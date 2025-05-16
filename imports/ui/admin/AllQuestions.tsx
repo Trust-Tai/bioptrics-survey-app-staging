@@ -144,11 +144,11 @@ const AllQuestions: React.FC = () => {
       <AdminLayout>
       <div style={{ width: '100%', padding: '32px 0', background: '#fff', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
-          {/* Title and Add Button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-            <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 0, letterSpacing: 0.2 }}>Question Bank</h2>
-          </div>
-          {/* Search Bar + Add Button */}
+        {/* Title and Add Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 0, letterSpacing: 0.2 }}>Question Bank</h2>
+        </div>
+        {/* Search Bar + Add Button */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <input
               type="text"
