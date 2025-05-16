@@ -153,8 +153,8 @@ const QuestionBuilder: React.FC =  () => {
             rightLabel: (latest as any).rightLabel,
             feedbackType: (latest as any).feedbackType || 'none',
             feedbackValue: (latest as any).feedbackValue || '',
-            wpsCategoryIds: (latest as any).wpsCategoryIds || [],
-            surveyThemeIds: (latest as any).surveyThemeIds || [],
+            wpsCategoryIds: (latest as any).categoryTags || [],
+            surveyThemeIds: (latest as any).surveyThemes || [],
           }
         ]);
       }
