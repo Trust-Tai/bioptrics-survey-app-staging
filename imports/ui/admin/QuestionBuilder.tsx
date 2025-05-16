@@ -1,15 +1,21 @@
 import React from 'react';
+import { Meteor } from 'meteor/meteor';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './QuestionBuilder.quill.css';
 import AdminLayout from './AdminLayout';
+import { useLocation } from 'react-router-dom';
+import { Questions } from '/imports/api/questions';
 import EllipsisMenu from './EllipsisMenu';
 import QuestionPreviewModal from './QuestionPreviewModal';
 import { useNavigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import { SurveyThemes } from '/imports/api/surveyThemes';
+import Select, { MultiValue, StylesConfig } from 'react-select';
+import { saveQuestionsToDB, publishQuestionsToDB, mapQuestionToVersion } from './questions.methods.client';
 
+// The Question interface is used for the builder state only. DB uses QuestionVersion.
 interface Question {
   text: string;
   description: string;
@@ -25,12 +31,30 @@ interface Question {
   surveyThemeIds?: string[];
 }
 
-const QuestionBuilder: React.FC = () => {
+const QuestionBuilder: React.FC =  () => {
+  const userId = Meteor.userId()!;
+  // Get ?edit=... param from URL
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const editId = params.get('edit');
+  // Alert state and helpers (matching WPSFramework)
+  const [alert, setAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  function showSuccess(msg: string) {
+    setAlert({ type: 'success', message: msg });
+    setTimeout(() => setAlert(null), 3000);
+  }
+  function showError(msg: string) {
+    setAlert({ type: 'error', message: msg });
+    setTimeout(() => setAlert(null), 4000);
+  }
   // ...existing state and handlers...
   const [previewIdx, setPreviewIdx] = React.useState<number|null>(null);
   const handleOpenPreview = (idx: number) => setPreviewIdx(idx);
   const handleClosePreview = () => setPreviewIdx(null);
   // ...existing state and handlers...
+
+  // Fetch the editing question if in edit mode
+  const editingDoc = useTracker(() => (editId ? Questions.findOne(editId) : null), [editId]);
 
   // Meteor subscriptions for WPS Categories and Survey Themes
   const wpsCategoriesSub = useTracker(() => Meteor.subscribe('wpsCategories'), []);
@@ -38,26 +62,71 @@ const QuestionBuilder: React.FC = () => {
   const wpsCategories = useTracker(() => wpsCategoriesSub.ready() ? WPSCategories.find({}, { sort: { name: 1 } }).fetch() : [], [wpsCategoriesSub]);
   const surveyThemes = useTracker(() => surveyThemesSub.ready() ? SurveyThemes.find({}, { sort: { name: 1 } }).fetch() : [], [surveyThemesSub]);
 
-  // Handlers for multi-selects
-  const handleWpsCategoryChange = (qIdx: number, values: string[]) => {
+  // Handlers for react-select multi-selects
+  const handleWpsCategoryChange = (qIdx: number, selected: MultiValue<{ value: string; label: string; color: string }>) => {
     const updated = [...questions];
-    updated[qIdx].wpsCategoryIds = values;
+    updated[qIdx].wpsCategoryIds = selected.map(opt => opt.value);
     setQuestions(updated);
   };
-  const handleSurveyThemeChange = (qIdx: number, values: string[]) => {
+  const handleSurveyThemeChange = (qIdx: number, selected: MultiValue<{ value: string; label: string; color: string }>) => {
     const updated = [...questions];
-    updated[qIdx].surveyThemeIds = values;
+    updated[qIdx].surveyThemeIds = selected.map(opt => opt.value);
     setQuestions(updated);
+  };
+
+  // Custom styles for react-select to show color chips
+  const colorMultiStyles: StylesConfig<any, true> = {
+    option: (styles, { data, isSelected }) => ({
+      ...styles,
+      backgroundColor: isSelected ? data.color : undefined,
+      color: isSelected ? '#fff' : '#28211e',
+      fontWeight: 500,
+      display: 'flex',
+      alignItems: 'center',
+    }),
+    multiValue: (styles, { data }) => ({
+      ...styles,
+      backgroundColor: data.color,
+      color: '#fff',
+      borderRadius: 8,
+      fontWeight: 600,
+      paddingLeft: 8,
+      paddingRight: 8,
+      display: 'flex',
+      alignItems: 'center',
+    }),
+    multiValueLabel: (styles, { data }) => ({
+      ...styles,
+      color: '#fff',
+      fontWeight: 600,
+    }),
+    multiValueRemove: (styles) => ({
+      ...styles,
+      color: '#fff',
+      ':hover': {
+        backgroundColor: '#333',
+        color: '#fff',
+      },
+    }),
   };
 
 
   // Handler to publish questions
-  const publishQuestions = () => {
-    // For demo: mark as published in localStorage
-    localStorage.setItem('questions', JSON.stringify(questions));
-    localStorage.setItem('questionsPublished', 'true');
-    alert('Questions have been published!');
-    navigate('/admin/questions/all');
+  const publishQuestions = async () => {
+    try {
+      const userId = Meteor.userId?.() || '';
+      if (editId) {
+        // Only publish the currently edited question
+        const q = questions[0];
+        await Meteor.callAsync('questions.update', editId, mapQuestionToVersion(q, userId, true), userId);
+      } else {
+        await publishQuestionsToDB(questions, userId);
+      }
+      showSuccess('Questions have been published!');
+      setTimeout(() => navigate('/admin/questions/all'), 1200);
+    } catch (err: any) {
+      showError('Failed to publish questions: ' + (err?.reason || err?.message || 'Unknown error'));
+    }
   };
 
   const [collapsed, setCollapsed] = React.useState<boolean[]>([]);
@@ -65,6 +134,32 @@ const QuestionBuilder: React.FC = () => {
   const [questions, setQuestions] = React.useState<Question[]>([
     { text: '', description: '', answerType: 'short_text', answers: [''], required: false, image: '', leftLabel: 'Strongly Disagree', rightLabel: 'Strongly Agree', feedbackType: 'none', feedbackValue: '' }
   ]);
+
+  // Prepopulate form if editing
+  React.useEffect(() => {
+    if (editingDoc) {
+      // Use the latest version from DB
+      const latest = editingDoc.versions && editingDoc.versions.length > 0 ? editingDoc.versions[editingDoc.versions.length - 1] : undefined;
+      if (latest && typeof latest === 'object') {
+        setQuestions([
+          {
+            text: (latest as any).questionText || '',
+            description: (latest as any).description || '',
+            answerType: (latest as any).responseType || 'short_text',
+            answers: Array.isArray((latest as any).options) ? (latest as any).options : (Array.isArray((latest as any).answers) ? (latest as any).answers : ['']),
+            required: !!(latest as any).required,
+            image: (latest as any).image || '',
+            leftLabel: (latest as any).leftLabel,
+            rightLabel: (latest as any).rightLabel,
+            feedbackType: (latest as any).feedbackType || 'none',
+            feedbackValue: (latest as any).feedbackValue || '',
+            wpsCategoryIds: (latest as any).wpsCategoryIds || [],
+            surveyThemeIds: (latest as any).surveyThemeIds || [],
+          }
+        ]);
+      }
+    }
+  }, [editingDoc]);
 
   // Ensure collapsed state matches questions
   React.useEffect(() => {
@@ -155,21 +250,9 @@ const QuestionBuilder: React.FC = () => {
     }
   };
 
-  const handleRemoveImage = (idx: number) => {
-    const updated = [...questions];
-    updated[idx].image = '';
-    setQuestions(updated);
-  };
-
   const handleRequiredToggle = (idx: number) => {
     const updated = [...questions];
     updated[idx].required = !updated[idx].required;
-    setQuestions(updated);
-  };
-
-  const handleRemoveQuestion = (idx: number) => {
-    const updated = [...questions];
-    updated.splice(idx, 1);
     setQuestions(updated);
   };
 
@@ -179,54 +262,95 @@ const QuestionBuilder: React.FC = () => {
     setQuestions(updated);
   };
 
-  const removeAnswer = (qIdx: number, aIdx: number) => {
-    const updated = [...questions];
-    updated[qIdx].answers.splice(aIdx, 1);
-    setQuestions(updated);
-  };
+const handleRemoveImage = (idx: number) => {
+  const updated = [...questions];
+  updated[idx].image = '';
+  setQuestions(updated);
+};
 
-  const saveQuestions = () => {
-    // Save logic here (e.g. localStorage, API call)
-    alert('Questions saved!');
-    navigate('/admin/questions/all');
-  };
+const handleRemoveQuestion = (idx: number) => {
+  const updated = [...questions];
+  updated.splice(idx, 1);
+  setQuestions(updated);
+};
 
-  // Handler for Likert label changes
-  const handleLikertLabelChange = (idx: number, labelKey: 'leftLabel' | 'rightLabel', value: string) => {
-    const updated = [...questions];
-    updated[idx][labelKey] = value;
-    setQuestions(updated);
-  };
+const removeAnswer = (qIdx: number, aIdx: number) => {
+  const updated = [...questions];
+  updated[qIdx].answers.splice(aIdx, 1);
+  setQuestions(updated);
+};
 
-  return (
-    <AdminLayout>
-      <div style={{ width: '100%', padding: '32px 0', background: '#fff', minHeight: '100vh', boxSizing: 'border-box' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
+const saveQuestions = async () => {
+  try {
+    const userId = Meteor.userId?.() || '';
+    if (editId) {
+      // Only update the existing question (single-question edit)
+      const q = questions[0];
+      await Meteor.callAsync('questions.update', editId, mapQuestionToVersion(q, userId, false), userId);
+    } else {
+      await saveQuestionsToDB(questions, userId);
+    }
+    showSuccess('Questions saved!');
+    setTimeout(() => navigate('/admin/questions/all'), 1200);
+  } catch (err: any) {
+    showError('Failed to save questions: ' + (err?.reason || err?.message || 'Unknown error'));
+  }
+};
 
-          <div style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-            background: '#fff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 20,
-            padding: '10px 0 10px 0'
-          }}>
-            <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>Questions</h2>
-            <div style={{ display: 'flex', gap: 8 }}>
+// Handler for Likert label changes
+const handleLikertLabelChange = (idx: number, labelKey: 'leftLabel' | 'rightLabel', value: string) => {
+  const updated = [...questions];
+  updated[idx][labelKey] = value;
+  setQuestions(updated);
+};
+
+return (
+  <AdminLayout>
+    {/* Custom Alert (matching WPSFramework) */}
+    {alert && (
+      <div style={{
+        position: 'fixed',
+        top: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: alert.type === 'success' ? '#2ecc40' : '#e74c3c',
+        color: '#fff',
+        padding: '12px 28px',
+        borderRadius: 8,
+        fontWeight: 600,
+        fontSize: 16,
+        zIndex: 2000,
+        boxShadow: '0 2px 12px #b0802b33',
+      }}>{alert.message}</div>
+    )}
+    <div style={{ width: '100%', padding: '32px 0', background: '#fff', minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          background: '#fff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+          padding: '10px 0 10px 0'
+        }}>
+          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>Questions</h2>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {editId ? null : (
               <button onClick={addQuestion} style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
                 + Add Question
               </button>
-              <button onClick={saveQuestions} style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 20px' }}>
-                Save
-              </button>
-              <button onClick={publishQuestions} style={{ background: '#1da463', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 20px' }}>
-                Publish
-              </button>
-            </div>
+            )}
+            <button onClick={saveQuestions} style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
+              Save
+            </button>
+            <button onClick={publishQuestions} style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
+              Publish
+            </button>
+          </div>
           </div>
           <div style={{
             background: '#EDFDD3',
@@ -342,51 +466,43 @@ const QuestionBuilder: React.FC = () => {
           />
 
           {/* WPS Categories Multi-Select */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10 }}>WPS Categories</label>
-            <select
-              multiple
-              value={q.wpsCategoryIds || []}
-              onChange={e => {
-                const values = Array.from(e.target.selectedOptions, option => option.value);
-                handleWpsCategoryChange(qIdx, values);
-              }}
-              style={{ minWidth: 200, borderRadius: 7, border: '1.5px solid #e5d6c7', padding: '6px 12px', background: '#f8f8f8' }}
-              disabled={!wpsCategoriesSub}
-            >
-              {wpsCategories.map((cat: any) => (
-                <option key={cat._id} value={cat._id} style={{ backgroundColor: cat.color, color: '#28211e', fontWeight: 500 }}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            <span style={{ marginLeft: 10, color: '#b3a08a', fontSize: 13 }}>
-              {wpsCategoriesSub ? '' : 'Loading categories...'}
-            </span>
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10, display: 'block', marginBottom: 6 }}>WPS Categories</label>
+            <Select
+              isMulti
+              isLoading={!wpsCategoriesSub.ready()}
+              options={wpsCategories.map((cat: any) => ({ value: cat._id, label: cat.name, color: cat.color }))}
+              value={(q.wpsCategoryIds || []).map(id => {
+                const cat = wpsCategories.find((c: any) => c._id === id);
+                return cat ? { value: cat._id, label: cat.name, color: cat.color } : null;
+              }).filter(Boolean)}
+              onChange={selected => handleWpsCategoryChange(qIdx, selected)}
+              styles={colorMultiStyles}
+              placeholder="Select WPS Categories..."
+              closeMenuOnSelect={false}
+              noOptionsMessage={() => wpsCategoriesSub.ready() ? 'No categories found' : 'Loading...'}
+              classNamePrefix="react-select"
+            />
           </div>
 
           {/* Survey Themes Multi-Select */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10 }}>Survey Themes</label>
-            <select
-              multiple
-              value={q.surveyThemeIds || []}
-              onChange={e => {
-                const values = Array.from(e.target.selectedOptions, option => option.value);
-                handleSurveyThemeChange(qIdx, values);
-              }}
-              style={{ minWidth: 200, borderRadius: 7, border: '1.5px solid #e5d6c7', padding: '6px 12px', background: '#f8f8f8' }}
-              disabled={!surveyThemesSub}
-            >
-              {surveyThemes.map((theme: any) => (
-                <option key={theme._id} value={theme._id} style={{ backgroundColor: theme.color, color: '#28211e', fontWeight: 500 }}>
-                  {theme.name}
-                </option>
-              ))}
-            </select>
-            <span style={{ marginLeft: 10, color: '#b3a08a', fontSize: 13 }}>
-              {surveyThemesSub ? '' : 'Loading themes...'}
-            </span>
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10, display: 'block', marginBottom: 6 }}>Survey Themes</label>
+            <Select
+              isMulti
+              isLoading={!surveyThemesSub.ready()}
+              options={surveyThemes.map((theme: any) => ({ value: theme._id, label: theme.name, color: theme.color }))}
+              value={(q.surveyThemeIds || []).map(id => {
+                const theme = surveyThemes.find((t: any) => t._id === id);
+                return theme ? { value: theme._id, label: theme.name, color: theme.color } : null;
+              }).filter(Boolean)}
+              onChange={selected => handleSurveyThemeChange(qIdx, selected)}
+              styles={colorMultiStyles}
+              placeholder="Select Survey Themes..."
+              closeMenuOnSelect={false}
+              noOptionsMessage={() => surveyThemesSub.ready() ? 'No themes found' : 'Loading...'}
+              classNamePrefix="react-select"
+            />
           </div>
         </div>
         {/* Image Upload */}
@@ -549,9 +665,8 @@ const QuestionBuilder: React.FC = () => {
            ))}
         </div> {/* close inner container */}
       </div> {/* close outer container */}
-    </AdminLayout>
+  </AdminLayout>
   );
 }
-
 
 export default QuestionBuilder;

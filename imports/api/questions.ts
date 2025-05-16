@@ -89,7 +89,7 @@ Meteor.methods({
   },
   'questions.update': async function (questionId: string, data: Omit<QuestionVersion, 'version'|'updatedAt'|'updatedBy'>, userId: string) {
 
-    const question = Questions.findOne(questionId);
+    const question = await Questions.findOneAsync(questionId);
     if (!question) throw new Meteor.Error('Not found');
     const now = new Date();
     const newVersion: QuestionVersion = {
