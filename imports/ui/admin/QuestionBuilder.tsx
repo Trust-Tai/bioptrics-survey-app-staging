@@ -1,0 +1,557 @@
+import React from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import './QuestionBuilder.quill.css';
+import AdminLayout from './AdminLayout';
+import EllipsisMenu from './EllipsisMenu';
+import QuestionPreviewModal from './QuestionPreviewModal';
+import { useNavigate } from 'react-router-dom';
+import { useTracker } from 'meteor/react-meteor-data';
+import { WPSCategories } from '/imports/api/wpsCategories';
+import { SurveyThemes } from '/imports/api/surveyThemes';
+
+interface Question {
+  text: string;
+  description: string;
+  answerType: string;
+  answers: string[];
+  required: boolean;
+  image: string;
+  leftLabel?: string;
+  rightLabel?: string;
+  feedbackType?: 'none' | 'text' | 'rating' | 'file';
+  feedbackValue?: string;
+  wpsCategoryIds?: string[];
+  surveyThemeIds?: string[];
+}
+
+const QuestionBuilder: React.FC = () => {
+  // ...existing state and handlers...
+  const [previewIdx, setPreviewIdx] = React.useState<number|null>(null);
+  const handleOpenPreview = (idx: number) => setPreviewIdx(idx);
+  const handleClosePreview = () => setPreviewIdx(null);
+  // ...existing state and handlers...
+
+  // Meteor subscriptions for WPS Categories and Survey Themes
+  const wpsCategoriesSub = useTracker(() => Meteor.subscribe('wpsCategories'), []);
+  const surveyThemesSub = useTracker(() => Meteor.subscribe('surveyThemes.all'), []);
+  const wpsCategories = useTracker(() => wpsCategoriesSub.ready() ? WPSCategories.find({}, { sort: { name: 1 } }).fetch() : [], [wpsCategoriesSub]);
+  const surveyThemes = useTracker(() => surveyThemesSub.ready() ? SurveyThemes.find({}, { sort: { name: 1 } }).fetch() : [], [surveyThemesSub]);
+
+  // Handlers for multi-selects
+  const handleWpsCategoryChange = (qIdx: number, values: string[]) => {
+    const updated = [...questions];
+    updated[qIdx].wpsCategoryIds = values;
+    setQuestions(updated);
+  };
+  const handleSurveyThemeChange = (qIdx: number, values: string[]) => {
+    const updated = [...questions];
+    updated[qIdx].surveyThemeIds = values;
+    setQuestions(updated);
+  };
+
+
+  // Handler to publish questions
+  const publishQuestions = () => {
+    // For demo: mark as published in localStorage
+    localStorage.setItem('questions', JSON.stringify(questions));
+    localStorage.setItem('questionsPublished', 'true');
+    alert('Questions have been published!');
+    navigate('/admin/questions/all');
+  };
+
+  const [collapsed, setCollapsed] = React.useState<boolean[]>([]);
+  const navigate = useNavigate();
+  const [questions, setQuestions] = React.useState<Question[]>([
+    { text: '', description: '', answerType: 'short_text', answers: [''], required: false, image: '', leftLabel: 'Strongly Disagree', rightLabel: 'Strongly Agree', feedbackType: 'none', feedbackValue: '' }
+  ]);
+
+  // Ensure collapsed state matches questions
+  React.useEffect(() => {
+    setCollapsed(prev => {
+      if (questions.length > prev.length) {
+        return [...prev, ...Array(questions.length - prev.length).fill(false)];
+      } else if (questions.length < prev.length) {
+        return prev.slice(0, questions.length);
+      }
+      return prev;
+    });
+  }, [questions.length]);
+
+  // Collapse/Expand handler
+  const handleToggleCollapse = (idx: number) => {
+    setCollapsed(prev => prev.map((val, i) => (i === idx ? !val : val)));
+  };
+
+  const answerTypes = [
+    { value: 'short_text', label: 'Short Text' },
+    { value: 'long_text', label: 'Long Text' },
+    { value: 'multiple_choice', label: 'Multiple Choice' },
+    { value: 'checkbox', label: 'Checkbox' },
+    { value: 'dropdown', label: 'Dropdown' },
+    { value: 'likert', label: 'Likert Scale' },
+    { value: 'quick_tabs', label: 'Quick Tabs' },
+    { value: 'free_text', label: 'Free-Text' }
+  ];
+
+  const handleQuestionChange = (idx: number, value: string) => {
+    const updated = [...questions];
+    updated[idx].text = value;
+    setQuestions(updated);
+  };
+
+  const handleDescriptionChange = (idx: number, value: string) => {
+    const updated = [...questions];
+    updated[idx].description = value;
+    setQuestions(updated);
+  };
+
+  const handleAnswerTypeChange = (idx: number, value: string) => {
+    const updated = [...questions];
+    updated[idx].answerType = value;
+    // Reset or initialize answers and likert labels as needed
+    if (["multiple_choice", "checkbox", "dropdown", "quick_tabs"].includes(value)) {
+      updated[idx].answers = updated[idx].answers && updated[idx].answers.length ? updated[idx].answers : [""];
+    } else if (value === "likert") {
+      updated[idx].leftLabel = updated[idx].leftLabel || "Strongly Disagree";
+      updated[idx].rightLabel = updated[idx].rightLabel || "Strongly Agree";
+      updated[idx].answers = ["1", "2", "3", "4", "5"];
+    } else {
+      updated[idx].answers = [];
+      if (updated[idx].leftLabel !== undefined) delete updated[idx].leftLabel;
+      if (updated[idx].rightLabel !== undefined) delete updated[idx].rightLabel;
+    }
+    setQuestions(updated);
+  };
+
+
+  const handleAnswerChange = (qIdx: number, aIdx: number, value: string) => {
+    const updated = [...questions];
+    updated[qIdx].answers[aIdx] = value;
+    setQuestions(updated);
+  };
+
+
+
+
+  const addQuestion = () => {
+    setQuestions([
+      ...questions,
+      { text: '', description: '', answerType: 'short_text', answers: [''], required: false, image: '', leftLabel: 'Strongly Disagree', rightLabel: 'Strongly Agree' }
+    ]);
+  };
+
+
+  const handleImageChange = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const updated = [...questions];
+        updated[idx].image = ev.target?.result as string;
+        setQuestions(updated);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (idx: number) => {
+    const updated = [...questions];
+    updated[idx].image = '';
+    setQuestions(updated);
+  };
+
+  const handleRequiredToggle = (idx: number) => {
+    const updated = [...questions];
+    updated[idx].required = !updated[idx].required;
+    setQuestions(updated);
+  };
+
+  const handleRemoveQuestion = (idx: number) => {
+    const updated = [...questions];
+    updated.splice(idx, 1);
+    setQuestions(updated);
+  };
+
+  const addAnswer = (qIdx: number) => {
+    const updated = [...questions];
+    updated[qIdx].answers.push('');
+    setQuestions(updated);
+  };
+
+  const removeAnswer = (qIdx: number, aIdx: number) => {
+    const updated = [...questions];
+    updated[qIdx].answers.splice(aIdx, 1);
+    setQuestions(updated);
+  };
+
+  const saveQuestions = () => {
+    // Save logic here (e.g. localStorage, API call)
+    alert('Questions saved!');
+    navigate('/admin/questions/all');
+  };
+
+  // Handler for Likert label changes
+  const handleLikertLabelChange = (idx: number, labelKey: 'leftLabel' | 'rightLabel', value: string) => {
+    const updated = [...questions];
+    updated[idx][labelKey] = value;
+    setQuestions(updated);
+  };
+
+  return (
+    <AdminLayout>
+      <div style={{ width: '100%', padding: '32px 0', background: '#fff', minHeight: '100vh', boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
+
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            background: '#fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 20,
+            padding: '10px 0 10px 0'
+          }}>
+            <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>Questions</h2>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={addQuestion} style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
+                + Add Question
+              </button>
+              <button onClick={saveQuestions} style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 20px' }}>
+                Save
+              </button>
+              <button onClick={publishQuestions} style={{ background: '#1da463', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 20px' }}>
+                Publish
+              </button>
+            </div>
+          </div>
+          <div style={{
+            background: '#EDFDD3',
+            border: '1px solid #C9C9C9',
+            borderRadius: 8,
+            padding: '18px 22px',
+            marginBottom: 28,
+            color: '#3a3a3a',
+            fontSize: 17,
+            fontWeight: 500,
+            lineHeight: 1.6
+          }}>
+            <strong>Welcome to the Question Builder</strong><br/>
+            This is your central hub for managing all survey questions. From here, you can easily browse, search, and organize your question library to build consistent and meaningful surveys.
+          </div>
+           {questions.map((q, qIdx) => (
+  <div key={qIdx} style={{ marginBottom: 36, padding: '24px 24px 18px 24px', border: '1px solid #CACACA', background: '#fff', borderRadius: 10 }}>
+    {previewIdx === qIdx && (
+      <QuestionPreviewModal
+        question={q}
+        open={true}
+        onClose={handleClosePreview}
+      />
+    )}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, background: '#FFF4D7', borderRadius: 10, border: '1px solid #CACACA', padding: '12px 18px' }}>
+      <div style={{ fontWeight: 800, fontSize: 18, color: '#000', textTransform: 'uppercase', letterSpacing: 1 }}>Question {qIdx + 1}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontWeight: 500, fontSize: 15, color: '#000' }}>Required</span>
+          <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 22, cursor: 'pointer', margin: 0 }}>
+            <input
+              type="checkbox"
+              checked={q.required}
+              onChange={() => handleRequiredToggle(qIdx)}
+              style={{ opacity: 0, width: 40, height: 22, margin: 0, position: 'absolute', left: 0, top: 0, zIndex: 2, cursor: 'pointer' }}
+            />
+            <span style={{
+              display: 'block',
+              width: 40,
+              height: 22,
+              background: q.required ? '#b0802b' : '#ccc',
+              borderRadius: 22,
+              transition: 'background 0.2s',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              zIndex: 1
+            }} />
+            <span style={{
+              display: 'block',
+              width: 18,
+              height: 18,
+              background: '#fff',
+              borderRadius: '50%',
+              position: 'absolute',
+              left: q.required ? 20 : 2,
+              top: 2,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+              transition: 'left 0.2s',
+              zIndex: 1
+            }} />
+          </label>
+        </div>
+        <button onClick={() => handleRemoveQuestion(qIdx)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} title="Remove question">
+          <span style={{ display: 'flex', alignItems: 'center', color: '#b80d2b', fontSize: 22 }}>
+            {/* Bin icon below */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+          </span>
+        </button>
+        <EllipsisMenu
+          onDuplicate={() => {}}
+        />
+        <button onClick={() => handleOpenPreview(qIdx)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} title="Preview question">
+          <span style={{ display: 'flex', alignItems: 'center', color: '#1da463', fontSize: 22 }}>
+            {/* Eye icon */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </span>
+        </button>
+        <button onClick={() => handleToggleCollapse(qIdx)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} title="Toggle collapse">
+          <span style={{ display: 'flex', alignItems: 'center', color: '#3776a8', fontSize: 22 }}>
+            {collapsed[qIdx] ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
+            )}
+          </span>
+        </button>
+      </div>
+    </div>
+    {/* Question Fields */}
+    {!collapsed[qIdx] && (
+      <div>
+        {/* Question Row */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontWeight: 500, color: '#000', fontSize: 16, textTransform: 'uppercase', display: 'block' }}>Question</label>
+          <input
+            type="text"
+            value={q.text}
+            onChange={e => handleQuestionChange(qIdx, e.target.value)}
+            placeholder="Enter question text"
+            style={{ width: '100%', fontSize: 17, padding: '10px 14px', borderRadius: 8, border: '1px solid #CACACA', marginTop: 6, background: '#fff', color: '#000', boxSizing: 'border-box', display: 'block' }}
+          />
+        </div>
+        {/* Description Field */}
+        <div style={{ marginBottom: 72 }}>
+          <label style={{ fontWeight: 500, color: '#000', fontSize: 16, textTransform: 'uppercase', display: 'block' }}>Description</label>
+          <ReactQuill
+            value={q.description}
+            onChange={value => handleDescriptionChange(qIdx, value)}
+            theme="snow"
+            placeholder="Enter question description (optional)"
+            style={{ marginBottom: 16, background: '#fff', borderRadius: 8, minHeight: 80 }}
+          />
+
+          {/* WPS Categories Multi-Select */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10 }}>WPS Categories</label>
+            <select
+              multiple
+              value={q.wpsCategoryIds || []}
+              onChange={e => {
+                const values = Array.from(e.target.selectedOptions, option => option.value);
+                handleWpsCategoryChange(qIdx, values);
+              }}
+              style={{ minWidth: 200, borderRadius: 7, border: '1.5px solid #e5d6c7', padding: '6px 12px', background: '#f8f8f8' }}
+              disabled={!wpsCategoriesSub}
+            >
+              {wpsCategories.map((cat: any) => (
+                <option key={cat._id} value={cat._id} style={{ backgroundColor: cat.color, color: '#28211e', fontWeight: 500 }}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <span style={{ marginLeft: 10, color: '#b3a08a', fontSize: 13 }}>
+              {wpsCategoriesSub ? '' : 'Loading categories...'}
+            </span>
+          </div>
+
+          {/* Survey Themes Multi-Select */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10 }}>Survey Themes</label>
+            <select
+              multiple
+              value={q.surveyThemeIds || []}
+              onChange={e => {
+                const values = Array.from(e.target.selectedOptions, option => option.value);
+                handleSurveyThemeChange(qIdx, values);
+              }}
+              style={{ minWidth: 200, borderRadius: 7, border: '1.5px solid #e5d6c7', padding: '6px 12px', background: '#f8f8f8' }}
+              disabled={!surveyThemesSub}
+            >
+              {surveyThemes.map((theme: any) => (
+                <option key={theme._id} value={theme._id} style={{ backgroundColor: theme.color, color: '#28211e', fontWeight: 500 }}>
+                  {theme.name}
+                </option>
+              ))}
+            </select>
+            <span style={{ marginLeft: 10, color: '#b3a08a', fontSize: 13 }}>
+              {surveyThemesSub ? '' : 'Loading themes...'}
+            </span>
+          </div>
+        </div>
+        {/* Image Upload */}
+        <div style={{ marginTop: 24, marginBottom: 16 }}>
+          <label style={{ fontWeight: 500, color: '#000', fontSize: 16, textTransform: 'uppercase', display: 'block' }}>Featured Image</label>
+          <input
+            type="file"
+            onChange={e => handleImageChange(qIdx, e)}
+            style={{ width: '100%', fontSize: 17, padding: '10px 14px', borderRadius: 8, border: '1px solid #CACACA', marginTop: 6, background: '#fff', color: '#000', boxSizing: 'border-box', display: 'block' }}
+          />
+          {q.image && (
+            <div style={{ marginTop: 6, marginBottom: 8 }}>
+              <img src={q.image} alt="attachment preview" style={{ maxWidth: '180px', maxHeight: '120px', borderRadius: 8, border: '1px solid #CACACA' }} />
+              <button onClick={() => handleRemoveImage(qIdx)} style={{ marginLeft: 10, background: 'none', border: 'none', color: '#b80d2b', cursor: 'pointer', fontWeight: 500 }}>Remove</button>
+            </div>
+          )}
+        </div>
+        {/* Answer Type */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontWeight: 500, color: '#000', fontSize: 15, textTransform: 'uppercase' }}>Answer Type</label>
+          <select
+            value={q.answerType}
+            onChange={e => handleAnswerTypeChange(qIdx, e.target.value)}
+            style={{ width: '100%', fontSize: 16, padding: '9px 14px', borderRadius: 8, border: '1px solid #CACACA', marginTop: 6, background: '#fff', color: '#000' }}
+          >
+            {answerTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+        </div>
+        {/* Answers */}
+        <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #CACACA', padding: '12px 14px' }}>
+          <label style={{ fontWeight: 500, color: '#000', fontSize: 15, textTransform: 'uppercase' }}>Answers</label>
+          {/* Dynamic Answers UI */}
+          {["multiple_choice", "checkbox", "dropdown"].includes(q.answerType) && (
+            <>
+              {q.answers.map((a, aIdx) => (
+                <div key={aIdx} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, background: '#fff', padding: '8px 10px' }}>
+                  <input
+                    type="text"
+                    value={a}
+                    onChange={e => handleAnswerChange(qIdx, aIdx, e.target.value)}
+                    placeholder={`Option ${aIdx + 1}`}
+                    style={{ flex: 1, fontSize: 16, padding: '8px 12px', background: '#fff', border: 'none', boxShadow: 'none' }}
+                  />
+                  {q.answers.length > 1 && (
+                    <button onClick={() => removeAnswer(qIdx, aIdx)} style={{ background: 'none', border: 'none', color: '#b0802b', fontWeight: 500, fontSize: 20, cursor: 'pointer' }}>×</button>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => addAnswer(qIdx)} style={{ background: 'none', border: 'none', color: '#3776a8', fontWeight: 500, fontSize: 15, cursor: 'pointer', marginTop: 6 }}>+ Add Option</button>
+            </>
+          )}
+          {q.answerType === "likert" && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <input
+                  type="text"
+                  value={q.leftLabel || ''}
+                  onChange={e => handleLikertLabelChange(qIdx, 'leftLabel', e.target.value)}
+                  placeholder="Left label"
+                  style={{ width: 120, fontSize: 15, padding: '7px 10px', border: '1px solid #CACACA', borderRadius: 6 }}
+                />
+                <div style={{ flex: 1, textAlign: 'center', color: '#888', fontSize: 15 }}>
+                  Likert Scale
+                </div>
+                <input
+                  type="text"
+                  value={q.rightLabel || ''}
+                  onChange={e => handleLikertLabelChange(qIdx, 'rightLabel', e.target.value)}
+                  placeholder="Right label"
+                  style={{ width: 120, fontSize: 15, padding: '7px 10px', border: '1px solid #CACACA', borderRadius: 6 }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                {q.answers && q.answers.map((val, i) => (
+                  <div key={i} style={{ flex: 1, textAlign: 'center', padding: '8px 0', background: '#f5f5f5', borderRadius: 6, border: '1px solid #CACACA', fontWeight: 500 }}>{val}</div>
+                ))}
+              </div>
+            </div>
+          )}
+          {q.answerType === "quick_tabs" && (
+            <>
+              {q.answers.map((a, aIdx) => (
+                <div key={aIdx} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, background: '#fff', padding: '8px 10px' }}>
+                  <input
+                    type="text"
+                    value={a}
+                    onChange={e => handleAnswerChange(qIdx, aIdx, e.target.value)}
+                    placeholder={`Tab ${aIdx + 1}`}
+                    style={{ flex: 1, fontSize: 16, padding: '8px 12px', background: '#fff', border: 'none', boxShadow: 'none' }}
+                  />
+                  {q.answers.length > 1 && (
+                    <button onClick={() => removeAnswer(qIdx, aIdx)} style={{ background: 'none', border: 'none', color: '#b0802b', fontWeight: 500, fontSize: 20, cursor: 'pointer' }}>×</button>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => addAnswer(qIdx)} style={{ background: 'none', border: 'none', color: '#3776a8', fontWeight: 500, fontSize: 15, cursor: 'pointer', marginTop: 6 }}>+ Add Tab</button>
+            </>
+          )}
+          {["short_text", "long_text", "free_text"].includes(q.answerType) && (
+            <div style={{ marginTop: 10, marginBottom: 8 }}>
+              <input
+                type={q.answerType === "long_text" ? "textarea" : "text"}
+                disabled
+                placeholder={q.answerType === "long_text" ? "Long text answer preview" : "Short text answer preview"}
+                style={{ width: '100%', maxWidth: '100%', fontSize: 16, padding: '8px 12px', border: '1px solid #CACACA', borderRadius: 6, background: '#f8f8f8', color: '#888', boxSizing: 'border-box' }}
+              />
+            </div>
+          )}
+        </div>
+        {/* Feedback Section */}
+        <div style={{ marginBottom: 40, background: '#F8F9FB', border: '1px solid #E0E0E0', borderRadius: 10, padding: '18px 18px 12px 18px', paddingTop: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10, gap: 12 }}>
+            <span style={{ fontWeight: 500, fontSize: 15, color: '#28211e', textTransform: 'uppercase', letterSpacing: 0.5 }}>Feedback</span>
+            <select
+              value={q.feedbackType || 'none'}
+              onChange={e => {
+                const updated = [...questions];
+                updated[qIdx].feedbackType = e.target.value as 'none' | 'text' | 'rating' | 'file';
+                updated[qIdx].feedbackValue = '';
+                setQuestions(updated);
+              }}
+              style={{ marginLeft: 10, fontSize: 15, padding: '6px 14px', borderRadius: 7, border: '1px solid #CACACA', background: '#fff', color: '#444', fontWeight: 500 }}
+            >
+              <option value="none">None</option>
+              <option value="text">Text Feedback</option>
+              <option value="rating">Rating</option>
+              <option value="file">File Upload</option>
+            </select>
+          </div>
+          {/* Feedback Input Area */}
+          {q.feedbackType === 'text' && (
+            <input
+              type="text"
+              value={q.feedbackValue || ''}
+              onChange={e => {
+                const updated = [...questions];
+                updated[qIdx].feedbackValue = e.target.value;
+                setQuestions(updated);
+              }}
+              placeholder="Prompt for feedback (e.g. 'Explain your answer')"
+              style={{ width: '100%', fontSize: 15, padding: '10px 12px', borderRadius: 8, border: '1px solid #CACACA', background: '#fff', color: '#333', marginBottom: 4, boxSizing: 'border-box' }}
+            />
+          )}
+          {q.feedbackType === 'rating' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, marginBottom: 4 }}>
+              <span style={{ color: '#888', fontSize: 15 }}>User will be asked for a rating (1-5 stars)</span>
+            </div>
+          )}
+          {q.feedbackType === 'file' && (
+            <div style={{ marginTop: 3, marginBottom: 4 }}>
+              <span style={{ color: '#888', fontSize: 15 }}>User will be asked to upload a file as feedback</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+           ))}
+        </div> {/* close inner container */}
+      </div> {/* close outer container */}
+    </AdminLayout>
+  );
+}
+
+
+export default QuestionBuilder;

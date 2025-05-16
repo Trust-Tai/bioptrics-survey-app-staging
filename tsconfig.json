@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "checkJs": false,
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "/imports/*": ["imports/*"]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["imports/**/*", "client/**/*", "server/**/*", "tests/**/*"],
+  "exclude": ["node_modules", ".meteor"]
+}

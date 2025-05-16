@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "question_text": "I feel encouraged to share new ideas and suggestions at work.",
+    "question_type": "close-ended",
+    "theme": "Engagement",
+    "wps_zone": "Inclusion Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 2,
+    "question_text": "Leadership communicates a clear vision for our team’s success.",
+    "question_type": "close-ended",
+    "theme": "Leadership",
+    "wps_zone": "Knowledge Equity",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 3,
+    "question_text": "I understand what is expected of me in my role.",
+    "question_type": "close-ended",
+    "theme": "Accountability",
+    "wps_zone": "Knowledge Equity",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 4,
+    "question_text": "I feel comfortable taking breaks to support my well-being.",
+    "question_type": "close-ended",
+    "theme": "Wellness",
+    "wps_zone": "Well-Being Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 5,
+    "question_text": "I feel safe to raise concerns without fear of retaliation.",
+    "question_type": "close-ended",
+    "theme": "Communication",
+    "wps_zone": "Behavior Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 6,
+    "question_text": "My workplace provides the equipment and resources I need to do my job safely.",
+    "question_type": "close-ended",
+    "theme": "Safety",
+    "wps_zone": "Workplace Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 7,
+    "question_text": "My contributions are recognized and valued by my team.",
+    "question_type": "close-ended",
+    "theme": "Recognition",
+    "wps_zone": "Inclusion Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 8,
+    "question_text": "I am proud to work for New Gold Corporation.",
+    "question_type": "close-ended",
+    "theme": "Pride",
+    "wps_zone": "Well-Being Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 9,
+    "question_text": "I have received adequate training to perform my job safely.",
+    "question_type": "close-ended",
+    "theme": "Safety",
+    "wps_zone": "Knowledge Equity",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 10,
+    "question_text": "There is open and honest communication within my team.",
+    "question_type": "close-ended",
+    "theme": "Communication",
+    "wps_zone": "Inclusion Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 11,
+    "question_text": "Leaders hold themselves and others accountable for results.",
+    "question_type": "close-ended",
+    "theme": "Accountability",
+    "wps_zone": "Behavior Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 12,
+    "question_text": "I feel my physical workspace is safe and well maintained.",
+    "question_type": "close-ended",
+    "theme": "Safety",
+    "wps_zone": "Built Environment Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 13,
+    "question_text": "I have opportunities to learn and grow at work.",
+    "question_type": "close-ended",
+    "theme": "Engagement",
+    "wps_zone": "Knowledge Equity",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 14,
+    "question_text": "I feel included and respected by my colleagues.",
+    "question_type": "close-ended",
+    "theme": "Engagement",
+    "wps_zone": "Inclusion Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 15,
+    "question_text": "What’s working well at your site?",
+    "question_type": "open-ended",
+    "theme": "Pride",
+    "wps_zone": "Well-Being Safety",
+    "display_format": "textarea"
+  },
+  {
+    "id": 16,
+    "question_text": "What could leadership do to better support your work?",
+    "question_type": "open-ended",
+    "theme": "Leadership",
+    "wps_zone": "Behavior Safety",
+    "display_format": "textarea"
+  },
+  {
+    "id": 17,
+    "question_text": "How can we improve safety in your workplace?",
+    "question_type": "open-ended",
+    "theme": "Safety",
+    "wps_zone": "Workplace Safety",
+    "display_format": "textarea"
+  },
+  {
+    "id": 18,
+    "question_text": "What suggestions do you have to improve communication?",
+    "question_type": "open-ended",
+    "theme": "Communication",
+    "wps_zone": "Knowledge Equity",
+    "display_format": "textarea"
+  },
+  {
+    "id": 19,
+    "question_text": "I feel supported in balancing my work and personal life.",
+    "question_type": "close-ended",
+    "theme": "Wellness",
+    "wps_zone": "Well-Being Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 20,
+    "question_text": "I am recognized for going above and beyond in my role.",
+    "question_type": "close-ended",
+    "theme": "Recognition",
+    "wps_zone": "Inclusion Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 21,
+    "question_text": "I feel empowered to make decisions related to my work.",
+    "question_type": "close-ended",
+    "theme": "Accountability",
+    "wps_zone": "Behavior Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 22,
+    "question_text": "My team collaborates effectively to achieve our goals.",
+    "question_type": "close-ended",
+    "theme": "Engagement",
+    "wps_zone": "Inclusion Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 23,
+    "question_text": "I feel my well-being is a priority at work.",
+    "question_type": "close-ended",
+    "theme": "Wellness",
+    "wps_zone": "Well-Being Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 24,
+    "question_text": "The workplace is accessible and accommodates my needs.",
+    "question_type": "close-ended",
+    "theme": "Pride",
+    "wps_zone": "Built Environment Safety",
+    "display_format": "scale_1_to_5"
+  },
+  {
+    "id": 25,
+    "question_text": "I receive timely feedback to help me improve my performance.",
+    "question_type": "close-ended",
+    "theme": "Communication",
+    "wps_zone": "Knowledge Equity",
+    "display_format": "scale_1_to_5"
+  }
+]

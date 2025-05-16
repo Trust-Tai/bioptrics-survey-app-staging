@@ -1,0 +1,5 @@
+{
+  "private": {
+    "jwtSecret": "YOUR_PRODUCTION_SECRET"
+  }
+}
