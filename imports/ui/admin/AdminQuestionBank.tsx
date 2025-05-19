@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FaPlus, FaFilter } from 'react-icons/fa';
 
@@ -150,14 +150,24 @@ const questions = [
 ];
 
 import AdminLayout from './AdminLayout';
-
+import QuestionPreviewModal from './QuestionPreviewModal';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '/imports/api/questions';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import { SurveyThemes } from '/imports/api/surveyThemes';
 
+function getLatestVersion(doc: any) {
+  if (doc.versions && doc.versions.length > 0) {
+    return doc.versions[doc.versions.length - 1];
+  }
+  return {};
+}
+
 const AdminQuestionBank = () => {
+  // Preview modal state
+  const [previewQuestion, setPreviewQuestion] = useState<any>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   // Fetch all categories and themes
   const wpsCategories = useTracker(() => {
     Meteor.subscribe('wpsCategories.all');
@@ -248,9 +258,75 @@ const AdminQuestionBank = () => {
             </div>
           </div>
         </div>
-    </Container>
-  </AdminLayout>
-);
-}
+            {/* --- Question List with Preview --- */}
+            <QuestionList>
+              {questions.length === 0 && <div style={{ color: '#b3a08a', fontStyle: 'italic' }}>No questions found.</div>}
+              {questions.map((doc: any, idx: number) => {
+                const latest = getLatestVersion(doc);
+                // Compose tags: theme, wps, type
+                const tags = [
+                  ...(latest.surveyThemes || []).map((id: string) => ({ label: surveyThemeMap[id] || id, color: tagColors.THEME })),
+                  ...(latest.categoryTags || []).map((id: string) => ({ label: wpsCategoryMap[id] || id, color: tagColors.WPS })),
+                  latest.responseType ? [{ label: latest.responseType.toUpperCase(), color: tagColors.TYPE }] : [],
+                ].flat();
+                return (
+                  <QuestionCard key={doc._id}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ marginBottom: 8 }}>
+                          {tags.map((tag, i) => (
+                            <Tag key={tag.label + i} color={tag.color}>{tag.label}</Tag>
+                          ))}
+                        </div>
+                        <div style={{ fontWeight: 500, color: '#28211e', fontSize: 17 }}>{latest.questionText || '[No text]'}</div>
+                      </div>
+                      <button
+                        style={{
+                          marginLeft: 16,
+                          background: '#b7a36a', // gold
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 8,
+                          padding: '7px 18px',
+                          fontWeight: 600,
+                          fontSize: 15,
+                          cursor: 'pointer',
+                          boxShadow: '0 1.5px 8px #e6d6b9',
+                          transition: 'background 0.18s',
+                        }}
+                        onMouseOver={e => (e.currentTarget.style.background = '#a08e54')}
+                        onMouseOut={e => (e.currentTarget.style.background = '#b7a36a')}
+                        onClick={() => {
+  console.log('Preview clicked', latest);
+  setPreviewQuestion(latest);
+  setPreviewOpen(true);
+}}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  </QuestionCard>
+                );
+              })}
+            </QuestionList>
+            <QuestionPreviewModal
+              question={previewQuestion}
+              open={previewOpen}
+              onClose={() => {
+                console.log('Closing preview modal');
+                setPreviewOpen(false);
+              }}
+            />
+            {previewOpen && (
+              <div style={{ position: 'fixed', bottom: 10, right: 10, background: '#fff0f0', color: '#c00', padding: 12, zIndex: 99999 }}>
+                <div>Debug: previewOpen={String(previewOpen)}</div>
+                <div>previewQuestion: {JSON.stringify(previewQuestion)}</div>
+              </div>
+            )}
+          </Container>
+        </AdminLayout>
+      );
+    }
+
 
 export default AdminQuestionBank;

@@ -9,19 +9,20 @@ import { useResponses } from '../useResponses';
 import styled from 'styled-components';
 
 const DashboardBg = styled.div`
-  background: #f9f7f2;
+  background: #fff;
   min-height: 100vh;
   padding: 2.5rem 0 4rem 0;
 `;
 
 const GoldHeaderCard = styled.div`
-  background: linear-gradient(90deg, #b8a06c 80%, #ffe082 100%);
+  background: #b7a36a;
   border-radius: 18px;
-  box-shadow: 0 2px 24px rgba(184,160,108,0.11);
+  box-shadow: 0 2px 18px #e6d6b933;
   padding: 2.2rem 2rem 2rem 2.2rem;
   margin: 0 auto 2.5rem auto;
   max-width: 1000px;
   color: #fff;
+  display: none;
 `;
 
 const HeaderLabel = styled.div`
@@ -63,13 +64,13 @@ const MainGrid = styled.div`
 const SurveyStatsCard = styled.div`
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 1px 10px #e3d6c6;
+  box-shadow: 0 1px 8px #e6d6b9;
   padding: 2rem 1.6rem 1.2rem 1.6rem;
 `;
 const SectionTitle = styled.div`
   font-size: 1.15rem;
   font-weight: 700;
-  color: #552a47;
+  color: #b7a36a;
   margin-bottom: 1.1rem;
 `;
 const DonutChart = styled.div`
@@ -90,7 +91,7 @@ const DonutSub = styled.div`
 const SiteResponsesCard = styled.div`
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 1px 10px #e3d6c6;
+  box-shadow: 0 1px 8px #e6d6b9;
   padding: 2rem 1.6rem 1.2rem 1.6rem;
 `;
 const BarChart = styled.div`
@@ -104,7 +105,7 @@ const BarBar = styled.div`
 const BarLabel = styled.div`
   width: 115px;
   font-size: 1.08rem;
-  color: #552a47;
+  color: #b7a36a;
   font-weight: 600;
 `;
 
@@ -115,7 +116,7 @@ const SiteLegend = styled.div`
 const FlaggedIssuesCard = styled.div`
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 1px 10px #e3d6c6;
+  box-shadow: 0 1px 8px #e6d6b9;
   padding: 2rem 1.6rem 1.2rem 1.6rem;
 `;
 const FlaggedList = styled.ul`
@@ -123,16 +124,16 @@ const FlaggedList = styled.ul`
   padding: 0;
   list-style: none;
 `;
-const FlaggedItem = styled.li<{ color: string }>`
+const FlaggedItem = styled.li<{ color?: string }>`
   margin-bottom: 0.7rem;
   font-size: 1.08rem;
   font-weight: 600;
-  color: ${({ color }) => color};
+  color: #b7a36a;
 `;
 const EngagementTrendCard = styled.div`
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 1px 10px #e3d6c6;
+  box-shadow: 0 1px 8px #e6d6b9;
   padding: 2rem 1.6rem 1.2rem 1.6rem;
 `;
 const TrendBar = styled.div`
@@ -146,12 +147,12 @@ const TrendRow = styled.div`
 const TrendLabel = styled.div`
   width: 70px;
   font-size: 1.08rem;
-  color: #552a47;
+  color: #b7a36a;
   font-weight: 600;
 `;
-const TrendFill = styled.div<{ width: number; color: string }>`
+const TrendFill = styled.div<{ width: number; color?: string }>`
   height: 14px;
-  background: ${({ color }) => color};
+  background: #b7a36a;
   border-radius: 8px;
   margin: 0 12px 0 0;
   width: ${({ width }) => width}%;
@@ -189,10 +190,10 @@ const AdminDashboard: React.FC = () => {
   const uniqueParticipants = new Set(responses.map(r => r.userId)).size;
 
   const stats = [
-    { label: 'Total Surveys', value: totalQuestions, icon: <FaClipboardList />, color: 'linear-gradient(90deg, #b8a06c 60%, #ffe082 100%)', link: '/admin/surveys/all' },
-    { label: 'Questions', value: totalQuestions, icon: <FaQuestionCircle />, color: 'linear-gradient(90deg, #6e395e 60%, #ffd6e0 100%)', link: '/admin/questions/all' },
-    { label: 'Participants', value: uniqueParticipants, icon: <FaUsers />, color: 'linear-gradient(90deg, #f6d365 60%, #fda085 100%)', link: '/admin/analytics' },
-    { label: 'Responses', value: totalResponses, icon: <FaChartBar />, color: 'linear-gradient(90deg, #b8a06c 60%, #e1cfa6 100%)', link: '/admin/analytics' },
+    { label: 'Total Surveys', value: totalQuestions, icon: <FaClipboardList color="#b7a36a" size={28} />, link: '/admin/surveys/all' },
+    { label: 'Questions', value: totalQuestions, icon: <FaQuestionCircle color="#b7a36a" size={28} />, link: '/admin/questions/all' },
+    { label: 'Participants', value: uniqueParticipants, icon: <FaUsers color="#b7a36a" size={28} />, link: '/admin/analytics' },
+    { label: 'Responses', value: totalResponses, icon: <FaChartBar color="#b7a36a" size={28} />, link: '/admin/analytics' },
   ];
 
   // Participation percentage
@@ -217,9 +218,7 @@ const AdminDashboard: React.FC = () => {
                 <Countdown end={new Date('2025-01-25T23:59:59')} />
               </HeaderEnds>
             </div>
-            <GoldIcon>
-              <svg width="90" height="64" viewBox="0 0 90 64" fill="none"><rect width="90" height="64" rx="14" fill="#FFD700"/><rect x="12" y="16" width="66" height="32" rx="8" fill="#F6E27A"/><rect x="28" y="28" width="34" height="12" rx="6" fill="#FFD700"/></svg>
-            </GoldIcon>
+
           </div>
         </GoldHeaderCard>
 
@@ -233,204 +232,212 @@ const AdminDashboard: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 18,
-                background: stat.color,
-                borderRadius: 40,
-                boxShadow: '0 2px 12px #e3d6c6',
+                background: '#fff',
+                border: '2px solid #b7a36a',
+                borderRadius: 20,
+                boxShadow: '0 2px 8px #e6d6b9',
                 padding: '1.2rem 2.2rem',
-                color: '#fff',
+                color: '#b7a36a',
                 fontWeight: 700,
-                fontSize: 19,
+                minWidth: 220,
                 textDecoration: 'none',
-                minWidth: 210,
-                transition: 'transform 0.13s, box-shadow 0.13s',
-                cursor: 'pointer',
-                outline: 'none',
-                border: 'none',
-                position: 'relative',
-                boxSizing: 'border-box',
-                zIndex: 1,
+                fontSize: 18,
+                transition: 'box-shadow 0.15s',
               }}
-              tabIndex={0}
-              onMouseOver={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.04)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 24px #b8a06c55'; }}
-              onMouseOut={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px #e3d6c6'; }}
             >
-              <span style={{ fontSize: 28 }}>{stat.icon}</span>
-              <span>
-                <div style={{ fontSize: 21 }}>{stat.value}</div>
-                <div style={{ fontSize: 15, fontWeight: 500, opacity: 0.94 }}>{stat.label}</div>
-              </span>
+              {stat.icon}
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#b7a36a' }}>{stat.value}</div>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>{stat.label}</div>
+              </div>
             </a>
           ))}
         </div>
 
-        {/* Quick Actions Pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.2rem', justifyContent: 'center', marginBottom: '2.2rem' }}>
-          {quickActions.map(action => (
+        {/* Quick Actions */}
+        <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginBottom: '2.5rem' }}>
+          {quickActions.map((action, idx) => (
             <a
               key={action.label}
               href={action.link}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
-                background: 'linear-gradient(90deg, #fff8e1 60%, #ffe082 100%)',
-                borderRadius: 30,
-                boxShadow: '0 2px 8px #e3d6c6',
-                padding: '0.8rem 1.7rem',
-                color: '#b8a06c',
+                gap: 10,
+                border: '2px solid #b7a36a',
+                borderRadius: 8,
+                background: '#fff',
+                color: '#b7a36a',
                 fontWeight: 700,
-                fontSize: 16,
+                padding: '0.7rem 1.5rem',
+                fontSize: 15,
                 textDecoration: 'none',
-                minWidth: 170,
-                transition: 'transform 0.13s, box-shadow 0.13s',
-                cursor: 'pointer',
-                outline: 'none',
-                border: 'none',
-                position: 'relative',
-                boxSizing: 'border-box',
-                zIndex: 1,
+                transition: 'background 0.15s, color 0.15s',
               }}
-              tabIndex={0}
-              onMouseOver={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.04)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 18px #b8a06c33'; }}
-              onMouseOut={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px #e3d6c6'; }}
+              onMouseOver={e => {
+                e.currentTarget.style.background = '#b7a36a';
+                e.currentTarget.style.color = '#fff';
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.background = '#fff';
+                e.currentTarget.style.color = '#b7a36a';
+              }}
             >
-              <span style={{ fontSize: 22 }}>{action.icon}</span>
-              <span>{action.label}</span>
+              {React.cloneElement(action.icon, { color: '#b7a36a', size: 20 })}
+              {action.label}
             </a>
           ))}
         </div>
 
         <MainGrid>
-          <SurveyStatsCard style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(120deg, #fff8e1 80%, #ffe082 100%)', boxShadow: '0 2px 18px #e3d6c6' }}>
-            <SectionTitle style={{ marginBottom: 18, fontSize: 19 }}>Survey Participation</SectionTitle>
+          <SurveyStatsCard style={{
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  background: '#fff',
+  border: '2px solid #b7a36a',
+  boxShadow: 'none',
+}}>
+            <SectionTitle style={{ marginBottom: 18, fontSize: 19, color: '#b7a36a' }}>Survey Participation</SectionTitle>
             {/* Modern segmented ring chart */}
             <div style={{ position: 'relative', width: 120, height: 120, marginBottom: 18 }}>
-              <svg width="120" height="120" viewBox="0 0 120 120">
-                {/* Background ring */}
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#f5e6c7" strokeWidth="12" />
-                {/* Completed segment */}
-                <circle
-                  cx="60" cy="60" r="52"
-                  fill="none"
-                  stroke="#b8a06c"
-                  strokeWidth="12"
-                  strokeDasharray={`${Math.PI * 2 * 52}`}
-                  strokeDashoffset={`${Math.PI * 2 * 52 * (1 - participationPct / 100)}`}
-                  strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.6,.3,0,1)' }}
-                />
-                {/* Pending segment (if any) */}
-                {pendingResponses > 0 && (
-                  <circle
-                    cx="60" cy="60" r="52"
-                    fill="none"
-                    stroke="#e1cfa6"
-                    strokeWidth="12"
-                    strokeDasharray={`${Math.PI * 2 * 52}`}
-                    strokeDashoffset={`${Math.PI * 2 * 52 * (completedResponses / totalResponses)}`}
-                    strokeLinecap="round"
-                    style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.6,.3,0,1)' }}
-                  />
-                )}
-                {/* Center % */}
-                <text x="50%" y="54%" textAnchor="middle" fontSize="32" fontWeight="bold" fill="#552a47">{participationPct}%</text>
-              </svg>
-            </div>
+  <svg width="120" height="120" viewBox="0 0 120 120">
+    {/* Background ring (white) */}
+    <circle cx="60" cy="60" r="52" fill="none" stroke="#fff" strokeWidth="12" />
+    {/* Completed segment (gold) */}
+    <circle
+      cx="60" cy="60" r="52"
+      fill="none"
+      stroke="#b7a36a"
+      strokeWidth="12"
+      strokeDasharray={`${Math.PI * 2 * 52}`}
+      strokeDashoffset={`${Math.PI * 2 * 52 * (1 - participationPct / 100)}`}
+      strokeLinecap="round"
+      style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.6,.3,0,1)' }}
+    />
+    {/* Pending segment (white, overlays gold if not 100%) */}
+    {pendingResponses > 0 && (
+      <circle
+        cx="60" cy="60" r="52"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="12"
+        strokeDasharray={`${Math.PI * 2 * 52}`}
+        strokeDashoffset={`${Math.PI * 2 * 52 * (completedResponses / totalResponses)}`}
+        strokeLinecap="round"
+        style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.6,.3,0,1)' }}
+      />
+    )}
+    {/* Center % */}
+    <text x="50%" y="54%" textAnchor="middle" fontSize="32" fontWeight="bold" fill="#b7a36a">{participationPct}%</text>
+  </svg>
+</div>
             {/* Pills for Completed and Pending */}
             <div style={{ display: 'flex', gap: 18, marginBottom: 10 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'linear-gradient(90deg, #b8a06c 60%, #ffe082 100%)',
-                color: '#fff', borderRadius: 30, padding: '7px 22px', fontWeight: 700, fontSize: 17, boxShadow: '0 1px 7px #e3d6c6',
-              }}>
-                <span style={{ fontSize: 20 }}>✔️</span> {completedResponses} Completed
-              </div>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'linear-gradient(90deg, #e1cfa6 60%, #fff8e1 100%)',
-                color: '#b8a06c', borderRadius: 30, padding: '7px 22px', fontWeight: 700, fontSize: 17, boxShadow: '0 1px 7px #e3d6c6',
-              }}>
-                <span style={{ fontSize: 20 }}>⏳</span> {pendingResponses} Pending
-              </div>
-            </div>
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: 8,
+    background: '#b7a36a',
+    color: '#fff', borderRadius: 30, padding: '7px 22px', fontWeight: 700, fontSize: 17, border: '1.5px solid #b7a36a',
+  }}>
+    <span style={{ fontSize: 20 }}>✔️</span> {completedResponses} Completed
+  </div>
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: 8,
+    background: '#fff',
+    color: '#b7a36a', borderRadius: 30, padding: '7px 22px', fontWeight: 700, fontSize: 17, border: '1.5px solid #b7a36a',
+  }}>
+    <span style={{ fontSize: 20 }}>⏳</span> {pendingResponses} Pending
+  </div>
+</div>
             {/* Legend */}
-            <div style={{ marginTop: 8, color: '#6e395e', fontSize: 15, textAlign: 'center' }}>
-              <span style={{ fontWeight: 600, color: '#b8a06c' }}>{completedResponses}</span> out of <span style={{ fontWeight: 600 }}>{totalResponses}</span> responses completed
-            </div>
+            <div style={{ marginTop: 8, color: '#b7a36a', fontSize: 15, textAlign: 'center', fontWeight: 600 }}>
+  {completedResponses} out of {totalResponses} responses completed
+</div>
           </SurveyStatsCard>
-          <SiteResponsesCard style={{ background: 'linear-gradient(120deg, #fff8e1 80%, #ffe082 100%)', boxShadow: '0 2px 18px #e3d6c6', borderRadius: 18, padding: '2.2rem 2rem 1.6rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <SectionTitle style={{ marginBottom: 18, fontSize: 19 }}>Responses by Site</SectionTitle>
+          <SiteResponsesCard style={{
+  background: '#fff',
+  border: '2px solid #b7a36a',
+  borderRadius: 18,
+  boxShadow: 'none',
+  padding: '2.2rem 2rem 1.6rem 2rem',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+}}>
+            <SectionTitle style={{ marginBottom: 18, fontSize: 19, color: '#b7a36a' }}>Responses by Site</SectionTitle>
             {/* Modern horizontal segmented bar/pill visualization */}
             <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 22 }}>
               {['Rainy River', 'New Afton', 'Corporate', 'Other'].map((site, idx) => {
-                const colors = [
-                  'linear-gradient(90deg, #b8a06c 60%, #ffe082 100%)',
-                  'linear-gradient(90deg, #f6d365 60%, #fda085 100%)',
-                  'linear-gradient(90deg, #e1cfa6 60%, #fff8e1 100%)',
-                  'linear-gradient(90deg, #eee 60%, #fff 100%)',
-                ];
-                const textColors = ['#fff', '#fff', '#b8a06c', '#888'];
-                const icons = ['🏞️', '⛏️', '🏢', '🌐'];
-                const count = responses.filter(r => r.site === site).length;
-                const max = Math.max(1, ...['Rainy River', 'New Afton', 'Corporate', 'Other'].map(s => responses.filter(r => r.site === s).length));
-                return (
-                  <div key={site} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 22 }}>{icons[idx]}</span>
-                    <div style={{
-                      flex: 1,
-                      background: colors[idx],
-                      borderRadius: 30,
-                      height: 24,
-                      position: 'relative',
-                      boxShadow: '0 1px 7px #e3d6c6',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      minWidth: 50,
-                    }}>
-                      <div style={{
-                        width: `${Math.max(10, (count / max) * 100)}%`,
-                        background: 'rgba(255,255,255,0.08)',
-                        height: '100%',
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        borderRadius: 30,
-                        transition: 'width 0.7s cubic-bezier(.6,.3,0,1)',
-                      }} />
-                      <span style={{
-                        position: 'relative',
-                        zIndex: 1,
-                        color: textColors[idx],
-                        fontWeight: 700,
-                        fontSize: 16,
-                        marginLeft: 20,
-                      }}>{site}</span>
-                    </div>
-                    <div style={{
-                      background: colors[idx],
-                      color: textColors[idx],
-                      borderRadius: 30,
-                      padding: '4px 18px',
-                      fontWeight: 700,
-                      fontSize: 15,
-                      boxShadow: '0 1px 7px #e3d6c6',
-                      minWidth: 56,
-                      textAlign: 'center',
-                    }}>{count}</div>
-                  </div>
-                );
-              })}
+  // Use only gold and white for bars and text
+  const barColors = ['#b7a36a', '#fff', '#b7a36a', '#fff'];
+  const textColors = ['#fff', '#b7a36a', '#fff', '#b7a36a'];
+  const borderStyles = ['2px solid #b7a36a', '2px solid #b7a36a', '2px solid #b7a36a', '2px solid #b7a36a'];
+  const icons = ['🏞️', '⛏️', '🏢', '🌐'];
+  const count = responses.filter(r => r.site === site).length;
+  const max = Math.max(1, ...['Rainy River', 'New Afton', 'Corporate', 'Other'].map(s => responses.filter(r => r.site === s).length));
+  return (
+    <div key={site} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <span style={{ fontSize: 22, color: '#b7a36a' }}>{icons[idx]}</span>
+      <div style={{
+        flex: 1,
+        background: barColors[idx],
+        border: borderStyles[idx],
+        borderRadius: 30,
+        height: 24,
+        position: 'relative',
+        boxShadow: 'none',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        minWidth: 50,
+      }}>
+        <div style={{
+          width: `${Math.max(10, (count / max) * 100)}%`,
+          background: barColors[idx] === '#b7a36a' ? '#b7a36a' : '#fff',
+          height: '100%',
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          borderRadius: 30,
+          transition: 'width 0.7s cubic-bezier(.6,.3,0,1)',
+          opacity: 0.3,
+        }} />
+        <span style={{
+          position: 'relative',
+          zIndex: 2,
+          color: barColors[idx] === '#b7a36a' ? '#fff' : '#b7a36a',
+          fontWeight: 700,
+          fontSize: 16,
+          marginLeft: 18,
+        }}>
+          {count}
+        </span>
+      </div>
+      <span style={{ color: '#b7a36a', fontWeight: 600, fontSize: 16 }}>{site}</span>
+    </div>
+  );
+})}
             </div>
-            {/* Modern legend/pointers below the section */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 8 }}>
-              <div style={{ background: 'linear-gradient(90deg, #b8a06c 60%, #ffe082 100%)', color: '#fff', borderRadius: 20, padding: '4px 16px', fontWeight: 600, fontSize: 15 }}>🏞️ Rainy River – {responses.filter(r => r.site === 'Rainy River').length}</div>
-              <div style={{ background: 'linear-gradient(90deg, #f6d365 60%, #fda085 100%)', color: '#fff', borderRadius: 20, padding: '4px 16px', fontWeight: 600, fontSize: 15 }}>⛏️ New Afton – {responses.filter(r => r.site === 'New Afton').length}</div>
-              <div style={{ background: 'linear-gradient(90deg, #e1cfa6 60%, #fff8e1 100%)', color: '#b8a06c', borderRadius: 20, padding: '4px 16px', fontWeight: 600, fontSize: 15 }}>🏢 Corporate – {responses.filter(r => r.site === 'Corporate').length}</div>
-              <div style={{ background: 'linear-gradient(90deg, #eee 60%, #fff 100%)', color: '#888', borderRadius: 20, padding: '4px 16px', fontWeight: 600, fontSize: 15 }}>🌐 Other – {responses.filter(r => r.site === 'Other').length}</div>
+              {['Rainy River', 'New Afton', 'Corporate', 'Other'].map((site, idx) => (
+                <div key={site} style={{
+                  background: '#fff',
+                  color: '#b7a36a',
+                  border: '1.5px solid #b7a36a',
+                  borderRadius: 20,
+                  padding: '4px 16px',
+                  fontWeight: 600,
+                  fontSize: 15,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                }}>
+                  <span style={{ fontSize: 18 }}>{['🏞️', '⛏️', '🏢', '🌐'][idx]}</span> {site} – {responses.filter(r => r.site === site).length}
+                </div>
+              ))}
             </div>
-            <div style={{ marginTop: 10, color: '#6e395e', fontSize: 15, textAlign: 'center' }}>
-              <b>TOTAL RESPONSES: {totalResponses}</b>
+            <div style={{ marginTop: 10, color: '#b7a36a', fontSize: 15, textAlign: 'center', fontWeight: 700 }}>
+              TOTAL RESPONSES: {totalResponses}
             </div>
           </SiteResponsesCard>
           <FlaggedIssuesCard>

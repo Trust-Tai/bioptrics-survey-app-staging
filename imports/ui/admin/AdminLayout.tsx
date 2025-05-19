@@ -213,20 +213,35 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
             </li>
             {/* Logout button */}
-            <footer style={{ padding: '1.5rem 0 0 0', textAlign: 'center' }}>
+            <footer style={{ padding: '1.5rem 0 0 0' }}>
               <button
                 style={{
                   background: 'none',
                   border: 'none',
                   color: '#fff',
-                  fontSize: 15,
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 4px rgba(90, 110, 234, 0.07)',
-                  marginLeft: 12
+                  fontSize: 17,
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '12px 24px',
+                  borderRadius: 8,
+                  marginBottom: 6,
+                  transition: 'background 0.2s',
+                  width: '100%',
+                  textAlign: 'left',
+                  boxShadow: '0 1px 4px rgba(90, 110, 234, 0.07)'
                 }}
                 onClick={() => {
                   localStorage.removeItem('admin_jwt');
                   window.location.href = '/admin-login';
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.color = '#b7a36a';
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.color = '#fff';
                 }}
               >
                 <FaSignOutAlt style={iconStyle} />

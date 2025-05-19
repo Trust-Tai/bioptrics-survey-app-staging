@@ -9,7 +9,12 @@ import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
 import Setting from './admin/Setting';
 import Welcome from './Welcome';
+import SurveyWelcome from './SurveyWelcome';
 import GetToKnowYou from './GetToKnowYou';
+import SurveyQuestion from './SurveyQuestion';
+import SectionIntro from './SectionIntro';
+import { useTracker } from 'meteor/react-meteor-data';
+import { SurveyThemes } from '/imports/api/surveyThemes';
 import LeadershipManagement from './user/LeadershipManagement';
 import TermsOfUse from './TermsOfUse';
 import PrivacyNotice from './PrivacyNotice';
@@ -70,12 +75,54 @@ function RequireAuth() {
   return <Outlet />;
 }
 
+// Wrapper for Section Intro, uses Meteor/react-meteor-data to fetch section info
+import { useParams } from 'react-router-dom';
+
+const SectionIntroWrapper: React.FC = () => {
+  const navigate = useNavigate();
+  const { sectionIdx } = useParams<{ sectionIdx: string }>();
+  const idx = Number(sectionIdx) || 0;
+  const surveyThemes = useTracker(() => {
+    Meteor.subscribe('surveyThemes.all');
+    return SurveyThemes.find().fetch();
+  }, []);
+  const theme = surveyThemes[idx];
+  if (!theme) return null;
+  return (
+    <SectionIntro
+      title={theme.name}
+      description={theme.description}
+      onContinue={() => navigate(`/survey/section/${idx}/question/0`)}
+      onBack={idx > 0 ? () => navigate(`/survey/section/${idx - 1}`) : undefined}
+    />
+  );
+};
+
+// Wrapper for Survey Question, placeholder for now
+const SurveyQuestionWrapper: React.FC = () => {
+  const navigate = useNavigate();
+  const { sectionIdx, questionIdx } = useParams<{ sectionIdx: string; questionIdx: string }>();
+  const sIdx = Number(sectionIdx) || 0;
+  const qIdx = Number(questionIdx) || 0;
+  // TODO: Replace with real questions length
+  const questionsLength = 4;
+  return (
+    <SurveyQuestion
+      question="How often does your manager provide clear direction for your work?"
+      progress={`${qIdx + 1}/${questionsLength}`}
+      onNext={() => {}}
+      onBack={qIdx > 0 ? () => navigate(`/survey/section/${sIdx}/question/${qIdx - 1}`) : () => navigate(`/survey/section/${sIdx}`)}
+    />
+  );
+};
+
 const AppRoutes: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Routes>
-      <Route path="/" element={<Welcome />} />
-      <Route path="/survey" element={<GetToKnowYou />} />
+      <Route path="/" element={<SurveyWelcome onStart={() => navigate('/survey/section/0')} />} />
+      <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
+      <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
       <Route path="/leadership" element={<LeadershipManagement />} />
       <Route path="/terms" element={<TermsOfUse />} />
       <Route path="/privacy" element={<PrivacyNotice />} />
