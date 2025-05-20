@@ -8,6 +8,7 @@ import { WPSCategories } from '../imports/api/wpsCategories';
 import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
 import '../imports/api/surveyThemes';
+import '../imports/api/surveys';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

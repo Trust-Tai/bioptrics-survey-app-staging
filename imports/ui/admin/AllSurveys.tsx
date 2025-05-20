@@ -4,6 +4,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '/imports/api/questions';
 import SurveySectionQuestionDropdown, { QuestionOption } from './SurveySectionQuestionDropdown';
+import DraggableQuestionList from './DraggableQuestionList';
 
 interface Survey {
   id: string;
@@ -242,21 +243,21 @@ const AllSurveys: React.FC = () => {
                 // Generate unique ID for demographics config
                 const demographicsId = 'demo-' + Math.random().toString(36).substr(2, 9);
                 const newSurvey = {
-                  id: Date.now().toString(),
                   title: form.title,
                   description: form.description,
-                  createdAt: new Date().toISOString(),
-                  questionsBySection: selectedQuestions,
-                  demographicsPublished: { id: demographicsId, published: true },
+                  questions: Object.values(selectedQuestions).flat().map(q => q.value),
                 };
-                const updated = [newSurvey, ...surveys];
-                localStorage.setItem('surveys', JSON.stringify(updated));
-                setSurveys(updated);
-                setShowModal(false);
-                setForm({ title: '', description: '' });
-                setStep(0);
-                setNotification({ type: 'success', message: 'Survey published! Unique Demographics ID: ' + demographicsId });
-                setTimeout(() => setNotification(null), 4000);
+                Meteor.call('surveys.insert', newSurvey, (err: any, surveyId: string) => {
+                  if (err) {
+                    setNotification({ type: 'error', message: 'Failed to publish survey: ' + err.reason });
+                    return;
+                  }
+                  setShowModal(false);
+                  setForm({ title: '', description: '' });
+                  setStep(0);
+                  setNotification({ type: 'success', message: `Survey published! Shareable link: /survey/${surveyId}` });
+                  setTimeout(() => setNotification(null), 6000);
+                });
               }}
               style={{ background: '#fff', borderRadius: 14, padding: 32, width: '80%', maxWidth: 900, minHeight: 220, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}
             >
@@ -360,6 +361,20 @@ const AllSurveys: React.FC = () => {
                     selected={selectedQuestions[step] || []}
                     onChange={opts => setSelectedQuestions(prev => ({ ...prev, [step]: opts }))}
                   />
+                  {/* Numbered, draggable selected questions list */}
+                  {(selectedQuestions[step] && selectedQuestions[step].length > 0) && (
+                    <div style={{ marginTop: 10, marginBottom: 10 }}>
+                      <div style={{ fontWeight: 600, color: '#6e5a67', marginBottom: 6 }}>Selected Questions:</div>
+                      <DraggableQuestionList
+                        questions={selectedQuestions[step]}
+                        onReorder={(reordered) => setSelectedQuestions(prev => ({ ...prev, [step]: reordered }))}
+                        onRemove={(removeIdx) => setSelectedQuestions(prev => ({
+                          ...prev,
+                          [step]: prev[step].filter((_, idx) => idx !== removeIdx)
+                        }))}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
               {step === 1 && (
