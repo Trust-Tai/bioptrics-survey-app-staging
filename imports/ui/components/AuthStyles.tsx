@@ -10,7 +10,7 @@ export const AuthBg = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e5d6e0 100%);
+  background: #FFF9EB;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,6 +21,7 @@ export const AuthCard = styled.form`
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+  border: 1px solid #E8B73A66;
   padding: 2.5rem 2.5rem 2rem 2.5rem;
   width: 520px;
   max-width: 98vw;
@@ -58,7 +59,7 @@ export const AuthInputIcon = styled.span`
 `;
 
 export const AuthInput = styled.input`
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  padding: 1rem 1.5rem 1rem 1.5rem;
   border-radius: 8px;
   border: 1px solid #d2d6dc;
   width: 100%;
