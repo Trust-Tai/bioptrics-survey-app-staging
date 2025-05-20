@@ -1,5 +1,9 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import AdminLayout from './AdminLayout';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Meteor } from 'meteor/meteor';
+import { Questions } from '/imports/api/questions';
+import SurveySectionQuestionDropdown, { QuestionOption } from './SurveySectionQuestionDropdown';
 
 interface Survey {
   id: string;
@@ -74,15 +78,36 @@ const ImageInput: React.FC<{
 };
 
 const AllSurveys: React.FC = () => {
+  // Fetch all published questions from the Questions collection
+  const questions = useTracker(() => {
+    Meteor.subscribe('questions.all');
+    return Questions.find().fetch();
+  }, []);
+
+  // Only show published questions in the dropdown (latest version must have published === true)
+  const questionOptions: QuestionOption[] = questions
+    .map((q: any) => {
+      const latest = q.versions && q.versions.length > 0 ? q.versions[q.versions.length - 1] : null;
+      if (latest && latest.published === true && latest.questionText) {
+        return { value: q._id, label: latest.questionText };
+      }
+      return null;
+    })
+    .filter((opt): opt is QuestionOption => !!opt);
+
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', description: '' });
+  // Store selected questions per section
+  const [selectedQuestions, setSelectedQuestions] = useState<{ [sectionIdx: number]: QuestionOption[] }>({});
   // Welcome screen image previews
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [featuredPreview, setFeaturedPreview] = useState<string | null>(null);
+  // Notification state
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Handlers for logo
   const handleLogoChange = (file: File | null) => {
@@ -169,6 +194,37 @@ const AllSurveys: React.FC = () => {
             Add
           </button>
         </div>
+        {/* Notification Bar */}
+        {notification && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: notification.type === 'success' ? '#2ecc40' : '#e74c3c',
+              color: '#fff',
+              padding: '12px 28px',
+              borderRadius: 8,
+              fontWeight: 600,
+              fontSize: 16,
+              zIndex: 2000,
+              boxShadow: '0 2px 12px #b0802b33',
+              minWidth: 280,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
+            <span style={{ flex: 1 }}>{notification.message}</span>
+            <button
+              onClick={() => setNotification(null)}
+              style={{ background: 'none', border: 'none', color: '#fff', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}
+            >
+              ×
+            </button>
+          </div>
+        )}
         {/* Add Survey Modal */}
         {showModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -179,12 +235,19 @@ const AllSurveys: React.FC = () => {
                   setStep(step + 1);
                   return;
                 }
-                if (!form.title.trim()) return;
+                if (!form.title.trim()) {
+                  setNotification({ type: 'error', message: 'Title is required to publish the survey.' });
+                  return;
+                }
+                // Generate unique ID for demographics config
+                const demographicsId = 'demo-' + Math.random().toString(36).substr(2, 9);
                 const newSurvey = {
                   id: Date.now().toString(),
                   title: form.title,
                   description: form.description,
                   createdAt: new Date().toISOString(),
+                  questionsBySection: selectedQuestions,
+                  demographicsPublished: { id: demographicsId, published: true },
                 };
                 const updated = [newSurvey, ...surveys];
                 localStorage.setItem('surveys', JSON.stringify(updated));
@@ -192,6 +255,8 @@ const AllSurveys: React.FC = () => {
                 setShowModal(false);
                 setForm({ title: '', description: '' });
                 setStep(0);
+                setNotification({ type: 'success', message: 'Survey published! Unique Demographics ID: ' + demographicsId });
+                setTimeout(() => setNotification(null), 4000);
               }}
               style={{ background: '#fff', borderRadius: 14, padding: 32, width: '80%', maxWidth: 900, minHeight: 220, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}
             >
@@ -231,7 +296,6 @@ const AllSurveys: React.FC = () => {
                 ))}
               </div>
               <h3 style={{ margin: 0, fontWeight: 800, color: '#b0802b', fontSize: 22 }}>Add New Survey</h3>
-              {/* Step Content */}
               {step === 0 && (
                 <div>
                   <div style={{ color: '#b0802b', textAlign: 'center', fontWeight: 800, fontSize: 22, marginBottom: 8 }}>
@@ -267,6 +331,8 @@ const AllSurveys: React.FC = () => {
                         type="text"
                         placeholder="Enter title..."
                         style={{ width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e' }}
+                        value={form.title}
+                        onChange={e => setForm({ ...form, title: e.target.value })}
                       />
                     </label>
                     <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>
@@ -274,6 +340,8 @@ const AllSurveys: React.FC = () => {
                       <textarea
                         placeholder="Enter a welcome message or description..."
                         style={{ width: '100%', marginTop: 6, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 15, fontWeight: 500, color: '#28211e', minHeight: 60 }}
+                        value={form.description}
+                        onChange={e => setForm({ ...form, description: e.target.value })}
                       />
                     </label>
                     <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>
@@ -283,12 +351,23 @@ const AllSurveys: React.FC = () => {
                   </div>
                 </div>
               )}
+              {step > 0 && step < steps.length && (
+                <div>
+                  <div style={{ color: '#b0802b', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>{steps[step].label}</div>
+                  <SurveySectionQuestionDropdown
+                    sectionLabel={steps[step].label}
+                    options={questionOptions}
+                    selected={selectedQuestions[step] || []}
+                    onChange={opts => setSelectedQuestions(prev => ({ ...prev, [step]: opts }))}
+                  />
+                </div>
+              )}
               {step === 1 && (
                 <div>
                   <div style={{ color: '#b0802b', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>Engagement/Manager Relationships</div>
                   <input
                     type="text"
-                    placeholder="Describe engagement or manager relationship focus..."
+                    placeholder="Describe engagement/manager relationships..."
                     style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e' }}
                   />
                 </div>
@@ -367,85 +446,25 @@ const AllSurveys: React.FC = () => {
                 >
                   {step === 0 ? 'Cancel' : 'Back'}
                 </button>
-                <button
-                  type={step === steps.length - 1 ? 'submit' : 'button'}
-                  style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}
-                  onClick={step < steps.length - 1 ? (e => { e.preventDefault(); setStep(step + 1); }) : undefined}
-                >
-                  {step === steps.length - 1 ? 'Add' : 'Next'}
-                </button>
+                {step < steps.length - 1 ? (
+                  <button
+                    type="button"
+                    style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}
+                    onClick={() => setStep(step + 1)}
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}
+                  >
+                    Publish
+                  </button>
+                )}
               </div>
             </form>
           </div>
-        )}
-        {surveys.length === 0 ? (
-          <div style={{ color: '#b3a08a', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No surveys added yet.</div>
-        ) : (
-          <>
-            <ul style={{ listStyle: 'none', padding: '24px 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 20, background: '#fffef6', borderRadius: 16 }}>
-              {paginated.length === 0 ? (
-                <li style={{ color: '#b3a08a', fontSize: 17, marginTop: 32, textAlign: 'center', listStyle: 'none' }}>No surveys found.</li>
-              ) : (
-                paginated.map(s => (
-                  <li key={s.id} style={{ background: '#fffbe9', borderRadius: 14, boxShadow: '0 2px 8px #f4e6c1', padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#28211e', fontWeight: 700, fontSize: 21, display: 'flex', alignItems: 'center', gap: 14 }}>
-                      {s.title}
-                    </span>
-                    <span style={{ color: '#b3a08a', fontSize: 15 }}>
-                      {s.description}
-                    </span>
-                    <span style={{ color: '#b3a08a', fontSize: 13 }}>
-                      Created: {new Date(s.createdAt).toLocaleString()}
-                    </span>
-                  </li>
-                ))
-              )}
-            </ul>
-            {/* Pagination Controls */}
-            {pageCount > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, margin: '24px 0 0 0' }}>
-                <button
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1}
-                  style={{
-                    background: page === 1 ? '#eee' : '#b0802b',
-                    color: page === 1 ? '#bbb' : '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    fontWeight: 700,
-                    padding: '0 18px',
-                    fontSize: 16,
-                    height: 40,
-                    cursor: page === 1 ? 'not-allowed' : 'pointer',
-                    opacity: page === 1 ? 0.7 : 1,
-                  }}
-                >
-                  Previous
-                </button>
-                <span style={{ fontSize: 15, color: '#b0802b', fontWeight: 600 }}>
-                  Page {page} of {pageCount}
-                </span>
-                <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={page === pageCount}
-                  style={{
-                    background: page === pageCount ? '#eee' : '#b0802b',
-                    color: page === pageCount ? '#bbb' : '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    fontWeight: 700,
-                    padding: '0 18px',
-                    fontSize: 16,
-                    height: 40,
-                    cursor: page === pageCount ? 'not-allowed' : 'pointer',
-                    opacity: page === pageCount ? 0.7 : 1,
-                  }}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
         )}
       </div>
     </AdminLayout>
