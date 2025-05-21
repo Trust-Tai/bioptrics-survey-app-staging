@@ -52,30 +52,32 @@ if (Meteor.isServer) {
   Meteor.publish('surveys.all', function () {
     return Surveys.find();
   });
-  Meteor.publish('surveys.public', function (shareToken: string) {
+  Meteor.publish('surveys.public', async function (shareToken: string) {
     return Surveys.find({ shareToken, published: true });
   });
 
   // Preview: allow owner or admin to view the latest draft (published or not)
-  Meteor.publish('surveys.preview', function (shareToken: string) {
+  Meteor.publish('surveys.preview', async function (shareToken) {
     check(shareToken, String);
+    
     // Use find().fetch()[0] for synchronous access
-    const surveyDoc = Surveys.find({ shareToken }).fetch()[0];
+    const surveyDocs = await Surveys.find({ shareToken }).fetch();
+    const surveyDoc = surveyDocs[0];
     if (!surveyDoc) return this.ready();
-    if (surveyDoc.createdBy === this.userId || (this.userId && Meteor.users.findOne(this.userId)?.roles?.includes('admin'))) {
+    if (surveyDoc.createdBy === this.userId || (this.userId && (await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin'))) {
       return Surveys.find({ shareToken });
     }
     return this.ready();
   });
   
   // Publication for survey responses - only accessible to admin users
-  Meteor.publish('survey_responses.all', function () {
+  Meteor.publish('survey_responses.all', async function () {
     if (!this.userId) {
       return this.ready();
     }
     
     // Check if user is admin
-    const user = Meteor.users.findOne(this.userId);
+    const user = await Meteor.users.findOneAsync(this.userId);
     if (user?.roles?.includes('admin')) {
       return SurveyResponses.find({});
     }
@@ -84,7 +86,7 @@ if (Meteor.isServer) {
   });
   
   // Publication for responses to a specific survey
-  Meteor.publish('survey_responses.bySurvey', function (surveyId) {
+  Meteor.publish('survey_responses.bySurvey', async function (surveyId) {
     check(surveyId, String);
     
     if (!this.userId) {
@@ -92,8 +94,8 @@ if (Meteor.isServer) {
     }
     
     // Check if user is admin or survey creator
-    const user = Meteor.users.findOne(this.userId);
-    const survey = Surveys.findOne(surveyId);
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const survey = await Surveys.findOneAsync(surveyId);
     
     if (user?.roles?.includes('admin') || (survey && survey.createdBy === this.userId)) {
       return SurveyResponses.find({ surveyId });
@@ -207,16 +209,16 @@ Meteor.methods({
     return Surveys.remove(surveyId);
   },
   // Public method to fetch survey by ID
-  'surveys.get'(surveyId: string) {
+  async 'surveys.get'(surveyId: string) {
     check(surveyId, String);
-    return Surveys.findOne({ _id: surveyId });
+    return await Surveys.findOneAsync({ _id: surveyId });
   },
   // Allow anonymous submission of survey responses
-  'surveys.submitResponse'(surveyId: string, answers: { [questionId: string]: any }) {
+  async 'surveys.submitResponse'(surveyId: string, answers: { [questionId: string]: any }) {
     check(surveyId, String);
     check(answers, Object);
     // Optionally, validate that the survey exists
-    if (!Surveys.findOne({ _id: surveyId })) {
+    if (!(await Surveys.findOneAsync({ _id: surveyId }))) {
       throw new Meteor.Error('not-found', 'Survey not found');
     }
     return SurveyResponses.insert({ surveyId, answers, submittedAt: new Date() });
