@@ -2,17 +2,10 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
-  min-height: 100vh;
-  background: #fffbea;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px;
-
-  @media (min-width: 600px) {
-    padding: 64px 0;
-  }
 `;
 
 const Card = styled.div`
@@ -66,8 +59,8 @@ const Description = styled.p`
   line-height: 1.5;
 `;
 
-const StartButton = styled.button`
-  background: #b7a36a;
+const StartButton = styled.button<{ btncolor?: string }>`
+  background: ${props => props.btncolor || '#b7a36a'};
   color: #fff;
   border: none;
   border-radius: 22px;
@@ -78,11 +71,6 @@ const StartButton = styled.button`
   letter-spacing: 0.05em;
   margin-bottom: 18px;
   cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #a08e54;
-  }
 `;
 
 const Privacy = styled.div`
@@ -93,16 +81,19 @@ const Privacy = styled.div`
 `;
 
 interface SurveyWelcomeProps {
-  onStart?: () => void;
-  previewData?: {
-    title?: string;
-    description?: string;
+  onStart: () => void;
+  previewData: {
+    title: string;
+    description: string;
     logo?: string;
     image?: string;
+    color?: string;
   };
+  disabled?: boolean;
 }
 
-const SurveyWelcome: React.FC<SurveyWelcomeProps> = ({ onStart, previewData }) => {
+const SurveyWelcome: React.FC<SurveyWelcomeProps> = ({ onStart, previewData, disabled }) => {
+  console.log('[SurveyWelcome] rendered, disabled:', disabled, 'onStart:', typeof onStart);
   return (
     <Wrapper>
       <Card>
@@ -110,11 +101,22 @@ const SurveyWelcome: React.FC<SurveyWelcomeProps> = ({ onStart, previewData }) =
         <Illustration src={previewData?.image || "/illustration.png"} alt="Survey Illustration" />
         <Title>{previewData?.title || "Welcome to the New Gold Employee Survey"}</Title>
         <Description>
-          {previewData?.description || (
+          {previewData?.description ? (
+            <span dangerouslySetInnerHTML={{ __html: previewData.description }} />
+          ) : (
             <>Your feedback is important in helping us improve our workplace. This survey is anonymous and takes about 5-7 minutes to complete. Please answer honestly – we value your input.</>
           )}
         </Description>
-        <StartButton onClick={onStart}>START SURVEY</StartButton>
+        <StartButton
+          btncolor={previewData?.color}
+          onClick={e => {
+            console.log('[SurveyWelcome] StartButton clicked, disabled:', disabled);
+            if (onStart) onStart();
+          }}
+          disabled={!!disabled}
+        >
+          START SURVEY
+        </StartButton>
         <Privacy>
           <span role="img" aria-label="info">ⓘ</span> Your responses are completely anonymous<br />and cannot be traced back to you
         </Privacy>

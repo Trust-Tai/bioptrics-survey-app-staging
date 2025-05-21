@@ -115,9 +115,9 @@ const SkipButton = styled.button`
 
 // Example question props
 interface SurveyQuestionProps {
-  question: string;
+  question: any; // Accepts a full question object
   progress: string; // e.g. "1 of 7"
-  onNext: (answer: number|null) => void;
+  onNext: (answer: any) => void;
   onBack?: () => void;
   onSkip?: () => void;
 }
@@ -150,18 +150,21 @@ const BackButton = styled.button`
 `;
 
 const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onNext, onBack, onSkip }) => {
-  const [selected, setSelected] = React.useState<number|null>(null);
+  // Defensive: get latest version
+  const version = question.versions ? question.versions[question.versions.length - 1] : {};
+  const responseType = version.responseType || 'likert';
+  const options = version.options || [];
+  const questionText = version.questionText || '';
 
-  return (
-    <Wrapper>
-      {onBack && (
-        <BackButton aria-label="Back" onClick={onBack}>
-          &#8592;
-        </BackButton>
-      )}
-      <Card>
-        <Progress>Question {progress}</Progress>
-        <QuestionText>{question}</QuestionText>
+  // State for answer
+  const [selected, setSelected] = React.useState<any>(null);
+  const [textValue, setTextValue] = React.useState('');
+
+  // Render answer input based on responseType
+  let answerInput: React.ReactNode = null;
+  if (responseType === 'likert') {
+    answerInput = (
+      <>
         <LikertRow>
           {[1,2,3,4,5].map((val, idx) => (
             <LikertButton
@@ -177,9 +180,57 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
         <div style={{ width: '100%', textAlign: 'center', color: '#b3a08a', fontSize: '0.98em', marginBottom: 8 }}>
           <span>{likertLabels[selected ? selected-1 : 2]}</span>
         </div>
+      </>
+    );
+  } else if (responseType === 'text') {
+    answerInput = (
+      <textarea
+        style={{ width: '100%', minHeight: 80, borderRadius: 8, border: '1px solid #b7a36a', padding: 12, fontSize: '1rem', marginBottom: 16 }}
+        value={textValue}
+        onChange={e => setTextValue(e.target.value)}
+        placeholder="Type your answer here..."
+      />
+    );
+  } else if (responseType === 'select' && Array.isArray(options)) {
+    answerInput = (
+      <div style={{ width: '100%', marginBottom: 16 }}>
+        {options.map((opt: string, idx: number) => (
+          <LikertButton
+            key={opt}
+            selected={selected === idx}
+            onClick={() => setSelected(idx)}
+            aria-label={opt}
+            style={{ marginBottom: 8 }}
+          >
+            {opt}
+          </LikertButton>
+        ))}
+      </div>
+    );
+  }
+
+  // Handler for Next
+  const handleNextClick = () => {
+    if (responseType === 'likert') onNext(selected);
+    else if (responseType === 'text') onNext(textValue);
+    else if (responseType === 'select') onNext(options[selected] ?? null);
+    else onNext(selected);
+  };
+
+  return (
+    <Wrapper>
+      {onBack && (
+        <BackButton aria-label="Back" onClick={onBack}>
+          &#8592;
+        </BackButton>
+      )}
+      <Card>
+        <Progress>Question {progress}</Progress>
+        <QuestionText>{questionText}</QuestionText>
+        {answerInput}
         <NavRow>
           {onBack && <NavButton type="button" onClick={onBack}>Back</NavButton>}
-          <NavButton type="button" onClick={() => onNext(selected)}>Next</NavButton>
+          <NavButton type="button" onClick={handleNextClick}>Next</NavButton>
         </NavRow>
         {onSkip && <SkipButton type="button" onClick={onSkip}>Skip this question</SkipButton>}
       </Card>

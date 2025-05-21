@@ -181,50 +181,58 @@ const [copied, setCopied] = useState(false);
 
   // Save as draft
   const handleSave = async () => {
-  setSaving(true);
-  try {
-    // Save and get the _id of the survey
-    const result = await Meteor.callAsync('surveys.saveDraft', getSurveyData());
-    let surveyId = result;
-    if (result && typeof result === 'object' && result.insertedId) {
-      surveyId = result.insertedId;
-    } else if (result && typeof result === 'object' && result._id) {
-      surveyId = result._id;
-    }
-    // Fetch the saved survey from the collection (ensure subscription is ready)
-    if (surveyId) {
-      const savedSurvey = Surveys.findOne(surveyId);
-      if (savedSurvey) {
-        setForm({
-          title: savedSurvey.title || '',
-          description: savedSurvey.description || '',
-          logo: savedSurvey.logo || '',
-          image: savedSurvey.image || '',
-          color: savedSurvey.color || '#b0802b',
-        });
-        setSelectedQuestions(savedSurvey.selectedQuestions || {});
-        setSiteTextQuestions(savedSurvey.siteTextQuestions || []);
-        setSiteTextQForm(savedSurvey.siteTextQForm || { text: '', description: '', wpsCategories: [], surveyThemes: [] });
-        setSelectedDemographics(savedSurvey.selectedDemographics || []);
-        setIsEditMode(true);
-        setEditSurveyId(surveyId);
-        // Remove autosave from localStorage when survey is saved in edit mode
-        localStorage.removeItem(AUTOSAVE_KEY);
-        localStorage.removeItem(AUTOSAVE_KEY + '-openSection');
-        // Update URL to include survey id
-        navigate(`/admin/surveys/builder/${surveyId}`, { replace: false });
-        // Clear autosave from localStorage
-        localStorage.removeItem(AUTOSAVE_KEY);
-        localStorage.removeItem(AUTOSAVE_KEY + '-openSection');
+    setSaving(true);
+    try {
+      // Always include _id if editing an existing survey
+      const surveyData = getSurveyData();
+      // Use editSurveyId as the canonical _id for editing
+      const surveyIdToEdit = editSurveyId || editId;
+      if (surveyIdToEdit) {
+        (surveyData as any)._id = surveyIdToEdit;
       }
+      // Save and get the _id of the survey
+      const result = await Meteor.callAsync('surveys.saveDraft', surveyData);
+      let surveyId = result;
+      if (result && typeof result === 'object' && result.insertedId) {
+        surveyId = result.insertedId;
+      } else if (result && typeof result === 'object' && result._id) {
+        surveyId = result._id;
+      }
+      // Fetch the saved survey from the collection (ensure subscription is ready)
+      if (surveyId) {
+        const savedSurvey = Surveys.findOne(surveyId);
+        if (savedSurvey) {
+          setForm({
+            title: savedSurvey.title || '',
+            description: savedSurvey.description || '',
+            logo: savedSurvey.logo || '',
+            image: savedSurvey.image || '',
+            color: savedSurvey.color || '#b0802b',
+          });
+          setSelectedQuestions(savedSurvey.selectedQuestions || {});
+          setSiteTextQuestions(savedSurvey.siteTextQuestions || []);
+          setSiteTextQForm(savedSurvey.siteTextQForm || { text: '', description: '', wpsCategories: [], surveyThemes: [] });
+          setSelectedDemographics(savedSurvey.selectedDemographics || []);
+          setIsEditMode(true);
+          setEditSurveyId(surveyId);
+          // Remove autosave from localStorage when survey is saved in edit mode
+          localStorage.removeItem(AUTOSAVE_KEY);
+          localStorage.removeItem(AUTOSAVE_KEY + '-openSection');
+          // Update URL to include survey id
+          navigate(`/admin/surveys/builder/${surveyId}`, { replace: false });
+          // Clear autosave from localStorage
+          localStorage.removeItem(AUTOSAVE_KEY);
+          localStorage.removeItem(AUTOSAVE_KEY + '-openSection');
+        }
+      }
+      showSuccess('Survey draft saved successfully and loaded for editing.');
+    } catch (err: any) {
+      showError(err?.reason || 'Error saving draft.');
+    } finally {
+      setSaving(false);
     }
-    showSuccess('Survey draft saved successfully and loaded for editing.');
-  } catch (err: any) {
-    showError(err?.reason || 'Error saving draft.');
-  } finally {
-    setSaving(false);
-  }
-};
+  };
+
 
   // Publish survey
   const handlePublish = async () => {
@@ -422,27 +430,27 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
         {/* --- Published Link Section --- */}
         {publishedLink && (
   <div style={{
-    background: '#2ecc40',
-    color: '#fff',
-    padding: '22px 24px',
-    borderRadius: 12,
-    margin: '32px auto 16px auto',
+    background: 'rgba(255,255,255,0.6)',
+    color: '#28211e',
+    padding: '12px 16px',
+    borderRadius: 14,
+    border: '2px solid #b0802b',
+    margin: '24px auto 12px auto',
     maxWidth: 900,
     boxShadow: '0 2px 8px #b0802b33',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: 600,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 10
+    gap: 6
   }}>
     <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
-      <span role="img" aria-label="check" style={{ fontSize: 22 }}>✅</span>
       Survey is published!
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
       <span style={{ fontWeight: 400, fontSize: 16 }}>Sharable Link:</span>
-      <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'underline', fontSize: 16 }}>{publishedLink}</a>
+      <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#28211e', textDecoration: 'underline', fontSize: 16 }}>{publishedLink}</a>
       <button
         style={{ background: '#fff', color: '#2ecc40', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, cursor: 'pointer' }}
         onClick={() => {
@@ -526,7 +534,18 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 <button
                   style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
                   onClick={() => {
-                    localStorage.setItem(`survey-preview-${previewToken}`, JSON.stringify(form));
+                    // Store complete survey data for preview
+                    const completeData = {
+                      ...form,
+                      selectedQuestions,
+                      siteTextQuestions,
+                      siteTextQForm,
+                      selectedDemographics,
+                      // Add mock data for preview
+                      _id: previewToken,
+                      shareToken: previewToken
+                    };
+                    localStorage.setItem(`survey-preview-${previewToken}`, JSON.stringify(completeData));
                     window.open(`/preview/survey/${previewToken}?status=preview`, '_blank');
                   }}
                 >

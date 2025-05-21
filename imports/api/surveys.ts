@@ -48,6 +48,18 @@ if (Meteor.isServer) {
   Meteor.publish('surveys.public', function (shareToken: string) {
     return Surveys.find({ shareToken, published: true });
   });
+
+  // Preview: allow owner or admin to view the latest draft (published or not)
+  Meteor.publish('surveys.preview', function (shareToken: string) {
+    check(shareToken, String);
+    // Use find().fetch()[0] for synchronous access
+    const surveyDoc = Surveys.find({ shareToken }).fetch()[0];
+    if (!surveyDoc) return this.ready();
+    if (surveyDoc.createdBy === this.userId || (this.userId && Meteor.users.findOne(this.userId)?.roles?.includes('admin'))) {
+      return Surveys.find({ shareToken });
+    }
+    return this.ready();
+  });
 }
 
 Meteor.methods({

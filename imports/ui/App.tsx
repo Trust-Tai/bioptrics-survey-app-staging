@@ -29,6 +29,7 @@ import AllSurveys from './admin/AllSurveys';
 import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
 import QuestionBuilder from './admin/QuestionBuilder';
+import SurveyPublic from './public/SurveyPublic';
 
 
 function RequireAdminAuth() {
@@ -118,25 +119,22 @@ const SurveyQuestionWrapper: React.FC = () => {
   );
 };
 
+
 const PreviewSurvey: React.FC = () => {
   const { token } = useParams<{ token: string }>();
-  const [data, setData] = React.useState<any | null>(null);
-  React.useEffect(() => {
-    if (token) {
-      const saved = localStorage.getItem(`survey-preview-${token}`);
-      if (saved) setData(JSON.parse(saved));
-    }
-  }, [token]);
+  // You can keep your data loading logic if you want to show a fallback for missing tokens/data
   if (!token) return <div style={{textAlign:'center',marginTop:80}}>No preview token provided.</div>;
-  if (!data) return <div style={{textAlign:'center',marginTop:80}}>No preview data found for this link.</div>;
-  return <SurveyWelcome previewData={data} />;
+  // If you want to check for preview data in localStorage, do it here (optional)
+  // Otherwise, just render SurveyPublic for the preview flow
+
+  return <SurveyPublic />;
 };
 
 const AppRoutes: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Routes>
-      <Route path="/" element={<SurveyWelcome onStart={() => navigate('/survey/section/0')} />} />
+      <Route path="/" element={<AdminLogin onAdminAuth={() => navigate('/admin/dashboard')} />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
