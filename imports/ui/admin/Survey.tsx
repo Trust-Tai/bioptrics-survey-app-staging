@@ -31,6 +31,14 @@ const SurveyPage: React.FC = () => {
 
   useEffect(() => {
     setSurveys(getAllSurveys());
+    // Listen for localStorage changes (e.g., when admin publishes a new survey)
+    function handleStorage(e: StorageEvent) {
+      if (e.key === 'surveys') {
+        setSurveys(getAllSurveys());
+      }
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   function handleSave() {

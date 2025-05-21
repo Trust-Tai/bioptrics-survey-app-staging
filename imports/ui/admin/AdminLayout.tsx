@@ -1,42 +1,263 @@
 import '../../../client/fonts.css';
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FaChartBar, FaQuestionCircle, FaClipboardList, FaUsers, FaKey, FaSignOutAlt } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  FaChartPie, 
+  FaDatabase, 
+  FaUserCheck, 
+  FaCog, 
+  FaSignOutAlt, 
+  FaBars, 
+  FaTimes
+} from 'react-icons/fa';
+import { 
+  FiBarChart2, 
+  FiClipboard, 
+  FiUsers, 
+  FiLogOut
+} from 'react-icons/fi';
+import styled from 'styled-components';
 
+// Sidebar navigation items matching the requested structure
 const sidebarLinks = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: FaChartBar },
-  { to: '/admin/questions', label: 'Questions', icon: FaQuestionCircle, submenu: [
-    { to: '/admin/questions/all', label: 'Question Bank' },
-    { to: '/admin/questions/builder', label: 'Question Builder' },
-  ] },
-  { to: '/admin/surveys', label: 'Surveys', icon: FaClipboardList, submenu: [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
+  { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
+  { to: '/admin/surveys', label: 'Surveys', icon: FiClipboard, submenu: [
     { to: '/admin/surveys/all', label: 'All Surveys' },
     { to: '/admin/surveys/builder', label: 'Survey Builder' },
     { to: '/admin/surveys/goals', label: 'Survey Goals' },
     { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
     { to: '/admin/surveys/theme', label: 'Theme' },
   ] },
-  { to: '/admin/org-setup', label: 'Org Setup', icon: FaUsers },
-  { to: '/admin/analytics', label: 'Analytics', icon: FaChartBar },
-  { to: '/admin/setting', label: 'Setting', icon: FaKey, submenu: [
-    // WPS Framework moved to Surveys
+  { to: '/admin/questions', label: 'Question Bank', icon: FaDatabase, submenu: [
+    { to: '/admin/questions/all', label: 'All Questions' },
+    { to: '/admin/questions/builder', label: 'Question Builder' },
   ] },
+  { to: '/admin/org-setup', label: 'Org Setup', icon: FiUsers },
+  { to: '/admin/participants', label: 'Participants', icon: FaUserCheck },
+  { to: '/admin/settings', label: 'Settings', icon: FaCog },
+  { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
-const sidebarLinkStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  color: '#fff',
-  textDecoration: 'none',
-  padding: '12px 24px',
-  fontSize: 17,
-  fontWeight: 500,
-  borderRadius: 8,
-  marginBottom: 6,
-  transition: 'background 0.2s',
-};
-const iconStyle = { marginRight: 12, fontSize: 18 };
+// Styled components for the sidebar
+interface SidebarProps {
+  collapsed: boolean;
+}
 
+const SubmenuFlyout = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: #2D1F01;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  position: absolute;
+  left: 230px;
+  top: 0;
+  min-width: 180px;
+  z-index: 9999;
+  overflow: visible;
+  border: 1px solid #b7a36a33;
+  pointer-events: auto;
+`;
+
+const SubmenuInline = styled.ul`
+  list-style: none;
+  margin: 0 0 0 0;
+  padding: 0;
+  background: rgba(255,255,255,0.06);
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+`;
+const SubmenuItem = styled(Link)<{active?: boolean}>`
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 10px 24px;
+  background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
+  border-left: ${({active}) => active ? '4px solid #b7a36a' : '4px solid transparent'};
+  font-weight: ${({active}) => active ? 700 : 500};
+  transition: background 0.15s, border-left 0.15s;
+  &:hover {
+    background: rgba(255,255,255,0.18);
+  }
+`;
+
+
+const Sidebar = styled.aside<SidebarProps>`
+  width: ${props => props.collapsed ? '72px' : '240px'};
+  background: linear-gradient(180deg, #402C00 0%, #2D1F01 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 1.5px 6px rgba(0,0,0,0.08);
+  border-radius: 22px;
+  margin: 32px 0 32px 24px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: max-content;
+  z-index: 120;
+  transition: width 0.3s ease, box-shadow 0.3s, border-radius 0.3s, margin 0.3s;
+  overflow-x: visible;
+  overflow-y: visible;
+  background-clip: padding-box;
+
+  @media (max-width: 1024px) {
+    width: ${props => props.collapsed ? '0' : '240px'};
+    transform: ${props => props.collapsed ? 'translateX(-100%)' : 'translateX(0)'};
+    margin: 0;
+    border-radius: 0 22px 22px 0;
+    height: 100vh;
+    top: 0;
+  }
+`;
+
+
+
+const Logo = styled.div`
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+`;
+
+interface NavItemProps {
+  active: boolean;
+  collapsed: boolean;
+}
+
+const NavItem = styled(Link)<NavItemProps>`
+  display: flex;
+  align-items: center;
+  color: #fff;
+  text-decoration: none;
+  padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: ${props => props.active ? '700' : '500'};
+  margin-bottom: 0.25rem;
+  transition: background 0.2s;
+  position: relative;
+  justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
+  border-left: ${props => props.active ? '4px solid #b7a36a' : '4px solid transparent'};
+  background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
+  
+  &:hover {
+    background: rgba(255,255,255,0.08);
+  }
+`;
+
+const NavButton = styled.button<NavItemProps>`
+  display: flex;
+  align-items: center;
+  color: #fff;
+  text-decoration: none;
+  padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: ${props => props.active ? '700' : '500'};
+  margin-bottom: 0.25rem;
+  transition: background 0.2s;
+  position: relative;
+  justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
+  border-left: ${props => props.active ? '4px solid #b7a36a' : '4px solid transparent'};
+  background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  
+  &:hover {
+    background: rgba(255,255,255,0.08);
+  }
+`;
+
+interface IconProps {
+  collapsed: boolean;
+}
+
+const NavIcon = styled.div<IconProps>`
+  font-size: 24px;
+  margin-right: ${props => props.collapsed ? '0' : '16px'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+interface LabelProps {
+  collapsed: boolean;
+}
+
+const NavLabel = styled.span<LabelProps>`
+  display: ${props => props.collapsed ? 'none' : 'block'};
+  white-space: nowrap;
+`;
+
+const Tooltip = styled.div`
+  position: absolute;
+  left: 72px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+`;
+
+interface ToggleButtonProps {
+  collapsed: boolean;
+}
+
+const ToggleButton = styled.button<ToggleButtonProps>`
+  position: fixed;
+  left: ${props => props.collapsed ? '1rem' : '245px'};
+  top: 1rem;
+  background: #402C00;
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: left 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  display: none;
+  
+  @media (max-width: 1024px) {
+    display: flex;
+  }
+`;
+
+interface MainContentProps {
+  sidebarCollapsed: boolean;
+}
+
+const MainContent = styled.main<MainContentProps>`
+  padding: 2rem;
+  width: 100%;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  
+  @media (max-width: 1024px) {
+    margin-left: 0;
+    width: 100%;
+  }
+`;
+
+/**
+ * AdminLayout component that provides the admin dashboard shell with navigation
+ */
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   React.useEffect(() => {
     const prevBg = document.body.style.background;
@@ -49,221 +270,115 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
   }, []);
   const location = useLocation();
-  const [hovered, setHovered] = React.useState<number|null>(null);
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', overflowX: 'hidden' }}>
-      {/* Sidebar */}
-      <aside style={{
-        width: 220,
-        background: 'linear-gradient(180deg, #402C00 0%, #2D1F01 100%)',
-        color: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '2rem 0',
-        boxShadow: '2px 0 18px rgba(64,44,0,0.14)',
-        borderRadius: 30,
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        height: 'max-content',
-        zIndex: 100,
-        margin: 18,
-        minHeight: '80vh',
-      }}>
-        <div style={{ fontWeight: 700, fontSize: 28, textAlign: 'center', marginBottom: 32, letterSpacing: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <img src="/logo.png" alt="newgold logo" style={{ width: 110, marginBottom: 16 }} />
-        </div>
-        <nav style={{ flex: 1 }}>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {/* Render all links except Setting and Logout */}
-            {sidebarLinks.slice(0, sidebarLinks.length - 2).map((link, idx) => (
-              <React.Fragment key={link.to}>
-                <li
-                  style={{ position: 'relative' }}
-                  onMouseEnter={() => setHovered(idx)}
-                  onMouseLeave={() => setHovered(null)}
-                >
-                  <Link to={link.to} style={{
-                    ...sidebarLinkStyle,
-                    background: location.pathname === link.to || (link.submenu && link.submenu.some(s => location.pathname === s.to)) ? '#FFFFFF1A' : 'transparent',
-                    position: 'relative',
-                    zIndex: 2,
-                    borderRadius: location.pathname === link.to || (link.submenu && link.submenu.some(s => location.pathname === s.to)) ? 0 : sidebarLinkStyle.borderRadius,
-                  }}>
-                    {link.icon && <link.icon style={iconStyle} />}
-                    {link.label}
-                  </Link>
-                  {/* Inline submenu if parent is active, floating otherwise */}
-                  {link.submenu && (
-                    ((link.to === '/admin/surveys' && location.pathname.startsWith('/admin/surveys')) ||
-                      (link.to === '/admin/questions' && location.pathname.startsWith('/admin/questions')))
-                      ? (
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginTop: 4 }}>
-                          {link.submenu.map(sublink => (
-                            <li key={sublink.to}>
-                              <Link
-                                to={sublink.to}
-                                style={{
-                                  ...sidebarLinkStyle,
-                                  background: location.pathname === sublink.to ? '#FFFFFF1A' : 'transparent',
-                                  color: location.pathname === sublink.to ? '#fff' : '#fff',
-                                  marginLeft: 36,
-                                  fontSize: 15,
-                                  fontWeight: 500,
-                                  borderRadius: location.pathname === sublink.to ? 0 : 6,
-                                  marginBottom: 4,
-                                }}
-                              >
-                                {sublink.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        hovered === idx && (
-                          <ul
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: '100%',
-                              minWidth: 180,
-                              background: '#fff',
-                              color: '#552a47',
-                              borderRadius: 12,
-                              boxShadow: '0 6px 32px #b0802b33',
-                              padding: '14px 0',
-                              margin: 0,
-                              zIndex: 999,
-                              listStyle: 'none',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: 2,
-                            }}
-                            onMouseEnter={() => setHovered(idx)}
-                            onMouseLeave={() => setHovered(null)}
-                          >
-                            {link.submenu.map(sublink => (
-                              <li key={sublink.to}>
-                                <Link
-                                  to={sublink.to}
-                                  style={{
-                                    display: 'block',
-                                    padding: '11px 28px',
-                                    color: location.pathname === sublink.to ? '#fff' : '#552a47',
-                                    background: location.pathname === sublink.to ? '#b8a06c' : 'transparent',
-                                    borderRadius: 8,
-                                    fontSize: 15,
-                                    fontWeight: 500,
-                                    textDecoration: 'none',
-                                    margin: '2px 0',
-                                    transition: 'background 0.13s, color 0.13s',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {sublink.label}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )
-                      )
-                  )}
-                </li>
-              </React.Fragment>
-            ))}
-          </ul>
-          {/* Spacer to push Setting and Logout to the bottom */}
-          <div style={{ flex: 1 }} />
-          {/* Settings and Logout section at the bottom */}
-          <div style={{ marginTop: 36 }}>
-            {/* Render Setting link (last sidebar link) */}
-            <li
-              style={{ position: 'relative', listStyle: 'none' }}
-              onMouseEnter={() => setHovered(sidebarLinks.length - 1)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              <Link to={sidebarLinks[sidebarLinks.length - 1].to} style={{
-                ...sidebarLinkStyle,
-                background: location.pathname.startsWith('/admin/setting') ? '#6e395e' : 'transparent',
-                position: 'relative',
-                zIndex: 2,
-              }}>
-                {(() => { const Icon = sidebarLinks[sidebarLinks.length - 1].icon; return Icon ? <Icon style={iconStyle} /> : null; })()}
-                {sidebarLinks[sidebarLinks.length - 1].label}
-              </Link>
-              {/* Inline submenu for Setting if active */}
-              {(() => {
-  const lastSidebarLink = sidebarLinks[sidebarLinks.length - 1];
-  if (lastSidebarLink?.submenu && location.pathname.startsWith('/admin/setting')) {
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginTop: 4 }}>
-        {lastSidebarLink.submenu.map(sublink => (
-          <li key={sublink.to}>
-            <Link
-              to={sublink.to}
-              style={{
-                ...sidebarLinkStyle,
-                background: location.pathname === sublink.to ? '#e4f0fa' : 'transparent',
-                color: location.pathname === sublink.to ? '#552a47' : '#fff',
-                marginLeft: 36,
-                fontSize: 15,
-                fontWeight: 500,
-                borderRadius: 6,
-                marginBottom: 4,
-              }}
-            >
-              {sublink.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return null;
-})()}
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
 
-            </li>
-            {/* Logout button */}
-            <footer style={{ padding: '1.5rem 0 0 0' }}>
-              <button
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  fontSize: 17,
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 24px',
-                  borderRadius: 8,
-                  marginBottom: 6,
-                  transition: 'background 0.2s',
-                  width: '100%',
-                  textAlign: 'left',
-                  boxShadow: '0 1px 4px rgba(90, 110, 234, 0.07)'
+  // Add expandedMenus state for submenu toggling
+  const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
+
+  function handleLogout() {
+    if (window.confirm('Are you sure you want to log out?')) {
+      navigate('/logout');
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex' }}>
+      <Sidebar collapsed={collapsed}>
+        <Logo>
+          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>Admin</span>
+        </Logo>
+        <nav>
+          {sidebarLinks.map((link, idx) => {
+            const isActive = location.pathname.startsWith(link.to);
+            const hasSubmenu = !!link.submenu;
+            return (
+              <div
+                key={link.to}
+                style={{ position: 'relative', overflow: 'visible' }}
+                onMouseEnter={() => {
+                  // Only allow hover/flyout if not showing inline submenu
+                  const isInline = !collapsed && (location.pathname.startsWith(link.to) || (link.submenu && link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))));
+                  if (!isInline) setHovered(idx);
                 }}
-                onClick={() => {
-                  localStorage.removeItem('admin_jwt');
-                  window.location.href = '/admin-login';
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.color = '#b7a36a';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = '#fff';
-                }}
+                onMouseLeave={() => setHovered(null)}
               >
-                <FaSignOutAlt style={iconStyle} />
-                Logout
-              </button>
-            </footer>
-          </div>
+                <NavItem
+                  to={link.to}
+                  active={isActive}
+                  collapsed={collapsed}
+                  tabIndex={0}
+                  aria-haspopup={hasSubmenu ? 'true' : undefined}
+                  aria-expanded={hasSubmenu ? hovered === idx : undefined}
+                  onClick={e => {
+                    if (link.to === '/logout') {
+                      e.preventDefault();
+                      handleLogout();
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (hasSubmenu && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setHovered(hovered === idx ? null : idx);
+                    }
+                  }}
+                >
+                  <NavIcon collapsed={collapsed}>{React.createElement(link.icon)}</NavIcon>
+                  <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
+                  {hasSubmenu && !collapsed && (
+                    <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7, transform: hovered === idx ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
+                      ▸
+                    </span>
+                  )}
+                  {collapsed && hovered === idx && (
+                    <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                      {link.label}
+                    </Tooltip>
+                  )}
+                </NavItem>
+                {/* Submenu inline if active, flyout if hovered */}
+                {hasSubmenu && !collapsed && (
+                  // Only show flyout on hover if not showing inline
+                  (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx)
+                  ? (
+                    <SubmenuFlyout>
+                      {link.submenu.map((sublink: any) => (
+                        <SubmenuItem
+                          key={sublink.to}
+                          to={sublink.to}
+                          active={location.pathname.startsWith(sublink.to)}
+                        >
+                          {sublink.label}
+                        </SubmenuItem>
+                      ))}
+                    </SubmenuFlyout>
+                  ) : (
+                    (location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))) && (
+                      <SubmenuInline>
+                        {link.submenu.map((sublink: any) => (
+                          <SubmenuItem
+                            key={sublink.to}
+                            to={sublink.to}
+                            active={location.pathname.startsWith(sublink.to)}
+                          >
+                            {sublink.label}
+                          </SubmenuItem>
+                        ))}
+                      </SubmenuInline>
+                    )
+                  )
+                )}
+              </div>
+            );
+          })}
         </nav>
-      </aside>
-      <div style={{ flex: 1, minHeight: '100vh', marginLeft: 220 }}>
-        {children}
+      </Sidebar>
+      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s' }}>
+        {/* Main Content */}
+        <MainContent sidebarCollapsed={collapsed}>
+          {children}
+        </MainContent>
       </div>
     </div>
   );

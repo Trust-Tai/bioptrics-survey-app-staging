@@ -54,6 +54,11 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
+  // Public method to fetch multiple questions by ID
+  'questions.getMany': function (ids: string[]) {
+    check(ids, Array);
+    return Questions.find({ _id: { $in: ids } }).fetch();
+  },
   'questions.delete': async function (questionId: string) {
     // Allow deletion from Bank admin (no Meteor user check)
     return await Questions.removeAsync(questionId);

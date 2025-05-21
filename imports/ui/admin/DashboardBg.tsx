@@ -6,7 +6,6 @@ const DashboardBg = styled.div`
   padding: 2.5rem 2.5rem 4rem 2.5rem; /* top right bottom left */
   box-shadow: 0px 0px 10px 0px #0000001A;
   border-radius: 20px;
-  margin-left: 40px;
   @media (max-width: 1200px) {
     width: 100vw;
     max-width: 100vw;

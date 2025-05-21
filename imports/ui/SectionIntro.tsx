@@ -115,7 +115,7 @@ const BackButton = styled.button`
   }
 `;
 
-const SectionIntro: React.FC<SectionIntroProps> = ({ logoSrc = "https://s28.q4cdn.com/380852864/files/design/logo.svg", title, description, onContinue, onBack }) => (
+const SectionIntro: React.FC<SectionIntroProps> = ({ logoSrc = "/logo.png", title, description, onContinue, onBack }) => (
   <Wrapper>
     {onBack && (
       <BackButton aria-label="Back" onClick={onBack}>
@@ -123,7 +123,7 @@ const SectionIntro: React.FC<SectionIntroProps> = ({ logoSrc = "https://s28.q4cd
       </BackButton>
     )}
     <Card>
-      <Logo src='https://s28.q4cdn.com/380852864/files/design/logo.svg' alt="newgold logo" />
+      <Logo src={logoSrc} alt="BIOPTRICS logo" />
       <Title>{title}</Title>
       <Description>{description}</Description>
       <ContinueButton onClick={onContinue}>CONTINUE</ContinueButton>

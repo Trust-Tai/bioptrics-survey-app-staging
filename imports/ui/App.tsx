@@ -23,6 +23,7 @@ import UserQuestionBank from './user/UserQuestionBank';
 import AllQuestions from './admin/AllQuestions';
 import Bank from './admin/Bank';
 import SurveyPage from './admin/Survey';
+import PublicSurveyPage from './PublicSurveyPage';
 import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
 import SurveyBuilder from './admin/SurveyBuilder';
@@ -137,6 +138,7 @@ const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/" element={<SurveyWelcome onStart={() => navigate('/survey/section/0')} />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
+      <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
       <Route path="/leadership" element={<LeadershipManagement />} />
