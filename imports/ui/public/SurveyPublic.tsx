@@ -1,10 +1,32 @@
 import React from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
+import { Meteor } from 'meteor/meteor';
 import { Surveys } from '/imports/api/surveys';
-import DashboardBg from '../admin/DashboardBg';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
+
+interface Question {
+  _id: string;
+  text: string;
+  type: string;
+  sectionName?: string;
+  options?: string[];
+  scale?: number;
+  labels?: string[];
+}
+
+interface Survey {
+  _id: string;
+  title: string;
+  description?: string;
+  logo?: string;
+  image?: string;
+  color?: string;
+  selectedQuestions?: Record<string, any[]>;
+  siteTextQuestions?: any[];
+  shareToken?: string;
+}
 
 const SurveyPublic: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -34,10 +56,10 @@ const SurveyPublic: React.FC = () => {
   }, [isPreviewMode, token]);
 
   // Use either preview or database survey
-  const survey = isPreviewMode ? previewSurvey : dbSurvey;
+  const survey: Survey | null = isPreviewMode ? previewSurvey : dbSurvey;
 
   // State for questions, loading, and error
-  const [questions, setQuestions] = React.useState<any[]>([]);
+  const [questions, setQuestions] = React.useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = React.useState(false);
   const [questionsError, setQuestionsError] = React.useState<string | null>(null);
   const [step, setStep] = React.useState<'welcome' | number | 'done' | 'no-questions'>('welcome');
@@ -49,64 +71,192 @@ const SurveyPublic: React.FC = () => {
     setQuestionsError(null);
     try {
       let ids: string[] = [];
-      // selectedQuestions: Record<string, any> (section: string[])
+      // Extract section information from selectedQuestions
+      const sectionInfo: Record<string, string> = {};
+      
+      // Process selectedQuestions (main questions from each section)
       if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
-        Object.values(survey.selectedQuestions).forEach((arr: any) => {
-          if (Array.isArray(arr)) {
-            // Handle both string IDs and objects with value property
-            arr.forEach((item: any) => {
-              if (typeof item === 'string') ids.push(item);
-              else if (item && typeof item === 'object' && item.value) ids.push(item.value);
+        // For each section in the survey
+        Object.entries(survey.selectedQuestions).forEach(([sectionIdx, questions]) => {
+          if (Array.isArray(questions)) {
+            // For each question in this section
+            questions.forEach((q: any) => {
+              // Get the question ID/value
+              let questionId = '';
+              if (typeof q === 'string') {
+                questionId = q;
+              } else if (q && typeof q === 'object') {
+                questionId = q.value || '';
+              }
+              
+              if (questionId) {
+                // Add to our list of IDs
+                ids.push(questionId);
+                
+                // Store section information for this question
+                // Get section name from steps array or from question object
+                let sectionName = '';
+                if (q.sectionName) {
+                  sectionName = q.sectionName;
+                } else {
+                  // Use section index to determine section name
+                  const sectionNumber = parseInt(sectionIdx, 10) + 1;
+                  switch(sectionNumber) {
+                    case 1: sectionName = 'Engagement/Manager Relationships'; break;
+                    case 2: sectionName = 'Peer/Team Dynamics'; break;
+                    case 3: sectionName = 'Feedback & Communication Quality'; break;
+                    case 4: sectionName = 'Recognition and Pride'; break;
+                    case 5: sectionName = 'Safety & Wellness Indicators'; break;
+                    case 6: sectionName = 'Site-specific Questions'; break;
+                    default: sectionName = `Section ${sectionNumber}`;
+                  }
+                }
+                
+                sectionInfo[questionId] = sectionName;
+              }
             });
           }
         });
       }
-      // siteTextQuestions: array of question IDs or objects with _id
+      
+      // Process siteTextQuestions if any
       if (Array.isArray(survey.siteTextQuestions)) {
         survey.siteTextQuestions.forEach((q: any) => {
-          if (typeof q === 'string') ids.push(q);
-          else if (q && typeof q === 'object' && typeof q._id === 'string') ids.push(q._id);
+          let questionId = '';
+          if (typeof q === 'string') {
+            questionId = q;
+          } else if (q && typeof q === 'object' && q._id) {
+            questionId = q._id;
+          }
+          
+          if (questionId) {
+            ids.push(questionId);
+            sectionInfo[questionId] = 'Site-specific Questions';
+          }
         });
       }
+      
+      console.log('[SurveyPublic] Extracted question IDs:', ids);
+      console.log('[SurveyPublic] Section info:', sectionInfo);
+      
+      // If no question IDs found and we're in preview mode, create mock IDs
       if (ids.length === 0) {
-        setQuestions([]);
-        setLoadingQuestions(false);
-        console.log('[SurveyPublic] No question IDs found in survey.');
-        return;
+        if (isPreviewMode) {
+          // Generate mock question IDs for preview - one for each section
+          console.log('[SurveyPublic] No real question IDs found, generating mock IDs for preview');
+          
+          // Create mock questions for each section
+          const sectionNames = [
+            'Engagement/Manager Relationships',
+            'Peer/Team Dynamics',
+            'Feedback & Communication Quality',
+            'Recognition and Pride',
+            'Safety & Wellness Indicators',
+            'Site-specific Questions'
+          ];
+          
+          // Create 1-2 questions per section
+          sectionNames.forEach((name, idx) => {
+            const id1 = `mock-${idx}-1`;
+            const id2 = `mock-${idx}-2`;
+            ids.push(id1, id2);
+            sectionInfo[id1] = name;
+            sectionInfo[id2] = name;
+          });
+        } else {
+          setQuestions([]);
+          setLoadingQuestions(false);
+          console.log('[SurveyPublic] No question IDs found in survey.');
+          return;
+        }
       }
+      
       // Remove duplicates
       ids = Array.from(new Set(ids));
       console.log('[SurveyPublic] Fetching questions with IDs:', ids);
       
-      // For preview mode, we can't fetch questions yet (would need to mock them)
-      // In a real implementation, you might want to store question data in localStorage too
-      if (isPreviewMode) {
-        // For preview, create mock questions
-        const mockQuestions = ids.map((id, index) => ({
-          _id: id,
-          text: `Preview Question ${index + 1}`,
-          type: 'text',
-          options: ['Option 1', 'Option 2', 'Option 3'],
-        }));
-        setQuestions(mockQuestions);
-        setLoadingQuestions(false);
-        console.log('[SurveyPublic] Created mock questions for preview:', mockQuestions);
-      } else {
-        // For real surveys, fetch from database
-        Meteor.call('questions.getMany', ids, (err: any, res: any[]) => {
-          if (err) {
-            setQuestionsError('Could not load questions');
-            setQuestions([]);
-            console.error('[SurveyPublic] Error loading questions:', err);
-          } else {
-            // Sort questions in the order of ids
-            const ordered = ids.map((id) => res.find((q) => q._id === id)).filter(Boolean);
-            setQuestions(ordered);
-            console.log('[SurveyPublic] Loaded questions:', ordered);
-          }
+      // Fetch the questions from the database
+      Meteor.call('questions.getMany', ids, (error: Error | null, result: Question[]) => {
+        if (error) {
+          setQuestionsError('Could not load questions');
+          setQuestions([]);
+          console.error('[SurveyPublic] Error loading questions:', error);
           setLoadingQuestions(false);
-        });
-      }
+          return;
+        }
+        
+        // Check if we got valid questions back
+        const validQuestions = result && Array.isArray(result) && result.length > 0;
+        
+        if (!validQuestions && isPreviewMode) {
+          // Create mock questions for preview mode
+          console.log('[SurveyPublic] Creating mock questions for preview');
+          const questionTypes = ['likert', 'text', 'multiple', 'single'];
+          
+          const mockQuestions = ids.map((id, index) => {
+            const type = questionTypes[index % questionTypes.length];
+            const sectionName = sectionInfo[id] || 'Unknown Section';
+            
+            const baseQuestion = {
+              _id: id,
+              text: `${sectionName} Question ${(index % 2) + 1}: This is a sample ${type} question.`,
+              type,
+              sectionName
+            };
+            
+            // Add type-specific properties
+            switch (type) {
+              case 'likert':
+                return {
+                  ...baseQuestion,
+                  scale: 5,
+                  labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
+                };
+              case 'multiple':
+              case 'single':
+                return {
+                  ...baseQuestion,
+                  options: [
+                    'Option 1: This is the first choice',
+                    'Option 2: This is the second choice',
+                    'Option 3: This is the third choice',
+                    'Option 4: This is the fourth choice'
+                  ]
+                };
+              default:
+                return baseQuestion;
+            }
+          });
+          
+          setQuestions(mockQuestions);
+          setLoadingQuestions(false);
+          console.log('[SurveyPublic] Created mock questions for preview:', mockQuestions);
+        } else if (validQuestions) {
+          // Process real questions from database
+          console.log('[SurveyPublic] Processing real questions from database');
+          
+          // Add section information to each question
+          const questionsWithSections = result.map(q => {
+            const sectionName = sectionInfo[q._id] || 'Unknown Section';
+            return {
+              ...q,
+              sectionName
+            };
+          });
+          
+          // Sort questions by section
+          const ordered = ids
+            .map(id => questionsWithSections.find(q => q._id === id))
+            .filter(Boolean) as Question[];
+          
+          setQuestions(ordered);
+          setLoadingQuestions(false);
+          console.log('[SurveyPublic] Processed questions with sections:', ordered);
+        } else {
+          setQuestionsError('No questions found for this survey.');
+          setLoadingQuestions(false);
+        }
+      });
     } catch (e: any) {
       setQuestionsError('Could not load questions');
       setQuestions([]);
@@ -174,14 +324,14 @@ const SurveyPublic: React.FC = () => {
       borderRadius: isPreviewMode ? '0' : '20px',
     }}>
       <div style={{ maxWidth: 500, margin: '0 auto' }}>
-        {step === 'welcome' && (
+        {step === 'welcome' && survey && (
           <SurveyWelcome
             previewData={{
               title: survey.title,
-              description: survey.description,
-              logo: survey.logo,
-              image: survey.image,
-              color: survey.color
+              description: survey.description || '',
+              logo: survey.logo || '',
+              image: survey.image || '',
+              color: survey.color || '#b0802b'
             }}
             onStart={handleStart}
             disabled={loadingQuestions || questions.length === 0}
@@ -201,7 +351,7 @@ const SurveyPublic: React.FC = () => {
             onBack={handleBack}
           />
         )}
-        {step === 'no-questions' && (
+        {step === 'no-questions' && survey && (
           <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#b0802b' }}>
             <h2>No Questions Found</h2>
             <p>This survey does not have any questions yet. Please add questions to preview the survey flow.</p>
@@ -213,7 +363,7 @@ const SurveyPublic: React.FC = () => {
             </button>
           </div>
         )}
-        {step === 'done' && (
+        {step === 'done' && survey && (
           <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#b0802b' }}>
             <h2>End of Preview</h2>
             <p>This is a preview. Please contact your administrator to participate.</p>

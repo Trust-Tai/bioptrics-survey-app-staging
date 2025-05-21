@@ -534,10 +534,65 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 <button
                   style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
                   onClick={() => {
+                    // Create a mapping of section indices to section names for the preview
+                    const sectionNames: Record<number, string> = {};
+                    steps.forEach((step, index) => {
+                      if (index > 0 && index < steps.length - 1) { // Skip welcome screen and demographics
+                        sectionNames[index - 1] = step.label;
+                      }
+                    });
+                    
+                    // Enhance existing questions with section names
+                    let previewSelectedQuestions: Record<number, any[]> = {};
+                    
+                    // Check if we have real questions
+                    const hasQuestions = selectedQuestions && 
+                      Object.entries(selectedQuestions).some(([_, arr]) => 
+                        Array.isArray(arr) && arr.length > 0
+                      );
+                    
+                    if (hasQuestions && selectedQuestions) {
+                      // Use the real questions but add section names to them
+                      Object.entries(selectedQuestions).forEach(([sectionIdxStr, questions]) => {
+                        const sectionIdx = parseInt(sectionIdxStr, 10);
+                        const sectionName = sectionNames[sectionIdx] || `Section ${sectionIdx + 1}`;
+                        
+                        if (Array.isArray(questions) && questions.length > 0) {
+                          // Add section name to each question
+                          previewSelectedQuestions[sectionIdx] = questions.map(q => ({
+                            ...q,
+                            sectionName: sectionName
+                          }));
+                        }
+                      });
+                      
+                      console.log('[SurveyBuilder] Enhanced real questions with section names:', previewSelectedQuestions);
+                    } else {
+                      // Create mock selected questions for preview - one for each section
+                      console.log('[SurveyBuilder] No real questions found, creating mock questions');
+                      
+                      // Create 1-2 questions for each section
+                      Object.entries(sectionNames).forEach(([sectionIdxStr, sectionName]) => {
+                        const sectionIdx = parseInt(sectionIdxStr, 10);
+                        previewSelectedQuestions[sectionIdx] = [
+                          { 
+                            value: `mock-q-${sectionIdx}-1`, 
+                            label: `${sectionName} Question 1`,
+                            sectionName: sectionName // Add section name to the question
+                          },
+                          { 
+                            value: `mock-q-${sectionIdx}-2`, 
+                            label: `${sectionName} Question 2`,
+                            sectionName: sectionName // Add section name to the question
+                          }
+                        ];
+                      });
+                    }
+                    
                     // Store complete survey data for preview
                     const completeData = {
                       ...form,
-                      selectedQuestions,
+                      selectedQuestions: previewSelectedQuestions,
                       siteTextQuestions,
                       siteTextQForm,
                       selectedDemographics,
@@ -545,6 +600,8 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                       _id: previewToken,
                       shareToken: previewToken
                     };
+                    
+                    console.log('[SurveyBuilder] Preview data:', completeData);
                     localStorage.setItem(`survey-preview-${previewToken}`, JSON.stringify(completeData));
                     window.open(`/preview/survey/${previewToken}?status=preview`, '_blank');
                   }}

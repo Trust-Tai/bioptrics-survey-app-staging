@@ -2,17 +2,10 @@ import React from 'react';
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
-  min-height: 100vh;
-  background: #fffbea;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px;
-
-  @media (min-width: 600px) {
-    padding: 64px 0;
-  }
 `;
 
 const Card = styled.div`
@@ -36,7 +29,19 @@ const Progress = styled.div`
   color: #b7a36a;
   font-weight: 700;
   font-size: 1.02rem;
-  margin-bottom: 18px;
+  margin-bottom: 8px;
+`;
+
+const SectionName = styled.div`
+  color: #28211e;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 12px;
+  background-color: #f5ebd7;
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: inline-block;
 `;
 
 const QuestionText = styled.div`
@@ -226,6 +231,11 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
       )}
       <Card>
         <Progress>Question {progress}</Progress>
+        {question.sectionName && (
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <SectionName>{question.sectionName}</SectionName>
+          </div>
+        )}
         <QuestionText>{questionText}</QuestionText>
         {answerInput}
         <NavRow>

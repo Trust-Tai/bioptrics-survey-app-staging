@@ -4,6 +4,7 @@ import Select from 'react-select';
 export interface QuestionOption {
   value: string;
   label: string;
+  sectionName?: string; // Optional section name for preview mode
 }
 
 interface SurveySectionQuestionDropdownProps {
