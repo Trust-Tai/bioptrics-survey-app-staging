@@ -104,7 +104,7 @@ const ActionButton = styled.button<{ primary?: boolean }>`
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: ${props => props.primary ? '#b7a36a' : '#ffffff'};
+  background: ${props => props.primary ? '#552a47' : '#ffffff'};
   color: ${props => props.primary ? '#ffffff' : '#333333'};
   border: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -117,7 +117,7 @@ const ActionButton = styled.button<{ primary?: boolean }>`
   
   &:hover {
     transform: scale(1.05);
-    background: ${props => props.primary ? '#a08e54' : '#f5f5f5'};
+    background: ${props => props.primary ? '#693658' : '#f5f5f5'};
   }
   
   &:disabled {
@@ -141,14 +141,14 @@ const Tab = styled.button<{ active: boolean }>`
   padding: 12px 20px;
   background: transparent;
   border: none;
-  border-bottom: ${props => props.active ? '2px solid #b7a36a' : '2px solid transparent'};
-  color: ${props => props.active ? '#b7a36a' : '#4a5568'};
+  border-bottom: ${props => props.active ? '2px solid #552a47' : '2px solid transparent'};
+  color: ${props => props.active ? '#552a47' : '#4a5568'};
   font-weight: ${props => props.active ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    color: #b7a36a;
+    color: #552a47;
   }
 `;
 

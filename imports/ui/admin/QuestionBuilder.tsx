@@ -322,7 +322,7 @@ return (
         fontWeight: 600,
         fontSize: 16,
         zIndex: 2000,
-        boxShadow: '0 2px 12px #b0802b33',
+        boxShadow: '0 2px 12px #552a4733',
       }}>{alert.message}</div>
     )}
     <div style={{ padding: '32px 0', minHeight: '100vh', boxSizing: 'border-box' }}>
@@ -342,11 +342,11 @@ return (
           <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>Questions</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             {editId ? null : (
-              <button onClick={addQuestion} style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
+              <button onClick={addQuestion} style={{ background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
                 + Add Question
               </button>
             )}
-            <button onClick={saveQuestions} style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
+            <button onClick={saveQuestions} style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
               Save
             </button>
             <button onClick={publishQuestions} style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}>
@@ -393,7 +393,7 @@ return (
               display: 'block',
               width: 40,
               height: 22,
-              background: q.required ? '#b0802b' : '#ccc',
+              background: q.required ? '#552a47' : '#ccc',
               borderRadius: 22,
               transition: 'background 0.2s',
               position: 'absolute',
@@ -551,7 +551,7 @@ return (
                     style={{ flex: 1, fontSize: 16, padding: '8px 12px', background: '#fff', border: 'none', boxShadow: 'none' }}
                   />
                   {q.answers.length > 1 && (
-                    <button onClick={() => removeAnswer(qIdx, aIdx)} style={{ background: 'none', border: 'none', color: '#b0802b', fontWeight: 500, fontSize: 20, cursor: 'pointer' }}>×</button>
+                    <button onClick={() => removeAnswer(qIdx, aIdx)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 500, fontSize: 20, cursor: 'pointer' }}>×</button>
                   )}
                 </div>
               ))}
@@ -598,7 +598,7 @@ return (
                     style={{ flex: 1, fontSize: 16, padding: '8px 12px', background: '#fff', border: 'none', boxShadow: 'none' }}
                   />
                   {q.answers.length > 1 && (
-                    <button onClick={() => removeAnswer(qIdx, aIdx)} style={{ background: 'none', border: 'none', color: '#b0802b', fontWeight: 500, fontSize: 20, cursor: 'pointer' }}>×</button>
+                    <button onClick={() => removeAnswer(qIdx, aIdx)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 500, fontSize: 20, cursor: 'pointer' }}>×</button>
                   )}
                 </div>
               ))}

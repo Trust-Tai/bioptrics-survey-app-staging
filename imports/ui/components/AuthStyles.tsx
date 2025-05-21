@@ -10,7 +10,7 @@ export const AuthBg = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  background: #FFF9EB;
+  background: #552a47;
   display: flex;
   align-items: center;
   justify-content: center;

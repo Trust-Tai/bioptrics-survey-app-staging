@@ -77,7 +77,7 @@ const AllSurveys: React.FC = () => {
             <div style={{
               background: '#fff',
               borderRadius: 14,
-              boxShadow: '0 2px 18px #b0802b33',
+              boxShadow: '0 2px 18px #552a4733',
               padding: '38px 40px 32px 40px',
               minWidth: 340,
               maxWidth: '90vw',
@@ -87,7 +87,7 @@ const AllSurveys: React.FC = () => {
               gap: 18,
               position: 'relative',
             }}>
-              <div style={{ fontWeight: 800, fontSize: 20, color: '#b0802b', marginBottom: 10 }}>Delete Survey</div>
+              <div style={{ fontWeight: 800, fontSize: 20, color: '#552a47', marginBottom: 10 }}>Delete Survey</div>
               <div style={{ fontSize: 16, color: '#222', marginBottom: 12, textAlign: 'center' }}>
                 Are you sure you want to delete <span style={{ fontWeight: 700 }}>'{confirmDelete.title}'</span>? This action cannot be undone.
               </div>
@@ -107,7 +107,7 @@ const AllSurveys: React.FC = () => {
                   Delete
                 </button>
                 <button
-                  style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 8, fontWeight: 700, padding: '8px 28px', fontSize: 16, cursor: 'pointer' }}
+                  style={{ background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: 8, fontWeight: 700, padding: '8px 28px', fontSize: 16, cursor: 'pointer' }}
                   onClick={() => setConfirmDelete(null)}
                 >
                   Cancel
@@ -141,7 +141,7 @@ const AllSurveys: React.FC = () => {
               onClick={() => {
                 window.location.href = '/admin/surveys/builder';
               }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
             >
               <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
               Add
@@ -162,7 +162,7 @@ const AllSurveys: React.FC = () => {
                 fontWeight: 600,
                 fontSize: 16,
                 zIndex: 2000,
-                boxShadow: '0 2px 12px #b0802b33',
+                boxShadow: '0 2px 12px #552a4733',
                 minWidth: 280,
                 display: 'flex',
                 alignItems: 'center',
@@ -180,16 +180,16 @@ const AllSurveys: React.FC = () => {
           )}
           {/* Survey List */}
           {paginated.length === 0 ? (
-            <div style={{ color: '#b3a08a', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No surveys found.</div>
+            <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No surveys found.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {paginated.map((s) => (
                 <div
                   key={s._id}
                   style={{
-                    background: '#fffbe9',
+                    background: '#f9f4f7',
                     borderRadius: 14,
-                    boxShadow: '0 2px 8px #f4e6c1',
+                    boxShadow: '0 2px 8px #f4ebf1',
                     padding: '18px 24px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -225,21 +225,21 @@ const AllSurveys: React.FC = () => {
                       }}
                       title="Preview"
                     >
-                      <FaEye style={{ color: '#b0802b', fontSize: 18 }} />
+                      <FaEye style={{ color: '#552a47', fontSize: 18 }} />
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
                       title="Edit"
                     >
-                      <FaEdit style={{ color: '#b0802b', fontSize: 18 }} />
+                      <FaEdit style={{ color: '#552a47', fontSize: 18 }} />
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
                       title="Delete"
                     >
-                      <FaTrash style={{ color: '#b0802b', fontSize: 18 }} />
+                      <FaTrash style={{ color: '#552a47', fontSize: 18 }} />
                     </button>
                   </div>
                 </div>
@@ -253,15 +253,15 @@ const AllSurveys: React.FC = () => {
                 key={i}
                 onClick={() => setPage(i + 1)}
                 style={{
-                  background: page === i + 1 ? '#b0802b' : '#f4e6c1',
-                  color: page === i + 1 ? '#fff' : '#b0802b',
+                  background: page === i + 1 ? '#552a47' : '#f4ebf1',
+                  color: page === i + 1 ? '#fff' : '#552a47',
                   border: 'none',
                   borderRadius: 6,
                   padding: '6px 16px',
                   fontWeight: 700,
                   fontSize: 16,
                   cursor: 'pointer',
-                  boxShadow: page === i + 1 ? '0 2px 8px #b0802b33' : 'none',
+                  boxShadow: page === i + 1 ? '0 2px 8px #552a4733' : 'none',
                   transition: 'background 0.2s, color 0.2s',
                 }}
               >

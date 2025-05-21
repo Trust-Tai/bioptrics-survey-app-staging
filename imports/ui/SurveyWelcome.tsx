@@ -11,7 +11,7 @@ const Wrapper = styled.div`
 const Card = styled.div`
   background: #fff;
   border-radius: 28px;
-  box-shadow: 0 2px 24px #e6d6b933;
+  box-shadow: 0 2px 24px #e5d6e033;
   padding: 36px 24px 28px 24px;
   max-width: 400px;
   width: 100%;
@@ -60,7 +60,7 @@ const Description = styled.p`
 `;
 
 const StartButton = styled.button<{ btncolor?: string }>`
-  background: ${props => props.btncolor || '#b7a36a'};
+  background: ${props => props.btncolor || '#552a47'};
   color: #fff;
   border: none;
   border-radius: 22px;
@@ -75,7 +75,7 @@ const StartButton = styled.button<{ btncolor?: string }>`
 
 const Privacy = styled.div`
   font-size: 0.92rem;
-  color: #b3a08a;
+  color: #8a7a85;
   text-align: center;
   margin-top: 8px;
 `;

@@ -31,6 +31,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import QuestionBuilder from './admin/QuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
+import LogoutPage from './LogoutPage';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -135,6 +136,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<AdminLogin onAdminAuth={() => navigate('/admin/dashboard')} />} />
+      <Route path="/logout" element={<LogoutPage />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
       <Route path="/survey/public/:token" element={<SurveyPublic />} />

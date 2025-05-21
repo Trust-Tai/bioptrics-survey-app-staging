@@ -60,7 +60,7 @@ const Spinner = () => (
   }}>
     <div style={{
       border: '6px solid #f3e9d7',
-      borderTop: '6px solid #b0802b',
+      borderTop: '6px solid #552a47',
       borderRadius: '50%',
       width: 56,
       height: 56,
@@ -108,7 +108,7 @@ const ImageInput: React.FC<{
       />
       {value && (
         <>
-          <img src={value} alt="preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1.5px solid #b0802b' }} />
+          <img src={value} alt="preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1.5px solid #552a47' }} />
           <button
             type="button"
             onClick={onRemove}
@@ -119,7 +119,7 @@ const ImageInput: React.FC<{
         </>
       )}
       {!value && (
-        <span style={{ color: '#b3a08a', fontSize: 14 }}>{placeholder}</span>
+        <span style={{ color: '#8a7a85', fontSize: 14 }}>{placeholder}</span>
       )}
     </div>
   );
@@ -143,7 +143,7 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editId }) => {
     }}>
       <div style={{
         border: '6px solid #f3e9d7',
-        borderTop: '6px solid #b0802b',
+        borderTop: '6px solid #552a47',
         borderRadius: '50%',
         width: 56,
         height: 56,
@@ -207,7 +207,7 @@ const [copied, setCopied] = useState(false);
             description: savedSurvey.description || '',
             logo: savedSurvey.logo || '',
             image: savedSurvey.image || '',
-            color: savedSurvey.color || '#b0802b',
+            color: savedSurvey.color || '#552a47',
           });
           setSelectedQuestions(savedSurvey.selectedQuestions || {});
           setSiteTextQuestions(savedSurvey.siteTextQuestions || []);
@@ -269,7 +269,7 @@ const [copied, setCopied] = useState(false);
           description: survey.description || '',
           logo: survey.logo || '',
           image: survey.image || '',
-          color: survey.color || '#b0802b',
+          color: survey.color || '#552a47',
         });
         setSelectedQuestions(survey.selectedQuestions || {});
         setSiteTextQuestions(survey.siteTextQuestions || []);
@@ -291,7 +291,7 @@ const [copied, setCopied] = useState(false);
   // ...rest of hooks and logic...
 // --- AUTOSAVE RESTORE ON MOUNT ---
   const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
-  const [form, setForm] = useState<SurveyForm>({ title: '', description: '', logo: '', image: '', color: '#b0802b' });
+  const [form, setForm] = useState<SurveyForm>({ title: '', description: '', logo: '', image: '', color: '#552a47' });
   // Generate a unique token for preview
   const [previewToken] = useState(() => `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`);
   const [selectedQuestions, setSelectedQuestions] = useState<{ [sectionIdx: number]: QuestionOption[] }>({});
@@ -434,10 +434,10 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
     color: '#28211e',
     padding: '12px 16px',
     borderRadius: 14,
-    border: '2px solid #b0802b',
+    border: '2px solid #552a47',
     margin: '24px auto 12px auto',
     maxWidth: 900,
-    boxShadow: '0 2px 8px #b0802b33',
+    boxShadow: '0 2px 8px #552a4733',
     fontSize: 16,
     fontWeight: 600,
     display: 'flex',
@@ -482,7 +482,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 fontWeight: 600,
                 fontSize: 16,
                 zIndex: 2000,
-                boxShadow: '0 2px 12px #b0802b33',
+                boxShadow: '0 2px 12px #552a4733',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -532,7 +532,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
 </h2>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
+                  style={{ background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
                   onClick={() => {
                     // Create a mapping of section indices to section names for the preview
                     const sectionNames: Record<number, string> = {};
@@ -609,7 +609,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                   Preview
                 </button>
                 <button
-                  style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: saving ? 'wait' : 'pointer', padding: '0 16px', opacity: saving ? 0.6 : 1 }}
+                  style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: saving ? 'wait' : 'pointer', padding: '0 16px', opacity: saving ? 0.6 : 1 }}
                   onClick={handleSave}
                   disabled={saving}
                 >
@@ -665,7 +665,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                       opacity: openSection === i ? 1 : (i > 0 && !form.title.trim() ? 0.5 : 1),
                       outline: 'none',
                       transition: 'all 0.18s',
-                      borderBottom: openSection === i ? '2px solid #b0802b' : '2px solid #e5d6c7',
+                      borderBottom: openSection === i ? '2px solid #552a47' : '2px solid #e5d6c7',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -675,7 +675,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                     <span>{s.label}</span>
                     <span style={{ display: 'inline-flex', transition: 'transform 0.2s', transform: openSection === i ? 'rotate(90deg)' : 'rotate(0deg)' }}>
                       {/* Right arrow SVG */}
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b0802b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#552a47" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                     </span>
                   </button>
                   {openSection === i && (
@@ -748,11 +748,11 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                             <label style={{ display: 'block', fontSize: 15, marginBottom: 6, textTransform: 'uppercase' }}>Survey Color</label>
                             <input
                               type="color"
-                              value={form.color || '#b0802b'}
+                              value={form.color || '#552a47'}
                               onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                               style={{ width: 48, height: 32, border: 'none', background: 'none', cursor: 'pointer' }}
                             />
-                            <span style={{ marginLeft: 10, fontSize: 15 }}>{form.color || '#b0802b'}</span>
+                            <span style={{ marginLeft: 10, fontSize: 15 }}>{form.color || '#552a47'}</span>
                           </div>
                         </>
                       ) : (i >= 1 && i <= 5) ? (
@@ -772,9 +772,9 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                 <div
                                   key={q._id}
                                   style={{
-                                    background: '#fffbe9',
+                                    background: '#f9f4f7',
                                     borderRadius: 14,
-                                    boxShadow: '0 2px 8px #f4e6c1',
+                                    boxShadow: '0 2px 8px #f4ebf1',
                                     padding: '18px 24px',
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -784,7 +784,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
                                     <span style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.theme}</span>
                                     <span style={{ background: '#e4f0fa', color: '#3776a8', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.wpsCategory}</span>
-                                    <span style={{ background: '#fff5e1', color: '#b0802b', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{QUE_TYPE_LABELS[q.queType] || q.queType}</span>
+                                    <span style={{ background: '#fff5e1', color: '#552a47', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{QUE_TYPE_LABELS[q.queType] || q.queType}</span>
                                   </div>
                                   <div style={{ color: '#28211e', fontWeight: 600, fontSize: 17, letterSpacing: 0.1 }}>
                                     {q.text}
@@ -828,8 +828,8 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                 placeholder={wpsCategories.length === 0 ? 'Loading categories...' : 'Select WPS Categories'}
                                 styles={{
                                   control: (base) => ({ ...base, borderColor: '#e5d6c7', minHeight: 44, fontSize: 15 }),
-                                  multiValue: (base, { data }) => ({ ...base, background: data.color || '#fffbe9', color: '#fff' }),
-                                  option: (base, state) => ({ ...base, background: state.isSelected ? '#b0802b' : '#fff', color: state.isSelected ? '#fff' : '#28211e', fontWeight: 500 }),
+                                  multiValue: (base, { data }) => ({ ...base, background: data.color || '#f9f4f7', color: '#fff' }),
+                                  option: (base, state) => ({ ...base, background: state.isSelected ? '#552a47' : '#fff', color: state.isSelected ? '#fff' : '#28211e', fontWeight: 500 }),
                                   multiValueLabel: (base) => ({ ...base, color: '#fff', fontWeight: 600 }),
                                   multiValueRemove: (base) => ({ ...base, color: '#fff', ':hover': { backgroundColor: '#333', color: '#fff' } }),
                                 }}
@@ -854,7 +854,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                               />
                               <button
                                 type="button"
-                                style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer', alignSelf: 'flex-start' }}
+                                style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer', alignSelf: 'flex-start' }}
                                 onClick={() => {
                                   if (!siteTextQForm.text.trim()) return;
                                   setSiteTextQuestions(qs => [
@@ -879,9 +879,9 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                               <div
                                 key={idx}
                                 style={{
-                                  background: '#fffbe9',
+                                  background: '#f9f4f7',
                                   borderRadius: 14,
-                                  boxShadow: '0 2px 8px #f4e6c1',
+                                  boxShadow: '0 2px 8px #f4ebf1',
                                   padding: '18px 24px',
                                   display: 'flex',
                                   flexDirection: 'column',
@@ -931,7 +931,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                   }) : (
                                     <span style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>No Theme</span>
                                   )}
-                                  <span style={{ background: '#fff5e1', color: '#b0802b', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>Open Text</span>
+                                  <span style={{ background: '#fff5e1', color: '#552a47', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>Open Text</span>
                                 </div>
                                 <div style={{ color: '#28211e', fontWeight: 600, fontSize: 17, letterSpacing: 0.1 }}>
                                   {q.text}
@@ -973,14 +973,14 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
         padding: '8px 18px',
         margin: '2px 0',
         borderRadius: 8,
-        border: isSelected ? '2px solid #b0802b' : '2px solid #e5d6c7',
-        background: isSelected ? '#b0802b' : '#fff',
+        border: isSelected ? '2px solid #552a47' : '2px solid #e5d6c7',
+        background: isSelected ? '#552a47' : '#fff',
         color: isSelected ? '#fff' : '#28211e',
         fontWeight: 600,
         fontSize: 15,
         cursor: 'pointer',
-        outline: isSelected ? '2px solid #b0802b' : 'none',
-        boxShadow: isSelected ? '0 2px 8px #f4e6c1' : 'none',
+        outline: isSelected ? '2px solid #552a47' : 'none',
+        boxShadow: isSelected ? '0 2px 8px #f4ebf1' : 'none',
         transition: 'all 0.15s',
         display: 'flex',
         alignItems: 'center',
@@ -1001,7 +1001,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                       {i > 0 && (
                         <button
                           type="button"
-                          style={{ background: '#b3a08a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer', marginRight: 12 }}
+                          style={{ background: '#8a7a85', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer', marginRight: 12 }}
                           onClick={() => setOpenSection(i - 1)}
                         >
                           Previous
@@ -1010,7 +1010,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                       {i < steps.length - 1 && (
                         <button
                           type="button"
-                          style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer' }}
+                          style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer' }}
                           onClick={() => setOpenSection(i + 1)}
                         >
                           Next

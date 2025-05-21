@@ -224,13 +224,13 @@ const AdminQuestionBank = () => {
         {/* Stats and Summary Section */}
         <div style={{ marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 12, padding: '18px 32px', fontWeight: 800, fontSize: 22, boxShadow: '0 2px 8px #f4e6c1' }}>
+            <div style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 12, padding: '18px 32px', fontWeight: 800, fontSize: 22, boxShadow: '0 2px 8px #f4ebf1' }}>
               Total Questions: {questionCount}
             </div>
-            <div style={{ background: '#e4f0fa', color: '#3776a8', borderRadius: 12, padding: '18px 32px', fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px #f4e6c1' }}>
+            <div style={{ background: '#e4f0fa', color: '#3776a8', borderRadius: 12, padding: '18px 32px', fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px #f4ebf1' }}>
               WPS Categories Used: {Object.keys(wpsCategoryUsage).length}
             </div>
-            <div style={{ background: '#fff5e1', color: '#b0802b', borderRadius: 12, padding: '18px 32px', fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px #f4e6c1' }}>
+            <div style={{ background: '#fff5e1', color: '#552a47', borderRadius: 12, padding: '18px 32px', fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px #f4ebf1' }}>
               Survey Themes Used: {Object.keys(surveyThemeUsage).length}
             </div>
           </div>
@@ -244,7 +244,7 @@ const AdminQuestionBank = () => {
                     {cat}: {count}
                   </span>
                 ))}
-                {Object.keys(wpsCategoryUsage).length === 0 && <span style={{ color: '#b3a08a', fontStyle: 'italic' }}>None</span>}
+                {Object.keys(wpsCategoryUsage).length === 0 && <span style={{ color: '#8a7a85', fontStyle: 'italic' }}>None</span>}
               </div>
             </div>
             <div>
@@ -255,14 +255,14 @@ const AdminQuestionBank = () => {
                     {theme}: {count}
                   </span>
                 ))}
-                {Object.keys(surveyThemeUsage).length === 0 && <span style={{ color: '#b3a08a', fontStyle: 'italic' }}>None</span>}
+                {Object.keys(surveyThemeUsage).length === 0 && <span style={{ color: '#8a7a85', fontStyle: 'italic' }}>None</span>}
               </div>
             </div>
           </div>
         </div>
             {/* --- Question List with Preview --- */}
             <QuestionList>
-              {questions.length === 0 && <div style={{ color: '#b3a08a', fontStyle: 'italic' }}>No questions found.</div>}
+              {questions.length === 0 && <div style={{ color: '#8a7a85', fontStyle: 'italic' }}>No questions found.</div>}
               {questions.map((doc: any, idx: number) => {
                 const latest = getLatestVersion(doc);
                 // Compose tags: theme, wps, type
@@ -285,7 +285,7 @@ const AdminQuestionBank = () => {
                       <button
                         style={{
                           marginLeft: 16,
-                          background: '#b7a36a', // gold
+                          background: '#552a47', // gold
                           color: '#fff',
                           border: 'none',
                           borderRadius: 8,
@@ -293,11 +293,11 @@ const AdminQuestionBank = () => {
                           fontWeight: 600,
                           fontSize: 15,
                           cursor: 'pointer',
-                          boxShadow: '0 1.5px 8px #e6d6b9',
+                          boxShadow: '0 1.5px 8px #e5d6e0',
                           transition: 'background 0.18s',
                         }}
-                        onMouseOver={e => (e.currentTarget.style.background = '#a08e54')}
-                        onMouseOut={e => (e.currentTarget.style.background = '#b7a36a')}
+                        onMouseOver={e => (e.currentTarget.style.background = '#693658')}
+                        onMouseOut={e => (e.currentTarget.style.background = '#552a47')}
                         onClick={() => {
   console.log('Preview clicked', latest);
   setPreviewQuestion(latest);

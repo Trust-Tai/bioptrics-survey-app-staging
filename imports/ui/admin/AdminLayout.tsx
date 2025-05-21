@@ -49,7 +49,7 @@ const SubmenuFlyout = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  background: #2D1F01;
+  background: #3d1f33;
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.13);
   position: absolute;
@@ -58,7 +58,7 @@ const SubmenuFlyout = styled.ul`
   min-width: 180px;
   z-index: 9999;
   overflow: visible;
-  border: 1px solid #b7a36a33;
+  border: 1px solid #552a4733;
   pointer-events: auto;
 `;
 
@@ -78,7 +78,7 @@ const SubmenuItem = styled(Link)<{active?: boolean}>`
   font-size: 15px;
   padding: 10px 24px;
   background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
-  border-left: ${({active}) => active ? '4px solid #b7a36a' : '4px solid transparent'};
+  border-left: ${({active}) => active ? '4px solid #7a3e68' : '4px solid transparent'};
   font-weight: ${({active}) => active ? 700 : 500};
   transition: background 0.15s, border-left 0.15s;
   &:hover {
@@ -89,7 +89,7 @@ const SubmenuItem = styled(Link)<{active?: boolean}>`
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
-  background: linear-gradient(180deg, #402C00 0%, #2D1F01 100%);
+  background: linear-gradient(180deg, #552a47 0%, #3d1f33 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -143,7 +143,7 @@ const NavItem = styled(Link)<NavItemProps>`
   transition: background 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #b7a36a' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   
   &:hover {
@@ -164,7 +164,7 @@ const NavButton = styled.button<NavItemProps>`
   transition: background 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #b7a36a' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   width: 100%;
   border: none;

@@ -86,8 +86,8 @@ const StyledSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #b7a36a;
-    box-shadow: 0 0 0 1px #b7a36a;
+    border-color: #552a47;
+    box-shadow: 0 0 0 1px #552a47;
   }
 `;
 
@@ -109,12 +109,12 @@ const Button = styled.button<{ primary?: boolean }>`
   cursor: pointer;
   transition: all 0.2s;
   
-  background: ${props => props.primary ? '#b7a36a' : 'transparent'};
+  background: ${props => props.primary ? '#552a47' : 'transparent'};
   color: ${props => props.primary ? 'white' : '#666'};
   border: ${props => props.primary ? 'none' : '1px solid #e2e8f0'};
   
   &:hover {
-    background: ${props => props.primary ? '#a08e54' : '#f7fafc'};
+    background: ${props => props.primary ? '#693658' : '#f7fafc'};
   }
   
   @media (max-width: 768px) {

@@ -26,7 +26,7 @@ const EllipsisMenu: React.FC<EllipsisMenuProps> = ({ onDuplicate }) => {
     <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
       <button
         onClick={() => setOpen(o => !o)}
-        style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', fontSize: 22, color: '#b0802b', display: 'flex', alignItems: 'center' }}
+        style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', fontSize: 22, color: '#552a47', display: 'flex', alignItems: 'center' }}
         title="More options"
       >
         <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>

@@ -90,7 +90,7 @@ const SurveyPage: React.FC = () => {
           <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 28, margin: 0, letterSpacing: 0.2 }}>Surveys</h2>
           <button
             style={{
-              background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: '50%', width: 44, height: 44, fontWeight: 900, fontSize: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px #f4e6c1', outline: 'none', transition: 'background 0.2s', marginLeft: 12
+              background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: '50%', width: 44, height: 44, fontWeight: 900, fontSize: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px #f4ebf1', outline: 'none', transition: 'background 0.2s', marginLeft: 12
             }}
             onClick={() => { setShowModal(true); setEditSurvey(null); setForm({ title: '', description: '' }); }}
             title="Add New Survey"
@@ -101,7 +101,7 @@ const SurveyPage: React.FC = () => {
         {/* Search Bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <div style={{ position: 'relative', flex: 1 }}>
-            <span style={{ position: 'absolute', left: 14, top: 11, color: '#b3a08a', fontSize: 18 }}>
+            <span style={{ position: 'absolute', left: 14, top: 11, color: '#8a7a85', fontSize: 18 }}>
               <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             </span>
             <input
@@ -117,16 +117,16 @@ const SurveyPage: React.FC = () => {
         </div>
         {/* Surveys List */}
         {filtered.length === 0 ? (
-          <div style={{ color: '#b3a08a', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No surveys available.</div>
+          <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No surveys available.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {filtered.map(s => (
               <div
                 key={s.id}
                 style={{
-                  background: '#fffbe9',
+                  background: '#f9f4f7',
                   borderRadius: 14,
-                  boxShadow: '0 2px 8px #f4e6c1',
+                  boxShadow: '0 2px 8px #f4ebf1',
                   padding: '18px 24px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -139,7 +139,7 @@ const SurveyPage: React.FC = () => {
                 </div>
                 <div style={{ color: '#6e5a67', fontSize: 15 }}>{s.description}</div>
                 <div style={{ position: 'absolute', right: 18, top: 18, display: 'flex', gap: 10 }}>
-                  <button onClick={() => handleEdit(s)} style={{ background: 'none', border: 'none', color: '#b0802b', fontWeight: 700, cursor: 'pointer', fontSize: 15 }}>Edit</button>
+                  <button onClick={() => handleEdit(s)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 700, cursor: 'pointer', fontSize: 15 }}>Edit</button>
                   <button onClick={() => handleDelete(s.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 700, cursor: 'pointer', fontSize: 15 }}>Delete</button>
                 </div>
               </div>
@@ -152,7 +152,7 @@ const SurveyPage: React.FC = () => {
             position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <div style={{ background: '#fff', borderRadius: 16, padding: '2rem 2.5rem', minWidth: 340, boxShadow: '0 4px 24px #e5d6c1', position: 'relative' }}>
-              <h3 style={{ color: '#b0802b', fontWeight: 800, fontSize: 21, marginBottom: 16 }}>{editSurvey ? 'Edit Survey' : 'Add New Survey'}</h3>
+              <h3 style={{ color: '#552a47', fontWeight: 800, fontSize: 21, marginBottom: 16 }}>{editSurvey ? 'Edit Survey' : 'Add New Survey'}</h3>
               <label style={{ display: 'block', marginBottom: 10, color: '#552a47', fontWeight: 600 }}>
                 Title
                 <input
@@ -173,7 +173,7 @@ const SurveyPage: React.FC = () => {
               </label>
               <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end' }}>
                 <button onClick={() => { setShowModal(false); setEditSurvey(null); }} style={{ background: '#f7f2f5', border: 'none', color: '#552a47', fontWeight: 700, borderRadius: 8, padding: '10px 20px', fontSize: 15, cursor: 'pointer' }}>Cancel</button>
-                <button onClick={handleSave} style={{ background: '#b0802b', border: 'none', color: '#fff', fontWeight: 700, borderRadius: 8, padding: '10px 22px', fontSize: 15, cursor: 'pointer' }}>{editSurvey ? 'Update' : 'Add'}</button>
+                <button onClick={handleSave} style={{ background: '#552a47', border: 'none', color: '#fff', fontWeight: 700, borderRadius: 8, padding: '10px 22px', fontSize: 15, cursor: 'pointer' }}>{editSurvey ? 'Update' : 'Add'}</button>
               </div>
             </div>
           </div>

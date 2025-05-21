@@ -31,8 +31,8 @@ const WPSFramework: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
-  const [color, setColor] = useState('#b0802b');
-  const [editColor, setEditColor] = useState('#b0802b');
+  const [color, setColor] = useState('#552a47');
+  const [editColor, setEditColor] = useState('#552a47');
   const [description, setDescription] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [loading, setLoading] = useState(true);
@@ -101,7 +101,7 @@ const WPSFramework: React.FC = () => {
     Meteor.call('wpsCategories.insert', { name, color, description }, (err: any) => {
       if (!err) {
         setName('');
-        setColor('#b0802b');
+        setColor('#552a47');
         setDescription('');
         showSuccess('Category added successfully!');
         setShowModal(false);
@@ -131,7 +131,7 @@ const WPSFramework: React.FC = () => {
   const startEdit = (cat: Category) => {
     setEditId(cat._id!);
     setEditName(cat.name);
-    setEditColor(cat.color || '#b0802b');
+    setEditColor(cat.color || '#552a47');
     setEditDescription(cat.description || '');
   };
 
@@ -141,7 +141,7 @@ const WPSFramework: React.FC = () => {
       if (!err) {
         setEditId(null);
         setEditName('');
-        setEditColor('#b0802b');
+        setEditColor('#552a47');
         setEditDescription('');
         showSuccess('Category updated successfully!');
       } else {
@@ -166,7 +166,7 @@ const WPSFramework: React.FC = () => {
           fontWeight: 600,
           fontSize: 16,
           zIndex: 2000,
-          boxShadow: '0 2px 12px #b0802b33',
+          boxShadow: '0 2px 12px #552a4733',
         }}>{alert.message}</div>
       )}
       <div style={{ width: '100%', padding: '32px 32px 32px 32px', background: '#fff8ee', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box' }}>
@@ -174,7 +174,7 @@ const WPSFramework: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <button
             onClick={() => { setShowModal(true); setName(''); }}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
           >
             <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
             Add
@@ -189,8 +189,8 @@ const WPSFramework: React.FC = () => {
         </div>
         {showModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 170, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#b0802b', fontSize: 22 }}>Add Category</h3>
+            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 170, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Add Category</h3>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -222,23 +222,23 @@ const WPSFramework: React.FC = () => {
                   }}
                   maxLength={7}
                   style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                  placeholder="#b0802b"
+                  placeholder="#552a47"
                   required
                 />
               </label>
               <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-                <button type="submit" style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
+                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
                 <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => setShowModal(false)}>Cancel</button>
               </div>
             </form>
           </div>
         )} 
         {filteredCategories.length === 0 ? (
-          <div style={{ color: '#b3a08a', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No categories found.</div>
+          <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No categories found.</div>
         ) : (
           <ul style={{ listStyle: 'none', padding: '24px 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 20, background: '#fffef6', borderRadius: 16 }}>
             {filteredCategories.map(cat => (
-              <li key={cat._id} style={{ background: '#fffbe9', borderRadius: 14, boxShadow: '0 2px 8px #f4e6c1', padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <li key={cat._id} style={{ background: '#f9f4f7', borderRadius: 14, boxShadow: '0 2px 8px #f4ebf1', padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ flex: 1, fontSize: 17, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, maxWidth: '100%' }}>
                     <span style={{ display: 'inline-block', width: 20, height: 20, background: cat.color, borderRadius: 4, marginRight: 10, border: '1px solid #d2c7b0' }} />
@@ -252,7 +252,7 @@ const WPSFramework: React.FC = () => {
                   </span>
                 </span>
                 <button onClick={() => setViewingCategory(cat)} style={{ marginLeft: 8, background: '#3776a8', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>View</button>
-                <button onClick={() => startEdit(cat)} style={{ marginLeft: 8, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => startEdit(cat)} style={{ marginLeft: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>Edit</button>
                 <button onClick={() => handleDelete(cat._id!)}
                 style={{ marginLeft: 8, background: '#f44336', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>
                   Delete
@@ -266,8 +266,8 @@ const WPSFramework: React.FC = () => {
       {/* Delete Category Modal */}
       {confirmDelete && (
         <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontWeight: 800, color: '#b0802b', fontSize: 22 }}>Delete Category</h3>
+          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Delete Category</h3>
             <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12, textAlign: 'center' }}>
               Are you sure you want to delete <span style={{ fontWeight: 700 }}>{confirmDelete.name}</span>?
             </div>
@@ -281,10 +281,10 @@ const WPSFramework: React.FC = () => {
 
       {viewingCategory && (
         <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
             <h3 style={{ margin: 0, fontWeight: 800, color: viewingCategory.color, fontSize: 22 }}>{viewingCategory.name}</h3>
             <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12 }}>{viewingCategory.description}</div>
-            <div style={{ fontSize: 13, color: '#b3a08a' }}>Created: {viewingCategory.createdAt ? new Date(viewingCategory.createdAt).toLocaleString() : '-'}</div>
+            <div style={{ fontSize: 13, color: '#8a7a85' }}>Created: {viewingCategory.createdAt ? new Date(viewingCategory.createdAt).toLocaleString() : '-'}</div>
             <button onClick={() => setViewingCategory(null)} style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer', marginTop: 14 }}>Close</button>
           </div>
         </div>
@@ -292,8 +292,8 @@ const WPSFramework: React.FC = () => {
       {/* Edit Category Modal */}
       {editId && (
         <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
-            <h3 style={{ margin: 0, fontWeight: 800, color: '#b0802b', fontSize: 22 }}>Edit Category</h3>
+          <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
+            <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Edit Category</h3>
             <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Name
               <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box', overflowWrap: 'break-word', wordBreak: 'break-word' }} required />
             </label>
@@ -311,13 +311,13 @@ const WPSFramework: React.FC = () => {
                 }}
                 maxLength={7}
                 style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                placeholder="#b0802b"
+                placeholder="#552a47"
                 required
               />
             </label>
             <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-              <button type="submit" style={{ background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
-              <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('#b0802b'); setEditDescription(''); }}>Cancel</button>
+              <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
+              <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}>Cancel</button>
             </div>
           </form>
         </div>

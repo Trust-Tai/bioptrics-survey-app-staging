@@ -11,7 +11,7 @@ const Wrapper = styled.div`
 const Card = styled.div`
   background: #fff;
   border-radius: 28px;
-  box-shadow: 0 2px 24px #e6d6b933;
+  box-shadow: 0 2px 24px #e5d6e033;
   padding: 36px 24px 28px 24px;
   max-width: 400px;
   width: 100%;
@@ -26,7 +26,7 @@ const Card = styled.div`
 `;
 
 const Progress = styled.div`
-  color: #b7a36a;
+  color: #552a47;
   font-weight: 700;
   font-size: 1.02rem;
   margin-bottom: 8px;
@@ -38,7 +38,7 @@ const SectionName = styled.div`
   font-weight: 600;
   text-align: center;
   margin-bottom: 12px;
-  background-color: #f5ebd7;
+  background-color: #f4ebf1;
   padding: 6px 12px;
   border-radius: 12px;
   display: inline-block;
@@ -68,7 +68,7 @@ const LikertButton = styled.button<{ selected: boolean }>`
   flex: 1;
   padding: 12px 0;
   margin: 0 2px;
-  background: ${({ selected }) => (selected ? '#b7a36a' : '#f7f2f5')};
+  background: ${({ selected }) => (selected ? '#552a47' : '#f7f2f5')};
   color: ${({ selected }) => (selected ? '#fff' : '#28211e')};
   border: none;
   border-radius: 10px;
@@ -78,7 +78,7 @@ const LikertButton = styled.button<{ selected: boolean }>`
   transition: background 0.18s;
 
   &:hover {
-    background: #b7a36a;
+    background: #693658;
     color: #fff;
   }
 `;
@@ -92,7 +92,7 @@ const NavRow = styled.div`
 `;
 
 const NavButton = styled.button`
-  background: #b7a36a;
+  background: #552a47;
   color: #fff;
   border: none;
   border-radius: 22px;
@@ -104,14 +104,14 @@ const NavButton = styled.button`
   transition: background 0.2s;
 
   &:hover {
-    background: #a08e54;
+    background: #693658;
   }
 `;
 
 const SkipButton = styled.button`
   background: none;
   border: none;
-  color: #b3a08a;
+  color: #8a7a85;
   font-size: 1rem;
   margin-top: 14px;
   cursor: pointer;
@@ -141,7 +141,7 @@ const BackButton = styled.button`
   top: 24px;
   background: none;
   border: none;
-  color: #b7a36a;
+  color: #552a47;
   font-size: 2rem;
   font-weight: bold;
   z-index: 10;
@@ -210,7 +210,7 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
             </LikertButton>
           ))}
         </LikertRow>
-        <div style={{ width: '100%', textAlign: 'center', color: '#b3a08a', fontSize: '0.98em', marginBottom: 8 }}>
+        <div style={{ width: '100%', textAlign: 'center', color: '#8a7a85', fontSize: '0.98em', marginBottom: 8 }}>
           <span>{selected ? (labels[selected-1] || `Rating ${selected}`) : 'Select a rating'}</span>
         </div>
       </>
@@ -219,7 +219,7 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
     // For free text questions
     answerInput = (
       <textarea
-        style={{ width: '100%', minHeight: 80, borderRadius: 8, border: '1px solid #b7a36a', padding: 12, fontSize: '1rem', marginBottom: 16 }}
+        style={{ width: '100%', minHeight: 80, borderRadius: 8, border: '1px solid #552a47', padding: 12, fontSize: '1rem', marginBottom: 16 }}
         value={textValue}
         onChange={e => setTextValue(e.target.value)}
         placeholder="Type your answer here..."

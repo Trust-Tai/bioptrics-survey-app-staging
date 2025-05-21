@@ -14,7 +14,7 @@ export const Goals = new Mongo.Collection<GoalDoc>('goals');
 const DEFAULT_GOALS: Omit<GoalDoc, '_id' | 'createdAt'>[] = [
   { title: 'Engagement', description: 'Increase employee engagement', color: '#6a5acd' },
   { title: 'Leadership', description: 'Develop leadership skills and culture', color: '#2e8b57' },
-  { title: 'Accountability', description: 'Promote accountability at all levels', color: '#b0802b' },
+  { title: 'Accountability', description: 'Promote accountability at all levels', color: '#552a47' },
   { title: 'Wellness', description: 'Support wellness and well-being', color: '#ff7f50' },
   { title: 'Communication', description: 'Enhance communication and transparency', color: '#3776a8' },
   { title: 'Safety', description: 'Ensure workplace safety', color: '#e74c3c' },

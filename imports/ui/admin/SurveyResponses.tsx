@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys, SurveyResponses as SurveyResponsesCollection } from '/imports/api/surveys';
 import styled from 'styled-components';
 import { FiChevronDown, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
+import AdminLayout from './AdminLayout';
+import DashboardBg from './DashboardBg';
 
 // Styled components
 const Container = styled.div`
@@ -11,6 +13,8 @@ const Container = styled.div`
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  margin: 0 auto;
 `;
 
 const Header = styled.div`
@@ -55,7 +59,7 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #b0802b;
+  background: #552a47;
   color: white;
   border: none;
   border-radius: 6px;
@@ -150,6 +154,7 @@ interface Survey {
 }
 
 const SurveyResponses: React.FC = () => {
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // State for expanded rows
   const [expandedSurveys, setExpandedSurveys] = React.useState<Record<string, boolean>>({});
   const [expandedResponses, setExpandedResponses] = React.useState<Record<string, boolean>>({});
@@ -313,16 +318,48 @@ const SurveyResponses: React.FC = () => {
   }
   
   return (
-    <Container>
-      <Header>
-        <Title>Survey Responses</Title>
-        <FilterContainer>
-          <FilterButton>
-            <FiFilter />
-            Filter
-          </FilterButton>
-        </FilterContainer>
-      </Header>
+    <AdminLayout>
+      <DashboardBg>
+        {/* Notification Bar */}
+        {notification && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: notification.type === 'success' ? '#2ecc40' : '#e74c3c',
+              color: '#fff',
+              padding: '12px 28px',
+              borderRadius: 8,
+              fontWeight: 600,
+              fontSize: 16,
+              zIndex: 2000,
+              boxShadow: '0 2px 12px #552a4733',
+              minWidth: 280,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
+            <span style={{ flex: 1 }}>{notification.message}</span>
+            <button
+              onClick={() => setNotification(null)}
+              style={{ background: 'none', border: 'none', color: '#fff', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+        <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: 'transparent' }}>
+          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>Survey Responses</h2>
+          <Container>
+      <FilterContainer>
+        <FilterButton>
+          <FiFilter />
+          Filter
+        </FilterButton>
+      </FilterContainer>
       
       {surveys.length === 0 ? (
         <NoData>No surveys found</NoData>
@@ -457,7 +494,10 @@ const SurveyResponses: React.FC = () => {
           </tbody>
         </Table>
       )}
-    </Container>
+          </Container>
+        </div>
+      </DashboardBg>
+    </AdminLayout>
   );
 };
 

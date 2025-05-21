@@ -40,7 +40,7 @@ const TAG_COLORS: Record<string, string> = {
 const TAG_TEXT_COLORS: Record<string, string> = {
   THEME: '#a54c8c',
   WPS: '#3776a8',
-  TYPE: '#b0802b',
+  TYPE: '#552a47',
 };
 
 
@@ -193,8 +193,8 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
                 alignItems: 'center',
                 gap: 10,
                 background: '#fff',
-                color: '#b0802b',
-                border: '2px solid #b0802b',
+                color: '#552a47',
+                border: '2px solid #552a47',
                 borderRadius: 12,
                 height: 44,
                 fontWeight: 700,
@@ -204,7 +204,7 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
                 outline: 'none',
                 transition: 'background 0.2s',
                 marginLeft: 18,
-                boxShadow: '0 2px 8px #f4e6c1',
+                boxShadow: '0 2px 8px #f4ebf1',
               }}
               onClick={() => navigate('/admin/questions/builder')}
               title="Add New"
@@ -215,16 +215,16 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
           </div>
           {/* Questions List */}
           {filtered.length === 0 ? (
-            <div style={{ color: '#b3a08a', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No questions available.</div>
+            <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No questions available.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {filtered.map((q, idx) => (
                 <div
                   key={q._id || idx}
                   style={{
-                    background: '#fffbe9',
+                    background: '#f9f4f7',
                     borderRadius: 14,
-                    boxShadow: '0 2px 8px #f4e6c1',
+                    boxShadow: '0 2px 8px #f4ebf1',
                     padding: '18px 24px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -234,7 +234,7 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
                     <span style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.theme}</span>
                     <span style={{ background: '#e4f0fa', color: '#3776a8', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.wpsCategory}</span>
-                    <span style={{ background: '#fff5e1', color: '#b0802b', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{QUE_TYPE_LABELS[q.queType] || q.queType}</span>
+                    <span style={{ background: '#fff5e1', color: '#552a47', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{QUE_TYPE_LABELS[q.queType] || q.queType}</span>
                   </div>
                   <div style={{ color: '#28211e', fontWeight: 600, fontSize: 17, letterSpacing: 0.1 }}>
                     {q.text}
@@ -245,21 +245,21 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
     onClick={() => handlePreview(q)}
     title="Preview"
   >
-    <FaEye style={{ color: '#b0802b', fontSize: 18 }} />
+    <FaEye style={{ color: '#552a47', fontSize: 18 }} />
   </button>
   <button
     style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
     onClick={() => handleEdit(q._id)}
     title="Edit"
   >
-    <FaEdit style={{ color: '#b0802b', fontSize: 18 }} />
+    <FaEdit style={{ color: '#552a47', fontSize: 18 }} />
   </button>
   <button
     style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
     onClick={() => handleDelete(q._id, q.text)}
     title="Delete"
   >
-    <FaTrash style={{ color: '#b0802b', fontSize: 18 }} />
+    <FaTrash style={{ color: '#552a47', fontSize: 18 }} />
   </button>
 </div>
                 </div>
@@ -280,18 +280,18 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
         position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.22)', zIndex: 99999,
         display: 'flex', alignItems: 'center', justifyContent: 'center'
       }}>
-        <div style={{ background: '#fff', borderRadius: 14, padding: '38px 36px 28px 36px', minWidth: 320, maxWidth: 400, boxShadow: '0 6px 32px #b0802b33', position: 'relative' }}>
-          <div style={{ fontWeight: 700, fontSize: 18, color: '#b0802b', marginBottom: 14 }}>Delete Question?</div>
+        <div style={{ background: '#fff', borderRadius: 14, padding: '38px 36px 28px 36px', minWidth: 320, maxWidth: 400, boxShadow: '0 6px 32px #552a4733', position: 'relative' }}>
+          <div style={{ fontWeight: 700, fontSize: 18, color: '#552a47', marginBottom: 14 }}>Delete Question?</div>
           <div style={{ color: '#28211e', marginBottom: 22 }}>
             Are you sure you want to delete this question?<br/>
-            <span style={{ fontWeight: 600, color: '#b0802b' }}>
+            <span style={{ fontWeight: 600, color: '#552a47' }}>
               "{confirmDelete!.text}"
             </span><br/>
             This action cannot be undone.
           </div>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end' }}>
             <button
-              style={{ background: '#f2f2f2', color: '#28211e', border: '1.5px solid #b3a08a', borderRadius: 8, padding: '6px 22px', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
+              style={{ background: '#f2f2f2', color: '#28211e', border: '1.5px solid #8a7a85', borderRadius: 8, padding: '6px 22px', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
               onClick={() => setConfirmDelete(null)}
             >Cancel</button>
             <button
@@ -308,7 +308,7 @@ if (latest.categoryTags && latest.categoryTags.length > 0) {
       <div style={{
         position: 'fixed', top: 28, left: '50%', transform: 'translateX(-50%)',
         background: alert.type === 'success' ? '#1da463' : '#e74c3c', color: '#fff',
-        padding: '12px 28px', borderRadius: 8, fontWeight: 600, fontSize: 16, zIndex: 20000, boxShadow: '0 2px 12px #b0802b33'
+        padding: '12px 28px', borderRadius: 8, fontWeight: 600, fontSize: 16, zIndex: 20000, boxShadow: '0 2px 12px #552a4733'
       }}>{alert.message}</div>
     )}
     </>

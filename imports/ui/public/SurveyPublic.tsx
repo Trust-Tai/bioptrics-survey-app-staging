@@ -232,12 +232,15 @@ const SurveyPublic: React.FC = () => {
           
           // Create ordered ID array
           const orderedIds: string[] = [];
+          
+          // Add questions in the correct section order
           sectionOrder.forEach(section => {
             if (idsBySection[section]) {
               orderedIds.push(...idsBySection[section]);
             }
           });
           
+          // Add any remaining questions from unknown sections
           if (idsBySection['Unknown Section']) {
             orderedIds.push(...idsBySection['Unknown Section']);
           }
@@ -571,7 +574,7 @@ const SurveyPublic: React.FC = () => {
 
   return (
     <div style={{
-      background: isPreviewMode ? '#FFF9EB' : '#fff',
+      background: isPreviewMode ? '#FFF9EB' : '#f9f4f7',
       minHeight: '100vh',
       padding: '2.5rem 2.5rem 4rem 2.5rem',
       // Remove box-shadow and border-radius for preview mode
@@ -586,7 +589,7 @@ const SurveyPublic: React.FC = () => {
               description: survey.description || '',
               logo: survey.logo || '',
               image: survey.image || '',
-              color: survey.color || '#b0802b'
+              color: survey.color || '#552a47'
             }}
             onStart={handleStart}
             disabled={loadingQuestions || questions.length === 0}
@@ -601,7 +604,7 @@ const SurveyPublic: React.FC = () => {
         {step === 'section-transition' && (
           <SectionTransition
             logo={survey.logo}
-            color={survey.color || '#b7a36a'}
+            color={survey.color || '#552a47'}
             sectionTitle={currentSection}
             sectionDescription={getSectionDescription(currentSection)}
             illustration={getSectionIllustration()}
@@ -622,11 +625,11 @@ const SurveyPublic: React.FC = () => {
           />
         )}
         {step === 'no-questions' && survey && (
-          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#b0802b' }}>
+          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#552a47' }}>
             <h2>No Questions Found</h2>
             <p>This survey does not have any questions yet. Please add questions to preview the survey flow.</p>
             <button
-              style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+              style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
               onClick={() => setStep('welcome')}
             >
               Back to Welcome
@@ -634,14 +637,14 @@ const SurveyPublic: React.FC = () => {
           </div>
         )}
         {step === 'done' && survey && (
-          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#b0802b' }}>
+          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#552a47' }}>
             {isPreviewMode ? (
               // Preview mode completion screen
               <>
                 <h2>End of Preview</h2>
                 <p>This is a preview. Please contact your administrator to participate.</p>
                 <button
-                  style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+                  style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
                   onClick={() => setStep('welcome')}
                 >
                   Back to Welcome
@@ -657,7 +660,7 @@ const SurveyPublic: React.FC = () => {
                   <>
                     <p style={{ color: 'red' }}>{submitError}</p>
                     <button
-                      style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+                      style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
                       onClick={submitResponses}
                     >
                       Try Again
@@ -667,7 +670,7 @@ const SurveyPublic: React.FC = () => {
                   <>
                     <p>Your responses have been submitted successfully. Thank you for participating in this survey.</p>
                     <button
-                      style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+                      style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
                       onClick={() => setStep('welcome')}
                     >
                       Back to Welcome

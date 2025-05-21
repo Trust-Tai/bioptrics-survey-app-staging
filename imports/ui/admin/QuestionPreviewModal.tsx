@@ -27,11 +27,11 @@ const QuestionPreviewModal: React.FC<QuestionPreviewModalProps> = ({ question, o
         minWidth: 350,
         maxWidth: 480,
         padding: '36px 36px 28px 36px',
-        boxShadow: '0 6px 32px #b0802b33',
+        boxShadow: '0 6px 32px #552a4733',
         position: 'relative',
       }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', fontSize: 26, color: '#552a47', cursor: 'pointer' }} title="Close">×</button>
-        <div style={{ fontWeight: 700, fontSize: 19, color: '#b0802b', marginBottom: 14 }}>Question Preview</div>
+        <div style={{ fontWeight: 700, fontSize: 19, color: '#552a47', marginBottom: 14 }}>Question Preview</div>
         <div style={{ marginBottom: 10, fontWeight: 600, fontSize: 16, color: '#28211e' }}>{question.text}</div>
         {question.description && (
           <div style={{ marginBottom: 12, color: '#6e5a67', fontSize: 15 }} dangerouslySetInnerHTML={{ __html: question.description }} />
@@ -74,7 +74,7 @@ const QuestionPreviewModal: React.FC<QuestionPreviewModalProps> = ({ question, o
         )}
         {question.feedbackType && question.feedbackType !== 'none' && (
           <div style={{ marginTop: 18, padding: '10px 0 0 0', borderTop: '1px solid #e0e0e0' }}>
-            <span style={{ fontWeight: 600, color: '#b0802b', fontSize: 15 }}>Feedback Required:</span> <span style={{ color: '#28211e', fontSize: 15 }}>{question.feedbackType}</span>
+            <span style={{ fontWeight: 600, color: '#552a47', fontSize: 15 }}>Feedback Required:</span> <span style={{ color: '#28211e', fontSize: 15 }}>{question.feedbackType}</span>
             {question.feedbackType === 'text' && question.feedbackValue && (
               <div style={{ marginTop: 4, color: '#6e5a67', fontSize: 15 }}>Prompt: {question.feedbackValue}</div>
             )}

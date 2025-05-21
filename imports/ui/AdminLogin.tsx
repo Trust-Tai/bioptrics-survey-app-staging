@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AuthBg, AuthCard, AuthTitle, AuthInput, AuthButton, AuthError, AuthInputWrapper, AuthInputIcon, AuthInputAction } from './components/AuthStyles';
 import { FaUser, FaKey, FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -7,10 +8,28 @@ interface AdminLoginProps {
 }
 
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
+  const location = useLocation();
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Check for logout success message in URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('logout') === 'success') {
+      setSuccessMessage('You have been successfully logged out.');
+      // Clear the URL parameter after a delay
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 500);
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+    }
+  }, [location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +62,11 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
       <img src="/newlogo-art.png" alt="new gold art" style={{ position: 'absolute', left: 0, bottom: 0, height: '60%', zIndex: 1, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', top: 50, left: '50%', transform: 'translateX(-50%)', zIndex: 2 }}>
         {/* Logo placeholder - replace src with your actual logo path */}
-        <img src="/newgold-logo.png" alt="new gold logo" style={{ height: 48, marginBottom: 32 }} />
+        <img src="/poweredbybioptrics.png" alt="new gold logo" style={{ height: 48, marginBottom: 32 }} />
       </div>
       <AuthCard onSubmit={handleLogin} style={{ maxWidth: 400, padding: '2.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
         <AuthTitle style={{ fontSize: 24, marginBottom: 8, marginTop: 0, fontWeight: 400, letterSpacing: 0.1, color: '#222' }}>
-          New Gold <span style={{ fontWeight: 'bold', color: '#D4AF37' }}>Survey Admin</span>
+          New Gold <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Survey Admin</span>
         </AuthTitle>
         <div style={{ textAlign: 'center', color: '#555555', fontSize: 15, marginBottom: 22, marginTop: 2 }}>
           Securely log in to access the admin dashboard, manage survey data, view insights, and control system settings.<br />
@@ -55,6 +74,21 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
           {error && <AuthError>{error}</AuthError>}
+          {successMessage && (
+            <div style={{
+              padding: '10px 16px',
+              borderRadius: '6px',
+              backgroundColor: '#d4edda',
+              color: '#155724',
+              border: '1px solid #c3e6cb',
+              marginBottom: '15px',
+              width: '100%',
+              textAlign: 'center',
+              fontWeight: 500
+            }}>
+              {successMessage}
+            </div>
+          )}
           <div style={{ width: '100%', marginBottom: 15 }}>
             <label style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 13, color: '#222222', letterSpacing: 0.7, marginBottom: 4, display: 'block' }}>
               Username<span style={{ color: '#d92d20' }}>*</span>
@@ -93,7 +127,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
               <a href="#" style={{ fontSize: 13, color: '#7a6a4f', textDecoration: 'underline', opacity: 0.9 }}>Forgot password?</a>
             </div>
           </div>
-          <AuthButton type="submit" style={{ marginTop: 22, fontSize: 17, fontWeight: 700, borderRadius: 24, background: 'linear-gradient(90deg, #8B7341 0%, #8B7341 100%)', boxShadow: '0 2px 8px #e5d6e0', height: 44, letterSpacing: 0.2, width: '100%', border: 'none' }}>LOG IN</AuthButton>
+          <AuthButton type="submit" style={{ marginTop: 22, fontSize: 17, fontWeight: 700, borderRadius: 24, background: 'linear-gradient(90deg, #552a47 0%, #552a47 100%)', boxShadow: '0 2px 8px #e5d6e0', height: 44, letterSpacing: 0.2, width: '100%', border: 'none' }}>LOG IN</AuthButton>
         </div>
       </AuthCard>
     </AuthBg>

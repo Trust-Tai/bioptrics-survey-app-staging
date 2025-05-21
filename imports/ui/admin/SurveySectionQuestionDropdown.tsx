@@ -31,8 +31,8 @@ const SurveySectionQuestionDropdown: React.FC<SurveySectionQuestionDropdownProps
         placeholder={`Select questions for ${sectionLabel}`}
         styles={{
           control: (base) => ({ ...base, borderColor: '#e5d6c7', minHeight: 44, fontSize: 15 }),
-          multiValue: (base) => ({ ...base, background: '#fffbe9' }),
-          option: (base, state) => ({ ...base, background: state.isSelected ? '#b0802b' : '#fff', color: state.isSelected ? '#fff' : '#28211e' }),
+          multiValue: (base) => ({ ...base, background: '#f9f4f7' }),
+          option: (base, state) => ({ ...base, background: state.isSelected ? '#552a47' : '#fff', color: state.isSelected ? '#fff' : '#28211e' }),
         }}
       />
     </div>

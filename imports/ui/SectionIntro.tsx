@@ -20,7 +20,7 @@ const Wrapper = styled.div`
 const Card = styled.div`
   background: #fff;
   border-radius: 28px;
-  box-shadow: 0 2px 24px #e6d6b933;
+  box-shadow: 0 2px 24px #e5d6e033;
   padding: 36px 24px 28px 24px;
   max-width: 400px;
   width: 100%;
@@ -61,7 +61,7 @@ const Description = styled.p`
 `;
 
 const ContinueButton = styled.button`
-  background: #b7a36a;
+  background: #552a47;
   color: #fff;
   border: none;
   border-radius: 22px;
@@ -75,7 +75,7 @@ const ContinueButton = styled.button`
   letter-spacing: 0.07em;
 
   &:hover {
-    background: #a08e54;
+    background: #693658;
   }
 `;
 
@@ -102,7 +102,7 @@ const BackButton = styled.button`
   top: 24px;
   background: none;
   border: none;
-  color: #b7a36a;
+  color: #552a47;
   font-size: 2rem;
   font-weight: bold;
   z-index: 10;

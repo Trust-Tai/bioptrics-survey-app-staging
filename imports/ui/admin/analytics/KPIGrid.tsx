@@ -68,7 +68,7 @@ const IconWrapper = styled.div`
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  color: #b7a36a;
+  color: #552a47;
   font-size: 24px;
 `;
 

@@ -101,7 +101,7 @@ const SurveyQuestions: React.FC<{ surveyId: string; questions: string[] }> = ({ 
         const latest = q.versions && q.versions.length > 0 ? q.versions[q.versions.length - 1] : {};
         const qid = q._id || q.id || questions[idx];
         return (
-          <div key={qid} style={{ background: '#fffbe9', padding: 20, borderRadius: 8 }}>
+          <div key={qid} style={{ background: '#f9f4f7', padding: 20, borderRadius: 8 }}>
             <div style={{ fontWeight: 600, color: '#28211e', fontSize: 17, marginBottom: 8 }}>{latest.questionText || q.question_text}</div>
             <div style={{ color: '#6e5a67', fontSize: 15, marginBottom: 10 }}>{latest.description || ''}</div>
             {renderInput(latest, qid, answers[qid], (val: any) => handleChange(qid, val))}
@@ -112,7 +112,7 @@ const SurveyQuestions: React.FC<{ surveyId: string; questions: string[] }> = ({ 
         type="submit"
         disabled={submitting}
         style={{
-          background: '#b0802b', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 6, padding: '12px 32px', marginTop: 8, cursor: 'pointer', opacity: submitting ? 0.7 : 1
+          background: '#552a47', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 6, padding: '12px 32px', marginTop: 8, cursor: 'pointer', opacity: submitting ? 0.7 : 1
         }}
       >
         {submitting ? 'Submitting...' : 'Submit Survey'}
@@ -127,7 +127,7 @@ function renderInput(q: any, qid: string, value: any, onChange: (v: any) => void
     return (
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         {[1,2,3,4,5].map(n => (
-          <label key={n} style={{ fontWeight: 500, color: '#b0802b' }}>
+          <label key={n} style={{ fontWeight: 500, color: '#552a47' }}>
             <input
               type="radio"
               name={qid}

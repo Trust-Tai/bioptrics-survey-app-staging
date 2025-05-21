@@ -47,8 +47,8 @@ const SearchInput = styled.div`
     
     &:focus {
       outline: none;
-      border-color: #b7a36a;
-      box-shadow: 0 0 0 1px #b7a36a;
+      border-color: #552a47;
+      box-shadow: 0 0 0 1px #552a47;
     }
   }
 `;
@@ -86,7 +86,7 @@ const ClusterTheme = styled.h4`
   gap: 8px;
   
   svg {
-    color: #b7a36a;
+    color: #552a47;
   }
 `;
 
@@ -128,7 +128,7 @@ const CommentsList = styled.div`
   }
   
   &::-webkit-scrollbar-thumb {
-    background: #b7a36a;
+    background: #552a47;
     border-radius: 10px;
   }
 `;
@@ -182,7 +182,7 @@ const LoadingOverlay = styled.div`
 
 const LoadingSpinner = styled.div`
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #b7a36a;
+  border-top: 3px solid #552a47;
   border-radius: 50%;
   width: 30px;
   height: 30px;
