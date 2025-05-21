@@ -22,8 +22,17 @@ import styled from 'styled-components';
 const sidebarLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
-  { to: '/admin/surveys/all', label: 'Surveys', icon: FiClipboard },
-  { to: '/admin/questions', label: 'Question Bank', icon: FaDatabase },
+  { to: '/admin/surveys', label: 'Surveys', icon: FiClipboard, submenu: [
+    { to: '/admin/surveys/all', label: 'All Surveys' },
+    { to: '/admin/surveys/builder', label: 'Survey Builder' },
+    { to: '/admin/surveys/goals', label: 'Survey Goals' },
+    { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
+    { to: '/admin/surveys/theme', label: 'Theme' },
+  ] },
+  { to: '/admin/questions', label: 'Question Bank', icon: FaDatabase, submenu: [
+    { to: '/admin/questions/all', label: 'All Questions' },
+    { to: '/admin/questions/builder', label: 'Question Builder' },
+  ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FiUsers },
   { to: '/admin/participants', label: 'Participants', icon: FaUserCheck },
   { to: '/admin/settings', label: 'Settings', icon: FaCog },
@@ -35,6 +44,48 @@ interface SidebarProps {
   collapsed: boolean;
 }
 
+const SubmenuFlyout = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: #2D1F01;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  position: absolute;
+  left: 230px;
+  top: 0;
+  min-width: 180px;
+  z-index: 9999;
+  overflow: visible;
+  border: 1px solid #b7a36a33;
+  pointer-events: auto;
+`;
+
+const SubmenuInline = styled.ul`
+  list-style: none;
+  margin: 0 0 0 0;
+  padding: 0;
+  background: rgba(255,255,255,0.06);
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+`;
+const SubmenuItem = styled(Link)<{active?: boolean}>`
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 10px 24px;
+  background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
+  border-left: ${({active}) => active ? '4px solid #b7a36a' : '4px solid transparent'};
+  font-weight: ${({active}) => active ? 700 : 500};
+  transition: background 0.15s, border-left 0.15s;
+  &:hover {
+    background: rgba(255,255,255,0.18);
+  }
+`;
+
+
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
   background: linear-gradient(180deg, #402C00 0%, #2D1F01 100%);
@@ -42,21 +93,30 @@ const Sidebar = styled.aside<SidebarProps>`
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 1.5px 6px rgba(0,0,0,0.08);
+  border-radius: 22px;
+  margin: 32px 0 32px 24px;
   position: fixed;
   left: 0;
   top: 0;
-  height: 100vh;
-  z-index: 100;
-  transition: width 0.3s ease;
-  overflow-x: hidden;
-  overflow-y: auto;
-  
+  height: max-content;
+  z-index: 120;
+  transition: width 0.3s ease, box-shadow 0.3s, border-radius 0.3s, margin 0.3s;
+  overflow-x: visible;
+  overflow-y: visible;
+  background-clip: padding-box;
+
   @media (max-width: 1024px) {
     width: ${props => props.collapsed ? '0' : '240px'};
     transform: ${props => props.collapsed ? 'translateX(-100%)' : 'translateX(0)'};
+    margin: 0;
+    border-radius: 0 22px 22px 0;
+    height: 100vh;
+    top: 0;
   }
 `;
+
+
 
 const Logo = styled.div`
   text-align: center;
@@ -185,9 +245,8 @@ interface MainContentProps {
 }
 
 const MainContent = styled.main<MainContentProps>`
-  margin-left: ${props => props.sidebarCollapsed ? '72px' : '240px'};
   padding: 2rem;
-  width: calc(100% - ${props => props.sidebarCollapsed ? '72px' : '240px'});
+  width: 100%;
   transition: margin-left 0.3s ease, width 0.3s ease;
   
   @media (max-width: 1024px) {
@@ -200,123 +259,127 @@ const MainContent = styled.main<MainContentProps>`
  * AdminLayout component that provides the admin dashboard shell with navigation
  */
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  React.useEffect(() => {
+    const prevBg = document.body.style.background;
+    const prevOverflowX = document.body.style.overflowX;
+    document.body.style.background = '#FFF9EB';
+    document.body.style.overflowX = 'hidden';
+    return () => {
+      document.body.style.background = prevBg;
+      document.body.style.overflowX = prevOverflowX;
+    };
+  }, []);
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<number | null>(null);
-  
-  // Auto-collapse the sidebar on smaller screens
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setCollapsed(true);
-      }
-    };
-    
-    // Initial check
-    handleResize();
-    
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    
-    // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-  // Handle logout action
-  const handleLogout = () => {
-    // In a real app, you would call auth.signOut() here
-    console.log('Logging out...');
-    // Redirect to login page
-    navigate('/login');
-  };
-  
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  // Add expandedMenus state for submenu toggling
+  const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
+
+  function handleLogout() {
+    if (window.confirm('Are you sure you want to log out?')) {
+      navigate('/logout');
+    }
+  }
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f6fa' }}>
-      {/* Toggle Button (visible on mobile) */}
-      <ToggleButton 
-        onClick={() => setCollapsed(!collapsed)}
-        collapsed={collapsed}
-      >
-        {collapsed ? <FaBars /> : <FaTimes />}
-      </ToggleButton>
-      
-      {/* Sidebar */}
+    <div style={{ display: 'flex' }}>
       <Sidebar collapsed={collapsed}>
         <Logo>
-          <img 
-            src="/logo.png" 
-            alt="BIOPTRICS logo" 
-            style={{ 
-              width: collapsed ? '40px' : '120px',
-              transition: 'width 0.3s ease'
-            }} 
-          />
+          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>Admin</span>
         </Logo>
-        
-        <nav style={{ flex: 1 }}>
+        <nav>
           {sidebarLinks.map((link, idx) => {
-            // Check if the current path matches this link
-            const isActive = location.pathname === link.to || 
-                             (link.to !== '/logout' && location.pathname.startsWith(link.to));
-            
+            const isActive = location.pathname.startsWith(link.to);
+            const hasSubmenu = !!link.submenu;
             return (
-              <div 
-                key={link.label}
-                onMouseEnter={() => setHoveredItem(idx)}
-                onMouseLeave={() => setHoveredItem(null)}
-                style={{ position: 'relative' }}
+              <div
+                key={link.to}
+                style={{ position: 'relative', overflow: 'visible' }}
+                onMouseEnter={() => {
+                  // Only allow hover/flyout if not showing inline submenu
+                  const isInline = !collapsed && (location.pathname.startsWith(link.to) || (link.submenu && link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))));
+                  if (!isInline) setHovered(idx);
+                }}
+                onMouseLeave={() => setHovered(null)}
               >
-                {link.to === '/logout' ? (
-                  // Render a button for logout
-                  <NavButton 
-                    active={isActive} 
-                    collapsed={collapsed}
-                    onClick={handleLogout}
-                  >
-                    <NavIcon collapsed={collapsed}>
-                      <link.icon />
-                    </NavIcon>
-                    <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
-                    
-                    {/* Tooltip shown on hover when sidebar is collapsed */}
-                    {collapsed && hoveredItem === idx && (
-                      <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
-                        {link.label}
-                      </Tooltip>
-                    )}
-                  </NavButton>
-                ) : (
-                  // Render a link for normal navigation
-                  <NavItem 
-                    to={link.to}
-                    active={isActive} 
-                    collapsed={collapsed}
-                  >
-                    <NavIcon collapsed={collapsed}>
-                      <link.icon />
-                    </NavIcon>
-                    <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
-                    
-                    {/* Tooltip shown on hover when sidebar is collapsed */}
-                    {collapsed && hoveredItem === idx && (
-                      <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
-                        {link.label}
-                      </Tooltip>
-                    )}
-                  </NavItem>
+                <NavItem
+                  to={link.to}
+                  active={isActive}
+                  collapsed={collapsed}
+                  tabIndex={0}
+                  aria-haspopup={hasSubmenu ? 'true' : undefined}
+                  aria-expanded={hasSubmenu ? hovered === idx : undefined}
+                  onClick={e => {
+                    if (link.to === '/logout') {
+                      e.preventDefault();
+                      handleLogout();
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (hasSubmenu && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setHovered(hovered === idx ? null : idx);
+                    }
+                  }}
+                >
+                  <NavIcon collapsed={collapsed}>{React.createElement(link.icon)}</NavIcon>
+                  <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
+                  {hasSubmenu && !collapsed && (
+                    <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7, transform: hovered === idx ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
+                      ▸
+                    </span>
+                  )}
+                  {collapsed && hovered === idx && (
+                    <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                      {link.label}
+                    </Tooltip>
+                  )}
+                </NavItem>
+                {/* Submenu inline if active, flyout if hovered */}
+                {hasSubmenu && !collapsed && (
+                  // Only show flyout on hover if not showing inline
+                  (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx)
+                  ? (
+                    <SubmenuFlyout>
+                      {link.submenu.map((sublink: any) => (
+                        <SubmenuItem
+                          key={sublink.to}
+                          to={sublink.to}
+                          active={location.pathname.startsWith(sublink.to)}
+                        >
+                          {sublink.label}
+                        </SubmenuItem>
+                      ))}
+                    </SubmenuFlyout>
+                  ) : (
+                    (location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))) && (
+                      <SubmenuInline>
+                        {link.submenu.map((sublink: any) => (
+                          <SubmenuItem
+                            key={sublink.to}
+                            to={sublink.to}
+                            active={location.pathname.startsWith(sublink.to)}
+                          >
+                            {sublink.label}
+                          </SubmenuItem>
+                        ))}
+                      </SubmenuInline>
+                    )
+                  )
                 )}
               </div>
             );
           })}
-          {/* Navigation items are rendered above */}
         </nav>
       </Sidebar>
-
-      {/* Main Content */}
-      <MainContent sidebarCollapsed={collapsed}>
-        {children}
-      </MainContent>
+      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s' }}>
+        {/* Main Content */}
+        <MainContent sidebarCollapsed={collapsed}>
+          {children}
+        </MainContent>
+      </div>
     </div>
   );
 };

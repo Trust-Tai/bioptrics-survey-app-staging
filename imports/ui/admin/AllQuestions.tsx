@@ -1,4 +1,5 @@
 import React from 'react';
+import DashboardBg from './DashboardBg';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -7,6 +8,7 @@ import { Questions } from '/imports/api/questions';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import { SurveyThemes } from '/imports/api/surveyThemes';
 import QuestionPreviewModal from './QuestionPreviewModal';
+import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 
 // This interface is for display only, based on the latest version of each question
 interface DisplayQuestion {
@@ -18,6 +20,18 @@ interface DisplayQuestion {
 }
 
 // Tag color definitions
+const QUE_TYPE_LABELS: Record<string, string> = {
+  short_text: 'Short Text',
+  long_text: 'Long Text',
+  free_text: 'Free Text',
+  multiple_choice: 'Multiple Choice',
+  checkbox: 'Checkbox',
+  dropdown: 'Dropdown',
+  likert: 'Likert Scale',
+  quick_tabs: 'Quick Tabs',
+  // Add more as needed...
+};
+
 const TAG_COLORS: Record<string, string> = {
   THEME: '#e6e6fa', // light purple
   WPS: '#e0f7fa',   // light blue
@@ -68,9 +82,12 @@ const AllQuestions: React.FC = () => {
         themeNames = latest.surveyThemes.map((id: string) => surveyThemeMap[id] || id).join(', ');
       }
       let wpsCategoryNames = '';
-      if (latest.categoryTags && latest.categoryTags.length > 0) {
-        wpsCategoryNames = latest.categoryTags.map((id: string) => wpsCategoryMap[id] || id).join(', ');
-      }
+if (latest.categoryTags && latest.categoryTags.length > 0) {
+  const names = latest.categoryTags
+    .map((id: string) => wpsCategoryMap[id])
+    .filter(Boolean);
+  wpsCategoryNames = names.length > 0 ? names.join(', ') : 'Uncategorized';
+}
       return {
         _id: doc._id,
         text: latest.questionText || '',
@@ -142,15 +159,15 @@ const AllQuestions: React.FC = () => {
   return (
     <>
       <AdminLayout>
-      <div style={{ width: '100%', padding: '32px 0', background: '#fff', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
-        {/* Title and Add Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 0, letterSpacing: 0.2 }}>Question Bank</h2>
-        </div>
-        {/* Search Bar + Add Button */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <input
+        <DashboardBg>
+          <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: 'transparent' }}>
+            {/* Title and Add Button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+              <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 0, letterSpacing: 0.2 }}>Question Bank</h2>
+            </div>
+            {/* Search Bar + Add Button */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <input
               type="text"
               placeholder="Search questions..."
               value={search}
@@ -190,10 +207,10 @@ const AllQuestions: React.FC = () => {
                 boxShadow: '0 2px 8px #f4e6c1',
               }}
               onClick={() => navigate('/admin/questions/builder')}
-              title="Add New Question"
+              title="Add New"
             >
               <span style={{ fontSize: 28, marginTop: -2, fontWeight: 900 }}>+</span>
-              <span style={{ fontSize: 18, fontWeight: 700 }}>Add New Question</span>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>Add New</span>
             </button>
           </div>
           {/* Questions List */}
@@ -217,35 +234,41 @@ const AllQuestions: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
                     <span style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.theme}</span>
                     <span style={{ background: '#e4f0fa', color: '#3776a8', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.wpsCategory}</span>
-                    <span style={{ background: '#fff5e1', color: '#b0802b', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{q.queType}</span>
+                    <span style={{ background: '#fff5e1', color: '#b0802b', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>{QUE_TYPE_LABELS[q.queType] || q.queType}</span>
                   </div>
                   <div style={{ color: '#28211e', fontWeight: 600, fontSize: 17, letterSpacing: 0.1 }}>
-                    Q. {q.text}
+                    {q.text}
                   </div>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                    <button
-                      style={{ background: '#f2f2f2', color: '#b0802b', border: '1.5px solid #b0802b', borderRadius: 8, padding: '5px 18px', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
-                      onClick={() => handleEdit(q._id)}
-                      title="Edit"
-                    >Edit</button>
-                    <button
-                      style={{ background: '#fff', color: '#e74c3c', border: '1.5px solid #e74c3c', borderRadius: 8, padding: '5px 18px', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
-                      onClick={() => handleDelete(q._id, q.text)}
-                      title="Delete"
-                    >Delete</button>
-                    <button
-                      style={{ background: '#1da463', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 18px', fontWeight: 600, cursor: 'pointer', fontSize: 15 }}
-                      onClick={() => handlePreview(q)}
-                      title="Preview"
-                    >Preview</button>
-                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, marginTop: 8 }}>
+  <button
+    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+    onClick={() => handlePreview(q)}
+    title="Preview"
+  >
+    <FaEye style={{ color: '#b0802b', fontSize: 18 }} />
+  </button>
+  <button
+    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+    onClick={() => handleEdit(q._id)}
+    title="Edit"
+  >
+    <FaEdit style={{ color: '#b0802b', fontSize: 18 }} />
+  </button>
+  <button
+    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+    onClick={() => handleDelete(q._id, q.text)}
+    title="Delete"
+  >
+    <FaTrash style={{ color: '#b0802b', fontSize: 18 }} />
+  </button>
+</div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
-    </AdminLayout>
+        </DashboardBg>
+      </AdminLayout>
 
     {/* Delete Confirmation Modal (always rendered at root) */}
     {/*

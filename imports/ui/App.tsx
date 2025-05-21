@@ -26,6 +26,7 @@ import SurveyPage from './admin/Survey';
 import PublicSurveyPage from './PublicSurveyPage';
 import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
+import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
 import QuestionBuilder from './admin/QuestionBuilder';
 
@@ -117,11 +118,26 @@ const SurveyQuestionWrapper: React.FC = () => {
   );
 };
 
+const PreviewSurvey: React.FC = () => {
+  const { token } = useParams<{ token: string }>();
+  const [data, setData] = React.useState<any | null>(null);
+  React.useEffect(() => {
+    if (token) {
+      const saved = localStorage.getItem(`survey-preview-${token}`);
+      if (saved) setData(JSON.parse(saved));
+    }
+  }, [token]);
+  if (!token) return <div style={{textAlign:'center',marginTop:80}}>No preview token provided.</div>;
+  if (!data) return <div style={{textAlign:'center',marginTop:80}}>No preview data found for this link.</div>;
+  return <SurveyWelcome previewData={data} />;
+};
+
 const AppRoutes: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Routes>
       <Route path="/" element={<SurveyWelcome onStart={() => navigate('/survey/section/0')} />} />
+      <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
@@ -135,6 +151,7 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/surveys" element={<SurveyPage />} />
         <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
+        <Route path="/admin/surveys/builder" element={<SurveyBuilder />} />
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />

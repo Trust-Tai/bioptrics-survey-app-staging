@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
+import DashboardBg from './DashboardBg';
 
 interface Survey {
   id: string;
@@ -82,6 +83,7 @@ const SurveyPage: React.FC = () => {
 
   return (
     <AdminLayout>
+      <DashboardBg>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 0', background: '#fff8ee', borderRadius: 24, minHeight: '100vh' }}>
         {/* Title and Add Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -177,6 +179,7 @@ const SurveyPage: React.FC = () => {
           </div>
         )}
       </div>
+      </DashboardBg>
     </AdminLayout>
   );
 };

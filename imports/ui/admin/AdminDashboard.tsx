@@ -14,6 +14,7 @@ import {
   FaBell
 } from 'react-icons/fa';
 import Countdown from './Countdown';
+import DashboardBg from './DashboardBg';
 
 import { useTracker } from 'meteor/react-meteor-data';
 import { useResponses } from '../useResponses';
@@ -23,20 +24,12 @@ import { IconType } from 'react-icons';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
-const DashboardBg = styled.div`
-  background: #fafafa;
-  min-height: 100vh;
-  padding: 1.5rem 2rem 4rem 2rem;
-  font-family: 'Inter', sans-serif;
-`;
-
 const GoldHeaderCard = styled.div`
   background: #b7a36a;
   border-radius: 12px;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
   padding: 1.5rem 2rem;
   margin: 0 0 1.5rem 0;
-  width: 100%;
   color: #fff;
   display: flex;
   justify-content: space-between;

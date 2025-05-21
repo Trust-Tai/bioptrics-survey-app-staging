@@ -4,6 +4,8 @@ import { Meteor } from 'meteor/meteor';
 import { SurveyThemes } from '/imports/api/surveyThemes';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import AdminLayout from './AdminLayout';
+import DashboardBg from './DashboardBg';
+import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 
 interface Theme {
   _id?: string;
@@ -136,7 +138,8 @@ const SurveyTheme: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div style={{ padding: '2rem' }}>
+      <DashboardBg>
+      <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto'}}>
         <h2 style={{ fontWeight: 700, fontSize: 28, marginBottom: 18 }}>Survey Theme</h2>
         {/* Alert message */}
         {alert && (
@@ -247,9 +250,17 @@ const SurveyTheme: React.FC = () => {
                     <span style={{ fontSize: 14, color: '#6e395e' }}>WPS Category: {wpsCategories.find((cat: any) => cat._id === theme.wpsCategoryId)?.name}</span>
                   )}
                 </span>
-                <button onClick={() => setViewingTheme(toTheme(theme))} style={{ marginLeft: 8, background: '#3776a8', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>View</button>
-                <button onClick={() => startEdit(toTheme(theme))} style={{ marginLeft: 8, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>Edit</button>
-                <button onClick={() => handleDelete(theme._id!)} style={{ marginLeft: 8, background: '#f44336', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>Delete</button>
+                <span style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                  <button onClick={() => setViewingTheme(toTheme(theme))} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} title="View">
+                    <FaEye style={{ color: '#b0802b', fontSize: 18 }} />
+                  </button>
+                  <button onClick={() => startEdit(toTheme(theme))} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} title="Edit">
+                    <FaEdit style={{ color: '#b0802b', fontSize: 18 }} />
+                  </button>
+                  <button onClick={() => handleDelete(theme._id!)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} title="Delete">
+                    <FaTrash style={{ color: '#b0802b', fontSize: 18 }} />
+                  </button>
+                </span>
               </li>
             ))}
           </ul>
@@ -326,6 +337,7 @@ const SurveyTheme: React.FC = () => {
           </div>
         )}
       </div>
+      </DashboardBg>
     </AdminLayout>
   );
 };
