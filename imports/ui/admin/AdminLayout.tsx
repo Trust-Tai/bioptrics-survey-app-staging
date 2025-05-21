@@ -246,7 +246,6 @@ interface MainContentProps {
 
 const MainContent = styled.main<MainContentProps>`
   padding: 2rem;
-  width: 100%;
   transition: margin-left 0.3s ease, width 0.3s ease;
   
   @media (max-width: 1024px) {

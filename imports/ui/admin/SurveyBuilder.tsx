@@ -125,7 +125,11 @@ const ImageInput: React.FC<{
   );
 };
 
-const SurveyBuilder: React.FC = () => {
+interface SurveyBuilderProps {
+  editId?: string;
+}
+
+const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editId }) => {
   // ...rest of hooks and logic...
 
   // Simple spinner component
@@ -152,9 +156,9 @@ const SurveyBuilder: React.FC = () => {
   // ...rest of hooks and logic...
 
   const navigate = useNavigate();
-  const params = useParams<{ surveyId?: string }>();
-  // Subscribe to surveys if editing
-  const surveyIdFromUrl = params.surveyId;
+  const params = useParams<{ surveyId?: string; id?: string }>();
+  // Use editId prop if present, otherwise use params
+  const surveyIdFromUrl = editId || params.id || params.surveyId;
   const surveysSub = useTracker(() => surveyIdFromUrl ? Meteor.subscribe('surveys.all') : null, [surveyIdFromUrl]);
   const surveysReady = surveysSub ? surveysSub.ready() : true;
   const [loadingSurvey, setLoadingSurvey] = useState(false);
@@ -162,6 +166,7 @@ const SurveyBuilder: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishedLink, setPublishedLink] = useState<string | null>(null);
+const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editSurveyId, setEditSurveyId] = useState<string | null>(null);
 
@@ -203,6 +208,9 @@ const SurveyBuilder: React.FC = () => {
         setSelectedDemographics(savedSurvey.selectedDemographics || []);
         setIsEditMode(true);
         setEditSurveyId(surveyId);
+        // Remove autosave from localStorage when survey is saved in edit mode
+        localStorage.removeItem(AUTOSAVE_KEY);
+        localStorage.removeItem(AUTOSAVE_KEY + '-openSection');
         // Update URL to include survey id
         navigate(`/admin/surveys/builder/${surveyId}`, { replace: false });
         // Clear autosave from localStorage
@@ -222,6 +230,12 @@ const SurveyBuilder: React.FC = () => {
   const handlePublish = async () => {
     setPublishing(true);
     try {
+      // Only call publish if no published link exists
+      if (publishedLink) {
+        showSuccess('Survey already published!');
+        setPublishing(false);
+        return;
+      }
       const result = await Meteor.callAsync('surveys.publish', getSurveyData());
       if (result && result.shareToken) {
         const url = `${window.location.origin}/survey/public/${result.shareToken}`;
@@ -238,34 +252,35 @@ const SurveyBuilder: React.FC = () => {
   // --- Load survey if editing via URL ---
   React.useEffect(() => {
     const urlSurveyId = params.surveyId;
-    if (urlSurveyId && editSurveyId !== urlSurveyId) {
+    if (urlSurveyId && surveysReady) {
       setLoadingSurvey(true);
-      if (surveysReady) {
-        const survey = Surveys.findOne(urlSurveyId);
-        if (survey) {
-          setForm({
-            title: survey.title || '',
-            description: survey.description || '',
-            logo: survey.logo || '',
-            image: survey.image || '',
-            color: survey.color || '#b0802b',
-          });
-          setSelectedQuestions(survey.selectedQuestions || {});
-          setSiteTextQuestions(survey.siteTextQuestions || []);
-          setSiteTextQForm(survey.siteTextQForm || { text: '', description: '', wpsCategories: [], surveyThemes: [] });
-          setSelectedDemographics(survey.selectedDemographics || []);
-          setIsEditMode(true);
-          setEditSurveyId(urlSurveyId);
-          // Clear autosave from localStorage
-          localStorage.removeItem(AUTOSAVE_KEY);
-          localStorage.removeItem(AUTOSAVE_KEY + '-openSection');
+      const survey = Surveys.findOne(urlSurveyId);
+      if (survey) {
+        setForm({
+          title: survey.title || '',
+          description: survey.description || '',
+          logo: survey.logo || '',
+          image: survey.image || '',
+          color: survey.color || '#b0802b',
+        });
+        setSelectedQuestions(survey.selectedQuestions || {});
+        setSiteTextQuestions(survey.siteTextQuestions || []);
+        setSiteTextQForm(survey.siteTextQForm || { text: '', description: '', wpsCategories: [], surveyThemes: [] });
+        setSelectedDemographics(survey.selectedDemographics || []);
+        setIsEditMode(true);
+        setEditSurveyId(urlSurveyId);
+        // Set published link if survey is published
+        if (survey.shareToken) {
+          setPublishedLink(`${window.location.origin}/survey/public/${survey.shareToken}`);
+        } else {
+          setPublishedLink(null);
         }
-        setLoadingSurvey(false);
       }
+      setLoadingSurvey(false);
     }
-    // eslint-disable-next-line
   }, [params.surveyId, surveysReady]);
 
+  // ...rest of hooks and logic...
 // --- AUTOSAVE RESTORE ON MOUNT ---
   const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
   const [form, setForm] = useState<SurveyForm>({ title: '', description: '', logo: '', image: '', color: '#b0802b' });
@@ -326,18 +341,21 @@ const SurveyBuilder: React.FC = () => {
     );
   }, [openSection]);
 
+  // Only autosave when not in edit mode
   React.useEffect(() => {
-    localStorage.setItem(
-      AUTOSAVE_KEY,
-      JSON.stringify({
-        form,
-        selectedQuestions,
-        siteTextQuestions,
-        siteTextQForm,
-        selectedDemographics,
-      })
-    );
-  }, [form, selectedQuestions, siteTextQuestions, siteTextQForm, selectedDemographics]);
+    if (!isEditMode) {
+      localStorage.setItem(
+        AUTOSAVE_KEY,
+        JSON.stringify({
+          form,
+          selectedQuestions,
+          siteTextQuestions,
+          siteTextQForm,
+          selectedDemographics,
+        })
+      );
+    }
+  }, [form, selectedQuestions, siteTextQuestions, siteTextQForm, selectedDemographics, isEditMode]);
 
 
 // Tag labels for question type
@@ -401,6 +419,43 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
   return (
     <AdminLayout>
       <DashboardBg>
+        {/* --- Published Link Section --- */}
+        {publishedLink && (
+  <div style={{
+    background: '#2ecc40',
+    color: '#fff',
+    padding: '22px 24px',
+    borderRadius: 12,
+    margin: '32px auto 16px auto',
+    maxWidth: 900,
+    boxShadow: '0 2px 8px #b0802b33',
+    fontSize: 17,
+    fontWeight: 600,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 10
+  }}>
+    <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span role="img" aria-label="check" style={{ fontSize: 22 }}>✅</span>
+      Survey is published!
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <span style={{ fontWeight: 400, fontSize: 16 }}>Sharable Link:</span>
+      <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'underline', fontSize: 16 }}>{publishedLink}</a>
+      <button
+        style={{ background: '#fff', color: '#2ecc40', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, cursor: 'pointer' }}
+        onClick={() => {
+          navigator.clipboard.writeText(publishedLink);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+      >
+        {copied ? 'Copied!' : 'Copy Link'}
+      </button>
+    </div>
+  </div>
+)}
         <div style={{ padding: '32px 0', minHeight: '100vh', boxSizing: 'border-box' }}>
           <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: '#fff', position: 'relative', overflow: 'visible' }}>
             
@@ -428,11 +483,23 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
               }}>
                 {alert.message}
                 {publishedLink && alert.type === 'success' && (
-                  <div style={{ marginTop: 12 }}>
-                    <span style={{ fontWeight: 400, color: '#fff' }}>Sharable Link:</span>
-                    <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
-                      <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'underline' }}>{publishedLink}</a>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <div style={{ marginTop: 12 }}>
+                      <span style={{ fontWeight: 400, color: '#fff' }}>Sharable Link:</span>
+                      <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
+                        <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'underline' }}>{publishedLink}</a>
+                      </div>
                     </div>
+                    <button
+                      style={{ background: '#fff', color: '#2ecc40', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, cursor: 'pointer' }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(publishedLink ?? "");
+                        showSuccess('Copied!');
+                        setTimeout(() => showSuccess(null), 2000);
+                      }}
+                    >
+                      Copy Link
+                    </button>
                   </div>
                 )}
               </div>
@@ -452,7 +519,9 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 transition: 'box-shadow 0.15s',
               }}
             >
-              <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>Add New Survey</h2>
+              <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>
+  {isEditMode && form.title ? `Editing ${form.title}` : 'Add New Survey'}
+</h2>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   style={{ background: '#fff', color: '#b0802b', border: '2px solid #b0802b', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}

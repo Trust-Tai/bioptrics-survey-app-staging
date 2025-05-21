@@ -1,16 +1,14 @@
 import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
-<<<<<<< HEAD
 import { Random } from 'meteor/random';
 import { check } from 'meteor/check';
-=======
->>>>>>> main
+
+
 
 export interface SurveyDoc {
   _id?: string;
   title: string;
   description: string;
-<<<<<<< HEAD
   logo?: string;
   image?: string;
   color?: string;
@@ -23,16 +21,17 @@ export interface SurveyDoc {
   createdBy: string;
   published: boolean;
   shareToken?: string;
-=======
-  createdAt: Date;
-  questions: string[]; // Array of question IDs or question texts
->>>>>>> main
+}
+
+export interface SurveyResponseDoc {
+  _id?: string;
+  surveyId: string;
+  answers: { [questionId: string]: any };
+  submittedAt: Date;
 }
 
 export const Surveys = new Mongo.Collection<SurveyDoc>('surveys');
 
-<<<<<<< HEAD
-=======
 export interface SurveyResponseDoc {
   _id?: string;
   surveyId: string;
@@ -42,12 +41,10 @@ export interface SurveyResponseDoc {
 
 export const SurveyResponses = new Mongo.Collection<SurveyResponseDoc>('survey_responses');
 
->>>>>>> main
 if (Meteor.isServer) {
   Meteor.publish('surveys.all', function () {
     return Surveys.find();
   });
-<<<<<<< HEAD
   Meteor.publish('surveys.public', function (shareToken: string) {
     return Surveys.find({ shareToken, published: true });
   });
@@ -62,7 +59,15 @@ Meteor.methods({
       // Update existing
       return await Surveys.updateAsync(survey._id, {
         $set: {
-          ...survey,
+          title: survey.title || '',
+          description: survey.description || '',
+          logo: survey.logo,
+          image: survey.image,
+          color: survey.color,
+          selectedQuestions: survey.selectedQuestions || {},
+          siteTextQuestions: survey.siteTextQuestions || [],
+          siteTextQForm: survey.siteTextQForm || {},
+          selectedDemographics: survey.selectedDemographics || [],
           published: false,
           updatedAt: now,
         },
@@ -70,7 +75,15 @@ Meteor.methods({
     } else {
       // Insert new
       const doc = {
-        ...survey,
+        title: survey.title || '',
+        description: survey.description || '',
+        logo: survey.logo,
+        image: survey.image,
+        color: survey.color,
+        selectedQuestions: survey.selectedQuestions || {},
+        siteTextQuestions: survey.siteTextQuestions || [],
+        siteTextQForm: survey.siteTextQForm || {},
+        selectedDemographics: survey.selectedDemographics || [],
         published: false,
         createdAt: now,
         updatedAt: now,
@@ -84,11 +97,31 @@ Meteor.methods({
   async 'surveys.publish'(survey: Partial<SurveyDoc>) {
     if (!this.userId) throw new Meteor.Error('Not authorized');
     const now = new Date();
-    let shareToken = survey.shareToken || Random.id(12);
+
+    // Fetch the existing survey from the DB
+    const existingRaw = survey._id && await Surveys.findOneAsync(survey._id);
+    const existing: SurveyDoc | undefined = (typeof existingRaw === 'object' && existingRaw !== null ? existingRaw as SurveyDoc : undefined);
+
+    // If already published and has a shareToken, just return it
+    if (existing && existing.published && existing.shareToken) {
+      return { _id: existing._id, shareToken: existing.shareToken };
+    }
+
+    // If not, generate a new token if needed
+    const shareToken = existing?.shareToken || Random.id(12);
+
     if (survey._id) {
       await Surveys.updateAsync(survey._id, {
         $set: {
-          ...survey,
+          title: survey.title || (existing ? existing.title : ''),
+          description: survey.description || (existing ? existing.description : ''),
+          logo: survey.logo ?? (existing ? existing.logo : undefined),
+          image: survey.image ?? (existing ? existing.image : undefined),
+          color: survey.color ?? (existing ? existing.color : undefined),
+          selectedQuestions: survey.selectedQuestions || (existing ? existing.selectedQuestions : {}),
+          siteTextQuestions: survey.siteTextQuestions || (existing ? existing.siteTextQuestions : []),
+          siteTextQForm: survey.siteTextQForm || (existing ? existing.siteTextQForm : {}),
+          selectedDemographics: survey.selectedDemographics || (existing ? existing.selectedDemographics : []),
           published: true,
           shareToken,
           updatedAt: now,
@@ -97,7 +130,15 @@ Meteor.methods({
       return { _id: survey._id, shareToken };
     } else {
       const doc = {
-        ...survey,
+        title: survey.title || '',
+        description: survey.description || '',
+        logo: survey.logo,
+        image: survey.image,
+        color: survey.color,
+        selectedQuestions: survey.selectedQuestions || {},
+        siteTextQuestions: survey.siteTextQuestions || [],
+        siteTextQForm: survey.siteTextQForm || {},
+        selectedDemographics: survey.selectedDemographics || [],
         published: true,
         shareToken,
         createdAt: now,
@@ -107,20 +148,8 @@ Meteor.methods({
       const _id = await Surveys.insertAsync(doc);
       return { _id, shareToken };
     }
-=======
-}
-
-Meteor.methods({
-  'surveys.insert'(survey: Omit<SurveyDoc, '_id'|'createdAt'>) {
-    console.log('surveys.insert called with:', survey);
-    if (!survey.title) {
-      throw new Meteor.Error('missing-title', 'Survey title is required');
-    }
-    if (!survey.questions || !Array.isArray(survey.questions) || !survey.questions.length) {
-      throw new Meteor.Error('missing-questions', 'At least one question is required');
-    }
-    return Surveys.insertAsync({ ...survey, createdAt: new Date() });
   },
+
   'surveys.remove'(surveyId: string) {
     return Surveys.remove(surveyId);
   },
@@ -138,6 +167,5 @@ Meteor.methods({
       throw new Meteor.Error('not-found', 'Survey not found');
     }
     return SurveyResponses.insert({ surveyId, answers, submittedAt: new Date() });
->>>>>>> main
   },
 });

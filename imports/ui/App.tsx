@@ -152,6 +152,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
         <Route path="/admin/surveys/builder" element={<SurveyBuilder />} />
+        <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
@@ -171,5 +172,11 @@ const App: React.FC = () => (
     <AppRoutes />
   </Router>
 );
+
+// Wrapper for SurveyBuilder to extract :id param
+const SurveyBuilderWrapper: React.FC = () => {
+  const { surveyId } = useParams<{ surveyId: string }>();
+  return <SurveyBuilder editId={surveyId} />;
+};
 
 export default App;
