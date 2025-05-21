@@ -17,11 +17,15 @@ import {
 import AdminLayout from './AdminLayout';
 import { Surveys, SurveyDoc } from '../../api/surveys';
 import { Questions } from '../../api/questions';
-import { Survey } from './types/surveyTypes';
-import WelcomeScreenStep from './builder/WelcomeScreenStep';
-import QuestionSelectionStep from './builder/QuestionSelectionStep';
-import ScheduleStep from './builder/ScheduleStep';
-import ReviewStep from './builder/ReviewStep';
+import { Survey, BranchingRule, EmailSettings } from './types/surveyTypes';
+// Try with relative paths
+import WelcomeScreenStep from '../admin/builder/WelcomeScreenStep';
+import QuestionSelectionStep from '../admin/builder/QuestionSelectionStep';
+import ScheduleStep from '../admin/builder/ScheduleStep';
+import BranchingLogicStep from '../admin/builder/BranchingLogicStep';
+import ParticipantsStep from '../admin/builder/ParticipantsStep';
+import EmailSettingsStep from '../admin/builder/EmailSettingsStep';
+import ReviewStep from '../admin/builder/ReviewStep';
 
 // Types
 interface SurveyBuilderProps {
@@ -176,6 +180,9 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editMode = false }) => {
     { id: 'welcome', label: 'Welcome Screen' },
     { id: 'questions', label: 'Question Selection' },
     { id: 'schedule', label: 'Schedule' },
+    { id: 'branching', label: 'Branching Logic' },
+    { id: 'participants', label: 'Participants' },
+    { id: 'emails', label: 'Email Notifications' },
     { id: 'review', label: 'Review' }
   ];
   
@@ -192,50 +199,73 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editMode = false }) => {
     questions: [],
     startDate: new Date(),
     endDate: new Date(new Date().setDate(new Date().getDate() + 14)),
-    invitedCount: 0
+    invitedCount: 0,
+    branching: [],
+    participants: [],
+    emailSettings: {
+      sendReminders: false,
+      reminderFrequency: 'weekly',
+      customDays: [3, 7, 14]
+    }
   });
   
   // Welcome screen state
   const [logoImage, setLogoImage] = useState<string | null>(null);
   const [welcomeImage, setWelcomeImage] = useState<string | null>(null);
   
-  // Fetch data if in edit mode
-  const { isLoading, surveyExists } = useTracker(() => {
-    if (!editMode || !id) return { isLoading: false, surveyExists: false };
-    
-    const subscription = Meteor.subscribe('surveys.all');
-    const loading = !subscription.ready();
-    
-    if (!loading && id) {
-      const survey = Surveys.findOne({ _id: id });
+  // Fetch questions if in edit mode
+  const { surveyDoc, questions, isLoading } = useTracker(() => {
+    if (editMode && id) {
+      const surveySubscription = Meteor.subscribe('surveys.all');
+      const questionSubscription = Meteor.subscribe('questions.all');
       
-      if (survey) {
-        // Set survey data from existing survey
-        setSurveyData({
-          _id: survey._id,
-          title: survey.title,
-          description: survey.description,
-          status: (survey as any).status || 'Draft',
-          questions: survey.questions || [],
-          startDate: (survey as any).startDate || new Date(),
-          endDate: (survey as any).endDate || new Date(new Date().setDate(new Date().getDate() + 14)),
-          invitedCount: (survey as any).invitedCount || 0,
-          publicSlug: (survey as any).publicSlug,
-          createdAt: survey.createdAt
-        });
+      const loading = !surveySubscription.ready() || !questionSubscription.ready();
+      
+      if (!loading) {
+        const doc = Surveys.findOne({ _id: id });
+        const allQuestions = Questions.find().fetch();
         
-        // Mark all steps as completed in edit mode
-        setCompletedSteps([0, 1, 2, 3]);
+        if (doc) {
+          // Update survey data
+          setSurveyData({
+            _id: doc._id,
+            title: doc.title,
+            description: doc.description,
+            questions: doc.questions || [],
+            createdAt: doc.createdAt,
+            status: (doc as any).status || 'Draft',
+            startDate: (doc as any).startDate || new Date(),
+            endDate: (doc as any).endDate || new Date(new Date().setDate(new Date().getDate() + 14)),
+            invitedCount: (doc as any).invitedCount || 0,
+            responseCount: 0,
+            branching: (doc as any).branching || [],
+            participants: (doc as any).participants || [],
+            emailSettings: (doc as any).emailSettings || {
+              sendReminders: false,
+              reminderFrequency: 'weekly',
+              customDays: [3, 7, 14]
+            }
+          });
+        }
         
-        return { isLoading: false, surveyExists: true };
+        return { surveyDoc: doc, questions: allQuestions, isLoading: false };
       }
     }
     
-    return { isLoading: loading, surveyExists: false };
+    // Fetch questions for new surveys
+    const questionSubscription = Meteor.subscribe('questions.all');
+    const loading = !questionSubscription.ready();
+    
+    if (!loading) {
+      const allQuestions = Questions.find().fetch();
+      return { surveyDoc: null, questions: allQuestions, isLoading: false };
+    }
+    
+    return { surveyDoc: null, questions: [], isLoading: true };
   }, [editMode, id]);
   
   // Fetch all questions
-  const questions = useTracker(() => {
+  const allQuestions = useTracker(() => {
     Meteor.subscribe('questions.all');
     return Questions.find().fetch();
   }, []);
@@ -251,6 +281,42 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editMode = false }) => {
     setCurrentStep(currentStep + 1);
   };
   
+  // Handle welcome screen data change
+  const handleWelcomeDataChange = (data: Record<string, any>) => {
+    setSurveyData({ ...surveyData, ...data });
+    markStepAsCompleted(0);
+  };
+  
+  // Handle questions data change
+  const handleQuestionsDataChange = (questions: string[]) => {
+    setSurveyData({ ...surveyData, questions });
+    markStepAsCompleted(1);
+  };
+  
+  // Handle schedule data change
+  const handleScheduleDataChange = (data: Record<string, any>) => {
+    setSurveyData({ ...surveyData, ...data });
+    markStepAsCompleted(2);
+  };
+  
+  // Handle branching logic change
+  const handleBranchingLogicChange = (branching: BranchingRule[]) => {
+    setSurveyData({ ...surveyData, branching });
+    markStepAsCompleted(3);
+  };
+  
+  // Handle participants change
+  const handleParticipantsChange = (participants: string[]) => {
+    setSurveyData({ ...surveyData, participants, invitedCount: participants.length });
+    markStepAsCompleted(4);
+  };
+  
+  // Handle email settings change
+  const handleEmailSettingsChange = (emailSettings: EmailSettings) => {
+    setSurveyData({ ...surveyData, emailSettings });
+    markStepAsCompleted(5);
+  };
+  
   // Handle previous step
   const handlePrevStep = () => {
     setCurrentStep(currentStep - 1);
@@ -259,6 +325,13 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editMode = false }) => {
   // Check if current step is completed
   const isStepCompleted = (stepIndex: number) => {
     return completedSteps.includes(stepIndex);
+  };
+  
+  // Mark step as completed
+  const markStepAsCompleted = (stepIndex: number) => {
+    if (!completedSteps.includes(stepIndex)) {
+      setCompletedSteps([...completedSteps, stepIndex]);
+    }
   };
   
   // Handle form field changes
@@ -317,51 +390,107 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editMode = false }) => {
     }
   };
   
+  // Handle save and complete
+  const handleComplete = (asTemplate = false) => {
+    // Save survey data 
+    const finalSurveyData = {
+      ...surveyData,
+      isTemplate: asTemplate
+    };
+    
+    console.log('Survey completed:', finalSurveyData);
+    
+    // Use Meteor method to save the survey
+    Meteor.call('surveys.insert', finalSurveyData, (error: Error, result: string) => {
+      if (error) {
+        console.error('Error saving survey:', error);
+        alert('There was an error saving your survey. Please try again.');
+      } else {
+        console.log('Survey saved successfully:', result);
+        navigate('/admin/surveys');
+      }
+    });
+  };
+  
+  // Handle save as template
+  const handleSaveAsTemplate = () => {
+    const templateData = {
+      ...surveyData,
+      isTemplate: true,
+      status: 'Template'
+    };
+    Meteor.call('surveys.insert', templateData, (error: Error, result: string) => {
+      if (error) {
+        console.error('Error saving template:', error);
+        alert('There was an error saving your template. Please try again.');
+      } else {
+        console.log('Template saved successfully:', result);
+        navigate('/admin/surveys');
+      }
+    });
+  };
+  
   // Render current step content
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0:
+      case 0: // Welcome Screen
         return (
-          <WelcomeScreenStep
+          <WelcomeScreenStep 
             title={surveyData.title || ''}
             description={surveyData.description || ''}
-            logoImage={logoImage}
-            welcomeImage={welcomeImage}
-            onTitleChange={(value) => handleChange('title', value)}
-            onDescriptionChange={(value) => handleChange('description', value)}
-            onLogoChange={setLogoImage}
-            onWelcomeImageChange={setWelcomeImage}
+            onDataChange={handleWelcomeDataChange}
           />
         );
-      case 1:
+      case 1: // Question Selection
         return (
-          <QuestionSelectionStep
+          <QuestionSelectionStep 
             selectedQuestions={surveyData.questions || []}
-            availableQuestions={questions}
-            onQuestionsChange={(value) => handleChange('questions', value)}
+            onQuestionsChange={handleQuestionsDataChange}
           />
         );
-      case 2:
+      case 2: // Schedule
         return (
-          <ScheduleStep
+          <ScheduleStep 
             startDate={surveyData.startDate || new Date()}
             endDate={surveyData.endDate || new Date(new Date().setDate(new Date().getDate() + 14))}
-            onStartDateChange={(value) => handleChange('startDate', value)}
-            onEndDateChange={(value) => handleChange('endDate', value)}
+            onScheduleChange={handleScheduleDataChange}
           />
         );
-      case 3:
+      case 3: // Branching Logic
         return (
-          <ReviewStep
-            survey={surveyData as Survey}
-            questions={questions}
+          <BranchingLogicStep 
+            questions={surveyData.questions || []}
+            branching={surveyData.branching || []}
+            onBranchingChange={handleBranchingLogicChange}
+          />
+        );
+      case 4: // Participants
+        return (
+          <ParticipantsStep 
+            participants={surveyData.participants || []}
+            onParticipantsChange={handleParticipantsChange}
+            surveyId={surveyData._id}
+          />
+        );
+      case 5: // Email Settings
+        return (
+          <EmailSettingsStep
+            emailSettings={surveyData.emailSettings}
+            onEmailSettingsChange={handleEmailSettingsChange}
+          />
+        );
+      case 6: // Review
+        return (
+          <ReviewStep 
+            survey={surveyData as Survey} 
+            questions={questions || []}
           />
         );
       default:
         return null;
     }
   };
-  
+
   return (
     <AdminLayout>
       <Container>
@@ -422,13 +551,20 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editMode = false }) => {
               <FiChevronRight />
             </Button>
           ) : (
-            <Button 
-              primary
-              onClick={handleSaveSurvey}
-            >
-              <FiSave />
-              {editMode ? 'Update Survey' : 'Create Survey'}
-            </Button>
+            <div style={{ display: 'flex', gap: '12px', marginLeft: 'auto' }}>
+              <Button 
+                primary
+                onClick={() => handleComplete(false)}
+              >
+                <FiSave />
+                {editMode ? 'Save Changes' : 'Create Survey'}
+              </Button>
+              <Button 
+                onClick={handleSaveAsTemplate}
+              >
+                Save as Template
+              </Button>
+            </div>
           )}
         </ButtonContainer>
         

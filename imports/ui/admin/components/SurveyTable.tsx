@@ -529,6 +529,10 @@ const SurveyTable: React.FC<SurveyTableProps> = ({ surveys, isLoading, onCopyLin
                         <FiLink />
                         Copy Public Link
                       </DropdownItem>
+                      <DropdownItem onClick={() => navigate(`/admin/surveys/${survey._id}/analytics`)}>
+                        <FiEye />
+                        View Analytics
+                      </DropdownItem>
                       {survey.status === 'Draft' && (
                         <DropdownItem onClick={() => handleEditSurvey(survey._id)}>
                           <FiEdit />

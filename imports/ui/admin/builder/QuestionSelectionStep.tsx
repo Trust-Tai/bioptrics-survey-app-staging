@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Meteor } from 'meteor/meteor';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Questions, QuestionDoc } from '../../../api/questions';
 import styled from 'styled-components';
 import { FiPlus, FiSearch, FiList, FiGrid, FiCheck, FiTrash2, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 
-interface Question {
+// Use the actual interface from the Questions collection
+interface Question extends QuestionDoc {
   _id: string;
-  versions?: {
-    questionText: string;
-    published: boolean;
-  }[];
 }
 
 interface QuestionSelectionStepProps {
   selectedQuestions: string[];
-  availableQuestions: Question[];
   onQuestionsChange: (questions: string[]) => void;
 }
 
@@ -192,11 +191,40 @@ const EmptyState = styled.div`
   color: #718096;
 `;
 
+const PublishedBadge = styled.span`
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: #c6f6d5;
+  color: #2f855a;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+`;
+
+const DraftBadge = styled.span`
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: #e2e8f0;
+  color: #4a5568;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+`;
+
 const QuestionSelectionStep: React.FC<QuestionSelectionStepProps> = ({
   selectedQuestions,
-  availableQuestions,
   onQuestionsChange
 }) => {
+  // Fetch available questions from the database
+  const availableQuestions = useTracker(() => {
+    const subscription = Meteor.subscribe('questions.all');
+    if (!subscription.ready()) {
+      return [];
+    }
+    return Questions.find().fetch();
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [isGridView, setIsGridView] = useState(true);
   
@@ -206,7 +234,7 @@ const QuestionSelectionStep: React.FC<QuestionSelectionStepProps> = ({
       ? question.versions[question.versions.length - 1] 
       : null;
     
-    if (!latestVersion || !latestVersion.published) return false;
+    if (!latestVersion) return false;
     
     return latestVersion.questionText.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -297,7 +325,7 @@ const QuestionSelectionStep: React.FC<QuestionSelectionStepProps> = ({
                 ? question.versions[question.versions.length - 1] 
                 : null;
               
-              if (!latestVersion || !latestVersion.published) return null;
+              if (!latestVersion) return null;
               
               const isSelected = selectedQuestionsMap.has(question._id || '');
               
@@ -308,6 +336,7 @@ const QuestionSelectionStep: React.FC<QuestionSelectionStepProps> = ({
                   onClick={() => toggleQuestionSelection(question._id || '')}
                 >
                   <QuestionText>{latestVersion.questionText}</QuestionText>
+                  <PublishedBadge>v{latestVersion.version}</PublishedBadge>
                   <QuestionActions>
                     {isSelected ? (
                       <ActionButton>

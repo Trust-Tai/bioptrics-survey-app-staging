@@ -22,13 +22,43 @@ import styled from 'styled-components';
 const sidebarLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
-  { to: '/admin/surveys/all', label: 'Surveys', icon: FiClipboard },
-  { to: '/admin/questions', label: 'Question Bank', icon: FaDatabase },
+  { 
+    to: '/admin/surveys', 
+    label: 'Surveys', 
+    icon: FiClipboard,
+    subMenu: [
+      { to: '/admin/surveys', label: 'All Surveys' },
+      { to: '/admin/surveys/new', label: 'Create New Survey' },
+      { to: '/admin/surveys/goals', label: 'Survey Goals' },
+    ] 
+  },
+  { 
+    to: '/admin/questions', 
+    label: 'Question Bank', 
+    icon: FaDatabase,
+    subMenu: [
+      { to: '/admin/questions', label: 'All Questions' },
+      { to: '/admin/questions/builder', label: 'Create New Question' },
+    ]
+  },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FiUsers },
   { to: '/admin/participants', label: 'Participants', icon: FaUserCheck },
   { to: '/admin/settings', label: 'Settings', icon: FaCog },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
+
+// Types for navigation menu items
+interface SubNavItem {
+  to: string;
+  label: string;
+}
+
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType;
+  subMenu?: SubNavItem[];
+}
 
 // Styled components for the sidebar
 interface SidebarProps {
@@ -49,6 +79,7 @@ const Sidebar = styled.aside<SidebarProps>`
   height: 100vh;
   z-index: 100;
   transition: width 0.3s ease;
+  overflow-y: auto;
   overflow-x: hidden;
   overflow-y: auto;
   
@@ -136,6 +167,37 @@ const NavLabel = styled.span<LabelProps>`
   white-space: nowrap;
 `;
 
+// Submenu styles
+const SubMenu = styled.div<{collapsed: boolean}>`
+  margin-left: ${props => props.collapsed ? '0' : '24px'};
+  margin-top: 4px;
+  display: ${props => props.collapsed ? 'none' : 'flex'};
+  flex-direction: column;
+`;
+
+const SubMenuItem = styled(Link)<{active: boolean}>`
+  color: ${props => props.active ? '#fff' : 'rgba(255, 255, 255, 0.7)'};
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  
+  &::before {
+    content: '•';
+    margin-right: 8px;
+    font-size: 10px;
+  }
+`;
+
 const Tooltip = styled.div`
   position: absolute;
   left: 72px;
@@ -204,6 +266,32 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<number | null>(null);
+  const [expandedSubmenus, setExpandedSubmenus] = useState<number[]>([]);
+  
+  // Toggle submenu expanded state
+  const toggleSubmenu = (index: number) => {
+    setExpandedSubmenus(prev => 
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
+  
+  // Initialize expanded submenus based on active route
+  useEffect(() => {
+    const activeSubmenus = sidebarLinks
+      .map((link, idx) => {
+        // Check if this link or any of its children match the current path
+        const linkActive = location.pathname === link.to || 
+                        (link.to !== '/logout' && location.pathname.startsWith(link.to));
+        const hasActiveChild = link.subMenu?.some(subItem => 
+          location.pathname === subItem.to || location.pathname.startsWith(subItem.to)
+        );
+        
+        return (linkActive || hasActiveChild) && link.subMenu ? idx : -1;
+      })
+      .filter(idx => idx !== -1);
+    
+    setExpandedSubmenus(activeSubmenus);
+  }, [location.pathname]);
   
   // Auto-collapse the sidebar on smaller screens
   useEffect(() => {
@@ -256,16 +344,23 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         
         <nav style={{ flex: 1 }}>
           {sidebarLinks.map((link, idx) => {
-            // Check if the current path matches this link
+            // Check if the current path matches this link or any submenu item
             const isActive = location.pathname === link.to || 
                              (link.to !== '/logout' && location.pathname.startsWith(link.to));
+            
+            // Check if any submenu item is active
+            const hasActiveSubmenu = link.subMenu?.some(subItem => 
+              location.pathname === subItem.to || location.pathname.startsWith(subItem.to)
+            );
+            
+            // Check if this submenu is expanded
+            const isSubmenuExpanded = expandedSubmenus.includes(idx);
             
             return (
               <div 
                 key={link.label}
                 onMouseEnter={() => setHoveredItem(idx)}
                 onMouseLeave={() => setHoveredItem(null)}
-                style={{ position: 'relative' }}
               >
                 {link.to === '/logout' ? (
                   // Render a button for logout
@@ -287,24 +382,53 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     )}
                   </NavButton>
                 ) : (
-                  // Render a link for normal navigation
-                  <NavItem 
-                    to={link.to}
-                    active={isActive} 
-                    collapsed={collapsed}
-                  >
-                    <NavIcon collapsed={collapsed}>
-                      <link.icon />
-                    </NavIcon>
-                    <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
-                    
-                    {/* Tooltip shown on hover when sidebar is collapsed */}
-                    {collapsed && hoveredItem === idx && (
-                      <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                  // Render a link for normal navigation items
+                  <>
+                    <NavItem 
+                      to={link.to} 
+                      active={isActive || hasActiveSubmenu} 
+                      collapsed={collapsed}
+                      onClick={() => link.subMenu && toggleSubmenu(idx)}
+                    >
+                      <NavIcon collapsed={collapsed}>
+                        <link.icon />
+                      </NavIcon>
+                      <NavLabel collapsed={collapsed}>
                         {link.label}
-                      </Tooltip>
+                        {link.subMenu && !collapsed && (
+                          <span style={{ marginLeft: '8px' }}>
+                            {isSubmenuExpanded ? '▼' : '▶'}
+                          </span>
+                        )}
+                      </NavLabel>
+                      
+                      {/* Tooltip shown on hover when sidebar is collapsed */}
+                      {collapsed && hoveredItem === idx && (
+                        <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                          {link.label}
+                        </Tooltip>
+                      )}
+                    </NavItem>
+                    
+                    {/* Render submenu if available */}
+                    {link.subMenu && isSubmenuExpanded && (
+                      <SubMenu collapsed={collapsed}>
+                        {link.subMenu.map((subItem) => {
+                          const subItemActive = location.pathname === subItem.to || 
+                                               location.pathname.startsWith(subItem.to);
+                          return (
+                            <SubMenuItem 
+                              key={subItem.label}
+                              to={subItem.to}
+                              active={subItemActive}
+                            >
+                              {subItem.label}
+                            </SubMenuItem>
+                          );
+                        })}
+                      </SubMenu>
                     )}
-                  </NavItem>
+                  </>
                 )}
               </div>
             );

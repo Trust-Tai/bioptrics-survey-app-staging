@@ -7,6 +7,7 @@ import AdminDashboard from './admin/AdminDashboard';
 import AdminAnalytics from './admin/AdminAnalytics';
 import AdminSurveysPage from './admin/AdminSurveysPage';
 import SurveyBuilder from './admin/SurveyBuilder';
+import SurveyAnalytics from './admin/SurveyAnalytics';
 import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
 import Setting from './admin/Setting';
@@ -119,8 +120,9 @@ const SurveyQuestionWrapper: React.FC = () => {
   );
 };
 
-const AppRoutes: React.FC = () => {
+const AppRoutes = () => {
   const navigate = useNavigate();
+  
   return (
     <Routes>
       <Route path="/" element={<SurveyWelcome onStart={() => navigate('/survey/section/0')} />} />
@@ -133,23 +135,22 @@ const AppRoutes: React.FC = () => {
       <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/dashboard')} />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/questions')} />} />
-      <Route element={<RequireAdminAuth />}>
-        <Route path="/admin/surveys" element={<AdminSurveysPage />} />
-        <Route path="/admin/surveys/new" element={<SurveyBuilder />} />
-        <Route path="/admin/surveys/:id/overview" element={<SurveyPage />} />
-        <Route path="/admin/surveys/:id/edit" element={<SurveyBuilder editMode={true} />} />
-        <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
-        <Route path="/admin/surveys/all" element={<AllSurveys />} />
-        <Route path="/admin/questions" element={<AdminQuestionBank />} />
-<Route path="/user/questions" element={<UserQuestionBank />} />
-        <Route path="/admin/questions/all" element={<AllQuestions />} />
-        <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
-        <Route path="/admin/bank" element={<Bank />} />
-        <Route path="/admin/analytics" element={<AdminAnalytics />} />
-        <Route path="/admin/setting" element={<Setting />} />
-        <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
-        <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
-      </Route>
+      <Route path="/admin/surveys" element={<AdminSurveysPage />} />
+      <Route path="/admin/surveys/new" element={<SurveyBuilder />} />
+      <Route path="/admin/surveys/:id/overview" element={<SurveyPage />} />
+      <Route path="/admin/surveys/:id/analytics" element={<SurveyAnalytics />} />
+      <Route path="/admin/surveys/:id/edit" element={<SurveyBuilder editMode={true} />} />
+      <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
+      <Route path="/admin/surveys/all" element={<AllSurveys />} />
+      <Route path="/admin/questions" element={<AdminQuestionBank />} />
+      <Route path="/user/questions" element={<UserQuestionBank />} />
+      <Route path="/admin/questions/all" element={<AllQuestions />} />
+      <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
+      <Route path="/admin/bank" element={<Bank />} />
+      <Route path="/admin/analytics" element={<AdminAnalytics />} />
+      <Route path="/admin/setting" element={<Setting />} />
+      <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
+      <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
     </Routes>
   );
 };

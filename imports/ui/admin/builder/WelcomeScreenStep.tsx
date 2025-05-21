@@ -5,12 +5,9 @@ import { FiImage, FiUpload, FiX } from 'react-icons/fi';
 interface WelcomeScreenStepProps {
   title: string;
   description: string;
-  logoImage: string | null;
-  welcomeImage: string | null;
-  onTitleChange: (value: string) => void;
-  onDescriptionChange: (value: string) => void;
-  onLogoChange: (value: string | null) => void;
-  onWelcomeImageChange: (value: string | null) => void;
+  logoImage?: string | null;
+  welcomeImage?: string | null;
+  onDataChange: (data: Record<string, any>) => void;
 }
 
 const FormGroup = styled.div`
@@ -141,12 +138,9 @@ const HelperText = styled.div`
 const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
   title,
   description,
-  logoImage,
-  welcomeImage,
-  onTitleChange,
-  onDescriptionChange,
-  onLogoChange,
-  onWelcomeImageChange
+  logoImage = null,
+  welcomeImage = null,
+  onDataChange
 }) => {
   // Logo image file input ref
   const logoInputRef = React.useRef<HTMLInputElement>(null);
@@ -159,9 +153,7 @@ const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        onLogoChange(reader.result as string);
-      };
+      reader.onloadend = () => onDataChange({ logoImage: reader.result as string });
       reader.readAsDataURL(file);
     }
   };
@@ -171,9 +163,7 @@ const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        onWelcomeImageChange(reader.result as string);
-      };
+      reader.onloadend = () => onDataChange({ welcomeImage: reader.result as string });
       reader.readAsDataURL(file);
     }
   };
@@ -186,7 +176,7 @@ const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
           id="survey-title"
           type="text"
           value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
+          onChange={(e) => onDataChange({ title: e.target.value })}
           placeholder="Enter survey title"
           required
         />
@@ -198,7 +188,7 @@ const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
         <Textarea
           id="survey-description"
           value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
+          onChange={(e) => onDataChange({ description: e.target.value })}
           placeholder="Enter survey description"
           required
         />
@@ -211,7 +201,7 @@ const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
           {logoImage ? (
             <ImagePreviewContainer>
               <ImagePreview src={logoImage} alt="Company Logo" />
-              <RemoveButton onClick={() => onLogoChange(null)}>
+              <RemoveButton onClick={() => onDataChange({ logoImage: null })}>
                 <FiX />
               </RemoveButton>
             </ImagePreviewContainer>
@@ -238,7 +228,7 @@ const WelcomeScreenStep: React.FC<WelcomeScreenStepProps> = ({
           {welcomeImage ? (
             <ImagePreviewContainer>
               <ImagePreview src={welcomeImage} alt="Welcome Image" />
-              <RemoveButton onClick={() => onWelcomeImageChange(null)}>
+              <RemoveButton onClick={() => onDataChange({ welcomeImage: null })}>
                 <FiX />
               </RemoveButton>
             </ImagePreviewContainer>

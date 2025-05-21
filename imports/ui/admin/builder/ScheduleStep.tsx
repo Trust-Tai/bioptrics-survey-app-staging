@@ -5,8 +5,7 @@ import { FiCalendar, FiInfo } from 'react-icons/fi';
 interface ScheduleStepProps {
   startDate: Date;
   endDate: Date;
-  onStartDateChange: (date: Date) => void;
-  onEndDateChange: (date: Date) => void;
+  onScheduleChange: (data: Record<string, any>) => void;
 }
 
 const Container = styled.div`
@@ -89,8 +88,7 @@ const ErrorMessage = styled.div`
 const ScheduleStep: React.FC<ScheduleStepProps> = ({
   startDate,
   endDate,
-  onStartDateChange,
-  onEndDateChange
+  onScheduleChange
 }) => {
   const [error, setError] = useState<string | null>(null);
   
@@ -99,40 +97,26 @@ const ScheduleStep: React.FC<ScheduleStepProps> = ({
     return date.toISOString().split('T')[0];
   };
   
-  // Handle start date change
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newStartDate = new Date(e.target.value);
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Validate date is not in the past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (newStartDate < today) {
-      setError('Start date cannot be in the past');
-      return;
-    }
-    
-    // Validate end date is after start date
-    if (endDate < newStartDate) {
-      onEndDateChange(new Date(newStartDate.getTime() + 14 * 24 * 60 * 60 * 1000)); // Set end date to 14 days after start
-    }
-    
-    setError(null);
-    onStartDateChange(newStartDate);
-  };
-  
-  // Handle end date change
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndDate = new Date(e.target.value);
-    
-    // Validate end date is after start date
-    if (newEndDate <= startDate) {
+    if (startDate >= endDate) {
       setError('End date must be after start date');
       return;
     }
     
     setError(null);
-    onEndDateChange(newEndDate);
+  };
+  
+  // Handle date validation
+  const validateDates = () => {
+    if (startDate >= endDate) {
+      setError('End date must be after start date');
+      return false;
+    }
+    setError(null);
+    return true;
   };
   
   // Calculate survey duration in days
@@ -148,8 +132,10 @@ const ScheduleStep: React.FC<ScheduleStepProps> = ({
               id="start-date"
               type="date"
               value={formatDateForInput(startDate)}
-              onChange={handleStartDateChange}
-              min={formatDateForInput(new Date())}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                onScheduleChange({ startDate: date });
+              }}
             />
           </FormGroup>
           
@@ -159,7 +145,10 @@ const ScheduleStep: React.FC<ScheduleStepProps> = ({
               id="end-date"
               type="date"
               value={formatDateForInput(endDate)}
-              onChange={handleEndDateChange}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                onScheduleChange({ endDate: date });
+              }}
               min={formatDateForInput(new Date(startDate.getTime() + 24 * 60 * 60 * 1000))} // Min: 1 day after start
             />
           </FormGroup>
