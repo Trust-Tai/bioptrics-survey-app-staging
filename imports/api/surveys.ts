@@ -3,7 +3,14 @@ import { Meteor } from 'meteor/meteor';
 import { Random } from 'meteor/random';
 import { check } from 'meteor/check';
 
-
+// Extend the User type to include roles
+declare module 'meteor/meteor' {
+  namespace Meteor {
+    interface User {
+      roles?: string[];
+    }
+  }
+}
 
 export interface SurveyDoc {
   _id?: string;
@@ -58,6 +65,40 @@ if (Meteor.isServer) {
     if (surveyDoc.createdBy === this.userId || (this.userId && Meteor.users.findOne(this.userId)?.roles?.includes('admin'))) {
       return Surveys.find({ shareToken });
     }
+    return this.ready();
+  });
+  
+  // Publication for survey responses - only accessible to admin users
+  Meteor.publish('survey_responses.all', function () {
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    // Check if user is admin
+    const user = Meteor.users.findOne(this.userId);
+    if (user?.roles?.includes('admin')) {
+      return SurveyResponses.find({});
+    }
+    
+    return this.ready();
+  });
+  
+  // Publication for responses to a specific survey
+  Meteor.publish('survey_responses.bySurvey', function (surveyId) {
+    check(surveyId, String);
+    
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    // Check if user is admin or survey creator
+    const user = Meteor.users.findOne(this.userId);
+    const survey = Surveys.findOne(surveyId);
+    
+    if (user?.roles?.includes('admin') || (survey && survey.createdBy === this.userId)) {
+      return SurveyResponses.find({ surveyId });
+    }
+    
     return this.ready();
   });
 }

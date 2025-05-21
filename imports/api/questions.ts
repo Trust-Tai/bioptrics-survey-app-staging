@@ -1,5 +1,6 @@
 import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
+import { check } from 'meteor/check';
 import SimpleSchema from 'simpl-schema';
 
 export interface QuestionVersion {
@@ -24,9 +25,16 @@ export interface QuestionDoc {
   createdBy: string;
 }
 
-export const Questions = new Mongo.Collection<QuestionDoc>('questions');
+// Extend the Collection type to include schema-related properties
+interface ExtendedCollection<T extends object> extends Mongo.Collection<T> {
+  schema?: any;
+  attachSchema?: (schema: any) => void;
+}
 
-Questions.attachSchema = function() {
+export const Questions = new Mongo.Collection<QuestionDoc>('questions') as ExtendedCollection<QuestionDoc>;
+
+// Only attach schema if the method exists (TypeScript safety)
+if (typeof Questions.attachSchema === 'function') {
   Questions.schema = new SimpleSchema({
     currentVersion: { type: SimpleSchema.Integer },
     versions: { type: Array },
@@ -45,7 +53,7 @@ Questions.attachSchema = function() {
     createdBy: { type: String },
   });
   Questions.attachSchema(Questions.schema);
-};
+}
 
 if (Meteor.isServer) {
   Meteor.publish('questions.all', function() {
@@ -69,11 +77,13 @@ Meteor.methods({
       console.log('[questions.insert] Received data:', data);
 
       const now = new Date();
+      const effectiveUserId = userId || (this.userId || 'system');
+      
       const version: QuestionVersion = {
         ...data,
         version: 1,
         updatedAt: now,
-        updatedBy: userId || this.userId,
+        updatedBy: effectiveUserId,
       };
       // eslint-disable-next-line no-console
       console.log('[questions.insert] Constructed version:', version);
@@ -81,7 +91,7 @@ Meteor.methods({
         currentVersion: 1,
         versions: [version],
         createdAt: now,
-        createdBy: userId || this.userId,
+        createdBy: effectiveUserId,
       });
       // eslint-disable-next-line no-console
       console.log('[questions.insert] Insert result:', result);
@@ -97,11 +107,13 @@ Meteor.methods({
     const question = await Questions.findOneAsync(questionId);
     if (!question) throw new Meteor.Error('Not found');
     const now = new Date();
+    const effectiveUserId = userId || (this.userId || 'system');
+    
     const newVersion: QuestionVersion = {
       ...data,
       version: question.currentVersion + 1,
       updatedAt: now,
-      updatedBy: userId || this.userId,
+      updatedBy: effectiveUserId,
     };
     return await Questions.updateAsync(questionId, {
       $set: { currentVersion: newVersion.version },

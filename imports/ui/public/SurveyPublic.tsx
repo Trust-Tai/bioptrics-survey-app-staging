@@ -5,6 +5,7 @@ import { Meteor } from 'meteor/meteor';
 import { Surveys } from '/imports/api/surveys';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
+import SectionTransition from '../SectionTransition';
 
 interface Question {
   _id: string;
@@ -62,7 +63,14 @@ const SurveyPublic: React.FC = () => {
   const [questions, setQuestions] = React.useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = React.useState(false);
   const [questionsError, setQuestionsError] = React.useState<string | null>(null);
-  const [step, setStep] = React.useState<'welcome' | number | 'done' | 'no-questions'>('welcome');
+  const [step, setStep] = React.useState<'welcome' | number | 'done' | 'no-questions' | 'section-transition'>('welcome');
+  const [currentSection, setCurrentSection] = React.useState<string>('');
+  const [nextSectionIndex, setNextSectionIndex] = React.useState<number>(0);
+  
+  // State for collecting responses
+  const [responses, setResponses] = React.useState<Record<string, any>>({});
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   // Extract all question IDs from selectedQuestions and siteTextQuestions
   React.useEffect(() => {
@@ -193,7 +201,48 @@ const SurveyPublic: React.FC = () => {
           console.log('[SurveyPublic] Creating mock questions for preview');
           const questionTypes = ['likert', 'text', 'multiple', 'single'];
           
-          const mockQuestions = ids.map((id, index) => {
+          // Define the correct section order
+          const sectionOrder = [
+            'Engagement/Manager Relationships',
+            'Peer/Team Dynamics',
+            'Feedback & Communication Quality',
+            'Recognition and Pride',
+            'Safety & Wellness Indicators',
+            'Site-specific Questions'
+          ];
+          
+          // Group mock IDs by section
+          const idsBySection: Record<string, string[]> = {};
+          
+          // Initialize sections
+          sectionOrder.forEach(section => {
+            idsBySection[section] = [];
+          });
+          
+          // Group IDs by section
+          ids.forEach(id => {
+            const section = sectionInfo[id] || 'Unknown Section';
+            if (idsBySection[section]) {
+              idsBySection[section].push(id);
+            } else {
+              idsBySection['Unknown Section'] = idsBySection['Unknown Section'] || [];
+              idsBySection['Unknown Section'].push(id);
+            }
+          });
+          
+          // Create ordered ID array
+          const orderedIds: string[] = [];
+          sectionOrder.forEach(section => {
+            if (idsBySection[section]) {
+              orderedIds.push(...idsBySection[section]);
+            }
+          });
+          
+          if (idsBySection['Unknown Section']) {
+            orderedIds.push(...idsBySection['Unknown Section']);
+          }
+          
+          const mockQuestions = orderedIds.map((id, index) => {
             const type = questionTypes[index % questionTypes.length];
             const sectionName = sectionInfo[id] || 'Unknown Section';
             
@@ -244,10 +293,50 @@ const SurveyPublic: React.FC = () => {
             };
           });
           
-          // Sort questions by section
-          const ordered = ids
-            .map(id => questionsWithSections.find(q => q._id === id))
-            .filter(Boolean) as Question[];
+          // Define the correct section order
+          const sectionOrder = [
+            'Engagement/Manager Relationships',
+            'Peer/Team Dynamics',
+            'Feedback & Communication Quality',
+            'Recognition and Pride',
+            'Safety & Wellness Indicators',
+            'Site-specific Questions'
+          ];
+          
+          // Group questions by section
+          const questionsBySection: Record<string, Question[]> = {};
+          
+          // Initialize all sections with empty arrays
+          sectionOrder.forEach(section => {
+            questionsBySection[section] = [];
+          });
+          
+          // Group questions by their section
+          questionsWithSections.forEach(question => {
+            const section = question.sectionName || 'Unknown Section';
+            if (questionsBySection[section]) {
+              questionsBySection[section].push(question);
+            } else {
+              // For any questions with sections not in our predefined order
+              questionsBySection['Unknown Section'] = questionsBySection['Unknown Section'] || [];
+              questionsBySection['Unknown Section'].push(question);
+            }
+          });
+          
+          // Create ordered array based on section order
+          const ordered: Question[] = [];
+          
+          // Add questions in the correct section order
+          sectionOrder.forEach(section => {
+            if (questionsBySection[section] && questionsBySection[section].length > 0) {
+              ordered.push(...questionsBySection[section]);
+            }
+          });
+          
+          // Add any remaining questions from unknown sections
+          if (questionsBySection['Unknown Section'] && questionsBySection['Unknown Section'].length > 0) {
+            ordered.push(...questionsBySection['Unknown Section']);
+          }
           
           setQuestions(ordered);
           setLoadingQuestions(false);
@@ -267,15 +356,92 @@ const SurveyPublic: React.FC = () => {
 
   if (!survey) return <div style={{ padding: 40 }}>Loading survey...</div>;
 
+  // Get unique sections in order
+  const sections = React.useMemo(() => {
+    if (!questions || questions.length === 0) return [];
+    
+    const uniqueSections: string[] = [];
+    questions.forEach(q => {
+      if (q.sectionName && !uniqueSections.includes(q.sectionName)) {
+        uniqueSections.push(q.sectionName);
+      }
+    });
+    return uniqueSections;
+  }, [questions]);
+
+  // Get section description based on section name
+  const getSectionDescription = (sectionName: string): string => {
+    switch (sectionName) {
+      case 'Engagement/Manager Relationships':
+        return "Let's talk about your engagement and relationship with your manager. These questions will ask about how you interact with leadership.";
+      case 'Peer/Team Dynamics':
+        return "Now let's talk about your team dynamics. These questions will ask about how you and your coworkers interact day-to-day. Keep it short and positive in tone.";
+      case 'Feedback & Communication Quality':
+        return "Let's discuss feedback and communication. These questions will ask about how information flows within your team and organization.";
+      case 'Recognition and Pride':
+        return "Let's explore recognition and pride in your work. These questions will ask about how your contributions are valued and your sense of accomplishment.";
+      case 'Safety & Wellness Indicators':
+        return "Let's focus on safety and wellness. These questions will ask about your physical and psychological well-being at work.";
+      case 'Site-specific Questions':
+        return "Finally, let's address some questions specific to your site. These are customized questions relevant to your particular location.";
+      default:
+        return `Let's explore the ${sectionName} section. Please answer the following questions honestly.`;
+    }
+  };
+
+  // Get section illustration - using the same mining illustration for all sections
+  const getSectionIllustration = (): string => {
+    // Using the mining illustration for all sections
+    return 'https://i.ibb.co/Lx7q9Nv/miners-illustration.png';
+  };
+
+  // Find the index of the first question in the next section
+  const findNextSectionQuestionIndex = (currentIndex: number): number => {
+    if (!questions || questions.length === 0 || currentIndex >= questions.length - 1) {
+      return -1; // No more questions or sections
+    }
+    
+    const currentSectionName = questions[currentIndex].sectionName;
+    
+    // Look for the first question with a different section name
+    for (let i = currentIndex + 1; i < questions.length; i++) {
+      if (questions[i].sectionName !== currentSectionName) {
+        return i;
+      }
+    }
+    
+    return -1; // No more sections found
+  };
+
   // Handler for starting the survey
   const handleStart = () => {
     console.log('[SurveyPublic] handleStart questions:', questions);
     if (questions.length > 0) {
-      setStep(0);
-      console.log('[SurveyPublic] setStep(0) called, should render first question.');
+      // Show the first section transition screen
+      if (questions[0].sectionName) {
+        setCurrentSection(questions[0].sectionName);
+        setNextSectionIndex(0);
+        setStep('section-transition');
+        console.log('[SurveyPublic] Starting with section transition for:', questions[0].sectionName);
+      } else {
+        // If no section name, just start with the first question
+        setStep(0);
+        console.log('[SurveyPublic] setStep(0) called, should render first question.');
+      }
     } else {
       setStep('no-questions');
       console.log('[SurveyPublic] setStep("no-questions") called.');
+    }
+  };
+
+  // Handler for continuing from section transition to questions
+  const handleContinueFromSection = () => {
+    if (nextSectionIndex >= 0 && nextSectionIndex < questions.length) {
+      setStep(nextSectionIndex);
+      console.log(`[SurveyPublic] Moving to question at index ${nextSectionIndex}`);
+    } else {
+      // Should never happen, but just in case
+      setStep('done');
     }
   };
 
@@ -283,11 +449,39 @@ const SurveyPublic: React.FC = () => {
     console.log('[SurveyPublic] Render, step:', step, 'questions:', questions);
   }, [step, questions]);
 
-  // Handler for next question
-  const handleNext = () => {
+  // Handler for next question with response data
+  const handleNext = (response?: any) => {
+    // If response is provided, save it
+    if (response && typeof step === 'number') {
+      const questionId = questions[step]._id;
+      setResponses(prev => ({
+        ...prev,
+        [questionId]: response
+      }));
+      console.log(`[SurveyPublic] Saved response for question ${questionId}:`, response);
+    }
+    
+    // Check if we need to show a section transition
     if (typeof step === 'number' && questions && step < questions.length - 1) {
-      setStep(step + 1);
+      const currentSectionName = questions[step].sectionName;
+      const nextQuestionIndex = step + 1;
+      const nextSectionName = questions[nextQuestionIndex].sectionName;
+      
+      // If the next question is from a different section, show the transition screen
+      if (nextSectionName && nextSectionName !== currentSectionName) {
+        setCurrentSection(nextSectionName);
+        setNextSectionIndex(nextQuestionIndex);
+        setStep('section-transition');
+        console.log(`[SurveyPublic] Showing transition to section: ${nextSectionName}`);
+      } else {
+        // Otherwise just go to the next question
+        setStep(nextQuestionIndex);
+      }
     } else {
+      // Submit responses if we're at the last question
+      if (typeof step === 'number' && step === questions.length - 1 && !isPreviewMode) {
+        submitResponses();
+      }
       setStep('done');
     }
   };
@@ -299,6 +493,42 @@ const SurveyPublic: React.FC = () => {
     } else {
       setStep('welcome');
     }
+  };
+  
+  // Submit all responses to the server
+  const submitResponses = () => {
+    if (!survey || isPreviewMode) return;
+    
+    setSubmitting(true);
+    setSubmitError(null);
+    
+    // Format responses for submission
+    const formattedResponses: Record<string, any> = {};
+    
+    // Extract the actual response values
+    Object.entries(responses).forEach(([questionId, responseData]) => {
+      if (responseData && responseData.response !== undefined) {
+        formattedResponses[questionId] = responseData.response;
+      } else {
+        formattedResponses[questionId] = responseData;
+      }
+    });
+    
+    console.log('[SurveyPublic] Submitting responses:', formattedResponses);
+    
+    // Call the Meteor method to save responses
+    Meteor.call('surveys.submitResponse', survey._id, formattedResponses, (error: Error | null) => {
+      setSubmitting(false);
+      
+      if (error) {
+        console.error('[SurveyPublic] Error submitting responses:', error);
+        setSubmitError('Failed to submit your responses. Please try again.');
+      } else {
+        console.log('[SurveyPublic] Responses submitted successfully');
+        // Clear responses after successful submission
+        setResponses({});
+      }
+    });
   };
 
   // Custom styles for preview mode
@@ -343,6 +573,21 @@ const SurveyPublic: React.FC = () => {
         {questionsError && (
           <div style={{ padding: 40, color: 'red' }}>{questionsError}</div>
         )}
+        {step === 'section-transition' && (
+          <SectionTransition
+            logo={survey.logo}
+            color={survey.color || '#b7a36a'}
+            sectionTitle={currentSection}
+            sectionDescription={getSectionDescription(currentSection)}
+            illustration={getSectionIllustration()}
+            progress={{
+              current: nextSectionIndex,
+              total: questions.length
+            }}
+            onContinue={handleContinueFromSection}
+            onBack={handleBack}
+          />
+        )}
         {typeof step === 'number' && questions[step] && (
           <SurveyQuestion
             question={questions[step]}
@@ -365,14 +610,47 @@ const SurveyPublic: React.FC = () => {
         )}
         {step === 'done' && survey && (
           <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#b0802b' }}>
-            <h2>End of Preview</h2>
-            <p>This is a preview. Please contact your administrator to participate.</p>
-            <button
-              style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
-              onClick={() => setStep('welcome')}
-            >
-              Back to Welcome
-            </button>
+            {isPreviewMode ? (
+              // Preview mode completion screen
+              <>
+                <h2>End of Preview</h2>
+                <p>This is a preview. Please contact your administrator to participate.</p>
+                <button
+                  style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+                  onClick={() => setStep('welcome')}
+                >
+                  Back to Welcome
+                </button>
+              </>
+            ) : (
+              // Actual survey completion screen
+              <>
+                <h2>Thank You!</h2>
+                {submitting ? (
+                  <p>Submitting your responses...</p>
+                ) : submitError ? (
+                  <>
+                    <p style={{ color: 'red' }}>{submitError}</p>
+                    <button
+                      style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+                      onClick={submitResponses}
+                    >
+                      Try Again
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>Your responses have been submitted successfully. Thank you for participating in this survey.</p>
+                    <button
+                      style={{ marginTop: 24, background: '#b0802b', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
+                      onClick={() => setStep('welcome')}
+                    >
+                      Back to Welcome
+                    </button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>

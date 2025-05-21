@@ -25,6 +25,7 @@ const sidebarLinks = [
   { to: '/admin/surveys', label: 'Surveys', icon: FiClipboard, submenu: [
     { to: '/admin/surveys/all', label: 'All Surveys' },
     { to: '/admin/surveys/builder', label: 'Survey Builder' },
+    { to: '/admin/surveys/responses', label: 'Survey Responses' },
     { to: '/admin/surveys/goals', label: 'Survey Goals' },
     { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
     { to: '/admin/surveys/theme', label: 'Theme' },

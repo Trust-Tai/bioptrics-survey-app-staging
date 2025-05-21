@@ -155,11 +155,32 @@ const BackButton = styled.button`
 `;
 
 const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onNext, onBack, onSkip }) => {
-  // Defensive: get latest version
-  const version = question.versions ? question.versions[question.versions.length - 1] : {};
-  const responseType = version.responseType || 'likert';
-  const options = version.options || [];
-  const questionText = version.questionText || '';
+  // Extract question data - handle both database format and mock format
+  let responseType = 'likert';
+  let options: any[] = [];
+  let questionText = '';
+  
+  if (question.versions && question.versions.length > 0) {
+    // Database format - question from the database has versions
+    const version = question.versions[question.versions.length - 1];
+    responseType = version.responseType || 'likert';
+    options = version.options || [];
+    questionText = version.questionText || '';
+  } else {
+    // Mock format - direct properties
+    responseType = question.type || 'likert';
+    questionText = question.text || '';
+    
+    // Handle different option formats
+    if (question.options) {
+      options = question.options;
+    } else if (question.labels) {
+      options = question.labels;
+    } else if (responseType === 'likert' && question.scale) {
+      // Default likert labels if we have a scale but no labels
+      options = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'].slice(0, question.scale);
+    }
+  }
 
   // State for answer
   const [selected, setSelected] = React.useState<any>(null);
@@ -167,27 +188,35 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
 
   // Render answer input based on responseType
   let answerInput: React.ReactNode = null;
+  
+  // Map responseType to the correct rendering
   if (responseType === 'likert') {
+    // For Likert scale questions (1-5 rating)
+    const scale = question.scale || 5;
+    const scaleArray = Array.from({ length: scale }, (_, i) => i + 1);
+    const labels = options.length > 0 ? options : likertLabels.slice(0, scale);
+    
     answerInput = (
       <>
         <LikertRow>
-          {[1,2,3,4,5].map((val, idx) => (
+          {scaleArray.map((val, idx) => (
             <LikertButton
               key={val}
               selected={selected === val}
               onClick={() => setSelected(val)}
-              aria-label={likertLabels[idx]}
+              aria-label={labels[idx] || `Rating ${val}`}
             >
               {val}
             </LikertButton>
           ))}
         </LikertRow>
         <div style={{ width: '100%', textAlign: 'center', color: '#b3a08a', fontSize: '0.98em', marginBottom: 8 }}>
-          <span>{likertLabels[selected ? selected-1 : 2]}</span>
+          <span>{selected ? (labels[selected-1] || `Rating ${selected}`) : 'Select a rating'}</span>
         </div>
       </>
     );
   } else if (responseType === 'text') {
+    // For free text questions
     answerInput = (
       <textarea
         style={{ width: '100%', minHeight: 80, borderRadius: 8, border: '1px solid #b7a36a', padding: 12, fontSize: '1rem', marginBottom: 16 }}
@@ -196,16 +225,37 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
         placeholder="Type your answer here..."
       />
     );
-  } else if (responseType === 'select' && Array.isArray(options)) {
+  } else if ((responseType === 'select' || responseType === 'single' || responseType === 'multiple') && Array.isArray(options) && options.length > 0) {
+    // For single or multiple choice questions
     answerInput = (
       <div style={{ width: '100%', marginBottom: 16 }}>
         {options.map((opt: string, idx: number) => (
           <LikertButton
-            key={opt}
-            selected={selected === idx}
-            onClick={() => setSelected(idx)}
+            key={`${opt}-${idx}`}
+            selected={responseType === 'multiple' ? 
+              (Array.isArray(selected) && selected.includes(idx)) : 
+              (selected === idx)}
+            onClick={() => {
+              if (responseType === 'multiple') {
+                // For multiple choice, toggle selection
+                const currentSelected = Array.isArray(selected) ? [...selected] : [];
+                if (currentSelected.includes(idx)) {
+                  setSelected(currentSelected.filter(i => i !== idx));
+                } else {
+                  setSelected([...currentSelected, idx]);
+                }
+              } else {
+                // For single choice, just select one
+                setSelected(idx);
+              }
+            }}
             aria-label={opt}
-            style={{ marginBottom: 8 }}
+            style={{ 
+              marginBottom: 8,
+              textAlign: 'left',
+              justifyContent: 'flex-start',
+              padding: '12px 16px'
+            }}
           >
             {opt}
           </LikertButton>
@@ -216,19 +266,56 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
 
   // Handler for Next
   const handleNextClick = () => {
-    if (responseType === 'likert') onNext(selected);
-    else if (responseType === 'text') onNext(textValue);
-    else if (responseType === 'select') onNext(options[selected] ?? null);
-    else onNext(selected);
+    // Validate that an answer has been provided
+    if (responseType === 'likert' && !selected) {
+      alert('Please select a rating before continuing.');
+      return;
+    } else if (responseType === 'text' && !textValue.trim()) {
+      alert('Please enter your response before continuing.');
+      return;
+    } else if ((responseType === 'select' || responseType === 'single') && selected === null) {
+      alert('Please select an option before continuing.');
+      return;
+    } else if (responseType === 'multiple' && (!Array.isArray(selected) || selected.length === 0)) {
+      alert('Please select at least one option before continuing.');
+      return;
+    }
+    
+    // Format the response based on question type
+    let response;
+    if (responseType === 'likert') {
+      response = {
+        value: selected,
+        label: options[selected - 1] || `Rating ${selected}`
+      };
+    } else if (responseType === 'text') {
+      response = textValue;
+    } else if (responseType === 'multiple' && Array.isArray(selected)) {
+      response = selected.map(idx => ({
+        value: idx,
+        label: options[idx]
+      }));
+    } else if (responseType === 'select' || responseType === 'single') {
+      response = {
+        value: selected,
+        label: options[selected]
+      };
+    } else {
+      response = selected;
+    }
+    
+    // Pass the response to the parent component
+    onNext({
+      questionId: question._id,
+      questionText: questionText,
+      sectionName: question.sectionName,
+      responseType: responseType,
+      response: response
+    });
   };
 
   return (
     <Wrapper>
-      {onBack && (
-        <BackButton aria-label="Back" onClick={onBack}>
-          &#8592;
-        </BackButton>
-      )}
       <Card>
         <Progress>Question {progress}</Progress>
         {question.sectionName && (

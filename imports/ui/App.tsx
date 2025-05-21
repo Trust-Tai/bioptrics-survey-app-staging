@@ -30,7 +30,7 @@ import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
 import QuestionBuilder from './admin/QuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
-
+import SurveyResponses from './admin/SurveyResponses';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -147,8 +147,9 @@ const AppRoutes: React.FC = () => {
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/questions')} />} />
       <Route element={<RequireAdminAuth />}>
          <Route path="/admin/surveys" element={<SurveyPage />} />
-        <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
+         <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
+        <Route path="/admin/surveys/responses" element={<SurveyResponses />} />
         <Route path="/admin/surveys/builder" element={<SurveyBuilder />} />
         <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
