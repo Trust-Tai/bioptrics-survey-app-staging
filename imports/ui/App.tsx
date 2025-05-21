@@ -137,6 +137,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<AdminLogin onAdminAuth={() => navigate('/admin/dashboard')} />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
+      <Route path="/survey/public/:token" element={<SurveyPublic />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
       <Route path="/leadership" element={<LeadershipManagement />} />

@@ -389,10 +389,10 @@ const SurveyPublic: React.FC = () => {
     }
   };
 
-  // Get section illustration - using the same mining illustration for all sections
+  // Get section illustration - using the local image file
   const getSectionIllustration = (): string => {
-    // Using the mining illustration for all sections
-    return 'https://i.ibb.co/Lx7q9Nv/miners-illustration.png';
+    // Using the local image from public directory
+    return '/frame.png';
   };
 
   // Find the index of the first question in the next section
@@ -488,8 +488,33 @@ const SurveyPublic: React.FC = () => {
 
   // Handler for previous question
   const handleBack = () => {
-    if (typeof step === 'number' && step > 0) {
-      setStep(step - 1);
+    if (step === 'section-transition') {
+      // If we're at a section transition, go back to the previous question
+      // or to welcome if this is the first section
+      if (nextSectionIndex > 0) {
+        setStep(nextSectionIndex - 1);
+      } else {
+        setStep('welcome');
+      }
+    } else if (typeof step === 'number') {
+      // If we're at a question
+      if (step > 0) {
+        // Check if the previous question is from a different section
+        const currentSectionName = questions[step].sectionName;
+        const prevSectionName = questions[step - 1].sectionName;
+        
+        if (prevSectionName && prevSectionName !== currentSectionName) {
+          // If we're going back to a different section, show the section transition
+          setCurrentSection(prevSectionName);
+          setNextSectionIndex(step - 1);
+          setStep('section-transition');
+        } else {
+          // Otherwise just go to the previous question
+          setStep(step - 1);
+        }
+      } else {
+        setStep('welcome');
+      }
     } else {
       setStep('welcome');
     }
