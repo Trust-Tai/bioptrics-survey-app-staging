@@ -96,7 +96,7 @@ const SurveyWelcome: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
   return (
     <Wrapper>
       <Card>
-        <Logo src="https://s28.q4cdn.com/380852864/files/design/logo.svg" alt="newgold logo" />
+        <Logo src="/logo.png" alt="BIOPTRICS logo" />
         <Illustration src="/illustration.png" alt="Survey Illustration" />
         <Title>Welcome to the New Gold Employee Survey</Title>
         <Description>

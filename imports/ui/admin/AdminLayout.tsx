@@ -5,7 +5,7 @@ import { FaChartBar, FaQuestionCircle, FaClipboardList, FaUsers, FaKey, FaSignOu
 
 const sidebarLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FaChartBar },
-  { to: '/admin/surveys', label: 'Surveys', icon: FaClipboardList, submenu: [
+  { to: '/admin/surveys/all', label: 'Surveys', icon: FaClipboardList, submenu: [
     { to: '/admin/surveys/all', label: 'All Surveys' },
     { to: '/admin/surveys/goals', label: 'Survey Goals' },
     { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },

@@ -1,17 +1,19 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
+
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '/imports/api/questions';
+import { Surveys } from '/imports/api/surveys';
 import SurveySectionQuestionDropdown, { QuestionOption } from './SurveySectionQuestionDropdown';
 import DraggableQuestionList from './DraggableQuestionList';
 
 interface Survey {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   createdAt: string;
-}
+} // _id for MongoDB
 
 // For demo: use localStorage for persistence
 function getAllSurveys(): Survey[] {
@@ -78,6 +80,37 @@ const ImageInput: React.FC<{
   );
 };
 
+// Demo demographic questions (replace with your actual questions or fetch from DB)
+const demoDemographicQuestions = [
+  { value: 'age', label: 'Age' },
+  { value: 'gender', label: 'Gender' },
+  { value: 'ethnicity', label: 'Ethnicity' },
+  { value: 'tenure', label: 'Tenure at Company' },
+  { value: 'role', label: 'Role/Position' },
+];
+
+// ErrorBoundary to catch rendering errors
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: any, info: any) {
+    // You can log error info here
+    // eslint-disable-next-line no-console
+    console.error('AllSurveys ErrorBoundary caught:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ color: 'red', padding: 24, textAlign: 'center' }}><b>Something went wrong loading the survey list:</b><br/>{String(this.state.error)}</div>;
+    }
+    return this.props.children;
+  }
+}
+
 const AllSurveys: React.FC = () => {
   // Fetch all published questions from the Questions collection
   const questions = useTracker(() => {
@@ -96,7 +129,16 @@ const AllSurveys: React.FC = () => {
     })
     .filter((opt): opt is QuestionOption => !!opt);
 
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  // Fetch all surveys from MongoDB reactively
+  const surveys: Survey[] = useTracker(() => {
+    Meteor.subscribe('surveys.all');
+    return Surveys.find({}, { sort: { createdAt: -1 } })
+      .fetch()
+      .map((doc: any) => ({
+        ...doc,
+        createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : String(doc.createdAt),
+      })) as Survey[];
+  }, []);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -104,6 +146,9 @@ const AllSurveys: React.FC = () => {
   const [form, setForm] = useState({ title: '', description: '' });
   // Store selected questions per section
   const [selectedQuestions, setSelectedQuestions] = useState<{ [sectionIdx: number]: QuestionOption[] }>({});
+  // Store selected demographic questions (by value)
+  const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
+
   // Welcome screen image previews
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [featuredPreview, setFeaturedPreview] = useState<string | null>(null);
@@ -146,9 +191,7 @@ const AllSurveys: React.FC = () => {
     { label: 'Optional Demographics' },
   ];
 
-  useEffect(() => {
-    setSurveys(getAllSurveys());
-  }, []);
+
 
   const filtered = surveys.filter(s =>
     s.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -160,6 +203,9 @@ const AllSurveys: React.FC = () => {
   useEffect(() => {
     setPage(1); // Reset to first page when search changes
   }, [search]);
+
+  // Fallback if surveys cannot be loaded
+  const surveysLoadError = !Array.isArray(surveys);
 
   return (
     <AdminLayout>
@@ -226,6 +272,43 @@ const AllSurveys: React.FC = () => {
             </button>
           </div>
         )}
+        {/* Survey List Table */}
+        <div style={{ marginTop: 24 }}>
+          <ErrorBoundary>
+            {surveysLoadError ? (
+              <div style={{ color: 'red', fontWeight: 600, textAlign: 'center', marginTop: 40 }}>
+                Unable to load surveys. Please check your database connection or try again later.
+              </div>
+            ) : paginated.length === 0 ? (
+              <div style={{ color: '#b3a08a', fontWeight: 600, textAlign: 'center', marginTop: 40 }}>
+                No surveys found.
+              </div>
+            ) : (
+              <table style={{ width: '100%', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #e5d6c7', marginTop: 16 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', color: '#b0802b', fontWeight: 800 }}>Title</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', color: '#b0802b', fontWeight: 800 }}>Description</th>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', color: '#b0802b', fontWeight: 800 }}>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginated.map(survey => (
+                    <tr key={survey._id}>
+                      <td style={{ padding: '12px 16px', fontWeight: 700 }}>{survey.title}</td>
+                      <td style={{ padding: '12px 16px' }}>{survey.description}</td>
+                      <td style={{ padding: '12px 16px', color: '#b3a08a' }}>
+                        {survey.createdAt
+                           ? new Date(survey.createdAt).toLocaleString()
+                           : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </ErrorBoundary>
+        </div>
         {/* Add Survey Modal */}
         {showModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -240,13 +323,19 @@ const AllSurveys: React.FC = () => {
                   setNotification({ type: 'error', message: 'Title is required to publish the survey.' });
                   return;
                 }
-                // Generate unique ID for demographics config
-                const demographicsId = 'demo-' + Math.random().toString(36).substr(2, 9);
+                // Combine all selected questions and selected demographic questions
+                const questionIds = Object.values(selectedQuestions).flat().map(q => q.value);
+                if (questionIds.length === 0) {
+                  setNotification({ type: 'error', message: 'You must select at least one real question to publish the survey.' });
+                  return;
+                }
                 const newSurvey = {
                   title: form.title,
                   description: form.description,
-                  questions: Object.values(selectedQuestions).flat().map(q => q.value),
+                  questions: questionIds // Only valid question IDs
                 };
+                // Debug: log the survey object being sent
+                console.log('Publishing survey:', newSurvey);
                 Meteor.call('surveys.insert', newSurvey, (err: any, surveyId: string) => {
                   if (err) {
                     setNotification({ type: 'error', message: 'Failed to publish survey: ' + err.reason });
@@ -261,7 +350,29 @@ const AllSurveys: React.FC = () => {
               }}
               style={{ background: '#fff', borderRadius: 14, padding: 32, width: '80%', maxWidth: 900, minHeight: 220, boxShadow: '0 4px 32px #b0802b33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}
             >
-              {/* Step Tabs */}
+              {/* Close Button */}
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setShowModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 16,
+                  background: 'none',
+                  border: 'none',
+                  color: '#b0802b',
+                  fontWeight: 900,
+                  fontSize: 26,
+                  cursor: 'pointer',
+                  zIndex: 1100,
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+              {/* Modal Content (step tabs, fields, etc) */}
               <div style={{
                 display: 'flex',
                 gap: 0,
@@ -439,11 +550,24 @@ const AllSurveys: React.FC = () => {
               {step === 7 && (
                 <div>
                   <div style={{ color: '#b0802b', fontWeight: 800, fontSize: 20, marginBottom: 10 }}>Optional Demographics</div>
-                  <input
-                    type="text"
-                    placeholder="Enter optional demographic questions or notes..."
-                    style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e' }}
-                  />
+                  <div style={{ marginBottom: 10, fontWeight: 600 }}>Select Demographic Questions:</div>
+                  {/* Checklist only, no dropdown */}
+                  {demoDemographicQuestions.map((q, idx) => (
+                    <label key={q.value} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDemographics.includes(q.value)}
+                        onChange={e => {
+                          setSelectedDemographics(prev =>
+                            e.target.checked
+                              ? [...prev, q.value]
+                              : prev.filter(val => val !== q.value)
+                          );
+                        }}
+                      />
+                      {q.label}
+                    </label>
+                  ))}
                 </div>
               )}
               <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'flex-end' }}>
