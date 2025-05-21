@@ -1,259 +1,322 @@
 import '../../../client/fonts.css';
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FaChartBar, FaQuestionCircle, FaClipboardList, FaUsers, FaKey, FaSignOutAlt } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  FaChartPie, 
+  FaDatabase, 
+  FaUserCheck, 
+  FaCog, 
+  FaSignOutAlt, 
+  FaBars, 
+  FaTimes
+} from 'react-icons/fa';
+import { 
+  FiBarChart2, 
+  FiClipboard, 
+  FiUsers, 
+  FiLogOut
+} from 'react-icons/fi';
+import styled from 'styled-components';
 
+// Sidebar navigation items matching the requested structure
 const sidebarLinks = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: FaChartBar },
-  { to: '/admin/surveys/all', label: 'Surveys', icon: FaClipboardList, submenu: [
-    { to: '/admin/surveys/all', label: 'All Surveys' },
-    { to: '/admin/surveys/goals', label: 'Survey Goals' },
-    { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
-    { to: '/admin/surveys/theme', label: 'Theme' },
-  ] },
-  { to: '/admin/questions', label: 'Questions', icon: FaQuestionCircle, submenu: [
-    { to: '/admin/questions/all', label: 'Question Bank' },
-    { to: '/admin/questions/builder', label: 'Question Builder' },
-  ] },
-  { to: '/admin/org-setup', label: 'Org Setup', icon: FaUsers },
-  { to: '/admin/analytics', label: 'Analytics', icon: FaChartBar },
-  { to: '/admin/setting', label: 'Setting', icon: FaKey, submenu: [
-    // WPS Framework moved to Surveys
-  ] },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
+  { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
+  { to: '/admin/surveys/all', label: 'Surveys', icon: FiClipboard },
+  { to: '/admin/questions', label: 'Question Bank', icon: FaDatabase },
+  { to: '/admin/org-setup', label: 'Org Setup', icon: FiUsers },
+  { to: '/admin/participants', label: 'Participants', icon: FaUserCheck },
+  { to: '/admin/settings', label: 'Settings', icon: FaCog },
+  { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
-const sidebarLinkStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  color: '#fff',
-  textDecoration: 'none',
-  padding: '12px 24px',
-  fontSize: 17,
-  fontWeight: 500,
-  borderRadius: 8,
-  marginBottom: 6,
-  transition: 'background 0.2s',
-};
-const iconStyle = { marginRight: 12, fontSize: 18 };
+// Styled components for the sidebar
+interface SidebarProps {
+  collapsed: boolean;
+}
 
+const Sidebar = styled.aside<SidebarProps>`
+  width: ${props => props.collapsed ? '72px' : '240px'};
+  background: linear-gradient(180deg, #402C00 0%, #2D1F01 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: width 0.3s ease;
+  overflow-x: hidden;
+  overflow-y: auto;
+  
+  @media (max-width: 1024px) {
+    width: ${props => props.collapsed ? '0' : '240px'};
+    transform: ${props => props.collapsed ? 'translateX(-100%)' : 'translateX(0)'};
+  }
+`;
+
+const Logo = styled.div`
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+`;
+
+interface NavItemProps {
+  active: boolean;
+  collapsed: boolean;
+}
+
+const NavItem = styled(Link)<NavItemProps>`
+  display: flex;
+  align-items: center;
+  color: #fff;
+  text-decoration: none;
+  padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: ${props => props.active ? '700' : '500'};
+  margin-bottom: 0.25rem;
+  transition: background 0.2s;
+  position: relative;
+  justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
+  border-left: ${props => props.active ? '4px solid #b7a36a' : '4px solid transparent'};
+  background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
+  
+  &:hover {
+    background: rgba(255,255,255,0.08);
+  }
+`;
+
+const NavButton = styled.button<NavItemProps>`
+  display: flex;
+  align-items: center;
+  color: #fff;
+  text-decoration: none;
+  padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: ${props => props.active ? '700' : '500'};
+  margin-bottom: 0.25rem;
+  transition: background 0.2s;
+  position: relative;
+  justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
+  border-left: ${props => props.active ? '4px solid #b7a36a' : '4px solid transparent'};
+  background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  
+  &:hover {
+    background: rgba(255,255,255,0.08);
+  }
+`;
+
+interface IconProps {
+  collapsed: boolean;
+}
+
+const NavIcon = styled.div<IconProps>`
+  font-size: 24px;
+  margin-right: ${props => props.collapsed ? '0' : '16px'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+interface LabelProps {
+  collapsed: boolean;
+}
+
+const NavLabel = styled.span<LabelProps>`
+  display: ${props => props.collapsed ? 'none' : 'block'};
+  white-space: nowrap;
+`;
+
+const Tooltip = styled.div`
+  position: absolute;
+  left: 72px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+`;
+
+interface ToggleButtonProps {
+  collapsed: boolean;
+}
+
+const ToggleButton = styled.button<ToggleButtonProps>`
+  position: fixed;
+  left: ${props => props.collapsed ? '1rem' : '245px'};
+  top: 1rem;
+  background: #402C00;
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: left 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  display: none;
+  
+  @media (max-width: 1024px) {
+    display: flex;
+  }
+`;
+
+interface MainContentProps {
+  sidebarCollapsed: boolean;
+}
+
+const MainContent = styled.main<MainContentProps>`
+  margin-left: ${props => props.sidebarCollapsed ? '72px' : '240px'};
+  padding: 2rem;
+  width: calc(100% - ${props => props.sidebarCollapsed ? '72px' : '240px'});
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  
+  @media (max-width: 1024px) {
+    margin-left: 0;
+    width: 100%;
+  }
+`;
+
+/**
+ * AdminLayout component that provides the admin dashboard shell with navigation
+ */
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const [hovered, setHovered] = React.useState<number|null>(null);
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<number | null>(null);
+  
+  // Auto-collapse the sidebar on smaller screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setCollapsed(true);
+      }
+    };
+    
+    // Initial check
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Handle logout action
+  const handleLogout = () => {
+    // In a real app, you would call auth.signOut() here
+    console.log('Logging out...');
+    // Redirect to login page
+    navigate('/login');
+  };
+  
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f6fa' }}>
+      {/* Toggle Button (visible on mobile) */}
+      <ToggleButton 
+        onClick={() => setCollapsed(!collapsed)}
+        collapsed={collapsed}
+      >
+        {collapsed ? <FaBars /> : <FaTimes />}
+      </ToggleButton>
+      
       {/* Sidebar */}
-      <aside style={{
-        width: 220,
-        background: 'linear-gradient(180deg, #402C00 0%, #2D1F01 100%)',
-        color: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '2rem 0',
-        boxShadow: '2px 0 18px rgba(64,44,0,0.14)',
-        borderRadius: 30,
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        height: 'max-content',
-        zIndex: 100,
-        margin: 18,
-        minHeight: '80vh',
-      }}>
-        <div style={{ fontWeight: 700, fontSize: 28, textAlign: 'center', marginBottom: 32, letterSpacing: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <img src="/logo.png" alt="newgold logo" style={{ width: 110, marginBottom: 16 }} />
-        </div>
+      <Sidebar collapsed={collapsed}>
+        <Logo>
+          <img 
+            src="/logo.png" 
+            alt="BIOPTRICS logo" 
+            style={{ 
+              width: collapsed ? '40px' : '120px',
+              transition: 'width 0.3s ease'
+            }} 
+          />
+        </Logo>
+        
         <nav style={{ flex: 1 }}>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {/* Render all links except Setting and Logout */}
-            {sidebarLinks.slice(0, sidebarLinks.length - 2).map((link, idx) => (
-              <React.Fragment key={link.to}>
-                <li
-                  style={{ position: 'relative' }}
-                  onMouseEnter={() => setHovered(idx)}
-                  onMouseLeave={() => setHovered(null)}
-                >
-                  <Link to={link.to} style={{
-                    ...sidebarLinkStyle,
-                    background: location.pathname === link.to || (link.submenu && link.submenu.some(s => location.pathname === s.to)) ? '#FFFFFF1A' : 'transparent',
-                    position: 'relative',
-                    zIndex: 2,
-                    borderRadius: location.pathname === link.to || (link.submenu && link.submenu.some(s => location.pathname === s.to)) ? 0 : sidebarLinkStyle.borderRadius,
-                  }}>
-                    {link.icon && <link.icon style={iconStyle} />}
-                    {link.label}
-                  </Link>
-                  {/* Inline submenu if parent is active, floating otherwise */}
-                  {link.submenu && (
-                    ((link.to === '/admin/surveys' && location.pathname.startsWith('/admin/surveys')) ||
-                      (link.to === '/admin/questions' && location.pathname.startsWith('/admin/questions')))
-                      ? (
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginTop: 4 }}>
-                          {link.submenu.map(sublink => (
-                            <li key={sublink.to}>
-                              <Link
-                                to={sublink.to}
-                                style={{
-                                  ...sidebarLinkStyle,
-                                  background: location.pathname === sublink.to ? '#FFFFFF1A' : 'transparent',
-                                  color: location.pathname === sublink.to ? '#fff' : '#fff',
-                                  marginLeft: 36,
-                                  fontSize: 15,
-                                  fontWeight: 500,
-                                  borderRadius: location.pathname === sublink.to ? 0 : 6,
-                                  marginBottom: 4,
-                                }}
-                              >
-                                {sublink.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        hovered === idx && (
-                          <ul
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: '100%',
-                              minWidth: 180,
-                              background: '#fff',
-                              color: '#552a47',
-                              borderRadius: 12,
-                              boxShadow: '0 6px 32px #b0802b33',
-                              padding: '14px 0',
-                              margin: 0,
-                              zIndex: 999,
-                              listStyle: 'none',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: 2,
-                            }}
-                            onMouseEnter={() => setHovered(idx)}
-                            onMouseLeave={() => setHovered(null)}
-                          >
-                            {link.submenu.map(sublink => (
-                              <li key={sublink.to}>
-                                <Link
-                                  to={sublink.to}
-                                  style={{
-                                    display: 'block',
-                                    padding: '11px 28px',
-                                    color: location.pathname === sublink.to ? '#fff' : '#552a47',
-                                    background: location.pathname === sublink.to ? '#b8a06c' : 'transparent',
-                                    borderRadius: 8,
-                                    fontSize: 15,
-                                    fontWeight: 500,
-                                    textDecoration: 'none',
-                                    margin: '2px 0',
-                                    transition: 'background 0.13s, color 0.13s',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {sublink.label}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )
-                      )
-                  )}
-                </li>
-              </React.Fragment>
-            ))}
-          </ul>
-          {/* Spacer to push Setting and Logout to the bottom */}
-          <div style={{ flex: 1 }} />
-          {/* Settings and Logout section at the bottom */}
-          <div style={{ marginTop: 36 }}>
-            {/* Render Setting link (last sidebar link) */}
-            <li
-              style={{ position: 'relative', listStyle: 'none' }}
-              onMouseEnter={() => setHovered(sidebarLinks.length - 1)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              <Link to={sidebarLinks[sidebarLinks.length - 1].to} style={{
-                ...sidebarLinkStyle,
-                background: location.pathname.startsWith('/admin/setting') ? '#6e395e' : 'transparent',
-                position: 'relative',
-                zIndex: 2,
-              }}>
-                {(() => { const Icon = sidebarLinks[sidebarLinks.length - 1].icon; return Icon ? <Icon style={iconStyle} /> : null; })()}
-                {sidebarLinks[sidebarLinks.length - 1].label}
-              </Link>
-              {/* Inline submenu for Setting if active */}
-              {(() => {
-  const lastSidebarLink = sidebarLinks[sidebarLinks.length - 1];
-  if (lastSidebarLink?.submenu && location.pathname.startsWith('/admin/setting')) {
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginTop: 4 }}>
-        {lastSidebarLink.submenu.map(sublink => (
-          <li key={sublink.to}>
-            <Link
-              to={sublink.to}
-              style={{
-                ...sidebarLinkStyle,
-                background: location.pathname === sublink.to ? '#e4f0fa' : 'transparent',
-                color: location.pathname === sublink.to ? '#552a47' : '#fff',
-                marginLeft: 36,
-                fontSize: 15,
-                fontWeight: 500,
-                borderRadius: 6,
-                marginBottom: 4,
-              }}
-            >
-              {sublink.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return null;
-})()}
-
-            </li>
-            {/* Logout button */}
-            <footer style={{ padding: '1.5rem 0 0 0' }}>
-              <button
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  fontSize: 17,
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 24px',
-                  borderRadius: 8,
-                  marginBottom: 6,
-                  transition: 'background 0.2s',
-                  width: '100%',
-                  textAlign: 'left',
-                  boxShadow: '0 1px 4px rgba(90, 110, 234, 0.07)'
-                }}
-                onClick={() => {
-                  localStorage.removeItem('admin_jwt');
-                  window.location.href = '/admin-login';
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.color = '#b7a36a';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.background = 'none';
-                  e.currentTarget.style.color = '#fff';
-                }}
+          {sidebarLinks.map((link, idx) => {
+            // Check if the current path matches this link
+            const isActive = location.pathname === link.to || 
+                             (link.to !== '/logout' && location.pathname.startsWith(link.to));
+            
+            return (
+              <div 
+                key={link.label}
+                onMouseEnter={() => setHoveredItem(idx)}
+                onMouseLeave={() => setHoveredItem(null)}
+                style={{ position: 'relative' }}
               >
-                <FaSignOutAlt style={iconStyle} />
-                Logout
-              </button>
-            </footer>
-          </div>
+                {link.to === '/logout' ? (
+                  // Render a button for logout
+                  <NavButton 
+                    active={isActive} 
+                    collapsed={collapsed}
+                    onClick={handleLogout}
+                  >
+                    <NavIcon collapsed={collapsed}>
+                      <link.icon />
+                    </NavIcon>
+                    <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
+                    
+                    {/* Tooltip shown on hover when sidebar is collapsed */}
+                    {collapsed && hoveredItem === idx && (
+                      <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                        {link.label}
+                      </Tooltip>
+                    )}
+                  </NavButton>
+                ) : (
+                  // Render a link for normal navigation
+                  <NavItem 
+                    to={link.to}
+                    active={isActive} 
+                    collapsed={collapsed}
+                  >
+                    <NavIcon collapsed={collapsed}>
+                      <link.icon />
+                    </NavIcon>
+                    <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
+                    
+                    {/* Tooltip shown on hover when sidebar is collapsed */}
+                    {collapsed && hoveredItem === idx && (
+                      <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                        {link.label}
+                      </Tooltip>
+                    )}
+                  </NavItem>
+                )}
+              </div>
+            );
+          })}
+          {/* Navigation items are rendered above */}
         </nav>
-      </aside>
-      <div style={{ flex: 1, background: '#FFF9EB', minHeight: '100vh', marginLeft: 220 }}>
+      </Sidebar>
+
+      {/* Main Content */}
+      <MainContent sidebarCollapsed={collapsed}>
         {children}
-      </div>
+      </MainContent>
     </div>
   );
 };
