@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FaPlus, FaFilter } from 'react-icons/fa';
+import DashboardBg from './DashboardBg';
+
 
 
 const Container = styled.div`
   padding: 40px;
-  background: #fffbea;
   min-height: 100vh;
 `;
 
@@ -215,10 +216,11 @@ const AdminQuestionBank = () => {
 
   return (
     <AdminLayout>
-       <TitleRow>
-        <Title>Question Bank</Title>
-      </TitleRow>
-      <Container>
+      <DashboardBg>
+        <TitleRow>
+          <Title>Question Bank</Title>
+        </TitleRow>
+        <Container>
         {/* Stats and Summary Section */}
         <div style={{ marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -324,7 +326,8 @@ const AdminQuestionBank = () => {
               </div>
             )}
           </Container>
-        </AdminLayout>
+      </DashboardBg>
+    </AdminLayout>
       );
     }
 

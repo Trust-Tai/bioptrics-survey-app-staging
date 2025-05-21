@@ -1,4 +1,5 @@
 import React from 'react';
+import DashboardBg from './DashboardBg';
 import AdminLayout from './AdminLayout';
 
 const Analytics: React.FC = () => {

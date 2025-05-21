@@ -1,3 +1,4 @@
+/// <reference path="../../../global.d.ts" />
 import React from 'react';
 import AdminLayout from './AdminLayout';
 import { FaUsers, FaQuestionCircle, FaClipboardList, FaChartBar } from 'react-icons/fa';
@@ -8,12 +9,16 @@ import { useResponses } from '../useResponses';
 
 import styled from 'styled-components';
 
-const DashboardBg = styled.div`
-  background: #fff;
-  min-height: 100vh;
-  padding: 2.5rem 0 4rem 0;
-`;
+import DashboardBg from './DashboardBg';
 
+
+
+const DashboardContent = styled.div`
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+`;
 const GoldHeaderCard = styled.div`
   background: #b7a36a;
   border-radius: 18px;
@@ -163,6 +168,8 @@ const TrendValue = styled.div`
   color: #444;
 `;
 
+import { useNavigate } from 'react-router-dom';
+
 const AdminDashboard: React.FC = () => {
   // Dynamically import the Questions collection for client-side use
   const [QuestionsCollection, setQuestionsCollection] = React.useState<any>(null);
@@ -205,10 +212,30 @@ const AdminDashboard: React.FC = () => {
     { label: 'Export Results', icon: <FaChartBar />, link: '/admin/analytics' },
   ];
 
+  // Get current admin's first name
+  const navigate = useNavigate();
+  const user = typeof Meteor !== 'undefined' && Meteor.user ? Meteor.user() : null;
+  const profile = user?.profile as UserProfile | undefined;
+  console.log(user);
+  const firstName = profile?.firstName || (profile?.name?.split(' ')[0]) || user?.username || 'Admin';
+
+  // Redirect to login if not logged in
+  React.useEffect(() => {
+    if (!user) {
+      navigate('/admin/login', { state: { message: "You've have been logged out" } });
+    }
+  }, [user, navigate]);
+
   return (
     <AdminLayout>
       <DashboardBg>
-        <GoldHeaderCard>
+        <DashboardContent>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#222222', marginBottom: 12 }}>
+              Hi Tai, welcome to your Dashboard.
+            </div>
+          </div>
+          <GoldHeaderCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <HeaderLabel>JAN '25</HeaderLabel>
@@ -478,6 +505,7 @@ const AdminDashboard: React.FC = () => {
             </TrendBar>
           </EngagementTrendCard>
         </MainGrid>
+        </DashboardContent>
       </DashboardBg>
     </AdminLayout>
   );

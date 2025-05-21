@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
+import DashboardBg from './DashboardBg';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Goals } from '/imports/api/goals';
 import { Meteor } from 'meteor/meteor';
@@ -131,9 +132,9 @@ const SurveyGoalsPage: React.FC = () => {
   }
 
   return (
-    <>
-      <AdminLayout>
-        <div style={{ width: '100%', padding: '32px 32px 32px 32px', background: '#fff8ee', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box' }}>
+    <AdminLayout>
+      <DashboardBg>
+        <div>
           <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>Survey Goals</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
             <button
@@ -335,8 +336,8 @@ const SurveyGoalsPage: React.FC = () => {
         )}
       </div>
       {/* End main content div */}
-    </AdminLayout>
-  </>
+    </DashboardBg>
+  </AdminLayout>
   );
 };
 

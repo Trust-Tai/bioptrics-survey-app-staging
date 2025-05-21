@@ -5,15 +5,16 @@ import { FaChartBar, FaQuestionCircle, FaClipboardList, FaUsers, FaKey, FaSignOu
 
 const sidebarLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FaChartBar },
-  { to: '/admin/surveys', label: 'Surveys', icon: FaClipboardList, submenu: [
-    { to: '/admin/surveys/all', label: 'All Surveys' },
-    { to: '/admin/surveys/goals', label: 'Survey Goals' },
-    { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
-    { to: '/admin/surveys/theme', label: 'Theme' },
-  ] },
   { to: '/admin/questions', label: 'Questions', icon: FaQuestionCircle, submenu: [
     { to: '/admin/questions/all', label: 'Question Bank' },
     { to: '/admin/questions/builder', label: 'Question Builder' },
+  ] },
+  { to: '/admin/surveys', label: 'Surveys', icon: FaClipboardList, submenu: [
+    { to: '/admin/surveys/all', label: 'All Surveys' },
+    { to: '/admin/surveys/builder', label: 'Survey Builder' },
+    { to: '/admin/surveys/goals', label: 'Survey Goals' },
+    { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
+    { to: '/admin/surveys/theme', label: 'Theme' },
   ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaUsers },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartBar },
@@ -37,10 +38,20 @@ const sidebarLinkStyle = {
 const iconStyle = { marginRight: 12, fontSize: 18 };
 
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  React.useEffect(() => {
+    const prevBg = document.body.style.background;
+    const prevOverflowX = document.body.style.overflowX;
+    document.body.style.background = '#FFF9EB';
+    document.body.style.overflowX = 'hidden';
+    return () => {
+      document.body.style.background = prevBg;
+      document.body.style.overflowX = prevOverflowX;
+    };
+  }, []);
   const location = useLocation();
   const [hovered, setHovered] = React.useState<number|null>(null);
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f6fa' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', overflowX: 'hidden' }}>
       {/* Sidebar */}
       <aside style={{
         width: 220,
@@ -251,7 +262,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </nav>
       </aside>
-      <div style={{ flex: 1, background: '#FFF9EB', minHeight: '100vh', marginLeft: 220 }}>
+      <div style={{ flex: 1, minHeight: '100vh', marginLeft: 220 }}>
         {children}
       </div>
     </div>

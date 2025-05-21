@@ -4,6 +4,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './QuestionBuilder.quill.css';
 import AdminLayout from './AdminLayout';
+import DashboardBg from './DashboardBg';
 import { useLocation } from 'react-router-dom';
 import { Questions } from '/imports/api/questions';
 import EllipsisMenu from './EllipsisMenu';
@@ -306,6 +307,7 @@ const handleLikertLabelChange = (idx: number, labelKey: 'leftLabel' | 'rightLabe
 
 return (
   <AdminLayout>
+    <DashboardBg>
     {/* Custom Alert (matching WPSFramework) */}
     {alert && (
       <div style={{
@@ -323,8 +325,8 @@ return (
         boxShadow: '0 2px 12px #b0802b33',
       }}>{alert.message}</div>
     )}
-    <div style={{ width: '100%', padding: '32px 0', background: '#fff', minHeight: '100vh', boxSizing: 'border-box' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
+    <div style={{ padding: '32px 0', minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px' }}>
         <div style={{
           position: 'sticky',
           top: 0,
@@ -665,7 +667,8 @@ return (
            ))}
         </div> {/* close inner container */}
       </div> {/* close outer container */}
-  </AdminLayout>
+      </DashboardBg>
+    </AdminLayout>
   );
 }
 

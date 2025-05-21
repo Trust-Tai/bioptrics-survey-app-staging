@@ -12,31 +12,35 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    Meteor.call('admin.login', emailOrUsername, password, (err: any, res: any) => {
-      if (err) {
-        setError(err.reason || 'Admin login failed');
-      } else {
-        localStorage.setItem('admin_jwt', res.token);
-        onAdminAuth();
-      }
-    });
+    try {
+      await new Promise((resolve, reject) => {
+        Meteor.loginWithPassword(emailOrUsername, password, (err) => {
+          if (err) reject(err);
+          else resolve(null);
+        });
+      });
+      Meteor.call('admin.getToken', (err: any, res: any) => {
+        if (err) {
+          setError(err.reason || 'Not an admin user');
+        } else {
+          localStorage.setItem('admin_jwt', res.token);
+          onAdminAuth();
+        }
+      });
+    } catch (err: any) {
+      setError(err.reason || 'Admin login failed');
+    }
   };
+
 
 
   return (
     <AuthBg>
-      {/* Triangle background shapes (placeholder, can be improved with SVG/CSS) */}
-      <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: 300, zIndex: 0 }}>
-        {/* Example triangles, you can replace with SVGs or images for more accuracy */}
-        <div style={{ width: 0, height: 0, borderLeft: '120px solid transparent', borderBottom: '120px solid #ede3d0', position: 'absolute', left: 40, top: 90, opacity: 0.6 }} />
-        <div style={{ width: 0, height: 0, borderLeft: '80px solid transparent', borderBottom: '80px solid #ede3d0', position: 'absolute', left: 60, top: 240, opacity: 0.4 }} />
-        <div style={{ width: 0, height: 0, borderLeft: '60px solid transparent', borderBottom: '60px solid #ede3d0', position: 'absolute', left: 0, top: 350, opacity: 0.25 }} />
-      </div>
       {/* New logo art at bottom left */}
-      <img src="/newlogo-art.png" alt="new gold art" style={{ position: 'absolute', left: 0, bottom: 0, height: 180, zIndex: 1, pointerEvents: 'none' }} />
+      <img src="/newlogo-art.png" alt="new gold art" style={{ position: 'absolute', left: 0, bottom: 0, height: '60%', zIndex: 1, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', top: 50, left: '50%', transform: 'translateX(-50%)', zIndex: 2 }}>
         {/* Logo placeholder - replace src with your actual logo path */}
         <img src="/newgold-logo.png" alt="new gold logo" style={{ height: 48, marginBottom: 32 }} />

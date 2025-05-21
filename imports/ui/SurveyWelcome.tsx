@@ -92,15 +92,27 @@ const Privacy = styled.div`
   margin-top: 8px;
 `;
 
-const SurveyWelcome: React.FC<{ onStart?: () => void }> = ({ onStart }) => {
+interface SurveyWelcomeProps {
+  onStart?: () => void;
+  previewData?: {
+    title?: string;
+    description?: string;
+    logo?: string;
+    image?: string;
+  };
+}
+
+const SurveyWelcome: React.FC<SurveyWelcomeProps> = ({ onStart, previewData }) => {
   return (
     <Wrapper>
       <Card>
-        <Logo src="https://s28.q4cdn.com/380852864/files/design/logo.svg" alt="newgold logo" />
-        <Illustration src="/illustration.png" alt="Survey Illustration" />
-        <Title>Welcome to the New Gold Employee Survey</Title>
+        <Logo src={previewData?.logo || "https://s28.q4cdn.com/380852864/files/design/logo.svg"} alt="newgold logo" />
+        <Illustration src={previewData?.image || "/illustration.png"} alt="Survey Illustration" />
+        <Title>{previewData?.title || "Welcome to the New Gold Employee Survey"}</Title>
         <Description>
-          Your feedback is important in helping us improve our workplace. This survey is anonymous and takes about 5-7 minutes to complete. Please answer honestly – we value your input.
+          {previewData?.description || (
+            <>Your feedback is important in helping us improve our workplace. This survey is anonymous and takes about 5-7 minutes to complete. Please answer honestly – we value your input.</>
+          )}
         </Description>
         <StartButton onClick={onStart}>START SURVEY</StartButton>
         <Privacy>
