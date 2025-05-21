@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, TooltipProps } from 'recharts';
 
 interface SiteData {
   name: string;
@@ -78,7 +78,7 @@ const SiteParticipationChart: React.FC<SiteParticipationChartProps> = ({ data, i
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip 
-                content={({ active, payload, label }) => {
+                content={({ active, payload, label }: TooltipProps<number, string>) => {
                   if (active && payload && payload.length) {
                     return (
                       <CustomTooltip>
