@@ -36,6 +36,10 @@ const sidebarLinks = [
   ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FiUsers },
   { to: '/admin/participants', label: 'Participants', icon: FaUserCheck },
+  { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
+    { to: '/admin/users/all', label: 'All Users' },
+    { to: '/admin/users/add', label: 'Add New' },
+  ] },
   { to: '/admin/settings', label: 'Settings', icon: FaCog },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
@@ -248,6 +252,7 @@ interface MainContentProps {
 const MainContent = styled.main<MainContentProps>`
   padding: 2rem;
   transition: margin-left 0.3s ease, width 0.3s ease;
+  height: 100%;
   
   @media (max-width: 1024px) {
     margin-left: 0;

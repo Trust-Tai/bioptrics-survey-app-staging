@@ -8,6 +8,9 @@ import Analytics from './admin/Analytics';
 import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
 import Setting from './admin/Setting';
+import Users from './admin/Users';
+import AllUsers from './admin/AllUsers';
+import AddUser from './admin/AddUser';
 import Welcome from './Welcome';
 import SurveyWelcome from './SurveyWelcome';
 import GetToKnowYou from './GetToKnowYou';
@@ -164,6 +167,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/setting" element={<Setting />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
+        <Route path="/admin/users" element={<Users />} />
+        <Route path="/admin/users/all" element={<AllUsers />} />
+        <Route path="/admin/users/add" element={<AddUser />} />
       </Route>
     </Routes>
   );
