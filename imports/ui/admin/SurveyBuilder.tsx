@@ -12,16 +12,22 @@ import { SurveyThemes } from '/imports/api/surveyThemes';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import { Surveys } from '/imports/api/surveys';
 import Select, { MultiValue } from 'react-select';
+import SurveySharing from './SurveySharing';
+import SurveyBranchingLogic from './SurveyBranchingLogic';
+import SurveyNotifications from './SurveyNotifications';
 
 const steps = [
   { label: 'Welcome Screen' },
-  { label: 'Engagement/Manager Relationships' },
-  { label: 'Peer/Team Dynamics' },
-  { label: 'Feedback & Communication Quality' },
-  { label: 'Recognition and Pride' },
-  { label: 'Safety & Wellness Indicators' },
-  { label: 'Site-specific open text boxes' },
-  { label: 'Optional Demographics' },
+  { label: 'Questions' },
+  { label: 'Demographics' },
+  { label: 'Themes' },
+  { label: 'Categories' },
+  { label: 'Branching Logic' },
+  { label: 'Completion' },
+  { label: 'Preview' },
+  { label: 'Publish' },
+  { label: 'Settings' },
+  { label: 'Notifications' },
 ];
 
 interface SurveyForm {
@@ -30,6 +36,42 @@ interface SurveyForm {
   logo?: string;
   image?: string;
   color?: string;
+  selectedQuestions?: Record<string, any>;
+  siteTextQuestions?: Array<any>;
+  siteTextQForm?: any;
+  selectedDemographics?: string[];
+  defaultSettings?: {
+    allowAnonymous?: boolean;
+    requireLogin?: boolean;
+    showProgressBar?: boolean;
+    allowSave?: boolean;
+    allowSkip?: boolean;
+    showThankYou?: boolean;
+    thankYouMessage?: string;
+    redirectUrl?: string;
+    notificationEmails?: string[];
+    expiryDate?: Date;
+    responseLimit?: number;
+    themes?: string[];
+    categories?: string[];
+    startDate?: Date;
+    autoPublish?: boolean;
+    recurringSchedule?: boolean;
+    recurringFrequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+    restrictAccess?: boolean;
+    allowedGroups?: string[];
+    passwordProtected?: boolean;
+    accessPassword?: string;
+  };
+  branchingLogic?: {
+    rules: Array<{
+      questionId: string;
+      condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
+      value: any;
+      jumpToQuestionId: string;
+    }>;
+    enabled: boolean;
+  };
 }
 
 const demographicOptions = [
@@ -169,6 +211,53 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editId }) => {
 const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editSurveyId, setEditSurveyId] = useState<string | null>(null);
+  
+  // Define interface for default settings
+  interface DefaultSettings {
+    allowAnonymous: boolean;
+    requireLogin: boolean;
+    showProgressBar: boolean;
+    allowSave: boolean;
+    allowSkip: boolean;
+    showThankYou: boolean;
+    thankYouMessage: string;
+    redirectUrl: string;
+    notificationEmails: string[];
+    expiryDate?: Date;
+    responseLimit: number;
+    themes: string[];
+    categories: string[];
+    // New properties for scheduling
+    startDate?: Date;
+    autoPublish?: boolean;
+    recurringSchedule?: boolean;
+    recurringFrequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+    // New properties for access control
+    restrictAccess?: boolean;
+    allowedGroups?: string[];
+    passwordProtected?: boolean;
+    accessPassword?: string;
+  }
+  
+  // Default settings state
+  const [defaultSettings, setDefaultSettings] = useState<DefaultSettings>({
+    allowAnonymous: true,
+    requireLogin: false,
+    showProgressBar: true,
+    allowSave: true,
+    allowSkip: false,
+    showThankYou: true,
+    thankYouMessage: 'Thank you for completing this survey! Your feedback is valuable to us.',
+    redirectUrl: '',
+    notificationEmails: [] as string[],
+    expiryDate: undefined as Date | undefined,
+    responseLimit: 0,
+    themes: [] as string[],
+    categories: [] as string[],
+  });
+  
+  // State for default settings panel visibility
+  const [showDefaultSettings, setShowDefaultSettings] = useState(false);
 
   // Helper to gather all survey data
   const getSurveyData = () => ({
@@ -177,6 +266,10 @@ const [copied, setCopied] = useState(false);
     siteTextQuestions,
     siteTextQForm,
     selectedDemographics,
+    defaultSettings,
+    isActive: true,
+    priority: 3,
+    keywords: [],
   });
 
   // Save as draft
@@ -429,41 +522,52 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
       <DashboardBg>
         {/* --- Published Link Section --- */}
         {publishedLink && (
-  <div style={{
-    background: 'rgba(255,255,255,0.6)',
-    color: '#28211e',
-    padding: '12px 16px',
-    borderRadius: 14,
-    border: '2px solid #552a47',
-    margin: '24px auto 12px auto',
-    maxWidth: 900,
-    boxShadow: '0 2px 8px #552a4733',
-    fontSize: 16,
-    fontWeight: 600,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: 6
-  }}>
-    <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
-      Survey is published!
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-      <span style={{ fontWeight: 400, fontSize: 16 }}>Sharable Link:</span>
-      <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#28211e', textDecoration: 'underline', fontSize: 16 }}>{publishedLink}</a>
-      <button
-        style={{ background: '#fff', color: '#2ecc40', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, cursor: 'pointer' }}
-        onClick={() => {
-          navigator.clipboard.writeText(publishedLink);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }}
-      >
-        {copied ? 'Copied!' : 'Copy Link'}
-      </button>
-    </div>
-  </div>
-)}
+          <div style={{
+            background: 'rgba(255,255,255,0.6)',
+            color: '#28211e',
+            padding: '24px',
+            borderRadius: 14,
+            border: '2px solid #552a47',
+            margin: '24px auto 12px auto',
+            maxWidth: 1000,
+            boxShadow: '0 2px 8px #552a4733',
+            fontSize: 16,
+            fontWeight: 600,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: 16
+          }}>
+            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+              Survey is published!
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
+              <span style={{ fontWeight: 400, fontSize: 16 }}>Sharable Link:</span>
+              <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#28211e', textDecoration: 'underline', fontSize: 16 }}>{publishedLink}</a>
+              </div>
+              <button
+                style={{ background: '#fff', color: '#2ecc40', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, cursor: 'pointer' }}
+                onClick={() => {
+                  navigator.clipboard.writeText(publishedLink);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+            </div>
+            
+            {/* Survey Sharing & Collaboration Component */}
+            <div style={{ width: '100%', marginTop: 16 }}>
+              <SurveySharing 
+                surveyId={editSurveyId || ''} 
+                surveyTitle={form.title} 
+                isOwner={true} 
+              />
+            </div>
+          </div>
+        )}
         <div style={{ padding: '32px 0', minHeight: '100vh', boxSizing: 'border-box' }}>
           <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: '#fff', position: 'relative', overflow: 'visible' }}>
             
@@ -487,7 +591,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 flexDirection: 'column',
                 alignItems: 'center',
                 minWidth: 240,
-                textAlign: 'center',
+                textAlign: 'center'
               }}>
                 {alert.message}
                 {publishedLink && alert.type === 'success' && (
@@ -503,7 +607,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                       onClick={() => {
                         navigator.clipboard.writeText(publishedLink ?? "");
                         showSuccess('Copied!');
-                        setTimeout(() => showSuccess(null), 2000);
+                        setTimeout(() => setAlert(null), 2000);
                       }}
                     >
                       Copy Link
@@ -512,24 +616,24 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 )}
               </div>
             )}
-            <div
-              style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 200,
-                background: '#fff',
-                boxShadow: '0 4px 18px 0 rgba(176,128,43,0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 20,
-                padding: '10px 0 10px 0',
-                transition: 'box-shadow 0.15s',
-              }}
-            >
+            
+            {/* Header Section */}
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 200,
+              background: '#fff',
+              boxShadow: '0 4px 18px 0 rgba(176,128,43,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 20,
+              padding: '10px 0 10px 0',
+              transition: 'box-shadow 0.15s'
+            }}>
               <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, margin: 0 }}>
-  {isEditMode && form.title ? `Editing ${form.title}` : 'Add New Survey'}
-</h2>
+                {isEditMode && form.title ? `Editing ${form.title}` : 'Add New Survey'}
+              </h2>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   style={{ background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
@@ -795,6 +899,33 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                           </div>
                         </>
                       ) : i === 6 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Question Branching Logic</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Create conditional logic to determine which questions to show based on previous answers:</p>
+                          
+                          {editSurveyId ? (
+                            <SurveyBranchingLogic
+                              surveyId={editSurveyId}
+                              questions={Object.entries(form.selectedQuestions || {}).map(([id, q]: [string, any]) => ({
+                                id,
+                                text: q.questionText || 'Untitled Question',
+                                type: q.type || 'text'
+                              }))}
+                              existingLogic={form.branchingLogic}
+                              onSave={(logic) => {
+                                setForm({
+                                  ...form,
+                                  branchingLogic: logic
+                                });
+                              }}
+                            />
+                          ) : (
+                            <div style={{ padding: '24px', background: '#f9f9f9', borderRadius: '8px', textAlign: 'center' }}>
+                              Please save the survey first to enable branching logic.
+                            </div>
+                          )}
+                        </div>
+                      ) : i === 7 ? (
                         <>
                           <div style={{ marginBottom: 18 }}>
                             <label style={{ display: 'block', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
@@ -992,6 +1123,318 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
   );
 })}
                           </div>
+                        </div>
+                      ) : i === 8 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Default Survey Settings</h3>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 20 }}>
+                            {/* Response Settings */}
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 16 }}>Response Settings</h4>
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.allowAnonymous} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, allowAnonymous: !defaultSettings.allowAnonymous})}
+                                  />
+                                  Allow Anonymous Responses
+                                </label>
+                              </div>
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.requireLogin} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, requireLogin: !defaultSettings.requireLogin})}
+                                  />
+                                  Require Login
+                                </label>
+                              </div>
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.allowSave} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, allowSave: !defaultSettings.allowSave})}
+                                  />
+                                  Allow Save & Continue
+                                </label>
+                              </div>
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.allowSkip} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, allowSkip: !defaultSettings.allowSkip})}
+                                  />
+                                  Allow Skipping Questions
+                                </label>
+                              </div>
+                            </div>
+                            
+                            {/* Display Settings */}
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 16 }}>Display Settings</h4>
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.showProgressBar} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, showProgressBar: !defaultSettings.showProgressBar})}
+                                  />
+                                  Show Progress Bar
+                                </label>
+                              </div>
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.showThankYou} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, showThankYou: !defaultSettings.showThankYou})}
+                                  />
+                                  Show Thank You Screen
+                                </label>
+                              </div>
+                              
+                              {defaultSettings.showThankYou && (
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ display: 'block', marginBottom: 4 }}>Thank You Message</label>
+                                  <textarea 
+                                    value={defaultSettings.thankYouMessage} 
+                                    onChange={(e) => setDefaultSettings({...defaultSettings, thankYouMessage: e.target.value})}
+                                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd', minHeight: 80 }}
+                                  />
+                                </div>
+                              )}
+                              
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'block', marginBottom: 4 }}>Redirect URL (optional)</label>
+                                <input 
+                                  type="text" 
+                                  value={defaultSettings.redirectUrl} 
+                                  onChange={(e) => setDefaultSettings({...defaultSettings, redirectUrl: e.target.value})}
+                                  placeholder="https://example.com/thank-you"
+                                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Notification Settings */}
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 16 }}>Notification Settings</h4>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'block', marginBottom: 4 }}>Notification Emails (comma-separated)</label>
+                                <input 
+                                  type="text" 
+                                  value={defaultSettings.notificationEmails?.join(', ') || ''} 
+                                  onChange={(e) => setDefaultSettings({...defaultSettings, notificationEmails: e.target.value.split(',').map(email => email.trim()).filter(email => email)})}
+                                  placeholder="email@example.com, another@example.com"
+                                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Limits Settings */}
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 16 }}>Limits & Restrictions</h4>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'block', marginBottom: 4 }}>Response Limit (0 = unlimited)</label>
+                                <input 
+                                  type="number" 
+                                  value={defaultSettings.responseLimit || 0} 
+                                  onChange={(e) => setDefaultSettings({...defaultSettings, responseLimit: parseInt(e.target.value) || 0})}
+                                  min="0"
+                                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                />
+                              </div>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'block', marginBottom: 4 }}>Expiry Date (optional)</label>
+                                <input 
+                                  type="date" 
+                                  value={defaultSettings.expiryDate ? new Date(defaultSettings.expiryDate).toISOString().split('T')[0] : ''} 
+                                  onChange={(e) => {
+                                    const date = e.target.value ? new Date(e.target.value) : undefined;
+                                    setDefaultSettings({...defaultSettings, expiryDate: date});
+                                  }}
+                                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Schedule Settings */}
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 16 }}>Schedule Settings</h4>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'block', marginBottom: 4 }}>Start Date (optional)</label>
+                                <input 
+                                  type="date" 
+                                  value={defaultSettings.startDate ? new Date(defaultSettings.startDate).toISOString().split('T')[0] : ''} 
+                                  onChange={(e) => {
+                                    const date = e.target.value ? new Date(e.target.value) : undefined;
+                                    setDefaultSettings({...defaultSettings, startDate: date});
+                                  }}
+                                  style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                />
+                              </div>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.autoPublish || false} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, autoPublish: !defaultSettings.autoPublish})}
+                                  />
+                                  Auto-publish on start date
+                                </label>
+                              </div>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.recurringSchedule || false} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, recurringSchedule: !defaultSettings.recurringSchedule})}
+                                  />
+                                  Set recurring schedule
+                                </label>
+                              </div>
+                               
+                              {defaultSettings.recurringSchedule && (
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ display: 'block', marginBottom: 4 }}>Frequency</label>
+                                  <select
+                                    value={defaultSettings.recurringFrequency || 'monthly'}
+                                    onChange={(e) => setDefaultSettings({...defaultSettings, recurringFrequency: e.target.value as 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually'})}
+                                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                  >
+                                    <option value="weekly">Weekly</option>
+                                    <option value="biweekly">Bi-weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="annually">Annually</option>
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Access Control */}
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 16 }}>Access Control</h4>
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.restrictAccess || false} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, restrictAccess: !defaultSettings.restrictAccess})}
+                                  />
+                                  Restrict access to specific groups
+                                </label>
+                              </div>
+                               
+                              {defaultSettings.restrictAccess && (
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ display: 'block', marginBottom: 4 }}>Allowed Groups</label>
+                                  <Select
+                                    isMulti
+                                    placeholder="Select groups..."
+                                    value={(defaultSettings.allowedGroups || []).map(group => ({ value: group, label: group }))} 
+                                    onChange={(selected: MultiValue<{ value: string; label: string }>) => {
+                                      setDefaultSettings({
+                                        ...defaultSettings, 
+                                        allowedGroups: selected ? selected.map(item => item.value) : []
+                                      });
+                                    }}
+                                    options={[
+                                      { value: 'employees', label: 'All Employees' },
+                                      { value: 'managers', label: 'Managers' },
+                                      { value: 'hr', label: 'HR Department' },
+                                      { value: 'executives', label: 'Executives' },
+                                      { value: 'contractors', label: 'Contractors' }
+                                    ]}
+                                    styles={{
+                                      control: (provided) => ({
+                                        ...provided,
+                                        borderColor: '#ddd',
+                                        boxShadow: 'none',
+                                        '&:hover': {
+                                          borderColor: '#552a47'
+                                        }
+                                      }),
+                                      multiValue: (provided) => ({
+                                        ...provided,
+                                        backgroundColor: '#f0e6f5',
+                                      }),
+                                      multiValueLabel: (provided) => ({
+                                        ...provided,
+                                        color: '#552a47',
+                                      }),
+                                      multiValueRemove: (provided) => ({
+                                        ...provided,
+                                        color: '#552a47',
+                                        '&:hover': {
+                                          backgroundColor: '#552a47',
+                                          color: 'white',
+                                        },
+                                      }),
+                                    }}
+                                  />
+                                </div>
+                              )}
+                               
+                              <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={defaultSettings.passwordProtected || false} 
+                                    onChange={() => setDefaultSettings({...defaultSettings, passwordProtected: !defaultSettings.passwordProtected})}
+                                  />
+                                  Password protect survey
+                                </label>
+                              </div>
+                               
+                              {defaultSettings.passwordProtected && (
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ display: 'block', marginBottom: 4 }}>Access Password</label>
+                                  <input 
+                                    type="password" 
+                                    value={defaultSettings.accessPassword || ''} 
+                                    onChange={(e) => setDefaultSettings({...defaultSettings, accessPassword: e.target.value})}
+                                    style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ddd' }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : i === 10 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Survey Notifications</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Send email notifications to invite participants or remind them to complete the survey:</p>
+                          
+                          {editSurveyId ? (
+                            <SurveyNotifications
+                              surveyId={editSurveyId}
+                              surveyTitle={form.title}
+                              notificationHistory={[]}
+                            />
+                          ) : (
+                            <div style={{ padding: '24px', background: '#f9f9f9', borderRadius: '8px', textAlign: 'center' }}>
+                              Please save and publish the survey first to enable notifications.
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div style={{ marginBottom: 18, fontSize: 16, color: '#222222' }}>

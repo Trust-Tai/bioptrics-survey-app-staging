@@ -15,6 +15,14 @@ export interface QuestionVersion {
   updatedBy: string;
   language?: string;
   surveyThemes?: string[];
+  categoryTags?: string[];
+  organizationId?: string;
+  isReusable?: boolean;
+  usageCount?: number;
+  lastUsedAt?: Date;
+  priority?: number;
+  isActive?: boolean;
+  keywords?: string[];
 }
 
 export interface QuestionDoc {
@@ -49,6 +57,19 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.adminNotes': { type: String, optional: true },
     'versions.$.updatedAt': { type: Date },
     'versions.$.updatedBy': { type: String },
+    'versions.$.language': { type: String, optional: true },
+    'versions.$.surveyThemes': { type: Array, optional: true },
+    'versions.$.surveyThemes.$': { type: String },
+    'versions.$.categoryTags': { type: Array, optional: true },
+    'versions.$.categoryTags.$': { type: String },
+    'versions.$.organizationId': { type: String, optional: true },
+    'versions.$.isReusable': { type: Boolean, optional: true },
+    'versions.$.usageCount': { type: SimpleSchema.Integer, optional: true },
+    'versions.$.lastUsedAt': { type: Date, optional: true },
+    'versions.$.priority': { type: SimpleSchema.Integer, optional: true },
+    'versions.$.isActive': { type: Boolean, optional: true },
+    'versions.$.keywords': { type: Array, optional: true },
+    'versions.$.keywords.$': { type: String },
     createdAt: { type: Date },
     createdBy: { type: String },
   });

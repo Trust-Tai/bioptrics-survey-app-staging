@@ -30,6 +30,11 @@ interface Question {
   feedbackValue?: string;
   wpsCategoryIds?: string[];
   surveyThemeIds?: string[];
+  isReusable?: boolean;
+  priority?: number;
+  isActive?: boolean;
+  keywords?: string[];
+  organizationId?: string;
 }
 
 const QuestionBuilder: React.FC =  () => {
@@ -133,7 +138,22 @@ const QuestionBuilder: React.FC =  () => {
   const [collapsed, setCollapsed] = React.useState<boolean[]>([]);
   const navigate = useNavigate();
   const [questions, setQuestions] = React.useState<Question[]>([
-    { text: '', description: '', answerType: 'short_text', answers: [''], required: false, image: '', leftLabel: 'Strongly Disagree', rightLabel: 'Strongly Agree', feedbackType: 'none', feedbackValue: '' }
+    { 
+      text: '', 
+      description: '', 
+      answerType: 'short_text', 
+      answers: [''], 
+      required: false, 
+      image: '', 
+      leftLabel: 'Strongly Disagree', 
+      rightLabel: 'Strongly Agree', 
+      feedbackType: 'none', 
+      feedbackValue: '',
+      isReusable: true,
+      isActive: true,
+      priority: 3,
+      keywords: []
+    }
   ]);
 
   // Prepopulate form if editing
@@ -156,6 +176,11 @@ const QuestionBuilder: React.FC =  () => {
             feedbackValue: (latest as any).feedbackValue || '',
             wpsCategoryIds: (latest as any).categoryTags || [],
             surveyThemeIds: (latest as any).surveyThemes || [],
+            isReusable: (latest as any).isReusable !== undefined ? (latest as any).isReusable : true,
+            isActive: (latest as any).isActive !== undefined ? (latest as any).isActive : true,
+            priority: (latest as any).priority || 3,
+            keywords: (latest as any).keywords || [],
+            organizationId: (latest as any).organizationId || ''
           }
         ]);
       }
@@ -505,6 +530,133 @@ return (
               noOptionsMessage={() => surveyThemesSub.ready() ? 'No themes found' : 'Loading...'}
               classNamePrefix="react-select"
             />
+          </div>
+          
+          {/* Reusability Settings */}
+          <div style={{ marginBottom: 18, padding: 16, background: '#f9f4f7', borderRadius: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#28211e', marginBottom: 12 }}>Reusability Settings</div>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 12 }}>
+              {/* Reusable Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 500, fontSize: 15, color: '#000' }}>Reusable</span>
+                <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 22, cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={q.isReusable}
+                    onChange={() => {
+                      const updated = [...questions];
+                      updated[qIdx].isReusable = !updated[qIdx].isReusable;
+                      setQuestions(updated);
+                    }}
+                    style={{ opacity: 0, width: 40, height: 22, margin: 0, position: 'absolute', left: 0, top: 0, zIndex: 2, cursor: 'pointer' }}
+                  />
+                  <span style={{
+                    display: 'block',
+                    width: 40,
+                    height: 22,
+                    background: q.isReusable ? '#4caf50' : '#ccc',
+                    borderRadius: 22,
+                    transition: 'background 0.2s',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    zIndex: 1
+                  }} />
+                  <span style={{
+                    display: 'block',
+                    width: 18,
+                    height: 18,
+                    background: '#fff',
+                    borderRadius: '50%',
+                    position: 'absolute',
+                    left: q.isReusable ? 20 : 2,
+                    top: 2,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+                    transition: 'left 0.2s',
+                    zIndex: 1
+                  }} />
+                </label>
+              </div>
+              
+              {/* Active Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 500, fontSize: 15, color: '#000' }}>Active</span>
+                <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 22, cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={q.isActive}
+                    onChange={() => {
+                      const updated = [...questions];
+                      updated[qIdx].isActive = !updated[qIdx].isActive;
+                      setQuestions(updated);
+                    }}
+                    style={{ opacity: 0, width: 40, height: 22, margin: 0, position: 'absolute', left: 0, top: 0, zIndex: 2, cursor: 'pointer' }}
+                  />
+                  <span style={{
+                    display: 'block',
+                    width: 40,
+                    height: 22,
+                    background: q.isActive ? '#3776a8' : '#ccc',
+                    borderRadius: 22,
+                    transition: 'background 0.2s',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    zIndex: 1
+                  }} />
+                  <span style={{
+                    display: 'block',
+                    width: 18,
+                    height: 18,
+                    background: '#fff',
+                    borderRadius: '50%',
+                    position: 'absolute',
+                    left: q.isActive ? 20 : 2,
+                    top: 2,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+                    transition: 'left 0.2s',
+                    zIndex: 1
+                  }} />
+                </label>
+              </div>
+              
+              {/* Priority Dropdown */}
+              <div>
+                <label style={{ fontWeight: 500, fontSize: 15, color: '#000', display: 'block', marginBottom: 4 }}>Priority</label>
+                <select 
+                  value={q.priority} 
+                  onChange={(e) => {
+                    const updated = [...questions];
+                    updated[qIdx].priority = parseInt(e.target.value);
+                    setQuestions(updated);
+                  }}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd' }}
+                >
+                  <option value="1">1 (Highest)</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5 (Lowest)</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Keywords */}
+            <div>
+              <label style={{ fontWeight: 500, fontSize: 15, color: '#000', display: 'block', marginBottom: 4 }}>Keywords (comma-separated)</label>
+              <input
+                type="text"
+                value={(q.keywords || []).join(', ')}
+                onChange={(e) => {
+                  const updated = [...questions];
+                  updated[qIdx].keywords = e.target.value.split(',').map(k => k.trim()).filter(k => k);
+                  setQuestions(updated);
+                }}
+                placeholder="Enter keywords separated by commas"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
+              />
+            </div>
           </div>
         </div>
         {/* Image Upload */}
