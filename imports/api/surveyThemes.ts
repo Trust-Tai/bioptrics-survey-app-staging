@@ -8,6 +8,10 @@ export interface SurveyThemeType {
   description: string;
   createdAt?: Date | string;
   wpsCategoryId?: string; // Relationship to WPS Category
+  assignableTo?: string[]; // Can be 'questions', 'surveys', or both
+  keywords?: string[];
+  priority?: number;
+  isActive?: boolean;
 }
 
 export const SurveyThemes = new Mongo.Collection<SurveyThemeType>('surveyThemes');

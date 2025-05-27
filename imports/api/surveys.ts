@@ -28,6 +28,52 @@ export interface SurveyDoc {
   createdBy: string;
   published: boolean;
   shareToken?: string;
+  organizationId?: string;
+  // Template-related fields
+  isTemplate?: boolean;
+  templateName?: string;
+  templateCategory?: string;
+  templateDescription?: string;
+  templateTags?: string[];
+  clonedFromId?: string;
+  // Question branching logic
+  branchingLogic?: {
+    rules: Array<{
+      questionId: string;
+      condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
+      value: any;
+      jumpToQuestionId: string;
+    }>;
+    enabled: boolean;
+  };
+  defaultSettings?: {
+    allowAnonymous?: boolean;
+    requireLogin?: boolean;
+    showProgressBar?: boolean;
+    allowSave?: boolean;
+    allowSkip?: boolean;
+    showThankYou?: boolean;
+    thankYouMessage?: string;
+    redirectUrl?: string;
+    notificationEmails?: string[];
+    expiryDate?: Date;
+    responseLimit?: number;
+    themes?: string[];
+    categories?: string[];
+    // New properties for scheduling
+    startDate?: Date;
+    autoPublish?: boolean;
+    recurringSchedule?: boolean;
+    recurringFrequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+    // New properties for access control
+    restrictAccess?: boolean;
+    allowedGroups?: string[];
+    passwordProtected?: boolean;
+    accessPassword?: string;
+  };
+  isActive?: boolean;
+  priority?: number;
+  keywords?: string[];
 }
 
 export interface SurveyResponseDoc {
@@ -52,6 +98,11 @@ if (Meteor.isServer) {
   Meteor.publish('surveys.all', function () {
     return Surveys.find();
   });
+  
+  Meteor.publish('surveys.templates', function () {
+    return Surveys.find({ isTemplate: true });
+  });
+  
   Meteor.publish('surveys.public', async function (shareToken: string) {
     return Surveys.find({ shareToken, published: true });
   });
@@ -106,6 +157,137 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
+  // Create a survey template
+  async 'surveys.saveAsTemplate'(survey: Partial<SurveyDoc>, templateDetails: { name: string, category: string, description: string, tags: string[] }) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    const now = new Date();
+    
+    // Validate template details
+    check(templateDetails.name, String);
+    check(templateDetails.category, String);
+    check(templateDetails.description, String);
+    check(templateDetails.tags, [String]);
+    
+    // Create a new template based on the survey
+    const templateId = await Surveys.insertAsync({
+      title: survey.title || '',
+      description: survey.description || '',
+      logo: survey.logo,
+      image: survey.image,
+      color: survey.color,
+      selectedQuestions: survey.selectedQuestions || {},
+      siteTextQuestions: survey.siteTextQuestions || [],
+      siteTextQForm: survey.siteTextQForm || {},
+      selectedDemographics: survey.selectedDemographics || [],
+      published: false,
+      isTemplate: true,
+      templateName: templateDetails.name,
+      templateCategory: templateDetails.category,
+      templateDescription: templateDetails.description,
+      templateTags: templateDetails.tags,
+      clonedFromId: survey._id,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: this.userId,
+      defaultSettings: survey.defaultSettings || {},
+      branchingLogic: survey.branchingLogic || { rules: [], enabled: false },
+    });
+    
+    return { _id: templateId };
+  },
+  
+  // Create survey from template
+  async 'surveys.createFromTemplate'(templateId: string, customizations: { title?: string, description?: string }) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    const now = new Date();
+    
+    // Find the template
+    const template = await Surveys.findOneAsync({ _id: templateId, isTemplate: true });
+    if (!template) throw new Meteor.Error('Template not found');
+    
+    // Create a new survey based on the template
+    const surveyId = await Surveys.insertAsync({
+      title: customizations.title || `${template.title} (from template)`,
+      description: customizations.description || template.description,
+      logo: template.logo,
+      image: template.image,
+      color: template.color,
+      selectedQuestions: template.selectedQuestions,
+      siteTextQuestions: template.siteTextQuestions,
+      siteTextQForm: template.siteTextQForm,
+      selectedDemographics: template.selectedDemographics,
+      published: false,
+      clonedFromId: templateId,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: this.userId,
+      defaultSettings: template.defaultSettings,
+      branchingLogic: template.branchingLogic,
+    });
+    
+    return { _id: surveyId };
+  },
+  
+  // Update question branching logic
+  async 'surveys.updateBranchingLogic'(surveyId: string, branchingLogic: { rules: Array<{ questionId: string, condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan', value: any, jumpToQuestionId: string }>, enabled: boolean }) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    
+    // Validate the survey exists and user has permission
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) throw new Meteor.Error('Survey not found');
+    if (survey.createdBy !== this.userId && !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin')) {
+      throw new Meteor.Error('Not authorized');
+    }
+    
+    // Update the branching logic
+    await Surveys.updateAsync(surveyId, {
+      $set: {
+        branchingLogic,
+        updatedAt: new Date(),
+      },
+    });
+    
+    return { success: true };
+  },
+  
+  // Send survey notifications
+  async 'surveys.sendNotifications'(surveyId: string, recipients: string[], message: string) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    
+    // Validate the survey exists and user has permission
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) throw new Meteor.Error('Survey not found');
+    if (survey.createdBy !== this.userId && !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin')) {
+      throw new Meteor.Error('Not authorized');
+    }
+    
+    // Validate inputs
+    check(recipients, [String]);
+    check(message, String);
+    
+    // In a real implementation, this would send emails via a service like SendGrid or Mailgun
+    // For now, we'll just log the notification and return success
+    console.log(`Sending survey notification for survey ${surveyId} to ${recipients.length} recipients`);
+    
+    // Record the notification in the database (you would need to create a notifications collection)
+    // For now, we'll just update the survey with the notification info
+    await Surveys.updateAsync(surveyId, {
+      $push: {
+        'notificationHistory': {
+          sentAt: new Date(),
+          recipients: recipients,
+          message: message,
+          sentBy: this.userId,
+        }
+      },
+      $set: {
+        updatedAt: new Date(),
+      },
+    });
+    
+    return { success: true, recipientCount: recipients.length };
+  },
+  
   // Save or update as draft (not published)
   async 'surveys.saveDraft'(survey: Partial<SurveyDoc>) {
     if (!this.userId) throw new Meteor.Error('Not authorized');

@@ -14,6 +14,11 @@ export interface Question {
   feedbackValue?: string;
   wpsCategoryIds?: string[];
   surveyThemeIds?: string[];
+  isReusable?: boolean;
+  priority?: number;
+  isActive?: boolean;
+  keywords?: string[];
+  organizationId?: string;
 }
 
 // Helper to map QuestionBuilder state to QuestionVersion
@@ -29,6 +34,11 @@ export function mapQuestionToVersion(q: Question, userId: string, published: boo
     language: 'en',
     published,
     updatedBy: userId,
+    isReusable: q.isReusable,
+    isActive: q.isActive,
+    priority: q.priority,
+    keywords: q.keywords || [],
+    organizationId: q.organizationId || '',
   };
 }
 

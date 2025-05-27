@@ -41,6 +41,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
     { to: '/admin/users/all', label: 'All Users' },
     { to: '/admin/users/add', label: 'Add New' },
+    { to: '/admin/users/roles', label: 'Role Management' },
   ] },
   { to: '/admin/settings', label: 'Settings', icon: FaCog },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },

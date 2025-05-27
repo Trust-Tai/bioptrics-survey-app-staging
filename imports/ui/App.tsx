@@ -13,6 +13,7 @@ import Setting from './admin/Setting';
 import Users from './admin/Users';
 import AllUsers from './admin/AllUsers';
 import AddUser from './admin/AddUser';
+import RoleManagement from './admin/RoleManagement';
 import Welcome from './Welcome';
 import SurveyWelcome from './SurveyWelcome';
 import GetToKnowYou from './GetToKnowYou';
@@ -172,6 +173,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/users" element={<Users />} />
         <Route path="/admin/users/all" element={<AllUsers />} />
         <Route path="/admin/users/add" element={<AddUser />} />
+        <Route path="/admin/users/roles" element={<RoleManagement />} />
         <Route path="/admin/org-setup" element={<OrgSetup />} />
       </Route>
     </Routes>

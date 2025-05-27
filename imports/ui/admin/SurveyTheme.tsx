@@ -14,6 +14,10 @@ interface Theme {
   description: string;
   createdAt?: string;
   wpsCategoryId?: string;
+  assignableTo?: string[]; // Can be 'questions', 'surveys', or both
+  keywords?: string[];
+  priority?: number;
+  isActive?: boolean;
 }
 
 function toTheme(theme: any): Theme {
@@ -23,6 +27,10 @@ function toTheme(theme: any): Theme {
       theme.createdAt instanceof Date
         ? theme.createdAt.toISOString()
         : theme.createdAt,
+    assignableTo: theme.assignableTo || ['questions', 'surveys'],
+    keywords: theme.keywords || [],
+    priority: theme.priority || 0,
+    isActive: theme.isActive !== false
   };
 }
 
@@ -44,6 +52,7 @@ const SurveyTheme: React.FC = () => {
   const [editId, setEditId] = useState<string|null>(null);
   const [editName, setEditName] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [viewModal, setViewModal] = useState(false);
   const [search, setSearch] = useState('');
   const [color, setColor] = useState('#552a47');
   const [editColor, setEditColor] = useState('#552a47');
@@ -51,6 +60,14 @@ const SurveyTheme: React.FC = () => {
   const [editDescription, setEditDescription] = useState('');
   const [wpsCategoryId, setWpsCategoryId] = useState('');
   const [editWpsCategoryId, setEditWpsCategoryId] = useState('');
+  const [assignableTo, setAssignableTo] = useState<string[]>(['questions', 'surveys']);
+  const [editAssignableTo, setEditAssignableTo] = useState<string[]>(['questions', 'surveys']);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [editKeywords, setEditKeywords] = useState<string[]>([]);
+  const [priority, setPriority] = useState<number>(0);
+  const [editPriority, setEditPriority] = useState<number>(0);
+  const [isActive, setIsActive] = useState<boolean>(true);
+  const [editIsActive, setEditIsActive] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [viewingTheme, setViewingTheme] = useState<Theme | null>(null);
 
@@ -60,12 +77,25 @@ const SurveyTheme: React.FC = () => {
       showError('Please fill in all required fields.');
       return;
     }
-    Meteor.call('surveyThemes.insert', { name, color, description, wpsCategoryId }, (err: any) => {
+    Meteor.call('surveyThemes.insert', { 
+      name, 
+      color, 
+      description, 
+      wpsCategoryId,
+      assignableTo,
+      keywords,
+      priority,
+      isActive
+    }, (err: any) => {
       if (!err) {
         setName('');
         setColor('#552a47');
         setDescription('');
         setWpsCategoryId('');
+        setAssignableTo(['questions', 'surveys']);
+        setKeywords([]);
+        setPriority(0);
+        setIsActive(true);
         showSuccess('Theme added successfully!');
         setShowModal(false);
       } else {
@@ -81,18 +111,35 @@ const SurveyTheme: React.FC = () => {
     setEditColor(theme.color || '#552a47');
     setEditDescription(theme.description || '');
     setEditWpsCategoryId(theme.wpsCategoryId || '');
+    setEditAssignableTo(theme.assignableTo || ['questions', 'surveys']);
+    setEditKeywords(theme.keywords || []);
+    setEditPriority(theme.priority || 0);
+    setEditIsActive(theme.isActive !== false); // Default to true if not specified
   };
 
   // Handler to update a theme
   const handleUpdate = () => {
     if (!editId || !editName.trim() || !editDescription.trim() || !editWpsCategoryId) return;
-    Meteor.call('surveyThemes.update', editId, { name: editName, color: editColor, description: editDescription, wpsCategoryId: editWpsCategoryId }, (err: any) => {
+    Meteor.call('surveyThemes.update', editId, { 
+      name: editName, 
+      color: editColor, 
+      description: editDescription, 
+      wpsCategoryId: editWpsCategoryId,
+      assignableTo: editAssignableTo,
+      keywords: editKeywords,
+      priority: editPriority,
+      isActive: editIsActive
+    }, (err: any) => {
       if (!err) {
         setEditId(null);
         setEditName('');
         setEditColor('#552a47');
         setEditDescription('');
         setEditWpsCategoryId('');
+        setEditAssignableTo(['questions', 'surveys']);
+        setEditKeywords([]);
+        setEditPriority(0);
+        setEditIsActive(true);
         showSuccess('Theme updated successfully!');
       } else {
         showError('Failed to update theme: ' + err.reason);
@@ -133,8 +180,17 @@ const SurveyTheme: React.FC = () => {
     if (subscription.ready()) setLoading(false);
   }, [subscription]);
 
-  // The rest of the component logic, UI, and handlers are identical to WPSFramework
-  // ...
+  // Handler to view a theme
+  const handleViewTheme = (theme: Theme) => {
+    setViewingTheme(theme);
+    setViewModal(true);
+  };
+
+  // Handler to close view modal
+  const closeViewModal = () => {
+    setViewModal(false);
+    setViewingTheme(null);
+  };
 
   return (
     <AdminLayout>
@@ -180,47 +236,175 @@ const SurveyTheme: React.FC = () => {
         {/* List, Edit, View, and Delete logic for Themes */}
         {showModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 170, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
+            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, width: 700, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
               <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Add Theme</h3>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Theme name"
-                style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
-                required
-              />
-              <select
-                value={wpsCategoryId}
-                onChange={e => setWpsCategoryId(e.target.value)}
-                required
-                style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', background: '#fff', boxSizing: 'border-box' }}
-                disabled={!wpsCategoriesSub.ready()}
-              >
-                <option value="">{wpsCategoriesSub.ready() ? 'Select WPS Category' : 'Loading categories...'}</option>
-                {wpsCategories.map((cat: any) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
-                ))}
-              </select>
-              <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Description (optional)"
-                style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 15, fontWeight: 500, color: '#28211e', minHeight: 60, boxSizing: 'border-box' }}
-              />
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Theme Name
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="Theme Name"
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                      required
+                    />
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>WPS Category
+                    <select
+                      value={wpsCategoryId}
+                      onChange={e => setWpsCategoryId(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                      required
+                    >
+                      <option value="">Select WPS Category</option>
+                      {wpsCategories.map((cat: any) => (
+                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Description
+                    <textarea
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      placeholder="Description of this theme"
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 15, fontWeight: 500, color: '#28211e', minHeight: 60, boxSizing: 'border-box' }}
+                      required
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Color
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={e => setColor(e.target.value)}
+                      style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={color}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setColor(val);
+                      }}
+                      maxLength={7}
+                      style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
+                      placeholder="#552a47"
+                      required
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Priority
+                    <input
+                      type="number"
+                      value={priority}
+                      onChange={e => setPriority(parseInt(e.target.value) || 0)}
+                      min="0"
+                      max="100"
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    />
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Keywords (comma-separated)
+                    <input
+                      type="text"
+                      value={keywords.join(', ')}
+                      onChange={e => setKeywords(e.target.value.split(',').map(k => k.trim()).filter(Boolean))}
+                      placeholder="e.g. safety, engagement, leadership"
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    />
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginBottom: 4, display: 'block' }}>Assignable To</label>
+                  <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: '#28211e', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={assignableTo.includes('questions')}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setAssignableTo([...assignableTo.filter(a => a !== 'questions'), 'questions']);
+                          } else {
+                            setAssignableTo(assignableTo.filter(a => a !== 'questions'));
+                          }
+                        }}
+                        style={{ width: 18, height: 18 }}
+                      />
+                      Questions
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: '#28211e', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={assignableTo.includes('surveys')}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setAssignableTo([...assignableTo.filter(a => a !== 'surveys'), 'surveys']);
+                          } else {
+                            setAssignableTo(assignableTo.filter(a => a !== 'surveys'));
+                          }
+                        }}
+                        style={{ width: 18, height: 18 }}
+                      />
+                      Surveys
+                    </label>
+                  </div>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: '#28211e', cursor: 'pointer', fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={e => setIsActive(e.target.checked)}
+                      style={{ width: 18, height: 18 }}
+                    />
+                    Active
+                  </label>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: 14, marginTop: 20 }}>
+                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
+                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => setShowModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        )}
+        {/* Edit Theme Modal */}
+        {editId && (
+          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Edit Theme</h3>
+              <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Name
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }} required />
+              </label>
+              <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Description
+                <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 15, fontWeight: 500, color: '#28211e', minHeight: 60, boxSizing: 'border-box' }} required />
+              </label>
               <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Color
-                <input
-                  type="color"
-                  value={color}
-                  onChange={e => setColor(e.target.value)}
-                  style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
-                  required
-                />
+                <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)} style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }} />
                 <input
                   type="text"
-                  value={color}
+                  value={editColor}
                   onChange={e => {
                     const val = e.target.value;
-                    if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setColor(val);
+                    setEditColor(val);
                   }}
                   maxLength={7}
                   style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
@@ -229,40 +413,154 @@ const SurveyTheme: React.FC = () => {
                 />
               </label>
               <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
-                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
+                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}>Cancel</button>
               </div>
             </form>
           </div>
         )}
+        {/* View Theme Modal */}
+        {viewingTheme && viewModal && (
+          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 32, width: 600, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontWeight: 800, color: viewingTheme.color, fontSize: 24 }}>{viewingTheme.name}</h3>
+                <span style={{ 
+                  backgroundColor: viewingTheme.isActive !== false ? '#d1e7dd' : '#f8d7da', 
+                  color: viewingTheme.isActive !== false ? '#198754' : '#dc3545', 
+                  padding: '4px 8px', 
+                  borderRadius: 4, 
+                  fontSize: 12, 
+                  fontWeight: 600 
+                }}>
+                  {viewingTheme.isActive !== false ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              
+              <div style={{ fontSize: 16, color: '#28211e', marginBottom: 8 }}>{viewingTheme.description || ''}</div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, fontSize: 15, color: '#333' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>WPS Category</h4>
+                  <div>{wpsCategories.find((cat: any) => cat._id === viewingTheme.wpsCategoryId)?.name || 'None'}</div>
+                </div>
+                
+                <div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Priority</h4>
+                  <div>{viewingTheme.priority || 0}</div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Assignable To</h4>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {viewingTheme.assignableTo && viewingTheme.assignableTo.includes('questions') && (
+                    <span style={{ backgroundColor: '#e3f2fd', color: '#0d6efd', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>Questions</span>
+                  )}
+                  {viewingTheme.assignableTo && viewingTheme.assignableTo.includes('surveys') && (
+                    <span style={{ backgroundColor: '#fff3cd', color: '#fd7e14', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>Surveys</span>
+                  )}
+                  {(!viewingTheme.assignableTo || viewingTheme.assignableTo.length === 0) && (
+                    <span style={{ color: '#6c757d' }}>Not specified</span>
+                  )}
+                </div>
+              </div>
+              
+              {(viewingTheme.keywords && viewingTheme.keywords.length > 0) && (
+                <div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Keywords</h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {viewingTheme.keywords.map((keyword, index) => (
+                      <span key={index} style={{ backgroundColor: '#f8f9fa', color: '#6c757d', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>{keyword}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ fontSize: 13, color: '#8a7a85', marginTop: 8 }}>Created: {new Date(viewingTheme.createdAt || '').toLocaleString()}</div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
+                <button onClick={closeViewModal} style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }}>Close</button>
+                <button onClick={() => { closeViewModal(); startEdit(viewingTheme); }} style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Edit</button>
+              </div>
+              
+              <button type="button" onClick={closeViewModal} style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: 22, fontWeight: 700, color: '#28211e', cursor: 'pointer', opacity: 0.5, padding: 0, lineHeight: 1 }} aria-label="Close">×</button>
+            </div>
+          </div>
+        )}
+        
+        {/* List of themes */}
         {themes.length === 0 ? (
           <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No themes found.</div>
         ) : (
           <ul style={{ listStyle: 'none', padding: '24px 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 20, background: '#fffef6', borderRadius: 16 }}>
-            {themes.filter(theme => theme.name.toLowerCase().includes(search.toLowerCase())).map(theme => (
-              <li key={theme._id} style={{ background: '#f9f4f7', borderRadius: 14, boxShadow: '0 2px 8px #f4ebf1', padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ flex: 1, fontSize: 17, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, maxWidth: '100%' }}>
-                    <span style={{ display: 'inline-block', width: 20, height: 20, background: theme.color, borderRadius: 4, marginRight: 10, border: '1px solid #d2c7b0' }} />
-                    <span style={{ maxWidth: '320px', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-line', display: 'inline-block' }}>{theme.name}</span>
-                  </span>
+            {themes.filter(theme => theme.name.toLowerCase().includes(search.toLowerCase())).map(themeData => {
+              const theme = toTheme(themeData);
+              return (
+              <li key={theme._id} style={{ background: '#f9f4f7', borderRadius: 14, boxShadow: '0 2px 8px #f4ebf1', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ display: 'inline-block', width: 20, height: 20, background: theme.color, borderRadius: 4, marginRight: 10, border: '1px solid #d2c7b0' }} />
+                      <span 
+                        style={{ maxWidth: '320px', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-line', display: 'inline-block', fontWeight: 700, fontSize: 17, cursor: 'pointer' }}
+                        onClick={() => handleViewTheme(theme)}
+                      >
+                        {theme.name}
+                      </span>
+                      {theme.isActive === false && (
+                        <span style={{ backgroundColor: '#f8d7da', color: '#dc3545', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>Inactive</span>
+                      )}
+                    </div>
+                    <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: 15 }}>{theme.description || ''}</p>
+                  </div>
+                  <div>
+                    <button onClick={() => handleViewTheme(theme)} style={{ background: 'none', border: 'none', color: '#3776a8', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>View</button>
+                    <button onClick={() => startEdit(theme)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>Edit</button>
+                    <button onClick={() => handleDelete(theme._id!)} style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 14, color: '#666' }}>
                   {theme.wpsCategoryId && (
-                    <span style={{ fontSize: 14, color: '#6e395e' }}>WPS Category: {wpsCategories.find((cat: any) => cat._id === theme.wpsCategoryId)?.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontWeight: 600 }}>WPS Category:</span>
+                      <span>{wpsCategories.find((cat: any) => cat._id === theme.wpsCategoryId)?.name}</span>
+                    </div>
                   )}
-                </span>
-                <span style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <button onClick={() => setViewingTheme(toTheme(theme))} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} title="View">
-                    <FaEye style={{ color: '#552a47', fontSize: 18 }} />
-                  </button>
-                  <button onClick={() => startEdit(toTheme(theme))} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} title="Edit">
-                    <FaEdit style={{ color: '#552a47', fontSize: 18 }} />
-                  </button>
-                  <button onClick={() => handleDelete(theme._id!)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} title="Delete">
-                    <FaTrash style={{ color: '#552a47', fontSize: 18 }} />
-                  </button>
-                </span>
+                  
+                  {theme.assignableTo && theme.assignableTo.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 600 }}>Assignable to:</span>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {theme.assignableTo.includes('questions') && (
+                          <span style={{ backgroundColor: '#e3f2fd', color: '#0d6efd', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>Questions</span>
+                        )}
+                        {theme.assignableTo.includes('surveys') && (
+                          <span style={{ backgroundColor: '#fff3cd', color: '#fd7e14', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>Surveys</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {theme.priority !== undefined && theme.priority > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontWeight: 600 }}>Priority:</span>
+                      <span>{theme.priority}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {theme.keywords && theme.keywords.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {theme.keywords.map((keyword, index) => (
+                      <span key={index} style={{ backgroundColor: '#f8f9fa', color: '#6c757d', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{keyword}</span>
+                    ))}
+                  </div>
+                )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
         {/* Delete Theme Modal */}
