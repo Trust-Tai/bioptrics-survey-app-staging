@@ -1,6 +1,8 @@
 import '../../../client/fonts.css';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useOrganization } from '../contexts/OrganizationContext';
+import TermLabel from '../components/TermLabel';
 import { 
   FaChartPie, 
   FaDatabase, 
@@ -8,7 +10,8 @@ import {
   FaCog, 
   FaSignOutAlt, 
   FaBars, 
-  FaTimes
+  FaTimes,
+  FaBuilding
 } from 'react-icons/fa';
 import { 
   FiBarChart2, 
@@ -18,29 +21,29 @@ import {
 } from 'react-icons/fi';
 import styled from 'styled-components';
 
-// Sidebar navigation items matching the requested structure
-const sidebarLinks = [
+// Function to get sidebar links with customized terminology
+const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
-  { to: '/admin/surveys', label: 'Surveys', icon: FiClipboard, submenu: [
-    { to: '/admin/surveys/all', label: 'All Surveys' },
-    { to: '/admin/surveys/builder', label: 'Survey Builder' },
-    { to: '/admin/surveys/responses', label: 'Survey Responses' },
-    { to: '/admin/surveys/goals', label: 'Survey Goals' },
+  { to: '/admin/surveys', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
+    { to: '/admin/surveys/all', label: `All ${getTerminology('surveyLabel')}s` },
+    { to: '/admin/surveys/builder', label: `${getTerminology('surveyLabel')} Builder` },
+    { to: '/admin/surveys/responses', label: `${getTerminology('surveyLabel')} Responses` },
+    { to: '/admin/surveys/goals', label: `${getTerminology('surveyLabel')} Goals` },
     { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
     { to: '/admin/surveys/theme', label: 'Theme' },
   ] },
-  { to: '/admin/questions', label: 'Question Bank', icon: FaDatabase, submenu: [
-    { to: '/admin/questions/all', label: 'All Questions' },
-    { to: '/admin/questions/builder', label: 'Question Builder' },
+  { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
+    { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
+    { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
   ] },
-  { to: '/admin/org-setup', label: 'Org Setup', icon: FiUsers },
-  { to: '/admin/participants', label: 'Participants', icon: FaUserCheck },
+  { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
     { to: '/admin/users/all', label: 'All Users' },
     { to: '/admin/users/add', label: 'Add New' },
   ] },
   { to: '/admin/settings', label: 'Settings', icon: FaCog },
+  { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
@@ -264,6 +267,11 @@ const MainContent = styled.main<MainContentProps>`
  * AdminLayout component that provides the admin dashboard shell with navigation
  */
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Get organization settings for customized terminology
+  const { getTerminology } = useOrganization();
+  
+  // Generate sidebar links with customized terminology
+  const sidebarLinks = getSidebarLinks(getTerminology);
   React.useEffect(() => {
     const prevBg = document.body.style.background;
     const prevOverflowX = document.body.style.overflowX;

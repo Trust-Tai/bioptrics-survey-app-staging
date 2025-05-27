@@ -6,6 +6,8 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '/imports/api/surveys';
 import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import { useOrganization } from '../contexts/OrganizationContext';
+import TermLabel from '../components/TermLabel';
 
 interface SurveyDisplay {
   _id: string;
@@ -29,6 +31,11 @@ function truncate(str: string, maxLen: number): string {
 
 const AllSurveys: React.FC = () => {
   const navigate = useNavigate();
+  const { getTerminology } = useOrganization();
+  
+  // Get the customized survey label
+  const surveyLabel = getTerminology('surveyLabel');
+  const surveyLabelPlural = `${surveyLabel}s`;
   const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -87,7 +94,7 @@ const AllSurveys: React.FC = () => {
               gap: 18,
               position: 'relative',
             }}>
-              <div style={{ fontWeight: 800, fontSize: 20, color: '#552a47', marginBottom: 10 }}>Delete Survey</div>
+              <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>Delete {surveyLabel}</h1>
               <div style={{ fontSize: 16, color: '#222', marginBottom: 12, textAlign: 'center' }}>
                 Are you sure you want to delete <span style={{ fontWeight: 700 }}>'{confirmDelete.title}'</span>? This action cannot be undone.
               </div>
@@ -97,9 +104,9 @@ const AllSurveys: React.FC = () => {
                   onClick={async () => {
                     try {
                       await Meteor.callAsync('surveys.remove', confirmDelete._id);
-                      setNotification({ type: 'success', message: 'Survey deleted successfully.' });
+                      setNotification({ type: 'success', message: `${surveyLabel} deleted successfully.` });
                     } catch (err: any) {
-                      setNotification({ type: 'error', message: err?.reason || 'Failed to delete survey.' });
+                      setNotification({ type: 'error', message: `Error deleting ${surveyLabel.toLowerCase()}: ${err.reason || err.message || 'Unknown error'}` });
                     }
                     setConfirmDelete(null);
                   }}
@@ -117,11 +124,11 @@ const AllSurveys: React.FC = () => {
           </div>
         )}
         <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: 'transparent' }}>
-          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>All Surveys</h2>
+          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>All {surveyLabelPlural}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
             <input
               type="text"
-              placeholder="Search surveys..."
+              placeholder={`Search ${surveyLabelPlural.toLowerCase()}...`}
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{
@@ -179,9 +186,8 @@ const AllSurveys: React.FC = () => {
             </div>
           )}
           {/* Survey List */}
-          {paginated.length === 0 ? (
-            <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No surveys found.</div>
-          ) : (
+          {filtered.length === 0 && <div style={{ textAlign: 'center', padding: '40px 0', color: '#6e5a67' }}>No {surveyLabelPlural.toLowerCase()} found.</div>}
+          {paginated.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {paginated.map((s) => (
                 <div
