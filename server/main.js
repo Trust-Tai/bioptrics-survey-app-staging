@@ -12,6 +12,7 @@ import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
 import '../imports/api/surveyThemes';
 import '../imports/api/surveys';
 import '../imports/api/users.methods';
+import '../imports/api/organizationSettings';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

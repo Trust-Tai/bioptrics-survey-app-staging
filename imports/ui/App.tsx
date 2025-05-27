@@ -7,6 +7,8 @@ import AdminDashboard from './admin/AdminDashboard';
 import Analytics from './admin/Analytics';
 import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
+import OrgSetup from './admin/OrgSetup';
+import { OrganizationProvider } from './contexts/OrganizationContext';
 import Setting from './admin/Setting';
 import Users from './admin/Users';
 import AllUsers from './admin/AllUsers';
@@ -170,6 +172,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/users" element={<Users />} />
         <Route path="/admin/users/all" element={<AllUsers />} />
         <Route path="/admin/users/add" element={<AddUser />} />
+        <Route path="/admin/org-setup" element={<OrgSetup />} />
       </Route>
     </Routes>
   );
@@ -177,7 +180,9 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => (
   <Router>
-    <AppRoutes />
+    <OrganizationProvider>
+      <AppRoutes />
+    </OrganizationProvider>
   </Router>
 );
 
