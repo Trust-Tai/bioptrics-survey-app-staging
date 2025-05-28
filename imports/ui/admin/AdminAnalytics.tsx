@@ -14,16 +14,20 @@ import {
   FiAlertTriangle
 } from 'react-icons/fi';
 
-import AdminLayout from './AdminLayout';
-import { Responses } from '../../api/responses';
-import { Surveys } from '../../api/surveys';
-import AnalyticsFilterBar from './analytics/AnalyticsFilterBar';
-import KPIGrid from './analytics/KPIGrid';
-import SiteParticipationChart from './analytics/SiteParticipationChart';
-import ThemeHeatmap from './analytics/ThemeHeatmap';
-import EngagementTrendLine from './analytics/EngagementTrendLine';
-import FlaggedIssuesList from './analytics/FlaggedIssuesList';
-import CommentClusterView from './analytics/CommentClusterView';
+import AdminLayout from '/imports/layouts/AdminLayout';
+import { Responses } from '/imports/api/responses';
+import { Surveys } from '../../features/surveys/api/surveys';
+
+// Import components from the feature-based structure
+import {
+  AnalyticsFilterBar,
+  KPIGrid,
+  SiteParticipationChart,
+  ThemeHeatmap,
+  EngagementTrendLine,
+  FlaggedIssuesList,
+  CommentClusterView
+} from '/imports/features/analytics/components/admin';
 
 // Types
 interface FilterState {
@@ -270,14 +274,16 @@ const AdminAnalytics: React.FC = () => {
     { name: 'Jan 2025', score: 4.2 }
   ];
   
+  // Sample data for FlaggedIssuesList component
   const flaggedIssues = [
-    { id: 1, severity: 'high', message: 'Communication score dropped from 4.1 to 3.5' },
-    { id: 2, severity: 'high', message: 'Leadership Trust fell below threshold: 2.9' },
-    { id: 3, severity: 'medium', message: 'Team Collaboration declined by 12% since last survey' },
-    { id: 4, severity: 'medium', message: 'Work-Life Balance flagged in multiple sites' },
-    { id: 5, severity: 'low', message: 'Manager Feedback score critically low at 2.5' }
+    { id: '1', severity: 'high' as const, message: 'Communication score dropped from 4.1 to 3.5', date: '2025-05-15' },
+    { id: '2', severity: 'high' as const, message: 'Leadership Trust fell below threshold: 2.9', date: '2025-05-16' },
+    { id: '3', severity: 'medium' as const, message: 'Team Collaboration declined by 12% since last survey', date: '2025-05-17' },
+    { id: '4', severity: 'medium' as const, message: 'Work-Life Balance flagged in multiple sites', date: '2025-05-18' },
+    { id: '5', severity: 'low' as const, message: 'Manager Feedback score critically low at 2.5', date: '2025-05-19' }
   ];
   
+  // Sample data for CommentClusterView component
   const commentClusters = [
     { 
       theme: 'Communication', 

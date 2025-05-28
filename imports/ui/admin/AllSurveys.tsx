@@ -4,7 +4,7 @@ import DashboardBg from './DashboardBg';
 import AdminLayout from './AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '/imports/api/surveys';
+import { Surveys } from '../../features/surveys/api/surveys';
 import { FaEdit, FaTrash, FaEye, FaTasks } from 'react-icons/fa';
 import { useOrganization } from '../contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';

@@ -1,5 +1,5 @@
 import { useTracker } from 'meteor/react-meteor-data';
-import { Surveys } from '/imports/api/surveys';
+import { Surveys } from '../features/surveys/api/surveys';
 
 export function useSurveys() {
   return useTracker(() => Surveys.find().fetch(), []);
