@@ -6,6 +6,7 @@ import '../imports/api/auth';
 import '../imports/api/questions';
 import '../imports/api/goals';
 import '../imports/api/goals.methods';
+import '../imports/api/surveyResponses';
 import { WPSCategories } from '../imports/api/wpsCategories';
 import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';

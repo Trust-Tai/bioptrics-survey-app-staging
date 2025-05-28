@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import DashboardBg from './DashboardBg';
@@ -15,9 +15,12 @@ import Select, { MultiValue } from 'react-select';
 import SurveySharing from './SurveySharing';
 import SurveyBranchingLogic from './SurveyBranchingLogic';
 import SurveyNotifications from './SurveyNotifications';
+import { SurveySections, SurveySectionItem } from './SurveySections';
+import SectionQuestions, { QuestionItem } from './SectionQuestions';
 
 const steps = [
   { label: 'Welcome Screen' },
+  { label: 'Sections' },
   { label: 'Questions' },
   { label: 'Demographics' },
   { label: 'Themes' },
@@ -266,6 +269,8 @@ const [copied, setCopied] = useState(false);
     siteTextQuestions,
     siteTextQForm,
     selectedDemographics,
+    surveySections,
+    sectionQuestions,
     defaultSettings,
     isActive: true,
     priority: 3,
@@ -368,6 +373,47 @@ const [copied, setCopied] = useState(false);
         setSiteTextQuestions(survey.siteTextQuestions || []);
         setSiteTextQForm(survey.siteTextQForm || { text: '', description: '', wpsCategories: [], surveyThemes: [] });
         setSelectedDemographics(survey.selectedDemographics || []);
+        
+        // Initialize survey sections from saved data or defaults
+        if (survey.surveySections) {
+          setSurveySections(survey.surveySections);
+        } else {
+          // Create default sections based on the SURVEY_SECTIONS array
+          const defaultSections: SurveySectionItem[] = [
+            { id: 'section-1', name: 'Welcome Screen', description: 'Introduction to the survey', isActive: true, priority: 0, color: '#552a47' },
+            { id: 'section-2', name: 'Engagement/Manager Relationships', description: 'Questions about management and engagement', isActive: true, priority: 1, color: '#552a47' },
+            { id: 'section-3', name: 'Peer/Team Dynamics', description: 'Questions about team collaboration', isActive: true, priority: 2, color: '#552a47' },
+            { id: 'section-4', name: 'Feedback & Communication Quality', description: 'Questions about communication', isActive: true, priority: 3, color: '#552a47' },
+            { id: 'section-5', name: 'Recognition and Pride', description: 'Questions about recognition', isActive: true, priority: 4, color: '#552a47' },
+            { id: 'section-6', name: 'Safety & Wellness Indicators', description: 'Questions about safety and wellness', isActive: true, priority: 5, color: '#552a47' },
+            { id: 'section-7', name: 'Site-specific open text boxes', description: 'Custom questions for this site', isActive: true, priority: 6, color: '#552a47' },
+            { id: 'section-8', name: 'Optional Demographics', description: 'Demographic information questions', isActive: true, priority: 7, color: '#552a47' },
+          ];
+          setSurveySections(defaultSections);
+        }
+        
+        // Initialize section questions
+        if (survey.sectionQuestions) {
+          setSectionQuestions(survey.sectionQuestions);
+        } else {
+          // Create empty section questions array or initialize from selected questions
+          const initialSectionQuestions: QuestionItem[] = [];
+          
+          // If there are selected questions, convert them to section questions
+          if (survey.selectedQuestions) {
+            Object.entries(survey.selectedQuestions).forEach(([id, q]: [string, any], index) => {
+              initialSectionQuestions.push({
+                id,
+                text: q.questionText || 'Untitled Question',
+                type: q.type || 'text',
+                order: index
+              });
+            });
+          }
+          
+          setSectionQuestions(initialSectionQuestions);
+        }
+        
         setIsEditMode(true);
         setEditSurveyId(urlSurveyId);
         // Set published link if survey is published
@@ -378,12 +424,31 @@ const [copied, setCopied] = useState(false);
         }
       }
       setLoadingSurvey(false);
+    } else if (!urlSurveyId) {
+      // Initialize default sections for new surveys
+      const defaultSections: SurveySectionItem[] = [
+        { id: 'section-1', name: 'Welcome Screen', description: 'Introduction to the survey', isActive: true, priority: 0, color: '#552a47' },
+        { id: 'section-2', name: 'Engagement/Manager Relationships', description: 'Questions about management and engagement', isActive: true, priority: 1, color: '#552a47' },
+        { id: 'section-3', name: 'Peer/Team Dynamics', description: 'Questions about team collaboration', isActive: true, priority: 2, color: '#552a47' },
+        { id: 'section-4', name: 'Feedback & Communication Quality', description: 'Questions about communication', isActive: true, priority: 3, color: '#552a47' },
+        { id: 'section-5', name: 'Recognition and Pride', description: 'Questions about recognition', isActive: true, priority: 4, color: '#552a47' },
+        { id: 'section-6', name: 'Safety & Wellness Indicators', description: 'Questions about safety and wellness', isActive: true, priority: 5, color: '#552a47' },
+        { id: 'section-7', name: 'Site-specific open text boxes', description: 'Custom questions for this site', isActive: true, priority: 6, color: '#552a47' },
+        { id: 'section-8', name: 'Optional Demographics', description: 'Demographic information questions', isActive: true, priority: 7, color: '#552a47' },
+      ];
+      setSurveySections(defaultSections);
     }
   }, [params.surveyId, surveysReady]);
 
   // ...rest of hooks and logic...
 // --- AUTOSAVE RESTORE ON MOUNT ---
   const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
+  
+  // State for survey sections
+  const [surveySections, setSurveySections] = useState<SurveySectionItem[]>([]);
+  
+  // State for section questions
+  const [sectionQuestions, setSectionQuestions] = useState<QuestionItem[]>([]);
   const [form, setForm] = useState<SurveyForm>({ title: '', description: '', logo: '', image: '', color: '#552a47' });
   // Generate a unique token for preview
   const [previewToken] = useState(() => `${Date.now()}-${Math.random().toString(36).substr(2, 8)}`);
@@ -898,6 +963,33 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                             })}
                           </div>
                         </>
+                      ) : i === 1 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Survey Sections</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Customize the sections of your survey to organize questions and create a better user experience:</p>
+                          
+                          <SurveySections 
+                            sections={surveySections} 
+                            onSectionsChange={setSurveySections}
+                            organizationId={Meteor.user()?.profile?.organization}
+                          />
+                        </div>
+                      ) : i === 2 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Organize Questions by Section</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Assign questions to specific sections to organize your survey content:</p>
+                          
+                          <div style={{ marginBottom: 24 }}>
+                            <SectionQuestions
+                              sections={surveySections.filter(s => s.isActive)}
+                              questions={sectionQuestions}
+                              onQuestionsChange={setSectionQuestions}
+                            />
+                          </div>
+                          
+                          <h3 style={{ margin: '24px 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Add Questions</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Select questions from the question bank to include in your survey:</p>
+                        </div>
                       ) : i === 6 ? (
                         <div style={{ marginBottom: 18 }}>
                           <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Question Branching Logic</h3>
@@ -1079,49 +1171,53 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                           </label>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
                             {demographicOptions.map(opt => {
-  const isSelected = selectedDemographics.includes(opt.value);
-  return (
-    <button
-      key={opt.value}
-      type="button"
-      aria-pressed={isSelected}
-      tabIndex={0}
-      onClick={() => {
-        setSelectedDemographics(isSelected
-          ? selectedDemographics.filter(v => v !== opt.value)
-          : [...selectedDemographics, opt.value]);
-      }}
-      onKeyDown={e => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          setSelectedDemographics(isSelected
-            ? selectedDemographics.filter(v => v !== opt.value)
-            : [...selectedDemographics, opt.value]);
-        }
-      }}
-      style={{
-        minWidth: 120,
-        padding: '8px 18px',
-        margin: '2px 0',
-        borderRadius: 8,
-        border: isSelected ? '2px solid #552a47' : '2px solid #e5d6c7',
-        background: isSelected ? '#552a47' : '#fff',
-        color: isSelected ? '#fff' : '#28211e',
-        fontWeight: 600,
-        fontSize: 15,
-        cursor: 'pointer',
-        outline: isSelected ? '2px solid #552a47' : 'none',
-        boxShadow: isSelected ? '0 2px 8px #f4ebf1' : 'none',
-        transition: 'all 0.15s',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      {opt.label}
-    </button>
-  );
-})}
+                              const isSelected = selectedDemographics.includes(opt.value);
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  aria-pressed={isSelected}
+                                  tabIndex={0}
+                                  onClick={() => {
+                                    setSelectedDemographics(
+                                      isSelected
+                                        ? selectedDemographics.filter(v => v !== opt.value)
+                                        : [...selectedDemographics, opt.value]
+                                    );
+                                  }}
+                                  onKeyDown={e => {
+                                    if (e.key === ' ' || e.key === 'Enter') {
+                                      e.preventDefault();
+                                      setSelectedDemographics(
+                                        isSelected
+                                          ? selectedDemographics.filter(v => v !== opt.value)
+                                          : [...selectedDemographics, opt.value]
+                                      );
+                                    }
+                                  }}
+                                  style={{
+                                    minWidth: 120,
+                                    padding: '8px 18px',
+                                    margin: '2px 0',
+                                    borderRadius: 8,
+                                    border: isSelected ? '2px solid #552a47' : '2px solid #e5d6c7',
+                                    background: isSelected ? '#552a47' : '#fff',
+                                    color: isSelected ? '#fff' : '#28211e',
+                                    fontWeight: 600,
+                                    fontSize: 15,
+                                    cursor: 'pointer',
+                                    outline: isSelected ? '2px solid #552a47' : 'none',
+                                    boxShadow: isSelected ? '0 2px 8px #f4ebf1' : 'none',
+                                    transition: 'all 0.15s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                  }}
+                                >
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ) : i === 8 ? (

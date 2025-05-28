@@ -17,6 +17,23 @@ const defaultSettings: OrganizationSettings = {
     departmentLabel: 'Department',
     siteLabel: 'Site'
   },
+  questionCategories: [
+    {
+      id: 'default-category',
+      name: 'Default Category',
+      description: 'Default category for questions',
+      assignableTo: ['questions']
+    }
+  ],
+  questionTags: [
+    {
+      id: 'default-tag',
+      name: 'Default Tag',
+      color: '#cccccc',
+      description: 'Default tag for questions',
+      assignableTo: ['questions', 'surveys']
+    }
+  ],
   defaultSettings: {
     enableDemographics: true,
     requireComments: false,
