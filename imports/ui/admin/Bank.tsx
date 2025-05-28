@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
   componentDidCatch(error: any, info: any) {
     // You can log error info here
-    // eslint-disable-next-line no-console
+     
     console.error('ErrorBoundary caught:', error, info);
   }
   render() {
@@ -72,7 +72,7 @@ const Bank: React.FC = () => {
   // Filter questions by selected category
   React.useEffect(() => {
     // Debug: log questions
-    // eslint-disable-next-line no-console
+     
     console.log('Bank questions:', questions);
   }, [questions]);
 

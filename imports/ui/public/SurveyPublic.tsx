@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '/imports/api/surveys';
+import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
 import SectionTransition from '../SectionTransition';

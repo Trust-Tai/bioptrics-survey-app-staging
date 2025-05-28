@@ -6,14 +6,14 @@ import '../imports/api/auth';
 import '../imports/api/questions';
 import '../imports/api/goals';
 import '../imports/api/goals.methods';
-import '../imports/api/surveyResponses';
+import '../imports/features/surveys/api/surveyResponses';
 import { WPSCategories } from '../imports/api/wpsCategories';
 import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
 import '../imports/api/surveyThemes';
-import '../imports/api/surveys';
+import '../imports/features/surveys/api/surveys';
 import '../imports/api/users.methods';
-import '../imports/api/organizationSettings';
+import '../imports/features/organization/api/organizationSettings';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

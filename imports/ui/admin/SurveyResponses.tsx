@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys, SurveyResponses as SurveyResponsesCollection } from '/imports/api/surveys';
+import { Surveys } from '../../features/surveys/api/surveys';
+import { SurveyResponses as SurveyResponsesCollection } from '../../features/surveys/api/surveyResponses';
 import styled from 'styled-components';
 import { FiChevronDown, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
 import AdminLayout from './AdminLayout';
@@ -221,7 +222,20 @@ const SurveyResponses: React.FC = () => {
       
       if (!isLoading) {
         surveyDocs = Surveys.find({}, { sort: { updatedAt: -1 } }).fetch() || [];
-        responseDocs = SurveyResponsesCollection.find({}).fetch() || [];
+        // Convert SurveyResponseDoc to SurveyResponse
+        const fetchedResponses = SurveyResponsesCollection.find({}).fetch() || [];
+        responseDocs = fetchedResponses.map(doc => ({
+          _id: doc._id,
+          surveyId: doc.surveyId,
+          answers: doc.responses ? doc.responses.reduce((acc, resp) => {
+            acc[resp.questionId] = resp.answer;
+            return acc;
+          }, {} as Record<string, any>) : {},
+          submittedAt: doc.startTime || new Date(),
+          startedAt: doc.startTime,
+          userId: doc.userId,
+          completionStatus: doc.completed ? 'complete' : 'partial'
+        }));
       }
       
       return {

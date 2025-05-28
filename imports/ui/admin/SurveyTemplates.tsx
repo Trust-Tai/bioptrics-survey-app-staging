@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '/imports/api/surveys';
+import { Surveys } from '../../features/surveys/api/surveys';
 import styled from 'styled-components';
 import { FiPlus, FiSearch, FiFilter, FiTag, FiFolder, FiCopy, FiEdit, FiStar, FiTrash2, FiCheck, FiX, FiInfo } from 'react-icons/fi';
 import AdminLayout from './AdminLayout';

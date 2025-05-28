@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '/imports/api/surveys';
-import { SurveyResponses, SurveyResponseDoc as BaseResponseDoc } from '/imports/api/surveyResponses';
+import { Surveys } from '../../features/surveys/api/surveys';
+import { SurveyResponses, SurveyResponseDoc as BaseResponseDoc } from '../../features/surveys/api/surveyResponses';
 import { FiBarChart2, FiUsers, FiCheckCircle, FiClock, FiCalendar, FiTrendingUp } from 'react-icons/fi';
 
 // Extend the SurveyResponseDoc interface to include all required properties

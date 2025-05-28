@@ -3,7 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import AdminLayout from './AdminLayout';
 import DashboardBg from './DashboardBg';
-import { OrganizationSettingsCollection, OrganizationSettings } from '/imports/api/organizationSettings';
+import { OrganizationSettingsCollection, OrganizationSettings } from '../../features/organization/api/organizationSettings';
 import { SketchPicker, ChromePicker, ColorResult } from 'react-color';
 
 // Vertical Tab Button Component

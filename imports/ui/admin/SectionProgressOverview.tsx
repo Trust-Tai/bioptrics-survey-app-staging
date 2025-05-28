@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import SectionCompletionIndicator from './SectionCompletionIndicator';
-import QuickActionsMenu from './QuickActionsMenu';
+import QuickActionsMenu from '../../shared/components/QuickActionsMenu';
 
 const Container = styled.div`
   margin-bottom: 24px;

@@ -10,7 +10,7 @@ import { Meteor } from 'meteor/meteor';
 import { Questions } from '/imports/api/questions';
 import { SurveyThemes } from '/imports/api/surveyThemes';
 import { WPSCategories } from '/imports/api/wpsCategories';
-import { Surveys } from '/imports/api/surveys';
+import { Surveys } from '../../features/surveys/api/surveys';
 import Select, { MultiValue } from 'react-select';
 import SurveySharing from './SurveySharing';
 import SurveyBranchingLogic from './SurveyBranchingLogic';

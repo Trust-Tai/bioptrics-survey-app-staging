@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '/imports/api/surveys';
-import { SurveyResponses } from '/imports/api/surveyResponses';
+import { Surveys } from '../../features/surveys/api/surveys';
+import { SurveyResponses } from '../../features/surveys/api/surveyResponses';
 import { FiBarChart2, FiUsers, FiCheckCircle, FiClock, FiActivity, FiCalendar, FiEdit } from 'react-icons/fi';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 

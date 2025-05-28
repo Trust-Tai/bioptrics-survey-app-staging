@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Surveys } from '/imports/api/surveys';
+import { Surveys } from '../../features/surveys/api/surveys';
 import { Questions } from '/imports/api/questions';
 import { 
   FiEdit, 
@@ -35,7 +35,7 @@ import SurveyPreview from './SurveyPreview';
 import SectionQuestions from './SectionQuestions';
 import SurveyDashboardSummary from './SurveyDashboardSummary';
 import QuestionAssignment from './QuestionAssignment';
-import QuickActionsMenu from './QuickActionsMenu';
+import QuickActionsMenu from '../../shared/components/QuickActionsMenu';
 import SectionCompletionIndicator from './SectionCompletionIndicator';
 import SectionProgressOverview from './SectionProgressOverview';
 
