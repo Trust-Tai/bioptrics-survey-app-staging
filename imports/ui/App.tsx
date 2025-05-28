@@ -37,6 +37,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import QuestionBuilder from './admin/QuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
+import SurveyManagementDashboard from './admin/SurveyManagementDashboard';
 import LogoutPage from './LogoutPage';
 
 function RequireAdminAuth() {
@@ -161,6 +162,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/surveys/responses" element={<SurveyResponses />} />
         <Route path="/admin/surveys/builder" element={<SurveyBuilder />} />
         <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
+        <Route path="/admin/surveys/manage/:surveyId" element={<SurveyManagementDashboardWrapper />} />
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
@@ -192,6 +194,12 @@ const App: React.FC = () => (
 const SurveyBuilderWrapper: React.FC = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
   return <SurveyBuilder editId={surveyId} />;
+};
+
+// Wrapper for SurveyManagementDashboard to extract :surveyId param
+const SurveyManagementDashboardWrapper: React.FC = () => {
+  const { surveyId } = useParams<{ surveyId: string }>();
+  return <SurveyManagementDashboard surveyId={surveyId} />;
 };
 
 export default App;

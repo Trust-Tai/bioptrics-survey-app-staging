@@ -29,6 +29,8 @@ export interface SurveyDoc {
   published: boolean;
   shareToken?: string;
   organizationId?: string;
+  startDate?: Date;
+  endDate?: Date;
   // Template-related fields
   isTemplate?: boolean;
   templateName?: string;
@@ -46,6 +48,39 @@ export interface SurveyDoc {
     }>;
     enabled: boolean;
   };
+  // Survey sections for organization and display
+  sections?: Array<any>;
+  surveySections?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    isActive: boolean;
+    priority: number;
+    icon?: string;
+    color?: string;
+    instructions?: string;
+    isRequired?: boolean;
+    visibilityCondition?: {
+      dependsOnSectionId?: string;
+      dependsOnQuestionId?: string;
+      condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
+      value: any;
+    };
+    timeLimit?: number; // in seconds
+    questionIds?: string[];
+    templateId?: string;
+    customCss?: string;
+    progressIndicator?: boolean;
+  }>;
+  
+  // Questions organized by section
+  sectionQuestions?: Array<{
+    id: string;
+    text: string;
+    type: string;
+    sectionId?: string;
+    order?: number;
+  }>;
   defaultSettings?: {
     allowAnonymous?: boolean;
     requireLogin?: boolean;
@@ -97,6 +132,11 @@ export const SurveyResponses = new Mongo.Collection<SurveyResponseDoc>('survey_r
 if (Meteor.isServer) {
   Meteor.publish('surveys.all', function () {
     return Surveys.find();
+  });
+  
+  Meteor.publish('surveys.single', function (surveyId) {
+    check(surveyId, String);
+    return Surveys.find({ _id: surveyId });
   });
   
   Meteor.publish('surveys.templates', function () {

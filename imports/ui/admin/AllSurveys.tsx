@@ -5,7 +5,7 @@ import AdminLayout from './AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '/imports/api/surveys';
-import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaTasks } from 'react-icons/fa';
 import { useOrganization } from '../contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
@@ -211,7 +211,31 @@ const AllSurveys: React.FC = () => {
                       {new Date(s.updatedAt).toLocaleString()}
                     </span>
                   </div>
-                  <div style={{ color: '#28211e', fontWeight: 600, fontSize: 17, letterSpacing: 0.1 }}>
+                  <div 
+                    style={{ 
+                      color: '#28211e', 
+                      fontWeight: 600, 
+                      fontSize: 17, 
+                      letterSpacing: 0.1,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'inline-block',
+                      position: 'relative',
+                      paddingBottom: '2px',
+                      borderBottom: '1px dotted transparent'
+                    }}
+                    onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#552a47';
+                      e.currentTarget.style.borderBottom = '1px dotted #552a47';
+                      e.currentTarget.title = 'Click to manage this survey';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#28211e';
+                      e.currentTarget.style.borderBottom = '1px dotted transparent';
+                    }}
+                    title="Click to manage this survey"
+                  >
                     {s.title}
                   </div>
                   <div style={{ color: '#6e5a67', fontSize: 15 }}>{truncate(stripHtml(s.description), 120)}</div>
@@ -232,6 +256,13 @@ const AllSurveys: React.FC = () => {
                       title="Preview"
                     >
                       <FaEye style={{ color: '#552a47', fontSize: 18 }} />
+                    </button>
+                    <button
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
+                      title="Manage"
+                    >
+                      <FaTasks style={{ color: '#552a47', fontSize: 18 }} />
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '/imports/api/surveys';
 import styled from 'styled-components';
-import { FiPlus, FiSearch, FiFilter, FiTag, FiFolder, FiCopy, FiEdit } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiFilter, FiTag, FiFolder, FiCopy, FiEdit, FiStar, FiTrash2, FiCheck, FiX, FiInfo } from 'react-icons/fi';
 import AdminLayout from './AdminLayout';
 import DashboardBg from './DashboardBg';
 import { useNavigate } from 'react-router-dom';
+import { Questions } from '/imports/api/questions';
+import { SurveyThemes } from '/imports/api/surveyThemes';
 
 // Styled components
 const Container = styled.div`

@@ -11,8 +11,10 @@ import {
   FaFilter, 
   FaInfoCircle,
   FaExclamationTriangle,
-  FaBell
+  FaBell,
+  FaTachometerAlt
 } from 'react-icons/fa';
+import AdminDashboardSummary from './AdminDashboardSummary';
 import Countdown from './Countdown';
 import DashboardBg from './DashboardBg';
 
@@ -519,6 +521,14 @@ const AdminDashboard: React.FC = () => {
             <option value="q3-2024">Q3 2024</option>
           </FilterSelect>
         </FilterBar>
+        
+        {/* Enhanced Dashboard Summary */}
+        <Card style={{ marginBottom: '24px' }}>
+          <SectionTitle>
+            <FaTachometerAlt size={16} /> Enhanced Dashboard
+          </SectionTitle>
+          <AdminDashboardSummary organizationId={undefined} />
+        </Card>
         
         {/* Anonymity Alert */}
         {showAnonymityWarning && (
