@@ -99,7 +99,7 @@ const SurveyWelcome: React.FC<SurveyWelcomeProps> = ({ onStart, previewData, dis
       <Card>
         <Logo src={previewData?.logo || "https://s28.q4cdn.com/380852864/files/design/logo.svg"} alt="newgold logo" />
         <Illustration src={previewData?.image || "/illustration.png"} alt="Survey Illustration" />
-        <Title>{previewData?.title || "Welcome to the New Gold Employee Survey"}</Title>
+        <Title>{previewData?.title || "Welcome to the Bioptrics Employee Survey"}</Title>
         <Description>
           {previewData?.description ? (
             <span dangerouslySetInnerHTML={{ __html: previewData.description }} />

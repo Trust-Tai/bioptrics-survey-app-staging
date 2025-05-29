@@ -132,7 +132,7 @@ const HomePage: React.FC = () => {
             <circle cx="37" cy="37" r="2" fill="#222"/>
           </svg>
         </Illustration>
-        <Title>Welcome to the New Gold Employee Survey</Title>
+        <Title>Welcome to the Bioptrics Employee Survey</Title>
         <Description>
           Your feedback is important in helping us improve our workplace. This survey is anonymous and takes about 5-7 minutes to complete. Please answer honestly &mdash; we value your input.
         </Description>

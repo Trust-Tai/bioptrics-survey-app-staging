@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FiInfo, FiPlus, FiTrash2 } from 'react-icons/fi';
-import { SurveySectionItem, VisibilityCondition } from '/imports/features/surveys/types/index';
+import { SurveySectionItem, VisibilityCondition } from '/imports/features/surveys/types';
 
 const Container = styled.div`
   margin-bottom: 24px;
@@ -81,6 +81,7 @@ interface SectionVisibilityConditionsProps {
   sections: SurveySectionItem[];
   condition?: VisibilityCondition;
   onChange: (condition: VisibilityCondition | undefined) => void;
+  currentSectionId?: string;
 }
 
 export const SectionVisibilityConditions: React.FC<SectionVisibilityConditionsProps> = ({

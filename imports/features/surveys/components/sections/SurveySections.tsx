@@ -3,13 +3,13 @@ import styled from 'styled-components';
 import { FiEdit2, FiTrash2, FiPlus, FiMove, FiInfo, FiCheckCircle, FiCopy, FiLayout, FiEye, FiBarChart2 } from 'react-icons/fi';
 
 // Import components from the same directory
-import SectionPreview from '/imports/features/surveys/components/sections/SectionPreview';
-import SectionTemplates from '/imports/features/surveys/components/sections/SectionTemplates';
-import SectionVisibilityConditions from '/imports/features/surveys/components/sections/SectionVisibilityConditions';
-import SectionInstructions from '/imports/features/surveys/components/sections/SectionInstructions';
+import SectionPreview from './SectionPreview';
+import SectionTemplates from './SectionTemplates';
+import SectionVisibilityConditions from './SectionVisibilityConditions';
+import SectionInstructions from './SectionInstructions';
 
 // Import shared types
-import { SurveySectionItem, SectionTemplate } from '/imports/features/surveys/types/index';
+import { SurveySectionItem, SectionTemplate } from '/imports/features/surveys/types';
 
 // Define the base survey sections that can be customized
 export const DEFAULT_SURVEY_SECTIONS = [

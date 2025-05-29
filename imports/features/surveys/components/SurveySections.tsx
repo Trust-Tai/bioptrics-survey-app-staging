@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FiEdit2, FiTrash2, FiPlus, FiMove, FiInfo, FiCheckCircle, FiCopy, FiLayout, FiEye, FiBarChart2 } from 'react-icons/fi';
-import SectionPreview from '../../../../imports/features/surveys/components/sections/SectionPreview';
-import SectionTemplates from '../../../../imports/features/surveys/components/sections/SectionTemplates';
-import { SectionTemplate } from '../../../../imports/ui/admin/SectionTemplates';
-import SectionVisibilityConditions from '../../../../imports/features/surveys/components/sections/SectionVisibilityConditions';
-import SectionInstructions from '../../../../imports/features/surveys/components/sections/SectionInstructions';
+import SectionPreview from './sections/SectionPreview';
+import SectionTemplates from './sections/SectionTemplates';
+import { SectionTemplate, SurveySectionItem, VisibilityCondition } from '/imports/features/surveys/types';
+import SectionVisibilityConditions from './sections/SectionVisibilityConditions';
+import SectionInstructions from './sections/SectionInstructions';
 
 // Define the base survey sections that can be customized
 export const DEFAULT_SURVEY_SECTIONS = [
@@ -277,51 +277,7 @@ export interface SectionQuestionsMap {
   [section: string]: string[]; // array of question IDs per section
 }
 
-export interface SurveySectionItem {
-  id: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  priority: number;
-  icon?: string;
-  color?: string;
-  instructions?: string;
-  isRequired?: boolean;
-  visibilityCondition?: {
-    dependsOnSectionId?: string;
-    dependsOnQuestionId?: string;
-    condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
-    value: any;
-  };
-  timeLimit?: number; // in seconds
-  questionIds?: string[];
-  templateId?: string;
-  customCss?: string;
-  progressIndicator?: boolean;
-  completionPercentage?: number; // For analytics
-  averageTimeSpent?: number; // For analytics in seconds
-  skipLogic?: {
-    enabled: boolean;
-    rules: Array<{
-      condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
-      questionId: string;
-      value: any;
-      skipToSectionId: string;
-    }>;
-  };
-  layout?: 'standard' | 'grid' | 'card' | 'tabbed';
-  theme?: {
-    backgroundColor?: string;
-    textColor?: string;
-    accentColor?: string;
-    fontFamily?: string;
-  };
-  feedback?: {
-    enabled: boolean;
-    prompt?: string;
-    type: 'rating' | 'text' | 'both' | 'thumbs';
-  };
-}
+// Using the imported SurveySectionItem interface from types
 
 interface SurveySectionsProps {
   sections: SurveySectionItem[];
@@ -865,7 +821,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
             <SectionVisibilityConditions
               sections={sections}
               currentSectionId={editingSection.id}
-              visibilityCondition={editingSection.visibilityCondition}
+              condition={editingSection.visibilityCondition}
               onChange={(visibilityCondition) => setEditingSection({...editingSection, visibilityCondition})}
             />
           </div>

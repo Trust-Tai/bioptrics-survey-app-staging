@@ -14,7 +14,7 @@ interface PublicLayoutProps {
  */
 const PublicLayout: React.FC<PublicLayoutProps> = ({ 
   children, 
-  title = 'New Gold Survey', 
+  title = 'Bioptrics Survey', 
   showHeader = true, 
   showFooter = true 
 }) => {
@@ -26,7 +26,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
             <div className="header-content">
               <div className="logo">
                 <Link to="/">
-                  <img src="/images/logo.png" alt="New Gold Logo" />
+                  <img src="/images/logo.png" alt="Bioptrics Logo" />
                 </Link>
               </div>
               <h1>{title}</h1>
@@ -45,7 +45,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({
         <footer className="public-footer">
           <div className="container">
             <div className="footer-content">
-              <p>&copy; {new Date().getFullYear()} New Gold Inc. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Bioptrics Inc. All rights reserved.</p>
               <div className="footer-links">
                 <Link to="/terms">Terms of Use</Link>
                 <Link to="/privacy">Privacy Policy</Link>

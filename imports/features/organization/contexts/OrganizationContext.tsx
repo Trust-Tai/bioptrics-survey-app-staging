@@ -5,7 +5,7 @@ import { OrganizationSettingsCollection, OrganizationSettings } from '../api/org
 
 // Default organization settings
 const defaultSettings: OrganizationSettings = {
-  name: 'New Gold',
+  name: 'Bioptrics',
   primaryColor: '#b0802b',
   secondaryColor: '#402C00',
   terminology: {

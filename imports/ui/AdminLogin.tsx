@@ -59,14 +59,12 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
   return (
     <AuthBg>
       {/* New logo art at bottom left */}
-      <img src="/newlogo-art.png" alt="new gold art" style={{ position: 'absolute', left: 0, bottom: 0, height: '60%', zIndex: 1, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 50, left: '50%', transform: 'translateX(-50%)', zIndex: 2 }}>
-        {/* Logo placeholder - replace src with your actual logo path */}
-        <img src="/poweredbybioptrics.png" alt="new gold logo" style={{ height: 48, marginBottom: 32 }} />
-      </div>
-      <AuthCard onSubmit={handleLogin} style={{ maxWidth: 400, padding: '2.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
+      <img src="/newlogo-art.png" alt="bioptrics art" style={{ position: 'absolute', left: 0, bottom: 0, height: '60%', zIndex: 1, pointerEvents: 'none' }} />
+      {/* Powered by Bioptrics at bottom right */}
+      <img src="/poweredbybioptrics.png" alt="Powered by Bioptrics" style={{ position: 'absolute', right: 20, bottom: 20, height: 40, zIndex: 1, pointerEvents: 'none' }} />
+      <AuthCard onSubmit={handleLogin} style={{ maxWidth: 400, padding: '1.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
         <AuthTitle style={{ fontSize: 24, marginBottom: 8, marginTop: 0, fontWeight: 400, letterSpacing: 0.1, color: '#222' }}>
-          New Gold <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Survey Admin</span>
+          Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Survey Admin</span>
         </AuthTitle>
         <div style={{ textAlign: 'center', color: '#555555', fontSize: 15, marginBottom: 22, marginTop: 2 }}>
           Securely log in to access the admin dashboard, manage survey data, view insights, and control system settings.<br />

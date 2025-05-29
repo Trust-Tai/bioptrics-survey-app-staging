@@ -1,5 +1,5 @@
 import React from 'react';
-import { useOrganization } from '../contexts/OrganizationContext';
+import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 
 interface TermLabelProps {
   term: keyof ReturnType<typeof useOrganization>['settings']['terminology'];

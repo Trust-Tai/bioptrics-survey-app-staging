@@ -49,11 +49,39 @@ export interface SectionTemplate {
   id: string;
   name: string;
   description: string;
-  instructions: string;
+  instructions?: string;
   organizationId?: string;
   isDefault?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  category?: string;
+  tags?: string[];
+  color?: string;
+  isRequired?: boolean;
+  progressIndicator?: boolean;
+  timeLimit?: number; // in seconds
+  customCss?: string;
+  layout?: 'standard' | 'grid' | 'card' | 'tabbed';
+  theme?: {
+    backgroundColor?: string;
+    textColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+  };
+  skipLogic?: {
+    enabled: boolean;
+    rules: Array<{
+      condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
+      questionId: string;
+      value: any;
+      skipToSectionId: string;
+    }>;
+  };
+  feedback?: {
+    enabled: boolean;
+    prompt?: string;
+    type: 'rating' | 'text' | 'both' | 'thumbs';
+  };
 }
 
 export interface SectionTimeData {

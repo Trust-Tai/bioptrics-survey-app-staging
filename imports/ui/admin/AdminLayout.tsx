@@ -1,7 +1,7 @@
 import '../../../client/fonts.css';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useOrganization } from '../contexts/OrganizationContext';
+import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 import { 
   FaChartPie, 
@@ -276,7 +276,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   React.useEffect(() => {
     const prevBg = document.body.style.background;
     const prevOverflowX = document.body.style.overflowX;
-    document.body.style.background = '#FFF9EB';
+    document.body.style.background = '#F5F5F5';
     document.body.style.overflowX = 'hidden';
     return () => {
       document.body.style.background = prevBg;
@@ -290,11 +290,30 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   // Add expandedMenus state for submenu toggling
   const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
-
+  
+  // State for confirmation dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ show: false, title: '', message: '', onConfirm: () => {} });
+  
+  // Function to close the confirmation dialog
+  const closeConfirmDialog = () => {
+    setConfirmDialog({ ...confirmDialog, show: false });
+  };
+  
   function handleLogout() {
-    if (window.confirm('Are you sure you want to log out?')) {
-      navigate('/logout');
-    }
+    setConfirmDialog({
+      show: true,
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to log out? Any unsaved changes will be lost.',
+      onConfirm: () => {
+        navigate('/logout');
+        closeConfirmDialog();
+      }
+    });
   }
 
   return (
@@ -394,6 +413,61 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </MainContent>
       </div>
+      
+      {/* Confirmation Dialog */}
+      {confirmDialog.show && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 2000,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '24px',
+            width: '400px',
+            maxWidth: '90%',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#552a47' }}>{confirmDialog.title}</h3>
+            <p style={{ margin: '0 0 24px 0', lineHeight: 1.5 }}>{confirmDialog.message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                onClick={closeConfirmDialog}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  background: '#f5f5f5',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDialog.onConfirm}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  background: '#552a47',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

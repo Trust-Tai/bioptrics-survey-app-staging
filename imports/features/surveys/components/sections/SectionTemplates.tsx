@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiPlus, FiCheck, FiInfo } from 'react-icons/fi';
-import { SectionTemplate } from '/imports/features/surveys/types/index';
+import { SectionTemplate } from '/imports/features/surveys/types';
 
 const TemplatesContainer = styled.div`
   margin-bottom: 24px;

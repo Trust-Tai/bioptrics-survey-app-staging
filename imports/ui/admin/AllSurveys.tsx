@@ -6,7 +6,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
 import { FaEdit, FaTrash, FaEye, FaTasks } from 'react-icons/fa';
-import { useOrganization } from '../contexts/OrganizationContext';
+import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
 interface SurveyDisplay {

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { FiPlus, FiTrash2, FiMove, FiEdit2, FiFilter, FiSearch, FiCheckSquare, FiSquare, FiCopy, FiArrowDown, FiArrowUp } from 'react-icons/fi';
 
 // Import shared types
-import { SurveySectionItem, QuestionItem } from '/imports/features/surveys/types/index';
+import { SurveySectionItem, QuestionItem } from '/imports/features/surveys/types';
 
 // Styled components for the section questions UI
 const Container = styled.div`

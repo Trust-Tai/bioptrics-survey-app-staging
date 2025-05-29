@@ -18,15 +18,14 @@ import {
 import { SurveyResponses } from '../../../../features/surveys/api/surveyResponses';
 import { Surveys } from '../../../../features/surveys/api/surveys';
 
-// These components will eventually be moved to the analytics feature
-// For now, we'll keep importing from the old location
-import AnalyticsFilterBar from '/imports/ui/admin/analytics/AnalyticsFilterBar';
-import KPIGrid from '/imports/ui/admin/analytics/KPIGrid';
-import SiteParticipationChart from '/imports/ui/admin/analytics/SiteParticipationChart';
-import ThemeHeatmap from '/imports/ui/admin/analytics/ThemeHeatmap';
-import EngagementTrendLine from '/imports/ui/admin/analytics/EngagementTrendLine';
-import FlaggedIssuesList from '/imports/ui/admin/analytics/FlaggedIssuesList';
-import CommentClusterView from '/imports/ui/admin/analytics/CommentClusterView';
+// Import components from the feature-based structure
+import AnalyticsFilterBar from './filters/AnalyticsFilterBar';
+import KPIGrid from './kpi/KPIGrid';
+import SiteParticipationChart from './charts/SiteParticipationChart';
+import ThemeHeatmap from './heatmap/ThemeHeatmap';
+import EngagementTrendLine from './trends/EngagementTrendLine';
+import FlaggedIssuesList, { Issue } from './issues/FlaggedIssuesList';
+import CommentClusterView from './comments/CommentClusterView';
 
 // Types
 interface FilterState {
@@ -107,18 +106,6 @@ interface ThemeData {
 interface TrendData {
   name: string;
   score: number;
-}
-
-// Match the interface expected by FlaggedIssuesList
-interface Issue {
-  id: number;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  // Additional properties for our internal use
-  site?: string;
-  department?: string;
-  issue?: string;
-  date?: string;
 }
 
 // Styled components
@@ -399,10 +386,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ surveyId }) => 
   const flaggedIssuesList: Issue[] = filteredResponses
     .filter((r: ResponseDoc) => r.flagged)
     .map((r: ResponseDoc, index) => ({
-      id: index,
+      id: String(index), // Convert index to string to match Issue type
       message: r.flaggedReason || 'Unspecified issue',
       severity: r.flaggedSeverity || 'medium',
-      // Additional properties for our internal use
+      // Additional metadata as custom properties
       site: r.site,
       department: r.department,
       issue: r.flaggedReason || 'Unspecified issue',

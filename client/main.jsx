@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Meteor } from 'meteor/meteor';
-import App from '/imports/app/App';
+import App from '/imports/ui/App';
 
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends React.Component {

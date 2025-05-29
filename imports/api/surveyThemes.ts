@@ -1,35 +1,13 @@
-import { Mongo } from 'meteor/mongo';
-import { Meteor } from 'meteor/meteor';
+/**
+ * This file is kept for backward compatibility with existing imports.
+ * It re-exports the SurveyThemes collection from the feature-based location.
+ */
 
-export interface SurveyThemeType {
-  _id?: string;
-  name: string;
-  color: string;
-  description: string;
-  createdAt?: Date | string;
-  wpsCategoryId?: string; // Relationship to WPS Category
-  assignableTo?: string[]; // Can be 'questions', 'surveys', or both
-  keywords?: string[];
-  priority?: number;
-  isActive?: boolean;
-}
+import { SurveyThemes, SurveyThemeType } from '/imports/features/survey-themes/api/surveyThemes';
 
-export const SurveyThemes = new Mongo.Collection<SurveyThemeType>('surveyThemes');
+// Re-export the collection and type
+export { SurveyThemes, SurveyThemeType };
 
-if (Meteor.isServer) {
-  Meteor.publish('surveyThemes.all', function () {
-    return SurveyThemes.find();
-  });
-}
-
-Meteor.methods({
-  async 'surveyThemes.insert'(theme: Omit<SurveyThemeType, '_id'>) {
-    return await SurveyThemes.insertAsync({ ...theme, createdAt: new Date() });
-  },
-  'surveyThemes.update'(id: string, updates: Partial<SurveyThemeType>) {
-    return SurveyThemes.update(id, { $set: updates });
-  },
-  'surveyThemes.remove'(id: string) {
-    return SurveyThemes.remove(id);
-  },
-});
+// Note: The server-side code (publications and methods) has been removed
+// to prevent duplicate definitions. These are now defined in the feature-based location.
+// See /imports/features/survey-themes/api/surveyThemes.ts for the implementation.

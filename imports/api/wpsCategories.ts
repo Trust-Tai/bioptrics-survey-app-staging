@@ -1,18 +1,10 @@
-import { Mongo } from 'meteor/mongo';
-import SimpleSchema from 'simpl-schema';
+/**
+ * This file is kept for backward compatibility with existing imports.
+ * It re-exports the WPSCategories collection from the feature-based location.
+ */
 
-export interface WPSCategory {
-  _id?: string;
-  name: string;
-  color: string;
-  description: string;
-}
+import { WPSCategories, WPSCategory } from '/imports/features/wps-framework/api/wpsCategories';
 
-export const WPSCategories = new Mongo.Collection<WPSCategory>('wpsCategories');
-
-const WPSCategorySchema = new SimpleSchema({
-  name: { type: String },
-  color: { type: String },
-  description: { type: String },
-});
+// Re-export the collection and type
+export { WPSCategories, WPSCategory };
 
