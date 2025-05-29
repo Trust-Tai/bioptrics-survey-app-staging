@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { FaChartBar, FaTable, FaFilter, FaClipboardList, FaUsers, FaFileAlt, FaExclamationTriangle, FaChartPie, FaChartLine } from 'react-icons/fa';
+import { FaChartBar, FaTable, FaFilter, FaClipboardList, FaUsers, FaFileAlt, FaExclamationTriangle, FaChartPie, FaChartLine, FaPlus, FaEdit, FaTrash, FaEye, FaExternalLinkAlt } from 'react-icons/fa';
 import { FiDownload, FiUsers, FiBarChart2 } from 'react-icons/fi';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, LineChart, Line, AreaChart, Area } from 'recharts';
 import DashboardBg from './DashboardBg';
@@ -109,6 +109,134 @@ const DashboardGrid = styled.div`
   grid-template-columns: repeat(12, 1fr);
   grid-gap: 24px;
   margin-bottom: 24px;
+`;
+
+const SurveyList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+`;
+
+const SurveyCard = styled.div`
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow: hidden;
+`;
+
+const SurveyHeader = styled.div`
+  padding: 12px 16px;
+  background: #f7f2f5;
+  border-bottom: 1px solid #eee;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const SurveyType = styled.div`
+  font-size: 0.8rem;
+  color: #666;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 12px;
+`;
+
+const SurveyContent = styled.div`
+  padding: 16px;
+`;
+
+const SurveyTitle = styled.div`
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+`;
+
+const SurveyDescription = styled.div`
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  color: #666;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const SurveyMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const MetaTag = styled.div`
+  background: #f0f0f0;
+  color: #666;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+`;
+
+const SurveyStats = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+`;
+
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const StatValue = styled.div`
+  font-weight: 600;
+  color: #552a47;
+`;
+
+const StatLabel = styled.div`
+  font-size: 0.75rem;
+  color: #666;
+`;
+
+const SurveyActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
+const ActionButton = styled.button`
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  &.preview {
+    background: #f0f0f0;
+    color: #333;
+  }
+  
+  &.edit {
+    background: #552a47;
+    color: #fff;
+  }
+  
+  &.delete {
+    background: #f44336;
+    color: #fff;
+  }
+  
+  &.responses {
+    background: #4caf50;
+    color: #fff;
+  }
 `;
 
 const KPICard = styled.div`
@@ -337,6 +465,12 @@ const SurveyDashboard: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [themeFilter, setThemeFilter] = useState('all');
   const [view, setView] = useState('dashboard'); // 'dashboard' or 'table'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [filterTemplate, setFilterTemplate] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [surveyToDelete, setSurveyToDelete] = useState<string | null>(null);
   
   // Fetch categories and themes
   const wpsCategories = useTracker(() => {
@@ -514,11 +648,67 @@ const SurveyDashboard: React.FC = () => {
       .slice(0, 10); // Top 10 surveys by response count
   }, [responses, surveys]);
   
+  // Filtered surveys based on search and filters
+  const filteredSurveys = React.useMemo(() => {
+    if (!surveys) return [];
+    
+    return surveys.filter((s: any) => {
+      // Apply search term filter
+      if (searchTerm && !s.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      
+      // Apply status filter
+      if (filterStatus === 'published' && !s.published) {
+        return false;
+      } else if (filterStatus === 'draft' && s.published) {
+        return false;
+      }
+      
+      // Apply template filter
+      if (filterTemplate === 'template' && !s.isTemplate) {
+        return false;
+      } else if (filterTemplate === 'regular' && s.isTemplate) {
+        return false;
+      }
+      
+      // Apply category filter
+      if (categoryFilter !== 'all' && (!s.defaultSettings?.categories || !s.defaultSettings.categories.includes(categoryFilter))) {
+        return false;
+      }
+      
+      // Apply theme filter
+      if (themeFilter !== 'all' && (!s.defaultSettings?.themes || !s.defaultSettings.themes.includes(themeFilter))) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [surveys, searchTerm, filterStatus, filterTemplate, categoryFilter, themeFilter]);
+  
+  // Handle deleting a survey
+  const handleDeleteSurvey = (surveyId: string) => {
+    setSurveyToDelete(surveyId);
+    setShowDeleteConfirm(true);
+  };
+  
+  const confirmDeleteSurvey = () => {
+    if (surveyToDelete) {
+      Meteor.call('surveys.delete', surveyToDelete, (error: any) => {
+        if (error) {
+          console.error('Error deleting survey:', error);
+        }
+      });
+      setShowDeleteConfirm(false);
+      setSurveyToDelete(null);
+    }
+  };
+  
   // Table data
   const tableData = React.useMemo(() => {
     if (!surveys) return [];
     
-    return surveys.map((s: any) => {
+    return filteredSurveys.map((s: any) => {
       const surveyResponses = responses ? responses.filter((r: any) => r.surveyId === s._id) : [];
       const completedSurveyResponses = surveyResponses.filter((r: any) => r.completed);
       const responseRate = surveyResponses.length > 0 ? 
@@ -547,63 +737,134 @@ const SurveyDashboard: React.FC = () => {
       <DashboardBg>
         <Container>
           <TitleRow>
-            <Title>Survey Analytics Dashboard</Title>
-            <ViewToggle>
-              <ToggleButton 
-                active={view === 'dashboard'} 
-                onClick={() => setView('dashboard')}
+            <Title>All Surveys</Title>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => navigate('/admin/surveys/builder')} 
+                style={{ 
+                  background: '#552a47', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: 8, 
+                  padding: '8px 16px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 6, 
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 15,
+                }}
               >
-                <FaChartBar size={14} /> Dashboard
-              </ToggleButton>
-              <ToggleButton 
-                active={view === 'table'} 
-                onClick={() => setView('table')}
-              >
-                <FaTable size={14} /> Table View
-              </ToggleButton>
-            </ViewToggle>
+                <FaPlus size={14} /> New Survey
+              </button>
+              <ViewToggle>
+                <button 
+                  style={{
+                    padding: '8px 16px',
+                    background: view === 'dashboard' ? '#552a47' : '#f5f5f5',
+                    color: view === 'dashboard' ? '#fff' : '#333',
+                    border: 'none',
+                    borderRadius: '4px 0 0 4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                  onClick={() => setView('dashboard')}
+                >
+                  <FaChartBar size={14} /> Dashboard
+                </button>
+                <button 
+                  style={{
+                    padding: '8px 16px',
+                    background: view === 'table' ? '#552a47' : '#f5f5f5',
+                    color: view === 'table' ? '#fff' : '#333',
+                    border: 'none',
+                    borderRadius: '0 4px 4px 0',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                  onClick={() => setView('table')}
+                >
+                  <FaTable size={14} /> Table View
+                </button>
+              </ViewToggle>
+            </div>
           </TitleRow>
           
-          <FilterBar>
-            <FilterGroup>
-              <FilterLabel>Time Period:</FilterLabel>
-              <FilterSelect 
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value)}
-              >
-                <option value="all">All Time</option>
-                <option value="month">Last Month</option>
-                <option value="quarter">Last Quarter</option>
-                <option value="year">Last Year</option>
-              </FilterSelect>
-            </FilterGroup>
-            
-            <FilterGroup style={{ marginLeft: 16 }}>
-              <FilterLabel>Category:</FilterLabel>
-              <FilterSelect 
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {wpsCategories.map((cat: any) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-            
-            <FilterGroup style={{ marginLeft: 16 }}>
-              <FilterLabel>Theme:</FilterLabel>
-              <FilterSelect 
-                value={themeFilter}
-                onChange={(e) => setThemeFilter(e.target.value)}
-              >
-                <option value="all">All Themes</option>
-                {surveyThemes.map((theme: any) => (
-                  <option key={theme._id} value={theme._id}>{theme.name}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
-          </FilterBar>
+          <SearchFilterRow>
+            <SearchInput 
+              type="text" 
+              placeholder="Search surveys..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <FilterButton onClick={() => setShowFilters(!showFilters)}>
+              <FaFilter size={12} /> Filters {showFilters ? '(Hide)' : '(Show)'}
+            </FilterButton>
+          </SearchFilterRow>
+          
+          {showFilters && (
+            <FiltersPanel>
+              <FilterGroup>
+                <FilterLabel>Status</FilterLabel>
+                <FilterSelect 
+                  value={filterStatus || ''}
+                  onChange={(e) => setFilterStatus(e.target.value || null)}
+                >
+                  <option value="">All</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </FilterSelect>
+              </FilterGroup>
+              
+              <FilterGroup>
+                <FilterLabel>Type</FilterLabel>
+                <FilterSelect 
+                  value={filterTemplate || ''}
+                  onChange={(e) => setFilterTemplate(e.target.value || null)}
+                >
+                  <option value="">All</option>
+                  <option value="template">Template</option>
+                  <option value="regular">Regular</option>
+                </FilterSelect>
+              </FilterGroup>
+              
+              <FilterGroup>
+                <FilterLabel>Category</FilterLabel>
+                <FilterSelect 
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <option value="all">All Categories</option>
+                  {wpsCategories.map((cat: any) => (
+                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  ))}
+                </FilterSelect>
+              </FilterGroup>
+              
+              <FilterGroup>
+                <FilterLabel>Theme</FilterLabel>
+                <FilterSelect 
+                  value={themeFilter}
+                  onChange={(e) => setThemeFilter(e.target.value)}
+                >
+                  <option value="all">All Themes</option>
+                  {surveyThemes.map((theme: any) => (
+                    <option key={theme._id} value={theme._id}>{theme.name}</option>
+                  ))}
+                </FilterSelect>
+              </FilterGroup>
+            </FiltersPanel>
+          )}
+          
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: '0.9rem', color: '#666' }}>
+              Showing {filteredSurveys.length} surveys {searchTerm ? `matching "${searchTerm}"` : ''}
+            </div>
+          </div>
           
           {view === 'dashboard' && (
             <>
