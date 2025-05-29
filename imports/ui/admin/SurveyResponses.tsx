@@ -144,8 +144,9 @@ interface SurveyResponse {
   _id?: string;
   surveyId: string;
   answers: Record<string, any>;
-  submittedAt: Date;
   startedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   respondentInfo?: {
     email?: string;
     name?: string;
@@ -231,7 +232,7 @@ const SurveyResponses: React.FC = () => {
             acc[resp.questionId] = resp.answer;
             return acc;
           }, {} as Record<string, any>) : {},
-          submittedAt: doc.startTime || new Date(),
+          createdAt: doc.startTime || new Date(),
           startedAt: doc.startTime,
           userId: doc.userId,
           completionStatus: doc.completed ? 'complete' : 'partial'
@@ -409,13 +410,13 @@ const SurveyResponses: React.FC = () => {
       const responseId = response._id || 'unknown';
       
       if (exportType === 'basic') {
-        csv += `${responseId},${response.submittedAt.toISOString()}`;
+        csv += `${responseId},${response.createdAt ? response.createdAt.toISOString() : new Date().toISOString()}`;
       } else if (exportType === 'detailed') {
         // Calculate time to complete if available
         let timeToComplete = '';
-        if (response.startedAt) {
+        if (response.startedAt && response.createdAt) {
           const startTime = new Date(response.startedAt).getTime();
-          const endTime = new Date(response.submittedAt).getTime();
+          const endTime = new Date(response.createdAt).getTime();
           timeToComplete = Math.floor((endTime - startTime) / 1000).toString();
         }
         
@@ -425,13 +426,13 @@ const SurveyResponses: React.FC = () => {
         // Get respondent email
         const respondentEmail = response.respondentInfo?.email || '';
         
-        csv += `${responseId},${response.submittedAt.toISOString()},${response.startedAt ? new Date(response.startedAt).toISOString() : ''},${timeToComplete},${completionStatus},${respondentEmail}`;
+        csv += `${responseId},${response.createdAt ? response.createdAt.toISOString() : new Date().toISOString()},${response.startedAt ? new Date(response.startedAt).toISOString() : ''},${timeToComplete},${completionStatus},${respondentEmail}`;
       } else if (exportType === 'analytics') {
         // Calculate time to complete if available
         let timeToComplete = '';
-        if (response.startedAt) {
+        if (response.startedAt && response.createdAt) {
           const startTime = new Date(response.startedAt).getTime();
-          const endTime = new Date(response.submittedAt).getTime();
+          const endTime = new Date(response.createdAt).getTime();
           timeToComplete = Math.floor((endTime - startTime) / 1000).toString();
         }
         
@@ -452,7 +453,7 @@ const SurveyResponses: React.FC = () => {
         const totalQuestions = survey?.selectedQuestions ? Object.keys(survey.selectedQuestions).length : 0;
         const answeredQuestions = Object.keys(response.answers).length;
         
-        csv += `${responseId},${response.surveyId},${response.submittedAt.toISOString()},${response.startedAt ? new Date(response.startedAt).toISOString() : ''},${timeToComplete},${completionStatus},${respondentEmail},${respondentName},${respondentUserId},${browser},${os},${device},${totalQuestions},${answeredQuestions}`;
+        csv += `${responseId},${response.surveyId},${response.createdAt ? response.createdAt.toISOString() : new Date().toISOString()},${response.startedAt ? new Date(response.startedAt).toISOString() : ''},${timeToComplete},${completionStatus},${respondentEmail},${respondentName},${respondentUserId},${browser},${os},${device},${totalQuestions},${answeredQuestions}`;
       }
       
       // Add answer data for all export types
@@ -568,422 +569,111 @@ const SurveyResponses: React.FC = () => {
           </div>
         )}
         <div style={{ maxWidth: 1100, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: 'transparent' }}>
-          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>Survey Analytics & Responses</h2>
+          <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>Survey Responses</h2>
           
-          {/* Analytics Dashboard */}
-          <div style={{ marginBottom: 32, background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontWeight: 700, fontSize: 20, color: '#552a47', margin: 0 }}>Analytics Overview</h3>
-              <div>
-                <select 
-                  style={{ 
-                    padding: '6px 12px', 
-                    borderRadius: 6, 
-                    border: '1px solid #ddd', 
-                    fontSize: 14,
-                    background: '#f9f9f9'
-                  }}
-                  onChange={(e) => {
-                    // Future implementation: Period selection for analytics
-                  }}
-                >
-                  <option value="all">All Time</option>
-                  <option value="30days">Last 30 Days</option>
-                  <option value="90days">Last 90 Days</option>
-                  <option value="year">Last Year</option>
-                </select>
-              </div>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20, marginBottom: 24 }}>
-              {/* Total Surveys Card */}
-              <div style={{ background: '#f9f4f7', padding: 20, borderRadius: 10, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Surveys</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#552a47' }}>{surveys.length}</div>
-                <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                  {surveys.filter(s => s.published).length} published
+          <Container>
+            <FilterContainer>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                <div>
+                  <FilterButton onClick={() => setShowFilters(!showFilters)}>
+                    <FiFilter />
+                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                  </FilterButton>
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Search surveys..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 20,
+                      border: '1px solid #ddd',
+                      width: 250,
+                      fontSize: 14
+                    }}
+                  />
                 </div>
               </div>
               
-              {/* Total Responses Card */}
-              <div style={{ background: '#f0f7fa', padding: 20, borderRadius: 10, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Responses</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#3776a8' }}>{responses.length}</div>
-                <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                  {surveys.length > 0 ? (responses.length / surveys.length).toFixed(1) : 0} avg per survey
-                </div>
-              </div>
-              
-              {/* Response Rate Card */}
-              <div style={{ background: '#f7f9f0', padding: 20, borderRadius: 10, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Response Rate</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#6a994e' }}>
-                  {surveys.some(s => s.published) ? 
-                    Math.round((responses.length / surveys.filter(s => s.published).length) * 100) + '%' : 
-                    'N/A'}
-                </div>
-                <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                  Based on published surveys
-                </div>
-              </div>
-              
-              {/* Recent Activity Card */}
-              <div style={{ background: '#fff5f0', padding: 20, borderRadius: 10, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Recent Activity</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#e67e22' }}>
-                  {responses.filter(r => {
-                    const today = new Date();
-                    const responseDate = new Date(r.submittedAt);
-                    const diffTime = Math.abs(today.getTime() - responseDate.getTime());
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays <= 7;
-                  }).length}
-                </div>
-                <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                  Responses in last 7 days
-                </div>
-              </div>
-            </div>
-            
-            {/* Response Trend Chart */}
-            <div style={{ marginTop: 20 }}>
-              <h4 style={{ fontWeight: 600, fontSize: 16, marginBottom: 12 }}>Response Trend</h4>
-              <div style={{ height: 200, background: '#f9f9f9', borderRadius: 8, padding: 16 }}>
-                <div style={{ display: 'flex', height: '100%' }}>
-                  {/* Y-axis labels */}
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 8, height: '100%' }}>
-                    <div style={{ fontSize: 10, color: '#777', height: 20 }}>Max</div>
-                    <div style={{ fontSize: 10, color: '#777', height: 20 }}>Mid</div>
-                    <div style={{ fontSize: 10, color: '#777', height: 20 }}>0</div>
+              {showFilters && (
+                <div style={{ 
+                  marginTop: 16, 
+                  padding: 16, 
+                  background: '#f9f9f9', 
+                  borderRadius: 8, 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: 16
+                }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Status</label>
+                    <select 
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value as 'all' | 'published' | 'draft')}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="published">Published Only</option>
+                      <option value="draft">Draft Only</option>
+                    </select>
                   </div>
                   
-                  {/* Chart area */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    {/* Chart grid */}
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      {/* Grid lines */}
-                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, borderTop: '1px dashed #ddd', height: 0 }} />
-                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px dashed #ddd', height: 0 }} />
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, borderTop: '1px dashed #ddd', height: 0 }} />
-                      
-                      {/* Bars */}
-                      <div style={{ display: 'flex', alignItems: 'flex-end', height: '100%', gap: 8, padding: '0 4px' }}>
-                        {Array.from({ length: 14 }).map((_, i) => {
-                          const date = new Date();
-                          date.setDate(date.getDate() - (13 - i));
-                          const dayResponses = responses.filter(r => {
-                            const responseDate = new Date(r.submittedAt);
-                            return responseDate.getDate() === date.getDate() && 
-                                  responseDate.getMonth() === date.getMonth() && 
-                                  responseDate.getFullYear() === date.getFullYear();
-                          }).length;
-                          
-                          const maxResponses = Math.max(1, ...Array.from({ length: 14 }).map((_, j) => {
-                            const d = new Date();
-                            d.setDate(d.getDate() - (13 - j));
-                            return responses.filter(r => {
-                              const responseDate = new Date(r.submittedAt);
-                              return responseDate.getDate() === d.getDate() && 
-                                    responseDate.getMonth() === d.getMonth() && 
-                                    responseDate.getFullYear() === d.getFullYear();
-                            }).length;
-                          }));
-                          
-                          const heightPercentage = dayResponses > 0 ? (dayResponses / maxResponses) * 100 : 0;
-                          
-                          return (
-                            <div key={i} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                              <div 
-                                style={{ 
-                                  width: '100%', 
-                                  height: `${heightPercentage}%`, 
-                                  minHeight: dayResponses > 0 ? 4 : 0,
-                                  background: `rgba(85, 42, 71, ${0.3 + (heightPercentage / 100) * 0.7})`,
-                                  borderRadius: '3px 3px 0 0',
-                                  transition: 'height 0.3s'
-                                }} 
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    
-                    {/* X-axis labels */}
-                    <div style={{ display: 'flex', marginTop: 8 }}>
-                      {Array.from({ length: 14 }).map((_, i) => {
-                        const date = new Date();
-                        date.setDate(date.getDate() - (13 - i));
-                        
-                        // Only show labels for every other day to avoid crowding
-                        const showLabel = i % 2 === 0;
-                        
-                        return (
-                          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-                            {showLabel && (
-                              <div style={{ fontSize: 10, color: '#777' }}>
-                                {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date Range</label>
+                    <select 
+                      value={filterDateRange}
+                      onChange={(e) => setFilterDateRange(e.target.value as 'all' | 'last7' | 'last30' | 'last90')}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
+                    >
+                      <option value="all">All Time</option>
+                      <option value="last7">Last 7 Days</option>
+                      <option value="last30">Last 30 Days</option>
+                      <option value="last90">Last 90 Days</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Responses</label>
+                    <select 
+                      value={filterResponseCount}
+                      onChange={(e) => setFilterResponseCount(e.target.value as 'all' | 'withResponses' | 'noResponses')}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
+                    >
+                      <option value="all">All Surveys</option>
+                      <option value="withResponses">With Responses</option>
+                      <option value="noResponses">No Responses</option>
+                    </select>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <button 
+                      onClick={() => {
+                        setFilterStatus('all');
+                        setFilterDateRange('all');
+                        setFilterResponseCount('all');
+                        setSearchTerm('');
+                      }}
+                      style={{ 
+                        background: '#f0f0f0', 
+                        border: 'none', 
+                        borderRadius: 6, 
+                        padding: '8px 16px', 
+                        cursor: 'pointer',
+                        width: '100%'
+                      }}
+                    >
+                      Clear Filters
+                    </button>
                   </div>
                 </div>
-              </div>
-            </div>
+              )}
+            </FilterContainer>
             
-            {/* Question Analytics */}
-            <div style={{ marginTop: 24 }}>
-              <h4 style={{ fontWeight: 600, fontSize: 16, marginBottom: 12 }}>Question Insights</h4>
-              <div style={{ background: '#f9f9f9', borderRadius: 8, padding: 16 }}>
-                {responses.length > 0 ? (
-                  <div>
-                    {/* Most Answered Questions */}
-                    <div style={{ marginBottom: 16 }}>
-                      <h5 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Most Answered Questions</h5>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {(() => {
-                          // Count answers per question across all responses
-                          const questionCounts: Record<string, number> = {};
-                          responses.forEach(response => {
-                            Object.keys(response.answers).forEach(qId => {
-                              if (!questionCounts[qId]) questionCounts[qId] = 0;
-                              questionCounts[qId]++;
-                            });
-                          });
-                          
-                          // Sort questions by answer count
-                          return Object.entries(questionCounts)
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 3)
-                            .map(([qId, count], index) => {
-                              // Find the question text if available
-                              let questionText = `Question ${qId}`;
-                              for (const survey of surveys) {
-                                if (survey.selectedQuestions && survey.selectedQuestions[qId]) {
-                                  questionText = survey.selectedQuestions[qId].questionText || questionText;
-                                  break;
-                                }
-                              }
-                              
-                              const percentage = Math.round((count / responses.length) * 100);
-                              
-                              return (
-                                <div key={qId} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                  <div style={{ 
-                                    width: 24, 
-                                    height: 24, 
-                                    borderRadius: '50%', 
-                                    background: '#552a47', 
-                                    color: '#fff',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: 12,
-                                    fontWeight: 600
-                                  }}>
-                                    {index + 1}
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {questionText.length > 50 ? `${questionText.substring(0, 50)}...` : questionText}
-                                    </div>
-                                    <div style={{ width: '100%', height: 6, background: '#eee', borderRadius: 3 }}>
-                                      <div 
-                                        style={{ 
-                                          width: `${percentage}%`, 
-                                          height: '100%', 
-                                          background: '#552a47', 
-                                          borderRadius: 3 
-                                        }} 
-                                      />
-                                    </div>
-                                  </div>
-                                  <div style={{ fontSize: 13, fontWeight: 600, minWidth: 40, textAlign: 'right' }}>
-                                    {percentage}%
-                                  </div>
-                                </div>
-                              );
-                            });
-                        })()}
-                      </div>
-                    </div>
-                    
-                    {/* Completion Rates */}
-                    <div>
-                      <h5 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Completion Rates</h5>
-                      <div style={{ display: 'flex', gap: 16 }}>
-                        {(() => {
-                          // Calculate completion statistics
-                          const stats = {
-                            complete: 0,
-                            partial: 0,
-                            abandoned: 0
-                          };
-                          
-                          responses.forEach(response => {
-                            if (response.completionStatus === 'complete') {
-                              stats.complete++;
-                            } else if (response.completionStatus === 'partial') {
-                              stats.partial++;
-                            } else if (response.completionStatus === 'abandoned') {
-                              stats.abandoned++;
-                            } else {
-                              // If no status, determine based on answer count
-                              const surveyId = response.surveyId;
-                              const survey = surveys.find(s => s._id === surveyId);
-                              if (survey && survey.selectedQuestions) {
-                                const totalQuestions = Object.keys(survey.selectedQuestions).length;
-                                const answeredQuestions = Object.keys(response.answers).length;
-                                
-                                if (totalQuestions === 0) {
-                                  stats.complete++;
-                                } else if (answeredQuestions / totalQuestions >= 0.9) {
-                                  stats.complete++;
-                                } else if (answeredQuestions / totalQuestions >= 0.3) {
-                                  stats.partial++;
-                                } else {
-                                  stats.abandoned++;
-                                }
-                              } else {
-                                stats.partial++; // Default if we can't determine
-                              }
-                            }
-                          });
-                          
-                          const total = responses.length;
-                          const completePercentage = Math.round((stats.complete / total) * 100) || 0;
-                          const partialPercentage = Math.round((stats.partial / total) * 100) || 0;
-                          const abandonedPercentage = Math.round((stats.abandoned / total) * 100) || 0;
-                          
-                          return [
-                            { label: 'Complete', value: stats.complete, percentage: completePercentage, color: '#4caf50' },
-                            { label: 'Partial', value: stats.partial, percentage: partialPercentage, color: '#ff9800' },
-                            { label: 'Abandoned', value: stats.abandoned, percentage: abandonedPercentage, color: '#f44336' }
-                          ].map(item => (
-                            <div key={item.label} style={{ flex: 1, background: '#fff', padding: 12, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                              <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>{item.label}</div>
-                              <div style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.percentage}%</div>
-                              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{item.value} responses</div>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: 20, color: '#777' }}>
-                    No response data available for analysis
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <Container>
-      <FilterContainer>
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <div>
-            <FilterButton onClick={() => setShowFilters(!showFilters)}>
-              <FiFilter />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </FilterButton>
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Search surveys..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 20,
-                border: '1px solid #ddd',
-                width: 250,
-                fontSize: 14
-              }}
-            />
-          </div>
-        </div>
-        
-        {showFilters && (
-          <div style={{ 
-            marginTop: 16, 
-            padding: 16, 
-            background: '#f9f9f9', 
-            borderRadius: 8, 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: 16
-          }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Status</label>
-              <select 
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as 'all' | 'published' | 'draft')}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
-              >
-                <option value="all">All Statuses</option>
-                <option value="published">Published Only</option>
-                <option value="draft">Draft Only</option>
-              </select>
-            </div>
-            
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date Range</label>
-              <select 
-                value={filterDateRange}
-                onChange={(e) => setFilterDateRange(e.target.value as 'all' | 'last7' | 'last30' | 'last90')}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
-              >
-                <option value="all">All Time</option>
-                <option value="last7">Last 7 Days</option>
-                <option value="last30">Last 30 Days</option>
-                <option value="last90">Last 90 Days</option>
-              </select>
-            </div>
-            
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Responses</label>
-              <select 
-                value={filterResponseCount}
-                onChange={(e) => setFilterResponseCount(e.target.value as 'all' | 'withResponses' | 'noResponses')}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
-              >
-                <option value="all">All Surveys</option>
-                <option value="withResponses">With Responses</option>
-                <option value="noResponses">No Responses</option>
-              </select>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button 
-                onClick={() => {
-                  setFilterStatus('all');
-                  setFilterDateRange('all');
-                  setFilterResponseCount('all');
-                  setSearchTerm('');
-                }}
-                style={{ 
-                  background: '#f0f0f0', 
-                  border: 'none', 
-                  borderRadius: 6, 
-                  padding: '8px 16px', 
-                  cursor: 'pointer',
-                  width: '100%'
-                }}
-              >
-                Clear Filters
-              </button>
-            </div>
-          </div>
-        )}
-      </FilterContainer>
-      
-      {surveys.length === 0 ? (
-        <NoData>No surveys found</NoData>
-      ) : (
+            {surveys.length === 0 ? (
+              <NoData>No surveys found</NoData>
+            ) : (
         <Table>
           <thead>
             <tr>
@@ -1139,11 +829,11 @@ const SurveyResponses: React.FC = () => {
                                           )}
                                         </Td>
                                         <Td>
-                                          <div>{response.submittedAt.toLocaleString()}</div>
+                                          <div>{(response.createdAt || new Date()).toLocaleString()}</div>
                                           <div style={{ fontSize: '0.85em', color: '#666', marginTop: 4 }}>
                                             {(() => {
                                               const now = new Date();
-                                              const submitted = new Date(response.submittedAt);
+                                              const submitted = new Date(response.createdAt || new Date());
                                               const diffTime = Math.abs(now.getTime() - submitted.getTime());
                                               const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                               const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -1227,17 +917,17 @@ const SurveyResponses: React.FC = () => {
                                                 <div>
                                                   <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Submitted</div>
                                                   <div style={{ fontWeight: 500 }}>
-                                                    {response.submittedAt.toLocaleString()}
+                                                    {(response.createdAt || new Date()).toLocaleString()}
                                                   </div>
                                                 </div>
                                                 
                                                 <div>
                                                   <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Time to Complete</div>
                                                   <div style={{ fontWeight: 500 }}>
-                                                    {response.startedAt && (
+                                                    {response.startedAt && response.createdAt && (
                                                       (() => {
                                                         const start = new Date(response.startedAt);
-                                                        const end = new Date(response.submittedAt);
+                                                        const end = new Date(response.createdAt);
                                                         const diffTime = Math.abs(end.getTime() - start.getTime());
                                                         const diffMinutes = Math.floor(diffTime / (1000 * 60));
                                                         const diffSeconds = Math.floor((diffTime % (1000 * 60)) / 1000);
