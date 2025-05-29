@@ -299,7 +299,6 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
 
   return (
     <Container>
-      <Title>Import Questions</Title>
       <Description>
         Upload a file containing questions to import into the survey application.
         The system supports various file formats including DOCX, CSV, Excel, and JSON.
