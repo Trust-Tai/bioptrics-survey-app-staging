@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { FaChartBar, FaTable, FaFilter, FaTag, FaListAlt, FaThLarge, FaExclamationTriangle } from 'react-icons/fa';
+import { FaChartBar, FaTable, FaFilter, FaClipboardList, FaUsers, FaFileAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
 import DashboardBg from './DashboardBg';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { Questions } from '../../features/questions/api/questions';
-import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
+import { Surveys, SurveyResponses } from '../../features/surveys/api/surveys';
 import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';
+import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
 
 // Styled components
 const Container = styled.div`
@@ -225,13 +225,6 @@ const AlertBadge = styled.span`
   margin-left: 6px;
 `;
 
-// Helper function to get the latest version of a question
-const getLatestVersion = (doc: any) => {
-  if (!doc || !doc.versions || !doc.versions.length) return null;
-  const version = doc.versions.find((v: any) => v.version === doc.currentVersion);
-  return version || doc.versions[doc.versions.length - 1];
-};
-
 // COLORS for charts
 const COLORS = [
   '#552a47', '#8e44ad', '#9b59b6', '#3498db', '#2980b9', 
@@ -239,7 +232,7 @@ const COLORS = [
   '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b'
 ];
 
-const AdminQuestionBank: React.FC = () => {
+const SurveyDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -270,34 +263,58 @@ const AdminQuestionBank: React.FC = () => {
     return map;
   }, [surveyThemes]);
   
-  // Fetch questions
-  const { questions, loading } = useTracker(() => {
-    const handle = Meteor.subscribe('questions.all');
+  // Fetch surveys
+  const { surveys, loading } = useTracker(() => {
+    const handle = Meteor.subscribe('surveys.all');
     return {
       loading: !handle.ready(),
-      questions: Questions.find({}).fetch()
+      surveys: Surveys.find({}).fetch()
     };
   }, []);
   
+  // Fetch survey responses
+  const { responses, responsesLoading } = useTracker(() => {
+    const handle = Meteor.subscribe('survey_responses.all');
+    return {
+      responsesLoading: !handle.ready(),
+      responses: SurveyResponses.find({}).fetch()
+    };
+  }, []);
+  
+  // Calculate KPI metrics
+  const totalSurveys = surveys ? surveys.length : 0;
+  
+  const publishedSurveys = React.useMemo(() => {
+    if (!surveys) return 0;
+    return surveys.filter((s: any) => s.published).length;
+  }, [surveys]);
+  
+  const templateSurveys = React.useMemo(() => {
+    if (!surveys) return 0;
+    return surveys.filter((s: any) => s.isTemplate).length;
+  }, [surveys]);
+  
+  const totalResponses = responses ? responses.length : 0;
+  
+  const completedResponses = React.useMemo(() => {
+    if (!responses) return 0;
+    return responses.filter((r: any) => r.completed).length;
+  }, [responses]);
+  
+  const completionRate = totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0;
+  
   // Prepare data for charts
-  const questionsByCategory = React.useMemo(() => {
-    if (!questions || !wpsCategories) return [];
+  const surveysByCategory = React.useMemo(() => {
+    if (!surveys || !wpsCategories) return [];
     
     const categoryCounts: Record<string, number> = {};
     
-    // Initialize with 0 for all categories
-    wpsCategories.forEach((cat: any) => {
-      categoryCounts[cat._id] = 0;
-    });
-    
-    // Count questions by category
-    questions.forEach((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      if (!latestVersion) return;
-      
-      const categoryId = latestVersion.category;
-      if (categoryId) {
-        categoryCounts[categoryId] = (categoryCounts[categoryId] || 0) + 1;
+    // Count surveys by category
+    surveys.forEach((s: any) => {
+      if (s.defaultSettings?.categories) {
+        s.defaultSettings.categories.forEach((categoryId: string) => {
+          categoryCounts[categoryId] = (categoryCounts[categoryId] || 0) + 1;
+        });
       }
     });
     
@@ -307,21 +324,18 @@ const AdminQuestionBank: React.FC = () => {
       value: count,
       id
     }));
-  }, [questions, wpsCategories, wpsCategoryMap]);
+  }, [surveys, wpsCategories, wpsCategoryMap]);
   
-  const questionsByTheme = React.useMemo(() => {
-    if (!questions || !surveyThemes) return [];
+  const surveysByTheme = React.useMemo(() => {
+    if (!surveys || !surveyThemes) return [];
     
     const themeCounts: Record<string, number> = {};
     let unassignedCount = 0;
     
-    // Count questions by theme
-    questions.forEach((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      if (!latestVersion) return;
-      
-      if (latestVersion.surveyThemes && latestVersion.surveyThemes.length > 0) {
-        latestVersion.surveyThemes.forEach((themeId: string) => {
+    // Count surveys by theme
+    surveys.forEach((s: any) => {
+      if (s.defaultSettings?.themes && s.defaultSettings.themes.length > 0) {
+        s.defaultSettings.themes.forEach((themeId: string) => {
           themeCounts[themeId] = (themeCounts[themeId] || 0) + 1;
         });
       } else {
@@ -346,40 +360,18 @@ const AdminQuestionBank: React.FC = () => {
     }
     
     return result;
-  }, [questions, surveyThemes, surveyThemeMap]);
+  }, [surveys, surveyThemes, surveyThemeMap]);
   
-  const questionsByType = React.useMemo(() => {
-    if (!questions) return [];
+  const responsesByMonth = React.useMemo(() => {
+    if (!responses) return [];
     
-    const typeCounts: Record<string, number> = {};
-    
-    // Count questions by response type
-    questions.forEach((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      if (!latestVersion) return;
-      
-      const responseType = latestVersion.responseType || 'unknown';
-      typeCounts[responseType] = (typeCounts[responseType] || 0) + 1;
-    });
-    
-    // Convert to chart data format
-    return Object.entries(typeCounts).map(([type, count]) => ({
-      name: type.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-      value: count,
-      id: type
-    }));
-  }, [questions]);
-  
-  const questionTrends = React.useMemo(() => {
-    if (!questions) return [];
-    
-    // Group questions by month
+    // Group responses by month
     const monthlyData: Record<string, number> = {};
     
-    questions.forEach((q: any) => {
-      if (!q.createdAt) return;
+    responses.forEach((r: any) => {
+      if (!r.createdAt) return;
       
-      const date = new Date(q.createdAt);
+      const date = new Date(r.createdAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
@@ -395,72 +387,68 @@ const AdminQuestionBank: React.FC = () => {
           count
         };
       });
-  }, [questions]);
+  }, [responses]);
   
-  // Calculate KPI metrics
-  const totalQuestions = questions ? questions.length : 0;
-  
-  const activeQuestions = React.useMemo(() => {
-    if (!questions) return 0;
+  const responsesBySurvey = React.useMemo(() => {
+    if (!responses || !surveys) return [];
     
-    return questions.filter((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      return latestVersion && latestVersion.isActive !== false;
-    }).length;
-  }, [questions]);
-  
-  const reusableQuestions = React.useMemo(() => {
-    if (!questions) return 0;
+    // Count responses by survey
+    const surveyCounts: Record<string, number> = {};
     
-    return questions.filter((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      return latestVersion && latestVersion.isReusable === true;
-    }).length;
-  }, [questions]);
-  
-  const incompleteQuestions = React.useMemo(() => {
-    if (!questions) return 0;
+    responses.forEach((r: any) => {
+      if (r.surveyId) {
+        surveyCounts[r.surveyId] = (surveyCounts[r.surveyId] || 0) + 1;
+      }
+    });
     
-    return questions.filter((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      if (!latestVersion) return false;
-      
-      // Check for missing required fields
-      return !latestVersion.questionText || 
-             !latestVersion.responseType || 
-             !latestVersion.category;
-    }).length;
-  }, [questions]);
+    // Get survey titles and convert to chart data
+    return Object.entries(surveyCounts)
+      .map(([surveyId, count]) => {
+        const survey = surveys.find((s: any) => s._id === surveyId);
+        return {
+          name: survey ? survey.title : 'Unknown Survey',
+          value: count,
+          id: surveyId
+        };
+      })
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10); // Top 10 surveys by response count
+  }, [responses, surveys]);
   
   // Table data
   const tableData = React.useMemo(() => {
-    if (!questions) return [];
+    if (!surveys) return [];
     
-    return questions.map((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      if (!latestVersion) return null;
+    return surveys.map((s: any) => {
+      const surveyResponses = responses ? responses.filter((r: any) => r.surveyId === s._id) : [];
+      const completedSurveyResponses = surveyResponses.filter((r: any) => r.completed);
+      const responseRate = surveyResponses.length > 0 ? 
+        Math.round((completedSurveyResponses.length / surveyResponses.length) * 100) : 0;
       
       return {
-        id: q._id,
-        text: latestVersion.questionText || 'No text',
-        type: latestVersion.responseType || 'unknown',
-        category: wpsCategoryMap[latestVersion.category] || 'Uncategorized',
-        themes: latestVersion.surveyThemes ? 
-          latestVersion.surveyThemes.map((id: string) => surveyThemeMap[id] || id) : 
+        id: s._id,
+        title: s.title || 'Untitled Survey',
+        published: s.published,
+        isTemplate: s.isTemplate,
+        responseCount: surveyResponses.length,
+        completionRate: responseRate,
+        createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'Unknown',
+        themes: s.defaultSettings?.themes ? 
+          s.defaultSettings.themes.map((id: string) => surveyThemeMap[id] || id) : 
           [],
-        isActive: latestVersion.isActive !== false,
-        isReusable: latestVersion.isReusable === true,
-        createdAt: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'Unknown'
+        categories: s.defaultSettings?.categories ? 
+          s.defaultSettings.categories.map((id: string) => wpsCategoryMap[id] || id) : 
+          []
       };
-    }).filter(Boolean);
-  }, [questions, wpsCategoryMap, surveyThemeMap]);
+    });
+  }, [surveys, responses, surveyThemeMap, wpsCategoryMap]);
   
   return (
     <AdminLayout>
       <DashboardBg>
         <Container>
           <TitleRow>
-            <Title>Question Bank Dashboard</Title>
+            <Title>Survey Analytics Dashboard</Title>
             <ViewToggle>
               <ToggleButton 
                 active={view === 'dashboard'} 
@@ -473,9 +461,6 @@ const AdminQuestionBank: React.FC = () => {
                 onClick={() => setView('table')}
               >
                 <FaTable size={14} /> Table View
-                {incompleteQuestions > 0 && (
-                  <AlertBadge>{incompleteQuestions}</AlertBadge>
-                )}
               </ToggleButton>
             </ViewToggle>
           </TitleRow>
@@ -525,57 +510,57 @@ const AdminQuestionBank: React.FC = () => {
             <>
               <DashboardGrid>
                 <KPICard>
-                  <FaListAlt size={24} color="#552a47" />
-                  <KPIValue>{totalQuestions}</KPIValue>
-                  <KPILabel>Total Questions</KPILabel>
+                  <FaClipboardList size={24} color="#552a47" />
+                  <KPIValue>{totalSurveys}</KPIValue>
+                  <KPILabel>Total Surveys</KPILabel>
                   <KPITrend className="neutral">
-                    {questionTrends.length > 1 && (
+                    {publishedSurveys} published
+                  </KPITrend>
+                </KPICard>
+                
+                <KPICard>
+                  <FaFileAlt size={24} color="#552a47" />
+                  <KPIValue>{templateSurveys}</KPIValue>
+                  <KPILabel>Survey Templates</KPILabel>
+                  <KPITrend className="neutral">
+                    {Math.round((templateSurveys / totalSurveys) * 100) || 0}% of all surveys
+                  </KPITrend>
+                </KPICard>
+                
+                <KPICard>
+                  <FaUsers size={24} color="#552a47" />
+                  <KPIValue>{totalResponses}</KPIValue>
+                  <KPILabel>Total Responses</KPILabel>
+                  <KPITrend className="neutral">
+                    {responsesByMonth.length > 1 && (
                       <>
-                        {questionTrends[questionTrends.length - 1].count - 
-                         questionTrends[questionTrends.length - 2].count > 0 ? '+' : ''}
-                        {questionTrends.length > 1 ? 
-                          questionTrends[questionTrends.length - 1].count - 
-                          questionTrends[questionTrends.length - 2].count : 0} from last month
+                        {responsesByMonth[responsesByMonth.length - 1].count - 
+                         responsesByMonth[responsesByMonth.length - 2].count > 0 ? '+' : ''}
+                        {responsesByMonth.length > 1 ? 
+                          responsesByMonth[responsesByMonth.length - 1].count - 
+                          responsesByMonth[responsesByMonth.length - 2].count : 0} from last month
                       </>
                     )}
                   </KPITrend>
                 </KPICard>
                 
                 <KPICard>
-                  <FaThLarge size={24} color="#552a47" />
-                  <KPIValue>{wpsCategories.length}</KPIValue>
-                  <KPILabel>WPS Categories</KPILabel>
-                  <KPITrend className="neutral">
-                    Used in {questionsByCategory.filter(c => c.value > 0).length} categories
-                  </KPITrend>
-                </KPICard>
-                
-                <KPICard>
-                  <FaTag size={24} color="#552a47" />
-                  <KPIValue>{surveyThemes.length}</KPIValue>
-                  <KPILabel>Survey Themes</KPILabel>
-                  <KPITrend className="neutral">
-                    Used in {questionsByTheme.filter(t => t.value > 0 && t.id !== 'unassigned').length} themes
-                  </KPITrend>
-                </KPICard>
-                
-                <KPICard>
-                  <FaExclamationTriangle size={24} color="#f44336" />
-                  <KPIValue>{incompleteQuestions}</KPIValue>
-                  <KPILabel>Incomplete Questions</KPILabel>
-                  <KPITrend className={incompleteQuestions > 0 ? 'negative' : 'positive'}>
-                    {incompleteQuestions > 0 ? 'Needs attention' : 'All questions complete'}
+                  <FaExclamationTriangle size={24} color="#552a47" />
+                  <KPIValue>{completionRate}%</KPIValue>
+                  <KPILabel>Completion Rate</KPILabel>
+                  <KPITrend className={completionRate > 75 ? 'positive' : completionRate > 50 ? 'neutral' : 'negative'}>
+                    {completionRate > 75 ? 'Excellent' : completionRate > 50 ? 'Good' : 'Needs improvement'}
                   </KPITrend>
                 </KPICard>
               </DashboardGrid>
               
               <DashboardGrid>
                 <ChartCard className="half">
-                  <ChartTitle>Questions by WPS Category</ChartTitle>
+                  <ChartTitle>Surveys by WPS Category</ChartTitle>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={questionsByCategory}
+                        data={surveysByCategory}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -585,7 +570,7 @@ const AdminQuestionBank: React.FC = () => {
                         nameKey="name"
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
-                        {questionsByCategory.map((entry, index) => (
+                        {surveysByCategory.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -595,11 +580,11 @@ const AdminQuestionBank: React.FC = () => {
                 </ChartCard>
                 
                 <ChartCard className="half">
-                  <ChartTitle>Questions by Survey Theme</ChartTitle>
+                  <ChartTitle>Surveys by Theme</ChartTitle>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={questionsByTheme}
+                        data={surveysByTheme}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -609,7 +594,7 @@ const AdminQuestionBank: React.FC = () => {
                         nameKey="name"
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
-                        {questionsByTheme.map((entry, index) => (
+                        {surveysByTheme.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -621,14 +606,14 @@ const AdminQuestionBank: React.FC = () => {
               
               <DashboardGrid>
                 <ChartCard className="half">
-                  <ChartTitle>Questions by Answer Type</ChartTitle>
+                  <ChartTitle>Top 10 Surveys by Response Count</ChartTitle>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={questionsByType}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
+                    <BarChart data={responsesBySurvey} layout="vertical">
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
                       <Tooltip />
                       <Bar dataKey="value" fill="#552a47">
-                        {questionsByType.map((entry, index) => (
+                        {responsesBySurvey.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Bar>
@@ -637,9 +622,9 @@ const AdminQuestionBank: React.FC = () => {
                 </ChartCard>
                 
                 <ChartCard className="half">
-                  <ChartTitle>Question Creation Trend</ChartTitle>
+                  <ChartTitle>Response Trend Over Time</ChartTitle>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={questionTrends}>
+                    <LineChart data={responsesByMonth}>
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
@@ -653,15 +638,16 @@ const AdminQuestionBank: React.FC = () => {
           
           {view === 'table' && (
             <TableCard>
-              <ChartTitle>All Questions</ChartTitle>
+              <ChartTitle>All Surveys</ChartTitle>
               <Table>
                 <thead>
                   <tr>
-                    <th>Question Text</th>
-                    <th>Type</th>
-                    <th>Category</th>
-                    <th>Themes</th>
+                    <th>Title</th>
                     <th>Status</th>
+                    <th>Responses</th>
+                    <th>Completion Rate</th>
+                    <th>Categories</th>
+                    <th>Themes</th>
                     <th>Created</th>
                     <th>Actions</th>
                   </tr>
@@ -669,9 +655,50 @@ const AdminQuestionBank: React.FC = () => {
                 <tbody>
                   {tableData.map((row: any) => (
                     <tr key={row.id}>
-                      <td>{row.text.length > 50 ? `${row.text.substring(0, 50)}...` : row.text}</td>
-                      <td>{row.type}</td>
-                      <td>{row.category}</td>
+                      <td>{row.title.length > 30 ? `${row.title.substring(0, 30)}...` : row.title}</td>
+                      <td>
+                        {row.published ? (
+                          <Tag style={{ background: '#e8f5e9', color: '#2e7d32' }}>Published</Tag>
+                        ) : (
+                          <Tag style={{ background: '#ffebee', color: '#c62828' }}>Draft</Tag>
+                        )}
+                        {row.isTemplate && (
+                          <Tag style={{ background: '#e3f2fd', color: '#1565c0' }}>Template</Tag>
+                        )}
+                      </td>
+                      <td>{row.responseCount}</td>
+                      <td>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 8 
+                        }}>
+                          <div style={{ 
+                            width: 50, 
+                            height: 8, 
+                            background: '#eee', 
+                            borderRadius: 4, 
+                            overflow: 'hidden' 
+                          }}>
+                            <div style={{ 
+                              width: `${row.completionRate}%`, 
+                              height: '100%', 
+                              background: row.completionRate > 75 ? '#4caf50' : row.completionRate > 50 ? '#ff9800' : '#f44336',
+                              borderRadius: 4
+                            }} />
+                          </div>
+                          <span>{row.completionRate}%</span>
+                        </div>
+                      </td>
+                      <td>
+                        {row.categories.length > 0 ? (
+                          row.categories.map((cat: string, i: number) => (
+                            <Tag key={i}>{cat}</Tag>
+                          ))
+                        ) : (
+                          <span style={{ color: '#999', fontStyle: 'italic' }}>None</span>
+                        )}
+                      </td>
                       <td>
                         {row.themes.length > 0 ? (
                           row.themes.map((theme: string, i: number) => (
@@ -681,20 +708,10 @@ const AdminQuestionBank: React.FC = () => {
                           <span style={{ color: '#999', fontStyle: 'italic' }}>None</span>
                         )}
                       </td>
-                      <td>
-                        {row.isActive ? (
-                          <Tag style={{ background: '#e8f5e9', color: '#2e7d32' }}>Active</Tag>
-                        ) : (
-                          <Tag style={{ background: '#ffebee', color: '#c62828' }}>Inactive</Tag>
-                        )}
-                        {row.isReusable && (
-                          <Tag style={{ background: '#e3f2fd', color: '#1565c0' }}>Reusable</Tag>
-                        )}
-                      </td>
                       <td>{row.createdAt}</td>
                       <td>
                         <button
-                          onClick={() => navigate(`/admin/questions/builder/${row.id}`)}
+                          onClick={() => navigate(`/admin/surveys/${row.id}`)}
                           style={{
                             background: '#552a47',
                             color: 'white',
@@ -705,7 +722,7 @@ const AdminQuestionBank: React.FC = () => {
                             fontSize: '0.8rem'
                           }}
                         >
-                          Edit
+                          View
                         </button>
                       </td>
                     </tr>
@@ -720,4 +737,4 @@ const AdminQuestionBank: React.FC = () => {
   );
 };
 
-export default AdminQuestionBank;
+export default SurveyDashboard;
