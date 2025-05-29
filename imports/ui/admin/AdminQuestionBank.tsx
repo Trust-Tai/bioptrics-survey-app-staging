@@ -6,7 +6,7 @@ import { Meteor } from 'meteor/meteor';
 import { FaChartBar, FaTable, FaFilter, FaTag, FaListAlt, FaThLarge, FaExclamationTriangle } from 'react-icons/fa';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
 import DashboardBg from './DashboardBg';
-import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { Questions } from '../../features/questions/api/questions';
 import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
 import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaPlus, FaList, FaUserPlus, FaUsers } from 'react-icons/fa';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 
 // Styled components
 

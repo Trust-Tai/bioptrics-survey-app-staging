@@ -3,7 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './QuestionBuilder.quill.css';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 import { useLocation } from 'react-router-dom';
 import { Questions } from '/imports/api/questions';
@@ -13,10 +13,17 @@ import { useNavigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import { SurveyThemes } from '/imports/api/surveyThemes';
+import { QuestionTags } from '/imports/features/question-tags/api/questionTags';
 import Select, { MultiValue, StylesConfig } from 'react-select';
 import { saveQuestionsToDB, publishQuestionsToDB, mapQuestionToVersion } from './questions.methods.client';
 
 // The Question interface is used for the builder state only. DB uses QuestionVersion.
+// Define a custom field interface
+interface CustomField {
+  title: string;
+  content: string;
+}
+
 interface Question {
   text: string;
   description: string;
@@ -30,6 +37,8 @@ interface Question {
   feedbackValue?: string;
   wpsCategoryIds?: string[];
   surveyThemeIds?: string[];
+  questionTagId?: string;
+  customFields?: CustomField[];
   isReusable?: boolean;
   priority?: number;
   isActive?: boolean;
@@ -62,22 +71,66 @@ const QuestionBuilder: React.FC =  () => {
   // Fetch the editing question if in edit mode
   const editingDoc = useTracker(() => (editId ? Questions.findOne(editId) : null), [editId]);
 
-  // Meteor subscriptions for WPS Categories and Survey Themes
-  const wpsCategoriesSub = useTracker(() => Meteor.subscribe('wpsCategories'), []);
-  const surveyThemesSub = useTracker(() => Meteor.subscribe('surveyThemes.all'), []);
-  const wpsCategories = useTracker(() => wpsCategoriesSub.ready() ? WPSCategories.find({}, { sort: { name: 1 } }).fetch() : [], [wpsCategoriesSub]);
-  const surveyThemes = useTracker(() => surveyThemesSub.ready() ? SurveyThemes.find({}, { sort: { name: 1 } }).fetch() : [], [surveyThemesSub]);
+  // Meteor subscriptions 
+  const wpsCategoriesSub = useTracker(() => Meteor.subscribe('wpsCategories.all'));
+  const wpsCategories = useTracker(() => WPSCategories.find().fetch(), [wpsCategoriesSub.ready()]);
+  
+  const surveyThemesSub = useTracker(() => Meteor.subscribe('surveyThemes.all'));
+  const surveyThemes = useTracker(() => SurveyThemes.find().fetch(), [surveyThemesSub.ready()]);
+  
+  const questionTagsSub = useTracker(() => Meteor.subscribe('questionTags'));
+  const questionTags = useTracker(() => QuestionTags.find().fetch(), [questionTagsSub.ready()]);
 
   // Handlers for react-select multi-selects
   const handleWpsCategoryChange = (qIdx: number, selected: MultiValue<{ value: string; label: string; color: string }>) => {
     const updated = [...questions];
-    updated[qIdx].wpsCategoryIds = selected.map(opt => opt.value);
+    updated[qIdx].wpsCategoryIds = selected ? selected.map(item => item.value) : [];
     setQuestions(updated);
   };
   const handleSurveyThemeChange = (qIdx: number, selected: MultiValue<{ value: string; label: string; color: string }>) => {
     const updated = [...questions];
-    updated[qIdx].surveyThemeIds = selected.map(opt => opt.value);
+    updated[qIdx].surveyThemeIds = selected ? selected.map(item => item.value) : [];
     setQuestions(updated);
+  };
+
+  const handleQuestionTagChange = (qIdx: number, selected: { value: string; label: string; color: string } | null) => {
+    const updated = [...questions];
+    updated[qIdx].questionTagId = selected ? selected.value : undefined;
+    setQuestions(updated);
+  };
+
+  // Handlers for custom fields
+  const handleAddCustomField = (qIdx: number) => {
+    const updated = [...questions];
+    if (!updated[qIdx].customFields) {
+      updated[qIdx].customFields = [];
+    }
+    updated[qIdx].customFields.push({ title: '', content: '' });
+    setQuestions(updated);
+  };
+
+  const handleRemoveCustomField = (qIdx: number, fieldIdx: number) => {
+    const updated = [...questions];
+    if (updated[qIdx].customFields) {
+      updated[qIdx].customFields = updated[qIdx].customFields.filter((_, idx) => idx !== fieldIdx);
+      setQuestions(updated);
+    }
+  };
+
+  const handleCustomFieldTitleChange = (qIdx: number, fieldIdx: number, value: string) => {
+    const updated = [...questions];
+    if (updated[qIdx].customFields && updated[qIdx].customFields[fieldIdx]) {
+      updated[qIdx].customFields[fieldIdx].title = value;
+      setQuestions(updated);
+    }
+  };
+
+  const handleCustomFieldContentChange = (qIdx: number, fieldIdx: number, value: string) => {
+    const updated = [...questions];
+    if (updated[qIdx].customFields && updated[qIdx].customFields[fieldIdx]) {
+      updated[qIdx].customFields[fieldIdx].content = value;
+      setQuestions(updated);
+    }
   };
 
   // Custom styles for react-select to show color chips
@@ -152,7 +205,8 @@ const QuestionBuilder: React.FC =  () => {
       isReusable: true,
       isActive: true,
       priority: 3,
-      keywords: []
+      keywords: [],
+      customFields: []
     }
   ]);
 
@@ -176,6 +230,8 @@ const QuestionBuilder: React.FC =  () => {
             feedbackValue: (latest as any).feedbackValue || '',
             wpsCategoryIds: (latest as any).categoryTags || [],
             surveyThemeIds: (latest as any).surveyThemes || [],
+            questionTagId: (latest as any).questionTag,
+            customFields: (latest as any).customFields || [],
             isReusable: (latest as any).isReusable !== undefined ? (latest as any).isReusable : true,
             isActive: (latest as any).isActive !== undefined ? (latest as any).isActive : true,
             priority: (latest as any).priority || 3,
@@ -532,6 +588,27 @@ return (
             />
           </div>
           
+          {/* Question Tag Single-Select */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10, display: 'block', marginBottom: 6 }}>Question Tag</label>
+            <Select
+              isLoading={!questionTagsSub.ready()}
+              options={questionTags.map((tag: any) => ({ value: tag._id, label: tag.name, color: tag.color }))}
+              value={q.questionTagId ? (() => {
+                const tag = questionTags.find((t: any) => t._id === q.questionTagId);
+                return tag ? { value: tag._id, label: tag.name, color: tag.color } : null;
+              })() : null}
+              onChange={(selected: any) => handleQuestionTagChange(qIdx, selected)}
+              styles={colorMultiStyles}
+              placeholder="Select Question Tag..."
+              isClearable
+              noOptionsMessage={() => questionTagsSub.ready() ? 'No tags found' : 'Loading...'}
+              classNamePrefix="react-select"
+            />
+          </div>
+          
+
+          
           {/* Reusability Settings */}
           <div style={{ marginBottom: 18, padding: 16, background: '#f9f4f7', borderRadius: 8 }}>
             <div style={{ fontWeight: 700, fontSize: 16, color: '#28211e', marginBottom: 12 }}>Reusability Settings</div>
@@ -768,9 +845,106 @@ return (
             </div>
           )}
         </div>
+        
+        <div style={{ marginBottom: 30 }}></div>
+        
+        {/* Custom Fields Section */}
+        <div style={{ marginBottom: 24, padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #eaeaea' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#28211e' }}>Custom Fields</div>
+            <button
+              onClick={() => handleAddCustomField(qIdx)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#552a47',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                fontWeight: 600,
+                padding: '6px 12px',
+                fontSize: 14,
+                cursor: 'pointer'
+              }}
+            >
+              <span style={{ fontSize: 18 }}>+</span>
+              Add Field
+            </button>
+          </div>
+          
+          {/* List of Custom Fields */}
+          {(q.customFields || []).length === 0 && (
+            <div style={{ color: '#666', fontStyle: 'italic', padding: '8px 0' }}>
+              No custom fields added. Click 'Add Field' to create one.
+            </div>
+          )}
+          
+          {(q.customFields || []).map((field, fieldIdx) => (
+            <div key={fieldIdx} style={{ marginBottom: 16, padding: 12, background: '#fff', borderRadius: 6, border: '1px solid #eee' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>Field {fieldIdx + 1}</div>
+                <button
+                  onClick={() => handleRemoveCustomField(qIdx, fieldIdx)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#e74c3c',
+                    cursor: 'pointer',
+                    fontSize: 18,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  title="Remove field"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+              
+              {/* Field Title */}
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontWeight: 500, fontSize: 14, color: '#555', display: 'block', marginBottom: 4 }}>Field Title</label>
+                <input
+                  type="text"
+                  value={field.title}
+                  onChange={(e) => handleCustomFieldTitleChange(qIdx, fieldIdx, e.target.value)}
+                  placeholder="Enter field title"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #ddd',
+                    fontSize: 15,
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              
+              {/* Field Content */}
+              <div>
+                <label style={{ fontWeight: 500, fontSize: 14, color: '#555', display: 'block', marginBottom: 4 }}>Field Content</label>
+                <textarea
+                  value={field.content}
+                  onChange={(e) => handleCustomFieldContentChange(qIdx, fieldIdx, e.target.value)}
+                  placeholder="Enter field content"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #ddd',
+                    fontSize: 15,
+                    minHeight: 80,
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
         {/* Feedback Section */}
-        <div style={{ marginBottom: 40, background: '#F8F9FB', border: '1px solid #E0E0E0', borderRadius: 10, padding: '18px 18px 12px 18px', paddingTop: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10, gap: 12 }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span style={{ fontWeight: 500, fontSize: 15, color: '#28211e', textTransform: 'uppercase', letterSpacing: 0.5 }}>Feedback</span>
             <select
               value={q.feedbackType || 'none'}
@@ -780,11 +954,11 @@ return (
                 updated[qIdx].feedbackValue = '';
                 setQuestions(updated);
               }}
-              style={{ marginLeft: 10, fontSize: 15, padding: '6px 14px', borderRadius: 7, border: '1px solid #CACACA', background: '#fff', color: '#444', fontWeight: 500 }}
+              style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ddd', fontSize: 15 }}
             >
-              <option value="none">None</option>
+              <option value="none">No Feedback</option>
               <option value="text">Text Feedback</option>
-              <option value="rating">Rating</option>
+              <option value="rating">Rating Feedback</option>
               <option value="file">File Upload</option>
             </select>
           </div>

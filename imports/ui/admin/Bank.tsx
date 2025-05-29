@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 
 interface QuestionVersion {

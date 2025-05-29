@@ -24,7 +24,7 @@ import {
   FiCheckCircle 
 } from 'react-icons/fi';
 
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 import { SurveySections } from './SurveySections';
 import SurveyAnalytics from './SurveyAnalytics';

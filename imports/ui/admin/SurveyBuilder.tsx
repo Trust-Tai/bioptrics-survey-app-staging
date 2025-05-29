@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 import SurveySectionQuestionDropdown, { QuestionOption } from './SurveySectionQuestionDropdown';
 import ReactQuill from 'react-quill';

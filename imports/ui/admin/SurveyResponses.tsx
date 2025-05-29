@@ -5,7 +5,7 @@ import { Surveys } from '../../features/surveys/api/surveys';
 import { SurveyResponses as SurveyResponsesCollection } from '../../features/surveys/api/surveyResponses';
 import styled from 'styled-components';
 import { FiChevronDown, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 
 // Styled components

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 import { OrganizationSettingsCollection, OrganizationSettings } from '../../features/organization/api/organizationSettings';
 import { SketchPicker, ChromePicker, ColorResult } from 'react-color';

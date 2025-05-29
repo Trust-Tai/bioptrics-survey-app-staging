@@ -1,5 +1,11 @@
 import { Meteor } from 'meteor/meteor';
 
+// Define a custom field interface
+export interface CustomField {
+  title: string;
+  content: string;
+}
+
 // Define the Question interface locally for this helper file
 export interface Question {
   text: string;
@@ -14,6 +20,8 @@ export interface Question {
   feedbackValue?: string;
   wpsCategoryIds?: string[];
   surveyThemeIds?: string[];
+  questionTagId?: string;
+  customFields?: CustomField[];
   isReusable?: boolean;
   priority?: number;
   isActive?: boolean;
@@ -29,6 +37,8 @@ export function mapQuestionToVersion(q: Question, userId: string, published: boo
     responseType: q.answerType,
     categoryTags: q.wpsCategoryIds || [],
     surveyThemes: q.surveyThemeIds || [],
+    questionTag: q.questionTagId,
+    customFields: q.customFields || [],
     options: q.answers,
     adminNotes: '',
     language: 'en',

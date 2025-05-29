@@ -14,6 +14,8 @@ import '../imports/api/surveyThemes';
 import '../imports/features/surveys/api/surveys';
 import '../imports/api/users.methods';
 import '../imports/features/organization/api/organizationSettings';
+// Import Question Tags API
+import '../imports/features/question-tags/api';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

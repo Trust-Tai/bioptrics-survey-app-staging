@@ -3,7 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { FaUserShield, FaEye, FaEyeSlash, FaCheck, FaTimes, FaRandom, FaCopy } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 
 // Styled components
 const Container = styled.div`

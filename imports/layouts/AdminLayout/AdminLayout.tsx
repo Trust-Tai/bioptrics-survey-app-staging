@@ -36,6 +36,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
     { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
+    { to: '/admin/questions/tags', label: 'Tags' },
   ] },
   { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
@@ -276,7 +277,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   React.useEffect(() => {
     const prevBg = document.body.style.background;
     const prevOverflowX = document.body.style.overflowX;
-    document.body.style.background = '#FFF9EB';
+    document.body.style.background = '#FFFFFF';
     document.body.style.overflowX = 'hidden';
     return () => {
       document.body.style.background = prevBg;
@@ -290,6 +291,15 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   // Add expandedMenus state for submenu toggling
   const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
+  
+  // Ensure the Question Bank submenu is expanded when on any of its pages
+  React.useEffect(() => {
+    // Find the index of the Question Bank menu item
+    const questionBankIndex = sidebarLinks.findIndex(link => link.to === '/admin/questions');
+    if (questionBankIndex !== -1 && location.pathname.startsWith('/admin/questions')) {
+      setExpandedMenus(prev => ({ ...prev, [questionBankIndex]: true }));
+    }
+  }, [location.pathname, sidebarLinks]);
 
   function handleLogout() {
     if (window.confirm('Are you sure you want to log out?')) {

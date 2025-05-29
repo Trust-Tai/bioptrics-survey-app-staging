@@ -40,6 +40,7 @@ import SurveyPublic from './public/SurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
 import SurveyManagementDashboard from './admin/SurveyManagementDashboard';
 import LogoutPage from './LogoutPage';
+import QuestionTagsPage from '../pages/admin/QuestionTagsPage';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -168,6 +169,7 @@ const AppRoutes: React.FC = () => {
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
         <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
+        <Route path="/admin/questions/tags" element={<QuestionTagsPage />} />
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         <Route path="/admin/settings" element={<Setting />} />

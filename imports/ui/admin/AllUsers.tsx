@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { FaEdit, FaTrash, FaUserShield, FaEye, FaEyeSlash } from 'react-icons/fa';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 
 // Types
 interface User {

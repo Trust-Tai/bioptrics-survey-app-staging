@@ -9,7 +9,7 @@ import { Meteor } from 'meteor/meteor';
 import { Questions } from '../../features/questions/api/questions';
 import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
 import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';
-import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import QuestionPreviewModal from './QuestionPreviewModal';
 
 // This interface is for display only, based on the latest version of each question

@@ -22,6 +22,8 @@ import { QuestionBuilder } from '../features/questions/components/admin';
 // Import from pages
 import { AdminDashboard } from '../pages/admin';
 import { PublicSurveyPage } from '../pages/public';
+// Removed QuestionTagsPage and QuestionTagsBasic imports
+// Using direct import from UI directory instead
 
 // Import from layouts
 import AdminLayout from '../layouts/AdminLayout/AdminLayout';
@@ -46,6 +48,8 @@ import PrivacyNotice from '../ui/PrivacyNotice';
 import AdminQuestionBank from '../ui/admin/AdminQuestionBank';
 import UserQuestionBank from '../ui/user/UserQuestionBank';
 import AllQuestions from '../ui/admin/AllQuestions';
+import QuestionTags from '../ui/admin/QuestionTags';
+import QuestionTagsSimple from '../ui/admin/QuestionTagsSimple';
 import Bank from '../ui/admin/Bank';
 // Import remaining components from UI (to be migrated later)
 import AllSurveys from '../ui/admin/AllSurveys';
@@ -179,6 +183,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
         <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
+        <Route path="/admin/questions/tags" element={<QuestionTagsSimple />} />
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         {/* New routes for the refactored analytics dashboards */}

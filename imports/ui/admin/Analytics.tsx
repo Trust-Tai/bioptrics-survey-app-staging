@@ -1,6 +1,6 @@
 import React from 'react';
 import DashboardBg from './DashboardBg';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 
 const Analytics: React.FC = () => {
   // Placeholder stats and structure
