@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { 
   FaUsers, 
   FaQuestionCircle, 
@@ -14,12 +14,12 @@ import {
   FaBell,
   FaTachometerAlt
 } from 'react-icons/fa';
-import AdminDashboardSummary from './AdminDashboardSummary';
-import Countdown from './Countdown';
-import DashboardBg from './DashboardBg';
+import AdminDashboardSummary from '../../ui/admin/AdminDashboardSummary';
+import Countdown from '../../ui/admin/Countdown';
+import DashboardBg from '../../ui/admin/DashboardBg';
 
 import { useTracker } from 'meteor/react-meteor-data';
-import { useResponses } from '../useResponses';
+import { useResponses } from '../../ui/useResponses';
 import { Meteor } from 'meteor/meteor';
 import { IconType } from 'react-icons';
 
