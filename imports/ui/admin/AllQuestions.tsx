@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
-import { ImportQuestionsFromDoc } from '../../features/questions/components/admin';
+import { ImportQuestions } from '../../features/questions/components/admin';
 import DashboardBg from './DashboardBg';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
@@ -579,6 +579,7 @@ const AllQuestions: React.FC = () => {
           {previewOpen && previewQuestion && (
             <QuestionPreviewModal
               question={previewQuestion}
+              open={previewOpen}
               onClose={() => setPreviewOpen(false)}
             />
           )}
@@ -588,11 +589,11 @@ const AllQuestions: React.FC = () => {
             <Modal>
               <ModalContent>
                 <ModalHeader>
-                  <h3>Import IT Sample Questions</h3>
+                  <h3>Import Questions</h3>
                   <CloseButton onClick={() => setShowImportModal(false)}>u00d7</CloseButton>
                 </ModalHeader>
                 <ModalBody>
-                  <ImportQuestionsFromDoc
+                  <ImportQuestions
                     onImportComplete={(questions) => {
                       handleImportQuestions(questions);
                       

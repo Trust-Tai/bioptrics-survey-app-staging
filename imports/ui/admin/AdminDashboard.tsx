@@ -377,10 +377,10 @@ const AdminDashboard: React.FC = () => {
   }, [filters]);
 
   useEffect(() => {
-    import('../../api/questions').then(mod => {
+    import('../../features/questions').then(mod => {
       setQuestionsCollection(mod.Questions);
     });
-    import('../../api/surveys').then(mod => {
+    import('../../features/surveys').then(mod => {
       setSurveysCollection(mod.Surveys);
     });
   }, []);

@@ -196,7 +196,7 @@ const ViewToggle = styled.div`
   overflow: hidden;
 `;
 
-const ToggleButton = styled.button`
+const ToggleButton = styled.button<{ active?: boolean }>`
   padding: 8px 16px;
   border: none;
   background: ${props => props.active ? '#552a47' : 'white'};

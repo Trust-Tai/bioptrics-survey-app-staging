@@ -380,7 +380,7 @@ const AdminDashboard: React.FC = () => {
     import('../../api/questions').then(mod => {
       setQuestionsCollection(mod.Questions);
     });
-    import('../../api/surveys').then(mod => {
+    import('../../features/surveys').then(mod => {
       setSurveysCollection(mod.Surveys);
     });
   }, []);

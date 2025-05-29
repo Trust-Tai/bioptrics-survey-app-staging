@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { FaChartBar, FaTable, FaFilter, FaClipboardList, FaUsers, FaFileAlt, FaExclamationTriangle } from 'react-icons/fa';
-import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { FaChartBar, FaTable, FaFilter, FaClipboardList, FaUsers, FaFileAlt, FaExclamationTriangle, FaChartPie, FaChartLine } from 'react-icons/fa';
+import { FiDownload, FiUsers, FiBarChart2 } from 'react-icons/fi';
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, LineChart, Line, AreaChart, Area } from 'recharts';
 import DashboardBg from './DashboardBg';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { Surveys, SurveyResponses } from '../../features/surveys/api/surveys';
@@ -30,6 +31,49 @@ const Title = styled.h2`
   margin: 0;
 `;
 
+const SearchFilterRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+`;
+
+const SearchInput = styled.input`
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: #f7f2f5;
+  font-size: 1rem;
+  width: 260px;
+`;
+
+const FilterButton = styled.button`
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  
+  &:hover {
+    background: #f9f9f9;
+  }
+`;
+
+const FiltersPanel = styled.div`
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 16px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+`;
+
 const FilterBar = styled.div`
   display: flex;
   align-items: center;
@@ -42,22 +86,22 @@ const FilterBar = styled.div`
 `;
 
 const FilterSelect = styled.select`
-  padding: 8px 12px;
+  padding: 8px;
   border-radius: 4px;
   border: 1px solid #ddd;
   font-size: 0.9rem;
-  min-width: 150px;
 `;
 
-const FilterLabel = styled.span`
+const FilterLabel = styled.div`
   font-size: 0.9rem;
+  font-weight: 500;
   color: #666;
-  margin-right: 4px;
 `;
 
 const FilterGroup = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 `;
 
 const DashboardGrid = styled.div`
@@ -231,6 +275,61 @@ const COLORS = [
   '#1abc9c', '#16a085', '#27ae60', '#2ecc71', '#f1c40f',
   '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b'
 ];
+
+// Analytics section styled components
+const AnalyticsSection = styled.div`
+  margin-bottom: 32px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const AnalyticsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+const AnalyticsTitle = styled.h3`
+  font-weight: 700;
+  font-size: 20px;
+  color: #552a47;
+  margin: 0;
+`;
+
+const AnalyticsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+`;
+
+const AnalyticsCard = styled.div<{ bgColor?: string }>`
+  background: ${props => props.bgColor || '#f9f4f7'};
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+`;
+
+const ExportButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #552a47;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #9a7025;
+  }
+`;
 
 const SurveyDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -508,6 +607,103 @@ const SurveyDashboard: React.FC = () => {
           
           {view === 'dashboard' && (
             <>
+              {/* Analytics Overview Section */}
+              <AnalyticsSection>
+                <AnalyticsHeader>
+                  <AnalyticsTitle>Analytics Overview</AnalyticsTitle>
+                  <div>
+                    <select 
+                      style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: 6, 
+                        border: '1px solid #ddd', 
+                        fontSize: 14,
+                        background: '#f9f9f9'
+                      }}
+                      onChange={(e) => {
+                        // Future implementation: Period selection for analytics
+                      }}
+                    >
+                      <option value="all">All Time</option>
+                      <option value="30days">Last 30 Days</option>
+                      <option value="90days">Last 90 Days</option>
+                      <option value="year">Last Year</option>
+                    </select>
+                  </div>
+                </AnalyticsHeader>
+                
+                <AnalyticsGrid>
+                  {/* Total Surveys Card */}
+                  <AnalyticsCard bgColor="#f9f4f7">
+                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Surveys</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#552a47' }}>{surveys.length}</div>
+                    <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
+                      {surveys.filter(s => s.published).length} published
+                    </div>
+                  </AnalyticsCard>
+                  
+                  {/* Total Responses Card */}
+                  <AnalyticsCard bgColor="#f0f7fa">
+                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Responses</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#3776a8' }}>{responses.length}</div>
+                    <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
+                      {surveys.length > 0 ? (responses.length / surveys.length).toFixed(1) : 0} avg per survey
+                    </div>
+                  </AnalyticsCard>
+                  
+                  {/* Response Rate Card */}
+                  <AnalyticsCard bgColor="#f7f9f0">
+                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Response Rate</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#6a994e' }}>
+                      {surveys.some(s => s.published) ? 
+                        Math.round((responses.length / surveys.filter(s => s.published).length) * 100) + '%' : 
+                        'N/A'}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
+                      Based on published surveys
+                    </div>
+                  </AnalyticsCard>
+                  
+                  {/* Recent Activity Card */}
+                  <AnalyticsCard bgColor="#fff5f0">
+                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Recent Activity</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#e67e22' }}>
+                      {responses.filter(r => {
+                        const today = new Date();
+                        const responseDate = new Date(r.createdAt || r.startTime);
+                        const diffTime = Math.abs(today.getTime() - responseDate.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        return diffDays <= 7;
+                      }).length}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
+                      Responses in last 7 days
+                    </div>
+                  </AnalyticsCard>
+                </AnalyticsGrid>
+                
+                {/* Response Trend Chart */}
+                <div style={{ marginTop: 20 }}>
+                  <h4 style={{ fontWeight: 600, fontSize: 16, marginBottom: 12 }}>Response Trend</h4>
+                  <div style={{ height: 200, background: '#f9f9f9', borderRadius: 8, padding: 16 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={responsesByMonth}>
+                        <defs>
+                          <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#552a47" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#552a47" stopOpacity={0.1}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Area type="monotone" dataKey="count" stroke="#552a47" fillOpacity={1} fill="url(#colorCount)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </AnalyticsSection>
+              
               <DashboardGrid>
                 <KPICard>
                   <FaClipboardList size={24} color="#552a47" />
@@ -735,6 +931,13 @@ const SurveyDashboard: React.FC = () => {
       </DashboardBg>
     </AdminLayout>
   );
+};
+
+// Format time in seconds to mm:ss format
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
 export default SurveyDashboard;
