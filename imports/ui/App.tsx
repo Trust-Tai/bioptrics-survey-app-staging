@@ -8,8 +8,9 @@ import Analytics from './admin/Analytics';
 import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
 import OrgSetup from './admin/OrgSetup';
-import { OrganizationProvider } from './contexts/OrganizationContext';
+import { OrganizationProvider } from '/imports/features/organization/contexts/OrganizationContext';
 import Setting from './admin/Setting';
+import Participants from './admin/Participants';
 import Users from './admin/Users';
 import AllUsers from './admin/AllUsers';
 import AddUser from './admin/AddUser';
@@ -169,7 +170,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
-        <Route path="/admin/setting" element={<Setting />} />
+        <Route path="/admin/settings" element={<Setting />} />
+        <Route path="/admin/participants" element={<Participants />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
         <Route path="/admin/users" element={<Users />} />

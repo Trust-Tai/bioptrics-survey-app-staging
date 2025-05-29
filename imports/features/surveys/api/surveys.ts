@@ -111,23 +111,16 @@ export interface SurveyDoc {
   keywords?: string[];
 }
 
-export interface SurveyResponseDoc {
-  _id?: string;
-  surveyId: string;
-  answers: { [questionId: string]: any };
-  submittedAt: Date;
-}
+// Import SurveyResponseDoc from the dedicated file
+import { SurveyResponseDoc, SurveyResponses } from './surveyResponses';
 
 export const Surveys = new Mongo.Collection<SurveyDoc>('surveys');
 
-export interface SurveyResponseDoc {
-  _id?: string;
-  surveyId: string;
-  answers: { [questionId: string]: any };
-  submittedAt: Date;
-}
+// Re-export SurveyResponseDoc for backward compatibility
+export { SurveyResponseDoc };
 
-export const SurveyResponses = new Mongo.Collection<SurveyResponseDoc>('survey_responses');
+// Re-export for backward compatibility
+export { SurveyResponses };
 
 if (Meteor.isServer) {
   Meteor.publish('surveys.all', function () {
@@ -443,6 +436,23 @@ Meteor.methods({
     if (!(await Surveys.findOneAsync({ _id: surveyId }))) {
       throw new Meteor.Error('not-found', 'Survey not found');
     }
-    return SurveyResponses.insert({ surveyId, answers, submittedAt: new Date() });
+    
+    // Convert answers object to responses array format expected by SurveyResponseDoc
+    const responses = Object.entries(answers).map(([questionId, answer]) => ({
+      questionId,
+      answer,
+    }));
+    
+    // Create a document that matches the SurveyResponseDoc interface
+    return SurveyResponses.insert({
+      surveyId,
+      responses,
+      completed: true,
+      startTime: new Date(),
+      endTime: new Date(),
+      progress: 100,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
   },
 });

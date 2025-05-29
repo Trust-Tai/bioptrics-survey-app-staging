@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { SurveySectionItem } from '/imports/features/surveys/types/index';
+import { SurveySectionItem } from '/imports/features/surveys/types';
 
 const PreviewContainer = styled.div`
   padding: 24px;
@@ -53,9 +53,20 @@ const PreviewPlaceholder = styled.div`
 
 interface SectionPreviewProps {
   section: SurveySectionItem;
+  totalSections?: number;
+  currentSectionIndex?: number;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  analytics?: {
+    avgCompletionTime: number;
+    responseRate: number;
+    dropoffRate: number;
+    avgRating: number;
+    completionPercentage: number;
+  };
 }
 
-export const SectionPreview: React.FC<SectionPreviewProps> = ({ section }) => {
+export const SectionPreview: React.FC<SectionPreviewProps> = ({ section, totalSections, currentSectionIndex, onNext, onPrevious, analytics }) => {
   return (
     <PreviewContainer>
       <PreviewHeader>

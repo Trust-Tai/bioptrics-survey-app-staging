@@ -14,8 +14,8 @@ import {
   FiAlertTriangle
 } from 'react-icons/fi';
 
-import AdminLayout from '/imports/layouts/AdminLayout';
-import { Responses } from '/imports/api/responses';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
+import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
 import { Surveys } from '../../features/surveys/api/surveys';
 
 // Import components from the feature-based structure
@@ -187,7 +187,7 @@ const AdminAnalytics: React.FC = () => {
     
     // Add more filter criteria here when available
     
-    const allResponses = Responses.find(responsesQuery).fetch();
+    const allResponses = SurveyResponses.find(responsesQuery).fetch();
     const allSurveys = Surveys.find().fetch();
     
     return {
@@ -313,7 +313,7 @@ const AdminAnalytics: React.FC = () => {
     },
     engagementScore: {
       value: responses.length > 0 
-        ? (responses.reduce((sum, r) => sum + r.engagementScore, 0) / responses.length).toFixed(1)
+        ? (responses.reduce((sum: number, r: any) => sum + (r.engagementScore || 0), 0) / responses.length).toFixed(1)
         : '0.0',
       icon: FiStar
     },

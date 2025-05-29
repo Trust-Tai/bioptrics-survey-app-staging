@@ -1,18 +1,12 @@
-import { Mongo } from 'meteor/mongo';
+/**
+ * This file is kept for backward compatibility with existing imports.
+ * It re-exports the SurveyResponses collection from the feature-based location.
+ */
 
-export interface ResponseDoc {
-  _id?: string;
-  userId: string;
-  site: string; // e.g., 'Rainy River', 'New Afton', 'Corporate', 'Other'
-  completed: boolean;
-  engagementScore: number; // e.g., 4.2
-  createdAt: Date;
-}
+import { SurveyResponses, SurveyResponseDoc } from '/imports/features/surveys/api/surveyResponses';
 
-export const Responses = new Mongo.Collection<ResponseDoc>('responses');
+// For backward compatibility, we'll alias SurveyResponses as Responses
+export const Responses = SurveyResponses;
 
-if (Meteor.isServer) {
-  Meteor.publish('responses.all', function () {
-    return Responses.find();
-  });
-}
+// Export the type as ResponseDoc for backward compatibility
+export type ResponseDoc = SurveyResponseDoc;
