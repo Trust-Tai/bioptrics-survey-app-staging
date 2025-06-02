@@ -1,117 +1,583 @@
-import React from 'react';
-import DashboardBg from './DashboardBg';
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import {
+  FiFilter,
+  FiDownload,
+  FiPieChart,
+  FiBarChart2,
+  FiTrendingUp,
+  FiMessageSquare,
+  FiCalendar,
+  FiUsers,
+} from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 
+// Styled components for the Analytics dashboard
+const DashboardContainer = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`;
+
+const PageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+`;
+
+const PageTitle = styled.h1`
+  font-size: 28px;
+  font-weight: 700;
+  color: #552a47;
+  margin: 0;
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: space-between;
+  }
+`;
+
+const Button = styled.button<{ primary?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: ${(props) => (props.primary ? '#552a47' : '#f7f2f5')};
+  color: ${(props) => (props.primary ? '#fff' : '#552a47')};
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${(props) => (props.primary ? '#693658' : '#efe7ed')};
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  svg {
+    font-size: 16px;
+  }
+`;
+
+const FilterBar = styled.div`
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const FilterGroup = styled.div`
+  flex: 1;
+  min-width: 180px;
+
+  @media (max-width: 768px) {
+    min-width: 100%;
+  }
+`;
+
+const FilterLabel = styled.label`
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 1px #552a47;
+  }
+`;
+
+const FilterButtons = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  @media (max-width: 768px) {
+    margin-top: 8px;
+  }
+`;
+
+const DashboardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+`;
+
+const Card = styled.div<{ cols?: number }>`
+  grid-column: span ${(props) => props.cols || 4};
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+
+  @media (max-width: 1200px) {
+    grid-column: span ${(props) => Math.min(props.cols || 4, 6)};
+  }
+
+  @media (max-width: 768px) {
+    grid-column: 1;
+  }
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+const CardTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #552a47;
+  margin: 0;
+`;
+
+const CardIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #f7f2f5;
+  border-radius: 8px;
+  color: #552a47;
+`;
+
+const StatCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f7f2f5;
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const StatValue = styled.div`
+  font-size: 32px;
+  font-weight: 700;
+  color: #552a47;
+  margin-bottom: 8px;
+`;
+
+const StatLabel = styled.div`
+  font-size: 14px;
+  color: #8a6d8a;
+  font-weight: 500;
+`;
+
+const ThemeCard = styled.div`
+  background: #f0f5fa;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+`;
+
+const ThemeName = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: #552a47;
+  margin-bottom: 8px;
+`;
+
+const ThemeScore = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+`;
+
+const ThemeLabel = styled.div`
+  font-size: 13px;
+  color: #8a6d8a;
+`;
+
+const ChartContainer = styled.div`
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a6d8a;
+  font-weight: 500;
+`;
+
+const TabsContainer = styled.div`
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+`;
+
+const Tab = styled.button<{ active?: boolean }>`
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid ${(props) => (props.active ? '#552a47' : 'transparent')};
+  color: ${(props) => (props.active ? '#552a47' : '#666')};
+  font-weight: ${(props) => (props.active ? '600' : '400')};
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #552a47;
+  }
+`;
+
+const ExportButtonsContainer = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
 const Analytics: React.FC = () => {
-  // Placeholder stats and structure
+  const [activeTab, setActiveTab] = useState('overview');
+  const [filterVisible, setFilterVisible] = useState(true);
+
+  // Sample data
+  const sites = ['All Sites', 'Site A', 'Site B', 'Site C'];
+  const departments = ['All Departments', 'HR', 'Operations', 'IT', 'Finance'];
+  const roles = ['All Roles', 'Manager', 'Individual Contributor', 'Director'];
+  const tenures = ['All Tenure', '< 1 year', '1-3 years', '3-5 years', '5+ years'];
+  const demographics = ['All Demographics', 'Age Group', 'Gender', 'Location'];
+
   return (
     <AdminLayout>
-      <div style={{ display: 'flex', maxWidth: 1200, margin: '0 auto', padding: 32, gap: 32 }}>
-        {/* Filters Sidebar */}
-        <aside style={{ minWidth: 220, background: '#faf8fa', borderRadius: 12, padding: 24, boxShadow: '0 1px 6px #eee' }}>
-          <h3 style={{ fontWeight: 700, color: '#552a47', fontSize: 18, marginBottom: 16 }}>Filters</h3>
-          <div style={{ marginBottom: 12 }}>
-            <label>Site:</label>
-            <select style={{ width: '100%', marginTop: 4 }}><option>All Sites</option></select>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Department:</label>
-            <select style={{ width: '100%', marginTop: 4 }}><option>All Departments</option></select>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Role Level:</label>
-            <select style={{ width: '100%', marginTop: 4 }}><option>All Levels</option></select>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Tenure:</label>
-            <select style={{ width: '100%', marginTop: 4 }}><option>All Tenure</option></select>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Demographics:</label>
-            <select style={{ width: '100%', marginTop: 4 }}><option>All Demographics</option></select>
-          </div>
-          <button style={{ width: '100%', background: '#552a47', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontWeight: 600, marginTop: 10 }}>Apply Filters</button>
-        </aside>
-        {/* Main Analytics Content */}
-        <main style={{ flex: 1 }}>
-          <h2 style={{ fontWeight: 700, color: '#552a47', fontSize: 28, marginBottom: 24 }}>Analytics Dashboard</h2>
+      <DashboardContainer>
+        <PageHeader>
+          <PageTitle>Analytics Dashboard</PageTitle>
+          <ActionButtons>
+            <Button onClick={() => setFilterVisible(!filterVisible)}>
+              <FiFilter />
+              {filterVisible ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+            <Button primary>
+              <FiDownload />
+              Export
+            </Button>
+          </ActionButtons>
+        </PageHeader>
 
-          {/* Participation Overview */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontWeight: 600, color: '#552a47', fontSize: 20 }}>Participation Overview</h3>
-            <div style={{ display: 'flex', gap: 32, marginTop: 14 }}>
-              <div style={{ background: '#f7f2f5', borderRadius: 10, padding: 24, minWidth: 180, textAlign: 'center' }}>
-                <div style={{ fontSize: 36, fontWeight: 700, color: '#552a47' }}>1,234</div>
-                <div style={{ color: '#8a6d8a', fontWeight: 500 }}>Surveys Completed</div>
+        {filterVisible && (
+          <FilterBar>
+            <FilterGroup>
+              <FilterLabel>Site</FilterLabel>
+              <Select>
+                {sites.map((site) => (
+                  <option key={site} value={site}>
+                    {site}
+                  </option>
+                ))}
+              </Select>
+            </FilterGroup>
+            <FilterGroup>
+              <FilterLabel>Department</FilterLabel>
+              <Select>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </Select>
+            </FilterGroup>
+            <FilterGroup>
+              <FilterLabel>Role Level</FilterLabel>
+              <Select>
+                {roles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </Select>
+            </FilterGroup>
+            <FilterGroup>
+              <FilterLabel>Tenure</FilterLabel>
+              <Select>
+                {tenures.map((tenure) => (
+                  <option key={tenure} value={tenure}>
+                    {tenure}
+                  </option>
+                ))}
+              </Select>
+            </FilterGroup>
+            <FilterGroup>
+              <FilterLabel>Demographics</FilterLabel>
+              <Select>
+                {demographics.map((demo) => (
+                  <option key={demo} value={demo}>
+                    {demo}
+                  </option>
+                ))}
+              </Select>
+            </FilterGroup>
+            <FilterButtons>
+              <Button primary>Apply Filters</Button>
+              <Button>Reset</Button>
+            </FilterButtons>
+          </FilterBar>
+        )}
+
+        <TabsContainer>
+          <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
+            Overview
+          </Tab>
+          <Tab active={activeTab === 'themes'} onClick={() => setActiveTab('themes')}>
+            Themes
+          </Tab>
+          <Tab active={activeTab === 'trends'} onClick={() => setActiveTab('trends')}>
+            Trends
+          </Tab>
+          <Tab active={activeTab === 'insights'} onClick={() => setActiveTab('insights')}>
+            Insights
+          </Tab>
+        </TabsContainer>
+
+        {activeTab === 'overview' && (
+          <DashboardGrid>
+            {/* KPI Cards */}
+            <Card cols={3}>
+              <CardHeader>
+                <CardTitle>Participation</CardTitle>
+                <CardIcon>
+                  <FiUsers />
+                </CardIcon>
+              </CardHeader>
+              <StatCard>
+                <StatValue>1,234</StatValue>
+                <StatLabel>Surveys Completed</StatLabel>
+              </StatCard>
+            </Card>
+
+            <Card cols={3}>
+              <CardHeader>
+                <CardTitle>Completion Rate</CardTitle>
+                <CardIcon>
+                  <FiPieChart />
+                </CardIcon>
+              </CardHeader>
+              <StatCard>
+                <StatValue>82%</StatValue>
+                <StatLabel>Participation Rate</StatLabel>
+              </StatCard>
+            </Card>
+
+            <Card cols={3}>
+              <CardHeader>
+                <CardTitle>Avg. Engagement</CardTitle>
+                <CardIcon>
+                  <FiBarChart2 />
+                </CardIcon>
+              </CardHeader>
+              <StatCard>
+                <StatValue>4.1</StatValue>
+                <StatLabel>Out of 5.0</StatLabel>
+              </StatCard>
+            </Card>
+
+            <Card cols={3}>
+              <CardHeader>
+                <CardTitle>Time to Complete</CardTitle>
+                <CardIcon>
+                  <FiCalendar />
+                </CardIcon>
+              </CardHeader>
+              <StatCard>
+                <StatValue>8.5</StatValue>
+                <StatLabel>Minutes (Average)</StatLabel>
+              </StatCard>
+            </Card>
+
+            {/* Theme Breakdown */}
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>WPS Zone / Theme Breakdown</CardTitle>
+              </CardHeader>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                <ThemeCard>
+                  <ThemeName>Safety</ThemeName>
+                  <ThemeScore>4.2</ThemeScore>
+                  <ThemeLabel>Avg. Score</ThemeLabel>
+                </ThemeCard>
+                <ThemeCard>
+                  <ThemeName>Engagement</ThemeName>
+                  <ThemeScore>3.8</ThemeScore>
+                  <ThemeLabel>Avg. Score</ThemeLabel>
+                </ThemeCard>
+                <ThemeCard>
+                  <ThemeName>Leadership</ThemeName>
+                  <ThemeScore>4.0</ThemeScore>
+                  <ThemeLabel>Avg. Score</ThemeLabel>
+                </ThemeCard>
+                <ThemeCard>
+                  <ThemeName>Wellbeing</ThemeName>
+                  <ThemeScore>3.6</ThemeScore>
+                  <ThemeLabel>Avg. Score</ThemeLabel>
+                </ThemeCard>
+                <ThemeCard>
+                  <ThemeName>Inclusion</ThemeName>
+                  <ThemeScore>4.3</ThemeScore>
+                  <ThemeLabel>Avg. Score</ThemeLabel>
+                </ThemeCard>
               </div>
-              <div style={{ background: '#f7f2f5', borderRadius: 10, padding: 24, minWidth: 180, textAlign: 'center' }}>
-                <div style={{ fontSize: 36, fontWeight: 700, color: '#552a47' }}>82%</div>
-                <div style={{ color: '#8a6d8a', fontWeight: 500 }}>Participation Rate</div>
-              </div>
-            </div>
-          </section>
+            </Card>
 
-          {/* WPS Zone/Theme Breakdown */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontWeight: 600, color: '#552a47', fontSize: 20 }}>WPS Zone / Theme Breakdown</h3>
-            <div style={{ display: 'flex', gap: 24 }}>
-              <div style={{ background: '#e0e7ef', borderRadius: 10, padding: 20, minWidth: 160, textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#552a47' }}>Safety</div>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>4.2</div>
-                <div style={{ color: '#8a6d8a' }}>Avg. Score</div>
-              </div>
-              <div style={{ background: '#e0e7ef', borderRadius: 10, padding: 20, minWidth: 160, textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#552a47' }}>Engagement</div>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>3.8</div>
-                <div style={{ color: '#8a6d8a' }}>Avg. Score</div>
-              </div>
-              <div style={{ background: '#e0e7ef', borderRadius: 10, padding: 20, minWidth: 160, textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#552a47' }}>Leadership</div>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>4.0</div>
-                <div style={{ color: '#8a6d8a' }}>Avg. Score</div>
-              </div>
-              {/* Add more themes as needed */}
-            </div>
-          </section>
+            {/* Heatmap */}
+            <Card cols={6}>
+              <CardHeader>
+                <CardTitle>Site Performance Heatmap</CardTitle>
+              </CardHeader>
+              <ChartContainer>
+                <div>Heatmap Visualization Coming Soon</div>
+              </ChartContainer>
+            </Card>
 
-          {/* Heatmap Placeholder */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontWeight: 600, color: '#552a47', fontSize: 20 }}>Heatmap (Sample)</h3>
-            <div style={{ background: '#f7f2f5', borderRadius: 10, padding: 24, textAlign: 'center', color: '#aaa' }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>Heatmap Visualization Coming Soon</div>
-              <div style={{ marginTop: 12 }}>[Sample: Site x Theme color grid]</div>
-            </div>
-          </section>
+            {/* Trendlines */}
+            <Card cols={6}>
+              <CardHeader>
+                <CardTitle>Engagement Trends</CardTitle>
+                <CardIcon>
+                  <FiTrendingUp />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer>
+                <div>Trendline Visualization Coming Soon</div>
+              </ChartContainer>
+            </Card>
 
-          {/* Trendlines Placeholder */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontWeight: 600, color: '#552a47', fontSize: 20 }}>Trendlines</h3>
-            <div style={{ background: '#f7f2f5', borderRadius: 10, padding: 24, textAlign: 'center', color: '#aaa' }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>Trendline Visualization Coming Soon</div>
-              <div style={{ marginTop: 12 }}>[Sample: Line chart of scores by wave]</div>
-            </div>
-          </section>
+            {/* Open-text Insights */}
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Open-text Insights</CardTitle>
+                <CardIcon>
+                  <FiMessageSquare />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer>
+                <div>NLP Topic Modeling Coming Soon</div>
+              </ChartContainer>
+            </Card>
 
-          {/* Open-text Insights Placeholder */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontWeight: 600, color: '#552a47', fontSize: 20 }}>Open-text Insights</h3>
-            <div style={{ background: '#f7f2f5', borderRadius: 10, padding: 24, textAlign: 'center', color: '#aaa' }}>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>NLP Topic Modeling Coming Soon</div>
-              <div style={{ marginTop: 12 }}>[Sample: Top 3 topics, word cloud]</div>
-            </div>
-          </section>
+            {/* Export Options */}
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Export Options</CardTitle>
+              </CardHeader>
+              <ExportButtonsContainer>
+                <Button>Export CSV</Button>
+                <Button>Export PDF</Button>
+                <Button>Power BI</Button>
+              </ExportButtonsContainer>
+            </Card>
+          </DashboardGrid>
+        )}
 
-          {/* Export Options */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontWeight: 600, color: '#552a47', fontSize: 20 }}>Export Options</h3>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <button style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 24px', fontWeight: 600 }}>Export CSV</button>
-              <button style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 24px', fontWeight: 600 }}>Export PDF</button>
-              <button style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 24px', fontWeight: 600 }}>Power BI</button>
-            </div>
-          </section>
-        </main>
-      </div>
+        {activeTab === 'themes' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Theme Analysis</CardTitle>
+              </CardHeader>
+              <ChartContainer>
+                <div>Detailed Theme Analysis Coming Soon</div>
+              </ChartContainer>
+            </Card>
+          </DashboardGrid>
+        )}
+
+        {activeTab === 'trends' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Trend Analysis</CardTitle>
+              </CardHeader>
+              <ChartContainer>
+                <div>Detailed Trend Analysis Coming Soon</div>
+              </ChartContainer>
+            </Card>
+          </DashboardGrid>
+        )}
+
+        {activeTab === 'insights' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>AI-Powered Insights</CardTitle>
+              </CardHeader>
+              <ChartContainer>
+                <div>AI-Powered Insights Coming Soon</div>
+              </ChartContainer>
+            </Card>
+          </DashboardGrid>
+        )}
+      </DashboardContainer>
     </AdminLayout>
   );
 };
