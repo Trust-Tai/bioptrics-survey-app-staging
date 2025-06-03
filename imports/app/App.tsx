@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useNavigate, 
 import { OrganizationProvider } from '../features/organization';
 // Import survey components from their respective locations
 import { SurveyManagement, SurveyPage } from '../features/surveys/components/admin';
-import { SurveyBuilder } from '../features/surveys';
+import SurveyBuilder from '../ui/admin/SurveyBuilder';
 import { SurveyManagementDashboard } from '../features/surveys';
 import { AdminAnalyticsDashboard, AnalyticsDashboard } from '../features/analytics/components/admin';
 import { SectionQuestions, SectionCompletionIndicator, SectionProgressOverview } from '../features/surveys/components/sections';

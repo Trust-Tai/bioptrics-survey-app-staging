@@ -230,7 +230,7 @@ const QuestionBuilder: React.FC =  () => {
             feedbackValue: (latest as any).feedbackValue || '',
             wpsCategoryIds: (latest as any).categoryTags || [],
             surveyThemeIds: (latest as any).surveyThemes || [],
-            questionTagId: (latest as any).questionTag,
+            questionTagId: (latest as any).questionTag || (Array.isArray((latest as any).questionTags) && (latest as any).questionTags.length > 0 ? (latest as any).questionTags[0] : undefined),
             customFields: (latest as any).customFields || [],
             isReusable: (latest as any).isReusable !== undefined ? (latest as any).isReusable : true,
             isActive: (latest as any).isActive !== undefined ? (latest as any).isActive : true,

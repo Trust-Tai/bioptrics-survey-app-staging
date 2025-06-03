@@ -35,7 +35,7 @@ import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
 import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
-import QuestionBuilder from './admin/QuestionBuilder';
+import QuestionBuilder from '../features/questions/components/admin/QuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
 import SurveyManagementDashboard from './admin/SurveyManagementDashboard';
@@ -169,6 +169,7 @@ const AppRoutes: React.FC = () => {
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
         <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
+        <Route path="/admin/questions/builder/:id" element={<QuestionBuilder />} />
         <Route path="/admin/questions/tags" element={<QuestionTagsPage />} />
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
