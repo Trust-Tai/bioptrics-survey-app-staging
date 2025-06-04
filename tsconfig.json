@@ -16,6 +16,6 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["imports/**/*", "client/**/*", "server/**/*", "tests/**/*"],
+  "include": ["imports/**/*", "client/**/*", "server/**/*", "tests/**/*", "types/**/*"],
   "exclude": ["node_modules", ".meteor"]
 }

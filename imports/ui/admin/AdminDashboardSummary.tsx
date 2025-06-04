@@ -4,8 +4,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
 import { SurveyResponses } from '../../features/surveys/api/surveyResponses';
-import { FiBarChart2, FiUsers, FiCheckCircle, FiClock, FiActivity, FiCalendar, FiEdit } from 'react-icons/fi';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { FiBarChart2, FiUsers, FiCheckCircle, FiClock, FiActivity, FiEdit } from 'react-icons/fi';
 
 // Styled components for the dashboard summary
 const SummaryContainer = styled.div`
@@ -16,14 +15,42 @@ const SummaryHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  position: relative;
+  padding-bottom: 12px;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #5e3b5e 0%, #7a4e7a 100%);
+    border-radius: 3px;
+  }
 `;
 
 const SummaryTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   color: #552a47;
   margin: 0;
+  letter-spacing: -0.5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #5e3b5e 0%, #7a4e7a 100%);
+    border-radius: 6px;
+    margin-right: 4px;
+  }
 `;
 
 const MetricsGrid = styled.div`
@@ -34,74 +61,107 @@ const MetricsGrid = styled.div`
 `;
 
 const MetricCard = styled.div`
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  padding: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f4f9 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(85, 42, 71, 0.08);
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(85, 42, 71, 0.05);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at top right, rgba(85, 42, 71, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+    z-index: 0;
+  }
   
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(85, 42, 71, 0.12);
   }
 `;
 
 const MetricHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
 `;
 
 const MetricIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: #f9f4f8;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5e3b5e 0%, #7a4e7a 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: white;
+  box-shadow: 0 4px 10px rgba(94, 59, 94, 0.2);
+  margin-right: 4px;
+  z-index: 1;
 `;
 
 const MetricTitle = styled.h3`
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   color: #666;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 1;
 `;
 
 const MetricValue = styled.div`
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 36px;
+  font-weight: 800;
   color: #552a47;
   margin-bottom: 8px;
+  letter-spacing: -0.5px;
+  z-index: 1;
+  position: relative;
 `;
 
 const MetricTrend = styled.div<{ positive?: boolean }>`
   font-size: 14px;
+  font-weight: 500;
   color: ${props => props.positive ? '#2ecc71' : '#e74c3c'};
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: ${props => props.positive ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)'};
+  width: fit-content;
+  z-index: 1;
+  position: relative;
   
   &::before {
     content: ${props => props.positive ? '"↑"' : '"↓"'};
   }
 `;
 
-const ChartsContainer = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-  margin-bottom: 32px;
-  
-  @media (max-width: 992px) {
-    grid-template-columns: 1fr;
-  }
-`;
+// const ChartsContainer = styled.div`
+//   display: grid;
+//   grid-template-columns: 2fr 1fr;
+//   gap: 24px;
+//   margin-bottom: 32px;
+//   
+//   @media (max-width: 992px) {
+//     grid-template-columns: 1fr;
+//   }
+// `;
 
 const ChartCard = styled.div`
   background: white;
@@ -124,34 +184,34 @@ const ChartTitle = styled.h3`
   margin: 0;
 `;
 
-const TimeframeSelector = styled.div`
-  display: flex;
-  gap: 8px;
-`;
+// const TimeframeSelector = styled.div`
+//   display: flex;
+//   gap: 8px;
+// `;
 
-const TimeframeButton = styled.button<{ active?: boolean }>`
-  background: ${props => props.active ? '#552a47' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#666'};
-  border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${props => props.active ? '#552a47' : '#f5f5f5'};
-  }
-`;
+// const TimeframeButton = styled.button<{ active?: boolean }>`
+//   background: ${props => props.active ? '#552a47' : 'transparent'};
+//   color: ${props => props.active ? 'white' : '#666'};
+//   border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
+//   border-radius: 4px;
+//   padding: 6px 12px;
+//   font-size: 14px;
+//   cursor: pointer;
+//   transition: all 0.2s;
+//   
+//   &:hover {
+//     background: ${props => props.active ? '#552a47' : '#f5f5f5'};
+//   }
+// `;
 
-const COLORS = ['#552a47', '#8e44ad', '#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+// const COLORS = ['#552a47', '#8e44ad', '#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
 
 interface AdminDashboardSummaryProps {
   organizationId?: string;
 }
 
 const AdminDashboardSummary: React.FC<AdminDashboardSummaryProps> = ({ organizationId }) => {
-  const [timeframe, setTimeframe] = useState<'week' | 'month' | 'quarter'>('month');
+  const [timeframe /*, setTimeframe*/] = useState<'week' | 'month' | 'quarter'>('month');
   
   // Fetch dashboard data
   const { 
@@ -160,8 +220,8 @@ const AdminDashboardSummary: React.FC<AdminDashboardSummaryProps> = ({ organizat
     totalResponses,
     completionRate,
     averageTimeSpent,
-    responseData,
-    surveyTypeData,
+    // responseData,
+    // surveyTypeData,
     recentActivity
   } = useTracker(() => {
     const surveysSub = Meteor.subscribe('surveys.all');
@@ -367,74 +427,8 @@ const AdminDashboardSummary: React.FC<AdminDashboardSummaryProps> = ({ organizat
         </MetricCard>
       </MetricsGrid>
       
-      <ChartsContainer>
-        <ChartCard>
-          <ChartHeader>
-            <ChartTitle>Response Trends</ChartTitle>
-            <TimeframeSelector>
-              <TimeframeButton 
-                active={timeframe === 'week'} 
-                onClick={() => setTimeframe('week')}
-              >
-                Week
-              </TimeframeButton>
-              <TimeframeButton 
-                active={timeframe === 'month'} 
-                onClick={() => setTimeframe('month')}
-              >
-                Month
-              </TimeframeButton>
-              <TimeframeButton 
-                active={timeframe === 'quarter'} 
-                onClick={() => setTimeframe('quarter')}
-              >
-                Quarter
-              </TimeframeButton>
-            </TimeframeSelector>
-          </ChartHeader>
-          
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={responseData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="responses" name="Total Responses" fill="#552a47" />
-              <Bar dataKey="completions" name="Completed" fill="#8e44ad" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-        
-        <ChartCard>
-          <ChartHeader>
-            <ChartTitle>Survey Types</ChartTitle>
-          </ChartHeader>
-          
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={surveyTypeData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }: { name: string, percent: number }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {surveyTypeData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </ChartsContainer>
+      {/* Charts container removed to avoid duplicate sections */}
+      {/* These sections have been moved to the main dashboard */}
       
       <ChartCard>
         <ChartHeader>

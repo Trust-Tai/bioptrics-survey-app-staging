@@ -3,9 +3,18 @@ import js from "@eslint/js";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import reactPlugin from "eslint-plugin-react";
+import globals from "globals"; // Import the globals package
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
+  { 
+    ignores: [
+      "node_modules/",
+      "build/",
+      "dist/",
+      ".meteor/"
+    ]
+  },
   js.configs.recommended,
   {
     files: ["**/*.ts", "**/*.tsx"],
@@ -17,6 +26,10 @@ export default [
         sourceType: "module",
         ecmaFeatures: { jsx: true },
       },
+      globals: { // Explicitly add browser and node globals here
+        ...globals.browser,
+        ...globals.node,
+      }
     },
     plugins: {
       "@typescript-eslint": tseslint,

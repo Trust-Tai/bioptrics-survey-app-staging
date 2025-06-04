@@ -1,6 +1,7 @@
 {
   "name": "meteor-app",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "meteor run --settings settings.json --port $PORT --allow-superuser",
     "test": "meteor test --once --driver-package meteortesting:mocha",
@@ -29,7 +30,8 @@
     "react-select": "^5.10.1",
     "recharts": "^2.15.3",
     "simpl-schema": "^3.4.6",
-    "styled-components": "^6.1.17"
+    "styled-components": "^6.1.17",
+    "globals": "^15.9.0"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",
@@ -38,6 +40,7 @@
     "@types/react": "^19.1.2",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-router-dom": "^5.3.3",
+    "@types/styled-jsx": "^2.2.9",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^9.26.0",
