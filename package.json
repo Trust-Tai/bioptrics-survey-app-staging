@@ -1,7 +1,6 @@
 {
   "name": "meteor-app",
   "private": true,
-  "type": "module",
   "scripts": {
     "start": "meteor run --settings settings.json --port $PORT --allow-superuser",
     "test": "meteor test --once --driver-package meteortesting:mocha",

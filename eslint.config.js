@@ -1,12 +1,12 @@
 // ESLint configuration for TypeScript + React
-import js from "@eslint/js";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import reactPlugin from "eslint-plugin-react";
-import globals from "globals"; // Import the globals package
+const js = require("@eslint/js");
+const tseslint = require("@typescript-eslint/eslint-plugin");
+const tsParser = require("@typescript-eslint/parser");
+const reactPlugin = require("eslint-plugin-react");
+const globals = require("globals"); // Import the globals package
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
-export default [
+module.exports = [
   { 
     ignores: [
       "node_modules/",
