@@ -4,51 +4,114 @@ import {
   FaUsers, 
   FaQuestionCircle, 
   FaClipboardList, 
-  FaChartBar, 
+  FaChartLine, 
   FaFileExport, 
   FaEnvelope, 
   FaCalendarAlt, 
   FaFilter, 
+  FaChevronRight, 
+  FaCheck, 
+  FaUndo,
   FaInfoCircle,
   FaExclamationTriangle,
-  FaBell,
-  FaTachometerAlt
+  FaBell
 } from 'react-icons/fa';
-import AdminDashboardSummary from '../../ui/admin/AdminDashboardSummary';
 import Countdown from '../../ui/admin/Countdown';
-import DashboardBg from '../../ui/admin/DashboardBg';
 
 import { useTracker } from 'meteor/react-meteor-data';
 import { useResponses } from '../../ui/useResponses';
 import { Meteor } from 'meteor/meteor';
-import { IconType } from 'react-icons';
 
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
+// Custom scrollbar styling
+const GlobalScrollbarStyle = createGlobalStyle`
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #aaaaaa;
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #888888;
+  }
+`;
+
 const GoldHeaderCard = styled.div`
-  background: #552a47;
-  border-radius: 12px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
-  padding: 1.5rem 2rem;
-  margin: 0 0 1.5rem 0;
+  background: linear-gradient(135deg, #552a47 0%, #7a4e7a 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 1.75rem 2.5rem;
+  margin: 0 0 1.75rem 0;
   color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: 30%;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 60%);
+    border-radius: 50%;
+  }
 `;
 
 const HeaderLabel = styled.div`
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
   opacity: 0.9;
+  text-transform: uppercase;
+  position: relative;
+  display: inline-block;
+  padding-left: 12px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 16px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4));
+    border-radius: 2px;
+  }
 `;
+
 const HeaderTitle = styled.div`
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   letter-spacing: 0.2px;
 `;
 
@@ -62,14 +125,12 @@ const HeaderEnds = styled.div`
   gap: 0.5rem;
 `;
 
-const GoldIcon = styled.div`
-  margin-left: 2.5rem;
-`;
+
 
 const MainGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  gap: 20px;
   width: 100%;
   margin-top: 1.5rem;
   
@@ -79,19 +140,62 @@ const MainGrid = styled.div`
 `;
 const Card = styled.div`
   background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
-  padding: 1.25rem;
-  height: 100%;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  height: auto;
+  min-height: 100%;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #552a47, #7a4e7a);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  &:hover {
+    transform: translate(0, -5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
 `;
+
 const SectionTitle = styled.div`
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #1c1c1c;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+  padding-left: 12px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate(0, -50%);
+    width: 4px;
+    height: 18px;
+    background: linear-gradient(to bottom, #552a47, #7a4e7a);
+    border-radius: 2px;
+  }
 `;
 const DonutChart = styled.div`
   display: flex;
@@ -107,19 +211,8 @@ const DonutLegend = styled.div`
   align-items: center;
   justify-content: center;
 `;
-const DonutSub = styled.div`
-  text-align: center;
-  font-size: 1.13rem;
-  margin-top: 0.6rem;
-`;
-// Layouts for different card sizes
-const FullWidthCard = styled(Card)`
-  grid-column: span 12;
-  
-  @media (max-width: 768px) {
-    grid-column: span 1;
-  }
-`;
+
+
 
 const HalfWidthCard = styled(Card)`
   grid-column: span 6;
@@ -153,25 +246,142 @@ const BarLabel = styled.div`
   font-weight: 600;
 `;
 
-const SiteLegend = styled.div`
-  font-size: 1.04rem;
-  margin-top: 0.5rem;
+
+const FilterContainer = styled.div`
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #552a47 0%, #7a4e7a 100%);
+  }
 `;
-const FilterBar = styled.div`
+
+const FilterHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  
+  svg {
+    color: #552a47;
+    font-size: 1.1rem;
+  }
+  
+  span {
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    cursor: pointer;
+  }
+`;
+
+const FilterContent = styled.div<{ isOpen?: boolean }>`
+  display: flex;
   flex-wrap: wrap;
-  margin-bottom: 1.5rem;
+  gap: 16px;
+  
+  @media (max-width: 768px) {
+    display: ${props => props.isOpen ? 'flex' : 'none'};
+    flex-direction: column;
+  }
+`;
+
+const FilterGroup = styled.div`
+  flex: 1;
+  min-width: 200px;
+  
+  @media (max-width: 768px) {
+    min-width: 100%;
+  }
+`;
+
+const FilterLabel = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
 `;
 
 const FilterSelect = styled.select`
-  padding: 0.5rem 1rem;
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 0.875rem;
   background: white;
-  min-width: 140px;
+  transition: all 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.1);
+  }
+  
+  &:hover {
+    border-color: #c0c0c0;
+  }
+`;
+
+const FilterActions = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const FilterButton = styled.button<{ primary?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  background: ${props => props.primary ? '#552a47' : 'white'};
+  color: ${props => props.primary ? 'white' : '#666'};
+  border: ${props => props.primary ? 'none' : '1px solid #e0e0e0'};
+  
+  &:hover {
+    background: ${props => props.primary ? '#693658' : '#f5f5f5'};
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  svg {
+    font-size: 14px;
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
 `;
 
 const QuickActionBar = styled.div`
@@ -234,49 +444,34 @@ const FlaggedItem = styled.li<{ severity?: 'high' | 'medium' | 'low' }>`
     '#f1faee'};
   border-radius: 4px;
 `;
-const MetricValue = styled.div`
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1c1c1c;
-  margin-bottom: 0.25rem;
-`;
 
-const MetricLabel = styled.div`
-  font-size: 0.875rem;
-  color: #6c6c6c;
-`;
+
 
 const KpiCard = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
-`;
-
-const KpiIcon = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: #f5f5f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #552a47;
+  gap: 1.25rem;
+  position: relative;
+  z-index: 1;
+  width: 100%;
 `;
 
 const HeatMapGrid = styled.div`
   display: grid;
   grid-template-columns: 130px repeat(3, 1fr);
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+  flex: 1;
+  overflow: hidden;
 `;
 
 const HeatMapHeader = styled.div`
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.5rem;
+  padding: 0.5rem 0.25rem;
   text-align: center;
   background: #f5f5f5;
-  border-radius: 4px;
+  border-radius: 6px;
 `;
 
 const HeatMapRow = styled.div`
@@ -291,19 +486,22 @@ const HeatMapLabel = styled.div`
 `;
 
 const HeatMapCell = styled.div<{ score: number }>`
-  background: ${props => {
-    if (props.score >= 4) return '#27ae60';
-    if (props.score >= 3) return '#2ecc71';
-    if (props.score >= 2.5) return '#f39c12';
-    if (props.score >= 2) return '#e67e22';
-    return '#e74c3c';
-  }};
-  border-radius: 4px;
-  color: white;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.5rem;
-  text-align: center;
+  background: ${props => {
+    if (props.score >= 4.0) return '#7ec16c';
+    if (props.score >= 3.0) return '#ffd166';
+    return '#ef476f';
+  }};
+  color: ${props => props.score >= 3.0 ? '#1c1c1c' : '#fff'};
+  border-radius: 6px;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.03);
+  }
 `;
 
 const AnonymityAlert = styled.div`
@@ -318,12 +516,17 @@ const AnonymityAlert = styled.div`
   margin-bottom: 1rem;
 `;
 const TrendBar = styled.div`
-  margin-top: 1.1rem;
+  margin-top: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
 `;
 const TrendRow = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
 `;
 const TrendLabel = styled.div`
   width: 70px;
@@ -333,16 +536,20 @@ const TrendLabel = styled.div`
 `;
 const TrendFill = styled.div<{ width: number; color?: string }>`
   height: 14px;
-  background: #552a47;
+  background: linear-gradient(90deg, #5e3b5e 0%, #7a4e7a 100%);
   border-radius: 8px;
   margin: 0 12px 0 0;
   width: ${({ width }) => width}%;
+  transition: width 0.3s ease;
+  box-shadow: 0 2px 4px rgba(85, 42, 71, 0.2);
 `;
 const TrendValue = styled.div`
   width: 60px;
   font-weight: 700;
   color: #444;
 `;
+
+
 
 // Type for filter state
 interface DashboardFilters {
@@ -353,7 +560,20 @@ interface DashboardFilters {
 }
 
 const AdminDashboard: React.FC = () => {
+  // const navigate = useNavigate();
+  
+  // Apply custom scrollbar styling
+  return (
+    <>
+      <GlobalScrollbarStyle />
+      <AdminDashboardContent />
+    </>
+  );
+};
+
+const AdminDashboardContent: React.FC = () => {
   const navigate = useNavigate();
+  
   // Dynamically import the Questions and Surveys collections for client-side use
   const [QuestionsCollection, setQuestionsCollection] = useState<any>(null);
   const [SurveysCollection, setSurveysCollection] = useState<any>(null);
@@ -365,6 +585,34 @@ const AdminDashboard: React.FC = () => {
     role: 'all',
     survey: 'all'
   });
+  
+  // Temporary filter state for apply/reset functionality
+  const [tempFilters, setTempFilters] = useState<DashboardFilters>({
+    site: 'all',
+    department: 'all',
+    role: 'all',
+    survey: 'all'
+  });
+  
+  // Apply filters
+  const applyFilters = () => {
+    setFilters(tempFilters);
+    // Here you would typically fetch filtered data or update the dashboard
+    console.log('Filters applied:', tempFilters);
+  };
+  
+  // Reset filters
+  const resetFilters = () => {
+    const defaultFilters = {
+      site: 'all',
+      department: 'all',
+      role: 'all',
+      survey: 'all'
+    };
+    setTempFilters(defaultFilters);
+    setFilters(defaultFilters);
+    console.log('Filters reset to default');
+  };
   
   // Anonymity warning state
   const [showAnonymityWarning, setShowAnonymityWarning] = useState(false);
@@ -412,14 +660,13 @@ const AdminDashboard: React.FC = () => {
   // Dynamic stats
   const totalResponses = responses.length;
   const completedResponses = responses.filter(r => r.completed).length;
-  const pendingResponses = totalResponses - completedResponses;
   const uniqueParticipants = new Set(responses.map(r => r.userId)).size;
 
   const stats = [
     { label: 'Total Surveys', value: surveys.length, icon: FaClipboardList, link: '/admin/surveys/all' },
     { label: 'Active Surveys', value: activeSurveys.length, icon: FaCalendarAlt, link: '/admin/surveys/all' },
     { label: 'Question Bank', value: totalQuestions, icon: FaQuestionCircle, link: '/admin/questions/all' },
-    { label: 'Participants', value: uniqueParticipants, icon: FaUsers, link: '/admin/analytics' },
+    { label: 'Participants', value: uniqueParticipants, icon: FaUsers, link: '/admin/analytics' }
   ];
 
   // Participation percentage
@@ -452,21 +699,15 @@ const AdminDashboard: React.FC = () => {
     { id: 5, text: 'Manager Feedback score critically low at 2.5', severity: 'low' as const }
   ];
 
-  // Handle filter change
-  const handleFilterChange = (filterName: keyof DashboardFilters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterName]: e.target.value
-    }));
-  };
+
 
   return (
     <AdminLayout>
-      <DashboardBg>
+      <div className="dashboard-bg">
         {/* Survey Countdown Header */}
         <GoldHeaderCard>
           <div>
-            <HeaderLabel>MAY '25</HeaderLabel>
+            <HeaderLabel>MAY 25</HeaderLabel>
             <HeaderTitle>BIOPTRICS Employee Survey</HeaderTitle>
             <HeaderEnds>
               ENDS IN: <Countdown end={new Date('2025-05-31T23:59:59')} />
@@ -488,47 +729,85 @@ const AdminDashboard: React.FC = () => {
           </QuickActionBar>
         </GoldHeaderCard>
         
-        {/* Filter Bar */}
-        <FilterBar>
-          <FaFilter style={{ color: '#6c6c6c' }} />
-          <FilterSelect value={filters.site} onChange={handleFilterChange('site')}>
-            <option value="all">All Sites</option>
-            <option value="rainy-river">Rainy River</option>
-            <option value="new-afton">New Afton</option>
-            <option value="corporate">Corporate</option>
-          </FilterSelect>
+        {/* Filter Section */}
+        <FilterContainer>
+          <FilterHeader>
+            <FaFilter />
+            <span>Dashboard Filters</span>
+          </FilterHeader>
           
-          <FilterSelect value={filters.department} onChange={handleFilterChange('department')}>
-            <option value="all">All Departments</option>
-            <option value="engineering">Engineering</option>
-            <option value="operations">Operations</option>
-            <option value="hr">Human Resources</option>
-            <option value="finance">Finance</option>
-          </FilterSelect>
+          <FilterContent isOpen={true}>
+            <FilterGroup>
+              <FilterLabel htmlFor="site-filter">Site</FilterLabel>
+              <FilterSelect 
+                id="site-filter"
+                value={tempFilters.site} 
+                onChange={(e) => setTempFilters({...tempFilters, site: e.target.value})}
+              >
+                <option value="all">All Sites</option>
+                <option value="rainy-river">Rainy River</option>
+                <option value="new-afton">New Afton</option>
+                <option value="corporate">Corporate</option>
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel htmlFor="department-filter">Department</FilterLabel>
+              <FilterSelect 
+                id="department-filter"
+                value={tempFilters.department} 
+                onChange={(e) => setTempFilters({...tempFilters, department: e.target.value})}
+              >
+                <option value="all">All Departments</option>
+                <option value="engineering">Engineering</option>
+                <option value="operations">Operations</option>
+                <option value="hr">Human Resources</option>
+                <option value="finance">Finance</option>
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel htmlFor="role-filter">Role</FilterLabel>
+              <FilterSelect 
+                id="role-filter"
+                value={tempFilters.role} 
+                onChange={(e) => setTempFilters({...tempFilters, role: e.target.value})}
+              >
+                <option value="all">All Roles</option>
+                <option value="manager">Managers</option>
+                <option value="supervisor">Supervisors</option>
+                <option value="engineer">Engineers</option>
+                <option value="analyst">Analysts</option>
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel htmlFor="survey-filter">Survey Period</FilterLabel>
+              <FilterSelect 
+                id="survey-filter"
+                value={tempFilters.survey} 
+                onChange={(e) => setTempFilters({...tempFilters, survey: e.target.value})}
+              >
+                <option value="all">Current Survey</option>
+                <option value="q1-2025">Q1 2025</option>
+                <option value="q4-2024">Q4 2024</option>
+                <option value="q3-2024">Q3 2024</option>
+              </FilterSelect>
+            </FilterGroup>
+          </FilterContent>
           
-          <FilterSelect value={filters.role} onChange={handleFilterChange('role')}>
-            <option value="all">All Roles</option>
-            <option value="manager">Managers</option>
-            <option value="supervisor">Supervisors</option>
-            <option value="engineer">Engineers</option>
-            <option value="analyst">Analysts</option>
-          </FilterSelect>
-          
-          <FilterSelect value={filters.survey} onChange={handleFilterChange('survey')}>
-            <option value="all">Current Survey</option>
-            <option value="q1-2025">Q1 2025</option>
-            <option value="q4-2024">Q4 2024</option>
-            <option value="q3-2024">Q3 2024</option>
-          </FilterSelect>
-        </FilterBar>
+          <FilterActions>
+            <FilterButton primary onClick={() => applyFilters()}>
+              <FaCheck /> Apply Filters
+            </FilterButton>
+            <FilterButton onClick={() => resetFilters()}>
+              <FaUndo /> Reset
+            </FilterButton>
+          </FilterActions>
+        </FilterContainer>
         
-        {/* Enhanced Dashboard Summary */}
-        <Card style={{ marginBottom: '24px' }}>
-          <SectionTitle>
-            <FaTachometerAlt size={16} /> Enhanced Dashboard
-          </SectionTitle>
-          <AdminDashboardSummary organizationId={undefined} />
-        </Card>
+        {/* Enhanced Dashboard Summary - Hidden to avoid duplicate sections */}
+        {/* This section was showing duplicate content of the Response Trends and Survey Types sections */}
         
         {/* Anonymity Alert */}
         {showAnonymityWarning && (
@@ -539,27 +818,276 @@ const AdminDashboard: React.FC = () => {
         )}
         
         {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          {stats.map((stat) => (
-            <Card key={stat.label} onClick={() => navigate(stat.link)} style={{ cursor: 'pointer' }}>
-              <KpiCard>
-                <KpiIcon>
-                  <stat.icon size={24} />
-                </KpiIcon>
-                <div>
-                  <MetricValue>{stat.value}</MetricValue>
-                  <MetricLabel>{stat.label}</MetricLabel>
-                </div>
-              </KpiCard>
-            </Card>
-          ))}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(4, 1fr)', 
+          gap: '16px', 
+          margin: '24px 0 40px 0',
+          background: 'linear-gradient(135deg, rgba(248, 248, 252, 0.9) 0%, rgba(252, 248, 252, 0.9) 100%)',
+          padding: '24px 24px 50px 24px',
+          borderRadius: '16px',
+          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.06)',
+          alignItems: 'stretch',
+          border: '1px solid rgba(0, 0, 0, 0.05)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <style jsx>{`
+            @media (max-width: 1024px) {
+              div {
+                grid-template-columns: repeat(2, 1fr);
+              }
+            }
+            @media (max-width: 480px) {
+              div {
+                grid-template-columns: 1fr;
+              }
+            }
+          `}</style>
+          {stats.map((stat, index) => {
+            // Generate unique gradient for each card
+            const gradients = [
+              'linear-gradient(135deg, #552a47 0%, #7a4e7a 100%)',
+              'linear-gradient(135deg, #2a5547 0%, #4e7a6a 100%)',
+              'linear-gradient(135deg, #2a4755 0%, #4e6a7a 100%)',
+              'linear-gradient(135deg, #472a55 0%, #6a4e7a 100%)'
+            ];
+            
+                  
+            
+            return (
+              <Card 
+                key={stat.label} 
+                onClick={() => navigate(stat.link)} 
+                style={{ 
+                  cursor: 'pointer', 
+                  position: 'relative', 
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+                  transition: 'all 0.3s ease',
+                  border: 'none',
+                  height: '100px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '10px',
+                  boxShadow: '0 3px 10px rgba(0, 0, 0, 0.05)',
+                  transform: 'translateZ(0)',
+                  backfaceVisibility: 'hidden',
+                  padding: '12px 16px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
+                  const viewDetailsEl = e.currentTarget.querySelector('[data-view-details]') as HTMLElement;
+                  if (viewDetailsEl) {
+                    viewDetailsEl.style.background = 'rgba(85, 42, 71, 0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.06)';
+                  const viewDetailsEl = e.currentTarget.querySelector('[data-view-details]') as HTMLElement;
+                  if (viewDetailsEl) {
+                    viewDetailsEl.style.background = 'rgba(0, 0, 0, 0.03)';
+                  }
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: gradients[index % gradients.length],
+                  zIndex: 0
+                }} />
+                
+                <KpiCard>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    height: '100%',
+                    width: '100%',
+                    padding: '4px 0'
+                  }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start', 
+                      gap: '14px', 
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        borderRadius: '4px', 
+                        background: 'transparent',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        color: '#552a47',
+                        boxShadow: 'none'
+                      }}>
+                        <stat.icon size={16} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          fontSize: '22px', 
+                          fontWeight: 700, 
+                          color: '#333', 
+                          marginBottom: '1px', 
+                          lineHeight: '1.1' 
+                        }}>
+                          {stat.value}
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          color: '#666',
+                          fontWeight: '500'
+                        }}>
+                          {stat.label}
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      data-view-details
+                      style={{ 
+                        fontSize: '0.7rem', 
+                        color: '#4a5568',
+                        marginTop: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        fontWeight: '500',
+                        background: 'rgba(0, 0, 0, 0.03)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        width: 'fit-content',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>View details</span>
+                      <FaChevronRight size={8} />
+                    </div>
+                  </div>
+                </KpiCard>
+              </Card>
+            );
+          })}
         </div>
-        
-        <MainGrid>
-          {/* Survey Participation */}
-          <QuarterWidthCard>
+      
+      <MainGrid style={{ marginTop: '16px' }}>
+        {/* First Row: Engagement Score Trend and Heat Map with Recent Activity */}
+          <QuarterWidthCard style={{ gridColumn: '1 / span 3' }}>
             <SectionTitle>
-              <FaChartBar size={14} /> Survey Participation
+              <FaChartLine size={14} /> Engagement Score Trend
+            </SectionTitle>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', background: 'rgba(248, 248, 252, 0.5)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ color: '#666', fontSize: 14, flex: 1 }}>Track how employee engagement has changed over recent surveys.</div>
+              <div style={{ fontWeight: 700, color: '#444', whiteSpace: 'nowrap', background: 'linear-gradient(135deg, #552a47 0%, #7a4e7a 100%)', padding: '6px 12px', borderRadius: '16px', color: 'white', fontSize: '13px' }}>AVERAGE: 4/5</div>
+            </div>
+
+            <TrendBar>
+              {(() => {
+                const data = [
+                  { month: 'Sep', score: 4.2 },
+                  { month: 'Jun', score: 4.0 },
+                  { month: 'Mar', score: 3.6 },
+                ];
+                return data.map((d, i) => (
+                  <TrendRow key={i}>
+                    <TrendLabel>{d.month}</TrendLabel>
+                    <TrendFill width={d.score * 20} />
+                    <TrendValue>{d.score}/5</TrendValue>
+                  </TrendRow>
+                ));
+              })()}
+            </TrendBar>
+          </QuarterWidthCard>
+          
+          {/* Heat Map */}
+          <HalfWidthCard style={{ gridColumn: '4 / span 6' }}>
+            <SectionTitle>
+              <FaChartLine size={14} /> Engagement Score Heat Map
+            </SectionTitle>
+            
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center', 
+              marginBottom: '0.5rem' 
+            }}>
+              <div style={{ fontSize: '0.875rem', color: '#6c6c6c' }}>
+                Track how employee engagement has changed over recent surveys with a quick view of average scores and trends.
+              </div>
+              <div style={{ fontWeight: 600, color: '#1c1c1c' }}>
+                AVERAGE: 4/5
+              </div>
+            </div>
+            
+            <HeatMapGrid>
+              <HeatMapHeader style={{ background: 'transparent' }}></HeatMapHeader>
+              <HeatMapHeader>JAN 25</HeatMapHeader>
+              <HeatMapHeader>SEP 24</HeatMapHeader>
+              <HeatMapHeader>MAY 24</HeatMapHeader>
+              
+              {heatMapData.map((row, index) => (
+                <HeatMapRow key={index}>
+                  <HeatMapLabel>{row.theme}</HeatMapLabel>
+                  {row.surveyScores.map((score, i) => (
+                    <HeatMapCell key={i} score={score}>
+                      {score.toFixed(1)}
+                    </HeatMapCell>
+                  ))}
+                </HeatMapRow>
+              ))}
+            </HeatMapGrid>
+          </HalfWidthCard>
+          
+          {/* Recent Activity - Positioned at top right after Heat Map */}
+          <QuarterWidthCard style={{ gridColumn: '10 / span 3' }}>
+            <SectionTitle>
+              <FaBell size={14} /> Recent Activity
+            </SectionTitle>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflow: 'auto', maxHeight: '400px' }}>
+              {[
+                { time: '2 hours ago', action: 'Jane Smith created a new survey: "Q2 Employee Feedback"' },
+                { time: '5 hours ago', action: 'John Davis exported survey results for "Leadership Assessment"' },
+                { time: 'Yesterday', action: 'Admin sent 45 new invitations to Operations department' },
+                { time: '2 days ago', action: 'Survey threshold alert: Communication score below target' },
+                { time: '3 days ago', action: 'Mike Johnson added 3 new questions to the Question Bank' }
+              ].map((activity, index) => (
+                <div key={index} style={{ 
+                  padding: '0.75rem', 
+                  borderLeft: '3px solid #5e3b5e',
+                  background: 'rgba(94, 59, 94, 0.05)',
+                  borderRadius: '6px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }} 
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateX(3px)';
+                  e.currentTarget.style.background = 'rgba(94, 59, 94, 0.08)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.background = 'rgba(94, 59, 94, 0.05)';
+                }}>
+                  <div style={{ fontSize: '0.75rem', color: '#5e3b5e', marginBottom: '0.25rem', fontWeight: '600' }}>
+                    {activity.time}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                    {activity.action}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </QuarterWidthCard>
+          
+          {/* Second Row: Survey Participation, Responses by Site, Flagged Issues */}
+          <QuarterWidthCard style={{ gridColumn: '1 / span 3', marginTop: '20px' }}>
+            <SectionTitle>
+              <FaChartLine size={14} /> Survey Participation
             </SectionTitle>
             <div style={{ fontSize: '0.875rem', color: '#6c6c6c', marginBottom: '1rem' }}>
               Quickly see how many participants have completed the survey.
@@ -567,29 +1095,21 @@ const AdminDashboard: React.FC = () => {
             
             <DonutChart>
               <svg viewBox="0 0 36 36" style={{ width: '140px', height: '140px' }}>
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#f5f5f5"
-                  strokeWidth="3.6"
-                  strokeDasharray="100, 100"
-                />
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#7ec16c"
-                  strokeWidth="3.8"
+                <circle cx="18" cy="18" r="16" fill="#f5f5f5" />
+                <circle 
+                  cx="18" 
+                  cy="18" 
+                  r="16" 
+                  fill="transparent"
+                  stroke="#7ec16c" 
+                  strokeWidth={3}
                   strokeDasharray={`${participationPct}, 100`}
-                  strokeLinecap="round"
+                  transform="rotate(-90 18 18)"
                 />
-                <text x="18" y="18" textAnchor="middle" fontSize="10" fontWeight="700" fill="#1c1c1c">
+                <text x={18} y={18} textAnchor="middle" fontSize={10} fontWeight={700} fill="#1c1c1c">
                   {participationPct}%
                 </text>
-                <text x="18" y="22" textAnchor="middle" fontSize="4" fill="#6c6c6c">
+                <text x={18} y={22} textAnchor="middle" fontSize={4} fill="#6c6c6c">
                   COMPLETED
                 </text>
               </svg>
@@ -597,20 +1117,20 @@ const AdminDashboard: React.FC = () => {
             
             <DonutLegend>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 10, height: 10, background: '#7ec16c', borderRadius: 2 }} />
+                <div style={{ width: '10px', height: '10px', background: '#7ec16c', borderRadius: '2px' }} />
                 <div>COMPLETED</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 10, height: 10, background: '#f5f5f5', borderRadius: 2 }} />
+                <div style={{ width: '10px', height: '10px', background: '#f5f5f5', borderRadius: '2px' }} />
                 <div>PENDING</div>
               </div>
             </DonutLegend>
           </QuarterWidthCard>
           
           {/* Responses by Site */}
-          <HalfWidthCard>
+          <HalfWidthCard style={{ gridColumn: '4 / span 6', marginTop: '50px' }}>
             <SectionTitle>
-              <FaChartBar size={14} /> Responses by Site
+              <FaChartLine size={14} /> Responses by Site
             </SectionTitle>
             <div style={{ fontSize: '0.875rem', color: '#6c6c6c', marginBottom: '1rem' }}>
               Breakdown of total responses received from each site or department to help monitor participation across locations.
@@ -646,7 +1166,7 @@ const AdminDashboard: React.FC = () => {
           </HalfWidthCard>
           
           {/* Flagged Issues */}
-          <QuarterWidthCard>
+          <QuarterWidthCard style={{ gridColumn: '10 / span 3', marginTop: '20px' }}>
             <SectionTitle>
               <FaExclamationTriangle size={14} color="#e74c3c" /> Flagged Issues
             </SectionTitle>
@@ -661,119 +1181,390 @@ const AdminDashboard: React.FC = () => {
               <FlaggedItem color="#ff9800"><span>⚠️</span> Manager Feedback score critically low at 2.5</FlaggedItem>
             </FlaggedList>
           </QuarterWidthCard>
-          <QuarterWidthCard>
-            <SectionTitle>Engagement Score Trend</SectionTitle>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ color: '#666', fontSize: 15 }}>Track how employee engagement has changed over recent surveys.</div>
-              <div style={{ fontWeight: 700, color: '#444' }}>AVERAGE: 4/5</div>
-            </div>
-
-            <TrendBar>
-              {(() => {
-                const data = [
-                  { month: 'Sep', score: 4.2 },
-                  { month: 'Jun', score: 4.0 },
-                  { month: 'Mar', score: 3.6 },
-                ];
-                return data.map((d, i) => {
-                  return (
-                    <TrendRow key={i}>
-                      <TrendLabel>{d.month}</TrendLabel>
-                      <TrendFill width={d.score * 20} />
-                      <TrendValue>{d.score}/5</TrendValue>
-                    </TrendRow>
-                  );
-                });
-              })()}
-            </TrendBar>
-          </QuarterWidthCard>
-          {/* Heat Map */}
-          <HalfWidthCard>
-            <SectionTitle>
-              <FaChartBar size={14} /> Engagement Score Heat Map
-            </SectionTitle>
-            
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              alignItems: 'center', 
-              marginBottom: '0.75rem' 
-            }}>
-              <div style={{ fontSize: '0.875rem', color: '#6c6c6c' }}>
-                Track how employee engagement has changed over recent surveys with a quick view of average scores and trends.
-              </div>
-              <div style={{ fontWeight: 600, color: '#1c1c1c' }}>
-                AVERAGE: 4/5
-              </div>
-            </div>
-            
-            <HeatMapGrid>
-              <HeatMapHeader style={{ background: 'transparent' }}></HeatMapHeader>
-              <HeatMapHeader>JAN '25</HeatMapHeader>
-              <HeatMapHeader>SEP '24</HeatMapHeader>
-              <HeatMapHeader>MAY '24</HeatMapHeader>
+          
+          {/* Response Trends Section */}
+          <HalfWidthCard style={{ gridColumn: '1 / span 6', marginTop: '100px' }}>
+            <TrendContainer>
+              <TrendHeader>
+                <TrendTitle>
+                  <FaChartLine size={16} /> Response Trends
+                </TrendTitle>
+                <TrendTabsContainer>
+                  <TrendTab active>Week</TrendTab>
+                  <TrendTab>Month</TrendTab>
+                  <TrendTab>Quarter</TrendTab>
+                </TrendTabsContainer>
+              </TrendHeader>
               
-              {heatMapData.map((row, index) => (
-                <HeatMapRow key={index}>
-                  <HeatMapLabel>{row.theme}</HeatMapLabel>
-                  {row.surveyScores.map((score, i) => (
-                    <HeatMapCell key={i} score={score}>
-                      {score.toFixed(1)}
-                    </HeatMapCell>
-                  ))}
-                </HeatMapRow>
-              ))}
-            </HeatMapGrid>
+              <div style={{ 
+                fontSize: '0.875rem', 
+                color: '#666', 
+                marginBottom: '15px',
+                background: 'rgba(85, 42, 71, 0.03)',
+                padding: '10px 15px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <FaInfoCircle size={14} color="#552a47" />
+                <span>Track response rates and completion trends over time across all surveys.</span>
+              </div>
+              
+              <TrendChart>
+                {[
+                  { label: 'May', responses: 85, completed: 72 },
+                  { label: 'Jun', responses: 95, completed: 80 },
+                  { label: 'Jul', responses: 110, completed: 92 },
+                  { label: 'Aug', responses: 105, completed: 90 },
+                  { label: 'Sep', responses: 120, completed: 98 }
+                ].map((month, index) => (
+                  <ResponseTrendBar key={index}>
+                    <ResponseTrendLabel>{month.label}</ResponseTrendLabel>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <TrendBarFill width={(month.responses/120)*80} color="linear-gradient(90deg, #552a47 0%, #7a4e7a 100%)">
+                          <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{month.responses}</span>
+                        </TrendBarFill>
+                        <ResponseTrendValue>Total</ResponseTrendValue>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <TrendBarFill width={(month.completed/120)*80} color="linear-gradient(90deg, #2b6cb0 0%, #4299e1 100%)">
+                          <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{month.completed}</span>
+                        </TrendBarFill>
+                        <ResponseTrendValue>Completed</ResponseTrendValue>
+                      </div>
+                    </div>
+                  </ResponseTrendBar>
+                ))}
+              </TrendChart>
+              
+              <TrendLegend>
+                <LegendItem>
+                  <LegendColor color="#552a47" />
+                  <span>Total Responses</span>
+                </LegendItem>
+                <LegendItem>
+                  <LegendColor color="#2b6cb0" />
+                  <span>Completed</span>
+                </LegendItem>
+              </TrendLegend>
+            </TrendContainer>
           </HalfWidthCard>
           
-          {/* Recent Activity */}
-          <HalfWidthCard>
-            <SectionTitle>
-              <FaBell size={14} /> Recent Activity
-            </SectionTitle>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {[
-                { time: '2 hours ago', action: 'Jane Smith created a new survey: "Q2 Employee Feedback"' },
-                { time: '5 hours ago', action: 'John Davis exported survey results for "Leadership Assessment"' },
-                { time: 'Yesterday', action: 'Admin sent 45 new invitations to Operations department' },
-                { time: '2 days ago', action: 'Survey threshold alert: Communication score below target' },
-                { time: '3 days ago', action: 'Mike Johnson added 3 new questions to the Question Bank' }
-              ].map((activity, index) => (
-                <div key={index} style={{ 
-                  padding: '0.75rem', 
-                  borderLeft: '3px solid #f0f0f0',
-                  background: '#f9f9f9',
-                  borderRadius: '4px'
+          {/* Survey Types Section */}
+          <HalfWidthCard style={{ gridColumn: '7 / span 6', marginTop: '100px' }}>
+            <TrendContainer>
+              <TrendHeader>
+                <TrendTitle>
+                  <FaClipboardList size={16} /> Survey Types
+                </TrendTitle>
+                <div style={{ 
+                  background: '#552a47', 
+                  color: 'white', 
+                  padding: '6px 12px', 
+                  borderRadius: '16px', 
+                  fontSize: '13px',
+                  fontWeight: '600'
                 }}>
-                  <div style={{ fontSize: '0.75rem', color: '#6c6c6c', marginBottom: '0.25rem' }}>
-                    {activity.time}
-                  </div>
-                  <div style={{ fontSize: '0.875rem' }}>
-                    {activity.action}
-                  </div>
+                  Last 90 Days
                 </div>
-              ))}
-            </div>
+              </TrendHeader>
+              
+              <div style={{ 
+                fontSize: '0.875rem', 
+                color: '#666', 
+                marginBottom: '15px',
+                background: 'rgba(85, 42, 71, 0.03)',
+                padding: '10px 15px',
+                borderRadius: '8px'
+              }}>
+                Overview of survey performance by type and category across the organization.
+              </div>
+              
+              <SurveyTypesContainer>
+                {[
+                  { 
+                    title: 'Employee Engagement', 
+                    icon: FaUsers, 
+                    color: '#552a47',
+                    stats: [
+                      { label: 'Avg. Score', value: '4.2' },
+                      { label: 'Completion', value: '92%' }
+                    ]
+                  },
+                  { 
+                    title: 'Leadership Assessment', 
+                    icon: FaChartLine, 
+                    color: '#2b6cb0',
+                    stats: [
+                      { label: 'Avg. Score', value: '3.8' },
+                      { label: 'Completion', value: '85%' }
+                    ]
+                  },
+                  { 
+                    title: 'Onboarding Feedback', 
+                    icon: FaClipboardList, 
+                    color: '#2f855a',
+                    stats: [
+                      { label: 'Avg. Score', value: '4.5' },
+                      { label: 'Completion', value: '96%' }
+                    ]
+                  },
+                  { 
+                    title: 'Work-Life Balance', 
+                    icon: FaCalendarAlt, 
+                    color: '#e53e3e',
+                    stats: [
+                      { label: 'Avg. Score', value: '3.2' },
+                      { label: 'Completion', value: '88%' }
+                    ]
+                  }
+                ].map((type, index) => (
+                  <SurveyTypeCard key={index}>
+                    <SurveyTypeHeader>
+                      <SurveyTypeTitle>{type.title}</SurveyTypeTitle>
+                      <SurveyTypeIcon color={type.color}>
+                        <type.icon size={18} />
+                      </SurveyTypeIcon>
+                    </SurveyTypeHeader>
+                    
+                    <SurveyTypeStats>
+                      {type.stats.map((stat, i) => (
+                        <SurveyTypeStat key={i}>
+                          <SurveyTypeValue>{stat.value}</SurveyTypeValue>
+                          <SurveyTypeLabel>{stat.label}</SurveyTypeLabel>
+                        </SurveyTypeStat>
+                      ))}
+                    </SurveyTypeStats>
+                  </SurveyTypeCard>
+                ))}
+              </SurveyTypesContainer>
+            </TrendContainer>
           </HalfWidthCard>
         </MainGrid>
-      </DashboardBg>
+      </div>
     </AdminLayout>
   );
 }
 
-const Bar = styled.div<{ value: number; color: string }>`
-  height: 14px;
-  width: ${p => p.value * 2}px;
-  background: ${p => p.color};
-  border-radius: 7px;
-  transition: width 0.5s;
+
+
+const TrendContainer = styled.div`
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 `;
-const BarValue = styled.div`
-  font-size: 1rem;
+
+const TrendHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+const TrendTitle = styled.h3`
+  font-size: 18px;
   font-weight: 600;
-  color: #888;
-  margin-left: 8px;
+  color: #333;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  svg {
+    color: #552a47;
+  }
+`;
+
+const TrendTabsContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  background: #f5f5f5;
+  padding: 4px;
+  border-radius: 8px;
+`;
+
+const TrendTab = styled.button<{ active?: boolean }>`
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  background: ${props => props.active ? '#552a47' : 'transparent'};
+  color: ${props => props.active ? 'white' : '#666'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${props => props.active ? '#552a47' : '#e0e0e0'};
+  }
+`;
+
+const TrendChart = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 10px;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-image: linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 20% 25%;
+    z-index: 0;
+    pointer-events: none;
+  }
+`;
+
+const ResponseTrendBar = styled.div`
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+`;
+
+const ResponseTrendLabel = styled.div`
+  width: 60px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+`;
+
+const TrendBarFill = styled.div<{ width: number; color?: string }>`
+  height: 30px;
+  width: ${props => props.width}%;
+  background: ${props => props.color || 'linear-gradient(90deg, #552a47 0%, #7a4e7a 100%)'};
+  border-radius: 6px;
+  position: relative;
+  transition: width 0.5s ease;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  box-shadow: 0 2px 8px rgba(85, 42, 71, 0.15);
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%);
+    border-radius: 6px;
+  }
+`;
+
+const ResponseTrendValue = styled.div`
+  margin-left: 10px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+`;
+
+const TrendLegend = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-top: 15px;
+  font-size: 13px;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+`;
+
+const LegendColor = styled.div<{ color: string }>`
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: ${props => props.color};
+`;
+
+const SurveyTypesContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+`;
+
+const SurveyTypeCard = styled.div`
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  }
+`;
+
+const SurveyTypeHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const SurveyTypeTitle = styled.div`
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+`;
+
+const SurveyTypeIcon = styled.div<{ color: string }>`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: ${props => props.color};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+`;
+
+const SurveyTypeStats = styled.div`
+  display: flex;
+  gap: 15px;
+`;
+
+const SurveyTypeStat = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const SurveyTypeValue = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+`;
+
+const SurveyTypeLabel = styled.div`
+  font-size: 12px;
+  color: #777;
 `;
 
 export default AdminDashboard;
