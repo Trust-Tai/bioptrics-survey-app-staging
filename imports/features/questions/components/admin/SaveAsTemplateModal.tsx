@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { Question } from '/imports/features/questions/api/questions.methods.client';
+import { QuestionTemplates } from '/imports/features/questions/api/questionTemplates';
 
 interface SaveAsTemplateModalProps {
   isOpen: boolean;
@@ -14,6 +15,25 @@ const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({ isOpen, onClo
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Subscribe to question templates
+  useEffect(() => {
+    if (isOpen) {
+      const subscription = Meteor.subscribe('questionTemplates.all', {
+        onReady: () => setIsSubscribed(true),
+        onError: (error: Meteor.Error) => {
+          console.error('Error subscribing to question templates:', error);
+          setError('Failed to load templates');
+        }
+      });
+      
+      return () => {
+        subscription.stop();
+        setIsSubscribed(false);
+      };
+    }
+  }, [isOpen]);
 
   const handleSave = () => {
     if (!name.trim()) {

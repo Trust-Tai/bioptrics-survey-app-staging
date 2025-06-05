@@ -29,6 +29,9 @@ export interface Question {
   collectFeedback?: boolean;
   feedbackType?: 'text' | 'rating' | 'file';
   feedbackPrompt?: string;
+  // Demographics collection
+  collectDemographics?: boolean;
+  selectedDemographics?: string[];
 }
 
 // Define the QuestionVersion interface to match what's expected by the DB

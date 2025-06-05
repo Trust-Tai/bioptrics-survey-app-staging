@@ -14,6 +14,7 @@ export interface QuestionTemplate {
 
 export const QuestionTemplates = new Mongo.Collection<QuestionTemplate>('questionTemplates');
 
+// @ts-ignore - attachSchema may not be recognized by TypeScript but is available in Meteor's Mongo collections
 QuestionTemplates.attachSchema?.(new SimpleSchema({
   name: { type: String },
   description: { type: String, optional: true },
@@ -31,4 +32,16 @@ Meteor.methods({
     if (!this.userId) throw new Meteor.Error('not-authorized');
     return QuestionTemplates.find({}, { sort: { createdAt: -1 } }).fetch();
   },
+  'questionTemplates.remove'(templateId: string) {
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    return QuestionTemplates.remove({ _id: templateId });
+  },
 });
+
+// Add publications for question templates
+if (Meteor.isServer) {
+  Meteor.publish('questionTemplates.all', function() {
+    if (!this.userId) return this.ready();
+    return QuestionTemplates.find({}, { sort: { createdAt: -1 } });
+  });
+}

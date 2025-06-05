@@ -151,7 +151,7 @@ const AllSurveys: React.FC = () => {
               style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
             >
               <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
-              Add
+              Add Survey
             </button>
           </div>
           {/* Notification Bar */}

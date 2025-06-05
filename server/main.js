@@ -10,12 +10,17 @@ import '../imports/features/surveys/api/surveyResponses';
 import { WPSCategories } from '../imports/api/wpsCategories';
 import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
+import '../imports/features/wps-framework/api/wpsCategories.publications';
 import '../imports/api/surveyThemes';
 import '../imports/features/surveys/api/surveys';
 import '../imports/api/users.methods';
 import '../imports/features/organization/api/organizationSettings';
 // Import Question Tags API
 import '../imports/features/question-tags/api';
+// Import Question Categories API
+import '../imports/features/question-categories/api';
+// Import Question Templates API
+import '../imports/features/questions/api/questionTemplates';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

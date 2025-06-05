@@ -36,11 +36,14 @@ import AllSurveys from './admin/AllSurveys';
 import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
 import QuestionBuilder from '../features/questions/components/admin/QuestionBuilder';
+import EnhancedQuestionBuilder from '../features/questions/components/admin/EnhancedQuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
 import SurveyManagementDashboard from './admin/SurveyManagementDashboard';
 import LogoutPage from './LogoutPage';
 import QuestionTagsPage from '../pages/admin/QuestionTagsPage';
+import QuestionCategoriesPage from '../pages/admin/QuestionCategoriesPage';
+import QuestionTemplatesPage from '../pages/admin/QuestionTemplatesPage';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -162,15 +165,17 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
         <Route path="/admin/surveys/responses" element={<SurveyResponses />} />
-        <Route path="/admin/surveys/builder" element={<SurveyBuilder />} />
+        <Route path="/admin/surveys/builder" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/surveys/manage/:surveyId" element={<SurveyManagementDashboardWrapper />} />
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
-        <Route path="/admin/questions/builder" element={<QuestionBuilder />} />
+        <Route path="/admin/questions/builder" element={<EnhancedQuestionBuilder />} />
         <Route path="/admin/questions/builder/:id" element={<QuestionBuilder />} />
         <Route path="/admin/questions/tags" element={<QuestionTagsPage />} />
+        <Route path="/admin/questions/categories" element={<QuestionCategoriesPage />} />
+        <Route path="/admin/questions/templates" element={<QuestionTemplatesPage />} />
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         <Route path="/admin/settings" element={<Setting />} />
@@ -196,10 +201,7 @@ const App: React.FC = () => (
 );
 
 // Wrapper for SurveyBuilder to extract :id param
-const SurveyBuilderWrapper: React.FC = () => {
-  const { surveyId } = useParams<{ surveyId: string }>();
-  return <SurveyBuilder editId={surveyId} />;
-};
+import SurveyBuilderWrapper from './admin/SurveyBuilderWrapper';
 
 // Wrapper for SurveyManagementDashboard to extract :surveyId param
 const SurveyManagementDashboardWrapper: React.FC = () => {

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye, FaFileAlt, FaCheckCircle } from 'react-icons/fa';
 import { ImportQuestions } from '../../features/questions/components/admin';
 import DashboardBg from './DashboardBg';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -9,17 +9,9 @@ import { Meteor } from 'meteor/meteor';
 import { Questions } from '../../features/questions/api/questions';
 import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
 import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';
+import DOMPurify from 'dompurify';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import QuestionPreviewModal from './QuestionPreviewModal';
-
-// This interface is for display only, based on the latest version of each question
-interface DisplayQuestion {
-  _id: string;
-  text: string;
-  theme: string;
-  wpsCategory: string;
-  queType: string;
-}
 
 // Tag color definitions
 const QUE_TYPE_LABELS: Record<string, string> = {
@@ -175,6 +167,17 @@ const MetaTag = styled.div`
   border-radius: 12px;
 `;
 
+const StatusTag = styled.div<{ published?: boolean }>`
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: ${props => props.published ? '#e6f7e6' : '#ffebee'};
+  color: ${props => props.published ? '#2e7d32' : '#c62828'};
+  font-weight: 500;
+`;
+
 const QuestionActions = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -259,10 +262,32 @@ const CloseButton = styled.button`
 `;
 
 // Helper function to get the latest version of a question
-const getLatestVersion = (doc: any) => {
-  if (!doc || !doc.versions || !doc.versions.length) return null;
-  const version = doc.versions.find((v: any) => v.version === doc.currentVersion);
-  return version || doc.versions[doc.versions.length - 1];
+const getLatestVersion = (question: any) => {
+  if (!question) return null;
+  if (!question.versions || !Array.isArray(question.versions) || question.versions.length === 0) return null;
+  
+  const currentVersion = question.currentVersion;
+  const latestVersion = question.versions.find((v: any) => v.version === currentVersion);
+  return latestVersion || question.versions[question.versions.length - 1];
+};
+
+// Helper function to strip HTML tags and sanitize text
+const stripHtml = (html: string): string => {
+  if (!html) return '';
+  // Create a temporary div to hold the sanitized HTML
+  const tempDiv = document.createElement('div');
+  // Sanitize the HTML to prevent XSS attacks
+  tempDiv.innerHTML = DOMPurify.sanitize(html);
+  // Return the text content only (no HTML tags)
+  return tempDiv.textContent || tempDiv.innerText || '';
+};
+
+// Helper function to truncate text to a specific length
+const truncateText = (text: string, maxLength: number = 100): string => {
+  if (!text) return '';
+  const cleanText = stripHtml(text);
+  if (cleanText.length <= maxLength) return cleanText;
+  return cleanText.substring(0, maxLength) + '...';
 };
 
 const AllQuestions: React.FC = () => {
@@ -533,13 +558,33 @@ const AllQuestions: React.FC = () => {
               return (
                 <QuestionCard key={doc._id}>
                   <QuestionHeader>
-                    <div>{wpsCategoryMap[latestVersion.category] || latestVersion.category}</div>
-                    <QuestionType>
-                      {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
-                    </QuestionType>
+                    <div>
+                      {latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
+                        ? latestVersion.categoryTags.map((catId: string) => wpsCategoryMap[catId] || catId).join(', ')
+                        : (latestVersion.category 
+                            ? wpsCategoryMap[latestVersion.category] || latestVersion.category 
+                            : 'Uncategorized')
+                      }
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
+                        <QuestionType>
+                          {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
+                        </QuestionType>
+                      )}
+                      {latestVersion.status === 'published' ? (
+                        <StatusTag published>
+                          <FaCheckCircle size={12} />
+                        </StatusTag>
+                      ) : (
+                        <StatusTag>
+                          <FaFileAlt size={12} />
+                        </StatusTag>
+                      )}
+                    </div>
                   </QuestionHeader>
                   <QuestionContent>
-                    <QuestionText>{latestVersion.questionText}</QuestionText>
+                    <QuestionText>{truncateText(latestVersion.questionText, 120)}</QuestionText>
                     <QuestionMeta>
                       {latestVersion.surveyThemes && latestVersion.surveyThemes.map((themeId: string) => (
                         <MetaTag key={themeId}>{surveyThemeMap[themeId] || themeId}</MetaTag>
@@ -551,8 +596,42 @@ const AllQuestions: React.FC = () => {
                       <ActionButton 
                         className="preview"
                         onClick={() => {
-                          setPreviewQuestion(doc);
-                          setPreviewOpen(true);
+                          // Pass the latest version of the question to the preview modal
+                          const latestVersion = getLatestVersion(doc);
+                          if (latestVersion) {
+                            // Get category names from IDs
+                            const categoryNames = latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
+                              ? latestVersion.categoryTags.map((catId: string) => wpsCategoryMap[catId] || catId)
+                              : [];
+                              
+                            // Get theme names from IDs
+                            const themeNames = latestVersion.surveyThemes && latestVersion.surveyThemes.length > 0
+                              ? latestVersion.surveyThemes.map((themeId: string) => surveyThemeMap[themeId] || themeId)
+                              : [];
+                              
+                            setPreviewQuestion({
+                              _id: doc._id,
+                              ...latestVersion,
+                              // Map fields to match what the preview modal expects
+                              text: latestVersion.questionText,
+                              questionText: latestVersion.questionText,
+                              description: latestVersion.description,
+                              questionDescription: latestVersion.description,
+                              answerType: latestVersion.responseType,
+                              responseType: latestVersion.responseType,
+                              // Handle answers based on response type
+                              answers: Array.isArray(latestVersion.options) ? latestVersion.options : [],
+                              options: latestVersion.options,
+                              // Add category and theme names
+                              categoryName: categoryNames.length > 0 ? categoryNames.join(', ') : '',
+                              themeNames: themeNames,
+                              surveyThemeNames: themeNames,
+                              // Include version info
+                              version: doc.currentVersion,
+                              currentVersion: doc.currentVersion
+                            });
+                            setPreviewOpen(true);
+                          }
                         }}
                       >
                         <FaEye size={12} style={{ marginRight: 4 }} /> Preview
@@ -590,7 +669,7 @@ const AllQuestions: React.FC = () => {
               <ModalContent>
                 <ModalHeader>
                   <h3>Import Questions</h3>
-                  <CloseButton onClick={() => setShowImportModal(false)}>u00d7</CloseButton>
+                  <CloseButton onClick={() => setShowImportModal(false)}>&times;</CloseButton>
                 </ModalHeader>
                 <ModalBody>
                   <ImportQuestions
@@ -617,7 +696,7 @@ const AllQuestions: React.FC = () => {
                   <CloseButton onClick={() => {
                     setShowDeleteConfirm(false);
                     setQuestionToDelete(null);
-                  }}>u00d7</CloseButton>
+                  }}>&times;</CloseButton>
                 </ModalHeader>
                 <ModalBody>
                   <p>Are you sure you want to delete this question? This action cannot be undone.</p>
