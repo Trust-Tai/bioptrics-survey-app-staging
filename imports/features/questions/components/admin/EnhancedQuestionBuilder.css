@@ -1,12 +1,54 @@
 .enhanced-question-builder {
   display: flex;
   flex-direction: row;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 24px;
-  background: #fff;
-  gap: 20px;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  height: calc(100vh - 100px);
+  overflow: hidden;
+}
+
+/* Edit mode styles */
+.edit-mode-header {
+  background-color: #f8f9fa;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.edit-mode-header-top {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.edit-mode-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.edit-mode-info {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #e0e0e0;
 }
 
 /* Required field styling */

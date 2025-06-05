@@ -128,7 +128,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
             id: q.id || '',
             text: q.text || '',
             type: q.type || 'text',
-            status: (q.status as 'draft' | 'published') || 'published',
+            status: q.status === 'draft' ? 'draft' : 'published',
             sectionId: q.sectionId,
             order: q.order
           };
