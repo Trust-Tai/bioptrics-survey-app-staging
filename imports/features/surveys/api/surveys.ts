@@ -23,6 +23,8 @@ export interface SurveyDoc {
   siteTextQuestions: Array<any>;
   siteTextQForm: any;
   selectedDemographics: string[];
+  selectedTheme?: string;
+  selectedCategories?: string[];
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -422,6 +424,39 @@ Meteor.methods({
 
   'surveys.remove'(surveyId: string) {
     return Surveys.remove(surveyId);
+  },
+
+  // Update an existing survey with all data including sections and questions
+  async 'surveys.update'(surveyId: string, surveyData: any) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    
+    // Validate the survey exists and user has permission
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) throw new Meteor.Error('Survey not found');
+    if (survey.createdBy !== this.userId && !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin')) {
+      throw new Meteor.Error('Not authorized');
+    }
+    
+    // Update the survey with all provided data
+    await Surveys.updateAsync(surveyId, {
+      $set: {
+        title: surveyData.title || '',
+        description: surveyData.description || '',
+        logo: surveyData.logo,
+        featuredImage: surveyData.featuredImage,
+        primaryColor: surveyData.primaryColor,
+        // Save sections and questions
+        surveySections: surveyData.surveySections || [],
+        sectionQuestions: surveyData.sectionQuestions || [],
+        // Save demographics, themes, and categories
+        selectedDemographics: surveyData.selectedDemographics || [],
+        selectedTheme: surveyData.selectedTheme,
+        selectedCategories: surveyData.selectedCategories || [],
+        updatedAt: new Date(),
+      },
+    });
+    
+    return { success: true };
   },
   // Public method to fetch survey by ID
   async 'surveys.get'(surveyId: string) {

@@ -25,7 +25,17 @@ import { WPSCategories } from '../../../features/wps-framework/api/wpsCategories
 import { Surveys } from '../../../features/surveys/api/surveys';
 
 // Import types
-import { SurveySectionItem, QuestionItem } from '../types';
+import { SurveySectionItem } from '../types';
+
+// Define QuestionItem interface locally to ensure TypeScript recognizes all properties
+interface QuestionItem {
+  id: string;
+  text: string;
+  type: string;
+  status: 'draft' | 'published';
+  sectionId?: string;
+  order?: number;
+}
 
 // Import styles
 import './EnhancedSurveyBuilder.css';
@@ -98,6 +108,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
+  const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
   // State for modals
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
@@ -125,11 +137,25 @@ const EnhancedSurveyBuilder: React.FC = () => {
     const isLoading = !questionsSub.ready() || !surveysSub.ready() || !themesSub.ready() || !categoriesSub.ready();
     
     // Fetch all available questions, themes, and categories
-    const allQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
+    const allQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+      // Get the current version of the question
+      const currentVersion = q.versions?.[q.currentVersion] || q.versions?.[0];
+      return {
+        id: q._id || '',
+        text: currentVersion?.questionText || '',
+        type: currentVersion?.responseType || 'text',
+        status: 'published' as 'draft' | 'published'
+      };
+    }) as QuestionItem[];
     const surveyThemes = SurveyThemes.find({}, { sort: { name: 1 } }).fetch();
     const wpsCategories = WPSCategories.find({}, { sort: { name: 1 } }).fetch();
     
     if (currentSurvey && !isLoading) {
+      // Clean up the description by removing paragraph tags if they exist
+      if (currentSurvey.description) {
+        currentSurvey.description = currentSurvey.description.replace(/<p>/g, '').replace(/<\/p>/g, '');
+      }
+      
       // Update survey state when data is ready
       setSurvey(currentSurvey);
       
@@ -149,13 +175,28 @@ const EnhancedSurveyBuilder: React.FC = () => {
             id: q.id || '',
             text: q.text || '',
             type: q.type || 'text',
-            status: q.status === 'draft' ? 'draft' : 'published' as 'draft' | 'published',
+            status: q.status === 'draft' ? 'draft' : 'published',
             sectionId: q.sectionId,
             order: q.order
           };
           return questionItem;
         });
         setSurveyQuestions(validatedQuestions);
+      }
+      
+      // Initialize demographics if they exist in the survey
+      if (currentSurvey.selectedDemographics && Array.isArray(currentSurvey.selectedDemographics)) {
+        setSelectedDemographics(currentSurvey.selectedDemographics);
+      }
+      
+      // Initialize theme if it exists in the survey
+      if (currentSurvey.selectedTheme) {
+        setSelectedTheme(currentSurvey.selectedTheme);
+      }
+      
+      // Initialize categories if they exist in the survey
+      if (currentSurvey.selectedCategories && Array.isArray(currentSurvey.selectedCategories)) {
+        setSelectedCategories(currentSurvey.selectedCategories);
       }
     }
     
@@ -167,13 +208,15 @@ const EnhancedSurveyBuilder: React.FC = () => {
         // Get the current version of the question
         const currentVersion = q.versions?.[q.currentVersion - 1] || {};
         
-        return {
+        // Create a properly typed QuestionItem
+        const questionItem: QuestionItem = {
           id: q._id || '',
           text: currentVersion.questionText || 'Untitled Question',
           type: currentVersion.responseType || 'text',
-          status: 'published' as 'draft' | 'published', // Cast to the correct type
+          status: 'published', // Explicitly set as published
           sectionId: undefined, // Will be assigned when added to a section
         };
+        return questionItem;
       }),
     };
   }, [surveyId]);
@@ -196,15 +239,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
       setSaving(true);
       
       // Prepare survey data for saving
+      // Clean up paragraph tags from description at save time
+      const cleanDescription = survey?.description ? survey.description.replace(/<p>/g, '').replace(/<\/p>/g, '') : '';
+      
       const surveyData = {
         ...survey,
         title: survey?.title || 'Untitled Survey',
-        description: survey?.description || '',
+        description: cleanDescription,
         logo: survey?.logo || '',
         featuredImage: survey?.featuredImage || '',
         primaryColor: survey?.primaryColor || '#552a47',
         surveySections: sections,
         sectionQuestions: surveyQuestions,
+        // Include demographics, themes, and categories
+        selectedDemographics: selectedDemographics,
+        selectedTheme: selectedTheme,
+        selectedCategories: selectedCategories,
         updatedAt: new Date(),
       };
       
@@ -312,7 +362,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
       type: q.type,
       sectionId: sectionId,
       order: currentSectionQuestions.length + index,
-      status: q.status || 'published'
+      status: q.status || 'published' as 'draft' | 'published'
     }));
     
     // Update questions with the new section ID and add new questions
@@ -327,7 +377,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
     });
     
     // Update the survey state to ensure changes are saved
-    setSurvey(prevSurvey => {
+    setSurvey((prevSurvey: any) => {
       if (!prevSurvey) return prevSurvey;
       
       return {
@@ -671,7 +721,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         <ReactQuill
                           theme="snow"
                           value={survey?.description || ''}
-                          onChange={(content) => setSurvey({...survey, description: content})}
+                          onChange={(content) => {
+                            // Just store the content as is during editing to improve performance
+                            // We'll clean it up when saving
+                            setSurvey({...survey, description: content});
+                          }}
                           placeholder="Enter survey description"
                           modules={{
                             toolbar: [
@@ -909,11 +963,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                       {surveyThemes.map((theme: any) => {
-                        const isSelected = survey?.theme === theme._id;
+                        const isSelected = selectedTheme === theme._id;
                         return (
                           <div 
                             key={theme._id} 
-                            onClick={() => setSurvey({ ...survey, theme: theme._id })}
+                            onClick={() => setSelectedTheme(theme._id)}
                             style={{ 
                               cursor: 'pointer',
                               borderRadius: 8,
@@ -1000,16 +1054,15 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
                       {wpsCategories.map((category: any) => {
-                        const isSelected = survey?.categories?.includes(category._id);
+                        const isSelected = selectedCategories.includes(category._id);
                         return (
                           <div 
                             key={category._id} 
                             onClick={() => {
-                              const currentCategories = survey?.categories || [];
                               const updatedCategories = isSelected
-                                ? currentCategories.filter((id: string) => id !== category._id)
-                                : [...currentCategories, category._id];
-                              setSurvey({ ...survey, categories: updatedCategories });
+                                ? selectedCategories.filter((id: string) => id !== category._id)
+                                : [...selectedCategories, category._id];
+                              setSelectedCategories(updatedCategories);
                             }}
                             style={{ 
                               cursor: 'pointer',
@@ -1098,7 +1151,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
             </div>
           </div>
         </div>
-        
         {/* Question Selector Modal */}
         <QuestionSelector
           isOpen={showQuestionSelector}
