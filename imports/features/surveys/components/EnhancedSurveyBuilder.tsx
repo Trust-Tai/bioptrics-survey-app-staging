@@ -107,7 +107,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
+  // Initialize all demographic options as selected by default for new surveys
+  const [selectedDemographics, setSelectedDemographics] = useState<string[]>(
+    !surveyId ? demographicOptions.map(opt => opt.value) : []
+  );
   const [selectedTheme, setSelectedTheme] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
@@ -187,6 +190,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
       // Initialize demographics if they exist in the survey
       if (currentSurvey.selectedDemographics && Array.isArray(currentSurvey.selectedDemographics)) {
         setSelectedDemographics(currentSurvey.selectedDemographics);
+      } else {
+        // For existing surveys without demographics, select all by default
+        setSelectedDemographics(demographicOptions.map(opt => opt.value));
       }
       
       // Initialize theme if it exists in the survey
