@@ -4,7 +4,7 @@ import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 import SurveySectionQuestionDropdown, { QuestionOption } from '../../../ui/admin/SurveySectionQuestionDropdown';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import '../../../ui/styles/quill-styles';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '../../../features/questions/api/questions';

@@ -4,7 +4,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import '../../../../ui/styles/quill-styles';
 import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaTags, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing } from 'react-icons/fa';
 import ToggleSwitch from './ToggleSwitch';
 

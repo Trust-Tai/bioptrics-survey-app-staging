@@ -4,7 +4,7 @@ import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 
