@@ -202,7 +202,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
           status: 'draft',
         };
         
-        savedSurveyId = await Meteor.callAsync('surveys.insert', newSurveyData);
+        savedSurveyId = await Meteor.callAsync('surveys.saveDraft', newSurveyData);
         showSuccessAlert('Survey created successfully!');
         
         // Navigate to the edit page for the new survey

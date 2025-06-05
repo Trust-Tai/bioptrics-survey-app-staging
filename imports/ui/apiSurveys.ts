@@ -9,7 +9,7 @@ export interface SurveyDoc {
 }
 
 export async function createSurvey(survey: Omit<SurveyDoc, '_id'|'createdAt'>): Promise<string> {
-  return await Meteor.callAsync('surveys.insert', survey);
+  return await Meteor.callAsync('surveys.saveDraft', survey);
 }
 
 export async function getAllSurveys(): Promise<SurveyDoc[]> {
