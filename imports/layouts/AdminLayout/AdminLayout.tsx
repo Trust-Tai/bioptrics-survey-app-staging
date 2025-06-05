@@ -37,6 +37,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
     { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
     { to: '/admin/questions/tags', label: 'Tags' },
+    { to: '/admin/questions/categories', label: 'Categories' },
   ] },
   { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [

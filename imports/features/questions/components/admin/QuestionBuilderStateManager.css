@@ -1,0 +1,193 @@
+.question-builder-state-manager {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  width: calc(100% - 340px);
+}
+
+.state-manager-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #eee;
+  border-radius: 4px 4px 0 0;
+}
+
+.undo-redo-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.control-button {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #552a47;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-button:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.autosave-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.autosave-status {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.last-saved-text {
+  white-space: nowrap;
+}
+
+.saving-indicator {
+  color: #0066cc;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.saving-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #0066cc;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.autosave-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #552a47;
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 1px #552a47;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: #666;
+}
+
+.save-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #552a47;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-button:hover:not(:disabled) {
+  background: #6e3a5d;
+}
+
+.save-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .state-manager-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .autosave-controls {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .save-button {
+    margin-left: auto;
+  }
+}

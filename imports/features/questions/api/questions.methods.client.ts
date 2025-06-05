@@ -16,8 +16,6 @@ export interface Question {
   image: string;
   leftLabel?: string;
   rightLabel?: string;
-  feedbackType?: 'none' | 'text' | 'rating' | 'file';
-  feedbackValue?: string;
   wpsCategoryIds?: string[];
   surveyThemeIds?: string[];
   questionTagId?: string;
@@ -27,6 +25,13 @@ export interface Question {
   isActive?: boolean;
   keywords?: string[];
   organizationId?: string;
+  // Feedback fields
+  collectFeedback?: boolean;
+  feedbackType?: 'text' | 'rating' | 'file';
+  feedbackPrompt?: string;
+  // Demographics collection
+  collectDemographics?: boolean;
+  selectedDemographics?: string[];
 }
 
 // Define the QuestionVersion interface to match what's expected by the DB
@@ -40,8 +45,6 @@ export interface QuestionVersion {
   image?: string;
   leftLabel?: string;
   rightLabel?: string;
-  feedbackType?: 'none' | 'text' | 'rating' | 'file';
-  feedbackValue?: string;
   categoryTags: string[];
   surveyThemes: string[];
   adminNotes: string;
@@ -49,6 +52,10 @@ export interface QuestionVersion {
   published: boolean;
   updatedBy: string;
   createdAt?: Date;
+  // Feedback fields
+  collectFeedback?: boolean;
+  feedbackType?: 'text' | 'rating' | 'file';
+  feedbackPrompt?: string;
 }
 
 // Helper to map QuestionBuilder state to QuestionVersion
@@ -62,8 +69,6 @@ export function mapQuestionToVersion(q: Question, userId?: string) {
     image: q.image,
     leftLabel: q.leftLabel,
     rightLabel: q.rightLabel,
-    feedbackType: q.feedbackType,
-    feedbackValue: q.feedbackValue,
     categoryTags: q.wpsCategoryIds || [],
     surveyThemes: q.surveyThemeIds || [],
     questionTag: q.questionTagId,
@@ -72,6 +77,10 @@ export function mapQuestionToVersion(q: Question, userId?: string) {
     language: 'en',
     published: false, // Default to false, will be set to true in publishQuestionsToDB
     updatedBy: userId || Meteor.userId() || '',
+    // Feedback fields
+    collectFeedback: q.collectFeedback ?? false,
+    feedbackType: q.feedbackType ?? 'text',
+    feedbackPrompt: q.feedbackPrompt || '',
   };
 }
 
