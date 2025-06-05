@@ -188,50 +188,259 @@ const WPSFramework: React.FC = () => {
             style={{ height: 44, fontSize: 16, padding: '0 16px', borderRadius: 8, border: '1.5px solid #e5d6c7', minWidth: 220, color: '#28211e', fontWeight: 500, outline: 'none', background: '#fff' }}
           />
         </div>
+        {/* Add Category Modal */}
         {showModal && (
-          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 170, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Add Category</h3>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Category name"
-                style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box', overflowWrap: 'break-word', wordBreak: 'break-word' }}
-                required
-              />
-              <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Description"
-                style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 15, fontWeight: 500, color: '#28211e', minHeight: 60, boxSizing: 'border-box', overflowWrap: 'break-word', wordBreak: 'break-word' }}
-                required
-              />
-              <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Color
-                <input
-                  type="color"
-                  value={color}
-                  onChange={e => setColor(e.target.value)}
-                  style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
-                  required
-                />
-                <input
-                  type="text"
-                  value={color}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setColor(val);
+          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ 
+              background: '#fff', 
+              borderRadius: 16, 
+              padding: 0, 
+              width: 500, 
+              maxWidth: '90%', 
+              minHeight: 320, 
+              boxShadow: '0 8px 42px rgba(85,42,71,0.25)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              position: 'relative', 
+              boxSizing: 'border-box',
+              overflow: 'hidden'
+            }}>
+              {/* Header */}
+              <div style={{ 
+                background: '#552a47', 
+                color: '#fff', 
+                padding: '20px 24px', 
+                borderTopLeftRadius: 16, 
+                borderTopRightRadius: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}>
+                <h3 style={{ margin: 0, fontWeight: 700, fontSize: 22 }}>Add Category</h3>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    border: 'none', 
+                    color: '#fff', 
+                    fontSize: 22, 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    padding: 0,
+                    transition: 'background 0.2s ease'
                   }}
-                  maxLength={7}
-                  style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                  placeholder="#552a47"
-                  required
-                />
-              </label>
-              <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
-                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => setShowModal(false)}>Cancel</button>
+                  onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                >
+                  &times;
+                </button>
               </div>
-            </form>
+              
+              {/* Form Content */}
+              <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ 
+                padding: '24px 28px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 22
+              }}>
+                {/* Name Field */}
+                <div style={{ marginBottom: 4 }}>
+                  <label style={{ 
+                    fontWeight: 600, 
+                    fontSize: 15, 
+                    color: '#28211e', 
+                    display: 'block', 
+                    marginBottom: 8 
+                  }}>
+                    Category Name
+                  </label>
+                  <input 
+                    type="text" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    placeholder="Enter category name"
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      borderRadius: 8, 
+                      border: '1.5px solid #e5d6c7', 
+                      fontSize: 16, 
+                      fontWeight: 500, 
+                      color: '#28211e', 
+                      boxSizing: 'border-box',
+                      transition: 'border-color 0.2s ease',
+                      outline: 'none'
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#552a47'}
+                    onBlur={e => e.target.style.borderColor = '#e5d6c7'}
+                    required 
+                  />
+                </div>
+                
+                {/* Description Field */}
+                <div style={{ marginBottom: 4 }}>
+                  <label style={{ 
+                    fontWeight: 600, 
+                    fontSize: 15, 
+                    color: '#28211e', 
+                    display: 'block', 
+                    marginBottom: 8 
+                  }}>
+                    Description
+                  </label>
+                  <textarea 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    placeholder="Enter category description"
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px 16px', 
+                      borderRadius: 8, 
+                      border: '1.5px solid #e5d6c7', 
+                      fontSize: 15, 
+                      fontWeight: 500, 
+                      color: '#28211e', 
+                      minHeight: 80, 
+                      boxSizing: 'border-box',
+                      resize: 'vertical',
+                      transition: 'border-color 0.2s ease',
+                      outline: 'none'
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#552a47'}
+                    onBlur={e => e.target.style.borderColor = '#e5d6c7'}
+                    required 
+                  />
+                </div>
+                
+                {/* Color Field */}
+                <div style={{ marginBottom: 4 }}>
+                  <label style={{ 
+                    fontWeight: 600, 
+                    fontSize: 15, 
+                    color: '#28211e', 
+                    display: 'block', 
+                    marginBottom: 8 
+                  }}>
+                    Color
+                  </label>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 16,
+                    background: '#f9f4f7',
+                    padding: '8px 16px',
+                    borderRadius: 8
+                  }}>
+                    <div style={{ 
+                      width: 42, 
+                      height: 42, 
+                      borderRadius: 8, 
+                      background: color,
+                      border: '1px solid #e5d6c7',
+                      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <input 
+                        type="color" 
+                        value={color} 
+                        onChange={e => setColor(e.target.value)} 
+                        style={{ 
+                          opacity: 0,
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          cursor: 'pointer'
+                        }} 
+                        required
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={color}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val.startsWith('#')) {
+                          setColor(val);
+                        }
+                      }}
+                      maxLength={7}
+                      style={{ 
+                        width: 120, 
+                        fontSize: 16, 
+                        border: '1.5px solid #e5d6c7', 
+                        borderRadius: 6, 
+                        padding: '8px 12px',
+                        transition: 'border-color 0.2s ease',
+                        outline: 'none'
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#552a47'}
+                      onBlur={e => e.target.style.borderColor = '#e5d6c7'}
+                      placeholder="#552a47"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: 16, 
+                  marginTop: 16,
+                  borderTop: '1px solid #f0e5ed',
+                  paddingTop: 20
+                }}>
+                  <button 
+                    type="submit" 
+                    style={{ 
+                      background: '#552a47', 
+                      color: '#fff', 
+                      border: 'none', 
+                      borderRadius: 8, 
+                      fontWeight: 700, 
+                      padding: '0 24px', 
+                      fontSize: 16, 
+                      height: 46, 
+                      cursor: 'pointer',
+                      flex: 1,
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = '#46233b'}
+                    onMouseOut={e => e.currentTarget.style.background = '#552a47'}
+                  >
+                    Add Category
+                  </button>
+                  <button 
+                    type="button" 
+                    style={{ 
+                      background: '#eee', 
+                      color: '#28211e', 
+                      border: 'none', 
+                      borderRadius: 8, 
+                      fontWeight: 600, 
+                      padding: '0 20px', 
+                      fontSize: 15, 
+                      height: 46, 
+                      cursor: 'pointer',
+                      transition: 'background 0.2s ease'
+                    }} 
+                    onClick={() => setShowModal(false)}
+                    onMouseOver={e => e.currentTarget.style.background = '#e0e0e0'}
+                    onMouseOut={e => e.currentTarget.style.background = '#eee'}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )} 
         {filteredCategories.length === 0 ? (
