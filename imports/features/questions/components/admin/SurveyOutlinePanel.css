@@ -1,0 +1,277 @@
+.survey-outline-panel {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.outline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.outline-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #552a47;
+  margin: 0;
+}
+
+.outline-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.outline-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.outline-action-btn.add-section {
+  background: #f0f7ff;
+  border: 1px solid #d0e3ff;
+  color: #0066cc;
+}
+
+.outline-action-btn.add-section:hover {
+  background: #d0e3ff;
+}
+
+.outline-action-btn.add-question {
+  background: #552a47;
+  border: 1px solid #552a47;
+  color: white;
+}
+
+.outline-action-btn.add-question:hover {
+  background: #6e3a5d;
+}
+
+.sections-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.section-item {
+  margin-bottom: 12px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+.section-drag-handle {
+  color: #aaa;
+  margin-right: 8px;
+  cursor: grab;
+}
+
+.section-title {
+  flex: 1;
+  font-weight: 500;
+  color: #28211e;
+}
+
+.section-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.section-action-btn {
+  background: none;
+  border: none;
+  color: #6e5a67;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.section-action-btn:hover {
+  background: rgba(110, 90, 103, 0.1);
+  color: #552a47;
+}
+
+.section-questions {
+  padding: 8px;
+  background: #fff;
+}
+
+.question-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.question-item:hover {
+  background: #f9f9f9;
+  border-color: #ddd;
+}
+
+.question-drag-handle {
+  color: #aaa;
+  margin-right: 8px;
+  cursor: grab;
+}
+
+.question-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.question-text {
+  font-size: 14px;
+  color: #28211e;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.question-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.question-type {
+  color: #6e5a67;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.question-required {
+  color: #e74c3c;
+  background: #fdedec;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.question-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.question-item:hover .question-actions {
+  opacity: 1;
+}
+
+.question-action-btn {
+  background: none;
+  border: none;
+  color: #6e5a67;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.question-action-btn:hover {
+  background: rgba(110, 90, 103, 0.1);
+  color: #552a47;
+}
+
+.unsectioned-questions {
+  padding: 8px;
+  border-top: 1px solid #eee;
+  margin-top: 8px;
+}
+
+.unsectioned-header {
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.unsectioned-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #6e5a67;
+  margin: 0;
+}
+
+.empty-section-message {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-question-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f0f7ff;
+  border: 1px solid #d0e3ff;
+  border-radius: 4px;
+  color: #0066cc;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-question-btn:hover {
+  background: #d0e3ff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .outline-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .outline-actions {
+    width: 100%;
+  }
+  
+  .outline-action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .question-item {
+    flex-wrap: wrap;
+  }
+  
+  .question-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 8px;
+    opacity: 1;
+  }
+}

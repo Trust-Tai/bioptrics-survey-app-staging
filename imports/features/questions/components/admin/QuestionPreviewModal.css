@@ -1,0 +1,387 @@
+/* Enhanced Question Preview Modal Styles */
+.enhanced-preview-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(40, 33, 30, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.enhanced-preview-modal {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(85, 42, 71, 0.3);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  transition: all 0.3s ease;
+}
+
+/* Device-specific styles */
+.enhanced-preview-modal.device-desktop {
+  width: 800px;
+  height: 600px;
+}
+
+.enhanced-preview-modal.device-tablet {
+  width: 600px;
+  height: 800px;
+}
+
+.enhanced-preview-modal.device-mobile {
+  width: 375px;
+  height: 667px;
+}
+
+.preview-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.preview-modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #552a47;
+  margin: 0;
+}
+
+.device-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.device-button {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.device-button.active {
+  color: #552a47;
+  background: rgba(85, 42, 71, 0.1);
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #552a47;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(85, 42, 71, 0.1);
+}
+
+.preview-device-frame {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid #eee;
+  margin: 16px;
+  border-radius: 8px;
+  background: #f9f9f9;
+  position: relative;
+}
+
+.device-mobile .preview-device-frame {
+  max-width: 100%;
+  padding: 8px;
+}
+
+.preview-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.preview-question-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.preview-question-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #28211e;
+  margin-bottom: 16px;
+}
+
+.device-mobile .preview-question-text {
+  font-size: 16px;
+}
+
+.preview-question-description {
+  font-size: 15px;
+  color: #6e5a67;
+  margin-bottom: 16px;
+}
+
+.preview-question-image {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.preview-question-image img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.preview-answer-section {
+  margin-bottom: 24px;
+}
+
+.preview-answer-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preview-radio-option,
+.preview-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-dropdown {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 15px;
+}
+
+.preview-text-input,
+.preview-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 15px;
+}
+
+.preview-textarea {
+  resize: vertical;
+}
+
+.preview-date-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 15px;
+}
+
+.preview-file-upload {
+  border: 2px dashed #ddd;
+  padding: 16px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.file-upload-help {
+  font-size: 14px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.preview-rating-scale {
+  margin: 16px 0;
+}
+
+.rating-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.rating-scale-options {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rating-option {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rating-option:hover {
+  background: #f5f5f5;
+}
+
+.rating-option.selected {
+  background: #552a47;
+  color: white;
+  border-color: #552a47;
+}
+
+.preview-likert-scale {
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+.likert-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.likert-table th,
+.likert-table td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #eee;
+}
+
+.likert-table th {
+  background: #f5f5f5;
+  font-weight: 500;
+}
+
+.preview-feedback-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.preview-feedback-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #552a47;
+  margin-bottom: 8px;
+}
+
+.preview-feedback-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 15px;
+  resize: vertical;
+}
+
+.preview-feedback-rating {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rating-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rating-button:hover {
+  background: #eee;
+}
+
+.preview-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.preview-back-button,
+.preview-next-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-back-button {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.preview-next-button {
+  background: #552a47;
+  border: 1px solid #552a47;
+  color: white;
+}
+
+.preview-next-button.disabled {
+  background: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.preview-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #eee;
+}
+
+.preview-meta-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.preview-info-item {
+  font-size: 14px;
+}
+
+.info-label {
+  font-weight: 500;
+  color: #666;
+  margin-right: 4px;
+}
+
+.info-value {
+  color: #28211e;
+  text-transform: capitalize;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .enhanced-preview-modal.device-desktop {
+    width: 95%;
+    height: 80vh;
+  }
+  
+  .enhanced-preview-modal.device-tablet {
+    width: 90%;
+    height: 80vh;
+  }
+  
+  .enhanced-preview-modal.device-mobile {
+    width: 350px;
+    height: 80vh;
+  }
+}

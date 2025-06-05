@@ -23,6 +23,8 @@ import { EllipsisMenu, DashboardBg } from '/imports/shared/components';
 
 // Import from local components
 import QuestionPreviewModal from './QuestionPreviewModal';
+import SaveAsTemplateModal from './SaveAsTemplateModal';
+import QuestionTemplatesModal from './QuestionTemplatesModal';
 
 // Use the Question interface from the questions.methods.client module
 type Question = QuestionType;
@@ -59,18 +61,23 @@ const QuestionBuilder: React.FC = () => {
     image: '',
     leftLabel: '',
     rightLabel: '',
-    feedbackType: 'none',
-    feedbackValue: '',
     wpsCategoryIds: [],
     surveyThemeIds: [],
     isReusable: true,
     priority: 1,
     isActive: true,
     keywords: [],
+    collectFeedback: false,
+    feedbackType: 'text',
+    feedbackPrompt: '',
   });
 
   // State for the preview modal
   const [showPreview, setShowPreview] = useState(false);
+  // State for Save as Template modal
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  // State for Import Template modal
+  const [showImportTemplate, setShowImportTemplate] = useState(false);
   
   // State for active tab
   const [activeTab, setActiveTab] = useState('basic');
@@ -120,8 +127,9 @@ const QuestionBuilder: React.FC = () => {
               image: latestVersionAny.image || '',
               leftLabel: latestVersionAny.leftLabel || '',
               rightLabel: latestVersionAny.rightLabel || '',
-              feedbackType: latestVersionAny.feedbackType || 'none',
-              feedbackValue: latestVersionAny.feedbackValue || '',
+              feedbackType: (['text','rating','file'].includes(latestVersionAny.feedbackType)) ? latestVersionAny.feedbackType : 'text',
+              collectFeedback: typeof latestVersionAny.collectFeedback === 'boolean' ? latestVersionAny.collectFeedback : false,
+              feedbackPrompt: latestVersionAny.feedbackPrompt || '',
             };
             
             // Use the mapped version and add document properties
@@ -287,16 +295,12 @@ const QuestionBuilder: React.FC = () => {
   const handleFeedbackTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setQuestion((prev: Question) => ({ 
       ...prev, 
-      feedbackType: e.target.value as 'none' | 'text' | 'rating' | 'file',
-      feedbackValue: e.target.value === 'none' ? '' : prev.feedbackValue,
+      feedbackType: (['text','rating','file'].includes(e.target.value)) ? e.target.value as 'text' | 'rating' | 'file' : 'text',
+      collectFeedback: (['text','rating','file'].includes(e.target.value)), // Enable feedback if a type is chosen
     }));
   };
 
-  // Handle feedback value changes
-  const handleFeedbackValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuestion((prev: Question) => ({ ...prev, feedbackValue: e.target.value as string }));
-  };
-
+  
   // Handle WPS category selection
   const handleCategoryChange = (selected: MultiValue<unknown>, _actionMeta: ActionMeta<unknown>) => {
     const typedSelected = selected as MultiValue<{ value: string; label: string }>;
@@ -410,39 +414,23 @@ const QuestionBuilder: React.FC = () => {
   );
 
   return (
-    <AdminLayout>
-      <DashboardBg>
+  <AdminLayout>
+    <DashboardBg>
       <div className="question-builder-container">
         <div className="question-builder-header">
           <h1>{editId ? 'Edit Question' : 'Create New Question'}</h1>
           <div className="question-builder-actions">
-            <button 
-              className="preview-button"
-              onClick={() => setShowPreview(true)}
-            >
-              <FaEye /> Preview
-            </button>
+            <button className="action-btn" onClick={() => setShowPreview(true)}><FaEye /> Preview</button>
+            <button className="action-btn" onClick={() => handleSave(false)}>Save as Draft</button>
+            <button className="action-btn primary" onClick={() => handleSave(true)}>Save & Publish</button>
+            <button className="action-btn" onClick={() => navigate('/admin/question-bank')}>Cancel</button>
             <EllipsisMenu
               items={[
-                { label: 'Save as Draft', onClick: () => handleSave(false) },
-                { label: 'Save & Publish', onClick: () => handleSave(true) },
-                { label: 'Cancel', onClick: () => navigate('/admin/question-bank') },
+                { label: 'Preview', onClick: () => setShowPreview(true) },
+                { label: 'Save as Template', onClick: () => setShowSaveTemplate(true) },
+                { label: 'Import from Template', onClick: () => setShowImportTemplate(true) },
               ]}
             />
-          </div>
-        </div>
-        
-        {/* Progress indicator */}
-        <div className="progress-container">
-          <div className="progress-steps">
-            <div className={`progress-step ${formProgress > 0 ? 'active' : ''}`}>Started</div>
-            <div className={`progress-step ${formProgress >= 25 ? 'active' : ''}`}>Basic Info</div>
-            <div className={`progress-step ${formProgress >= 50 ? 'active' : ''}`}>Answer Options</div>
-            <div className={`progress-step ${formProgress >= 75 ? 'active' : ''}`}>Categories</div>
-            <div className={`progress-step ${formProgress === 100 ? 'active' : ''}`}>Complete</div>
-          </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${formProgress}%` }}></div>
           </div>
         </div>
 
@@ -693,43 +681,6 @@ const QuestionBuilder: React.FC = () => {
                     Add an image to provide visual context for the question
                   </div>
                 </div>
-                
-                <div className="setting-group">
-                  <label>Feedback Type:</label>
-                  <select 
-                    value={question.feedbackType} 
-                    onChange={handleFeedbackTypeChange}
-                  >
-                    <option value="none">None</option>
-                    <option value="text">Text Comment</option>
-                    <option value="rating">Rating</option>
-                    <option value="file">File Upload</option>
-                  </select>
-                  <div className="helper-text">
-                    Allow respondents to provide additional feedback for this question
-                  </div>
-                </div>
-                
-                {question.feedbackType !== 'none' && (
-                  <div className="setting-group">
-                    <label>Feedback Prompt:</label>
-                    <input 
-                      type="text" 
-                      value={question.feedbackValue} 
-                      onChange={handleFeedbackValueChange}
-                      placeholder={
-                        question.feedbackType === 'text' 
-                          ? 'Please provide additional comments...' 
-                          : question.feedbackType === 'rating'
-                          ? 'How would you rate this aspect?' 
-                          : 'Upload a file for evidence...'
-                      }
-                    />
-                    <div className="helper-text">
-                      Customize the prompt that asks for additional feedback
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -799,6 +750,58 @@ const QuestionBuilder: React.FC = () => {
             </div>
           )}
 
+          {/* Feedback Section */}
+          <div className="form-section card full-width">
+            <div className="card-header">
+              <h2>Feedback</h2>
+            </div>
+            <div className="card-body">
+              <div className="setting-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={question.collectFeedback || false}
+                    onChange={e => setQuestion(q => ({ ...q, collectFeedback: e.target.checked }))}
+                  />
+                  Collect feedback for this question
+                  {renderTooltip('Enable this to allow respondents to provide feedback for this question.')}
+                </label>
+              </div>
+              {question.collectFeedback && (
+                <>
+                  <div className="setting-group">
+                    <label>Feedback Type:</label>
+                    <select
+                      value={question.feedbackType}
+                      onChange={e => setQuestion(q => ({ ...q, feedbackType: e.target.value }))}
+                    >
+                      <option value="text">Text Comment</option>
+                      <option value="rating">Rating</option>
+                      <option value="file">File Upload</option>
+                    </select>
+                    <div className="helper-text">Choose the type of feedback to collect from respondents.</div>
+                  </div>
+                  <div className="setting-group">
+                    <label>Feedback Prompt (optional):</label>
+                    <input
+                      type="text"
+                      value={question.feedbackPrompt || ''}
+                      onChange={e => setQuestion(q => ({ ...q, feedbackPrompt: e.target.value }))}
+                      placeholder={
+                        question.feedbackType === 'text'
+                          ? 'Please provide additional comments...'
+                          : question.feedbackType === 'rating'
+                          ? 'How would you rate this aspect?'
+                          : 'Upload a file for evidence...'
+                      }
+                    />
+                    <div className="helper-text">Customize the prompt that respondents will see for feedback.</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Advanced Settings Tab */}
           {activeTab === 'advanced' && (
             <div className="form-section card full-width">
@@ -832,55 +835,38 @@ const QuestionBuilder: React.FC = () => {
                     Set the importance level of this question
                   </div>
                 </div>
-                
-                <div className="setting-group">
-                  <label className="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={question.isActive} 
-                      onChange={handleActiveChange}
-                    />
-                    Active
-                    {renderTooltip('If unchecked, this question will not be available for use in surveys')}
-                  </label>
-                </div>
               </div>
             </div>
           )}
-
-          <div className="form-actions">
-            <button 
-              className="cancel-button"
-              onClick={() => navigate('/admin/question-bank')}
-            >
-              Cancel
-            </button>
-            <button 
-              className="save-draft-button"
-              onClick={() => handleSave(false)}
-            >
-              <FaSave /> Save as Draft
-            </button>
-            <button 
-              className="publish-button"
-              onClick={() => handleSave(true)}
-            >
-              <FaCheck /> Save & Publish
-            </button>
-          </div>
         </div>
-      </div>
-      
-      {showPreview && (
-        <QuestionPreviewModal
+
+        {/* Modals: placed at root for correct overlay */}
+        <SaveAsTemplateModal
+          isOpen={showSaveTemplate}
+          onClose={() => setShowSaveTemplate(false)}
           question={question}
-          onClose={() => setShowPreview(false)}
-          open={showPreview}
+          onSuccess={() => showSuccess('Template saved!')}
         />
-      )}
+        <QuestionTemplatesModal
+          isOpen={showImportTemplate}
+          onClose={() => setShowImportTemplate(false)}
+          onImport={(template: { questionData: Question }) => {
+            setShowImportTemplate(false);
+            setQuestion({
+              ...template.questionData,
+              feedbackType: (['text','rating','file'].includes(template.questionData.feedbackType)) ? template.questionData.feedbackType as 'text' | 'rating' | 'file' : 'text',
+            });
+            showSuccess('Template imported!');
+          }}
+        />
+        <QuestionPreviewModal
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          question={question}
+        />
+      </div>
       </DashboardBg>
-     
-    </AdminLayout>
+      </AdminLayout>
   );
 };
 

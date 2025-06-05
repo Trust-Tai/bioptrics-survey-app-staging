@@ -36,6 +36,9 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
     { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
+    { to: '/admin/questions/categories', label: 'Categories' },
+    { to: '/admin/questions/tags', label: 'Tags' },
+    { to: '/admin/questions/templates', label: 'Templates' },
   ] },
   { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
@@ -387,7 +390,10 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       ))}
                     </SubmenuFlyout>
                   ) : (
-                    (location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))) && (
+                    // Always show Question Bank submenu or other active submenus
+                    (location.pathname.startsWith(link.to) || 
+                     link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)) || 
+                     link.to === '/admin/questions') && (
                       <SubmenuInline>
                         {link.submenu.map((sublink: any) => (
                           <SubmenuItem

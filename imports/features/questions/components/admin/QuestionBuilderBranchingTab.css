@@ -1,0 +1,125 @@
+.question-builder-branching-tab {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.branching-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.branching-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #552a47;
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 1px #552a47;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #28211e;
+}
+
+.branching-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: #f0f7ff;
+  border: 1px solid #d0e3ff;
+  border-radius: 6px;
+  color: #0066cc;
+  font-size: 14px;
+}
+
+.branching-info svg {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.branching-content {
+  margin-top: 16px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 16px;
+  background: #f9f9f9;
+}
+
+.branching-disabled-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #f9f9f9;
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.branching-disabled-message p {
+  color: #6e5a67;
+  font-size: 15px;
+  max-width: 500px;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .branching-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
