@@ -1,4 +1,5 @@
 import React from 'react';
+import './quill-styles.css';
 import { createRoot } from 'react-dom/client';
 import { Meteor } from 'meteor/meteor';
 import App from '/imports/ui/App';

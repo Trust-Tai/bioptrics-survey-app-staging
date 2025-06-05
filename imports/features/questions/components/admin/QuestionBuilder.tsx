@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import '../../../../ui/styles/quill-styles';
 import './QuestionBuilder.quill.css';
 import './QuestionBuilder.css';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
