@@ -587,68 +587,272 @@ const SurveyGoalsPage: React.FC = () => {
           </div>
         )}
         {viewingGoal && viewModal && (
-          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 14, padding: 32, width: 600, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontWeight: 800, color: viewingGoal.color, fontSize: 24 }}>{viewingGoal.title}</h3>
-                <StatusBadge status={viewingGoal.status || 'not_started'} />
-              </div>
-              
-              <div style={{ fontSize: 16, color: '#28211e', marginBottom: 8 }}>{viewingGoal.description || ''}</div>
-              
-              <div style={{ marginTop: 4, marginBottom: 12 }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Progress</h4>
-                <GoalProgressBar 
-                  currentValue={viewingGoal.currentValue} 
-                  targetValue={viewingGoal.targetValue} 
-                  color={viewingGoal.color} 
-                />
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, fontSize: 15, color: '#333' }}>
+          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.35)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(3px)' }}>
+            <div style={{ 
+              background: '#fff', 
+              borderRadius: 16, 
+              width: 700, 
+              maxWidth: '90vw', 
+              maxHeight: '90vh', 
+              overflowY: 'auto', 
+              boxShadow: '0 10px 40px rgba(85, 42, 71, 0.25)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              position: 'relative',
+              padding: 0
+            }}>
+              {/* Header section with color bar and title */}
+              <div style={{ 
+                borderTopLeftRadius: 16, 
+                borderTopRightRadius: 16, 
+                borderBottom: '1px solid #f0f0f0',
+                padding: '16px 32px 20px',
+                position: 'relative'
+              }}>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  right: 0, 
+                  height: 8, 
+                  background: viewingGoal.color, 
+                  borderTopLeftRadius: 16, 
+                  borderTopRightRadius: 16 
+                }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
+                  <StatusBadge status={viewingGoal.status || 'not_started'} />
+                  <button 
+                    type="button" 
+                    onClick={closeViewModal} 
+                    style={{ 
+                      background: '#f5f5f5', 
+                      border: 'none', 
+                      borderRadius: '50%', 
+                      width: 32, 
+                      height: 32, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      fontSize: 18, 
+                      fontWeight: 700, 
+                      color: '#666', 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = '#eee';
+                      e.currentTarget.style.color = '#333';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = '#f5f5f5';
+                      e.currentTarget.style.color = '#666';
+                    }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
                 <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Timeline</h4>
-                  <div><strong>Start Date:</strong> {viewingGoal.startDate || 'Not set'}</div>
-                  <div><strong>End Date:</strong> {viewingGoal.endDate || 'Not set'}</div>
+                  <h3 style={{ margin: 0, fontWeight: 800, fontSize: 26, color: '#333' }}>{viewingGoal.title}</h3>
+                </div>
+              </div>
+              
+              {/* Main content area */}
+              <div style={{ padding: '24px 32px' }}>
+                {/* Description */}
+                <div style={{ 
+                  fontSize: 16, 
+                  color: '#444', 
+                  marginBottom: 24, 
+                  lineHeight: 1.5, 
+                  padding: '16px 20px', 
+                  background: '#f9f9f9', 
+                  borderRadius: 12,
+                  border: '1px solid #eee'
+                }}>
+                  {viewingGoal.description || 'No description provided.'}
                 </div>
                 
-                <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Location</h4>
-                  <div><strong>Department:</strong> {viewingGoal.department || 'All'}</div>
-                  <div><strong>Site:</strong> {viewingGoal.site || 'All'}</div>
+                {/* Progress section */}
+                <div style={{ 
+                  marginBottom: 18, 
+                  background: '#fff', 
+                  padding: '28px 20px', 
+                  borderRadius: 12, 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+                  border: '1px solid #f0f0f0'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <h4 style={{ margin: 0, fontSize: 18, color: viewingGoal.color, fontWeight: 700 }}>Progress</h4>
+                    <div style={{ fontSize: 16, fontWeight: 600 }}>
+                      {viewingGoal.currentValue || 0}/{viewingGoal.targetValue || 100}
+                    </div>
+                  </div>
+                  <GoalProgressBar 
+                    currentValue={viewingGoal.currentValue} 
+                    targetValue={viewingGoal.targetValue} 
+                    color={viewingGoal.color} 
+                  />
+                </div>
+                
+                {/* Info grid */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(2, 1fr)', 
+                  gap: 24, 
+                  fontSize: 15, 
+                  color: '#333',
+                  marginBottom: 18
+                }}>
+                  {/* Timeline card */}
+                  <div style={{ 
+                    background: '#fff', 
+                    padding: '28px 20px', 
+                    borderRadius: 12, 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+                    border: '1px solid #f0f0f0'
+                  }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: 16, color: viewingGoal.color, fontWeight: 700 }}>Timeline</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div style={{ fontWeight: 600, color: '#555' }}>Start Date:</div>
+                      <div>{viewingGoal.startDate || 'Not set'}</div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontWeight: 600, color: '#555' }}>End Date:</div>
+                      <div>{viewingGoal.endDate || 'Not set'}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Location card */}
+                  <div style={{ 
+                    background: '#fff', 
+                    padding: '28px 20px', 
+                    borderRadius: 12, 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+                    border: '1px solid #f0f0f0'
+                  }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: 16, color: viewingGoal.color, fontWeight: 700 }}>Location</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div style={{ fontWeight: 600, color: '#555' }}>Department:</div>
+                      <div>{viewingGoal.department || 'All'}</div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontWeight: 600, color: '#555' }}>Site:</div>
+                      <div>{viewingGoal.site || 'All'}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Metrics and Related Surveys */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+                  {/* Metrics card */}
+                  <div style={{ 
+                    background: '#fff', 
+                    padding: '28px 20px', 
+                    borderRadius: 12, 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+                    border: '1px solid #f0f0f0'
+                  }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: 16, color: viewingGoal.color, fontWeight: 700 }}>Metrics</h4>
+                    {(viewingGoal.metrics && viewingGoal.metrics.length > 0) ? (
+                      <ul style={{ margin: 0, paddingLeft: 20, color: '#444' }}>
+                        {viewingGoal.metrics.map((metric, index) => (
+                          <li key={index} style={{ marginBottom: 6 }}>{metric}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div style={{ color: '#777', fontStyle: 'italic' }}>No metrics specified</div>
+                    )}
+                  </div>
+                  
+                  {/* Related Surveys card */}
+                  <div style={{ 
+                    background: '#fff', 
+                    padding: '28px 20px', 
+                    borderRadius: 12, 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
+                    border: '1px solid #f0f0f0'
+                  }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: 16, color: viewingGoal.color, fontWeight: 700 }}>Related Surveys</h4>
+                    {(viewingGoal.relatedSurveys && viewingGoal.relatedSurveys.length > 0) ? (
+                      <ul style={{ margin: 0, paddingLeft: 20, color: '#444' }}>
+                        {viewingGoal.relatedSurveys.map((survey, index) => (
+                          <li key={index} style={{ marginBottom: 6 }}>{survey}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div style={{ color: '#777', fontStyle: 'italic' }}>No related surveys</div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Created date */}
+                <div style={{ fontSize: 13, color: '#8a7a85', marginTop: 24, textAlign: 'right' }}>
+                  Created: {new Date(viewingGoal.createdAt).toLocaleString()}
                 </div>
               </div>
               
-              {(viewingGoal.metrics && viewingGoal.metrics.length > 0) && (
-                <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Metrics</h4>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    {viewingGoal.metrics.map((metric, index) => (
-                      <li key={index} style={{ marginBottom: 4 }}>{metric}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {(viewingGoal.relatedSurveys && viewingGoal.relatedSurveys.length > 0) && (
-                <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Related Surveys</h4>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    {viewingGoal.relatedSurveys.map((survey, index) => (
-                      <li key={index} style={{ marginBottom: 4 }}>{survey}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              <div style={{ fontSize: 13, color: '#8a7a85', marginTop: 8 }}>Created: {new Date(viewingGoal.createdAt).toLocaleString()}</div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
-                <button onClick={closeViewModal} style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }}>Close</button>
-                <button onClick={() => { closeViewModal(); openEditModal(viewingGoal); }} style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Edit</button>
+              {/* Footer with buttons */}
+              <div style={{ 
+                borderTop: '1px solid #f0f0f0', 
+                padding: '16px 32px', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                background: '#fafafa',
+                borderBottomLeftRadius: 16,
+                borderBottomRightRadius: 16
+              }}>
+                <button 
+                  onClick={closeViewModal} 
+                  style={{ 
+                    background: '#f5f5f5', 
+                    color: '#333', 
+                    border: '1px solid #ddd', 
+                    borderRadius: 8, 
+                    fontWeight: 600, 
+                    padding: '0 20px', 
+                    fontSize: 15, 
+                    height: 42, 
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#eee'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={() => { closeViewModal(); openEditModal(viewingGoal); }} 
+                  style={{ 
+                    background: viewingGoal.color, 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: 8, 
+                    fontWeight: 700, 
+                    padding: '0 24px', 
+                    fontSize: 15, 
+                    height: 42, 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>✏️</span> Edit
+                </button>
               </div>
               
-              <button type="button" onClick={closeViewModal} style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: 22, fontWeight: 700, color: '#28211e', cursor: 'pointer', opacity: 0.5, padding: 0, lineHeight: 1 }} aria-label="Close">×</button>
+              {/* No duplicate close button needed */}
             </div>
           </div>
         )}
