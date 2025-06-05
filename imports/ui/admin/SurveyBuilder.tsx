@@ -924,7 +924,171 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                             <span style={{ marginLeft: 10, fontSize: 15 }}>{form.color || '#552a47'}</span>
                           </div>
                         </>
-                      ) : (i >= 1 && i <= 5) ? (
+                      ) : i === 4 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Survey Themes</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Select a theme for your survey. The theme will affect the appearance and feel of your survey.</p>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                            {surveyThemes.map((theme: any) => {
+                              const isSelected = defaultSettings.themes?.includes(theme._id);
+                              return (
+                                <div 
+                                  key={theme._id} 
+                                  onClick={() => setDefaultSettings({...defaultSettings, themes: [theme._id]})}
+                                  style={{ 
+                                    cursor: 'pointer',
+                                    borderRadius: 8,
+                                    border: `2px solid ${isSelected ? theme.color || '#552a47' : '#e0e0e0'}`,
+                                    background: isSelected ? '#f5edf3' : '#fff',
+                                    padding: '16px',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ 
+                                      width: 24, 
+                                      height: 24, 
+                                      borderRadius: '50%', 
+                                      background: theme.color || '#552a47',
+                                      border: '1px solid #e0e0e0'
+                                    }} />
+                                    <div style={{ 
+                                      fontWeight: isSelected ? 600 : 500, 
+                                      fontSize: 16,
+                                      color: isSelected ? '#552a47' : '#333'
+                                    }}>
+                                      {theme.name}
+                                    </div>
+                                  </div>
+                                  
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between'
+                                  }}>
+                                    <div style={{ 
+                                      fontSize: 14, 
+                                      color: '#666',
+                                      flex: 1,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {theme.description || 'No description'}
+                                    </div>
+                                    <div style={{ 
+                                      width: 20, 
+                                      height: 20, 
+                                      borderRadius: '50%', 
+                                      border: `2px solid ${isSelected ? theme.color || '#552a47' : '#ddd'}`,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      background: '#fff'
+                                    }}>
+                                      {isSelected && (
+                                        <div style={{ 
+                                          width: 12, 
+                                          height: 12, 
+                                          borderRadius: '50%', 
+                                          background: theme.color || '#552a47' 
+                                        }} />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : i === 4 ? (
+                        <div style={{ marginBottom: 18 }}>
+                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Survey Themes</h3>
+                          <p style={{ marginBottom: 16, fontSize: 15 }}>Select a theme for your survey. The theme will affect the appearance and feel of your survey.</p>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                            {surveyThemes.map((theme: any) => {
+                              const isSelected = defaultSettings.themes?.includes(theme._id);
+                              return (
+                                <div 
+                                  key={theme._id} 
+                                  onClick={() => setDefaultSettings({...defaultSettings, themes: [theme._id]})}
+                                  style={{ 
+                                    cursor: 'pointer',
+                                    borderRadius: 8,
+                                    border: `2px solid ${isSelected ? theme.color || '#552a47' : '#e0e0e0'}`,
+                                    background: isSelected ? '#f5edf3' : '#fff',
+                                    padding: '16px',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ 
+                                      width: 24, 
+                                      height: 24, 
+                                      borderRadius: '50%', 
+                                      background: theme.color || '#552a47',
+                                      border: '1px solid #e0e0e0'
+                                    }} />
+                                    <div style={{ 
+                                      fontWeight: isSelected ? 600 : 500, 
+                                      fontSize: 16,
+                                      color: isSelected ? '#552a47' : '#333'
+                                    }}>
+                                      {theme.name}
+                                    </div>
+                                  </div>
+                                  
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between'
+                                  }}>
+                                    <div style={{ 
+                                      fontSize: 14, 
+                                      color: '#666',
+                                      flex: 1,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {theme.description || 'No description'}
+                                    </div>
+                                    <div style={{ 
+                                      width: 20, 
+                                      height: 20, 
+                                      borderRadius: '50%', 
+                                      border: `2px solid ${isSelected ? theme.color || '#552a47' : '#ddd'}`,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      background: '#fff'
+                                    }}>
+                                      {isSelected && (
+                                        <div style={{ 
+                                          width: 12, 
+                                          height: 12, 
+                                          borderRadius: '50%', 
+                                          background: theme.color || '#552a47' 
+                                        }} />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (i >= 1 && i <= 3 || i === 5) ? (
                         <>
                           <SurveySectionQuestionDropdown
                             sectionLabel={s.label}
