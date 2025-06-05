@@ -170,7 +170,7 @@ const WPSFramework: React.FC = () => {
           boxShadow: '0 2px 12px #552a4733',
         }}>{alert.message}</div>
       )}
-      <div style={{ width: '100%', padding: '32px 32px 32px 32px', background: '#fff8ee', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: '100%', padding: '32px 32px 32px 32px', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
         <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>WPS Framework</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <button
@@ -446,7 +446,7 @@ const WPSFramework: React.FC = () => {
         {filteredCategories.length === 0 ? (
           <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No categories found.</div>
         ) : (
-          <div className="wps-container">
+          <div className="wps-container" style={{ background: 'transparent', borderRadius: 0, boxShadow: 'none' }}>
             <div className="wps-grid">
               {filteredCategories.map((cat, index) => (
                 <div key={cat._id} className="wps-category-card" style={index >= 3 ? { marginTop: '35px' } : {}}>
