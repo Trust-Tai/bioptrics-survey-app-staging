@@ -159,5 +159,36 @@ Meteor.methods({
       console.error('Error removing user:', error);
       throw new Meteor.Error('remove-failed', error.message || 'Failed to delete user');
     }
+  },
+  'users.changePassword': async function(currentPassword, newPassword) {
+    // Validate input
+    check(currentPassword, String);
+    check(newPassword, String);
+    
+    // Check if the user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to change your password');
+    }
+    
+    try {
+      // Verify current password
+      const user = Meteor.user();
+      if (!user) {
+        throw new Meteor.Error('not-found', 'User not found');
+      }
+      
+      const result = Accounts._checkPassword(user, currentPassword);
+      if (result.error) {
+        throw new Meteor.Error('invalid-password', 'Current password is incorrect');
+      }
+      
+      // Change the password
+      Accounts.setPassword(this.userId, newPassword, { logout: false });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      throw new Meteor.Error('password-change-failed', error.message || 'Failed to change password');
+    }
   }
 });

@@ -45,7 +45,10 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
     { to: '/admin/users/add', label: 'Add New' },
     { to: '/admin/users/roles', label: 'Role Management' },
   ] },
-  { to: '/admin/settings', label: 'Settings', icon: FaCog },
+  { to: '/admin/settings', label: 'Settings', icon: FaCog, submenu: [
+    { to: '/admin/settings/password', label: 'Change Password' },
+    { to: '/admin/settings/timezone', label: 'Choose Time Zone' },
+  ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
