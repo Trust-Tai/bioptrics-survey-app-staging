@@ -1018,206 +1018,96 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                           )}
                         </div>
                       ) : i === 7 ? (
-                        <>
-                          <div style={{ marginBottom: 18 }}>
-                            <label style={{ display: 'block', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
-                              Add Site-specific Open Textbox Questions
-                            </label>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, background: '#faf7f2', borderRadius: 10, padding: 18, marginBottom: 20 }}>
-                              <label style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>Question Text</label>
-                              <input
-                                type="text"
-                                placeholder="Question text"
-                                value={siteTextQForm.text}
-                                onChange={e => setSiteTextQForm(f => ({ ...f, text: e.target.value }))}
-                                style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 7, border: '1.5px solid #e5d6c7', fontSize: 15 }}
-                              />
-                              <label style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>Description <span style={{ fontWeight: 400, color: '#a9a9a9' }}>(optional)</span></label>
-                              <textarea
-                                placeholder="Description (optional)"
-                                value={siteTextQForm.description}
-                                onChange={e => setSiteTextQForm(f => ({ ...f, description: e.target.value }))}
-                                style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 7, border: '1.5px solid #e5d6c7', fontSize: 15, minHeight: 40 }}
-                              />
-                              <label style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>WPS Categories</label>
-                              <Select
-                                isMulti
-                                isDisabled={wpsCategories.length === 0}
-                                options={wpsCategories.map((cat: any) => ({ value: cat._id, label: cat.name, color: cat.color }))}
-                                value={wpsCategories.filter((cat: any) => (siteTextQForm.wpsCategories || []).includes(cat._id)).map((cat: any) => ({ value: cat._id, label: cat.name, color: cat.color }))}
-                                onChange={(selected: MultiValue<{ value: string; label: string; color: string }>) => {
-                                  setSiteTextQForm(f => ({ ...f, wpsCategories: selected.map(opt => opt.value) }));
-                                }}
-                                placeholder={wpsCategories.length === 0 ? 'Loading categories...' : 'Select WPS Categories'}
-                                styles={{
-                                  control: (base) => ({ ...base, borderColor: '#e5d6c7', minHeight: 44, fontSize: 15 }),
-                                  multiValue: (base, { data }) => ({ ...base, background: data.color || '#f9f4f7', color: '#fff' }),
-                                  option: (base, state) => ({ ...base, background: state.isSelected ? '#552a47' : '#fff', color: state.isSelected ? '#fff' : '#28211e', fontWeight: 500 }),
-                                  multiValueLabel: (base) => ({ ...base, color: '#fff', fontWeight: 600 }),
-                                  multiValueRemove: (base) => ({ ...base, color: '#fff', ':hover': { backgroundColor: '#333', color: '#fff' } }),
-                                }}
-                              />
-                              <label style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>Survey Themes</label>
-                              <Select
-                                isMulti
-                                isDisabled={surveyThemes.length === 0}
-                                options={surveyThemes.map((theme: any) => ({ value: theme._id, label: theme.name, color: theme.color }))}
-                                value={surveyThemes.filter((theme: any) => (siteTextQForm.surveyThemes || []).includes(theme._id)).map((theme: any) => ({ value: theme._id, label: theme.name, color: theme.color }))}
-                                onChange={(selected: MultiValue<{ value: string; label: string; color: string }>) => {
-                                  setSiteTextQForm(f => ({ ...f, surveyThemes: selected.map(opt => opt.value) }));
-                                }}
-                                placeholder={surveyThemes.length === 0 ? 'Loading themes...' : 'Select Survey Themes'}
-                                styles={{
-                                  control: (base) => ({ ...base, borderColor: '#e5d6c7', minHeight: 44, fontSize: 15 }),
-                                  multiValue: (base, { data }) => ({ ...base, background: data.color || '#fbe7f6', color: '#a54c8c' }),
-                                  option: (base, state) => ({ ...base, background: state.isSelected ? '#a54c8c' : '#fff', color: state.isSelected ? '#fff' : '#28211e', fontWeight: 500 }),
-                                  multiValueLabel: (base) => ({ ...base, color: '#fff', fontWeight: 600 }),
-                                  multiValueRemove: (base) => ({ ...base, color: '#fff', ':hover': { backgroundColor: '#333', color: '#fff' } }),
-                                }}
-                              />
-                              <button
-                                type="button"
-                                style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: 15, padding: '8px 24px', cursor: 'pointer', alignSelf: 'flex-start' }}
-                                onClick={() => {
-                                  if (!siteTextQForm.text.trim()) return;
-                                  setSiteTextQuestions(qs => [
-                                    ...qs,
-                                    {
-                                      text: siteTextQForm.text,
-                                      description: siteTextQForm.description,
-                                      wpsCategories: siteTextQForm.wpsCategories,
-                                      surveyThemes: siteTextQForm.surveyThemes
-                                    }
-                                  ]);
-                                  setSiteTextQForm({ text: '', description: '', wpsCategories: [], surveyThemes: [] });
-                                }}
-                              >
-                                Add Question
-                              </button>
-                            </div>
-                          </div>
-                          {/* Preview of added questions */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                            {siteTextQuestions.map((q, idx) => (
-                              <div
-                                key={idx}
-                                style={{
-                                  background: '#f9f4f7',
-                                  borderRadius: 14,
-                                  boxShadow: '0 2px 8px #f4ebf1',
-                                  padding: '18px 24px',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 10
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
-                                  {q.wpsCategories && q.wpsCategories.length > 0 ? q.wpsCategories.map(catId => {
-                                    const cat = wpsCategories.find((c: any) => c._id === catId);
-                                    return (
-                                      <span
-                                        key={catId}
-                                        style={{
-                                          background: cat?.color || '#e4f0fa',
-                                          color: '#3776a8',
-                                          borderRadius: 7,
-                                          padding: '2px 12px',
-                                          fontSize: 13,
-                                          fontWeight: 700,
-                                          letterSpacing: 0.2,
-                                        }}
-                                      >
-                                        {cat ? cat.name : wpsCategoryMap[catId] || 'Uncategorized'}
-                                      </span>
-                                    );
-                                  }) : (
-                                    <span style={{ background: '#e4f0fa', color: '#3776a8', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>Uncategorized</span>
-                                  )}
-                                  {q.surveyThemes && q.surveyThemes.length > 0 ? q.surveyThemes.map(themeId => {
-                                    const theme = surveyThemes.find((t: any) => t._id === themeId);
-                                    return (
-                                      <span
-                                        key={themeId}
-                                        style={{
-                                          background: theme?.color || '#fbe7f6',
-                                          color: '#a54c8c',
-                                          borderRadius: 7,
-                                          padding: '2px 12px',
-                                          fontSize: 13,
-                                          fontWeight: 700,
-                                          letterSpacing: 0.2,
-                                        }}
-                                      >
-                                        {theme ? theme.name : surveyThemeMap[themeId] || 'No Theme'}
-                                      </span>
-                                    );
-                                  }) : (
-                                    <span style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>No Theme</span>
-                                  )}
-                                  <span style={{ background: '#fff5e1', color: '#552a47', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>Open Text</span>
-                                </div>
-                                <div style={{ color: '#28211e', fontWeight: 600, fontSize: 17, letterSpacing: 0.1 }}>
-                                  {q.text}
-                                </div>
-                                {q.description && <div style={{ color: '#6e5a67', fontSize: 15 }}>{q.description}</div>}
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      ) : i === 7 ? (
                         <div style={{ marginBottom: 18 }}>
-                          <label style={{ display: 'block', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
-                            Select Demographic Indicators to include:
-                          </label>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
+                          <div style={{ marginBottom: 16 }}>
+                            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Demographics Metrics</h3>
+                          </div>
+                          
+                          <div style={{ marginBottom: 16 }}>
+                            <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
+                              Select which demographic data to collect when users answer this survey. This information helps analyze survey results across different demographic groups.
+                            </p>
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                             {demographicOptions.map(opt => {
                               const isSelected = selectedDemographics.includes(opt.value);
                               return (
-                                <button
-                                  key={opt.value}
-                                  type="button"
-                                  aria-pressed={isSelected}
-                                  tabIndex={0}
-                                  onClick={() => {
-                                    setSelectedDemographics(
-                                      isSelected
-                                        ? selectedDemographics.filter(v => v !== opt.value)
-                                        : [...selectedDemographics, opt.value]
-                                    );
-                                  }}
-                                  onKeyDown={e => {
-                                    if (e.key === ' ' || e.key === 'Enter') {
-                                      e.preventDefault();
-                                      setSelectedDemographics(
-                                        isSelected
-                                          ? selectedDemographics.filter(v => v !== opt.value)
-                                          : [...selectedDemographics, opt.value]
-                                      );
-                                    }
-                                  }}
-                                  style={{
-                                    minWidth: 120,
-                                    padding: '8px 18px',
-                                    margin: '2px 0',
-                                    borderRadius: 8,
-                                    border: isSelected ? '2px solid #552a47' : '2px solid #e5d6c7',
-                                    background: isSelected ? '#552a47' : '#fff',
-                                    color: isSelected ? '#fff' : '#28211e',
-                                    fontWeight: 600,
-                                    fontSize: 15,
+                                <div key={opt.value} style={{ marginBottom: 10 }}>
+                                  <label style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 10, 
                                     cursor: 'pointer',
-                                    outline: isSelected ? '2px solid #552a47' : 'none',
-                                    boxShadow: isSelected ? '0 2px 8px #f4ebf1' : 'none',
-                                    transition: 'all 0.15s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                  }}
-                                >
-                                  {opt.label}
-                                </button>
+                                    padding: '10px 14px',
+                                    borderRadius: 8,
+                                    border: '1px solid #e0e0e0',
+                                    background: isSelected ? '#f5edf3' : '#fff',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.08)' : 'none'
+                                  }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => {
+                                        setSelectedDemographics(
+                                          isSelected
+                                            ? selectedDemographics.filter(v => v !== opt.value)
+                                            : [...selectedDemographics, opt.value]
+                                        );
+                                      }}
+                                      style={{ 
+                                        width: 18, 
+                                        height: 18,
+                                        accentColor: '#552a47'
+                                      }}
+                                    />
+                                    <span style={{ 
+                                      fontWeight: isSelected ? 600 : 500, 
+                                      fontSize: 15,
+                                      color: isSelected ? '#552a47' : '#333'
+                                    }}>
+                                      {opt.label}
+                                    </span>
+                                  </label>
+                                </div>
                               );
                             })}
+                          </div>
+                          
+                          <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                            <button 
+                              onClick={() => setSelectedDemographics(demographicOptions.map(opt => opt.value))}
+                              style={{
+                                padding: '8px 16px',
+                                background: '#f5edf3',
+                                border: '1px solid #e5d6e2',
+                                borderRadius: 8,
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: '#552a47',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              Select All
+                            </button>
+                            <button 
+                              onClick={() => setSelectedDemographics([])}
+                              style={{
+                                padding: '8px 16px',
+                                background: '#f0f0f0',
+                                border: '1px solid #ddd',
+                                borderRadius: 8,
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: '#555',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              Clear All
+                            </button>
                           </div>
                         </div>
                       ) : i === 8 ? (

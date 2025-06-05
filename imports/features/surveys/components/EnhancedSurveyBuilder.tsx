@@ -67,6 +67,24 @@ const Spinner = () => (
   </div>
 );
 
+// Define demographic options
+const demographicOptions = [
+  { value: 'location', label: 'Location' },
+  { value: 'age', label: 'Age' },
+  { value: 'gender', label: 'Gender' },
+  { value: 'education', label: 'Education Level' },
+  { value: 'employment', label: 'Employment Status' },
+  { value: 'income', label: 'Income Range' },
+  { value: 'ethnicity', label: 'Ethnicity' },
+  { value: 'language', label: 'Primary Language' },
+  { value: 'marital', label: 'Marital Status' },
+  { value: 'household', label: 'Household Size' },
+  { value: 'disability', label: 'Disability Status' },
+  { value: 'veteran', label: 'Veteran Status' },
+  { value: 'religion', label: 'Religious Affiliation' },
+  { value: 'politics', label: 'Political Affiliation' }
+];
+
 // Main EnhancedSurveyBuilder component
 const EnhancedSurveyBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -79,6 +97,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
   
   // State for modals
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
@@ -128,7 +147,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
             id: q.id || '',
             text: q.text || '',
             type: q.type || 'text',
-            status: q.status === 'draft' ? 'draft' : 'published',
+            status: q.status === 'draft' ? 'draft' : 'published' as 'draft' | 'published',
             sectionId: q.sectionId,
             order: q.order
           };
@@ -599,7 +618,100 @@ const EnhancedSurveyBuilder: React.FC = () => {
               )}
               
               {/* Other steps would be implemented here */}
-              {activeStep !== 'sections' && activeStep !== 'questions' && activeStep !== 'welcome' && (
+              {activeStep === 'demographics' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Demographics Metrics</h2>
+                  </div>
+                  
+                  <div style={{ padding: 20 }}>
+                    <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
+                      Select which demographic data to collect when users answer this survey. This information helps analyze survey results across different demographic groups.
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                      {demographicOptions.map(opt => {
+                        const isSelected = selectedDemographics.includes(opt.value);
+                        return (
+                          <div key={opt.value} style={{ marginBottom: 10 }}>
+                            <label style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 10, 
+                              cursor: 'pointer',
+                              padding: '10px 14px',
+                              borderRadius: 8,
+                              border: '1px solid #e0e0e0',
+                              background: isSelected ? '#f5edf3' : '#fff',
+                              transition: 'all 0.2s',
+                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.08)' : 'none'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  setSelectedDemographics(
+                                    isSelected
+                                      ? selectedDemographics.filter(v => v !== opt.value)
+                                      : [...selectedDemographics, opt.value]
+                                  );
+                                }}
+                                style={{ 
+                                  width: 18, 
+                                  height: 18,
+                                  accentColor: '#552a47'
+                                }}
+                              />
+                              <span style={{ 
+                                fontWeight: isSelected ? 600 : 500, 
+                                fontSize: 15,
+                                color: isSelected ? '#552a47' : '#333'
+                              }}>
+                                {opt.label}
+                              </span>
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                      <button 
+                        onClick={() => setSelectedDemographics(demographicOptions.map(opt => opt.value))}
+                        style={{
+                          padding: '8px 16px',
+                          background: '#f5edf3',
+                          border: '1px solid #e5d6e2',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#552a47',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Select All
+                      </button>
+                      <button 
+                        onClick={() => setSelectedDemographics([])}
+                        style={{
+                          padding: '8px 16px',
+                          background: '#f0f0f0',
+                          border: '1px solid #ddd',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#555',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : activeStep !== 'sections' && activeStep !== 'questions' && activeStep !== 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">
