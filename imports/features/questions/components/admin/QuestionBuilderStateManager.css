@@ -3,6 +3,7 @@
   flex-direction: column;
   width: 100%;
   width: calc(100% - 340px);
+  padding-left: 30px;
 }
 
 .state-manager-controls {

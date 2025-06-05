@@ -147,10 +147,12 @@ const QuestionClassification: React.FC<QuestionClassificationProps> = ({
           }
         });
         
-        Meteor.subscribe('questionTags.all', {
+        Meteor.subscribe('questionTags', {
           onReady: () => {
             if (isMounted) {
-              setTags(QuestionTags.find({}).fetch() as unknown as Tag[]);
+              const fetchedTags = QuestionTags.find({}).fetch() as unknown as Tag[];
+              console.log('Fetched tags:', fetchedTags);
+              setTags(fetchedTags);
               checkAllDataLoaded();
             }
           },
@@ -344,6 +346,11 @@ const QuestionClassification: React.FC<QuestionClassificationProps> = ({
     color: cat.color,
     description: cat.description,
   }));
+  
+  // Debug selected categories
+  console.log('Selected category IDs:', selectedCategoryIds);
+  console.log('Available categories:', categories);
+  console.log('Category options:', categoryOptions);
 
   const themeOptions = themes.map(theme => ({
     value: theme._id || '',
@@ -357,6 +364,10 @@ const QuestionClassification: React.FC<QuestionClassificationProps> = ({
     color: tag.color,
     category: tag.category,
   }));
+  
+  // Debug tag options and selected tag IDs
+  console.log('Tag options:', tagOptions);
+  console.log('Selected tag IDs:', selectedTagIds);
 
   // Group tags by category
   const groupedTagOptions = tagOptions.reduce((groups: any, tag) => {
