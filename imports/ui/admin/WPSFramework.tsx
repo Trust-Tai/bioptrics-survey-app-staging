@@ -3,6 +3,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { WPSCategories } from '/imports/api/wpsCategories';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
+import './WPSFramework.css';
 
 interface Category {
   _id?: string;
@@ -169,7 +170,7 @@ const WPSFramework: React.FC = () => {
           boxShadow: '0 2px 12px #552a4733',
         }}>{alert.message}</div>
       )}
-      <div style={{ width: '100%', padding: '32px 32px 32px 32px', background: '#fff8ee', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', padding: '32px 32px 32px 32px', background: '#fff8ee', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
         <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>WPS Framework</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <button
@@ -236,30 +237,46 @@ const WPSFramework: React.FC = () => {
         {filteredCategories.length === 0 ? (
           <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No categories found.</div>
         ) : (
-          <ul style={{ listStyle: 'none', padding: '24px 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 20, background: '#fffef6', borderRadius: 16 }}>
-            {filteredCategories.map(cat => (
-              <li key={cat._id} style={{ background: '#f9f4f7', borderRadius: 14, boxShadow: '0 2px 8px #f4ebf1', padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ flex: 1, fontSize: 17, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, maxWidth: '100%' }}>
-                    <span style={{ display: 'inline-block', width: 20, height: 20, background: cat.color, borderRadius: 4, marginRight: 10, border: '1px solid #d2c7b0' }} />
-                    <span style={{
-                      maxWidth: '320px',
-                      overflowWrap: 'break-word',
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-line',
-                      display: 'inline-block',
-                    }}>{cat.name}</span>
-                  </span>
-                </span>
-                <button onClick={() => setViewingCategory(cat)} style={{ marginLeft: 8, background: '#3776a8', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>View</button>
-                <button onClick={() => startEdit(cat)} style={{ marginLeft: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>Edit</button>
-                <button onClick={() => handleDelete(cat._id!)}
-                style={{ marginLeft: 8, background: '#f44336', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 500, fontSize: 15, padding: '6px 14px', cursor: 'pointer' }}>
-                  Delete
-                </button>  
-              </li>
-            ))}
-          </ul>
+          <div className="wps-container">
+            <div className="wps-grid">
+              {filteredCategories.map((cat, index) => (
+                <div key={cat._id} className="wps-category-card" style={index >= 3 ? { marginTop: '35px' } : {}}>
+                  <div className="wps-category-header">
+                    <span className="wps-category-color" style={{ background: cat.color }} />
+                    <span className="wps-category-title">{cat.name}</span>
+                  </div>
+                  
+                  <div className="wps-category-description">
+                    {cat.description}
+                  </div>
+                  
+                  <div className="wps-category-actions">
+                    <button 
+                      onClick={() => setViewingCategory(cat)} 
+                      className="wps-button wps-button-view"
+                      style={{ background: '#3776a8' }}
+                    >
+                      View
+                    </button>
+                    <button 
+                      onClick={() => startEdit(cat)} 
+                      className="wps-button wps-button-edit"
+                      style={{ background: '#552a47' }}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(cat._id!)} 
+                      className="wps-button wps-button-delete"
+                      style={{ background: '#f44336' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
       {/* View Category Modal */}
