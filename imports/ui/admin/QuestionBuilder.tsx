@@ -1,7 +1,7 @@
 import React from 'react';
 import { Meteor } from 'meteor/meteor';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import '../styles/quill-styles';
 import './QuestionBuilder.quill.css';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';

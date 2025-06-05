@@ -80,6 +80,11 @@ if (Meteor.isServer) {
   Meteor.publish('questions.all', function() {
     return Questions.find();
   });
+  
+  Meteor.publish('questions.single', function(questionId) {
+    check(questionId, String);
+    return Questions.find({ _id: questionId });
+  });
 }
 
 Meteor.methods({

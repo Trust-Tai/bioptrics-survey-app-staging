@@ -402,7 +402,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           })}
         </nav>
       </Sidebar>
-      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s' }}>
+      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', width: 'calc(100% - 264px)' }}>
         {/* Main Content */}
         <MainContent sidebarCollapsed={collapsed}>
           {children}

@@ -13,6 +13,58 @@ import DOMPurify from 'dompurify';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import QuestionPreviewModal from './QuestionPreviewModal';
 
+// Alert component for success and error messages
+interface AlertProps {
+  type: 'success' | 'error';
+  message: string;
+  onClose: () => void;
+}
+
+const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
+  useEffect(() => {
+    // Auto-close the alert after 5 seconds
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [onClose]);
+  
+  return (
+    <div className={`alert alert-${type}`} style={{
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      zIndex: 1000,
+      padding: '12px 20px',
+      borderRadius: '4px',
+      backgroundColor: type === 'success' ? '#d4edda' : '#f8d7da',
+      color: type === 'success' ? '#155724' : '#721c24',
+      border: `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minWidth: '300px'
+    }}>
+      <span>{message}</span>
+      <button 
+        onClick={onClose} 
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '16px',
+          marginLeft: '10px',
+          color: type === 'success' ? '#155724' : '#721c24',
+        }}
+      >
+        &times;
+      </button>
+    </div>
+  );
+};
+
 // Tag color definitions
 const QUE_TYPE_LABELS: Record<string, string> = {
   short_text: 'Short Text',
@@ -305,6 +357,7 @@ const AllQuestions: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
+  const [alert, setAlert] = useState<{type: 'success' | 'error', message: string} | null>(null);
   
   // Fetch all categories and themes
   const wpsCategories = useTracker(() => {
@@ -403,6 +456,16 @@ const AllQuestions: React.FC = () => {
       Meteor.call('questions.delete', questionToDelete, (error: any) => {
         if (error) {
           console.error('Error deleting question:', error);
+          setAlert({
+            type: 'error',
+            message: `Error deleting question: ${error.reason || error.message || 'Unknown error'}`
+          });
+        } else {
+          // Show success message
+          setAlert({
+            type: 'success',
+            message: 'Question deleted successfully!'
+          });
         }
       });
       setShowDeleteConfirm(false);
@@ -414,6 +477,14 @@ const AllQuestions: React.FC = () => {
     <AdminLayout>
       <DashboardBg>
         <Container>
+          {/* Show alert if it exists */}
+          {alert && (
+            <Alert 
+              type={alert.type} 
+              message={alert.message} 
+              onClose={() => setAlert(null)} 
+            />
+          )}
           <TitleRow>
             <Title>All Questions</Title>
             <div style={{ display: 'flex', gap: 12 }}>

@@ -4,7 +4,7 @@ import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 
@@ -128,7 +128,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
             id: q.id || '',
             text: q.text || '',
             type: q.type || 'text',
-            status: (q.status as 'draft' | 'published') || 'published',
+            status: q.status === 'draft' ? 'draft' : 'published',
             sectionId: q.sectionId,
             order: q.order
           };

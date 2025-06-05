@@ -4,8 +4,9 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import ReactQuill from 'react-quill';
+import '../../../../ui/styles/quill-styles';
 import 'react-quill/dist/quill.snow.css';
-import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaTags, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing } from 'react-icons/fa';
+import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaTags, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing, FaArrowLeft } from 'react-icons/fa';
 import ToggleSwitch from './ToggleSwitch';
 
 // Import layouts
@@ -169,86 +170,142 @@ const EnhancedQuestionBuilder: React.FC = () => {
   
   // Get question data from database
   // Get the question data with proper version handling
-  const { question, isReady } = useTracker(() => {
+  const { question, isReady, isEditMode } = useTracker(() => {
     let question = { ...defaultQuestion };
     let isReady = false;
+    let isEditMode = !!id; // If we have an ID, we're in edit mode
+    
+    console.log('EnhancedQuestionBuilder: useTracker running, id:', id);
     
     if (id) {
       const questionsSub = Meteor.subscribe('questions.single', id);
       isReady = questionsSub.ready();
+      console.log('EnhancedQuestionBuilder: subscription ready:', isReady);
       
       if (isReady) {
         const { Questions } = require('/imports/features/questions/api/questions');
         const questionDoc = Questions.findOne(id);
+        console.log('EnhancedQuestionBuilder: questionDoc found:', !!questionDoc);
         
         if (questionDoc) {
           // Get the current version of the question
-          const currentVersion = questionDoc.versions.find(
-            (v: any) => v.version === questionDoc.currentVersion
-          ) || questionDoc.versions[questionDoc.versions.length - 1];
+          const currentVersion = questionDoc.versions && questionDoc.versions.length > 0 ? 
+            (questionDoc.versions.find(
+              (v: any) => v.version === questionDoc.currentVersion
+            ) || questionDoc.versions[questionDoc.versions.length - 1]) : null;
+          
+          console.log('EnhancedQuestionBuilder: currentVersion found:', !!currentVersion);
           
           if (currentVersion) {
             // Map the versioned question fields to the format expected by the builder
+            // Log the current version data to debug category mapping
+            console.log('Current version data:', currentVersion);
+            
             question = {
               _id: questionDoc._id,
-              text: currentVersion.questionText,
+              text: currentVersion.questionText || '',
               description: currentVersion.description || '',
-              answerType: currentVersion.responseType,
+              answerType: currentVersion.responseType || 'text',
               answers: Array.isArray(currentVersion.options) ? currentVersion.options : [],
               required: currentVersion.required || true,
               image: currentVersion.image || '',
               labels: currentVersion.labels || [],
               feedback: currentVersion.feedbackType || 'none',
-              categories: currentVersion.categoryTags || [],
+              // Ensure categoryTags is properly mapped to categories
+              categories: Array.isArray(currentVersion.categoryTags) ? currentVersion.categoryTags : [],
+              // Also set categoryId if it exists in the data
+              categoryId: currentVersion.categoryId || undefined,
+              categoryDetails: currentVersion.categoryDetails || '',
               themes: currentVersion.surveyThemes || [],
               reusable: currentVersion.isReusable || false,
               priority: currentVersion.priority || 0,
-              active: currentVersion.isActive !== false, // Default to true if not specified
+              active: currentVersion.isActive !== false, // Default to true if not explicitly set to false
               keywords: currentVersion.keywords || [],
               status: currentVersion.status || 'draft',
-              branchingLogic: currentVersion.branchingLogic || {
-                enabled: false,
-                rules: [],
-                defaultDestination: ''
-              }
+              branchingLogic: currentVersion.branchingLogic || {},
+              customFields: currentVersion.customFields || [],
+              // Add any other fields you need
             };
           }
         }
       }
     } else {
-      // If no ID, we're creating a new question, so we're ready
+      // If there's no ID, we're creating a new question, so we're ready immediately
       isReady = true;
     }
     
-    return { question, isReady };
+    return { question, isReady, isEditMode };
   }, [id]);
   
   // Initialize question sections when data is ready
   useEffect(() => {
-    if (isReady) {
-      // Use a ref to track if we've already initialized to prevent multiple initializations
+    console.log('Initialization effect running', { id, isReady, isEditMode });
+    
+    // For edit mode, we need to wait for data to be ready
+    // For create mode, we can proceed immediately
+    if (!isEditMode || (isEditMode && isReady)) {
+      console.log('Initializing question builder', { isEditMode });
+      
+      // Create the initial section with the current question data
       const initialSection: QuestionSection = {
         id: id || `new-question-${Date.now()}`,
         question: { ...question }, // Create a new object to avoid reference issues
         isExpanded: true
       };
       
-      // Only set these states if we need to (prevent unnecessary re-renders)
+      // Set question sections if empty
       setQuestionSections(prev => {
-        if (prev.length === 0) return [initialSection];
+        if (prev.length === 0) {
+          console.log('Setting initial question section');
+          return [initialSection];
+        }
         return prev;
       });
       
+      // Set active question ID if not already set
       setActiveQuestionId(prevId => {
         if (!prevId) return initialSection.id;
         return prevId;
       });
       
+      // Always set loading to false when we've initialized
       setIsLoading(false);
     }
-  }, [isReady, id]); // Keep dependencies minimal to prevent infinite loop
+  }, [isReady, id, question, isEditMode]); // Include all dependencies
   
-  // No longer needed as we set loading state in the initialization effect
+  // Track if we've already set up the fallback timeout
+  const [fallbackTimeoutSet, setFallbackTimeoutSet] = useState(false);
+  
+  // Fallback timeout to prevent getting stuck at loading screen
+  // This effect runs only once after the component mounts, not during reactive computations
+  useEffect(() => {
+    // Only set the timeout if we haven't already
+    if (!fallbackTimeoutSet && isLoading) {
+      setFallbackTimeoutSet(true);
+      
+      // Set a timeout to force loading to false after 5 seconds
+      // This ensures we don't get stuck at the loading screen
+      const timeoutId = setTimeout(() => {
+        console.log('Loading timeout reached, forcing initialization');
+        setIsLoading(false);
+        
+        // If we don't have any question sections, create a default one
+        setQuestionSections(prev => {
+          if (prev.length === 0) {
+            const defaultSection = {
+              id: id || `new-question-${Date.now()}`,
+              question: { ...defaultQuestion },
+              isExpanded: true
+            };
+            return [defaultSection];
+          }
+          return prev;
+        });
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading, fallbackTimeoutSet]);
   
   // Save question to database with specified status
   const saveQuestion = async (questionData: Question, status?: 'draft' | 'published'): Promise<void> => {
@@ -261,6 +318,8 @@ const EnhancedQuestionBuilder: React.FC = () => {
       
       // Format the question data for versioning
       // Map the question fields to the format expected by the server
+      console.log('Saving question data:', questionData);
+      
       const versionedData = {
         questionText: questionData.text,
         description: questionData.description,
@@ -271,16 +330,44 @@ const EnhancedQuestionBuilder: React.FC = () => {
         labels: questionData.labels,
         feedbackType: questionData.feedback,
         categoryTags: questionData.categories,
+        // Save the single category ID if present
+        categoryId: questionData.categoryId,
+        // Save category details if present
+        categoryDetails: questionData.categoryDetails,
         surveyThemes: questionData.themes,
         isReusable: questionData.reusable,
         priority: questionData.priority,
         isActive: questionData.active,
         keywords: questionData.keywords,
         status: status || questionData.status,
-        branchingLogic: questionData.branchingLogic
+        branchingLogic: questionData.branchingLogic,
+        customFields: questionData.customFields || []
       };
       
-      if (section.id.startsWith('new-question-')) {
+      // In edit mode, we always want to update the existing question
+      if (isEditMode || !section.id.startsWith('new-question-')) {
+        try {
+          // Update existing question
+          await Meteor.callAsync('questions.update', section.id, versionedData);
+          
+          // Show success message
+          setAlert({
+            type: 'success',
+            message: status === 'published' ? 
+              'Question published successfully!' : 
+              'Question updated successfully!'
+          });
+          
+          // No longer navigate away after publishing - stay on the same page
+          // The user can use the back button if they want to return to the questions list
+        } catch (error: any) {
+          console.error('Error updating question:', error);
+          setAlert({
+            type: 'error',
+            message: `Error updating question: ${error.reason || error.message}`
+          });
+        }
+      } else {
         // Insert new question
         const newId = await Meteor.callAsync('questions.insert', versionedData);
         
@@ -291,10 +378,6 @@ const EnhancedQuestionBuilder: React.FC = () => {
         
         setActiveQuestionId(newId);
         showSuccessAlert('Question created successfully!');
-      } else {
-        // Update existing question
-        await Meteor.callAsync('questions.update', section.id, versionedData);
-        showSuccessAlert('Question saved successfully!');
       }
       
       // Update local state with the new status
@@ -312,12 +395,6 @@ const EnhancedQuestionBuilder: React.FC = () => {
         setQuestionSections(updatedSections);
       }
       setIsSaving(false);
-      
-      // If this was a new question that was just saved, make sure we don't create another one automatically
-      if (section.id.startsWith('new-question-')) {
-        // We've already updated the section ID in the state above, so we don't need to do anything else here
-        // The isNew flag is now set to false, which will prevent duplicate creation
-      }
     } catch (error) {
       setIsSaving(false);
       console.error('Error saving question:', error);
@@ -487,15 +564,40 @@ const EnhancedQuestionBuilder: React.FC = () => {
     return error instanceof Error || (typeof error === 'object' && error !== null && 'message' in error);
   };
 
-  if (isLoading) {
-    return <div className="loading-spinner">Loading question data...</div>;
-  }
-  
   // Get the active question section
   const activeSection = questionSections.find(section => section.id === activeQuestionId);
+  
+  // If we're loading and it's been less than 3 seconds since component mounted, show loading
+  // Otherwise, proceed with default data to prevent getting stuck
+  if (isLoading) {
+    return <div className="loading-spinner">Loading question data...<br/><small>(If this takes too long, please refresh the page)</small></div>;
+  }
+  
+  // If we have sections but no active section, set the first one as active
   if (!activeSection && questionSections.length > 0) {
-    setActiveQuestionId(questionSections[0].id);
-    return <div className="loading-spinner">Loading question data...</div>;
+    // Instead of returning loading, just set the active ID and continue
+    // This will cause a re-render with the correct active section
+    setTimeout(() => setActiveQuestionId(questionSections[0].id), 0);
+    
+    // Return a brief loading message, but we should never get stuck here
+    return <div className="loading-spinner">Initializing editor...</div>;
+  }
+  
+  // If we have no sections at all, create a default one
+  if (questionSections.length === 0) {
+    const defaultSection = {
+      id: id || `new-question-${Date.now()}`,
+      question: { ...defaultQuestion },
+      isExpanded: true
+    };
+    
+    // Set up the default section and continue rendering
+    setTimeout(() => {
+      setQuestionSections([defaultSection]);
+      setActiveQuestionId(defaultSection.id);
+    }, 0);
+    
+    return <div className="loading-spinner">Creating new question...</div>;
   }
 
   return (
@@ -524,101 +626,123 @@ const EnhancedQuestionBuilder: React.FC = () => {
                 }}
               >{alert.message}</div>
             )}
-            <div className="question-builder-sections">
-              <div className="sections-header">
-                <h1>Question Builder</h1>
-                <div className="bulk-action-buttons">
-                  <button
-                    className="save-all-button"
-                    onClick={async () => {
-                      try {
-                        setIsSaving(true);
-                        for (const questionSection of questionSections) {
-                          await saveQuestion(questionSection.question, 'draft');
-                          showSuccessAlert('All questions saved successfully!');
-                        }
-                      } catch (error) {
-                        console.error('Error saving all questions:', error);
-                        showErrorAlert('Error saving all questions. Please try again.');
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
-                    disabled={isSaving}
-                    title="Save All Questions"
-                  >
-                    <FaSave /> Save All
-                  </button>
-                  <button
-                    className="publish-all-button"
-                    onClick={async () => {
-                      try {
-                        setIsSaving(true);
-                        for (const questionSection of questionSections) {
-                          try {
-                            await saveQuestion(questionSection.question, 'published');
-                            showSuccessAlert('Question published successfully!');
-                          } catch (error) {
-                            // Error is already handled in saveQuestion
+            {/* Only show the question-builder-sections in create mode */}
+            {!isEditMode && (
+              <div className="question-builder-sections">
+                <div className="sections-header">
+                  <h1>Question Builder</h1>
+                  <div className="bulk-action-buttons">
+                    <button
+                      className="save-all-button"
+                      onClick={async () => {
+                        try {
+                          setIsSaving(true);
+                          for (const questionSection of questionSections) {
+                            await saveQuestion(questionSection.question, 'draft');
+                            showSuccessAlert('All questions saved successfully!');
                           }
+                        } catch (error) {
+                          console.error('Error saving all questions:', error);
+                          showErrorAlert('Error saving all questions. Please try again.');
+                        } finally {
+                          setIsSaving(false);
                         }
-                        showSuccessAlert('All questions published successfully!');
-                      } catch (error) {
-                        console.error('Error publishing all questions:', error);
-                        showErrorAlert('Error publishing all questions. Please try again.');
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
-                    disabled={isSaving}
-                    title="Publish All Questions"
-                  >
-                    <FaSave /> Publish All
-                  </button>
+                      }}
+                      disabled={isSaving}
+                      title="Save All Questions"
+                    >
+                      <FaSave /> Save All
+                    </button>
+                    <button
+                      className="publish-all-button"
+                      onClick={async () => {
+                        try {
+                          setIsSaving(true);
+                          for (const questionSection of questionSections) {
+                            try {
+                              await saveQuestion(questionSection.question, 'published');
+                              showSuccessAlert('Question published successfully!');
+                            } catch (error) {
+                              // Error is already handled in saveQuestion
+                            }
+                          }
+                          showSuccessAlert('All questions published successfully!');
+                        } catch (error) {
+                          console.error('Error publishing all questions:', error);
+                          showErrorAlert('Error publishing all questions. Please try again.');
+                        } finally {
+                          setIsSaving(false);
+                        }
+                      }}
+                      disabled={isSaving}
+                      title="Publish All Questions"
+                    >
+                      <FaSave /> Publish All
+                    </button>
+                  </div>
+                  <div className="sections-header-buttons">
+                    <button className="add-question-button" onClick={addNewQuestion}>
+                      + Add New Question
+                    </button>
+                  </div>
                 </div>
-                <div className="sections-header-buttons">
-                  <button className="add-question-button" onClick={addNewQuestion}>
-                    + Add New Question
-                  </button>
-                </div>
-              </div>
-              
-              <div className="question-sections-list">
-                {questionSections.map((section, index) => (
-                  <div 
-                    key={section.id} 
-                    className={`question-section-item ${activeQuestionId === section.id ? 'active' : ''}`}
-                    onClick={() => setActiveQuestion(section.id)}
-                  >
-                    <div className="question-section-header">
-                      <span className="question-title">
-                        {section.question.text || `Question ${index + 1}`}
-                      </span>
-                      <div className="question-actions">
-                        <button 
-                          className="toggle-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleQuestionSection(section.id);
-                          }}
-                        >
-                          {section.isExpanded ? '▼' : '►'}
-                        </button>
-                        <button 
-                          className="remove-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeQuestionSection(section.id);
-                          }}
-                        >
-                          <FaTimes />
-                        </button>
+                
+                <div className="question-sections-list">
+                  {/* Full view for create mode with multiple questions */}
+                  {questionSections.map((section, index) => (
+                    <div 
+                      key={section.id} 
+                      className={`question-section-item ${activeQuestionId === section.id ? 'active' : ''}`}
+                      onClick={() => setActiveQuestion(section.id)}
+                    >
+                      <div className="question-section-header">
+                        <span className="question-title">
+                          {section.question.text || `Question ${index + 1}`}
+                        </span>
+                        <div className="question-actions">
+                          <button 
+                            className="toggle-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleQuestionSection(section.id);
+                            }}
+                          >
+                            {section.isExpanded ? '▼' : '►'}
+                          </button>
+                          <button 
+                            className="remove-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeQuestionSection(section.id);
+                            }}
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+            
+            {/* Add a title bar for edit mode */}
+            {isEditMode && (
+              <div className="edit-mode-header">
+                <div className="edit-mode-header-top">
+                  <button 
+                    className="back-button" 
+                    onClick={() => navigate('/admin/questions')}
+                  >
+                    <FaArrowLeft /> Back to Questions
+                  </button>
+                  <h1>Edit Question</h1>
+                </div>
+                <div className="edit-mode-info">
+                  <span>ID: {id}</span>
+                </div>
+              </div>
+            )}
             
             {activeSection && (
               <QuestionBuilderStateManager
@@ -641,7 +765,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
                 }) => (
                   <>
                     <div className="question-builder-header">
-                      <h2>{activeSection.id.startsWith('new-question-') ? 'Create New Question' : 'Edit Question'}</h2>
+                      <h2>{isEditMode ? 'Edit Question' : (activeSection.id.startsWith('new-question-') ? 'Create New Question' : 'Edit Question')}</h2>
                       
                       <div className="question-builder-actions">
                         <div className="undo-redo-actions">
@@ -669,19 +793,29 @@ const EnhancedQuestionBuilder: React.FC = () => {
                           className="save-button"
                           onClick={() => saveQuestion(question, 'draft')}
                           disabled={isSaving}
-                          title="Save Question"
+                          title={isEditMode ? "Update Question" : "Save Question"}
                         >
-                          <FaSave /> Save
+                          <FaSave /> {isEditMode ? 'Update' : 'Save'}
                         </button>
                         
                         <button
                           className="save-button publish-button"
                           onClick={() => saveQuestion(question, 'published')}
                           disabled={isSaving}
-                          title="Publish Question"
+                          title={isEditMode ? "Update & Publish Question" : "Publish Question"}
                         >
-                          <FaSave /> Publish
+                          <FaSave /> {isEditMode ? 'Update & Publish' : 'Publish'}
                         </button>
+                        
+                        {isEditMode && (
+                          <button
+                            className="cancel-button"
+                            onClick={() => navigate('/admin/questions')}
+                            title="Cancel and return to questions list"
+                          >
+                            Cancel
+                          </button>
+                        )}
                         
                         <div className="template-dropdown-container" ref={dropdownRef}>
                           <button
