@@ -109,7 +109,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                     <FiMove />
                   </div>
                   <div className="survey-section-question-title">
-                    {question.text}
+                    {question.text.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '')}
                   </div>
                   <div className="survey-section-question-actions">
                     <button 

@@ -163,7 +163,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                   )}
                 </div>
                 <div className="question-selector-info">
-                  <div className="question-selector-title">{question.text}</div>
+                  <div className="question-selector-title">
+                    {question.text.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '')}
+                  </div>
                   <div className="question-selector-type">
                     {question.type} • {question.status}
                   </div>
