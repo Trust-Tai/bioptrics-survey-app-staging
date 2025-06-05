@@ -67,6 +67,24 @@ const Spinner = () => (
   </div>
 );
 
+// Define demographic options
+const demographicOptions = [
+  { value: 'location', label: 'Location' },
+  { value: 'age', label: 'Age' },
+  { value: 'gender', label: 'Gender' },
+  { value: 'education', label: 'Education Level' },
+  { value: 'employment', label: 'Employment Status' },
+  { value: 'income', label: 'Income Range' },
+  { value: 'ethnicity', label: 'Ethnicity' },
+  { value: 'language', label: 'Primary Language' },
+  { value: 'marital', label: 'Marital Status' },
+  { value: 'household', label: 'Household Size' },
+  { value: 'disability', label: 'Disability Status' },
+  { value: 'veteran', label: 'Veteran Status' },
+  { value: 'religion', label: 'Religious Affiliation' },
+  { value: 'politics', label: 'Political Affiliation' }
+];
+
 // Main EnhancedSurveyBuilder component
 const EnhancedSurveyBuilder: React.FC = () => {
   const navigate = useNavigate();
@@ -79,6 +97,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [selectedDemographics, setSelectedDemographics] = useState<string[]>([]);
   
   // State for modals
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
@@ -87,7 +106,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<SurveySectionItem | undefined>(undefined);
   
   // Use Meteor's reactive data system to load questions and survey data
-  const { isLoading, allQuestions } = useTracker(() => {
+  const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
     // Subscribe to all questions
     const questionsSub = Meteor.subscribe('questions.all');
     const themesSub = Meteor.subscribe('surveyThemes.all');
@@ -105,8 +124,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
     
     const isLoading = !questionsSub.ready() || !surveysSub.ready() || !themesSub.ready() || !categoriesSub.ready();
     
-    // Fetch all available questions
+    // Fetch all available questions, themes, and categories
     const allQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
+    const surveyThemes = SurveyThemes.find({}, { sort: { name: 1 } }).fetch();
+    const wpsCategories = WPSCategories.find({}, { sort: { name: 1 } }).fetch();
     
     if (currentSurvey && !isLoading) {
       // Update survey state when data is ready
@@ -128,7 +149,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
             id: q.id || '',
             text: q.text || '',
             type: q.type || 'text',
-            status: q.status === 'draft' ? 'draft' : 'published',
+            status: q.status === 'draft' ? 'draft' : 'published' as 'draft' | 'published',
             sectionId: q.sectionId,
             order: q.order
           };
@@ -140,6 +161,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
     
     return {
       isLoading,
+      surveyThemes,
+      wpsCategories,
       allQuestions: allQuestions.map(q => {
         // Get the current version of the question
         const currentVersion = q.versions?.[q.currentVersion - 1] || {};
@@ -599,7 +622,288 @@ const EnhancedSurveyBuilder: React.FC = () => {
               )}
               
               {/* Other steps would be implemented here */}
-              {activeStep !== 'sections' && activeStep !== 'questions' && activeStep !== 'welcome' && (
+              {activeStep === 'demographics' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Demographics Metrics</h2>
+                  </div>
+                  
+                  <div style={{ padding: 20 }}>
+                    <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
+                      Select which demographic data to collect when users answer this survey. This information helps analyze survey results across different demographic groups.
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                      {demographicOptions.map(opt => {
+                        const isSelected = selectedDemographics.includes(opt.value);
+                        return (
+                          <div key={opt.value} style={{ marginBottom: 10 }}>
+                            <label style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 10, 
+                              cursor: 'pointer',
+                              padding: '10px 14px',
+                              borderRadius: 8,
+                              border: '1px solid #e0e0e0',
+                              background: isSelected ? '#f5edf3' : '#fff',
+                              transition: 'all 0.2s',
+                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.08)' : 'none'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  setSelectedDemographics(
+                                    isSelected
+                                      ? selectedDemographics.filter(v => v !== opt.value)
+                                      : [...selectedDemographics, opt.value]
+                                  );
+                                }}
+                                style={{ 
+                                  width: 18, 
+                                  height: 18,
+                                  accentColor: '#552a47'
+                                }}
+                              />
+                              <span style={{ 
+                                fontWeight: isSelected ? 600 : 500, 
+                                fontSize: 15,
+                                color: isSelected ? '#552a47' : '#333'
+                              }}>
+                                {opt.label}
+                              </span>
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                      <button 
+                        onClick={() => setSelectedDemographics(demographicOptions.map(opt => opt.value))}
+                        style={{
+                          padding: '8px 16px',
+                          background: '#f5edf3',
+                          border: '1px solid #e5d6e2',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#552a47',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Select All
+                      </button>
+                      <button 
+                        onClick={() => setSelectedDemographics([])}
+                        style={{
+                          padding: '8px 16px',
+                          background: '#f0f0f0',
+                          border: '1px solid #ddd',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#555',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : activeStep === 'themes' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">
+                      {steps.find(step => step.id === activeStep)?.label}
+                    </h2>
+                  </div>
+                  
+                  <div style={{ padding: 20 }}>
+                    <p style={{ marginBottom: 16, fontSize: 15 }}>
+                      Select a theme for your survey. The theme will affect the appearance and feel of your survey.
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                      {surveyThemes.map((theme: any) => {
+                        const isSelected = survey?.theme === theme._id;
+                        return (
+                          <div 
+                            key={theme._id} 
+                            onClick={() => setSurvey({ ...survey, theme: theme._id })}
+                            style={{ 
+                              cursor: 'pointer',
+                              borderRadius: 8,
+                              border: `2px solid ${isSelected ? theme.color || '#552a47' : '#e0e0e0'}`,
+                              background: isSelected ? '#f5edf3' : '#fff',
+                              padding: '16px',
+                              transition: 'all 0.2s',
+                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 12
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ 
+                                width: 24, 
+                                height: 24, 
+                                borderRadius: '50%', 
+                                background: theme.color || '#552a47',
+                                border: '1px solid #e0e0e0'
+                              }} />
+                              <div style={{ 
+                                fontWeight: isSelected ? 600 : 500, 
+                                fontSize: 16,
+                                color: isSelected ? '#552a47' : '#333'
+                              }}>
+                                {theme.name}
+                              </div>
+                            </div>
+                            
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between'
+                            }}>
+                              <div style={{ 
+                                fontSize: 14, 
+                                color: '#666',
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {theme.description || 'No description'}
+                              </div>
+                              <div style={{ 
+                                width: 20, 
+                                height: 20, 
+                                borderRadius: '50%', 
+                                border: `2px solid ${isSelected ? theme.color || '#552a47' : '#ddd'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: '#fff'
+                              }}>
+                                {isSelected && (
+                                  <div style={{ 
+                                    width: 12, 
+                                    height: 12, 
+                                    borderRadius: '50%', 
+                                    background: theme.color || '#552a47' 
+                                  }} />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : activeStep === 'categories' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">
+                      {steps.find(step => step.id === activeStep)?.label}
+                    </h2>
+                  </div>
+                  
+                  <div style={{ padding: 20 }}>
+                    <p style={{ marginBottom: 16, fontSize: 15 }}>
+                      Select categories for your survey. Categories help organize and classify your survey content.
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+                      {wpsCategories.map((category: any) => {
+                        const isSelected = survey?.categories?.includes(category._id);
+                        return (
+                          <div 
+                            key={category._id} 
+                            onClick={() => {
+                              const currentCategories = survey?.categories || [];
+                              const updatedCategories = isSelected
+                                ? currentCategories.filter((id: string) => id !== category._id)
+                                : [...currentCategories, category._id];
+                              setSurvey({ ...survey, categories: updatedCategories });
+                            }}
+                            style={{ 
+                              cursor: 'pointer',
+                              borderRadius: 8,
+                              border: `2px solid ${isSelected ? category.color || '#552a47' : '#e0e0e0'}`,
+                              background: isSelected ? '#f5edf3' : '#fff',
+                              padding: '16px',
+                              transition: 'all 0.2s',
+                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 12
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ 
+                                width: 24, 
+                                height: 24, 
+                                borderRadius: '4px', 
+                                background: category.color || '#552a47',
+                                border: '1px solid #e0e0e0'
+                              }} />
+                              <div style={{ 
+                                fontWeight: isSelected ? 600 : 500, 
+                                fontSize: 16,
+                                color: isSelected ? '#552a47' : '#333'
+                              }}>
+                                {category.name}
+                              </div>
+                            </div>
+                            
+                            <div style={{ 
+                              fontSize: 14, 
+                              color: '#666',
+                              marginTop: 5,
+                              lineHeight: '1.4'
+                            }}>
+                              {category.description || 'No description'}
+                            </div>
+                            
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'flex-end',
+                              marginTop: 10
+                            }}>
+                              <div style={{ 
+                                width: 20, 
+                                height: 20, 
+                                borderRadius: '4px', 
+                                border: `2px solid ${isSelected ? category.color || '#552a47' : '#ddd'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: '#fff'
+                              }}>
+                                {isSelected && (
+                                  <div style={{ 
+                                    width: 12, 
+                                    height: 12, 
+                                    borderRadius: '2px', 
+                                    background: category.color || '#552a47' 
+                                  }} />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : activeStep !== 'sections' && activeStep !== 'questions' && activeStep !== 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">
