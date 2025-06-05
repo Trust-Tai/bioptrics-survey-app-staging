@@ -296,13 +296,155 @@ const WPSFramework: React.FC = () => {
         </div>
       )}
 
+      {/* View Category Modal */}
       {viewingCategory && (
-        <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
-            <h3 style={{ margin: 0, fontWeight: 800, color: viewingCategory.color, fontSize: 22 }}>{viewingCategory.name}</h3>
-            <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12 }}>{viewingCategory.description}</div>
-            <div style={{ fontSize: 13, color: '#8a7a85' }}>Created: {viewingCategory.createdAt ? new Date(viewingCategory.createdAt).toLocaleString() : '-'}</div>
-            <button onClick={() => setViewingCategory(null)} style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer', marginTop: 14 }}>Close</button>
+        <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ 
+            background: '#fff', 
+            borderRadius: 16, 
+            padding: 0, 
+            width: 500, 
+            maxWidth: '90%', 
+            minHeight: 320, 
+            boxShadow: '0 8px 42px rgba(85,42,71,0.25)', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            position: 'relative', 
+            boxSizing: 'border-box',
+            overflow: 'hidden'
+          }}>
+            {/* Header */}
+            <div style={{ 
+              background: viewingCategory.color || '#552a47', 
+              color: '#fff', 
+              padding: '20px 24px', 
+              borderTopLeftRadius: 16, 
+              borderTopRightRadius: 16,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: 22 }}>{viewingCategory.name}</h3>
+              <button 
+                onClick={() => setViewingCategory(null)}
+                style={{ 
+                  background: 'rgba(255,255,255,0.2)', 
+                  border: 'none', 
+                  color: '#fff', 
+                  fontSize: 22, 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  padding: 0,
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div style={{ 
+              padding: '28px 32px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: 24,
+              flex: 1
+            }}>
+              {/* Category color indicator */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                marginBottom: 8
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 8,
+                  background: viewingCategory.color || '#552a47',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(0,0,0,0.05)'
+                }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#666', marginBottom: 4 }}>Category Color</div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#28211e' }}>{viewingCategory.color}</div>
+                </div>
+              </div>
+              
+              {/* Description section */}
+              <div style={{ 
+                background: '#f9f4f7', 
+                borderRadius: 12, 
+                padding: '20px 24px',
+                marginBottom: 8
+              }}>
+                <h4 style={{ 
+                  margin: '0 0 12px 0', 
+                  fontSize: 16, 
+                  fontWeight: 600, 
+                  color: '#552a47',
+                  borderBottom: '1px solid rgba(85,42,71,0.1)',
+                  paddingBottom: 8
+                }}>Description</h4>
+                <div style={{ 
+                  fontSize: 16, 
+                  lineHeight: 1.6,
+                  color: '#28211e',
+                  whiteSpace: 'pre-wrap'
+                }}>{viewingCategory.description || 'No description provided.'}</div>
+              </div>
+              
+              {/* Metadata */}
+              <div style={{ 
+                fontSize: 14, 
+                color: '#8a7a85',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginTop: 'auto'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.7 }}>
+                  <path d="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#8a7a85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Created: {viewingCategory.createdAt ? new Date(viewingCategory.createdAt).toLocaleString() : 'Unknown'}
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div style={{ 
+              borderTop: '1px solid #f0e5ed',
+              padding: '16px 32px',
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}>
+              <button 
+                onClick={() => setViewingCategory(null)} 
+                style={{ 
+                  background: '#552a47', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: 8, 
+                  fontWeight: 600, 
+                  padding: '0 24px', 
+                  fontSize: 15, 
+                  height: 42, 
+                  cursor: 'pointer',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = '#46233b'}
+                onMouseOut={e => e.currentTarget.style.background = '#552a47'}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
