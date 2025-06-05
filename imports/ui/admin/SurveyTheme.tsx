@@ -493,75 +493,194 @@ const SurveyTheme: React.FC = () => {
         {themes.length === 0 ? (
           <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No themes found.</div>
         ) : (
-          <ul style={{ listStyle: 'none', padding: '24px 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 20, background: '#fffef6', borderRadius: 16 }}>
-            {themes.filter(theme => theme.name.toLowerCase().includes(search.toLowerCase())).map(themeData => {
-              const theme = toTheme(themeData);
-              return (
-              <li key={theme._id} style={{ background: '#f9f4f7', borderRadius: 14, boxShadow: '0 2px 8px #f4ebf1', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ display: 'inline-block', width: 20, height: 20, background: theme.color, borderRadius: 4, marginRight: 10, border: '1px solid #d2c7b0' }} />
-                      <span 
-                        style={{ maxWidth: '320px', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-line', display: 'inline-block', fontWeight: 700, fontSize: 17, cursor: 'pointer' }}
-                        onClick={() => handleViewTheme(theme)}
-                      >
-                        {theme.name}
-                      </span>
-                      {theme.isActive === false && (
-                        <span style={{ backgroundColor: '#f8d7da', color: '#dc3545', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>Inactive</span>
-                      )}
-                    </div>
-                    <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: 15 }}>{theme.description || ''}</p>
-                  </div>
-                  <div>
-                    <button onClick={() => handleViewTheme(theme)} style={{ background: 'none', border: 'none', color: '#3776a8', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>View</button>
-                    <button onClick={() => startEdit(theme)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>Edit</button>
-                    <button onClick={() => handleDelete(theme._id!)} style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 14, color: '#666' }}>
-                  {theme.wpsCategoryId && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ fontWeight: 600 }}>WPS Category:</span>
-                      <span>{wpsCategories.find((cat: any) => cat._id === theme.wpsCategoryId)?.name}</span>
-                    </div>
-                  )}
+          <div style={{ 
+            padding: '28px 24px', 
+            margin: 0
+          }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(3, 1fr)', 
+              gap: '24px',
+              width: '100%'
+            }}>
+              {themes.filter(theme => theme.name.toLowerCase().includes(search.toLowerCase())).map((themeData, index) => {
+                const theme = toTheme(themeData);
+                return (
+                <div 
+                  key={theme._id} 
+                  style={{ 
+                    background: '#fff', 
+                    borderRadius: 14, 
+                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)', 
+                    padding: '24px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 16,
+                    border: '1px solid #f0f0f0',
+                    transition: 'all 0.2s ease-in-out',
+                    height: '100%',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    marginTop: index >= 3 ? '45px' : '0'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(85, 42, 71, 0.12)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.05)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {/* Color indicator at top of card */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '6px',
+                    background: theme.color,
+                  }} />
                   
-                  {theme.assignableTo && theme.assignableTo.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 600 }}>Assignable to:</span>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {theme.assignableTo.includes('questions') && (
-                          <span style={{ backgroundColor: '#e3f2fd', color: '#0d6efd', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>Questions</span>
-                        )}
-                        {theme.assignableTo.includes('surveys') && (
-                          <span style={{ backgroundColor: '#fff3cd', color: '#fd7e14', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>Surveys</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span 
+                          style={{ 
+                            maxWidth: '100%', 
+                            overflowWrap: 'break-word', 
+                            wordBreak: 'break-word', 
+                            whiteSpace: 'pre-line', 
+                            display: 'inline-block', 
+                            fontWeight: 700, 
+                            fontSize: 18, 
+                            cursor: 'pointer',
+                            color: theme.color
+                          }}
+                          onClick={() => handleViewTheme(theme)}
+                        >
+                          {theme.name}
+                        </span>
+                        {theme.isActive === false && (
+                          <span style={{ 
+                            backgroundColor: '#f8d7da', 
+                            color: '#dc3545', 
+                            padding: '2px 8px', 
+                            borderRadius: 4, 
+                            fontSize: 11, 
+                            fontWeight: 600 
+                          }}>Inactive</span>
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
                   
-                  {theme.priority !== undefined && theme.priority > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ fontWeight: 600 }}>Priority:</span>
-                      <span>{theme.priority}</span>
+                  <p style={{ 
+                    margin: '4px 0 0 0', 
+                    color: '#555', 
+                    fontSize: 15,
+                    flexGrow: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>{theme.description || ''}</p>
+                  
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 14, color: '#666', marginTop: 'auto' }}>
+                    {theme.wpsCategoryId && (
+                      <div style={{ 
+                        display: 'inline-block', 
+                        backgroundColor: '#f2f2f2', 
+                        padding: '4px 10px', 
+                        borderRadius: 6,
+                        fontSize: 13
+                      }}>
+                        {wpsCategories.find((cat: any) => cat._id === theme.wpsCategoryId)?.name}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {theme.assignableTo && theme.assignableTo.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      {theme.assignableTo.includes('questions') && (
+                        <span style={{ 
+                          backgroundColor: '#e3f2fd', 
+                          color: '#0d6efd', 
+                          padding: '3px 8px', 
+                          borderRadius: 4, 
+                          fontSize: 12, 
+                          fontWeight: 600 
+                        }}>Questions</span>
+                      )}
+                      {theme.assignableTo.includes('surveys') && (
+                        <span style={{ 
+                          backgroundColor: '#fff3cd', 
+                          color: '#fd7e14', 
+                          padding: '3px 8px', 
+                          borderRadius: 4, 
+                          fontSize: 12, 
+                          fontWeight: 600 
+                        }}>Surveys</span>
+                      )}
                     </div>
                   )}
-                </div>
-                
-                {theme.keywords && theme.keywords.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {theme.keywords.map((keyword, index) => (
-                      <span key={index} style={{ backgroundColor: '#f8f9fa', color: '#6c757d', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{keyword}</span>
-                    ))}
+                  
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    marginTop: 16, 
+                    borderTop: '1px solid #f0f0f0', 
+                    paddingTop: 12 
+                  }}>
+                    <button 
+                      onClick={() => handleViewTheme(theme)} 
+                      style={{ 
+                        background: '#f8f9fa', 
+                        border: 'none', 
+                        color: '#3776a8', 
+                        fontWeight: 600, 
+                        cursor: 'pointer', 
+                        fontSize: 14, 
+                        padding: '6px 12px',
+                        borderRadius: 6
+                      }}
+                    >View</button>
+                    <div>
+                      <button 
+                        onClick={() => startEdit(theme)} 
+                        style={{ 
+                          background: '#f0e6ee', 
+                          border: 'none', 
+                          color: '#552a47', 
+                          fontWeight: 600, 
+                          cursor: 'pointer', 
+                          fontSize: 14, 
+                          marginRight: 10,
+                          padding: '6px 12px',
+                          borderRadius: 6
+                        }}
+                      >Edit</button>
+                      <button 
+                        onClick={() => handleDelete(theme._id!)} 
+                        style={{ 
+                          background: '#fee5e2', 
+                          border: 'none', 
+                          color: '#c0392b', 
+                          fontWeight: 600, 
+                          cursor: 'pointer', 
+                          fontSize: 14,
+                          padding: '6px 12px',
+                          borderRadius: 6
+                        }}
+                      >Delete</button>
+                    </div>
                   </div>
-                )}
-              </li>
-              );
-            })}
-          </ul>
+                </div>
+                );
+              })}
+            </div>
+          </div>
         )}
         {/* Delete Theme Modal */}
         {confirmDelete && (
