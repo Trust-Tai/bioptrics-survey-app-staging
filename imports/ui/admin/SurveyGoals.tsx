@@ -656,78 +656,224 @@ const SurveyGoalsPage: React.FC = () => {
           <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No goals added yet.</div>
         ) : (
           <>
-            <ul style={{ listStyle: 'none', padding: '24px 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 20, background: '#fffef6', borderRadius: 16 }}>
+            <div style={{ padding: '24px 18px', background: '#fffef6', borderRadius: 16 }}>
               {paginatedGoals.length === 0 ? (
-                <li style={{ color: '#8a7a85', fontSize: 17, marginTop: 32, textAlign: 'center', listStyle: 'none' }}>No goals found.</li>
+                <div style={{ color: '#8a7a85', fontSize: 17, marginTop: 32, textAlign: 'center' }}>No goals found.</div>
               ) : (
-                paginatedGoals.map(g => (
-                  <li key={g._id} style={{ background: '#f9f4f7', borderRadius: 14, boxShadow: '0 2px 8px #f4ebf1', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span
-                            style={{
-                              background: g.color,
-                              color: '#fff',
-                              borderRadius: 12,
-                              padding: '5px 22px',
-                              fontWeight: 800,
-                              fontSize: 17,
-                              letterSpacing: 0.2,
-                              display: 'inline-block',
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', rowGap: '60px' }}>
+                  {paginatedGoals.map((g, index) => (
+                    <div 
+                      key={g._id} 
+                      style={{ 
+                        background: '#fff', 
+                        borderRadius: 14, 
+                        boxShadow: '0 4px 12px rgba(85, 42, 71, 0.08)', 
+                        padding: '20px', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 16,
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid #f4ebf1',
+                        height: '100%',
+                        // Row gap is handled by the parent grid container
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(85, 42, 71, 0.12)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(85, 42, 71, 0.08)';
+                      }}
+                    >
+                      {/* Color accent at top */}
+                      <div style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        height: '5px', 
+                        background: g.color 
+                      }} />
+                      
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start',
+                        marginTop: '5px'
+                      }}>
+                        <div>
+                          <h3 
+                            style={{ 
+                              margin: 0, 
+                              fontSize: '18px', 
+                              fontWeight: 700, 
+                              color: g.color,
                               cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
                             }}
                             onClick={() => handleViewGoal(g)}
                           >
                             {g.title}
-                          </span>
+                          </h3>
                           <StatusBadge status={g.status || 'not_started'} />
                         </div>
-                        <p style={{ margin: '4px 0 0 0', color: '#555', fontSize: 15 }}>{g.description || ''}</p>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                          <button 
+                            onClick={() => handleViewGoal(g)} 
+                            style={{ 
+                              background: '#f0f7ff', 
+                              border: 'none', 
+                              color: '#3776a8', 
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                            title="View"
+                          >
+                            👁️
+                          </button>
+                          <button 
+                            onClick={() => openEditModal(g)} 
+                            style={{ 
+                              background: '#f9f4f7', 
+                              border: 'none', 
+                              color: '#552a47', 
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(g._id!)} 
+                            style={{ 
+                              background: '#fff0f0', 
+                              border: 'none', 
+                              color: '#c0392b', 
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <button onClick={() => handleViewGoal(g)} style={{ background: 'none', border: 'none', color: '#3776a8', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>View</button>
-                        <button onClick={() => openEditModal(g)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>Edit</button>
-                        <button onClick={() => handleDelete(g._id!)} style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                      
+                      <p style={{ 
+                        margin: '8px 0 0', 
+                        color: '#555', 
+                        fontSize: 15,
+                        flexGrow: 1,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {g.description || ''}
+                      </p>
+                      
+                      <div style={{ marginTop: 'auto' }}>
+                        <GoalProgressBar currentValue={g.currentValue} targetValue={g.targetValue} color={g.color} />
                       </div>
+                      
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: '6px',
+                        fontSize: 13, 
+                        color: '#666', 
+                        marginTop: 4,
+                        background: '#fafafa',
+                        padding: '8px',
+                        borderRadius: '8px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <div style={{ fontWeight: 600 }}>Timeline:</div>
+                          <div style={{ color: '#555' }}>{g.startDate || 'Not set'} to {g.endDate || 'Not set'}</div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <div style={{ fontWeight: 600 }}>Department:</div>
+                          <div style={{ color: '#555' }}>{g.department || 'All'}</div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <div style={{ fontWeight: 600 }}>Site:</div>
+                          <div style={{ color: '#555' }}>{g.site || 'All'}</div>
+                        </div>
+                      </div>
+                      
+                      {(g.metrics && g.metrics.length > 0) && (
+                        <div style={{ 
+                          fontSize: 13, 
+                          color: '#666',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}>
+                          <div style={{ fontWeight: 600 }}>Metrics:</div>
+                          <div style={{ 
+                            color: '#555',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {g.metrics.join(', ')}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {(g.relatedSurveys && g.relatedSurveys.length > 0) && (
+                        <div style={{ 
+                          fontSize: 13, 
+                          color: '#666',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}>
+                          <div style={{ fontWeight: 600 }}>Related Surveys:</div>
+                          <div style={{ 
+                            color: '#555',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {g.relatedSurveys.join(', ')}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    
-                    <div style={{ marginTop: 4 }}>
-                      <GoalProgressBar currentValue={g.currentValue} targetValue={g.targetValue} color={g.color} />
-                    </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#666', marginTop: 4 }}>
-                      <div>
-                        <span style={{ fontWeight: 600, marginRight: 4 }}>Timeline:</span>
-                        {g.startDate || 'Not set'} to {g.endDate || 'Not set'}
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 600, marginRight: 4 }}>Department:</span>
-                        {g.department || 'All'}
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 600, marginRight: 4 }}>Site:</span>
-                        {g.site || 'All'}
-                      </div>
-                    </div>
-                    
-                    {(g.metrics && g.metrics.length > 0) && (
-                      <div style={{ fontSize: 14, color: '#666' }}>
-                        <span style={{ fontWeight: 600, marginRight: 4 }}>Metrics:</span>
-                        {g.metrics.join(', ')}
-                      </div>
-                    )}
-                    
-                    {(g.relatedSurveys && g.relatedSurveys.length > 0) && (
-                      <div style={{ fontSize: 14, color: '#666' }}>
-                        <span style={{ fontWeight: 600, marginRight: 4 }}>Related Surveys:</span>
-                        {g.relatedSurveys.join(', ')}
-                      </div>
-                    )}
-                  </li>
-                ))
+                  ))}
+                </div>
               )}
-            </ul>
+            </div>
             {/* Pagination Controls */}
             {pageCount > 1 && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, margin: '24px 0 0 0' }}>
