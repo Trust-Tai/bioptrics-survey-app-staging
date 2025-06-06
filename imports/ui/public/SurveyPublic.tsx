@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
+import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
@@ -391,8 +392,25 @@ const SurveyPublic: React.FC = () => {
       return { loading: false, survey: null };
     }
     
+    // We pass the encrypted token to the publication, which will handle decryption
     const handle = Meteor.subscribe('surveys.preview', token);
-    const survey = Surveys.findOne({ shareToken: token });
+    
+    // Try to find the survey by both methods: directly by ID (if token is a valid encrypted ID)
+    // or by shareToken (for backward compatibility)
+    let survey;
+    try {
+      const decryptedId = decryptToken(token);
+      if (decryptedId) {
+        survey = Surveys.findOne({ _id: decryptedId });
+      }
+    } catch (error) {
+      console.error('Error decrypting token:', error);
+    }
+    
+    // If we couldn't find it by ID, fall back to the old method
+    if (!survey) {
+      survey = Surveys.findOne({ shareToken: token });
+    }
     
     return {
       loading: !handle.ready(),

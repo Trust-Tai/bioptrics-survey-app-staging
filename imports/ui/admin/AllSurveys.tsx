@@ -29,6 +29,26 @@ function truncate(str: string, maxLen: number): string {
   return str.slice(0, maxLen) + '...';
 }
 
+const SurveyLink: React.FC<{ surveyId: string }> = ({ surveyId }) => {
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    Meteor.call('surveys.generateEncryptedToken', surveyId, (err: Meteor.Error | null, res: string) => {
+      if (err) {
+        console.error(err);
+      } else {
+        setToken(res);
+      }
+    });
+  }, [surveyId]);
+
+  return (
+    <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
+      <a href={`${window.location.origin}/survey/public/${token}`} target="_blank" rel="noopener noreferrer">{`${window.location.origin}/survey/public/${token}`}</a>
+    </div>
+  );
+};
+
 const AllSurveys: React.FC = () => {
   const navigate = useNavigate();
   const { getTerminology } = useOrganization();
@@ -239,12 +259,10 @@ const AllSurveys: React.FC = () => {
                     {s.title}
                   </div>
                   <div style={{ color: '#6e5a67', fontSize: 15 }}>{truncate(stripHtml(s.description), 120)}</div>
-                  {s.shareToken && s.published && (
+                  {s.published && s._id && (
                     <div style={{ marginTop: 8 }}>
-                      <span style={{ fontWeight: 400, color: '#222' }}>Sharable Link:</span>
-                      <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
-                        <a href={`${window.location.origin}/survey/public/${s.shareToken}`} target="_blank" rel="noopener noreferrer">{`${window.location.origin}/survey/public/${s.shareToken}`}</a>
-                      </div>
+                      <span style={{ fontWeight: 400, color: '#222' }}>Secure Sharable Link:</span>
+                      <SurveyLink surveyId={s._id} />
                     </div>
                   )}
                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, marginTop: 8 }}>

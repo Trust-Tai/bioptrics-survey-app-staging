@@ -306,25 +306,42 @@ const EnhancedSurveyBuilder: React.FC = () => {
         return;
       }
       
-      // Call the server method to mark the survey as public and get its URL
+      // Call the server method to mark the survey as public
       const updatedSurvey = await Meteor.callAsync('surveys.makePublic', survey._id);
       
-      // Make sure we have a shareToken
-      if (!updatedSurvey || !updatedSurvey.shareToken) {
-        showErrorAlert('Failed to generate share token for the survey.');
+      if (!updatedSurvey) {
+        showErrorAlert('Failed to make the survey public.');
         return;
       }
       
-      // Generate the public URL using the shareToken
-      const baseUrl = window.location.origin;
-      const publicSurveyUrl = `${baseUrl}/survey/public/${updatedSurvey.shareToken}`;
-      
-      // Update state
-      setPublicUrl(publicSurveyUrl);
-      setShowPublicUrl(true);
-      
-      // Show success message
-      showSuccessAlert('Public URL generated successfully!');
+      try {
+        // Generate an encrypted token for the survey ID
+        const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
+        
+        // Generate the public URL using the encrypted token
+        const baseUrl = window.location.origin;
+        const publicSurveyUrl = `${baseUrl}/survey/public/${encryptedToken}`;
+        
+        // Update state
+        setPublicUrl(publicSurveyUrl);
+        setShowPublicUrl(true);
+        
+        // Show success message
+        showSuccessAlert('Secure public URL generated successfully!');
+      } catch (tokenError: any) {
+        // Fallback to shareToken if token generation fails
+        if (updatedSurvey.shareToken) {
+          const baseUrl = window.location.origin;
+          const publicSurveyUrl = `${baseUrl}/survey/public/${updatedSurvey.shareToken}`;
+          
+          setPublicUrl(publicSurveyUrl);
+          setShowPublicUrl(true);
+          
+          showSuccessAlert('Public URL generated successfully (using legacy token).');
+        } else {
+          showErrorAlert('Failed to generate secure token for the survey.');
+        }
+      }
     } catch (error: any) {
       showErrorAlert(`Error generating public URL: ${error.message}`);
     }
