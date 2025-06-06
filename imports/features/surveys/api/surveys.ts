@@ -176,14 +176,21 @@ if (Meteor.isServer) {
     
     if (!surveyDoc) return this.ready();
     
-    // Check permissions
-    if (surveyDoc.createdBy === this.userId || 
-        (this.userId && (await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin'))) {
+    // Allow public access to surveys with shareToken
+    if (surveyDoc.shareToken) {
       // Return the survey by ID if we have it, otherwise by shareToken
       return surveyId ? Surveys.find({ _id: surveyId }) : Surveys.find({ shareToken: encryptedToken });
     }
     
-    return this.ready();
+    // If no shareToken and not the creator or admin, don't return anything
+    if (!this.userId || 
+        (surveyDoc.createdBy !== this.userId && 
+         !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin'))) {
+      return this.ready();
+    }
+    
+    // Return the survey for creator or admin
+    return surveyId ? Surveys.find({ _id: surveyId }) : Surveys.find({ shareToken: encryptedToken });
   });
   
   // Publication for survey responses - only accessible to admin users

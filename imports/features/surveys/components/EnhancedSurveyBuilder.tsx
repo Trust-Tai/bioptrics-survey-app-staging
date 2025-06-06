@@ -320,7 +320,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
         
         // Generate the public URL using the encrypted token
         const baseUrl = window.location.origin;
-        const publicSurveyUrl = `${baseUrl}/survey/public/${encryptedToken}`;
+        const publicSurveyUrl = `${baseUrl}/public/${encryptedToken}`;
         
         // Update state
         setPublicUrl(publicSurveyUrl);
@@ -332,7 +332,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
         // Fallback to shareToken if token generation fails
         if (updatedSurvey.shareToken) {
           const baseUrl = window.location.origin;
-          const publicSurveyUrl = `${baseUrl}/survey/public/${updatedSurvey.shareToken}`;
+          const publicSurveyUrl = `${baseUrl}/public/${updatedSurvey.shareToken}`;
           
           setPublicUrl(publicSurveyUrl);
           setShowPublicUrl(true);

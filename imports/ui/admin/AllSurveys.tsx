@@ -44,7 +44,7 @@ const SurveyLink: React.FC<{ surveyId: string }> = ({ surveyId }) => {
 
   return (
     <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
-      <a href={`${window.location.origin}/survey/public/${token}`} target="_blank" rel="noopener noreferrer">{`${window.location.origin}/survey/public/${token}`}</a>
+      <a href={`${window.location.origin}/public/${token}`} target="_blank" rel="noopener noreferrer">{`${window.location.origin}/public/${token}`}</a>
     </div>
   );
 };
