@@ -490,4 +490,51 @@ Meteor.methods({
       updatedAt: new Date()
     });
   },
+  
+  /**
+   * Make a survey public by generating a share token
+   * @param surveyId - The ID of the survey to make public
+   * @returns The updated survey document
+   */
+  async 'surveys.makePublic'(surveyId: string) {
+    check(surveyId, String);
+    
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to make a survey public');
+    }
+    
+    // Find the survey
+    const survey = await Surveys.findOneAsync({ _id: surveyId });
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user has permission to modify this survey
+    if (survey.createdBy !== this.userId) {
+      // Check if user is an admin
+      const user = await Meteor.users.findOneAsync(this.userId);
+      if (!user?.roles?.includes('admin')) {
+        throw new Meteor.Error('not-authorized', 'You do not have permission to modify this survey');
+      }
+    }
+    
+    // Generate a share token if one doesn't exist
+    const shareToken = survey.shareToken || Random.id(10);
+    
+    // Update the survey
+    await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $set: { 
+          published: true,
+          shareToken: shareToken,
+          updatedAt: new Date()
+        } 
+      }
+    );
+    
+    // Return the updated survey
+    return await Surveys.findOneAsync({ _id: surveyId });
+  },
 });

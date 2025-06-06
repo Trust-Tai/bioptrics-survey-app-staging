@@ -139,6 +139,7 @@ const PreviewSurvey: React.FC = () => {
   // If you want to check for preview data in localStorage, do it here (optional)
   // Otherwise, just render SurveyPublic for the preview flow
 
+  // Pass the token as a URL parameter so SurveyPublic can access it via useParams
   return <SurveyPublic />;
 };
 

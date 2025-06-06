@@ -35,6 +35,22 @@ interface QuestionItem {
   status: 'draft' | 'published';
   sectionId?: string;
   order?: number;
+  // Add missing properties that are used in the component
+  _id?: string;
+  versions?: any[];
+  currentVersion?: number;
+  questionText?: string;
+  responseType?: string;
+}
+
+// Define the type for section questions to ensure TypeScript recognizes the status property
+interface SectionQuestion {
+  id: string;
+  text: string;
+  type: string;
+  status?: 'draft' | 'published';
+  sectionId?: string;
+  order?: number;
 }
 
 // Import styles
@@ -120,6 +136,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [currentSectionId, setCurrentSectionId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState<SurveySectionItem | undefined>(undefined);
   
+  // State for public URL
+  const [publicUrl, setPublicUrl] = useState<string>('');
+  const [showPublicUrl, setShowPublicUrl] = useState(false);
+  
   // Use Meteor's reactive data system to load questions and survey data
   const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
     // Subscribe to all questions
@@ -139,17 +159,41 @@ const EnhancedSurveyBuilder: React.FC = () => {
     
     const isLoading = !questionsSub.ready() || !surveysSub.ready() || !themesSub.ready() || !categoriesSub.ready();
     
+    // Helper function to extract question text from the current version
+    const getQuestionText = (question: any): string => {
+      if (!question) return 'Untitled Question';
+      if (!question.versions || !Array.isArray(question.versions) || question.versions.length === 0) {
+        return 'Untitled Question';
+      }
+      
+      // Get the latest version (similar to AllQuestions.tsx)
+      const currentVersion = question.currentVersion;
+      const latestVersion = question.versions.find((v: any) => v.version === currentVersion) || 
+                            question.versions[question.versions.length - 1];
+      
+      // Strip HTML tags from question text for cleaner display
+      const questionText = latestVersion && latestVersion.questionText ? latestVersion.questionText : 'Untitled Question';
+      return questionText.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '');
+    };
+
     // Fetch all available questions, themes, and categories
     const allQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
-      // Get the current version of the question
-      const currentVersion = q.versions?.[q.currentVersion] || q.versions?.[0];
-      return {
+      // Get the latest version to extract the response type
+      const currentVersion = q.currentVersion;
+      const latestVersion = q.versions && Array.isArray(q.versions) ?
+        (q.versions.find((v: any) => v.version === currentVersion) || 
+        (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+      
+      // Create a properly typed QuestionItem
+      const questionItem: QuestionItem = {
         id: q._id || '',
-        text: currentVersion?.questionText || '',
-        type: currentVersion?.responseType || 'text',
-        status: 'published' as 'draft' | 'published'
+        text: getQuestionText(q),
+        type: latestVersion?.responseType || 'text',
+        status: 'published'
       };
-    }) as QuestionItem[];
+      
+      return questionItem;
+    });
     const surveyThemes = SurveyThemes.find({}, { sort: { name: 1 } }).fetch();
     const wpsCategories = WPSCategories.find({}, { sort: { name: 1 } }).fetch();
     
@@ -172,16 +216,23 @@ const EnhancedSurveyBuilder: React.FC = () => {
       // Initialize questions if they exist in the survey
       if (currentSurvey.sectionQuestions && Array.isArray(currentSurvey.sectionQuestions)) {
         // Make sure all required fields are present
-        const validatedQuestions = currentSurvey.sectionQuestions.map(q => {
-          // Create a properly typed QuestionItem
+        const validatedQuestions = currentSurvey.sectionQuestions.map((q: SectionQuestion) => {
+          // Find the full question document to get the proper text
+          const fullQuestion = Questions.findOne(q.id);
+          
+          // Create a properly typed QuestionItem with all required fields
           const questionItem: QuestionItem = {
             id: q.id || '',
-            text: q.text || '',
+            text: fullQuestion ? getQuestionText(fullQuestion) : (q.text || 'Untitled Question'),
             type: q.type || 'text',
             status: q.status === 'draft' ? 'draft' : 'published',
             sectionId: q.sectionId,
             order: q.order
           };
+          
+          // For debugging
+          console.log(`Question ${q.id} text:`, questionItem.text);
+          
           return questionItem;
         });
         setSurveyQuestions(validatedQuestions);
@@ -212,16 +263,24 @@ const EnhancedSurveyBuilder: React.FC = () => {
       wpsCategories,
       allQuestions: allQuestions.map(q => {
         // Get the current version of the question
-        const currentVersion = q.versions?.[q.currentVersion - 1] || {};
+        // Use nullish coalescing to handle undefined currentVersion
+        const versionIndex = q.currentVersion != null ? q.currentVersion - 1 : 0;
+        
+        // Get the question version data
+        const versions = q.versions || [];
+        const currentVersion = versions[versionIndex] || versions[0] || {};
+        
+        // Extract the actual question text from the current version
+        const questionText = currentVersion.questionText || '';
         
         // Create a properly typed QuestionItem
-        const questionItem: QuestionItem = {
+        const questionItem = {
           id: q._id || '',
-          text: currentVersion.questionText || 'Untitled Question',
+          text: questionText || 'Untitled Question',
           type: currentVersion.responseType || 'text',
           status: 'published', // Explicitly set as published
           sectionId: undefined, // Will be assigned when added to a section
-        };
+        } as QuestionItem; // Use type assertion to fix TypeScript error
         return questionItem;
       }),
     };
@@ -230,13 +289,45 @@ const EnhancedSurveyBuilder: React.FC = () => {
   // Show success alert
   const showSuccessAlert = (message: string) => {
     setAlert({ type: 'success', message });
-    setTimeout(() => setAlert(null), 3000);
+    setTimeout(() => setAlert(null), 5000);
   };
   
   // Show error alert
   const showErrorAlert = (message: string) => {
     setAlert({ type: 'error', message });
-    setTimeout(() => setAlert(null), 4000);
+    setTimeout(() => setAlert(null), 5000);
+  };
+  
+  // Handle generating a public URL for the survey
+  const handleGeneratePublicUrl = async () => {
+    try {
+      if (!survey || !survey._id) {
+        showErrorAlert('Please save the survey first before generating a public URL.');
+        return;
+      }
+      
+      // Call the server method to mark the survey as public and get its URL
+      const updatedSurvey = await Meteor.callAsync('surveys.makePublic', survey._id);
+      
+      // Make sure we have a shareToken
+      if (!updatedSurvey || !updatedSurvey.shareToken) {
+        showErrorAlert('Failed to generate share token for the survey.');
+        return;
+      }
+      
+      // Generate the public URL using the shareToken
+      const baseUrl = window.location.origin;
+      const publicSurveyUrl = `${baseUrl}/survey/public/${updatedSurvey.shareToken}`;
+      
+      // Update state
+      setPublicUrl(publicSurveyUrl);
+      setShowPublicUrl(true);
+      
+      // Show success message
+      showSuccessAlert('Public URL generated successfully!');
+    } catch (error: any) {
+      showErrorAlert(`Error generating public URL: ${error.message}`);
+    }
   };
   
   // Handle saving the survey
@@ -247,6 +338,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
       // Prepare survey data for saving
       // Clean up paragraph tags from description at save time
       const cleanDescription = survey?.description ? survey.description.replace(/<p>/g, '').replace(/<\/p>/g, '') : '';
+      
+      // Log the current state of survey questions before saving
+      console.log('Saving survey with questions:', surveyQuestions);
       
       const surveyData = {
         ...survey,
@@ -344,52 +438,116 @@ const EnhancedSurveyBuilder: React.FC = () => {
     }
   };
   
+  // Helper function to get clean question text
+  const extractQuestionText = (question: any): string => {
+    if (!question) return 'Untitled Question';
+    if (!question.versions || !Array.isArray(question.versions) || question.versions.length === 0) {
+      return 'Untitled Question';
+    }
+    
+    // Get the latest version (similar to AllQuestions.tsx)
+    const currentVersion = question.currentVersion;
+    const latestVersion = question.versions.find((v: any) => v.version === currentVersion) || 
+                          question.versions[question.versions.length - 1];
+    
+    // Strip HTML tags from question text for cleaner display
+    const questionText = latestVersion && latestVersion.questionText ? latestVersion.questionText : 'Untitled Question';
+    return questionText.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '');
+  };
+  
+  // State to store refreshed questions for the question selector
+  const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
+  
   // Handle adding questions to a section
   const handleAddQuestion = (sectionId: string) => {
     setCurrentSectionId(sectionId);
+    
+    // Refresh question data before opening selector to ensure we have the latest question text
+    const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+      // Get the latest version to extract the response type and text
+      const currentVersion = q.currentVersion;
+      const latestVersion = q.versions && Array.isArray(q.versions) ?
+        (q.versions.find((v: any) => v.version === currentVersion) || 
+        (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+      
+      // Create a properly typed QuestionItem
+      const questionItem: QuestionItem = {
+        id: q._id || '',
+        text: extractQuestionText(q), // Use our helper function to get clean question text
+        type: latestVersion?.responseType || 'text',
+        status: 'published'
+      };
+      
+      console.log(`Question selector item: ${q._id} - ${questionItem.text}`);
+      return questionItem;
+    });
+    
+    // Update the question selector items
+    setQuestionSelectorItems(refreshedQuestions);
     setShowQuestionSelector(true);
   };
   
   // Handle selecting questions in the question selector
   const handleSelectQuestions = (questionIds: string[], sectionId: string) => {
+    console.log(`Adding questions to section ${sectionId}:`, questionIds);
+    
     // Get currently selected questions for this section
     const currentSectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
     const currentSectionQuestionIds = currentSectionQuestions.map(q => q.id);
     
     // Find questions that need to be added (not already in the section)
-    const questionsToAdd = allQuestions.filter(q => 
-      questionIds.includes(q.id) && !currentSectionQuestionIds.includes(q.id)
-    );
+    // Use questionSelectorItems if available, otherwise fall back to allQuestions
+    const questionsSource = questionSelectorItems.length > 0 ? questionSelectorItems : allQuestions;
     
-    // Create new question items for the ones being added
-    const newQuestionItems = questionsToAdd.map((q, index) => ({
-      id: q.id,
-      text: q.text,
-      type: q.type,
-      sectionId: sectionId,
-      order: currentSectionQuestions.length + index,
-      status: q.status || 'published' as 'draft' | 'published'
-    }));
+    // Get all selected questions from the source
+    const selectedQuestions = questionsSource.filter(q => questionIds.includes(q.id));
+    console.log('Selected questions:', selectedQuestions);
     
-    // Update questions with the new section ID and add new questions
-    setSurveyQuestions(prev => {
-      // Keep questions that aren't changing
-      const unchangedQuestions = prev.filter(q => 
-        !questionIds.includes(q.id) || q.sectionId === sectionId
-      );
+    // Create question items for ALL selected questions (not just new ones)
+    // This ensures we have the complete set of questions for the section
+    const sectionQuestionItems = selectedQuestions.map((q, index) => {
+      // Create a properly typed QuestionItem
+      const questionItem: QuestionItem = {
+        id: q.id,
+        text: q.text,
+        type: q.type,
+        sectionId: sectionId,
+        order: index, // Reorder based on selection order
+        status: q.status || 'published'
+      };
       
-      // Add the new questions
-      return [...unchangedQuestions, ...newQuestionItems];
+      console.log(`Adding question to section: ${q.id} - ${q.text}`);
+      return questionItem;
+    });
+    
+    // Update survey questions - remove existing questions for this section and add the new set
+    setSurveyQuestions(prev => {
+      // Keep questions from other sections
+      const otherSectionQuestions = prev.filter(q => q.sectionId !== sectionId);
+      
+      // Combine with the new section questions
+      const updatedQuestions = [...otherSectionQuestions, ...sectionQuestionItems];
+      console.log('Updated survey questions:', updatedQuestions);
+      return updatedQuestions;
     });
     
     // Update the survey state to ensure changes are saved
     setSurvey((prevSurvey: any) => {
       if (!prevSurvey) return prevSurvey;
       
-      return {
+      // Get questions from other sections
+      const otherSectionQuestions = prevSurvey.sectionQuestions?.filter((q: any) => 
+        q.sectionId !== sectionId
+      ) || [];
+      
+      // Create updated survey with the new section questions
+      const updatedSurvey = {
         ...prevSurvey,
-        sectionQuestions: [...(prevSurvey.sectionQuestions || []), ...newQuestionItems]
+        sectionQuestions: [...otherSectionQuestions, ...sectionQuestionItems]
       };
+      
+      console.log('Updated survey:', updatedSurvey);
+      return updatedSurvey;
     });
     
     // Close the question selector modal
@@ -496,6 +654,14 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 disabled={saving}
               >
                 <FiSave /> {saving ? 'Saving...' : 'Save Survey'}
+              </button>
+              <button 
+                className="btn btn-success"
+                onClick={handleGeneratePublicUrl}
+                disabled={!survey?._id}
+                style={{ marginLeft: '8px', backgroundColor: '#28a745', borderColor: '#28a745' }}
+              >
+                Public
               </button>
             </div>
           </div>
@@ -1157,11 +1323,92 @@ const EnhancedSurveyBuilder: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Public URL Modal */}
+        {showPublicUrl && (
+            <div className="modal-overlay" style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}>
+              <div className="modal-content" style={{
+                backgroundColor: 'white',
+                padding: '20px',
+                borderRadius: '8px',
+                width: '500px',
+                maxWidth: '90%',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+              }}>
+                <h3 style={{ marginTop: 0 }}>Public Survey URL</h3>
+                <p>Share this URL with participants to allow them to take the survey:</p>
+                
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  marginBottom: '20px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  padding: '8px'
+                }}>
+                  <input 
+                    type="text" 
+                    value={publicUrl} 
+                    readOnly 
+                    style={{ 
+                      flex: 1, 
+                      border: 'none', 
+                      outline: 'none',
+                      padding: '4px'
+                    }} 
+                  />
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(publicUrl);
+                      showSuccessAlert('URL copied to clipboard!');
+                    }}
+                    style={{
+                      backgroundColor: '#552a47',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '8px 12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    onClick={() => setShowPublicUrl(false)}
+                    style={{
+                      backgroundColor: '#f0f0f0',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '8px 16px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        
         {/* Question Selector Modal */}
         <QuestionSelector
           isOpen={showQuestionSelector}
           onClose={() => setShowQuestionSelector(false)}
-          questions={allQuestions}
+          questions={questionSelectorItems.length > 0 ? questionSelectorItems : allQuestions}
           selectedQuestionIds={currentSectionId ? getSelectedQuestionIds(currentSectionId) : []}
           sectionId={currentSectionId || ''}
           onSelectQuestions={handleSelectQuestions}
