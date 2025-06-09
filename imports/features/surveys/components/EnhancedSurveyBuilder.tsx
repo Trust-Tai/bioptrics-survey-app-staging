@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight } from 'react-icons/fi';
+import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight, FiTrash2 } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
@@ -271,10 +271,20 @@ const EnhancedSurveyBuilder: React.FC = () => {
       // Remove section
       setSections(prev => prev.filter(s => s.id !== sectionId));
       
-      // Remove section ID from questions
-      setSurveyQuestions(prev => prev.map(q => 
-        q.sectionId === sectionId ? { ...q, sectionId: undefined } : q
-      ));
+      // Completely remove questions associated with this section
+      setSurveyQuestions(prev => prev.filter(q => q.sectionId !== sectionId));
+      
+      // Also update the survey state to ensure changes are saved
+      setSurvey((prevSurvey: any) => {
+        if (!prevSurvey) return prevSurvey;
+        
+        return {
+          ...prevSurvey,
+          sectionQuestions: prevSurvey.sectionQuestions?.filter((q: any) => 
+            q.sectionId !== sectionId
+          ) || []
+        };
+      });
     }
   };
   
@@ -286,17 +296,68 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // Handle selecting questions in the question selector
   const handleSelectQuestions = (questionIds: string[], sectionId: string) => {
-    // Update questions with the new section ID
-    setSurveyQuestions(prev => prev.map(q => 
-      questionIds.includes(q.id) ? { ...q, sectionId } : q
-    ));
+    // Get currently selected questions for this section
+    const currentSectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
+    const currentSectionQuestionIds = currentSectionQuestions.map(q => q.id);
+    
+    // Find questions that need to be added (not already in the section)
+    const questionsToAdd = allQuestions.filter(q => 
+      questionIds.includes(q.id) && !currentSectionQuestionIds.includes(q.id)
+    );
+    
+    // Create new question items for the ones being added
+    const newQuestionItems = questionsToAdd.map((q, index) => ({
+      id: q.id,
+      text: q.text,
+      type: q.type,
+      sectionId: sectionId,
+      order: currentSectionQuestions.length + index,
+      status: q.status || 'published'
+    }));
+    
+    // Update questions with the new section ID and add new questions
+    setSurveyQuestions(prev => {
+      // Keep questions that aren't changing
+      const unchangedQuestions = prev.filter(q => 
+        !questionIds.includes(q.id) || q.sectionId === sectionId
+      );
+      
+      // Add the new questions
+      return [...unchangedQuestions, ...newQuestionItems];
+    });
+    
+    // Update the survey state to ensure changes are saved
+    setSurvey(prevSurvey => {
+      if (!prevSurvey) return prevSurvey;
+      
+      return {
+        ...prevSurvey,
+        sectionQuestions: [...(prevSurvey.sectionQuestions || []), ...newQuestionItems]
+      };
+    });
+    
+    // Close the question selector modal
+    setShowQuestionSelector(false);
   };
   
   // Handle removing a question from a section
   const handleRemoveQuestion = (questionId: string, sectionId: string) => {
-    setSurveyQuestions(prev => prev.map(q => 
-      q.id === questionId && q.sectionId === sectionId ? { ...q, sectionId: undefined } : q
+    // Completely remove the question from surveyQuestions
+    setSurveyQuestions(prev => prev.filter(q => 
+      !(q.id === questionId && q.sectionId === sectionId)
     ));
+    
+    // Also update the survey state to ensure changes are saved
+    setSurvey((prevSurvey: any) => {
+      if (!prevSurvey) return prevSurvey;
+      
+      return {
+        ...prevSurvey,
+        sectionQuestions: prevSurvey.sectionQuestions?.filter((q: any) => 
+          !(q.id === questionId && q.sectionId === sectionId)
+        ) || []
+      };
+    });
   };
   
   // Handle reordering questions within a section
@@ -459,9 +520,127 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Questions management UI will go here */}
-                  <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>
-                    Questions management is available in the Sections tab. Please use the Sections tab to add and manage questions.
+                  <div style={{ padding: 20 }}>
+                    {surveyQuestions.length > 0 ? (
+                      <div>
+                        <p style={{ marginBottom: 16, fontSize: 15, color: '#555' }}>
+                          All questions added to your survey sections are listed below.
+                        </p>
+                        
+                        <div style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          gap: 16,
+                          marginTop: 16
+                        }}>
+                          {surveyQuestions.map((question, index) => {
+                            // Find the section this question belongs to
+                            const section = sections.find(s => s.id === question.sectionId);
+                            
+                            // Remove HTML tags from question text
+                            const cleanQuestionText = question.text
+                              .replace(/<\/?p>/g, '')
+                              .replace(/<\/?[^>]+(>|$)/g, '');
+                            
+                            return (
+                              <div 
+                                key={question.id}
+                                style={{
+                                  padding: '18px',
+                                  borderRadius: 8,
+                                  border: '1px solid #e0e0e0',
+                                  background: '#fff',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ 
+                                    fontWeight: 600, 
+                                    fontSize: 15, 
+                                    color: '#333',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {cleanQuestionText}
+                                  </div>
+                                  
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 12,
+                                    marginTop: 8
+                                  }}>
+                                    <div style={{ 
+                                      fontSize: 13, 
+                                      color: '#666',
+                                      padding: '3px 8px',
+                                      background: '#f5f5f5',
+                                      borderRadius: 4
+                                    }}>
+                                      {question.type}
+                                    </div>
+                                    
+                                    {section && (
+                                      <div style={{ 
+                                        fontSize: 13, 
+                                        color: '#666',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 4
+                                      }}>
+                                        <span>Section:</span>
+                                        <span style={{ fontWeight: 500, color: '#552a47' }}>{section.name}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="remove-button-container">
+                                  <button 
+                                    className="remove-button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (question.sectionId) {
+                                        handleRemoveQuestion(question.id, question.sectionId);
+                                      }
+                                    }}
+                                    style={{ 
+                                      padding: '6px 10px', 
+                                      fontSize: 13,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: 6,
+                                      background: '#f8f8f8',
+                                      border: '1px solid #ddd',
+                                      borderRadius: 4,
+                                      color: '#d63031',
+                                      fontWeight: 500,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    aria-label="Remove question"
+                                  >
+                                    <FiTrash2 size={16} style={{ color: '#d63031' }} /> 
+                                    <span>Remove</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', color: '#666', padding: '20px 0' }}>
+                        No questions have been added to any sections yet. 
+                        <div style={{ marginTop: 8 }}>
+                          Go to the Sections tab to add sections and questions to your survey.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
