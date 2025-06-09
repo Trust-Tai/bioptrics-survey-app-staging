@@ -6,12 +6,16 @@ const Wrapper = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f9f6f2;
+  position: relative;
 `;
 
 const Card = styled.div`
   background: #fff;
   border-radius: 28px;
-  box-shadow: 0 2px 24px #e5d6e033;
+  box-shadow: 0 2px 24px rgba(229, 214, 224, 0.2);
   padding: 36px 24px 28px 24px;
   max-width: 500px;
   width: 100%;
@@ -19,6 +23,7 @@ const Card = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
+  position: relative;
 
   @media (min-width: 600px) {
     padding: 48px 44px 36px 44px;
@@ -26,7 +31,8 @@ const Card = styled.div`
 `;
 
 const Logo = styled.img`
-  max-width: 180px;
+  max-width: 140px;
+  height: auto;
   margin-bottom: 20px;
 `;
 
@@ -35,7 +41,7 @@ const ProgressBar = styled.div`
   height: 6px;
   background-color: #f0e6d2;
   border-radius: 3px;
-  margin-bottom: 20px;
+  margin-bottom: 5px;
   position: relative;
   overflow: hidden;
 `;
@@ -43,58 +49,67 @@ const ProgressBar = styled.div`
 const ProgressFill = styled.div<{ width: string }>`
   position: absolute;
   height: 100%;
-  background-color: #552a47;
+  background-color: #b69d57;
   width: ${props => props.width};
   transition: width 0.3s ease;
 `;
 
 const NextUpText = styled.div`
-  font-size: 1.1rem;
-  color: #552a47;
-  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: #b69d57;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 15px;
+  margin-bottom: 5px;
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 2.2rem;
+  font-size: 2rem;
   color: #28211e;
-  margin: 0 0 20px 0;
+  margin: 0 0 15px 0;
   font-weight: bold;
 `;
 
 const SectionDescription = styled.p`
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #555;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   line-height: 1.5;
+  max-width: 320px;
 `;
 
 const IllustrationContainer = styled.div`
   width: 100%;
-  max-width: 300px;
+  max-width: 220px;
   margin: 0 auto 30px auto;
 `;
 
 const Illustration = styled.img`
   width: 100%;
   height: auto;
+  border-radius: 50%;
+  object-fit: cover;
 `;
 
 const ContinueButton = styled.button`
-  background: #552a47;
+  background: #b69d57;
   color: #fff;
   border: none;
   border-radius: 22px;
   padding: 14px 0;
   width: 100%;
   max-width: 280px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s;
   margin-top: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 
   &:hover {
-    background: #693658;
+    opacity: 0.9;
   }
 `;
 
@@ -104,17 +119,44 @@ const BackButton = styled.button`
   top: 24px;
   background: none;
   border: none;
-  color: #552a47;
-  font-size: 2rem;
+  color: #b69d57;
+  font-size: 1.2rem;
   font-weight: bold;
   z-index: 10;
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  display: flex;
+  align-items: center;
   @media (min-width: 600px) {
     left: 32px;
     top: 38px;
   }
+`;
+
+const SkipButton = styled.button`
+  position: absolute;
+  right: 16px;
+  top: 24px;
+  background: none;
+  border: none;
+  color: #b69d57;
+  font-size: 0.9rem;
+  z-index: 10;
+  cursor: pointer;
+  padding: 0;
+  @media (min-width: 600px) {
+    right: 32px;
+    top: 38px;
+  }
+`;
+
+const ProgressText = styled.div`
+  width: 100%;
+  text-align: right;
+  color: #999;
+  font-size: 0.8rem;
+  margin-bottom: 20px;
 `;
 
 
@@ -132,7 +174,7 @@ interface SectionTransitionProps {
 
 const SectionTransition: React.FC<SectionTransitionProps> = ({
   logo,
-  color = '#552a47',
+  color = '#b69d57',
   sectionTitle,
   sectionDescription,
   illustration,
@@ -145,18 +187,19 @@ const SectionTransition: React.FC<SectionTransitionProps> = ({
   return (
     <Wrapper>
       {onBack && <BackButton onClick={onBack}>&larr;</BackButton>}
+      <SkipButton onClick={onContinue}>Skip</SkipButton>
       <Card>
         {logo && <Logo src={logo} alt="Logo" />}
         
         <ProgressBar>
           <ProgressFill width={progressPercentage} />
         </ProgressBar>
-        <div style={{ width: '100%', textAlign: 'right', color: '#999', fontSize: '0.9rem', marginBottom: '20px' }}>
+        <ProgressText>
           {progressPercentage} complete and paused
-        </div>
+        </ProgressText>
         
         <NextUpText>NEXT UP:</NextUpText>
-        <SectionTitle style={{ color }}>{sectionTitle}</SectionTitle>
+        <SectionTitle>{sectionTitle}</SectionTitle>
         <SectionDescription>{sectionDescription}</SectionDescription>
         
         {illustration && (
@@ -166,7 +209,6 @@ const SectionTransition: React.FC<SectionTransitionProps> = ({
         )}
         
         <ContinueButton 
-          style={{ backgroundColor: color }} 
           onClick={onContinue}
         >
           CONTINUE

@@ -935,7 +935,11 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                   return;
                                 }
                                 const reader = new FileReader();
-                                reader.onload = ev => setForm(f => ({ ...f, image: ev.target?.result as string }));
+                                reader.onload = ev => {
+                                  const imageData = ev.target?.result as string;
+                                  console.log('[SurveyBuilder] Setting image data:', imageData.substring(0, 100) + '...');
+                                  setForm(f => ({ ...f, image: imageData }));
+                                };
                                 reader.readAsDataURL(file);
                               }}
                               onRemove={() => setForm(f => ({ ...f, image: '' }))}
