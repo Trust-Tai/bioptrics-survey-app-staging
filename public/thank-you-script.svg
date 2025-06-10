@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="150" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .script {
+      fill: #b69d57;
+      font-family: 'Brush Script MT', cursive;
+      font-size: 60px;
+      font-weight: normal;
+    }
+  </style>
+  <text x="150" y="85" text-anchor="middle" class="script">Thank you</text>
+</svg>

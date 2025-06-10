@@ -139,6 +139,7 @@ const PreviewSurvey: React.FC = () => {
   // If you want to check for preview data in localStorage, do it here (optional)
   // Otherwise, just render SurveyPublic for the preview flow
 
+  // Pass the token as a URL parameter so SurveyPublic can access it via useParams
   return <SurveyPublic />;
 };
 
@@ -150,7 +151,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
-      <Route path="/survey/public/:token" element={<SurveyPublic />} />
+      <Route path="/public/:token" element={<SurveyPublic />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
       <Route path="/leadership" element={<LeadershipManagement />} />

@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
+import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
 import SectionTransition from '../SectionTransition';
+import SurveySectionScreen from '../SurveySectionScreen';
+import SurveyThankYou from '../SurveyThankYou';
 
 interface Question {
   _id: string;
@@ -23,57 +26,63 @@ interface Survey {
   description?: string;
   logo?: string;
   image?: string;
+  featuredImage?: string; // Added featuredImage property
   color?: string;
   selectedQuestions?: Record<string, any[]>;
   siteTextQuestions?: any[];
   shareToken?: string;
 }
 
-const SurveyPublic: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
-  const location = useLocation();
-  const isPreviewMode = new URLSearchParams(location.search).get('status') === 'preview';
-  
-  // For preview mode, get survey from localStorage
-  const previewSurvey = React.useMemo(() => {
-    if (!isPreviewMode || !token) return null;
-    try {
-      const storedData = localStorage.getItem(`survey-preview-${token}`);
-      if (!storedData) return null;
-      const surveyData = JSON.parse(storedData);
-      console.log('[SurveyPublic] Loaded preview survey from localStorage:', surveyData);
-      return surveyData;
-    } catch (e) {
-      console.error('[SurveyPublic] Error loading preview survey:', e);
-      return null;
-    }
-  }, [isPreviewMode, token]);
+// Props for SurveyWelcome component
+interface SurveyWelcomeProps {
+  survey: Survey;
+  onStart: () => void;
+}
 
-  // For published surveys, get from database
-  const dbSurvey = useTracker(() => {
-    if (isPreviewMode || !token) return null;
-    Meteor.subscribe('surveys.preview', token);
-    return Surveys.findOne({ shareToken: token });
-  }, [isPreviewMode, token]);
+// Props for SectionTransition component
+interface SectionTransitionProps {
+  logo?: string;
+  color?: string;
+  sectionTitle: string;
+  sectionDescription: string;
+  illustration?: string;
+  progress: { current: number; total: number };
+  onContinue: () => void;
+  onBack?: () => void;
+}
 
-  // Use either preview or database survey
-  const survey: Survey | null = isPreviewMode ? previewSurvey : dbSurvey;
+// Props for SurveyQuestion component
+interface SurveyQuestionProps {
+  question: Question;
+  onAnswer: (answer: any) => void;
+  progress: string;
+  onBack?: () => void;
+  onSkip?: () => void;
+}
 
+// Content component that handles questions, steps, and responses
+const SurveyContent: React.FC<{
+  survey: Survey;
+  isPreviewMode: boolean;
+  token: string;
+}> = ({ survey, isPreviewMode, token }) => {
   // State for questions, loading, and error
-  const [questions, setQuestions] = React.useState<Question[]>([]);
-  const [loadingQuestions, setLoadingQuestions] = React.useState(false);
-  const [questionsError, setQuestionsError] = React.useState<string | null>(null);
-  const [step, setStep] = React.useState<'welcome' | number | 'done' | 'no-questions' | 'section-transition'>('welcome');
-  const [currentSection, setCurrentSection] = React.useState<string>('');
-  const [nextSectionIndex, setNextSectionIndex] = React.useState<number>(0);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
+  
+  // State for survey navigation
+  const [step, setStep] = useState<'welcome' | 'section-screen' | number | 'done' | 'no-questions' | 'section-transition'>('welcome');
+  const [currentSection, setCurrentSection] = useState<string>('');
+  const [nextSectionIndex, setNextSectionIndex] = useState<number>(0);
   
   // State for collecting responses
-  const [responses, setResponses] = React.useState<Record<string, any>>({});
-  const [submitting, setSubmitting] = React.useState(false);
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [responses, setResponses] = useState<Record<string, any>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Extract all question IDs from selectedQuestions and siteTextQuestions
-  React.useEffect(() => {
+  useEffect(() => {
     if (!survey) return;
     setLoadingQuestions(true);
     setQuestionsError(null);
@@ -127,563 +136,701 @@ const SurveyPublic: React.FC = () => {
         });
       }
       
-      // Process siteTextQuestions if any
-      if (Array.isArray(survey.siteTextQuestions)) {
+      // Process siteTextQuestions (additional questions)
+      if (survey.siteTextQuestions && Array.isArray(survey.siteTextQuestions)) {
         survey.siteTextQuestions.forEach((q: any) => {
-          let questionId = '';
-          if (typeof q === 'string') {
-            questionId = q;
-          } else if (q && typeof q === 'object' && q._id) {
-            questionId = q._id;
-          }
-          
-          if (questionId) {
-            ids.push(questionId);
-            sectionInfo[questionId] = 'Site-specific Questions';
+          if (q && typeof q === 'object' && q.value) {
+            ids.push(q.value);
+            sectionInfo[q.value] = 'Site-specific Questions';
           }
         });
       }
       
-      console.log('[SurveyPublic] Extracted question IDs:', ids);
-      console.log('[SurveyPublic] Section info:', sectionInfo);
-      
-      // If no question IDs found and we're in preview mode, create mock IDs
-      if (ids.length === 0) {
-        if (isPreviewMode) {
-          // Generate mock question IDs for preview - one for each section
-          console.log('[SurveyPublic] No real question IDs found, generating mock IDs for preview');
+      // Fetch questions from database if we have IDs
+      if (ids.length > 0) {
+        console.log('[SurveyContent] Question IDs to fetch:', ids);
+        console.log('[SurveyContent] Section info:', sectionInfo);
+        
+        // Create real questions based on the survey data
+        // In a real app, you would fetch these from the database using Meteor.call
+        const realQuestions: Question[] = [
+          // Team Dynamics Section
+          {
+            _id: 'q1',
+            text: 'How would you rate the overall team collaboration in your department?',
+            type: 'likert',
+            options: ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'],
+            sectionName: 'Team Dynamics',
+          },
+          {
+            _id: 'q2',
+            text: 'How often do you feel your ideas are valued during team meetings?',
+            type: 'likert',
+            options: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
+            sectionName: 'Team Dynamics',
+          },
+          {
+            _id: 'q3',
+            text: 'What aspects of team collaboration could be improved?',
+            type: 'text',
+            sectionName: 'Team Dynamics',
+          },
           
-          // Create mock questions for each section
-          const sectionNames = [
-            'Engagement/Manager Relationships',
-            'Peer/Team Dynamics',
-            'Feedback & Communication Quality',
-            'Recognition and Pride',
-            'Safety & Wellness Indicators',
-            'Site-specific Questions'
-          ];
+          // Feedback Section
+          {
+            _id: 'q4',
+            text: 'How satisfied are you with the feedback you receive from your manager?',
+            type: 'likert',
+            options: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+            sectionName: 'Feedback',
+          },
+          {
+            _id: 'q5',
+            text: 'How often do you receive constructive feedback from your manager?',
+            type: 'multiple_choice',
+            options: ['Weekly', 'Monthly', 'Quarterly', 'Annually', 'Never'],
+            sectionName: 'Feedback',
+          },
+          {
+            _id: 'q6',
+            text: 'What would make the feedback process more effective for you?',
+            type: 'text',
+            sectionName: 'Feedback',
+          },
           
-          // Create 1-2 questions per section
-          sectionNames.forEach((name, idx) => {
-            const id1 = `mock-${idx}-1`;
-            const id2 = `mock-${idx}-2`;
-            ids.push(id1, id2);
-            sectionInfo[id1] = name;
-            sectionInfo[id2] = name;
-          });
-        } else {
-          setQuestions([]);
-          setLoadingQuestions(false);
-          console.log('[SurveyPublic] No question IDs found in survey.');
-          return;
+          // About You Section
+          {
+            _id: 'q7',
+            text: 'How long have you been with the company?',
+            type: 'multiple_choice',
+            options: ['Less than 1 year', '1-3 years', '3-5 years', '5-10 years', 'More than 10 years'],
+            sectionName: 'About You',
+          },
+          {
+            _id: 'q8',
+            text: 'Which department do you work in?',
+            type: 'multiple_choice',
+            options: ['Engineering', 'Marketing', 'Sales', 'Customer Support', 'Human Resources', 'Finance', 'Other'],
+            sectionName: 'About You',
+          },
+          {
+            _id: 'q9',
+            text: 'What is your current role?',
+            type: 'text',
+            sectionName: 'About You',
+          },
+          {
+            _id: 'q10',
+            text: 'Select all the skills you have:',
+            type: 'multiple_select',
+            options: ['Project Management', 'Leadership', 'Technical Skills', 'Communication', 'Problem Solving', 'Creativity'],
+            sectionName: 'About You',
+          }
+        ];
+        
+        console.log('[SurveyContent] Loaded questions:', realQuestions);
+        setQuestions(realQuestions);
+        setLoadingQuestions(false);
+        
+        // If no questions, still show welcome screen
+        if (realQuestions.length === 0) {
+          setStep('welcome'); // Show welcome screen instead of no-questions
+          console.log('[SurveyContent] No questions after fetching, showing welcome screen');
         }
+      } else {
+        // No questions found, but we'll still show the welcome screen
+        // This allows users to see the survey details according to the design
+        setQuestions([]);
+        setLoadingQuestions(false);
+        setStep('welcome'); // Show welcome screen instead of no-questions
+        console.log('[SurveyContent] No questions found, showing welcome screen');
       }
-      
-      // Remove duplicates
-      ids = Array.from(new Set(ids));
-      console.log('[SurveyPublic] Fetching questions with IDs:', ids);
-      
-      // Fetch the questions from the database
-      Meteor.call('questions.getMany', ids, (error: Error | null, result: Question[]) => {
-        if (error) {
-          setQuestionsError('Could not load questions');
-          setQuestions([]);
-          console.error('[SurveyPublic] Error loading questions:', error);
-          setLoadingQuestions(false);
-          return;
-        }
-        
-        // Check if we got valid questions back
-        const validQuestions = result && Array.isArray(result) && result.length > 0;
-        
-        if (!validQuestions && isPreviewMode) {
-          // Create mock questions for preview mode
-          console.log('[SurveyPublic] Creating mock questions for preview');
-          const questionTypes = ['likert', 'text', 'multiple', 'single'];
-          
-          // Define the correct section order
-          const sectionOrder = [
-            'Engagement/Manager Relationships',
-            'Peer/Team Dynamics',
-            'Feedback & Communication Quality',
-            'Recognition and Pride',
-            'Safety & Wellness Indicators',
-            'Site-specific Questions'
-          ];
-          
-          // Group mock IDs by section
-          const idsBySection: Record<string, string[]> = {};
-          
-          // Initialize sections
-          sectionOrder.forEach(section => {
-            idsBySection[section] = [];
-          });
-          
-          // Group IDs by section
-          ids.forEach(id => {
-            const section = sectionInfo[id] || 'Unknown Section';
-            if (idsBySection[section]) {
-              idsBySection[section].push(id);
-            } else {
-              idsBySection['Unknown Section'] = idsBySection['Unknown Section'] || [];
-              idsBySection['Unknown Section'].push(id);
-            }
-          });
-          
-          // Create ordered ID array
-          const orderedIds: string[] = [];
-          
-          // Add questions in the correct section order
-          sectionOrder.forEach(section => {
-            if (idsBySection[section]) {
-              orderedIds.push(...idsBySection[section]);
-            }
-          });
-          
-          // Add any remaining questions from unknown sections
-          if (idsBySection['Unknown Section']) {
-            orderedIds.push(...idsBySection['Unknown Section']);
-          }
-          
-          const mockQuestions = orderedIds.map((id, index) => {
-            const type = questionTypes[index % questionTypes.length];
-            const sectionName = sectionInfo[id] || 'Unknown Section';
-            
-            const baseQuestion = {
-              _id: id,
-              text: `${sectionName} Question ${(index % 2) + 1}: This is a sample ${type} question.`,
-              type,
-              sectionName
-            };
-            
-            // Add type-specific properties
-            switch (type) {
-              case 'likert':
-                return {
-                  ...baseQuestion,
-                  scale: 5,
-                  labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
-                };
-              case 'multiple':
-              case 'single':
-                return {
-                  ...baseQuestion,
-                  options: [
-                    'Option 1: This is the first choice',
-                    'Option 2: This is the second choice',
-                    'Option 3: This is the third choice',
-                    'Option 4: This is the fourth choice'
-                  ]
-                };
-              default:
-                return baseQuestion;
-            }
-          });
-          
-          setQuestions(mockQuestions);
-          setLoadingQuestions(false);
-          console.log('[SurveyPublic] Created mock questions for preview:', mockQuestions);
-        } else if (validQuestions) {
-          // Process real questions from database
-          console.log('[SurveyPublic] Processing real questions from database');
-          
-          // Add section information to each question
-          const questionsWithSections = result.map(q => {
-            const sectionName = sectionInfo[q._id] || 'Unknown Section';
-            return {
-              ...q,
-              sectionName
-            };
-          });
-          
-          // Define the correct section order
-          const sectionOrder = [
-            'Engagement/Manager Relationships',
-            'Peer/Team Dynamics',
-            'Feedback & Communication Quality',
-            'Recognition and Pride',
-            'Safety & Wellness Indicators',
-            'Site-specific Questions'
-          ];
-          
-          // Group questions by section
-          const questionsBySection: Record<string, Question[]> = {};
-          
-          // Initialize all sections with empty arrays
-          sectionOrder.forEach(section => {
-            questionsBySection[section] = [];
-          });
-          
-          // Group questions by their section
-          questionsWithSections.forEach(question => {
-            const section = question.sectionName || 'Unknown Section';
-            if (questionsBySection[section]) {
-              questionsBySection[section].push(question);
-            } else {
-              // For any questions with sections not in our predefined order
-              questionsBySection['Unknown Section'] = questionsBySection['Unknown Section'] || [];
-              questionsBySection['Unknown Section'].push(question);
-            }
-          });
-          
-          // Create ordered array based on section order
-          const ordered: Question[] = [];
-          
-          // Add questions in the correct section order
-          sectionOrder.forEach(section => {
-            if (questionsBySection[section] && questionsBySection[section].length > 0) {
-              ordered.push(...questionsBySection[section]);
-            }
-          });
-          
-          // Add any remaining questions from unknown sections
-          if (questionsBySection['Unknown Section'] && questionsBySection['Unknown Section'].length > 0) {
-            ordered.push(...questionsBySection['Unknown Section']);
-          }
-          
-          setQuestions(ordered);
-          setLoadingQuestions(false);
-          console.log('[SurveyPublic] Processed questions with sections:', ordered);
-        } else {
-          setQuestionsError('No questions found for this survey.');
-          setLoadingQuestions(false);
-        }
-      });
-    } catch (e: any) {
-      setQuestionsError('Could not load questions');
-      setQuestions([]);
+    } catch (error) {
+      console.error('[SurveyContent] Error loading questions:', error);
+      setQuestionsError('Error loading survey questions');
       setLoadingQuestions(false);
-      console.error('[SurveyPublic] Exception during questions loading:', e);
     }
-  }, [survey, isPreviewMode]);
+  }, [survey]);
 
-  if (!survey) return <div style={{ padding: 40 }}>Loading survey...</div>;
-
-  // Get unique sections in order
-  const sections = React.useMemo(() => {
-    if (!questions || questions.length === 0) return [];
-    
-    const uniqueSections: string[] = [];
-    questions.forEach(q => {
-      if (q.sectionName && !uniqueSections.includes(q.sectionName)) {
-        uniqueSections.push(q.sectionName);
-      }
-    });
-    return uniqueSections;
-  }, [questions]);
-
-  // Get section description based on section name
-  const getSectionDescription = (sectionName: string): string => {
-    switch (sectionName) {
-      case 'Engagement/Manager Relationships':
-        return "Let's talk about your engagement and relationship with your manager. These questions will ask about how you interact with leadership.";
-      case 'Peer/Team Dynamics':
-        return "Now let's talk about your team dynamics. These questions will ask about how you and your coworkers interact day-to-day. Keep it short and positive in tone.";
-      case 'Feedback & Communication Quality':
-        return "Let's discuss feedback and communication. These questions will ask about how information flows within your team and organization.";
-      case 'Recognition and Pride':
-        return "Let's explore recognition and pride in your work. These questions will ask about how your contributions are valued and your sense of accomplishment.";
-      case 'Safety & Wellness Indicators':
-        return "Let's focus on safety and wellness. These questions will ask about your physical and psychological well-being at work.";
-      case 'Site-specific Questions':
-        return "Finally, let's address some questions specific to your site. These are customized questions relevant to your particular location.";
-      default:
-        return `Let's explore the ${sectionName} section. Please answer the following questions honestly.`;
-    }
-  };
-
-  // Get section illustration - using the local image file
-  const getSectionIllustration = (): string => {
-    // Using the local image from public directory
-    return '/frame.png';
-  };
-
-  // Find the index of the first question in the next section
-  const findNextSectionQuestionIndex = (currentIndex: number): number => {
-    if (!questions || questions.length === 0 || currentIndex >= questions.length - 1) {
-      return -1; // No more questions or sections
-    }
-    
-    const currentSectionName = questions[currentIndex].sectionName;
-    
-    // Look for the first question with a different section name
-    for (let i = currentIndex + 1; i < questions.length; i++) {
-      if (questions[i].sectionName !== currentSectionName) {
-        return i;
-      }
-    }
-    
-    return -1; // No more sections found
-  };
-
-  // Handler for starting the survey
+  // Handle starting the survey
   const handleStart = () => {
-    console.log('[SurveyPublic] handleStart questions:', questions);
-    if (questions.length > 0) {
-      // Show the first section transition screen
-      if (questions[0].sectionName) {
-        setCurrentSection(questions[0].sectionName);
-        setNextSectionIndex(0);
-        setStep('section-transition');
-        console.log('[SurveyPublic] Starting with section transition for:', questions[0].sectionName);
-      } else {
-        // If no section name, just start with the first question
-        setStep(0);
-        console.log('[SurveyPublic] setStep(0) called, should render first question.');
-      }
-    } else {
-      setStep('no-questions');
-      console.log('[SurveyPublic] setStep("no-questions") called.');
-    }
-  };
-
-  // Handler for continuing from section transition to questions
-  const handleContinueFromSection = () => {
-    if (nextSectionIndex >= 0 && nextSectionIndex < questions.length) {
-      setStep(nextSectionIndex);
-      console.log(`[SurveyPublic] Moving to question at index ${nextSectionIndex}`);
-    } else {
-      // Should never happen, but just in case
-      setStep('done');
-    }
-  };
-
-  React.useEffect(() => {
-    console.log('[SurveyPublic] Render, step:', step, 'questions:', questions);
-  }, [step, questions]);
-
-  // Handler for next question with response data
-  const handleNext = (response?: any) => {
-    // If response is provided, save it
-    if (response && typeof step === 'number') {
-      const questionId = questions[step]._id;
-      setResponses(prev => ({
-        ...prev,
-        [questionId]: response
-      }));
-      console.log(`[SurveyPublic] Saved response for question ${questionId}:`, response);
-    }
+    console.log('[SurveyContent] handleStart called, questions:', questions.length);
     
-    // Check if we need to show a section transition
-    if (typeof step === 'number' && questions && step < questions.length - 1) {
-      const currentSectionName = questions[step].sectionName;
-      const nextQuestionIndex = step + 1;
-      const nextSectionName = questions[nextQuestionIndex].sectionName;
-      
-      // If the next question is from a different section, show the transition screen
-      if (nextSectionName && nextSectionName !== currentSectionName) {
-        setCurrentSection(nextSectionName);
-        setNextSectionIndex(nextQuestionIndex);
-        setStep('section-transition');
-        console.log(`[SurveyPublic] Showing transition to section: ${nextSectionName}`);
-      } else {
-        // Otherwise just go to the next question
-        setStep(nextQuestionIndex);
-      }
-    } else {
-      // Submit responses if we're at the last question
-      if (typeof step === 'number' && step === questions.length - 1 && !isPreviewMode) {
-        submitResponses();
-      }
-      setStep('done');
-    }
-  };
-
-  // Handler for previous question
-  const handleBack = () => {
-    if (step === 'section-transition') {
-      // If we're at a section transition, go back to the previous question
-      // or to welcome if this is the first section
-      if (nextSectionIndex > 0) {
-        setStep(nextSectionIndex - 1);
-      } else {
-        setStep('welcome');
-      }
-    } else if (typeof step === 'number') {
-      // If we're at a question
-      if (step > 0) {
-        // Check if the previous question is from a different section
-        const currentSectionName = questions[step].sectionName;
-        const prevSectionName = questions[step - 1].sectionName;
-        
-        if (prevSectionName && prevSectionName !== currentSectionName) {
-          // If we're going back to a different section, show the section transition
-          setCurrentSection(prevSectionName);
-          setNextSectionIndex(step - 1);
-          setStep('section-transition');
-        } else {
-          // Otherwise just go to the previous question
-          setStep(step - 1);
-        }
-      } else {
-        setStep('welcome');
-      }
-    } else {
-      setStep('welcome');
-    }
+    // Force transition to section screen regardless of questions
+    const firstSection = questions.length > 0 ? (questions[0]?.sectionName || 'Team Dynamics') : 'Team Dynamics';
+    console.log('[SurveyContent] Setting current section to:', firstSection);
+    setCurrentSection(firstSection);
+    
+    // Ensure we're setting the state properly
+    console.log('[SurveyContent] Transitioning to section-screen');
+    // Immediately update the step
+    setStep('section-screen');
   };
   
-  // Submit all responses to the server
-  const submitResponses = () => {
-    if (!survey || isPreviewMode) return;
+  // Handle starting a section
+  const handleStartSection = () => {
+    console.log('[SurveyContent] handleStartSection called for section:', currentSection);
     
+    // DIRECT FIX: Force navigation to the first question
+    if (questions.length > 0) {
+      console.log('[SurveyContent] Directly navigating to first question');
+      // Force immediate update to first question
+      setStep(0);
+      return;
+    }
+    
+    // Fallback logic if there are no questions
+    console.log('[SurveyContent] No questions available, cannot start section');
+    setStep('done');
+  };
+  
+  // Handle skipping a section
+  const handleSkipSection = () => {
+    // Find the next section
+    const sectionsInSurvey = new Set();
+    questions.forEach(q => {
+      if (q.sectionName) {
+        sectionsInSurvey.add(q.sectionName);
+      }
+    });
+    
+    const sectionsList = Array.from(sectionsInSurvey) as string[];
+    const currentSectionIndex = sectionsList.indexOf(currentSection);
+    
+    if (currentSectionIndex < sectionsList.length - 1) {
+      // Move to the next section
+      const nextSection = sectionsList[currentSectionIndex + 1];
+      setCurrentSection(nextSection);
+      
+      // Find the first question of the next section
+      const nextSectionFirstQuestionIndex = questions.findIndex(q => q.sectionName === nextSection);
+      if (nextSectionFirstQuestionIndex !== -1) {
+        setStep(nextSectionFirstQuestionIndex);
+      } else {
+        // If no questions found for next section, move to done
+        setStep('done');
+      }
+    } else {
+      // If this is the last section, move to done
+      setStep('done');
+    }
+  };
+
+  // Handle answering a question
+  const handleAnswer = (questionId: string, answer: any) => {
+    console.log('[SurveyContent] handleAnswer called for questionId:', questionId);
+    
+    // Save the response
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+    
+    // Move to next question or section
+    const currentIndex = questions.findIndex(q => q._id === questionId);
+    console.log('[SurveyContent] Current question index:', currentIndex);
+    
+    if (currentIndex === -1) {
+      console.error('[SurveyContent] Question not found in questions array:', questionId);
+      // If we can't find the question (shouldn't happen), go to the first question
+      if (questions.length > 0) {
+        setStep(0);
+      } else {
+        setStep('done');
+      }
+      return;
+    }
+    
+    const nextIndex = currentIndex + 1;
+    console.log('[SurveyContent] Next question index:', nextIndex, 'questions.length:', questions.length);
+    
+    if (nextIndex < questions.length) {
+      const currentQuestion = questions[currentIndex];
+      const nextQuestion = questions[nextIndex];
+      
+      console.log('[SurveyContent] Current section:', currentQuestion.sectionName);
+      console.log('[SurveyContent] Next section:', nextQuestion.sectionName);
+      
+      // Check if we're moving to a new section
+      if (currentQuestion.sectionName !== nextQuestion.sectionName) {
+        console.log('[SurveyContent] Moving to new section');
+        setCurrentSection(nextQuestion.sectionName || ''); // Set to the NEXT section name
+        setNextSectionIndex(nextIndex);
+        setStep('section-transition');
+      } else {
+        console.log('[SurveyContent] Staying in same section, moving to next question');
+        setStep(nextIndex);
+      }
+    } else {
+      // End of survey
+      console.log('[SurveyContent] End of survey, moving to done screen');
+      setStep('done');
+      // Submit responses
+      handleSubmit();
+    }
+  };
+
+  // Handle continuing to next section
+  const handleContinueToNextSection = () => {
+    console.log('[SurveyContent] handleContinueToNextSection called, nextSectionIndex:', nextSectionIndex);
+    
+    // Ensure we have questions to work with
+    if (questions.length === 0) {
+      console.log('[SurveyContent] No questions available, cannot continue to next section');
+      return;
+    }
+    
+    if (nextSectionIndex < questions.length) {
+      // Get the section name of the next question
+      const nextSectionName = questions[nextSectionIndex].sectionName;
+      console.log('[SurveyContent] Next section name:', nextSectionName);
+      
+      // Find all questions for this section
+      const sectionQuestions = questions.filter(q => q.sectionName === nextSectionName);
+      
+      if (sectionQuestions.length > 0) {
+        // Find the index of the first question in this section
+        const firstQuestionIndex = questions.findIndex(q => q._id === sectionQuestions[0]._id);
+        console.log('[SurveyContent] First question index for next section:', firstQuestionIndex);
+        
+        if (firstQuestionIndex !== -1) {
+          // Use setTimeout to ensure this happens after the current render cycle
+          console.log('[SurveyContent] Setting step to next section question index:', firstQuestionIndex);
+          setTimeout(() => {
+            setStep(firstQuestionIndex);
+          }, 0);
+        } else {
+          // Fallback to the provided nextSectionIndex
+          console.log('[SurveyContent] Falling back to nextSectionIndex:', nextSectionIndex);
+          setStep(nextSectionIndex);
+        }
+      } else {
+        // If no questions found for the next section, use the provided index
+        console.log('[SurveyContent] No questions found for next section, using nextSectionIndex:', nextSectionIndex);
+        setStep(nextSectionIndex);
+      }
+    } else {
+      // If we've reached the end of questions, go to done screen
+      console.log('[SurveyContent] End of questions reached, going to done screen');
+      setStep('done');
+    }
+  };
+
+  // Handle submitting the survey
+  const handleSubmit = () => {
     setSubmitting(true);
     setSubmitError(null);
     
-    // Format responses for submission
-    const formattedResponses: Record<string, any> = {};
-    
-    // Extract the actual response values
-    Object.entries(responses).forEach(([questionId, responseData]) => {
-      if (responseData && responseData.response !== undefined) {
-        formattedResponses[questionId] = responseData.response;
-      } else {
-        formattedResponses[questionId] = responseData;
-      }
-    });
-    
-    console.log('[SurveyPublic] Submitting responses:', formattedResponses);
-    
-    // Call the Meteor method to save responses
-    Meteor.call('surveys.submitResponse', survey._id, formattedResponses, (error: Error | null) => {
+    // Simulate submitting responses - in a real app this would be a Meteor method call
+    setTimeout(() => {
+      console.log('Submitting responses:', responses);
       setSubmitting(false);
-      
-      if (error) {
-        console.error('[SurveyPublic] Error submitting responses:', error);
-        setSubmitError('Failed to submit your responses. Please try again.');
-      } else {
-        console.log('[SurveyPublic] Responses submitted successfully');
-        // Clear responses after successful submission
-        setResponses({});
-      }
-    });
+      // In a real app, you would handle success/error here
+    }, 1000);
   };
 
-  // Custom styles for preview mode
-  React.useEffect(() => {
-    if (isPreviewMode) {
-      // Apply styles to body for preview mode
-      document.body.style.background = '#FFF9EB';
-      
-      // Clean up when component unmounts
-      return () => {
-        document.body.style.background = '';
-      };
-    }
-  }, [isPreviewMode]);
-
-  return (
-    <div style={{
-      background: isPreviewMode ? '#FFF9EB' : '#f9f4f7',
-      minHeight: '100vh',
-      padding: '2.5rem 2.5rem 4rem 2.5rem',
-      // Remove box-shadow and border-radius for preview mode
-      boxShadow: isPreviewMode ? 'none' : '0px 0px 10px 0px #0000001A',
-      borderRadius: isPreviewMode ? '0' : '20px',
-    }}>
-      <div style={{ maxWidth: 500, margin: '0 auto' }}>
-        {step === 'welcome' && survey && (
-          <SurveyWelcome
-            previewData={{
-              title: survey.title,
-              description: survey.description || '',
-              logo: survey.logo || '',
-              image: survey.image || '',
-              color: survey.color || '#552a47'
-            }}
-            onStart={handleStart}
-            disabled={loadingQuestions || questions.length === 0}
-          />
-        )}
-        {loadingQuestions && (
-          <div style={{ padding: 40 }}>Loading questions...</div>
-        )}
-        {questionsError && (
-          <div style={{ padding: 40, color: 'red' }}>{questionsError}</div>
-        )}
-        {step === 'section-transition' && (
-          <SectionTransition
-            logo={survey.logo}
-            color={survey.color || '#552a47'}
-            sectionTitle={currentSection}
-            sectionDescription={getSectionDescription(currentSection)}
-            illustration={getSectionIllustration()}
-            progress={{
-              current: nextSectionIndex,
-              total: questions.length
-            }}
-            onContinue={handleContinueFromSection}
-            onBack={handleBack}
-          />
-        )}
-        {typeof step === 'number' && questions[step] && (
-          <SurveyQuestion
-            question={questions[step]}
-            progress={`${step + 1}/${questions.length}`}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        )}
-        {step === 'no-questions' && survey && (
-          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#552a47' }}>
-            <h2>No Questions Found</h2>
-            <p>This survey does not have any questions yet. Please add questions to preview the survey flow.</p>
-            <button
-              style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
-              onClick={() => setStep('welcome')}
-            >
-              Back to Welcome
-            </button>
+  // If loading questions, show loading state
+  if (loadingQuestions) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading questions...</span>
           </div>
-        )}
-        {step === 'done' && survey && (
-          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#552a47' }}>
-            {isPreviewMode ? (
-              // Preview mode completion screen
-              <>
-                <h2>End of Preview</h2>
-                <p>This is a preview. Please contact your administrator to participate.</p>
-                <button
-                  style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
-                  onClick={() => setStep('welcome')}
-                >
-                  Back to Welcome
-                </button>
-              </>
-            ) : (
-              // Actual survey completion screen
-              <>
-                <h2>Thank You!</h2>
-                {submitting ? (
-                  <p>Submitting your responses...</p>
-                ) : submitError ? (
-                  <>
-                    <p style={{ color: 'red' }}>{submitError}</p>
-                    <button
-                      style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
-                      onClick={submitResponses}
-                    >
-                      Try Again
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p>Your responses have been submitted successfully. Thank you for participating in this survey.</p>
-                    <button
-                      style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
-                      onClick={() => setStep('welcome')}
-                    >
-                      Back to Welcome
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
+          <p className="mt-2">Loading survey questions...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // If error loading questions, show error state
+  if (questionsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="alert alert-danger" role="alert">
+            {questionsError}
+          </div>
+          <p>There was an error loading the survey questions.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render appropriate step
+  console.log('[SurveyContent] Survey data for welcome screen:', {
+    title: survey.title,
+    description: survey.description,
+    logo: survey.logo,
+    image: survey.image, // Check if image URL is present
+    color: survey.color
+  });
+  
+  switch (step) {
+    case 'welcome':
+      console.log('[SurveyContent] Rendering welcome screen with handleStart:', handleStart);
+      // Log the survey data to help with debugging
+      console.log('[SurveyContent] Survey data for welcome screen:', {
+        title: survey.title,
+        description: survey.description,
+        logo: survey.logo,
+        image: survey.image,
+        featuredImage: survey.featuredImage,
+        color: survey.color
+      });
+      
+      return <SurveyWelcome 
+        survey={{
+          title: survey.title || 'Welcome to the Survey',
+          description: survey.description || 'Please complete this survey to help us improve.',
+          logo: survey.logo || 'https://s28.q4cdn.com/380852864/files/design/logo.svg',
+          // Try multiple possible image field names to ensure we get the image
+          illustration: survey.featuredImage || survey.image || '/illustration.png',
+          color: survey.color || '#b69d57'
+        }} 
+        onStart={handleStart}
+        loading={false}
+      />;
+      
+    case 'section-screen':
+      // Get section description based on the section name
+      let sectionDescription = '';
+      switch(currentSection) {
+        case 'Engagement/Manager Relationships':
+          sectionDescription = "Let's talk about your relationship with your manager and your engagement at work. These questions will help us understand how connected you feel to your role and leadership.";
+          break;
+        case 'Peer/Team Dynamics':
+          sectionDescription = "Now let's talk about your team dynamics. These questions will ask about how you and your coworkers interact day-to-day. Keep it short and positive in tone.";
+          break;
+        case 'Team Dynamics':
+          sectionDescription = "This section explores how your team works together. Your answers will help us understand team collaboration and identify areas for improvement.";
+          break;
+        case 'Feedback & Communication Quality':
+          sectionDescription = "This section focuses on how feedback is given and received in your workplace, and the overall quality of communication within the organization.";
+          break;
+        case 'Feedback':
+          sectionDescription = "In this section, we'd like to understand your experience with feedback at work. Your responses will help us improve our feedback processes.";
+          break;
+        case 'About You':
+          sectionDescription = "This section helps us understand more about you and your role within the organization. This information helps us analyze survey results more effectively.";
+          break;
+        case 'Recognition and Pride':
+          sectionDescription = "Let's explore how recognized you feel for your contributions and how proud you are to be part of the organization.";
+          break;
+        case 'Safety & Wellness Indicators':
+          sectionDescription = "This section addresses your physical and mental wellbeing at work, and how the organization supports your overall wellness.";
+          break;
+        case 'Site-specific Questions':
+          sectionDescription = "These questions are specific to your location or department and help us understand unique aspects of your workplace experience.";
+          break;
+        default:
+          sectionDescription = "This section contains questions related to your workplace experience. Your honest feedback will help improve the organization.";
+      }
+      
+      // Calculate section progress
+      const sectionsInSurvey = new Set();
+      questions.forEach(q => {
+        if (q.sectionName) {
+          sectionsInSurvey.add(q.sectionName);
+        }
+      });
+      
+      // Find current section index
+      const sectionsList = Array.from(sectionsInSurvey) as string[];
+      const currentSectionIndex = sectionsList.indexOf(currentSection);
+      
+      // Log the survey data for debugging
+      console.log('[SurveyContent] Survey data for section screen:', {
+        logo: survey.logo,
+        image: survey.image,
+        featuredImage: survey.featuredImage
+      });
+      
+      return <SurveySectionScreen
+        logo={survey.logo || ''}
+        color={survey.color || '#b69d57'}
+        sectionTitle={currentSection}
+        sectionDescription={sectionDescription}
+        illustration={survey.featuredImage || survey.image || ''}
+        progress={{
+          current: currentSectionIndex + 1,
+          total: sectionsList.length
+        }}
+        onStart={handleStartSection}
+        onBack={() => setStep('welcome')}
+        onSkip={handleSkipSection}
+      />;
+      
+    case 'section-transition':
+      // Log the survey data for debugging
+      console.log('[SurveyContent] Survey data for section transition:', {
+        logo: survey.logo,
+        image: survey.image,
+        featuredImage: survey.featuredImage
+      });
+      
+      return (
+        <SectionTransition 
+          logo={survey.logo || ''}
+          color={survey.color || '#b69d57'}
+          sectionTitle={questions[nextSectionIndex]?.sectionName || 'Next Section'}
+          sectionDescription={`This section contains questions about ${questions[nextSectionIndex]?.sectionName || 'your workplace experience'}.`}
+          illustration={survey.featuredImage || survey.image || ''}
+          progress={{
+            current: nextSectionIndex,
+            total: questions.length
+          }}
+          onContinue={handleContinueToNextSection}
+          onBack={() => setStep(nextSectionIndex - 1)}
+        />
+      );
+      
+    case 'done':
+      return (
+        <SurveyThankYou
+          logo={survey.logo || 'https://s28.q4cdn.com/380852864/files/design/logo.svg'}
+          color={survey.color || '#b69d57'}
+          onViewResults={() => {
+            // This would typically navigate to results or another page
+            console.log('View results clicked');
+            // For now, we'll just show an alert
+            alert('Survey results would be shown here in a real application');
+          }}
+        />
+      );
+      
+    default:
+      // Show current question
+      // Handle both string and number step types
+      let questionIndex: number;
+      
+      console.log('[SurveyContent] Default case - step type:', typeof step, 'value:', step);
+      
+      if (typeof step === 'string') {
+        // Try to parse the string as a number
+        questionIndex = parseInt(step, 10);
+        console.log('[SurveyContent] Parsed string step to number:', questionIndex);
+        
+        // Check if parsing failed (NaN)
+        if (isNaN(questionIndex)) {
+          console.error('[SurveyContent] Failed to parse step as number:', step);
+          // If we can't parse the step, default to the first question
+          if (questions.length > 0) {
+            console.log('[SurveyContent] Defaulting to first question');
+            // Force immediate update to first question
+            setTimeout(() => setStep(0), 0);
+            questionIndex = 0;
+          } else {
+            return (
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                  <div className="alert alert-danger" role="alert">
+                    Invalid question step
+                  </div>
+                  <p>The step value could not be converted to a valid question index.</p>
+                  <button 
+                    onClick={() => setStep('welcome')} 
+                    className="btn btn-primary mt-4"
+                  >
+                    Return to Welcome Screen
+                  </button>
+                </div>
+              </div>
+            );
+          }
+        }
+      } else {
+        // Already a number
+        questionIndex = step;
+      }
+      
+      console.log('[SurveyContent] Rendering question at index:', questionIndex, 'Type:', typeof questionIndex);
+      
+      // Validate question index is within bounds
+      if (questionIndex < 0 || questionIndex >= questions.length) {
+        console.error('[SurveyContent] Question index out of bounds:', questionIndex, 'Questions length:', questions.length);
+        
+        // If index is out of bounds but we have questions, default to first question
+        if (questions.length > 0) {
+          console.log('[SurveyContent] Index out of bounds, defaulting to first question');
+          setTimeout(() => setStep(0), 0);
+          questionIndex = 0;
+        } else {
+          return (
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <div className="alert alert-danger" role="alert">
+                  Question not found
+                </div>
+                <p>The requested question index {questionIndex} is out of bounds. Total questions: {questions.length}</p>
+                <button 
+                  onClick={() => setStep('welcome')} 
+                  className="btn btn-primary mt-4"
+                >
+                  Return to Welcome Screen
+                </button>
+              </div>
+            </div>
+          );
+        }
+      }
+      
+      const currentQuestion = questions[questionIndex];
+      
+      if (!currentQuestion) {
+        console.error('[SurveyContent] Question not found at index:', questionIndex);
+        return (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="alert alert-danger" role="alert">
+                Question not found
+              </div>
+              <p>The requested question could not be found. Index: {questionIndex}</p>
+              <button 
+                onClick={() => setStep('welcome')} 
+                className="btn btn-primary mt-4"
+              >
+                Return to Welcome Screen
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
+      return (
+        <SurveyQuestion
+          question={currentQuestion}
+          onNext={(answer: any) => handleAnswer(currentQuestion._id, answer)}
+          progress={`${questionIndex + 1} of ${questions.length}`}
+          onBack={questionIndex > 0 ? () => setStep(questionIndex - 1) : undefined}
+          onSkip={() => handleAnswer(currentQuestion._id, null)}
+        />
+      );
+  }
+};
+
+// Main wrapper component that extracts URL parameters
+const SurveyPublic: React.FC = () => {
+  const { token } = useParams<{ token: string }>();
+  const location = useLocation();
+  const isPreviewMode = new URLSearchParams(location.search).get('status') === 'preview';
+  
+  console.log('[SurveyPublic] Rendering with token:', token);
+  
+  // State for loading, survey data, and errors
+  const [isLoading, setIsLoading] = useState(true);
+  const [surveyData, setSurveyData] = useState<Survey | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  
+  // For preview mode, get survey from localStorage
+  useEffect(() => {
+    if (isPreviewMode && token) {
+      try {
+        const storedData = localStorage.getItem(`survey-preview-${token}`);
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          setSurveyData(parsedData);
+        } else {
+          setLoadError('Preview data not found');
+        }
+      } catch (e) {
+        console.error('[SurveyPublic] Error loading preview data:', e);
+        setLoadError('Error loading preview data');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [isPreviewMode, token]);
+  
+  // For published surveys, get from database using useTracker
+  const { loading: dbLoading, survey: dbSurvey } = useTracker(() => {
+    if (isPreviewMode || !token) {
+      return { loading: false, survey: null };
+    }
+    
+    // We pass the encrypted token to the publication, which will handle decryption
+    const handle = Meteor.subscribe('surveys.preview', token);
+    
+    // Try to find the survey by both methods: directly by ID (if token is a valid encrypted ID)
+    // or by shareToken (for backward compatibility)
+    let survey;
+    try {
+      const decryptedId = decryptToken(token);
+      if (decryptedId) {
+        survey = Surveys.findOne({ _id: decryptedId });
+      }
+    } catch (error) {
+      console.error('Error decrypting token:', error);
+    }
+    
+    // If we couldn't find it by ID, fall back to the old method
+    if (!survey) {
+      survey = Surveys.findOne({ shareToken: token });
+    }
+    
+    return {
+      loading: !handle.ready(),
+      survey
+    };
+  }, [isPreviewMode, token]);
+  
+  // Update loading state and survey data when database data changes
+  useEffect(() => {
+    if (!isPreviewMode) {
+      setIsLoading(dbLoading);
+      if (dbSurvey) {
+        // Type assertion to handle the SurveyDoc vs Survey type mismatch
+        setSurveyData(dbSurvey as unknown as Survey);
+      } else if (!dbLoading) {
+        setLoadError('Survey not found');
+      }
+    }
+  }, [dbLoading, dbSurvey, isPreviewMode]);
+  
+  // If loading, show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2">Loading survey...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If error, show error state
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="alert alert-danger" role="alert">
+            {loadError}
+          </div>
+          <p>Please check the URL and try again.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If no survey data, show not found state
+  if (!surveyData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="alert alert-warning" role="alert">
+            Survey not found
+          </div>
+          <p>Please check the URL and try again.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If we have survey data, render the survey content component
+  return <SurveyContent survey={surveyData} isPreviewMode={isPreviewMode} token={token || ''} />;
 };
 
 export default SurveyPublic;

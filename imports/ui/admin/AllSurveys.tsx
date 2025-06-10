@@ -29,6 +29,26 @@ function truncate(str: string, maxLen: number): string {
   return str.slice(0, maxLen) + '...';
 }
 
+const SurveyLink: React.FC<{ surveyId: string }> = ({ surveyId }) => {
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    Meteor.call('surveys.generateEncryptedToken', surveyId, (err: Meteor.Error | null, res: string) => {
+      if (err) {
+        console.error(err);
+      } else {
+        setToken(res);
+      }
+    });
+  }, [surveyId]);
+
+  return (
+    <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
+      <a href={`${window.location.origin}/public/${token}`} target="_blank" rel="noopener noreferrer">{`${window.location.origin}/public/${token}`}</a>
+    </div>
+  );
+};
+
 const AllSurveys: React.FC = () => {
   const navigate = useNavigate();
   const { getTerminology } = useOrganization();

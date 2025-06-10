@@ -343,8 +343,15 @@ const [copied, setCopied] = useState(false);
         return;
       }
       const result = await Meteor.callAsync('surveys.publish', getSurveyData());
-      if (result && result.shareToken) {
-        const url = `${window.location.origin}/survey/public/${result.shareToken}`;
+      if (result && result._id) {
+        // Generate an encrypted token for the survey ID
+        const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', result._id);
+        const url = `${window.location.origin}/public/${encryptedToken}`;
+        setPublishedLink(url);
+        showSuccess('Survey published! Secure sharable link generated below.');
+      } else if (result && result.shareToken) {
+        // Fallback to old method if token generation fails
+        const url = `${window.location.origin}/public/${result.shareToken}`;
         setPublishedLink(url);
         showSuccess('Survey published! Sharable link generated below.');
       }
@@ -417,8 +424,31 @@ const [copied, setCopied] = useState(false);
         setIsEditMode(true);
         setEditSurveyId(urlSurveyId);
         // Set published link if survey is published
-        if (survey.shareToken) {
-          setPublishedLink(`${window.location.origin}/survey/public/${survey.shareToken}`);
+        if (survey._id) {
+          try {
+            // Generate an encrypted token for the survey ID
+            Meteor.call('surveys.generateEncryptedToken', survey._id, (error: Meteor.Error | null, encryptedToken: string) => {
+              if (error) {
+                console.error('Error generating encrypted token:', error);
+                // Fall back to shareToken if available
+                if (survey.shareToken) {
+                  setPublishedLink(`${window.location.origin}/public/${survey.shareToken}`);
+                } else {
+                  setPublishedLink(null);
+                }
+              } else {
+                setPublishedLink(`${window.location.origin}/public/${encryptedToken}`);
+              }
+            });
+          } catch (error) {
+            console.error('Error generating encrypted token:', error);
+            // Fall back to shareToken if available
+            if (survey.shareToken) {
+              setPublishedLink(`${window.location.origin}/public/${survey.shareToken}`);
+            } else {
+              setPublishedLink(null);
+            }
+          }
         } else {
           setPublishedLink(null);
         }
@@ -905,7 +935,11 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                   return;
                                 }
                                 const reader = new FileReader();
-                                reader.onload = ev => setForm(f => ({ ...f, image: ev.target?.result as string }));
+                                reader.onload = ev => {
+                                  const imageData = ev.target?.result as string;
+                                  console.log('[SurveyBuilder] Setting image data:', imageData.substring(0, 100) + '...');
+                                  setForm(f => ({ ...f, image: imageData }));
+                                };
                                 reader.readAsDataURL(file);
                               }}
                               onRemove={() => setForm(f => ({ ...f, image: '' }))}
