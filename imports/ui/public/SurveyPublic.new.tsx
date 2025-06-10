@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
@@ -156,18 +155,15 @@ const SurveyContent: React.FC<{
         setQuestions(dummyQuestions);
         setLoadingQuestions(false);
         
-        // If no questions, still show welcome screen
+        // If no questions, show no-questions state
         if (dummyQuestions.length === 0) {
-          setStep('welcome'); // Show welcome screen instead of no-questions
-          console.log('[SurveyContent] No questions after fetching, showing welcome screen');
+          setStep('no-questions');
         }
       } else {
-        // No questions found, but we'll still show the welcome screen
-        // This allows users to see the survey details according to the design
+        // No questions found
         setQuestions([]);
         setLoadingQuestions(false);
-        setStep('welcome'); // Show welcome screen instead of no-questions
-        console.log('[SurveyContent] No questions found, showing welcome screen');
+        setStep('no-questions');
       }
     } catch (error) {
       console.error('[SurveyContent] Error loading questions:', error);
@@ -181,10 +177,7 @@ const SurveyContent: React.FC<{
     if (questions.length > 0) {
       setStep(0);
     } else {
-      // Even if there are no questions, we'll show the welcome screen
-      // This ensures users can see the survey details according to the design
-      console.log('[SurveyContent] No questions available, keeping welcome screen visible');
-      setStep('welcome');
+      setStep('no-questions');
     }
   };
 
@@ -268,30 +261,19 @@ const SurveyContent: React.FC<{
   // Render appropriate step
   switch (step) {
     case 'welcome':
-      return <SurveyWelcome 
-        previewData={{
-          title: survey.title,
-          description: survey.description || '',
-          logo: survey.logo || '',
-          image: survey.image || '',
-          color: survey.color || '#552a47'
-        }} 
-        onStart={handleStart} 
-      />;
+      return <SurveyWelcome survey={survey} onStart={handleStart} />;
       
     case 'no-questions':
-      // Instead of showing an error, we'll display the welcome screen
-      // This ensures users can see the survey details according to the design
-      return <SurveyWelcome 
-        previewData={{
-          title: survey.title,
-          description: survey.description || '',
-          logo: survey.logo || '',
-          image: survey.image || '',
-          color: survey.color || '#552a47'
-        }} 
-        onStart={handleStart} 
-      />;
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="alert alert-warning" role="alert">
+              No questions found for this survey
+            </div>
+            <p>This survey doesn't have any questions yet.</p>
+          </div>
+        </div>
+      );
       
     case 'section-transition':
       return (
@@ -343,7 +325,7 @@ const SurveyContent: React.FC<{
       return (
         <SurveyQuestion
           question={currentQuestion}
-          onAnswer={(answer: any) => handleAnswer(currentQuestion._id, answer)}
+          onAnswer={(answer) => handleAnswer(currentQuestion._id, answer)}
           progress={{
             current: questionIndex + 1,
             total: questions.length
@@ -392,25 +374,8 @@ const SurveyPublic: React.FC = () => {
       return { loading: false, survey: null };
     }
     
-    // We pass the encrypted token to the publication, which will handle decryption
     const handle = Meteor.subscribe('surveys.preview', token);
-    
-    // Try to find the survey by both methods: directly by ID (if token is a valid encrypted ID)
-    // or by shareToken (for backward compatibility)
-    let survey;
-    try {
-      const decryptedId = decryptToken(token);
-      if (decryptedId) {
-        survey = Surveys.findOne({ _id: decryptedId });
-      }
-    } catch (error) {
-      console.error('Error decrypting token:', error);
-    }
-    
-    // If we couldn't find it by ID, fall back to the old method
-    if (!survey) {
-      survey = Surveys.findOne({ shareToken: token });
-    }
+    const survey = Surveys.findOne({ shareToken: token });
     
     return {
       loading: !handle.ready(),

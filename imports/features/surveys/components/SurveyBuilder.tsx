@@ -346,7 +346,7 @@ const [copied, setCopied] = useState(false);
       }
       const result = await Meteor.callAsync('surveys.publish', getSurveyData());
       if (result && result.shareToken) {
-        const url = `${window.location.origin}/survey/public/${result.shareToken}`;
+        const url = `${window.location.origin}/public/${result.shareToken}`;
         setPublishedLink(url);
         showSuccess('Survey published! Sharable link generated below.');
       }
@@ -420,7 +420,7 @@ const [copied, setCopied] = useState(false);
         setEditSurveyId(urlSurveyId);
         // Set published link if survey is published
         if (survey.shareToken) {
-          setPublishedLink(`${window.location.origin}/survey/public/${survey.shareToken}`);
+          setPublishedLink(`${window.location.origin}/public/${survey.shareToken}`);
         } else {
           setPublishedLink(null);
         }

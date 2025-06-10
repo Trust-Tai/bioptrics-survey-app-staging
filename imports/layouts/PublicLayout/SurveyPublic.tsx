@@ -27,6 +27,17 @@ interface Survey {
   selectedQuestions?: Record<string, any[]>;
   siteTextQuestions?: any[];
   shareToken?: string;
+  // New properties from EnhancedSurveyBuilder
+  sectionQuestions?: Array<{
+    id: string;
+    sectionId: string;
+    order?: number;
+  }>;
+  surveySections?: Array<{
+    id: string;
+    title: string;
+    order: number;
+  }>;
 }
 
 const SurveyPublic: React.FC = () => {
@@ -72,18 +83,45 @@ const SurveyPublic: React.FC = () => {
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
-  // Extract all question IDs from selectedQuestions and siteTextQuestions
+  // Extract all question IDs from sectionQuestions or fall back to selectedQuestions
   React.useEffect(() => {
     if (!survey) return;
     setLoadingQuestions(true);
     setQuestionsError(null);
     try {
       let ids: string[] = [];
-      // Extract section information from selectedQuestions
+      // Extract section information from questions
       const sectionInfo: Record<string, string> = {};
       
-      // Process selectedQuestions (main questions from each section)
-      if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
+      console.log('[SurveyPublic] Survey data:', survey);
+      
+      // First check for sectionQuestions (new format from EnhancedSurveyBuilder)
+      if (Array.isArray(survey.sectionQuestions) && survey.sectionQuestions.length > 0) {
+        console.log('[SurveyPublic] Using sectionQuestions:', survey.sectionQuestions);
+        
+        // Process each question in sectionQuestions
+        survey.sectionQuestions.forEach((question: any) => {
+          if (question && question.id) {
+            // Add to our list of IDs
+            ids.push(question.id);
+            
+            // Find section name from surveySections
+            let sectionName = 'Unknown Section';
+            if (Array.isArray(survey.surveySections)) {
+              const section = survey.surveySections.find(s => s.id === question.sectionId);
+              if (section) {
+                sectionName = section.title || `Section ${section.order + 1}`;
+              }
+            }
+            
+            // Store section information for this question
+            sectionInfo[question.id] = sectionName;
+          }
+        });
+      }
+      // Fall back to legacy selectedQuestions format if no sectionQuestions
+      else if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
+        console.log('[SurveyPublic] Falling back to selectedQuestions');
         // For each section in the survey
         Object.entries(survey.selectedQuestions).forEach(([sectionIdx, questions]) => {
           if (Array.isArray(questions)) {
@@ -345,19 +383,38 @@ const SurveyPublic: React.FC = () => {
           setLoadingQuestions(false);
           console.log('[SurveyPublic] Processed questions with sections:', ordered);
         } else {
+          console.error('[SurveyPublic] No valid questions returned from questions.getMany');
+          console.error('[SurveyPublic] Survey data:', survey);
+          
+          // Check if we're in preview mode but still couldn't create mock questions
+          if (isPreviewMode) {
+            console.error('[SurveyPublic] Failed to create mock questions for preview mode');
+          }
+          
+          // Check if the survey has question references
+          if (survey) {
+            if (Array.isArray(survey.sectionQuestions) && survey.sectionQuestions.length > 0) {
+              console.error('[SurveyPublic] Survey has sectionQuestions but no questions were found:', 
+                survey.sectionQuestions);
+            } else if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
+              console.error('[SurveyPublic] Survey has selectedQuestions but no questions were found:', 
+                survey.selectedQuestions);
+            } else {
+              console.error('[SurveyPublic] Survey has no question references');
+            }
+          }
+          
           setQuestionsError('No questions found for this survey.');
           setLoadingQuestions(false);
         }
       });
-    } catch (e: any) {
+    } catch (e) {
       setQuestionsError('Could not load questions');
       setQuestions([]);
       setLoadingQuestions(false);
       console.error('[SurveyPublic] Exception during questions loading:', e);
     }
   }, [survey, isPreviewMode]);
-
-  if (!survey) return <div style={{ padding: 40 }}>Loading survey...</div>;
 
   // Get unique sections in order
   const sections = React.useMemo(() => {
@@ -432,8 +489,20 @@ const SurveyPublic: React.FC = () => {
         console.log('[SurveyPublic] setStep(0) called, should render first question.');
       }
     } else {
-      setStep('no-questions');
-      console.log('[SurveyPublic] setStep("no-questions") called.');
+      // Log more details about why no questions were found
+      console.error('[SurveyPublic] No questions found. Survey data:', survey);
+      console.error('[SurveyPublic] Is preview mode:', isPreviewMode);
+      
+      // Check if we have IDs but no questions
+      if (survey && (Array.isArray(survey.sectionQuestions) || 
+          (survey.selectedQuestions && typeof survey.selectedQuestions === 'object'))) {
+        console.error('[SurveyPublic] Survey has question references but no questions were loaded');
+      }
+      
+      // For now, we'll still show the welcome screen even if there are no questions
+      // This allows users to see the survey details according to the design
+      setStep('welcome');
+      console.log('[SurveyPublic] setStep("welcome") called despite no questions.');
     }
   };
 
@@ -592,7 +661,7 @@ const SurveyPublic: React.FC = () => {
               color: survey.color || '#552a47'
             }}
             onStart={handleStart}
-            disabled={loadingQuestions || questions.length === 0}
+            disabled={loadingQuestions} // Allow starting even if no questions
           />
         )}
         {loadingQuestions && (
@@ -601,7 +670,7 @@ const SurveyPublic: React.FC = () => {
         {questionsError && (
           <div style={{ padding: 40, color: 'red' }}>{questionsError}</div>
         )}
-        {step === 'section-transition' && (
+        {step === 'section-transition' && survey && (
           <SectionTransition
             logo={survey.logo}
             color={survey.color || '#552a47'}
@@ -623,18 +692,6 @@ const SurveyPublic: React.FC = () => {
             onNext={handleNext}
             onBack={handleBack}
           />
-        )}
-        {step === 'no-questions' && survey && (
-          <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#552a47' }}>
-            <h2>No Questions Found</h2>
-            <p>This survey does not have any questions yet. Please add questions to preview the survey flow.</p>
-            <button
-              style={{ marginTop: 24, background: '#552a47', color: '#f9f4f7', border: 'none', borderRadius: 8, fontWeight: 700, padding: '12px 32px', fontSize: 16, cursor: 'pointer' }}
-              onClick={() => setStep('welcome')}
-            >
-              Back to Welcome
-            </button>
-          </div>
         )}
         {step === 'done' && survey && (
           <div style={{ padding: 40, textAlign: 'center', color: survey.color || '#552a47' }}>

@@ -23,6 +23,8 @@ export interface SurveyDoc {
   siteTextQuestions: Array<any>;
   siteTextQForm: any;
   selectedDemographics: string[];
+  selectedTheme?: string;
+  selectedCategories?: string[];
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -141,17 +143,54 @@ if (Meteor.isServer) {
   });
 
   // Preview: allow owner or admin to view the latest draft (published or not)
-  Meteor.publish('surveys.preview', async function (shareToken) {
-    check(shareToken, String);
+  Meteor.publish('surveys.preview', async function (encryptedToken) {
+    check(encryptedToken, String);
     
-    // Use find().fetch()[0] for synchronous access
-    const surveyDocs = await Surveys.find({ shareToken }).fetch();
-    const surveyDoc = surveyDocs[0];
-    if (!surveyDoc) return this.ready();
-    if (surveyDoc.createdBy === this.userId || (this.userId && (await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin'))) {
-      return Surveys.find({ shareToken });
+    // Import the token decryption utility
+    const { decryptToken } = await import('../../../utils/tokenUtils');
+    
+    // Try to decrypt the token to get the survey ID
+    let surveyId;
+    let surveyDoc;
+    
+    try {
+      // First try to decrypt the token
+      surveyId = decryptToken(encryptedToken);
+      
+      if (surveyId) {
+        // If we successfully decrypted a survey ID, look it up directly
+        surveyDoc = await Surveys.findOneAsync({ _id: surveyId });
+      }
+      
+      // If we couldn't find the survey by ID, fall back to the old method
+      if (!surveyDoc) {
+        const surveyDocs = await Surveys.find({ shareToken: encryptedToken }).fetch();
+        surveyDoc = surveyDocs[0];
+      }
+    } catch (error) {
+      console.error('Error decrypting survey token:', error);
+      // Fall back to the old method if decryption fails
+      const surveyDocs = await Surveys.find({ shareToken: encryptedToken }).fetch();
+      surveyDoc = surveyDocs[0];
     }
-    return this.ready();
+    
+    if (!surveyDoc) return this.ready();
+    
+    // Allow public access to surveys with shareToken
+    if (surveyDoc.shareToken) {
+      // Return the survey by ID if we have it, otherwise by shareToken
+      return surveyId ? Surveys.find({ _id: surveyId }) : Surveys.find({ shareToken: encryptedToken });
+    }
+    
+    // If no shareToken and not the creator or admin, don't return anything
+    if (!this.userId || 
+        (surveyDoc.createdBy !== this.userId && 
+         !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin'))) {
+      return this.ready();
+    }
+    
+    // Return the survey for creator or admin
+    return surveyId ? Surveys.find({ _id: surveyId }) : Surveys.find({ shareToken: encryptedToken });
   });
   
   // Publication for survey responses - only accessible to admin users
@@ -423,12 +462,73 @@ Meteor.methods({
   'surveys.remove'(surveyId: string) {
     return Surveys.remove(surveyId);
   },
+
+  // Update an existing survey with all data including sections and questions
+  async 'surveys.update'(surveyId: string, surveyData: any) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    
+    // Validate the survey exists and user has permission
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) throw new Meteor.Error('Survey not found');
+    if (survey.createdBy !== this.userId && !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin')) {
+      throw new Meteor.Error('Not authorized');
+    }
+    
+    // Update the survey with all provided data
+    await Surveys.updateAsync(surveyId, {
+      $set: {
+        title: surveyData.title || '',
+        description: surveyData.description || '',
+        logo: surveyData.logo,
+        featuredImage: surveyData.featuredImage,
+        primaryColor: surveyData.primaryColor,
+        // Save sections and questions
+        surveySections: surveyData.surveySections || [],
+        sectionQuestions: surveyData.sectionQuestions || [],
+        // Save demographics, themes, and categories
+        selectedDemographics: surveyData.selectedDemographics || [],
+        selectedTheme: surveyData.selectedTheme,
+        selectedCategories: surveyData.selectedCategories || [],
+        updatedAt: new Date(),
+      },
+    });
+    
+    return { success: true };
+  },
   // Public method to fetch survey by ID
   async 'surveys.get'(surveyId: string) {
     check(surveyId, String);
     return await Surveys.findOneAsync({ _id: surveyId });
   },
   // Allow anonymous submission of survey responses
+  // Generate an encrypted token for a survey ID
+  async 'surveys.generateEncryptedToken'(surveyId: string) {
+    check(surveyId, String);
+    
+    // Verify the survey exists
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user is authorized (admin or survey creator)
+    if (this.userId) {
+      const user = await Meteor.users.findOneAsync(this.userId);
+      if (survey.createdBy !== this.userId && !user?.roles?.includes('admin')) {
+        throw new Meteor.Error('not-authorized', 'Not authorized to generate token for this survey');
+      }
+    } else if (!survey.published) {
+      // Non-authenticated users can only access published surveys
+      throw new Meteor.Error('not-authorized', 'Not authorized to access unpublished survey');
+    }
+    
+    // Import the token generation utility
+    const { generateSurveyToken } = await import('../../../utils/tokenUtils');
+    
+    // Generate and return the encrypted token
+    return generateSurveyToken(surveyId);
+  },
+  
   async 'surveys.submitResponse'(surveyId: string, answers: { [questionId: string]: any }) {
     check(surveyId, String);
     check(answers, Object);
@@ -454,5 +554,52 @@ Meteor.methods({
       createdAt: new Date(),
       updatedAt: new Date()
     });
+  },
+  
+  /**
+   * Make a survey public by generating a share token
+   * @param surveyId - The ID of the survey to make public
+   * @returns The updated survey document
+   */
+  async 'surveys.makePublic'(surveyId: string) {
+    check(surveyId, String);
+    
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to make a survey public');
+    }
+    
+    // Find the survey
+    const survey = await Surveys.findOneAsync({ _id: surveyId });
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user has permission to modify this survey
+    if (survey.createdBy !== this.userId) {
+      // Check if user is an admin
+      const user = await Meteor.users.findOneAsync(this.userId);
+      if (!user?.roles?.includes('admin')) {
+        throw new Meteor.Error('not-authorized', 'You do not have permission to modify this survey');
+      }
+    }
+    
+    // Generate a share token if one doesn't exist
+    const shareToken = survey.shareToken || Random.id(10);
+    
+    // Update the survey
+    await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $set: { 
+          published: true,
+          shareToken: shareToken,
+          updatedAt: new Date()
+        } 
+      }
+    );
+    
+    // Return the updated survey
+    return await Surveys.findOneAsync({ _id: surveyId });
   },
 });

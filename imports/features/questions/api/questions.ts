@@ -91,7 +91,30 @@ Meteor.methods({
   // Public method to fetch multiple questions by ID
   'questions.getMany': function (ids: string[]) {
     check(ids, Array);
-    return Questions.find({ _id: { $in: ids } }).fetch();
+    
+    console.log(`[questions.getMany] Fetching ${ids.length} questions:`, ids);
+    
+    if (!ids.length) {
+      console.log('[questions.getMany] No question IDs provided');
+      return [];
+    }
+    
+    try {
+      const questions = Questions.find({ _id: { $in: ids } }).fetch();
+      console.log(`[questions.getMany] Found ${questions.length} of ${ids.length} requested questions`);
+      
+      // Log which IDs were not found
+      if (questions.length < ids.length) {
+        const foundIds = questions.map(q => q._id);
+        const missingIds = ids.filter(id => !foundIds.includes(id));
+        console.log('[questions.getMany] Missing question IDs:', missingIds);
+      }
+      
+      return questions;
+    } catch (error) {
+      console.error('[questions.getMany] Error fetching questions:', error);
+      throw new Meteor.Error('questions.getMany.error', 'Failed to fetch questions');
+    }
   },
   'questions.delete': async function (questionId: string) {
     // Allow deletion from Bank admin (no Meteor user check)

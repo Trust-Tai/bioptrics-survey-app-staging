@@ -256,7 +256,7 @@ const SurveyNotifications: React.FC<SurveyNotificationsProps> = ({
         // Replace placeholders with actual values
         let messageText = template.body
           .replace('{{surveyTitle}}', surveyTitle)
-          .replace('{{surveyLink}}', `${window.location.origin}/survey/public/${surveyId}`);
+          .replace('{{surveyLink}}', `${window.location.origin}/public/${surveyId}`);
         
         setMessage(messageText);
       }
