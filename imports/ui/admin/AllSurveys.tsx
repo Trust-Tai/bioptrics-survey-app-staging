@@ -5,7 +5,7 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
-import { FaEdit, FaTrash, FaEye, FaTasks } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
@@ -143,35 +143,47 @@ const AllSurveys: React.FC = () => {
             </div>
           </div>
         )}
-        <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, padding: '32px 32px 40px 32px', background: 'transparent' }}>
+        <div style={{ 
+          width: '100%', 
+          maxWidth: 1200, 
+          margin: '0 auto', 
+          borderRadius: 18, 
+          padding: '24px 24px 40px 24px', 
+          background: 'transparent',
+          boxSizing: 'border-box',
+          overflow: 'hidden'
+        }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>All {surveyLabelPlural}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-            <input
-              type="text"
-              placeholder={`Search ${surveyLabelPlural.toLowerCase()}...`}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                height: 44,
-                fontSize: 16,
-                padding: '0 16px',
-                borderRadius: 8,
-                border: '1.5px solid #e5d6c7',
-                minWidth: 220,
-                color: '#28211e',
-                fontWeight: 500,
-                outline: 'none',
-                background: '#fff',
-              }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 24, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ position: 'relative', minWidth: 280 }}>
+              <FaSearch style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#552a47', opacity: 0.6 }} />
+              <input
+                type="text"
+                placeholder={`Search ${surveyLabelPlural.toLowerCase()}...`}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  height: 44,
+                  fontSize: 16,
+                  padding: '0 16px 0 42px',
+                  borderRadius: 8,
+                  border: '1.5px solid #e5d6c7',
+                  width: '100%',
+                  color: '#28211e',
+                  fontWeight: 500,
+                  outline: 'none',
+                  background: '#fff',
+                }}
+              />
+            </div>
             <button
               onClick={() => {
                 window.location.href = '/admin/surveys/builder';
               }}
               style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
             >
-              <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
-              Add Survey
+              <FaPlus style={{ fontSize: 14 }} />
+              <span style={{ marginLeft: 6 }}>Add Survey</span>
             </button>
           </div>
           {/* Notification Bar */}
@@ -208,64 +220,200 @@ const AllSurveys: React.FC = () => {
           {/* Survey List */}
           {filtered.length === 0 && <div style={{ textAlign: 'center', padding: '40px 0', color: '#6e5a67' }}>No {surveyLabelPlural.toLowerCase()} found.</div>}
           {paginated.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+              gap: '65px 24px',
+              width: '100%',
+              maxWidth: '100%',
+              overflow: 'hidden'
+            }}>
               {paginated.map((s) => (
                 <div
                   key={s._id}
                   style={{
-                    background: '#f9f4f7',
-                    borderRadius: 14,
-                    boxShadow: '0 2px 8px #f4ebf1',
-                    padding: '18px 24px',
+                    background: '#fff',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 16px rgba(85, 42, 71, 0.08)',
+                    padding: '22px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 10,
+                    gap: 12,
                     position: 'relative',
+                    transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                    height: '100%',
+                    margin: 0,
+                    border: '1px solid #f4ebf1',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    maxWidth: '100%',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(85, 42, 71, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 3px 12px rgba(85, 42, 71, 0.08)';
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
-                    <span style={{ background: s.published ? '#e6f8e0' : '#ffe6e6', color: s.published ? '#1da463' : '#e74c3c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>
+                  <div style={{ 
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                    marginTop: 12,
+                    marginBottom: 8
+                  }}>
+                    <div style={{ 
+                      background: s.published ? 'linear-gradient(135deg, #e6f8e0, #d7f9c8)' : 'linear-gradient(135deg, #ffe6e6, #ffcece)', 
+                      color: s.published ? '#0a8043' : '#c0392b', 
+                      borderRadius: 30, 
+                      padding: '6px 14px', 
+                      fontSize: 13, 
+                      fontWeight: 700, 
+                      letterSpacing: 0.3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}>
+                      <div style={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: s.published ? '#0a8043' : '#c0392b',
+                        marginRight: 2
+                      }}></div>
                       {s.published ? 'Published' : 'Draft'}
-                    </span>
-                    <span style={{ background: '#fbe7f6', color: '#a54c8c', borderRadius: 7, padding: '2px 12px', fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>
-                      {new Date(s.updatedAt).toLocaleString()}
-                    </span>
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      gap: 6,
+                      color: '#777',
+                      fontSize: 12,
+                      fontWeight: 500,
+                    }}>
+                      <FaClock style={{ fontSize: 11 }} />
+                      {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
                   </div>
-                  <div 
+                  <h3 
                     style={{ 
                       color: '#28211e', 
-                      fontWeight: 600, 
-                      fontSize: 17, 
-                      letterSpacing: 0.1,
+                      fontWeight: 700, 
+                      fontSize: 20, 
+                      letterSpacing: 0.2,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      display: 'inline-block',
-                      position: 'relative',
-                      paddingBottom: '2px',
-                      borderBottom: '1px dotted transparent'
-                    }}
+                      margin: '0 0 14px 0',
+                      paddingRight: '20px',
+                      borderLeft: '3px solid #552a47',
+                      paddingLeft: '12px',
+                      lineHeight: 1.3,
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }} 
                     onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = '#552a47';
-                      e.currentTarget.style.borderBottom = '1px dotted #552a47';
-                      e.currentTarget.title = 'Click to manage this survey';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = '#28211e';
-                      e.currentTarget.style.borderBottom = '1px dotted transparent';
                     }}
                     title="Click to manage this survey"
                   >
                     {s.title}
-                  </div>
-                  <div style={{ color: '#6e5a67', fontSize: 15 }}>{truncate(stripHtml(s.description), 120)}</div>
-                  {s.published && s._id && (
-                    <div style={{ marginTop: 8 }}>
-                      <span style={{ fontWeight: 400, color: '#222' }}>Secure Sharable Link:</span>
-                      <SurveyLink surveyId={s._id} />
+                  </h3>
+                  <div style={{ 
+                    color: '#6e5a67', 
+                    fontSize: 15, 
+                    flex: 1, 
+                    lineHeight: 1.5,
+                    backgroundColor: '#faf7f9',
+                    padding: '12px 16px',
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word'
+                  }}>{truncate(stripHtml(s.description), 120)}</div>
+                  {s.shareToken && s.published && (
+                    <div style={{ 
+                      marginTop: 'auto', 
+                      padding: '14px 16px', 
+                      borderTop: '1px solid #f4ebf1',
+                      backgroundColor: '#f9f4f7',
+                      borderRadius: 8,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      maxWidth: '100%'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        <span style={{ 
+                          fontWeight: 600, 
+                          color: '#552a47', 
+                          fontSize: 14,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6
+                        }}>
+                          <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
+                        </span>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/survey/public/${s.shareToken}`);
+                            setNotification({ type: 'success', message: 'URL copied to clipboard!' });
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            background: '#552a47',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '6px 12px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <FaCopy style={{ fontSize: 12 }} /> Copy URL
+                        </button>
+                      </div>
+                      <div style={{ 
+                        padding: '8px 12px', 
+                        background: 'white', 
+                        borderRadius: 6, 
+                        border: '1px dashed #d7c5d3',
+                        fontSize: 13,
+                        color: '#552a47',
+                        fontFamily: 'monospace',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%'
+                      }}>
+                        {`${window.location.origin}/survey/public/${s.shareToken}`}
+                      </div>
                     </div>
                   )}
-                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, marginTop: 8 }}>
+                   <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginTop: 'auto', paddingTop: s.shareToken && s.published ? 0 : 12, borderTop: s.shareToken && s.published ? 'none' : '1px solid #f4ebf1' }}>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => {
@@ -273,28 +421,28 @@ const AllSurveys: React.FC = () => {
                       }}
                       title="Preview"
                     >
-                      <FaEye style={{ color: '#552a47', fontSize: 18 }} />
+                      <FaEye style={{ color: '#552a47', fontSize: 20 }} />
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
                       title="Manage"
                     >
-                      <FaTasks style={{ color: '#552a47', fontSize: 18 }} />
+                      <FaTasks style={{ color: '#552a47', fontSize: 20 }} />
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
                       title="Edit"
                     >
-                      <FaEdit style={{ color: '#552a47', fontSize: 18 }} />
+                      <FaEdit style={{ color: '#552a47', fontSize: 20 }} />
                     </button>
                     <button
                       style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
                       title="Delete"
                     >
-                      <FaTrash style={{ color: '#552a47', fontSize: 18 }} />
+                      <FaTrash style={{ color: '#552a47', fontSize: 20 }} />
                     </button>
                   </div>
                 </div>
