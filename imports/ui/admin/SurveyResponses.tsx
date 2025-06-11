@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
 import { SurveyResponses as SurveyResponsesCollection } from '../../features/surveys/api/surveyResponses';
-import styled from 'styled-components';
-import { FiChevronDown, FiChevronRight, FiDownload, FiFilter } from 'react-icons/fi';
+import { 
+  FiChevronDown, 
+  FiChevronUp, 
+  FiChevronRight, 
+  FiFilter, 
+  FiDownload, 
+  FiGrid, 
+  FiList, 
+  FiFileText, 
+  FiBarChart2, 
+  FiEye, 
+  FiEdit 
+} from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
+import { format } from 'date-fns';
 
 // Styled components
 const Container = styled.div`
@@ -14,7 +27,7 @@ const Container = styled.div`
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
 `;
 
@@ -25,33 +38,354 @@ const Header = styled.div`
   margin-bottom: 24px;
 `;
 
-const Title = styled.h1`
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
+const ViewToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  justify-content: flex-end;
+`;
+
+const ViewToggleButton = styled.button<{ active: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: ${props => props.active ? '#552a47' : '#f5f5f5'};
+  color: ${props => props.active ? '#fff' : '#555'};
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+  
+  &:hover {
+    background: ${props => props.active ? '#552a47' : '#e0e0e0'};
+  }
+  
+  svg {
+    font-size: 18px;
+  }
+`;
+
+const GridContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+  padding: 4px;
+`;
+
+const SurveyCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid #edf2f7;
+  position: relative;
+  
+  &:hover {
+    box-shadow: 0 8px 24px rgba(85, 42, 71, 0.12);
+    transform: translateY(-3px);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, #552a47, #7b4068);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid #edf2f7;
+  background-color: #ffffff;
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    background: linear-gradient(to right, #edf2f7, #f8f9fa, #edf2f7);
+  }
+`;
+
+const CardTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1a202c;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+`;
+
+const CardDescription = styled.p`
+  font-size: 14px;
+  color: #718096;
   margin: 0;
+  flex-grow: 1;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+`;
+
+const CardContent = styled.div`
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  background-color: #f8f9fa;
+  border-top: 1px solid #edf2f7;
+  border-bottom: 1px solid #edf2f7;
+`;
+
+const CardFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid #edf2f7;
+  background-color: #ffffff;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+`;
+
+const CardStats = styled.div`
+  display: flex;
+  gap: 24px;
+  align-items: center;
+`;
+
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
+const StatValue = styled.div`
+  font-weight: 700;
+  font-size: 24px;
+  color: #552a47;
+  position: relative;
+  display: inline-block;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 24px;
+    height: 2px;
+    background: linear-gradient(to right, #552a47, rgba(85, 42, 71, 0.2));
+    border-radius: 2px;
+  }
+`;
+
+const StatLabel = styled.div`
+  font-size: 12px;
+  color: #718096;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+`;
+
+const StatusLabel = styled.span<{ status: 'published' | 'draft' }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: ${props => props.status === 'published' ? '#e6f7eb' : '#f7fafc'};
+  color: ${props => props.status === 'published' ? '#2f855a' : '#718096'};
+  text-transform: capitalize;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${props => props.status === 'published' ? '#2f855a' : '#718096'};
+    margin-right: 6px;
+    box-shadow: 0 0 0 2px ${props => props.status === 'published' ? 'rgba(47, 133, 90, 0.2)' : 'rgba(113, 128, 150, 0.2)'};
+  }
 `;
 
 const FilterContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border: 1px solid #edf2f7;
 `;
 
 const FilterButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-weight: 500;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #4a5568;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 
   &:hover {
-    background: #e9e9e9;
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  svg {
+    color: #552a47;
+    font-size: 16px;
+  }
+`;
+
+const SearchInput = styled.input`
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  width: 280px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+  }
+
+  &::placeholder {
+    color: #a0aec0;
+  }
+`;
+
+const FilterGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FilterSelect = styled.select`
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 14px;
+  color: #4a5568;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  min-width: 180px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+  }
+  
+  &:hover {
+    border-color: #cbd5e0;
+  }
+`;
+
+const FilterLabel = styled.label`
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #4a5568;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+`;
+
+const ClearFiltersButton = styled.button`
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+
+  &:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    color: #2d3748;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -60,53 +394,100 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #552a47;
+  background: linear-gradient(135deg, #552a47, #7b4068);
   color: white;
   border: none;
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(85, 42, 71, 0.2);
 
   &:hover {
-    background: #9a7025;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(85, 42, 71, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const Table = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
 `;
 
 const Th = styled.th`
   text-align: left;
-  padding: 12px 16px;
-  border-bottom: 2px solid #ddd;
+  padding: 18px 20px;
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+  border-bottom: 1px solid #edf2f7;
   font-weight: 600;
-  color: #555;
+  color: #4a5568;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+  
+  &:first-child {
+    border-top-left-radius: 12px;
+  }
+  
+  &:last-child {
+    border-top-right-radius: 12px;
+  }
 `;
 
 const Td = styled.td`
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
-  vertical-align: top;
+  padding: 16px 20px;
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: middle;
+  color: #2d3748;
+  font-size: 14px;
+  transition: all 0.2s;
+  line-height: 1.5;
 `;
 
 const SurveyRow = styled.tr`
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  position: relative;
 
   &:hover {
-    background-color: #f9f9f9;
+    background-color: #f7fafc;
+  }
+  
+  &:hover td:first-child {
+    box-shadow: inset 4px 0 0 #552a47;
+  }
+  
+  &:active {
+    background-color: #edf2f7;
+  }
+  
+  &:last-child td {
+    border-bottom: none;
   }
 `;
 
 const ResponseRow = styled.tr`
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  background-color: #fafbfc;
   
   &:hover {
-    background-color: #f9f9f9;
+    background-color: #f1f3f5;
   }
 `;
 
@@ -118,25 +499,48 @@ const ResponseDetails = styled.div`
 `;
 
 const NoData = styled.div`
-  text-align: center;
-  padding: 32px;
-  color: #777;
-  font-style: italic;
-`;
-
-const ExpandButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  color: #777;
+  padding: 60px 40px;
+  color: #718096;
+  font-size: 15px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
+  margin: 20px 0;
+  flex-direction: column;
+  gap: 12px;
   
-  &:hover {
-    color: #333;
+  svg {
+    color: #a0aec0;
+    font-size: 32px;
+    margin-bottom: 8px;
   }
+`;
+
+const ExpandButton = styled.button`
+background: none;
+border: none;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+color: #a0aec0;
+padding: 6px;
+border-radius: 6px;
+transition: all 0.2s;
+
+&:hover {
+  background: rgba(85, 42, 71, 0.08);
+  color: #552a47;
+}
+
+svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5px;
+}
 `;
 
 // Use the actual types from the collections
@@ -201,6 +605,9 @@ const SurveyResponses: React.FC = () => {
   // State for expanded rows
   const [expandedSurveys, setExpandedSurveys] = React.useState<Record<string, boolean>>({});
   const [expandedResponses, setExpandedResponses] = React.useState<Record<string, boolean>>({});
+  
+  // View toggle state
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   
   // Filtering state
   const [showFilters, setShowFilters] = useState(false);
@@ -330,6 +737,26 @@ const SurveyResponses: React.FC = () => {
       [surveyId]: !prev[surveyId]
     }));
   };
+  
+  // Handle dropdown menus
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Skip if the click is on a dropdown button
+      if ((event.target as Element).closest('button')) {
+        return;
+      }
+      
+      // Close all dropdowns if clicking outside
+      if (!(event.target as Element).closest('.export-dropdown')) {
+        document.querySelectorAll('.export-dropdown').forEach(el => {
+          (el as HTMLElement).style.display = 'none';
+        });
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
   
   // Toggle response expansion
   const toggleResponseExpansion = (responseId: string) => {
@@ -572,228 +999,267 @@ const SurveyResponses: React.FC = () => {
           <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26, marginBottom: 24, letterSpacing: 0.2 }}>Survey Responses</h2>
           
           <Container>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ width: '1px', height: '1px' }}></div>
+              <ViewToggleContainer>
+                <ViewToggleButton 
+                  active={viewMode === 'table'} 
+                  onClick={() => setViewMode('table')}
+                  aria-label="Table View"
+                >
+                  <FiList />
+                </ViewToggleButton>
+                <ViewToggleButton 
+                  active={viewMode === 'grid'} 
+                  onClick={() => setViewMode('grid')}
+                  aria-label="Grid View"
+                >
+                  <FiGrid />
+                </ViewToggleButton>
+              </ViewToggleContainer>
+            </div>
+            
             <FilterContainer>
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                <div>
-                  <FilterButton onClick={() => setShowFilters(!showFilters)}>
-                    <FiFilter />
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
-                  </FilterButton>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '8px', 
+                    background: 'rgba(85, 42, 71, 0.08)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}>
+                    <FiFilter style={{ color: '#552a47', strokeWidth: 2.5 }} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#2d3748', fontSize: '16px' }}>Filters</span>
                 </div>
-                <div>
-                  <input
+                <div style={{ position: 'relative' }}>
+                  <SearchInput
                     type="text"
                     placeholder="Search surveys..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: 20,
-                      border: '1px solid #ddd',
-                      width: 250,
-                      fontSize: 14
-                    }}
                   />
+                  <div style={{ 
+                    position: 'absolute', 
+                    right: '16px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)', 
+                    pointerEvents: 'none',
+                    color: searchTerm ? '#552a47' : '#a0aec0'
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </div>
                 </div>
               </div>
               
-              {showFilters && (
-                <div style={{ 
-                  marginTop: 16, 
-                  padding: 16, 
-                  background: '#f9f9f9', 
-                  borderRadius: 8, 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                  gap: 16
-                }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Status</label>
-                    <select 
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value as 'all' | 'published' | 'draft')}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="published">Published Only</option>
-                      <option value="draft">Draft Only</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Date Range</label>
-                    <select 
-                      value={filterDateRange}
-                      onChange={(e) => setFilterDateRange(e.target.value as 'all' | 'last7' | 'last30' | 'last90')}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
-                    >
-                      <option value="all">All Time</option>
-                      <option value="last7">Last 7 Days</option>
-                      <option value="last30">Last 30 Days</option>
-                      <option value="last90">Last 90 Days</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>Responses</label>
-                    <select 
-                      value={filterResponseCount}
-                      onChange={(e) => setFilterResponseCount(e.target.value as 'all' | 'withResponses' | 'noResponses')}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd' }}
-                    >
-                      <option value="all">All Surveys</option>
-                      <option value="withResponses">With Responses</option>
-                      <option value="noResponses">No Responses</option>
-                    </select>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <button 
-                      onClick={() => {
-                        setFilterStatus('all');
-                        setFilterDateRange('all');
-                        setFilterResponseCount('all');
-                        setSearchTerm('');
-                      }}
-                      style={{ 
-                        background: '#f0f0f0', 
-                        border: 'none', 
-                        borderRadius: 6, 
-                        padding: '8px 16px', 
-                        cursor: 'pointer',
-                        width: '100%'
-                      }}
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
+              <FilterGrid>
+                <FilterGroup>
+                  <FilterLabel>Status</FilterLabel>
+                  <FilterSelect 
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as 'all' | 'published' | 'draft')}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="published">Published Only</option>
+                    <option value="draft">Draft Only</option>
+                  </FilterSelect>
+                </FilterGroup>
+                
+                <FilterGroup>
+                  <FilterLabel>Date Range</FilterLabel>
+                  <FilterSelect 
+                    value={filterDateRange}
+                    onChange={(e) => setFilterDateRange(e.target.value as 'all' | 'last7' | 'last30' | 'last90')}
+                  >
+                    <option value="all">All Time</option>
+                    <option value="last7">Last 7 Days</option>
+                    <option value="last30">Last 30 Days</option>
+                    <option value="last90">Last 90 Days</option>
+                  </FilterSelect>
+                </FilterGroup>
+                
+                <FilterGroup>
+                  <FilterLabel>Responses</FilterLabel>
+                  <FilterSelect 
+                    value={filterResponseCount}
+                    onChange={(e) => setFilterResponseCount(e.target.value as 'all' | 'withResponses' | 'noResponses')}
+                  >
+                    <option value="all">All Surveys</option>
+                    <option value="withResponses">With Responses</option>
+                    <option value="noResponses">No Responses</option>
+                  </FilterSelect>
+                </FilterGroup>
+                
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                  <ClearFiltersButton
+                    onClick={() => {
+                      setFilterStatus('all');
+                      setFilterDateRange('all');
+                      setFilterResponseCount('all');
+                      setSearchTerm('');
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                      <path d="M19 12H5"></path>
+                      <path d="M12 19l-7-7 7-7"></path>
+                    </svg>
+                    Clear Filters
+                  </ClearFiltersButton>
                 </div>
-              )}
+              </FilterGrid>
             </FilterContainer>
             
             {surveys.length === 0 ? (
-              <NoData>No surveys found</NoData>
-            ) : (
-        <Table>
-          <thead>
-            <tr>
-              <Th style={{ width: '5%' }}></Th>
-              <Th style={{ width: '30%' }}>Survey</Th>
-              <Th style={{ width: '15%' }}>Created</Th>
-              <Th style={{ width: '15%' }}>Last Updated</Th>
-              <Th style={{ width: '15%' }}>Status</Th>
-              <Th style={{ width: '10%' }}>Responses</Th>
-              <Th style={{ width: '10%' }}>Actions</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSurveys.map(survey => {
-              // Ensure survey._id is defined with a fallback
-              const surveyId = survey._id || `survey-${Math.random().toString(36).substring(2, 9)}`;
-              const surveyResponses = responsesBySurvey[surveyId] || [];
-              const isExpanded = expandedSurveys[surveyId] || false;
-              
-              return (
-                <React.Fragment key={surveyId}>
-                  <SurveyRow onClick={() => toggleSurveyExpansion(surveyId)}>
-                    <Td>
-                      <ExpandButton>
-                        {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
-                      </ExpandButton>
-                    </Td>
-                    <Td>
-                      <div style={{ fontWeight: 500 }}>{survey.title}</div>
-                      {survey.description && (
-                        <div style={{ fontSize: '0.9em', color: '#777', marginTop: 4 }}>
-                          {survey.description}
-                        </div>
-                      )}
-                    </Td>
-                    <Td>{survey.createdAt.toLocaleDateString()}</Td>
-                    <Td>{survey.updatedAt.toLocaleDateString()}</Td>
-                    <Td>
-                      <span style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: 12, 
-                        fontSize: '0.85em',
-                        backgroundColor: survey.published ? '#e6f7e6' : '#f7f7e7',
-                        color: survey.published ? '#2e7d32' : '#9e9d24'
-                      }}>
-                        {survey.published ? 'Published' : 'Draft'}
-                      </span>
-                    </Td>
-                    <Td>{surveyResponses.length}</Td>
-                    <Td>
-                      {surveyResponses.length > 0 && (
-                        <div style={{ position: 'relative' }}>
-                          <ExportButton 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Toggle dropdown visibility
-                              const dropdown = e.currentTarget.nextElementSibling as HTMLDivElement;
-                              if (dropdown) {
-                                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-                              }
-                            }}
-                          >
-                            <FiDownload />
-                            Export
-                          </ExportButton>
-                          <div 
-                            style={{
-                              display: 'none',
-                              position: 'absolute',
-                              right: 0,
-                              top: '100%',
-                              marginTop: 4,
-                              background: '#fff',
-                              boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                              borderRadius: 6,
-                              zIndex: 10,
-                              width: 200
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div 
-                              style={{ padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                exportResponses(surveyId, survey.title || 'Survey', 'basic');
-                                (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
-                              }}
-                            >
-                              Basic Export
+              <NoData>
+                <FiFileText />
+                <div>No surveys found</div>
+                <div style={{ fontSize: '13px', color: '#a0aec0', maxWidth: '400px', textAlign: 'center' }}>
+                  Try adjusting your filters or create a new survey to get started
+                </div>
+              </NoData>
+            ) : viewMode === 'table' ? (
+              <Table>
+                <thead>
+                  <tr>
+                    <Th style={{ width: '5%' }}></Th>
+                    <Th style={{ width: '30%' }}>Survey</Th>
+                    <Th style={{ width: '15%' }}>Created</Th>
+                    <Th style={{ width: '15%' }}>Last Updated</Th>
+                    <Th style={{ width: '15%' }}>Status</Th>
+                    <Th style={{ width: '10%' }}>Responses</Th>
+                    <Th style={{ width: '10%' }}>Actions</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSurveys.map(survey => {
+                    // Ensure survey._id is defined with a fallback
+                    const surveyId = survey._id || `survey-${Math.random().toString(36).substring(2, 9)}`;
+                    const surveyResponses = responsesBySurvey[surveyId] || [];
+                    const isExpanded = expandedSurveys[surveyId] || false;
+                    
+                    return (
+                      <React.Fragment key={surveyId}>
+                        <SurveyRow onClick={() => toggleSurveyExpansion(surveyId)}>
+                          <Td>
+                            <ExpandButton>
+                              {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
+                            </ExpandButton>
+                          </Td>
+                          <Td>
+                            <div style={{ fontWeight: 600, color: '#2d3748', marginBottom: '4px' }}>{survey.title}</div>
+                            {survey.description && (
+                              <div style={{ fontSize: '13px', color: '#718096', lineHeight: '1.4' }}>
+                                {survey.description.length > 80 ? `${survey.description.substring(0, 80)}...` : survey.description}
+                              </div>
+                            )}
+                          </Td>
+                          <Td>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: 500 }}>{format(survey.createdAt, 'MMM d, yyyy')}</span>
+                              <span style={{ fontSize: '12px', color: '#718096', marginTop: '2px' }}>{format(survey.createdAt, 'h:mm a')}</span>
                             </div>
-                            <div 
-                              style={{ padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                exportResponses(surveyId, survey.title || 'Survey', 'detailed');
-                                (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
-                              }}
-                            >
-                              Detailed Export
+                          </Td>
+                          <Td>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: 500 }}>{format(survey.updatedAt, 'MMM d, yyyy')}</span>
+                              <span style={{ fontSize: '12px', color: '#718096', marginTop: '2px' }}>{format(survey.updatedAt, 'h:mm a')}</span>
                             </div>
-                            <div 
-                              style={{ padding: '10px 16px', cursor: 'pointer' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                exportResponses(surveyId, survey.title || 'Survey', 'analytics');
-                                (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
-                              }}
-                            >
-                              Analytics Export
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </Td>
-                  </SurveyRow>
+                          </Td>
+                          <Td>
+                            <StatusLabel status={survey.published ? 'published' : 'draft'}>
+                              {survey.published ? 'Published' : 'Draft'}
+                            </StatusLabel>
+                          </Td>
+                          <Td>
+                            <span style={{
+                              fontWeight: '600',
+                              color: surveyResponses.length > 0 ? '#2f855a' : '#718096',
+                              background: surveyResponses.length > 0 ? 'rgba(47, 133, 90, 0.1)' : 'transparent',
+                              padding: surveyResponses.length > 0 ? '4px 10px' : '0',
+                              borderRadius: '16px',
+                              display: 'inline-block',
+                              fontSize: '13px'
+                            }}>
+                              {surveyResponses.length}
+                            </span>
+                          </Td>
+                          <Td>
+                            {surveyResponses.length > 0 && (
+                              <div style={{ position: 'relative' }}>
+                                <ExportButton 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Toggle dropdown visibility
+                                    const dropdown = e.currentTarget.nextElementSibling as HTMLDivElement;
+                                    if (dropdown) {
+                                      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+                                    }
+                                  }}
+                                >
+                                  <FiDownload />
+                                  Export
+                                </ExportButton>
+                                <div 
+                                  style={{
+                                    display: 'none',
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: '100%',
+                                    marginTop: 4,
+                                    background: '#fff',
+                                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                                    borderRadius: 6,
+                                    zIndex: 10,
+                                    width: 200
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div 
+                                    style={{ padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      exportResponses(surveyId, survey.title || 'Survey', 'basic');
+                                      (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
+                                    }}
+                                  >
+                                    Basic Export
+                                  </div>
+                                  <div 
+                                    style={{ padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      exportResponses(surveyId, survey.title || 'Survey', 'detailed');
+                                      (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
+                                    }}
+                                  >
+                                    Detailed Export
+                                  </div>
+                                  <div 
+                                    style={{ padding: '10px 16px', cursor: 'pointer' }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      exportResponses(surveyId, survey.title || 'Survey', 'analytics');
+                                      (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
+                                    }}
+                                  >
+                                    Analytics Export
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Td>
+                        </SurveyRow>
                   
                   {isExpanded && (
                     <tr>
                       <Td colSpan={7} style={{ padding: 0 }}>
-                        <div style={{ padding: '0 16px 16px 48px' }}>
+                        <div style={{ padding: '16px 20px 24px 48px', backgroundColor: '#f8f9fa', borderRadius: '0 0 10px 10px' }}>
                           {surveyResponses.length === 0 ? (
                             <NoData>No responses for this survey</NoData>
                           ) : (
@@ -856,9 +1322,9 @@ const SurveyResponses: React.FC = () => {
                                       {isResponseExpanded && (
                                         <tr>
                                           <Td colSpan={3} style={{ padding: 0 }}>
-                                            <div style={{ padding: '16px 16px 16px 48px' }}>
+                                            <div style={{ padding: '20px 24px 24px 48px', backgroundColor: '#f1f3f5', borderRadius: '8px', margin: '8px 0' }}>
                                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                                <h4 style={{ margin: 0 }}>Response Details</h4>
+                                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#495057', display: 'flex', alignItems: 'center', gap: '8px' }}>Response Details</h4>
                                                 <div>
                                                   <button 
                                                     onClick={(e) => {
@@ -883,12 +1349,15 @@ const SurveyResponses: React.FC = () => {
                                                       background: '#f0f0f0', 
                                                       border: 'none', 
                                                       borderRadius: 4, 
-                                                      padding: '6px 12px', 
-                                                      fontSize: 13,
+                                                      padding: '6px 12px',
+                                                      display: 'flex', 
+                                                      alignItems: 'center', 
+                                                      justifyContent: 'center',
                                                       cursor: 'pointer',
-                                                      display: 'flex',
-                                                      alignItems: 'center',
-                                                      gap: 6
+                                                      color: '#4a5568',
+                                                      fontSize: '13px',
+                                                      fontWeight: 500,
+                                                      transition: 'all 0.2s ease'
                                                     }}
                                                   >
                                                     <FiDownload size={14} />
@@ -995,12 +1464,157 @@ const SurveyResponses: React.FC = () => {
                       </Td>
                     </tr>
                   )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </Table>
-      )}
+                    </React.Fragment>
+                  );
+                })}
+                </tbody>
+              </Table>
+            ):
+            
+            (viewMode === 'grid' && (
+              <GridContainer>
+                {filteredSurveys.map(survey => {
+                  const surveyId = survey._id || `survey-${Math.random().toString(36).substring(2, 9)}`;
+                  const surveyResponses = responsesBySurvey[surveyId] || [];
+                  
+                  return (
+                    <SurveyCard key={surveyId} onClick={() => toggleSurveyExpansion(surveyId)}>
+                      <CardHeader>
+                        <StatusLabel status={survey.published ? 'published' : 'draft'}>
+                          {survey.published ? 'Published' : 'Draft'}
+                        </StatusLabel>
+                        <span style={{ 
+                          fontSize: '0.8em',
+                          color: '#718096',
+                          fontWeight: 500
+                        }}>
+                          {new Date(survey.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </CardHeader>
+                      
+                      <CardContent>
+                        <CardTitle>{survey.title || 'Untitled Survey'}</CardTitle>
+                        <CardDescription>
+                          {survey.description || 'No description provided'}
+                        </CardDescription>
+                      </CardContent>
+                      
+                      <CardFooter>
+                        <CardStats>
+                          <StatItem>
+                            <StatValue>{surveyResponses.length}</StatValue>
+                            <StatLabel>Responses</StatLabel>
+                          </StatItem>
+                        </CardStats>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ position: 'relative' }}>
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 const dropdown = e.currentTarget.nextElementSibling as HTMLDivElement;
+                                 dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                               }}
+                              style={{ 
+                                background: 'linear-gradient(135deg, #552a47, #7b4068)', 
+                                border: 'none', 
+                                borderRadius: '50%', 
+                                width: 44, 
+                                height: 44, 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'white',
+                                boxShadow: '0 4px 12px rgba(85, 42, 71, 0.3)',
+                                transition: 'all 0.3s ease',
+                                transform: 'translateY(0)'
+                              }}
+                            >
+                              <FiDownload style={{ fontSize: '18px', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }} />
+                            </button>
+                            <div className="export-dropdown" style={{ 
+                              position: 'absolute', 
+                              bottom: '100%', 
+                              right: '0', 
+                              marginBottom: '10px',
+                              background: 'white', 
+                              border: '1px solid #e2e8f0', 
+                              borderRadius: '8px', 
+                              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)', 
+                              zIndex: 999, 
+                              display: 'none',
+                              minWidth: '200px',
+                              overflow: 'hidden'
+                            }}>
+                              <div 
+                                style={{ 
+                                  padding: '12px 16px', 
+                                  cursor: 'pointer', 
+                                  borderBottom: '1px solid #eee',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  transition: 'all 0.2s ease',
+                                  fontSize: '14px',
+                                  fontWeight: 500
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  exportResponses(surveyId, survey.title || 'Survey', 'basic');
+                                  (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
+                                }}
+                              >
+                                <FiFileText style={{ color: '#552a47' }} /> Basic Export
+                              </div>
+                              <div 
+                                style={{ 
+                                  padding: '12px 16px', 
+                                  cursor: 'pointer', 
+                                  borderBottom: '1px solid #eee',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  transition: 'all 0.2s ease',
+                                  fontSize: '14px',
+                                  fontWeight: 500
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  exportResponses(surveyId, survey.title || 'Survey', 'detailed');
+                                  (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
+                                }}
+                              >
+                                <FiList style={{ color: '#552a47' }} /> Detailed Export
+                              </div>
+                              <div 
+                                style={{ 
+                                  padding: '12px 16px', 
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  transition: 'all 0.2s ease',
+                                  fontSize: '14px',
+                                  fontWeight: 500
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  exportResponses(surveyId, survey.title || 'Survey', 'analytics');
+                                  (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
+                                }}
+                              >
+                                <FiBarChart2 style={{ color: '#552a47' }} /> Analytics Export
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </CardFooter>
+                    </SurveyCard>
+                  );
+                })}
+              </GridContainer>
+            ))}
           </Container>
         </div>
       </DashboardBg>
