@@ -1189,10 +1189,7 @@ const SurveyTheme: React.FC = () => {
         ) : (
           <div style={{ 
             padding: '28px 24px', 
-            margin: 0, 
-            background: '#fffef6', 
-            borderRadius: 16,
-            boxShadow: '0 4px 12px rgba(85, 42, 71, 0.06)'
+            margin: 0
           }}>
             <div style={{ 
               display: 'grid', 
