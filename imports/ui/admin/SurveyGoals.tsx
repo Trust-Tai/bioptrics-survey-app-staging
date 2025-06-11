@@ -860,7 +860,7 @@ const SurveyGoalsPage: React.FC = () => {
           <div style={{ color: '#8a7a85', fontStyle: 'italic', textAlign: 'center', marginTop: 48 }}>No goals added yet.</div>
         ) : (
           <>
-            <div style={{ padding: '24px 18px', background: '#fffef6', borderRadius: 16 }}>
+            <div style={{ padding: '24px 18px' }}>
               {paginatedGoals.length === 0 ? (
                 <div style={{ color: '#8a7a85', fontSize: 17, marginTop: 32, textAlign: 'center' }}>No goals found.</div>
               ) : (
