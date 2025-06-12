@@ -37,6 +37,7 @@ import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
 import EnhancedQuestionBuilder from '../features/questions/components/admin/EnhancedQuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
+import ModernSurveyPublic from './public/ModernSurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
 import SurveyManagementDashboard from './admin/SurveyManagementDashboard';
 import LogoutPage from './LogoutPage';
@@ -151,7 +152,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
-      <Route path="/public/:token" element={<SurveyPublic />} />
+      <Route path="/public/modern/:token" element={<ModernSurveyPublic />} />
+      <Route path="/public/:token" element={<ModernSurveyPublic />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
       <Route path="/leadership" element={<LeadershipManagement />} />

@@ -396,7 +396,19 @@ const [copied, setCopied] = useState(false);
         
         // Initialize section questions
         if (survey.sectionQuestions) {
-          setSectionQuestions(survey.sectionQuestions);
+          // Type assertion to tell TypeScript that we know what we're doing
+          // and we'll ensure the required properties are present
+          const sectionQuestionsWithStatus = survey.sectionQuestions.map(q => ({
+            id: q.id,
+            text: q.text,
+            type: q.type,
+            status: 'draft', // Explicitly set status to 'draft'
+            sectionId: q.sectionId,
+            order: q.order
+          }));
+          
+          // Now we can safely set the state with our properly formed objects
+          setSectionQuestions(sectionQuestionsWithStatus as QuestionItem[]);
         } else {
           // Create empty section questions array or initialize from selected questions
           const initialSectionQuestions: QuestionItem[] = [];
@@ -404,12 +416,15 @@ const [copied, setCopied] = useState(false);
           // If there are selected questions, convert them to section questions
           if (survey.selectedQuestions) {
             Object.entries(survey.selectedQuestions).forEach(([id, q]: [string, any], index) => {
-              initialSectionQuestions.push({
+              // Create a properly formed question item with all required properties
+              const questionItem = {
                 id,
                 text: q.questionText || 'Untitled Question',
                 type: q.type || 'text',
+                status: 'draft', // Explicitly set status to 'draft'
                 order: index
-              });
+              };
+              initialSectionQuestions.push(questionItem as QuestionItem);
             });
           }
           
