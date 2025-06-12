@@ -329,20 +329,6 @@ const AllSurveys: React.FC = () => {
                   >
                     {s.title}
                   </h3>
-                  <div style={{ 
-                    color: '#6e5a67', 
-                    fontSize: 15, 
-                    flex: 1, 
-                    lineHeight: 1.5,
-                    backgroundColor: '#faf7f9',
-                    padding: '12px 16px',
-                    borderRadius: 8,
-                    marginBottom: 16,
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word'
-                  }}>{truncate(stripHtml(s.description), 120)}</div>
                   {s.shareToken && s.published && (
                     <div style={{ 
                       marginTop: 'auto', 
@@ -351,98 +337,180 @@ const AllSurveys: React.FC = () => {
                       backgroundColor: '#f9f4f7',
                       borderRadius: 8,
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                       width: '100%',
                       boxSizing: 'border-box',
                       maxWidth: '100%'
                     }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '8px'
+                      <span style={{ 
+                        fontWeight: 600, 
+                        color: '#552a47', 
+                        fontSize: 14,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
                       }}>
-                        <span style={{ 
-                          fontWeight: 600, 
-                          color: '#552a47', 
-                          fontSize: 14,
+                        <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
+                      </span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/survey/public/${s.shareToken}`);
+                          setNotification({ type: 'success', message: 'URL copied to clipboard!' });
+                        }}
+                        style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 6
-                        }}>
-                          <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
-                        </span>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/survey/public/${s.shareToken}`);
-                            setNotification({ type: 'success', message: 'URL copied to clipboard!' });
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            background: '#552a47',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 6,
-                            padding: '6px 12px',
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <FaCopy style={{ fontSize: 12 }} /> Copy URL
-                        </button>
-                      </div>
-                      <div style={{ 
-                        padding: '8px 12px', 
-                        background: 'white', 
-                        borderRadius: 6, 
-                        border: '1px dashed #d7c5d3',
-                        fontSize: 13,
-                        color: '#552a47',
-                        fontFamily: 'monospace',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '100%'
-                      }}>
-                        {`${window.location.origin}/survey/public/${s.shareToken}`}
-                      </div>
+                          gap: 6,
+                          background: '#552a47',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '8px 14px',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.15)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.15)';
+                        }}
+                      >
+                        <FaCopy style={{ fontSize: 12 }} /> Copy URL
+                      </button>
                     </div>
                   )}
-                   <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginTop: 'auto', paddingTop: s.shareToken && s.published ? 0 : 12, borderTop: s.shareToken && s.published ? 'none' : '1px solid #f4ebf1' }}>
+                   <div style={{ 
+                     display: 'flex', 
+                     justifyContent: 'center', 
+                     gap: 16, 
+                     marginTop: 'auto', 
+                     paddingTop: s.shareToken && s.published ? 0 : 16, 
+                     borderTop: s.shareToken && s.published ? 'none' : '1px solid #f4ebf1' 
+                   }}>
                     <button
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      style={{ 
+                        background: '#f9f4f7', 
+                        border: 'none', 
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                        transition: 'all 0.2s ease'
+                      }}
                       onClick={() => {
                         window.open(`/preview/survey/${s._id}?status=preview`, '_blank');
                       }}
                       title="Preview"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f4ebf1';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f9f4f7';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                      }}
                     >
-                      <FaEye style={{ color: '#552a47', fontSize: 20 }} />
+                      <FaEye style={{ color: '#552a47', fontSize: 16 }} />
                     </button>
                     <button
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      style={{ 
+                        background: '#f9f4f7', 
+                        border: 'none', 
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                        transition: 'all 0.2s ease'
+                      }}
                       onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
                       title="Manage"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f4ebf1';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f9f4f7';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                      }}
                     >
-                      <FaTasks style={{ color: '#552a47', fontSize: 20 }} />
+                      <FaTasks style={{ color: '#552a47', fontSize: 16 }} />
                     </button>
                     <button
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      style={{ 
+                        background: '#f9f4f7', 
+                        border: 'none', 
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                        transition: 'all 0.2s ease'
+                      }}
                       onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
                       title="Edit"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f4ebf1';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f9f4f7';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                      }}
                     >
-                      <FaEdit style={{ color: '#552a47', fontSize: 20 }} />
+                      <FaEdit style={{ color: '#552a47', fontSize: 16 }} />
                     </button>
                     <button
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      style={{ 
+                        background: '#f9f4f7', 
+                        border: 'none', 
+                        borderRadius: '50%',
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                        transition: 'all 0.2s ease'
+                      }}
                       onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
                       title="Delete"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#ffeeee';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(192, 57, 43, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f9f4f7';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                      }}
                     >
-                      <FaTrash style={{ color: '#552a47', fontSize: 20 }} />
+                      <FaTrash style={{ color: '#c0392b', fontSize: 16 }} />
                     </button>
                   </div>
                 </div>
