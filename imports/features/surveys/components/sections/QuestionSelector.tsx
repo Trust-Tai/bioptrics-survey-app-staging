@@ -23,7 +23,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedQuestionIds);
   const [filters, setFilters] = useState({
     type: 'all',
-    status: 'all',
   });
   
   // Reset selected IDs when the modal opens with new selectedQuestionIds
@@ -40,10 +39,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     // Filter by question type
     const matchesType = filters.type === 'all' || question.type === filters.type;
     
-    // Filter by question status
-    const matchesStatus = filters.status === 'all' || question.status === filters.status;
-    
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesType;
   });
   
   // Toggle question selection
@@ -122,29 +118,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
             </div>
           </div>
           
-          <div>
-            <strong>Status:</strong>
-            <div className="question-selector-filters">
-              <button
-                className={`question-selector-filter ${filters.status === 'all' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('status', 'all')}
-              >
-                All
-              </button>
-              <button
-                className={`question-selector-filter ${filters.status === 'published' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('status', 'published')}
-              >
-                Published
-              </button>
-              <button
-                className={`question-selector-filter ${filters.status === 'draft' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('status', 'draft')}
-              >
-                Draft
-              </button>
-            </div>
-          </div>
+
         </div>
         
         <div className="question-selector-list">
