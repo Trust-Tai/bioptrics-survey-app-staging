@@ -98,18 +98,24 @@ const ModernSurveyProgress: React.FC<ModernSurveyProgressProps> = ({
   
   // Create step indicators
   const renderSteps = () => {
-    if (!totalSteps || totalSteps <= 1) return null;
+    // Only show indicators for actual questions (not welcome/thank-you screens)
+    const actualQuestionCount = Math.max(0, totalSteps - 2);
+    if (actualQuestionCount <= 1) return null;
     
     return (
       <StepIndicator>
-        {Array.from({ length: totalSteps }).map((_, index) => (
-          <Step 
-            key={index}
-            active={index + 1 === currentStep}
-            completed={index + 1 < currentStep}
-            color={color}
-          />
-        ))}
+        {Array.from({ length: actualQuestionCount }).map((_, index) => {
+          // Adjust index to account for welcome screen
+          const stepNumber = index + 2; // +2 because welcome is step 1
+          return (
+            <Step 
+              key={index}
+              active={stepNumber === currentStep}
+              completed={stepNumber < currentStep}
+              color={color}
+            />
+          );
+        })}
       </StepIndicator>
     );
   };
@@ -119,7 +125,7 @@ const ModernSurveyProgress: React.FC<ModernSurveyProgressProps> = ({
       <ProgressHeader>
         <ProgressLabel>
           {currentStep && totalSteps ? (
-            <>Step {currentStep} of {totalSteps}</>
+            <>Question {currentStep - 1} of {totalSteps - 2}</>
           ) : (
             'Survey Progress'
           )}

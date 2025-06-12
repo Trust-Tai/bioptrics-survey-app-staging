@@ -301,17 +301,15 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   };
   
   const handleQuestionAnswer = (questionId: string, answer: any) => {
-    // Save the response
-    setResponses(prev => {
+    // Save the answer to responses
+    setResponses(prevResponses => {
       const updatedResponses = {
-        ...prev,
+        ...prevResponses,
         [questionId]: answer
       };
       
-      // Save progress to localStorage after updating responses
-      setTimeout(() => {
-        saveProgress();
-      }, 0);
+      // Save progress to localStorage
+      saveProgress();
       
       return updatedResponses;
     });
@@ -323,6 +321,18 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     // Find the current question index in its section
     const sectionQuestions = questions.filter(q => q.sectionId === currentQuestion.sectionId);
     const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === questionId || q.id === questionId);
+    
+    // Check if this is the last question in the survey
+    const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
+    const isLastSection = sections.findIndex(s => s.id === currentQuestion.sectionId) === sections.length - 1;
+    const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
+    
+    // If this is the last question in the survey, let the submit button handle navigation
+    // This prevents the automatic navigation from conflicting with the submit process
+    if (isLastQuestionInSurvey) {
+      console.log('Last question detected - waiting for submit button click');
+      return;
+    }
     
     // If there are more questions in this section
     if (currentQuestionIndex < sectionQuestions.length - 1) {
@@ -518,7 +528,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   const handleSubmit = () => {
     if (isPreviewMode) {
       // In preview mode, just show thank you
-      setCurrentStep({ type: 'thank-you' });
+      updateCurrentStep({ type: 'thank-you' });
       return;
     }
     
@@ -537,37 +547,75 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
         console.error('Error submitting survey:', error);
         setSubmitError(error.message);
       } else {
-        // Show thank you screen
-        setCurrentStep({ type: 'thank-you' });
+        // Show thank you screen and clear saved progress
+        updateCurrentStep({ type: 'thank-you' });
+        // Clear saved progress since survey is complete
+        try {
+          localStorage.removeItem(getProgressStorageKey());
+          console.log('Cleared saved progress after successful submission');
+        } catch (e) {
+          console.error('Error clearing saved progress:', e);
+        }
       }
     });
   };
   
-  // Calculate progress
-  // Calculate progress percentage and step information
+  // Calculate detailed progress information
   const calculateProgressInfo = () => {
-    if (currentStep.type === 'welcome') return { progress: 0, currentStepNumber: 0, totalSteps: getTotalSteps() };
-    if (currentStep.type === 'thank-you') return { progress: 100, currentStepNumber: getTotalSteps(), totalSteps: getTotalSteps() };
-    
-    const totalSteps = getTotalSteps();
     let completedSteps = 0;
-    let currentStepNumber = 1; // Start at 1 for user-friendly display
+    let currentStepNumber = 0;
+    
+    // Get the actual number of questions (no duplicates)
+    const totalSteps = getTotalSteps();
+    const actualQuestionCount = totalSteps - 2; // Subtract welcome and thank-you screens
+    
+    // If on welcome screen, progress is 0
+    if (currentStep.type === 'welcome') return { progress: 0, currentStepNumber: 0, totalSteps: totalSteps };
+    if (currentStep.type === 'thank-you') return { progress: 100, currentStepNumber: totalSteps, totalSteps: totalSteps };
     
     if (currentStep.type === 'section') {
+      // For sections, count all previous sections and their questions
       const currentSectionIndex = sections.findIndex(s => s.id === currentStep.sectionId);
-      completedSteps = currentSectionIndex;
-      currentStepNumber = currentSectionIndex + 1;
-    } else if (currentStep.type === 'question') {
-      const currentQuestion = getCurrentQuestion();
-      if (!currentQuestion) return { progress: 0, currentStepNumber: 1, totalSteps };
-      
-      // Count completed sections
-      const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
       
       // Count questions in previous sections
       let previousQuestions = 0;
       for (let i = 0; i < currentSectionIndex; i++) {
-        previousQuestions += questions.filter(q => q.sectionId === sections[i].id).length;
+        const sectionId = sections[i].id;
+        // Count unique questions in this section
+        const uniqueQuestionIds = new Set();
+        questions.filter(q => q.sectionId === sectionId).forEach(q => {
+          const qId = q._id || q.id || '';
+          if (qId) uniqueQuestionIds.add(qId);
+        });
+        previousQuestions += uniqueQuestionIds.size;
+      }
+      
+      // For section screens, we've completed all previous questions plus the section intro
+      completedSteps = previousQuestions + 1;
+      currentStepNumber = completedSteps;
+      
+      // Calculate progress percentage - adjust for actual questions only
+      const progress = Math.round((previousQuestions / actualQuestionCount) * 100);
+      
+      return { progress, currentStepNumber, totalSteps };
+    }
+    
+    if (currentStep.type === 'question') {
+      const currentQuestion = getCurrentQuestion();
+      if (!currentQuestion) return { progress: 0, currentStepNumber: 0, totalSteps };
+      
+      // Count unique questions in previous sections
+      const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
+      let previousQuestions = 0;
+      for (let i = 0; i <currentSectionIndex; i++) {
+        const sectionId = sections[i].id;
+        // Count unique questions in this section
+        const uniqueQuestionIds = new Set();
+        questions.filter(q => q.sectionId === sectionId).forEach(q => {
+          const qId = q._id || q.id || '';
+          if (qId) uniqueQuestionIds.add(qId);
+        });
+        previousQuestions += uniqueQuestionIds.size;
       }
       
       // Count completed questions in current section
@@ -576,23 +624,47 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
         q => q._id === currentQuestion._id || q.id === currentQuestion.id
       );
       
-      completedSteps = previousQuestions + currentQuestionIndex;
-      currentStepNumber = previousQuestions + currentQuestionIndex + 1;
+      // Log for debugging
+      console.log('Progress calculation:', {
+        currentSectionIndex,
+        previousQuestions,
+        currentQuestionIndex,
+        totalQuestions: actualQuestionCount
+      });
       
-      // Calculate progress percentage
-      const progress = Math.round((completedSteps / (totalSteps - 1)) * 100);
+      completedSteps = previousQuestions + currentQuestionIndex;
+      currentStepNumber = previousQuestions + currentQuestionIndex + 2; // +2 to account for welcome screen
+      
+      // Calculate progress percentage based on actual questions only
+      const questionsCompleted = previousQuestions + currentQuestionIndex;
+      const progress = actualQuestionCount > 0 ? 
+        Math.round((questionsCompleted / actualQuestionCount) * 100) : 0;
       
       return { progress, currentStepNumber, totalSteps };
     }
     
-    const progress = Math.round((completedSteps / (totalSteps - 1)) * 100);
-    return { progress, currentStepNumber, totalSteps };
+    return { progress: 0, currentStepNumber: 0, totalSteps };
   };
   
   // Get total number of steps (sections + questions)
   const getTotalSteps = () => {
-    // Count all questions plus the welcome and thank you screens
-    return questions.length + 2;
+    // Count only the actual questions in the survey plus welcome and thank-you screens
+    // First, verify we have the correct questions by filtering out any duplicates
+    const uniqueQuestionIds = new Set();
+    const actualQuestions = questions.filter(question => {
+      const questionId = question._id || question.id || '';
+      if (!questionId || uniqueQuestionIds.has(questionId)) {
+        return false; // Skip duplicates or questions without IDs
+      }
+      uniqueQuestionIds.add(questionId);
+      return true;
+    });
+    
+    // Log the actual question count for debugging
+    console.log(`Survey has ${actualQuestions.length} unique questions across ${sections.length} sections`);
+    
+    // Return actual questions + welcome + thank you
+    return actualQuestions.length + 2;
   };
   
   // Calculate just the progress percentage for backward compatibility
@@ -633,6 +705,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
         const currentQuestionIndex = sectionQuestions.findIndex(
           q => q._id === currentQuestion._id || q.id === currentQuestion.id
         );
+        
+        // Calculate simple question progress
         const questionProgress = `${currentQuestionIndex + 1} of ${sectionQuestions.length}`;
         
         // Map backend question type to frontend display type and ensure options are properly formatted
@@ -642,6 +716,23 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
           options: processQuestionOptions(currentQuestion)
         };
         
+        // Debug information for last question detection
+        const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
+        const isLastSection = sections.findIndex(s => s.id === currentQuestion.sectionId) === sections.length - 1;
+        const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
+        
+        console.log('Question debug:', {
+          questionId: currentQuestion._id || currentQuestion.id,
+          questionIndex: currentQuestionIndex,
+          sectionQuestionsLength: sectionQuestions.length,
+          sectionId: currentQuestion.sectionId,
+          sectionIndex: sections.findIndex(s => s.id === currentQuestion.sectionId),
+          totalSections: sections.length,
+          isLastQuestionInSection,
+          isLastSection,
+          isLastQuestionInSurvey
+        });
+        
         return (
           <ModernSurveyQuestion
             question={mappedQuestion}
@@ -650,10 +741,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
             onBack={handleBack}
             value={responses[currentQuestion._id || currentQuestion.id || '']}
             color={survey.color}
-            isLastQuestion={
-              currentQuestionIndex === sectionQuestions.length - 1 && 
-              sections.findIndex(s => s.id === currentQuestion.sectionId) === sections.length - 1
-            }
+            isLastQuestion={isLastQuestionInSurvey}
             onSubmit={handleSubmit}
           />
         );

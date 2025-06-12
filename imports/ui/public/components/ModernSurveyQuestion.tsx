@@ -33,7 +33,6 @@ const QuestionContainer = styled.div`
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 900px;
   animation: fadeIn 0.5s ease-out;
   
   @keyframes fadeIn {
@@ -296,8 +295,18 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     // Clear any errors
     setError(null);
     
+    // Debug information
+    console.log('ModernSurveyQuestion - handleContinue:', {
+      isLastQuestion,
+      hasSubmitHandler: !!onSubmit,
+      questionId: question._id || question.id,
+      questionType: question.type,
+      questionText: question.text?.substring(0, 30) + '...',
+    });
+    
     // If this is the last question and we have a submit handler
     if (isLastQuestion && onSubmit) {
+      console.log('Submitting survey - this is the last question');
       // Save the current answer first
       onAnswer(answer);
       // Then submit the whole survey
