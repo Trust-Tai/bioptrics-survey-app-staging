@@ -678,7 +678,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 disabled={!survey?._id}
                 style={{ marginLeft: '8px', backgroundColor: '#28a745', borderColor: '#28a745' }}
               >
-                Public
+                Publish
               </button>
             </div>
           </div>
