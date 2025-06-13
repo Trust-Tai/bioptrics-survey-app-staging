@@ -48,6 +48,8 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/settings', label: 'Settings', icon: FaCog, submenu: [
     { to: '/admin/settings/password', label: 'Change Password' },
     { to: '/admin/settings/timezone', label: 'Choose Time Zone' },
+    { to: '/admin/settings/layers', label: 'Create New Layer' },
+    { to: '/admin/settings/all-layers', label: 'All Layers' },
   ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },

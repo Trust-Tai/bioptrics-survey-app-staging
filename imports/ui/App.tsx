@@ -33,7 +33,8 @@ import SurveyPage from './admin/Survey';
 import PublicSurveyPage from './PublicSurveyPage';
 import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
-import SurveyBuilder from './admin/SurveyBuilder';
+import LayerBuilder from './admin/settings/LayerBuilder';
+import AllLayers from './admin/settings/AllLayers';
 import { BrowserRouter as Router } from 'react-router-dom';
 import EnhancedQuestionBuilder from '../features/questions/components/admin/EnhancedQuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
@@ -181,6 +182,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         <Route path="/admin/settings" element={<Setting />} />
+        <Route path="/admin/settings/layers" element={<LayerBuilder />} />
+        <Route path="/admin/settings/all-layers" element={<AllLayers />} />
         <Route path="/admin/participants" element={<Participants />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
