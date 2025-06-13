@@ -145,10 +145,24 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     // Process questions
     const allQuestions: Question[] = [];
     
+    console.log('Processing survey data:', {
+      sections: surveySection,
+      sectionQuestions: survey.sectionQuestions,
+      selectedQuestions: survey.selectedQuestions
+    });
+    
     // Add section questions if available
     if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+      console.log('Processing sectionQuestions:', survey.sectionQuestions);
+      
       survey.sectionQuestions.forEach(q => {
         if (q && q.id) {
+          console.log('Adding question to section:', {
+            questionId: q.id,
+            sectionId: q.sectionId,
+            text: q.text
+          });
+          
           allQuestions.push({
             _id: q.id,
             id: q.id,
@@ -167,7 +181,15 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     
     // Add selected questions if available
     if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
+      console.log('Processing selectedQuestions:', survey.selectedQuestions);
+      
       Object.entries(survey.selectedQuestions).forEach(([sectionId, sectionQuestions]) => {
+        console.log(`Processing questions for section ID: ${sectionId}`);
+        
+        // Check if this section exists in our sections array
+        const sectionExists = sections.some(s => s.id === sectionId);
+        console.log(`Section ${sectionId} exists in sections array: ${sectionExists}`);
+        
         if (Array.isArray(sectionQuestions)) {
           sectionQuestions.forEach((q: any, index: number) => {
             // Get the question ID/value
@@ -184,6 +206,13 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
             if (questionId) {
               // Find the section name
               const section = sections.find(s => s.id === sectionId);
+              
+              console.log('Adding selected question to section:', {
+                questionId,
+                sectionId,
+                sectionFound: !!section,
+                questionText: questionData.questionText || questionData.text || 'Untitled Question'
+              });
               
               allQuestions.push({
                 _id: questionId,
@@ -233,10 +262,21 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     setQuestions(allQuestions);
   }, [survey]);
   
-  // Get current question or section based on step
+  // Get the current question based on the current step
   const getCurrentQuestion = (): Question | null => {
-    if (currentStep.type !== 'question') return null;
-    return questions.find(q => q._id === currentStep.questionId || q.id === currentStep.questionId) || null;
+    if (currentStep.type !== 'question' || !currentStep.questionId) return null;
+    
+    // Find the question by ID first
+    const question = questions.find(q => q._id === currentStep.questionId || q.id === currentStep.questionId);
+    return question || null;
+  };
+  
+  // Get all questions for a specific section using enhanced matching
+  const getQuestionsForSection = (sectionId: string): Question[] => {
+    if (!sectionId) return [];
+    
+    return questions.filter(q => questionBelongsToSection(q, sectionId))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   };
   
   const getCurrentSection = (): Section | null => {
@@ -274,27 +314,70 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     }
   };
   
+  // Helper function to check if a question belongs to a section
+  const questionBelongsToSection = (question: Question, sectionId: string) => {
+    // Check direct match
+    if (question.sectionId === sectionId) return true;
+    
+    // Check if the section ID is stored in a different format
+    // Some systems might store IDs with or without prefixes
+    if (question.sectionId && sectionId) {
+      // Check if one ID is a substring of the other
+      if (question.sectionId.includes(sectionId) || sectionId.includes(question.sectionId)) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+  
   const handleSectionContinue = (sectionId: string) => {
-    // Find questions for this section
-    const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+    console.log('handleSectionContinue called with sectionId:', sectionId);
+    
+    // Ensure we're working with the correct section ID format
+    const currentSection = sections.find(s => s.id === sectionId);
+    if (!currentSection) {
+      console.error(`Section with ID ${sectionId} not found`);
+      return;
+    }
+    
+    // Get all questions for this specific section using our helper function
+    const sectionQuestions = getQuestionsForSection(sectionId);
+    console.log(`Found ${sectionQuestions.length} questions for section ${sectionId}`);
     
     if (sectionQuestions.length > 0) {
       // Go to the first question in this section
+      const firstQuestion = sectionQuestions[0];
+      const questionId = firstQuestion._id || firstQuestion.id || '';
+      
+      console.log('Navigating to first question of section:', {
+        sectionId,
+        questionId,
+        questionText: firstQuestion.text?.substring(0, 30)
+      });
+      
       updateCurrentStep({ 
         type: 'question', 
-        questionId: sectionQuestions[0]._id || sectionQuestions[0].id || '' 
+        questionId: questionId
       });
     } else {
+      console.warn(`No questions found for section ${sectionId}`);
+      
       // Find the next section
       const currentSectionIndex = sections.findIndex(s => s.id === sectionId);
+      
       if (currentSectionIndex < sections.length - 1) {
         // Go to the next section
+        const nextSectionId = sections[currentSectionIndex + 1].id;
+        console.log('No questions in current section, navigating to next section:', nextSectionId);
+        
         updateCurrentStep({ 
           type: 'section', 
-          sectionId: sections[currentSectionIndex + 1].id 
+          sectionId: nextSectionId
         });
       } else {
         // No more sections, go to thank you
+        console.log('No more sections, going to thank-you screen');
         updateCurrentStep({ type: 'thank-you' });
       }
     }
