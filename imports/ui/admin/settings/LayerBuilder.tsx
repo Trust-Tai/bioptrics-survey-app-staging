@@ -12,7 +12,8 @@ import {
   FaArrowLeft, 
   FaToggleOn, 
   FaToggleOff,
-  FaLayerGroup 
+  FaLayerGroup,
+  FaEdit
 } from 'react-icons/fa';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -248,6 +249,7 @@ const ErrorMessage = styled.div`
 `;
 
 // LayerBuilder Component
+// Tag Builder Component (previously LayerBuilder)
 const LayerBuilder: React.FC = () => {
   // Get URL parameters for editing
   const location = useLocation();
@@ -269,11 +271,9 @@ const LayerBuilder: React.FC = () => {
   
   // State for available fields
   const [availableFields, setAvailableFields] = useState<LayerField[]>([
-    { id: 'title', name: 'title', type: 'text', label: 'Title', required: false, enabled: false },
     { id: 'description', name: 'description', type: 'textarea', label: 'Description', required: false, enabled: false },
     { id: 'color', name: 'color', type: 'color', label: 'Color', required: false, enabled: false },
     { id: 'image', name: 'image', type: 'image', label: 'Image', required: false, enabled: false },
-    { id: 'status', name: 'status', type: 'dropdown', label: 'Status', required: false, options: ['Active', 'Inactive'], enabled: false },
     { id: 'startDate', name: 'startDate', type: 'date', label: 'Start Date', required: false, enabled: false },
     { id: 'endDate', name: 'endDate', type: 'date', label: 'End Date', required: false, enabled: false },
   ]);
@@ -365,8 +365,13 @@ const LayerBuilder: React.FC = () => {
     name: '',
     type: 'text',
     label: '',
-    required: false
+    required: false,
+    options: []
   });
+  
+  // State for managing dropdown options
+  const [dropdownOption, setDropdownOption] = useState<string>('');
+  const [dropdownOptions, setDropdownOptions] = useState<string[]>([]);
   
   // State for validation errors
   const [errors, setErrors] = useState<{
@@ -454,10 +459,29 @@ const LayerBuilder: React.FC = () => {
     );
   };
   
+  // Handle adding a dropdown option
+  const addDropdownOption = () => {
+    if (!dropdownOption.trim()) return;
+    
+    setDropdownOptions(prev => [...prev, dropdownOption.trim()]);
+    setDropdownOption('');
+  };
+  
+  // Handle removing a dropdown option
+  const removeDropdownOption = (optionToRemove: string) => {
+    setDropdownOptions(prev => prev.filter(option => option !== optionToRemove));
+  };
+  
   // Add custom field
   const addCustomField = () => {
     if (!newCustomField.name || !newCustomField.label) {
       return; // Validation failed
+    }
+    
+    // Validate dropdown options if field type is dropdown
+    if (newCustomField.type === 'dropdown' && dropdownOptions.length === 0) {
+      alert('Please add at least one option for the dropdown field');
+      return;
     }
     
     const newField: LayerField = {
@@ -466,7 +490,8 @@ const LayerBuilder: React.FC = () => {
       type: newCustomField.type || 'text',
       label: newCustomField.label || '',
       required: newCustomField.required || false,
-      enabled: true
+      enabled: true,
+      options: newCustomField.type === 'dropdown' ? [...dropdownOptions] : undefined
     };
     
     setCustomFields(prev => [...prev, newField]);
@@ -476,8 +501,13 @@ const LayerBuilder: React.FC = () => {
       name: '',
       type: 'text',
       label: '',
-      required: false
+      required: false,
+      options: []
     });
+    
+    // Reset dropdown options
+    setDropdownOptions([]);
+    setDropdownOption('');
   };
   
   // Remove custom field
@@ -485,19 +515,44 @@ const LayerBuilder: React.FC = () => {
     setCustomFields(prev => prev.filter(field => field.id !== fieldId));
   };
   
+  // Edit custom field
+  const editCustomField = (field: LayerField) => {
+    setNewCustomField({
+      id: field.id,
+      name: field.name,
+      type: field.type,
+      label: field.label,
+      required: field.required,
+      options: field.options || []
+    });
+    
+    // If it's a dropdown field, load the options
+    if (field.type === 'dropdown' && field.options && field.options.length > 0) {
+      setDropdownOptions(field.options);
+    } else {
+      setDropdownOptions([]);
+    }
+    
+    // Remove the field from the list
+    removeCustomField(field.id);
+    
+    // Scroll to the custom field form
+    document.getElementById('customFieldForm')?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
   // No duplicate declaration here
   
-  // Delete a layer
-  const deleteLayer = (layerId: string) => {
-    if (window.confirm('Are you sure you want to delete this layer?')) {
-      setStatus({ loading: true, message: 'Deleting layer...', type: 'info' });
+  // Delete a tag
+  const deleteTag = (layerId: string) => {
+    if (window.confirm('Are you sure you want to delete this tag?')) {
+      setStatus({ loading: true, message: 'Deleting tag...', type: 'info' });
       
       Meteor.call('layers.remove', layerId, (error: Error | null) => {
         if (error) {
-          console.error('Error deleting layer:', error);
+          console.error('Error deleting tag:', error);
           setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
         } else {
-          setStatus({ loading: false, message: 'Layer deleted successfully!', type: 'success' });
+          setStatus({ loading: false, message: 'Tag deleted successfully!', type: 'success' });
           
           // Clear success message after 3 seconds
           setTimeout(() => {
@@ -553,10 +608,10 @@ const LayerBuilder: React.FC = () => {
     }
     
     // Set loading state
-    setStatus({ loading: true, message: isEditing ? 'Updating layer...' : 'Saving layer...', type: 'info' });
+    setStatus({ loading: true, message: isEditing ? 'Updating tag...' : 'Saving tag...', type: 'info' });
     
     if (isEditing && layer._id) {
-      // Update existing layer
+      // Update existing tag
       const updatedLayer = {
         id: layer.id,
         name: layer.name || '',
@@ -566,7 +621,7 @@ const LayerBuilder: React.FC = () => {
         fields: allSelectedFields
       };
       
-      console.log('Updating layer:', updatedLayer);
+      console.log('Updating tag:', updatedLayer);
       
       // Update in database using Meteor method - wait for completion before redirecting
       Meteor.call('layers.update', layer._id, updatedLayer, (error: Error | null) => {
@@ -574,10 +629,10 @@ const LayerBuilder: React.FC = () => {
           console.error('Error updating layer:', error);
           setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
         } else {
-          console.log('Layer updated successfully');
+          console.log('Tag updated successfully');
           
           // Store success message in localStorage before redirecting
-          const successMessage = `Layer "${layer.name}" updated successfully!`;
+          const successMessage = `Tag "${layer.name}" updated successfully!`;
           localStorage.setItem('layerActionSuccess', successMessage);
           
           // Only redirect after successful update
@@ -585,7 +640,7 @@ const LayerBuilder: React.FC = () => {
         }
       });
     } else {
-      // Create new layer
+      // Create new tag
       const newLayer = {
         id: `layer-${Date.now()}`,
         name: layer.name || '',
@@ -595,18 +650,18 @@ const LayerBuilder: React.FC = () => {
         fields: allSelectedFields
       };
       
-      console.log('Creating new layer:', newLayer);
+      console.log('Creating new tag:', newLayer);
       
       // Save to database using Meteor method - wait for completion before redirecting
       Meteor.call('layers.create', newLayer, (error: Error | null) => {
         if (error) {
-          console.error('Error creating layer:', error);
+          console.error('Error creating tag:', error);
           setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
         } else {
-          console.log('Layer created successfully');
+          console.log('Tag created successfully');
           
           // Store success message in localStorage before redirecting
-          const successMessage = `Layer "${layer.name}" created successfully!`;
+          const successMessage = `Tag "${layer.name}" created successfully!`;
           localStorage.setItem('layerActionSuccess', successMessage);
           
           // Only redirect after successful creation
@@ -620,7 +675,7 @@ const LayerBuilder: React.FC = () => {
     <AdminLayout>
       <Container>
         <Header>
-          <Title>{isEditing ? 'Edit Layer' : 'Layer Builder'}</Title>
+          <Title>{isEditing ? 'Edit Tag' : 'Tag Builder'}</Title>
           <ButtonGroup>
             {activeTab === 'list' && (
               <Button primary onClick={() => { 
@@ -639,7 +694,7 @@ const LayerBuilder: React.FC = () => {
                 setActiveTab('builder'); 
                 setCurrentStep(1); 
               }}>
-                <FaPlus /> Create New Layer
+                <FaPlus /> Create New Tag
               </Button>
             )}
           </ButtonGroup>
@@ -650,17 +705,17 @@ const LayerBuilder: React.FC = () => {
         
         {activeTab === 'builder' && currentStep === 1 && (
           <StepContainer>
-            <StepTitle>Step 1: Layer Basic Info</StepTitle>
+            <StepTitle>Step 1: Tag Basic Info</StepTitle>
             
             <FormGroup>
-              <Label htmlFor="name">Layer Name</Label>
+              <Label htmlFor="name">Tag Name</Label>
               <Input
                 id="name"
                 name="name"
                 type="text"
                 value={layer.name}
                 onChange={handleInputChange}
-                placeholder="Enter layer name"
+                placeholder="Enter tag name"
               />
               {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
             </FormGroup>
@@ -721,7 +776,7 @@ const LayerBuilder: React.FC = () => {
         
         {activeTab === 'builder' && currentStep === 2 && (
           <StepContainer>
-            <StepTitle>Step 2: Select Fields to Include</StepTitle>
+            <StepTitle>Step 2: Select Tag Fields to Include</StepTitle>
             
             <div>
               {/* Standard Fields */}
@@ -763,15 +818,26 @@ const LayerBuilder: React.FC = () => {
                 </h3>
                 
                 {/* Add new custom field form */}
-                <div style={{ 
-                  padding: '1rem', 
-                  border: '1px dashed #ddd', 
-                  borderRadius: '8px', 
-                  marginBottom: '1.5rem',
-                  background: '#f9f9f9'
-                }}>
+                <div 
+                  id="customFieldForm"
+                  style={{ 
+                    padding: '1rem', 
+                    border: '1px dashed #ddd', 
+                    borderRadius: '8px', 
+                    marginBottom: '1.5rem',
+                    background: '#f9f9f9'
+                  }}
+                >
                   <h4 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#666' }}>
-                    <FiPlus style={{ marginRight: '0.5rem' }} /> Add New Custom Field
+                    {newCustomField.id ? (
+                      <>
+                        <FaEdit style={{ marginRight: '0.5rem' }} /> Edit Custom Field
+                      </>
+                    ) : (
+                      <>
+                        <FaPlus style={{ marginRight: '0.5rem' }} /> Add New Custom Field
+                      </>
+                    )}
                   </h4>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -811,6 +877,74 @@ const LayerBuilder: React.FC = () => {
                       </Select>
                     </FormGroup>
                     
+                    {/* Show dropdown options UI when dropdown type is selected */}
+                    {newCustomField.type === 'dropdown' && (
+                      <FormGroup style={{ gridColumn: '1 / -1' }}>
+                        <Label>Dropdown Options</Label>
+                        <div style={{ 
+                          border: '1px solid #e0e0e0', 
+                          borderRadius: '8px', 
+                          padding: '12px',
+                          background: '#f9f9f9',
+                          marginBottom: '12px'
+                        }}>
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                            <Input
+                              value={dropdownOption}
+                              onChange={(e) => setDropdownOption(e.target.value)}
+                              placeholder="Enter option"
+                              style={{ flex: 1 }}
+                            />
+                            <Button onClick={addDropdownOption}>
+                              <FaPlus /> Add
+                            </Button>
+                          </div>
+                          
+                          {dropdownOptions.length > 0 ? (
+                            <div style={{ 
+                              display: 'flex', 
+                              flexWrap: 'wrap', 
+                              gap: '8px',
+                              maxHeight: '120px',
+                              overflowY: 'auto',
+                              padding: '8px'
+                            }}>
+                              {dropdownOptions.map((option, index) => (
+                                <div key={index} style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  background: '#fff', 
+                                  border: '1px solid #ddd',
+                                  borderRadius: '4px',
+                                  padding: '4px 8px',
+                                  fontSize: '14px'
+                                }}>
+                                  {option}
+                                  <span 
+                                    onClick={() => removeDropdownOption(option)}
+                                    style={{ 
+                                      marginLeft: '8px', 
+                                      cursor: 'pointer',
+                                      color: '#d32f2f',
+                                      fontSize: '16px',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <FaTimes />
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ color: '#777', fontSize: '14px', padding: '8px', textAlign: 'center' }}>
+                              No options added yet. Add at least one option for the dropdown.
+                            </div>
+                          )}
+                        </div>
+                      </FormGroup>
+                    )}
+                    
                     <FormGroup style={{ display: 'flex', alignItems: 'flex-end' }}>
                       <div style={{ marginRight: '1rem', display: 'flex', alignItems: 'center' }}>
                         <input 
@@ -828,7 +962,15 @@ const LayerBuilder: React.FC = () => {
                         onClick={addCustomField}
                         style={{ marginLeft: 'auto' }}
                       >
-                        <FaPlus /> Add Field
+                        {newCustomField.id ? (
+                          <>
+                            <FaSave /> Update Field
+                          </>
+                        ) : (
+                          <>
+                            <FaPlus /> Add Field
+                          </>
+                        )}
                       </Button>
                     </FormGroup>
                   </div>
@@ -845,31 +987,59 @@ const LayerBuilder: React.FC = () => {
                           key={field.id} 
                           style={{ 
                             display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between',
+                            flexDirection: 'column',
                             padding: '0.75rem', 
                             border: '1px solid #eee', 
                             borderRadius: '8px',
-                            background: 'rgba(122, 78, 122, 0.05)'
+                            background: 'white'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ marginRight: '1rem', color: '#7a4e7a' }}>
-                              <FaToggleOn size={24} />
-                            </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: field.type === 'dropdown' ? '8px' : '0' }}>
                             <div>
                               <div style={{ fontWeight: 600 }}>{field.label}</div>
                               <div style={{ fontSize: '0.8rem', color: '#777' }}>
-                                {field.type}{field.required ? ' (Required)' : ''}
+                                {field.type} {field.required && <span style={{ color: '#d32f2f' }}>(Required)</span>}
                               </div>
                             </div>
+                            
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <ActionButton onClick={() => editCustomField(field)} title="Edit Field">
+                                <FaEdit color="#3776a8" />
+                              </ActionButton>
+                              <ActionButton onClick={() => removeCustomField(field.id)} title="Remove Field">
+                                <FaTrash color="#d32f2f" />
+                              </ActionButton>
+                            </div>
                           </div>
-                          <Button 
-                            onClick={() => removeCustomField(field.id)}
-                            style={{ padding: '0.25rem', background: 'transparent', border: 'none' }}
-                          >
-                            <FaTrash size={16} color="#e74c3c" />
-                          </Button>
+                          
+                          {/* Show options for dropdown fields */}
+                          {field.type === 'dropdown' && field.options && field.options.length > 0 && (
+                            <div style={{ 
+                              marginTop: '8px',
+                              padding: '8px',
+                              background: '#f9f9f9',
+                              borderRadius: '4px',
+                              fontSize: '0.85rem'
+                            }}>
+                              <div style={{ fontWeight: 500, marginBottom: '4px', color: '#555' }}>Options:</div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {field.options.map((option, index) => (
+                                  <span 
+                                    key={index}
+                                    style={{ 
+                                      background: '#fff', 
+                                      border: '1px solid #e0e0e0',
+                                      borderRadius: '4px',
+                                      padding: '2px 6px',
+                                      fontSize: '0.8rem'
+                                    }}
+                                  >
+                                    {option}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -894,7 +1064,7 @@ const LayerBuilder: React.FC = () => {
               {isEditing && (
                 <Button 
                   onClick={() => {
-                    // Reset form and redirect to All Layers page
+                    // Reset form and redirect to All Tags page
                     setLayer({
                       name: '',
                       location: 'surveys',
@@ -905,7 +1075,7 @@ const LayerBuilder: React.FC = () => {
                     setCustomFields([]);
                     setIsEditing(false);
                     
-                    // Redirect to All Layers page
+                    // Redirect to All Tags page
                     navigate('/admin/settings/all-layers');
                   }}
                   style={{ backgroundColor: '#f5f5f5', color: '#555' }}
@@ -919,11 +1089,21 @@ const LayerBuilder: React.FC = () => {
                     <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
                     <span style={{ marginLeft: '0.5rem' }}>{isEditing ? 'Updating...' : 'Saving...'}</span>
                   </>
-                ) : isEditing ? 'Update Layer' : 'Save Layer'}
+                ) : isEditing ? 'Update Tag' : 'Save Tag'}
               </Button>
             </ButtonGroup>
-          </StepContainer>
-        )}
+        </StepContainer>
+    )}
+    
+    {status.message && (
+      <StatusMessage error={status.type === 'error'} success={status.type === 'success'}>
+        {status.message}
+      </StatusMessage>
+    )}
+    
+
+  
+        
       </Container>
     </AdminLayout>
   );

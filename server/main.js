@@ -23,6 +23,8 @@ import '../imports/features/question-categories/api';
 import '../imports/features/questions/api/questionTemplates';
 // Import Layers API
 import '../imports/api/layers';
+// Import Tag Items API
+import '../imports/api/tagItems';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

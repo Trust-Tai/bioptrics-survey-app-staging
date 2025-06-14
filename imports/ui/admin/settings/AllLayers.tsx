@@ -245,18 +245,18 @@ const AllLayers: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Delete a layer
-  const deleteLayer = (layerId: string, layerName: string) => {
-    if (window.confirm(`Are you sure you want to delete the layer "${layerName}"?`)) {
-      setStatus({ loading: true, message: 'Deleting layer...', type: 'info' });
+  // Delete a tag
+  const deleteTag = (layerId: string, layerName: string) => {
+    if (window.confirm(`Are you sure you want to delete the tag "${layerName}"?`)) {
+      setStatus({ loading: true, message: 'Deleting tag...', type: 'info' });
       
       Meteor.call('layers.remove', layerId, (error: Error | null, result: string) => {
         if (error) {
-          console.error('Error deleting layer:', error);
+          console.error('Error deleting tag:', error);
           setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
         } else {
-          console.log('Layer deleted successfully:', result);
-          setStatus({ loading: false, message: `Layer "${layerName}" deleted successfully!`, type: 'success' });
+          console.log('Tag deleted successfully:', result);
+          setStatus({ loading: false, message: `Tag "${layerName}" deleted successfully!`, type: 'success' });
           
           // Clear success message after 3 seconds
           setTimeout(() => {
@@ -267,24 +267,24 @@ const AllLayers: React.FC = () => {
     }
   };
 
-  // Edit a layer
-  const editLayer = (layerId: string) => {
+  // Edit a tag
+  const editTag = (layerId: string) => {
     navigate(`/admin/settings/layers?edit=${layerId}`);
   };
 
-  // Toggle layer active status
-  const toggleLayerStatus = (layerId: string, newActiveStatus: boolean) => {
-    setStatus({ loading: true, message: `${newActiveStatus ? 'Activating' : 'Deactivating'} layer...`, type: 'info' });
+  // Toggle tag active status
+  const toggleTagStatus = (layerId: string, newActiveStatus: boolean) => {
+    setStatus({ loading: true, message: `${newActiveStatus ? 'Activating' : 'Deactivating'} tag...`, type: 'info' });
     
     Meteor.call('layers.updateStatus', layerId, newActiveStatus, (error: Error | null) => {
       if (error) {
-        console.error('Error updating layer status:', error);
+        console.error('Error updating tag status:', error);
         setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
       } else {
-        console.log(`Layer status updated to ${newActiveStatus ? 'active' : 'inactive'}`);
+        console.log(`Tag status updated to ${newActiveStatus ? 'active' : 'inactive'}`);
         setStatus({ 
           loading: false, 
-          message: `Layer ${newActiveStatus ? 'activated' : 'deactivated'} successfully!`, 
+          message: `Tag ${newActiveStatus ? 'activated' : 'deactivated'} successfully!`, 
           type: 'success' 
         });
         
@@ -296,8 +296,8 @@ const AllLayers: React.FC = () => {
     });
   };
 
-  // Create a new layer
-  const createNewLayer = () => {
+  // Create a new tag
+  const createNewTag = () => {
     navigate('/admin/settings/layers');
   };
 
@@ -305,10 +305,10 @@ const AllLayers: React.FC = () => {
     <AdminLayout>
       <Container>
         <Header>
-          <Title>All Layers</Title>
+          <Title>All Tag Builder</Title>
           <ButtonGroup>
-            <Button primary onClick={createNewLayer}>
-              <FaPlus /> Create New Layer
+            <Button primary onClick={createNewTag}>
+              <FaPlus /> Create New Tag
             </Button>
           </ButtonGroup>
         </Header>
@@ -322,22 +322,22 @@ const AllLayers: React.FC = () => {
         {isLoading && !forceShowContent ? (
           <LoadingSpinner>
             <FaSpinner size={24} />
-            <span style={{ marginLeft: '0.5rem' }}>Loading layers...</span>
+            <span style={{ marginLeft: '0.5rem' }}>Loading tags...</span>
           </LoadingSpinner>
         ) : layers.length === 0 ? (
           <EmptyState>
             <FaLayerGroup size={48} />
-            <h3>No Layers Available</h3>
-            <p>You haven't created any layers yet. Layers help you organize fields and customize your surveys and questions.</p>
-            <Button primary onClick={createNewLayer}>
-              Create Your First Layer
+            <h3>No Tags Available</h3>
+            <p>You haven't created any tags yet. Tags help you organize fields and customize your surveys and questions.</p>
+            <Button primary onClick={createNewTag}>
+              Create Your First Tag
             </Button>
           </EmptyState>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Layer Name</th>
+                <th>Tag Name</th>
                 <th>Location</th>
                 <th>Priority</th>
                 <th>Status</th>
@@ -355,7 +355,7 @@ const AllLayers: React.FC = () => {
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <div 
-                        onClick={() => toggleLayerStatus(layer._id || '', !layer.active)}
+                        onClick={() => toggleTagStatus(layer._id || '', !layer.active)}
                         style={{ 
                           cursor: 'pointer',
                           color: layer.active ? '#4CAF50' : '#ccc'
@@ -371,15 +371,15 @@ const AllLayers: React.FC = () => {
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <ActionButton
-                        title="Edit Layer"
-                        onClick={() => editLayer(layer._id || '')}
+                        title="Edit Tag"
+                        onClick={() => editTag(layer._id || '')}
                         disabled={status.loading}
                       >
                         <FaPencilAlt />
                       </ActionButton>
                       <ActionButton
-                        title="Delete Layer"
-                        onClick={() => deleteLayer(layer._id || '', layer.name || 'Unnamed Layer')}
+                        title="Delete Tag"
+                        onClick={() => deleteTag(layer._id || '', layer.name || 'Unnamed Tag')}
                         disabled={status.loading}
                       >
                         {status.loading ? <FaSpinner /> : <FaTrash color="#e74c3c" />}

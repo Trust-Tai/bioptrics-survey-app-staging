@@ -46,6 +46,12 @@ if (Meteor.isServer) {
   Meteor.publish('layers.all', function() {
     return Layers.find();
   });
+  
+  // Publish a single layer by ID
+  Meteor.publish('layers.single', function(layerId) {
+    check(layerId, String);
+    return Layers.find({ _id: layerId });
+  });
 
   Meteor.methods({
     // Create a new layer
