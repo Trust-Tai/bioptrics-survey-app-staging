@@ -654,33 +654,142 @@ const EnhancedSurveyBuilder: React.FC = () => {
               <h1 className="survey-builder-title">
                 {survey?.title || 'Untitled Survey'}
               </h1>
-              <p style={{ color: '#666' }}>
+              {/* <p style={{ color: '#666' }}>
                 {survey?.description || 'No description'}
-              </p>
+              </p> */}
             </div>
-            <div className="survey-builder-actions">
+            <div className="survey-builder-actions" style={{ 
+              display: 'flex', 
+              gap: '12px',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end'
+            }}>
+              {/* Cancel Button */}
               <button 
-                className="btn btn-secondary"
                 onClick={() => navigate('/admin/surveys')}
+                className="action-button cancel-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d1d1',
+                  backgroundColor: '#f8f8f8',
+                  color: '#333',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  minWidth: '100px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ebebeb';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f8f8';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                }}
               >
                 Cancel
               </button>
+              
+              {/* Save Survey Button */}
               <button 
-                className="btn btn-primary"
                 onClick={handleSaveSurvey}
                 disabled={saving}
+                className="action-button save-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#552a47',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: saving ? 'wait' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease',
+                  minWidth: '140px',
+                  boxShadow: '0 2px 4px rgba(85,42,71,0.3)'
+                }}
+                onMouseOver={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.backgroundColor = '#6a3559';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(85,42,71,0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#552a47';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(85,42,71,0.3)';
+                }}
               >
-                <FiSave /> {saving ? 'Saving...' : 'Save Survey'}
+                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save Survey'}
               </button>
+              
+              {/* Publish Button */}
               <button 
-                className="btn btn-success"
                 onClick={handleGeneratePublicUrl}
                 disabled={!survey?._id}
-                style={{ marginLeft: '8px', backgroundColor: '#28a745', borderColor: '#28a745' }}
+                className="action-button publish-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#2ecc40',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                  opacity: !survey?._id ? 0.7 : 1,
+                  transition: 'all 0.3s ease',
+                  minWidth: '100px',
+                  boxShadow: '0 2px 4px rgba(46,204,64,0.3)'
+                }}
+                onMouseOver={(e) => {
+                  if (survey?._id) {
+                    e.currentTarget.style.backgroundColor = '#27ae60';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(46,204,64,0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2ecc40';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.3)';
+                }}
               >
                 Publish
               </button>
             </div>
+            
+            {/* Add responsive styles */}
+            <style jsx>{`
+              @media (max-width: 768px) {
+                .survey-builder-actions {
+                  flex-direction: column;
+                  width: 100%;
+                }
+                .action-button {
+                  width: 100%;
+                  margin-bottom: 8px;
+                }
+              }
+              
+              @media (max-width: 480px) {
+                .action-button {
+                  font-size: 14px !important;
+                  padding: 8px 16px !important;
+                }
+              }
+            `}</style>
           </div>
           
           {/* Main content */}
