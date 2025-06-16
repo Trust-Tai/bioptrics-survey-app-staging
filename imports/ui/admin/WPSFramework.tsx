@@ -452,7 +452,7 @@ const WPSFramework: React.FC = () => {
                 <div key={cat._id} className="wps-category-card" style={index >= 3 ? { marginTop: '35px' } : {}}>
                   <div className="wps-category-header">
                     <span className="wps-category-color" style={{ background: cat.color }} />
-                    <span className="wps-category-title">{cat.name}</span>
+                    <span className="wps-category-name">{cat.name}</span>
                   </div>
                   
                   <div className="wps-category-description">

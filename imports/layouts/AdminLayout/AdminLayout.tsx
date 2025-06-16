@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import { TermLabel } from '/imports/shared/components';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Layers } from '/imports/api/layers';
 import { 
   FaChartPie, 
   FaDatabase, 
@@ -21,8 +23,8 @@ import {
 } from 'react-icons/fi';
 import styled from 'styled-components';
 
-// Function to get sidebar links with customized terminology
-const getSidebarLinks = (getTerminology: (key: any) => string) => [
+// Function to get sidebar links with customized terminology and dynamic tags
+const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
   { to: '/admin/surveys', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
@@ -32,12 +34,24 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
     { to: '/admin/surveys/goals', label: `${getTerminology('surveyLabel')} Goals` },
     { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
     { to: '/admin/surveys/theme', label: 'Theme' },
+    // Dynamically add survey tags as submenu items
+    ...(surveyTags.map(tag => ({ 
+      to: `/admin/surveys/tag/${tag._id}`, 
+      label: `${tag.name}`,
+      isTag: true
+    })))
   ] },
   { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
     { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
     { to: '/admin/questions/tags', label: 'Tags' },
     { to: '/admin/questions/categories', label: 'Categories' },
+    // Dynamically add question tags as submenu items
+    ...(questionTags.map(tag => ({ 
+      to: `/admin/questions/tag/${tag._id}`, 
+      label: `${tag.name}`,
+      isTag: true
+    })))
   ] },
   { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
@@ -48,6 +62,8 @@ const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/settings', label: 'Settings', icon: FaCog, submenu: [
     { to: '/admin/settings/password', label: 'Change Password' },
     { to: '/admin/settings/timezone', label: 'Choose Time Zone' },
+    { to: '/admin/settings/layers', label: 'Create New Tag Builder' },
+    { to: '/admin/settings/all-layers', label: 'Tag Builder' },
   ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
@@ -276,8 +292,20 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Get organization settings for customized terminology
   const { getTerminology } = useOrganization();
   
-  // Generate sidebar links with customized terminology
-  const sidebarLinks = getSidebarLinks(getTerminology);
+  // Subscribe to layers collection and filter active tags by location
+  const { surveyTags, questionTags, isLoading } = useTracker(() => {
+    const handle = Meteor.subscribe('layers.all');
+    const allTags = Layers.find({ active: true }).fetch();
+    
+    return {
+      surveyTags: allTags.filter(tag => tag.location === 'surveys'),
+      questionTags: allTags.filter(tag => tag.location === 'questions'),
+      isLoading: !handle.ready(),
+    };
+  }, []);
+  
+  // Generate sidebar links with customized terminology and dynamic tags
+  const sidebarLinks = getSidebarLinks(getTerminology, surveyTags, questionTags);
   React.useEffect(() => {
     const prevBg = document.body.style.background;
     const prevOverflowX = document.body.style.overflowX;
@@ -377,7 +405,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                           to={sublink.to}
                           active={location.pathname.startsWith(sublink.to)}
                         >
-                          {sublink.label}
+                          {sublink.isTag ? '🏷️ ' : ''}{sublink.label}
                         </SubmenuItem>
                       ))}
                     </SubmenuFlyout>
@@ -390,7 +418,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             to={sublink.to}
                             active={location.pathname.startsWith(sublink.to)}
                           >
-                            {sublink.label}
+                            {sublink.isTag ? '🏷️ ' : ''}{sublink.label}
                           </SubmenuItem>
                         ))}
                       </SubmenuInline>

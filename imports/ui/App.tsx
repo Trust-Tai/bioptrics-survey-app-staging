@@ -33,7 +33,9 @@ import SurveyPage from './admin/Survey';
 import PublicSurveyPage from './PublicSurveyPage';
 import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
-import SurveyBuilder from './admin/SurveyBuilder';
+import LayerBuilder from './admin/settings/LayerBuilder';
+import AllLayers from './admin/settings/AllLayers';
+import TagItemsComponent from './admin/tags/TagItems';
 import { BrowserRouter as Router } from 'react-router-dom';
 import EnhancedQuestionBuilder from '../features/questions/components/admin/EnhancedQuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
@@ -124,7 +126,11 @@ const SurveyQuestionWrapper: React.FC = () => {
   const questionsLength = 4;
   return (
     <SurveyQuestion
-      question="How often does your manager provide clear direction for your work?"
+      question={{
+        _id: 'sample-question',
+        text: "How often does your manager provide clear direction for your work?",
+        type: 'scale'
+      }}
       progress={`${qIdx + 1}/${questionsLength}`}
       onNext={() => {}}
       onBack={qIdx > 0 ? () => navigate(`/survey/section/${sIdx}/question/${qIdx - 1}`) : () => navigate(`/survey/section/${sIdx}`)}
@@ -166,6 +172,7 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/surveys" element={<SurveyPage />} />
          <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
+        <Route path="/admin/surveys/tag/:tagId" element={<TagItemsComponent />} />
         <Route path="/admin/surveys/responses" element={<SurveyResponses />} />
         <Route path="/admin/surveys/builder" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
@@ -173,6 +180,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
+        <Route path="/admin/questions/tag/:tagId" element={<TagItemsComponent />} />
         <Route path="/admin/questions/builder" element={<EnhancedQuestionBuilder />} />
         <Route path="/admin/questions/builder/:id" element={<EnhancedQuestionBuilder />} />
         <Route path="/admin/questions/tags" element={<QuestionTagsPage />} />
@@ -181,6 +189,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         <Route path="/admin/settings" element={<Setting />} />
+        <Route path="/admin/settings/layers" element={<LayerBuilder />} />
+        <Route path="/admin/settings/all-layers" element={<AllLayers />} />
         <Route path="/admin/participants" element={<Participants />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
