@@ -189,8 +189,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         <Route path="/admin/settings" element={<Setting />} />
-        <Route path="/admin/settings/layers" element={<LayerBuilder />} />
-        <Route path="/admin/settings/all-layers" element={<AllLayers />} />
+        <Route path="/admin/settings/tag" element={<LayerBuilder />} />
+        <Route path="/admin/settings/tag/:id" element={<LayerBuilder />} />
+        <Route path="/admin/settings/all-tags" element={<AllLayers />} />
         <Route path="/admin/participants" element={<Participants />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash } from 'react-icons/fa';
+import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -11,10 +11,13 @@ import { Layers, LayerField } from '../../../api/layers';
 interface LayerDisplay {
   _id?: string;
   name: string;
-  location: 'surveys' | 'questions';
-  priority: number;
-  fields: LayerField[];
+  location: string; // Changed from 'surveys' | 'questions' to string to match actual data
+  priority?: number; // Made optional to match actual data
+  fields: LayerField[] | []; // Allow empty array
   createdAt: Date;
+  active?: boolean;
+  parentId?: string;
+  children?: LayerDisplay[];
 }
 
 // Styled Components
@@ -40,6 +43,118 @@ const Title = styled.h1`
 const ButtonGroup = styled.div`
   display: flex;
   gap: 1rem;
+`;
+
+const ViewToggleGroup = styled.div`
+  display: flex;
+  background: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+`;
+
+const ViewToggleButton = styled.button<{ active?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: ${props => props.active ? 'linear-gradient(135deg, #552a47 0%, #7a4e7a 100%)' : 'transparent'};
+  color: ${props => props.active ? '#fff' : '#333'};
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  
+  &:hover {
+    background: ${props => props.active ? 'linear-gradient(135deg, #552a47 0%, #7a4e7a 100%)' : '#e0e0e0'};
+  }
+`;
+
+const ListViewContainer = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 1rem;
+`;
+
+const ListItem = styled.div<{ level: number }>`
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 3px solid #7a4e7a;
+  margin-left: ${props => props.level * 20}px;
+  margin-bottom: 0.5rem;
+  width: calc(100% - ${props => props.level * 20}px);
+  
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+`;
+
+const ListItemContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-left: 0.5rem;
+`;
+
+const ListItemName = styled.span<{ isParent?: boolean }>`
+  font-weight: ${props => props.isParent ? '700' : '600'};
+  color: ${props => props.isParent ? '#552a47' : '#333'};
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+`;
+
+const ListItemLocation = styled.span`
+  font-size: 0.8rem;
+  color: #777;
+  text-transform: capitalize;
+  margin-bottom: 0.25rem;
+`;
+
+const ListItemFields = styled.span`
+  font-size: 0.8rem;
+  color: #777;
+`;
+
+const ListItemActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 1;
+  }
+`;
+
+const ToggleIcon = styled.div`
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-right: 8px;
+  color: #552a47;
+  
+  &:hover {
+    color: #7a4e7a;
+  }
+`;
+
+const StatusIndicator = styled.div<{ active?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${props => props.active ? '#4CAF50' : '#ccc'};
+  font-size: 1.2rem;
 `;
 
 const Button = styled.button<{ primary?: boolean }>`
@@ -168,6 +283,8 @@ const StatusMessage = styled.div<{ success?: boolean; error?: boolean }>`
 // AllLayers Component
 const AllLayers: React.FC = () => {
   const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'table' | 'list'>('table');
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [status, setStatus] = useState<{ loading: boolean; message: string; type: 'success' | 'error' | 'info' }>({ 
     loading: false, 
     message: '', 
@@ -269,7 +386,7 @@ const AllLayers: React.FC = () => {
 
   // Edit a tag
   const editTag = (layerId: string) => {
-    navigate(`/admin/settings/layers?edit=${layerId}`);
+    navigate(`/admin/settings/tag/${layerId}`);
   };
 
   // Toggle tag active status
@@ -298,8 +415,109 @@ const AllLayers: React.FC = () => {
 
   // Create a new tag
   const createNewTag = () => {
-    navigate('/admin/settings/layers');
+    navigate('/admin/settings/tag');
   };
+
+  // Toggle item expansion in list view
+  const toggleItemExpansion = (itemId: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+  
+  // Function to render a tag item with its children recursively
+  const renderTagItem = (layer: LayerDisplay, level: number = 0): React.ReactNode => {
+    const hasChildren = layer.children && layer.children.length > 0;
+    const isExpanded = expandedItems.includes(layer._id || '');
+    
+    return (
+      <React.Fragment key={layer._id}>
+        <ListItem level={level}>
+          {hasChildren && (
+            <ToggleIcon onClick={() => toggleItemExpansion(layer._id || '')}>
+              {isExpanded ? <FaChevronDown /> : <FaChevronRight />}
+            </ToggleIcon>
+          )}
+          {!hasChildren && <div style={{ width: 24, marginRight: 8 }} />}
+          
+          <StatusIndicator active={layer.active} onClick={() => toggleTagStatus(layer._id || '', !layer.active)}>
+            {layer.active ? <FaToggleOn /> : <FaToggleOff />}
+          </StatusIndicator>
+          
+          <ListItemContent>
+            <ListItemName isParent={hasChildren}>{layer.name}</ListItemName>
+            <ListItemLocation>{layer.location}</ListItemLocation>
+            <ListItemFields>{layer.fields.length} fields</ListItemFields>
+          </ListItemContent>
+          
+          <ListItemActions>
+            <ActionButton
+              title="Edit Tag"
+              onClick={() => editTag(layer._id || '')}
+              disabled={status.loading}
+            >
+              <FaPencilAlt size={14} />
+            </ActionButton>
+            <ActionButton
+              title="Delete Tag"
+              onClick={() => deleteTag(layer._id || '', layer.name || 'Unnamed Tag')}
+              disabled={status.loading}
+            >
+              {status.loading ? <FaSpinner size={14} /> : <FaTrash size={14} color="#e74c3c" />}
+            </ActionButton>
+          </ListItemActions>
+        </ListItem>
+        
+        {/* Render children if expanded */}
+        {hasChildren && isExpanded && layer.children?.map(child => renderTagItem(child, level + 1))}
+      </React.Fragment>
+    );
+  };
+  
+  // Organize layers into hierarchical structure for list view
+  const hierarchicalLayers = useMemo(() => {
+    // First pass: create a map of all layers with empty children arrays
+    const layerMap = new Map<string, LayerDisplay>();
+    layers.forEach(layer => {
+      layerMap.set(layer._id || '', {
+        ...layer,
+        children: []
+      });
+    });
+    
+    // Second pass: build the hierarchy by adding children to their parents
+    const rootLayers: LayerDisplay[] = [];
+    
+    layers.forEach(layer => {
+      if (layer.parentId && layerMap.has(layer.parentId)) {
+        // This layer has a parent, add it to the parent's children
+        const parent = layerMap.get(layer.parentId);
+        if (parent && parent.children) {
+          parent.children.push(layerMap.get(layer._id || '') as LayerDisplay);
+        }
+      } else {
+        // This is a root layer (no parent)
+        rootLayers.push(layerMap.get(layer._id || '') as LayerDisplay);
+      }
+    });
+    
+    // Sort the root layers and their children by name
+    const sortLayersByName = (layers: LayerDisplay[]): LayerDisplay[] => {
+      return layers.sort((a, b) => a.name.localeCompare(b.name)).map(layer => {
+        if (layer.children && layer.children.length > 0) {
+          return {
+            ...layer,
+            children: sortLayersByName(layer.children)
+          };
+        }
+        return layer;
+      });
+    };
+    
+    return sortLayersByName(rootLayers);
+  }, [layers]);
 
   return (
     <AdminLayout>
@@ -312,6 +530,21 @@ const AllLayers: React.FC = () => {
             </Button>
           </ButtonGroup>
         </Header>
+        
+        <ViewToggleGroup>
+          <ViewToggleButton 
+            active={viewMode === 'table'} 
+            onClick={() => setViewMode('table')}
+          >
+            <FaTable /> Table View
+          </ViewToggleButton>
+          <ViewToggleButton 
+            active={viewMode === 'list'} 
+            onClick={() => setViewMode('list')}
+          >
+            <FaList /> List View
+          </ViewToggleButton>
+        </ViewToggleGroup>
 
         {status.message && (
           <StatusMessage success={status.type === 'success'} error={status.type === 'error'}>
@@ -333,7 +566,7 @@ const AllLayers: React.FC = () => {
               Create Your First Tag
             </Button>
           </EmptyState>
-        ) : (
+        ) : viewMode === 'table' ? (
           <Table>
             <thead>
               <tr>
@@ -390,6 +623,10 @@ const AllLayers: React.FC = () => {
               ))}
             </tbody>
           </Table>
+        ) : (
+          <ListViewContainer>
+            {hierarchicalLayers.map(layer => renderTagItem(layer))}
+          </ListViewContainer>
         )}
       </Container>
     </AdminLayout>

@@ -25,6 +25,7 @@ export interface SurveyDoc {
   selectedDemographics: string[];
   selectedTheme?: string;
   selectedCategories?: string[];
+  selectedTags?: string[];
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -489,6 +490,7 @@ Meteor.methods({
         selectedDemographics: surveyData.selectedDemographics || [],
         selectedTheme: surveyData.selectedTheme,
         selectedCategories: surveyData.selectedCategories || [],
+        selectedTags: surveyData.selectedTags || [],
         updatedAt: new Date(),
       },
     });
