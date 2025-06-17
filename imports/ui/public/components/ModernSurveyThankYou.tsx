@@ -15,6 +15,7 @@ interface Survey {
 interface ModernSurveyThankYouProps {
   survey: Survey;
   color?: string;
+  onRestart?: () => void;
 }
 
 const ThankYouContainer = styled.div`
@@ -107,7 +108,7 @@ const Logo = styled.img`
   opacity: 0.8;
 `;
 
-const CloseButton = styled.button<{ btnColor?: string }>`
+const ActionButton = styled.button<{ btnColor?: string }>`
   background: ${props => props.btnColor || '#552a47'};
   color: white;
   border: none;
@@ -130,10 +131,12 @@ const CloseButton = styled.button<{ btnColor?: string }>`
   }
 `;
 
-const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, color }) => {
-  const handleClose = () => {
-    // Close the survey or redirect to a specific URL if needed
-    window.close();
+const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, color, onRestart }) => {
+  const handleRestart = () => {
+    // Call the onRestart callback if provided
+    if (onRestart) {
+      onRestart();
+    }
   };
 
   return (
@@ -149,12 +152,12 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, col
           Your responses have been successfully submitted. We appreciate your time and feedback.
         </Message>
         
-        <CloseButton 
-          onClick={handleClose}
+        <ActionButton 
+          onClick={handleRestart}
           btnColor={color}
         >
-          Close Survey
-        </CloseButton>
+          Restart Survey
+        </ActionButton>
         
         {survey.logo && <Logo src={survey.logo} alt="Survey Logo" />}
       </ThankYouCard>

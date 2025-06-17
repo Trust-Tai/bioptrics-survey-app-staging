@@ -746,6 +746,25 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     }
   };
   
+  // Handle restart button click
+  const handleRestart = () => {
+    console.log('handleRestart called - resetting survey to welcome screen');
+    
+    // Clear responses
+    setResponses({});
+    
+    // Clear saved progress
+    try {
+      localStorage.removeItem(getProgressStorageKey());
+      console.log('Cleared saved progress for restart');
+    } catch (e) {
+      console.error('Error clearing saved progress:', e);
+    }
+    
+    // Reset to welcome screen
+    updateCurrentStep({ type: 'welcome' });
+  };
+  
   // Load saved progress when the component initializes
   useEffect(() => {
     // Wait until questions and sections are loaded
@@ -1111,6 +1130,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
           <ModernSurveyThankYou
             survey={survey}
             color={survey.color}
+            onRestart={handleRestart}
           />
         );
         
