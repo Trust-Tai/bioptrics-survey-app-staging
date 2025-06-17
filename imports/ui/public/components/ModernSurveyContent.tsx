@@ -6,7 +6,6 @@ import ModernSurveySection from './ModernSurveySection';
 import ModernSurveyQuestion from './ModernSurveyQuestion';
 import ModernSurveyThankYou from './ModernSurveyThankYou';
 import ModernSurveyProgress from './ModernSurveyProgress';
-import SurveyDebug from './SurveyDebug';
 
 // Types
 interface Question {
@@ -1148,11 +1147,6 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
         totalSteps={calculateProgressInfo().totalSteps}
       />
       {renderContent()}
-      <SurveyDebug 
-        sections={sections} 
-        questions={questions} 
-        currentStep={currentStep} 
-      />
     </ContentContainer>
   );
 };
