@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
-import { useNavigate, useLocation } from 'react-router-dom';
-import AdminLayout from './AdminLayout';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Accounts } from 'meteor/accounts-base';
+import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import styled from 'styled-components';
+import { useTheme } from '/imports/contexts/ThemeContext';
+import UIPreferences from './UIPreferences';
+// Import icons
+import { FaKey, FaClock, FaPalette, FaBell, FaDatabase, FaPlug } from 'react-icons/fa';
 
 // Styled components
-const Container = styled.div`
-  background: white;
+const Container = styled.div<{theme: any}>`
+  background: ${({ theme }) => theme.backgroundColor};
+  color: ${({ theme }) => theme.textColor};
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
@@ -21,77 +27,86 @@ const PageHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const PageTitle = styled.h1`
+const BackLink = styled.a<{theme: any}>`
+  color: ${({ theme }) => theme.primaryColor};
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const PageTitle = styled.h1<{theme: any}>`
   font-size: 24px;
-  color: #333;
+  color: ${({ theme }) => theme.textColor};
   margin: 0;
 `;
 
-const Card = styled.div`
-  background: #f8f5f9;
+const Card = styled.div<{theme: any}>`
+  background: ${({ theme }) => `${theme.secondaryColor}10`};
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
 `;
 
-const CardTitle = styled.h3`
-  color: #552a47;
+const CardTitle = styled.h3<{theme: any}>`
+  color: ${({ theme }) => theme.primaryColor};
   margin-bottom: 12px;
 `;
 
-const CardContent = styled.div`
-  color: #6e5a67;
+const CardContent = styled.div<{theme: any}>`
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const FormGroup = styled.div`
   margin-bottom: 16px;
 `;
 
-const Label = styled.label`
+const Label = styled.label<{theme: any}>`
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #552a47;
+  color: ${({ theme }) => theme.primaryColor};
 `;
 
-const Input = styled.input`
+const Input = styled.input<{theme: any}>`
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid ${({ theme }) => `${theme.primaryColor}33`};
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.3s;
   max-width: 400px;
+  background: ${({ theme }) => theme.backgroundColor};
+  color: ${({ theme }) => theme.textColor};
   
   &:focus {
-    border-color: #552a47;
+    border-color: ${({ theme }) => theme.primaryColor};
     outline: none;
   }
 `;
 
-const Button = styled.button`
-  background-color: #552a47;
-  color: white;
+const Button = styled.button<{theme: any}>`
+  background-color: ${({ theme }) => theme.primaryColor};
+  color: ${({ theme }) => theme.backgroundColor === '#000000' ? theme.textColor : '#fff'};
   border: none;
   border-radius: 4px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
-  
+  transition: background 0.3s, color 0.3s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-top: 10px;
   &:hover {
-    background-color: #6a3559;
-  }
-  
-  &:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
+    background-color: ${({ theme }) => theme.secondaryColor};
+    color: ${({ theme }) => theme.textColor};
   }
 `;
 
-const ErrorMessage = styled.div`
-  color: #e53935;
+const ErrorMessage = styled.div<{theme: any}>`
+  color: ${({ theme }) => theme.errorColor};
   font-size: 14px;
   margin-top: 8px;
 `;
@@ -125,7 +140,8 @@ interface SettingProps {
 const Setting: React.FC<SettingProps> = ({ view }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentView = view || (location.pathname === '/admin/settings' ? 'default' : location.pathname.split('/').pop());
+  // Improved currentView logic to better handle defaults
+  const currentView = view || (location.pathname === '/admin/settings' ? 'default' : location.pathname.split('/').pop() || 'default');
   
   // State for password change form
   const [currentPassword, setCurrentPassword] = useState('');
@@ -134,8 +150,9 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uiSuccess, setUiSuccess] = useState(false);
   
-  // Handle password change form submission
+  // Handler for password change form submission
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -215,8 +232,10 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
     { value: 'Pacific/Auckland', label: 'New Zealand Standard Time (NZST)' },
   ];
   
+  // No longer need UI theme preference loading as that's handled in UIPreferences component
+
   // Effect to detect the user's system timezone on component mount and check for saved preference
-  React.useEffect(() => {
+  useEffect(() => {
     try {
       // Get the user's system timezone using Intl API
       const systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -277,8 +296,7 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
     setTimezone(newTimezone);
     setIsDefaultTimezone(newTimezone === prevTimezone);
     
-    // Here you would add the actual logic to save the timezone preference
-    // For a simple implementation, we'll store it in localStorage
+    // Save the timezone preference to localStorage
     localStorage.setItem('userTimezone', newTimezone);
     
     // Show success message
@@ -286,38 +304,79 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
     setTimeout(() => setSuccess(false), 3000);
   };
   
+  // Using the styled components defined at the file level
+
+  // Card with icon layout
+  const CardWithIcon = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 15px;
+  `;
+
   // Main settings view with cards listing available options
   const renderMainSettings = () => (
-    <>
-      <Card onClick={() => navigate('/admin/settings/password')} style={{ cursor: 'pointer' }}>
-        <CardTitle>Password Settings</CardTitle>
-        <CardContent>
-          <p>Change your account password and manage security settings</p>
-        </CardContent>
-      </Card>
+    <SettingsGrid>
+      <SettingCard onClick={() => navigate('/admin/settings/password')}>
+        <CardWithIcon>
+          <SettingIcon data-icon-container>
+            <FaKey />
+          </SettingIcon>
+          <SettingTitle>Password Settings</SettingTitle>
+          <SettingDescription>
+            Change your account password and manage security settings
+          </SettingDescription>
+        </CardWithIcon>
+      </SettingCard>
       
-      <Card onClick={() => navigate('/admin/settings/timezone')} style={{ cursor: 'pointer' }}>
-        <CardTitle>Time Zone Settings</CardTitle>
-        <CardContent>
-          <p>Set your preferred time zone for accurate time display</p>
-        </CardContent>
-      </Card>
+      <SettingCard onClick={() => navigate('/admin/settings/timezone')}>
+        <CardWithIcon>
+          <SettingIcon data-icon-container>
+            <FaClock />
+          </SettingIcon>
+          <SettingTitle>Time Zone Settings</SettingTitle>
+          <SettingDescription>
+            Set your preferred time zone for accurate time display
+          </SettingDescription>
+        </CardWithIcon>
+      </SettingCard>
       
-      <Card>
-        <CardTitle>Other Settings</CardTitle>
-        <CardContent>
-          <p>
-            More settings will be available soon. Future options will include:
-          </p>
-          <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
-            <li>User interface preferences</li>
-            <li>Notification settings</li>
-            <li>Data retention policies</li>
-            <li>Integration configurations</li>
-          </ul>
-        </CardContent>
-      </Card>
-    </>
+      <SettingCard onClick={() => navigate('/admin/settings/ui-preferences')}>
+        <CardWithIcon>
+          <SettingIcon data-icon-container>
+            <FaPalette />
+          </SettingIcon>
+          <SettingTitle>UI Preferences</SettingTitle>
+          <SettingDescription>
+            Customize the appearance of your interface with themes and colors
+          </SettingDescription>
+        </CardWithIcon>
+      </SettingCard>
+      
+      <SettingCard style={{ cursor: 'default' }}>
+        <CardWithIcon>
+          <SettingIcon data-icon-container style={{ backgroundColor: 'rgba(150, 150, 150, 0.15)', color: '#888' }}>
+            <FaPlug />
+          </SettingIcon>
+          <SettingTitle>Other Settings</SettingTitle>
+          <SettingDescription>
+            Coming soon: notification preferences, data retention, and integrations
+          </SettingDescription>
+          <div style={{ marginTop: '15px', width: '100%', textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#888', fontSize: '0.9em' }}>
+              <FaBell style={{ marginRight: '8px' }} /> Notification settings
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#888', fontSize: '0.9em' }}>
+              <FaDatabase style={{ marginRight: '8px' }} /> Data retention policies
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', color: '#888', fontSize: '0.9em' }}>
+              <FaPlug style={{ marginRight: '8px' }} /> Integration configurations
+            </div>
+          </div>
+        </CardWithIcon>
+      </SettingCard>
+    </SettingsGrid>
   );
   
   // Password change form
@@ -492,32 +551,195 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
     </Card>
   );
   
-  // Render the appropriate content based on the current view
-  const renderContent = () => {
-    switch (currentView) {
-      case 'password':
-        return renderPasswordSettings();
-      case 'timezone':
-        return renderTimezoneSettings();
-      default:
-        return renderMainSettings();
-    }
+  // Handler for theme change
+  // Removed theme management functions as they've been moved to UIPreferences component
+  
+  // UI Preferences settings - now uses the enhanced UIPreferences component
+  const renderUiPreferences = () => {
+    return (
+      <Card>
+        <CardContent style={{ padding: '20px' }}>
+          {/* Using our new UIPreferences component inline */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            width: '100%'
+          }}>
+            <UIPreferences />
+          </div>
+          
+          <div style={{ 
+            marginTop: '20px',
+            display: 'flex',
+            justifyContent: 'flex-start'
+          }}>
+            <Button 
+              type="button" 
+              onClick={() => navigate('/admin/settings')}
+              style={{ backgroundColor: '#6e5a67' }}
+            >
+              Back to Settings
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
   
+// Styled components for the settings cards
+const SettingsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+`;
+
+const SettingCard = styled.div<{theme: any}>`
+  background: ${({ theme }) => theme.backgroundColor};
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  height: 100%;
+  border: 1px solid ${({ theme }) => `${theme.primaryColor}15`};
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    border-color: ${({ theme }) => `${theme.primaryColor}30`};
+    
+    div[data-icon-container] {
+      background-color: ${({ theme }) => `${theme.primaryColor}30`};
+    }
+  }
+`;
+
+const SettingIcon = styled.div<{theme: any}>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: ${({ theme }) => `${theme.primaryColor}15`};
+  margin-bottom: 15px;
+  color: ${({ theme }) => theme.primaryColor};
+  font-size: 24px;
+  transition: all 0.2s ease-in-out;
+`;
+
+// Deprecated - using SettingIcon instead
+const IconContainer = styled.div<{theme: any}>`
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  background: ${({ theme }) => `${theme.primaryColor}20`};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  
+  i {
+    font-size: 24px;
+    color: ${({ theme }) => theme.primaryColor};
+  }
+`;
+
+const SettingTitle = styled.h3<{theme: any}>`
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: ${({ theme }) => theme.primaryColor};
+  font-weight: 600;
+`;
+
+const SettingDescription = styled.p<{theme: any}>`
+  font-size: 14px;
+  color: ${({ theme }) => `${theme.textColor}80`};
+  margin: 0;
+  line-height: 1.5;
+`;
+
+// Render main settings list
+const renderSettingsList = () => {
   return (
-    <AdminLayout>
-      <Container>
-        <PageHeader>
-          <PageTitle>
-            {currentView === 'password' ? 'Password Settings' :
-             currentView === 'timezone' ? 'Time Zone Settings' : 'Settings'}
-          </PageTitle>
-        </PageHeader>
+    <div>
+      <SettingsGrid>
+        <Link to="/admin/settings/password" style={{ textDecoration: 'none' }}>
+          <SettingCard>
+            <SettingIcon data-icon-container>
+              <FaKey />
+            </SettingIcon>
+            <SettingTitle>Password Settings</SettingTitle>
+            <SettingDescription>Change your account password</SettingDescription>
+          </SettingCard>
+        </Link>
         
-        {renderContent()}
-      </Container>
-    </AdminLayout>
+        <Link to="/admin/settings/timezone" style={{ textDecoration: 'none' }}>
+          <SettingCard>
+            <SettingIcon data-icon-container>
+              <FaClock />
+            </SettingIcon>
+            <SettingTitle>Time Zone Settings</SettingTitle>
+            <SettingDescription>Configure your preferred time zone</SettingDescription>
+          </SettingCard>
+        </Link>
+        
+        <Link to="/admin/settings/ui-preferences" style={{ textDecoration: 'none' }}>
+          <SettingCard>
+            <SettingIcon data-icon-container>
+              <FaPalette />
+            </SettingIcon>
+            <SettingTitle>UI Preferences</SettingTitle>
+            <SettingDescription>Customize the application appearance</SettingDescription>
+          </SettingCard>
+        </Link>
+      </SettingsGrid>
+    </div>
   );
+};
+
+// Render the appropriate content based on the current view
+const renderContent = () => {
+  switch (currentView) {
+    case 'password':
+      return renderPasswordSettings();
+    case 'timezone':
+      return renderTimezoneSettings();
+    case 'ui-preferences':
+      return renderUiPreferences();
+    default:
+      return renderSettingsList();
+  }
+};
+  
+return (
+  <AdminLayout>
+    <Container>
+      <PageHeader>
+        <PageTitle>
+          {currentView === 'password' && 'Password Settings'}
+          {currentView === 'timezone' && 'Time Zone Settings'}
+          {currentView === 'ui-preferences' && 'UI Preferences'}
+          {!currentView || currentView === 'default' ? 'Settings' : ''}
+        </PageTitle>
+        {currentView !== 'default' && (
+          <BackLink onClick={() => navigate('/admin/settings')}>
+            &larr; Back to Settings
+          </BackLink>
+        )}
+      </PageHeader>
+      
+      {renderContent()}
+    </Container>
+  </AdminLayout>
+);
 };
 
 export default Setting;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { useTheme } from '../../contexts/ThemeContext';
 import { 
   FaUsers, 
   FaQuestionCircle, 
@@ -48,7 +49,7 @@ const GlobalScrollbarStyle = createGlobalStyle`
 `;
 
 const GoldHeaderCard = styled.div`
-  background: linear-gradient(135deg, #552a47 0%, #7a4e7a 100%);
+  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#542A46'}, ${props => props.theme.secondaryColor || '#3B1D31'});
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 1.75rem 2.5rem;
@@ -573,6 +574,7 @@ const AdminDashboard: React.FC = () => {
 
 const AdminDashboardContent: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   
   // Dynamically import the Questions and Surveys collections for client-side use
   const [QuestionsCollection, setQuestionsCollection] = useState<any>(null);
@@ -983,7 +985,7 @@ const AdminDashboardContent: React.FC = () => {
             </SectionTitle>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', background: 'rgba(248, 248, 252, 0.5)', padding: '12px', borderRadius: '8px' }}>
               <div style={{ color: '#666', fontSize: 14, flex: 1 }}>Track how employee engagement has changed over recent surveys.</div>
-              <div style={{ fontWeight: 700, color: '#444', whiteSpace: 'nowrap', background: 'linear-gradient(135deg, #552a47 0%, #7a4e7a 100%)', padding: '6px 12px', borderRadius: '16px', color: 'white', fontSize: '13px' }}>AVERAGE: 4/5</div>
+              <div style={{ fontWeight: 700, whiteSpace: 'nowrap', background: `linear-gradient(135deg, ${theme.primaryColor || '#542A46'}, ${theme.secondaryColor || '#3B1D31'})`, padding: '6px 12px', borderRadius: '16px', color: 'white', fontSize: '13px' }}>AVERAGE: 4/5</div>
             </div>
 
             <TrendBar>

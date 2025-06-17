@@ -64,12 +64,12 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     { to: '/admin/settings/timezone', label: 'Choose Time Zone' },
     { to: '/admin/settings/layers', label: 'Create New Tag Builder' },
     { to: '/admin/settings/all-layers', label: 'Tag Builder' },
+    { to: '/admin/settings/ui-preferences', label: 'UI Preferences' },
   ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
-// Styled components for the sidebar
 interface SidebarProps {
   collapsed: boolean;
 }
@@ -78,7 +78,7 @@ const SubmenuFlyout = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  background: #3d1f33;
+  background: var(--color-sidebar, linear-gradient(180deg, #552a47 0%, #3d1f33 100%));
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.13);
   position: absolute;
@@ -87,7 +87,7 @@ const SubmenuFlyout = styled.ul`
   min-width: 180px;
   z-index: 9999;
   overflow: visible;
-  border: 1px solid #552a4733;
+  border: 1px solid rgba(0,0,0,0.1);
   pointer-events: auto;
 `;
 
@@ -99,27 +99,29 @@ const SubmenuInline = styled.ul`
   border-radius: 0 0 10px 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   overflow: hidden;
+  color: var(--color-sidebar-text, #fff);
 `;
 const SubmenuItem = styled(Link)<{active?: boolean}>`
   display: block;
-  color: #fff;
+  color: var(--color-sidebar-text, #fff);
   text-decoration: none;
   font-size: 15px;
   padding: 10px 24px;
   background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
-  border-left: ${({active}) => active ? '4px solid #7a3e68' : '4px solid transparent'};
+  border-left: ${({active}) => active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
   font-weight: ${({active}) => active ? 700 : 500};
-  transition: background 0.15s, border-left 0.15s;
+  transition: background 0.15s, border-left 0.15s, color 0.15s;
   &:hover {
     background: rgba(255,255,255,0.18);
+    color: var(--color-sidebar-text, #fff);
   }
 `;
 
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
-  background: linear-gradient(180deg, #552a47 0%, #3d1f33 100%);
-  color: #fff;
+  background: var(--color-sidebar, linear-gradient(180deg, #552a47 0%, #3d1f33 100%));
+  color: var(--color-sidebar-text, #ffffff);
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
@@ -162,7 +164,7 @@ interface NavItemProps {
 const NavItem = styled(Link)<NavItemProps>`
   display: flex;
   align-items: center;
-  color: #fff;
+  color: var(--color-sidebar-text, #fff);
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
@@ -172,18 +174,19 @@ const NavItem = styled(Link)<NavItemProps>`
   transition: background 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   
   &:hover {
     background: rgba(255,255,255,0.08);
+    color: var(--color-sidebar-text, #fff);
   }
 `;
 
 const NavButton = styled.button<NavItemProps>`
   display: flex;
   align-items: center;
-  color: #fff;
+  color: var(--color-sidebar-text, #fff);
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
@@ -193,7 +196,7 @@ const NavButton = styled.button<NavItemProps>`
   transition: background 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   width: 100%;
   border: none;
@@ -202,6 +205,7 @@ const NavButton = styled.button<NavItemProps>`
   
   &:hover {
     background: rgba(255,255,255,0.08);
+    color: var(--color-sidebar-text, #fff);
   }
 `;
 
