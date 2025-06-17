@@ -286,17 +286,16 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   
   // Handle continue/submit button click
   const handleContinue = () => {
-    // Validate required questions
+    // If the question is required and the answer is not valid, show error
     if (question.required && !isAnswerValid()) {
       setError('This question requires an answer');
       return;
     }
     
-    // Clear any errors
+    // Clear any previous error
     setError(null);
     
-    // Debug information
-    console.log('ModernSurveyQuestion - handleContinue:', {
+    console.log('Question continue with:', {
       isLastQuestion,
       hasSubmitHandler: !!onSubmit,
       questionId: question._id || question.id,
@@ -304,17 +303,18 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       questionText: question.text?.substring(0, 30) + '...',
     });
     
+    // Save the current answer first (always do this regardless of whether it's the last question)
+    onAnswer(answer);
+    
     // If this is the last question and we have a submit handler
     if (isLastQuestion && onSubmit) {
       console.log('Submitting survey - this is the last question');
-      // Save the current answer first
-      onAnswer(answer);
       // Then submit the whole survey
-      onSubmit();
-    } else {
-      // Just save the answer and move to next question
-      onAnswer(answer);
+      setTimeout(() => {
+        onSubmit();
+      }, 100); // Small delay to ensure the answer is saved first
     }
+    // Note: If it's not the last question, the onAnswer call above will handle navigation
   };
   
   // Check if the current answer is valid
