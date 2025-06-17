@@ -35,11 +35,11 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
     { to: '/admin/surveys/theme', label: 'Theme' },
     // Dynamically add survey tags as submenu items
-    ...(surveyTags.map(tag => ({ 
-      to: `/admin/surveys/tag/${tag._id}`, 
-      label: `${tag.name}`,
-      isTag: true
-    })))
+    // ...(surveyTags.map(tag => ({ 
+    //   to: `/admin/surveys/tag/${tag._id}`, 
+    //   label: `${tag.name}`,
+    //   isTag: true
+    // })))
   ] },
   { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
@@ -47,11 +47,11 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     { to: '/admin/questions/tags', label: 'Tags' },
     { to: '/admin/questions/categories', label: 'Categories' },
     // Dynamically add question tags as submenu items
-    ...(questionTags.map(tag => ({ 
-      to: `/admin/questions/tag/${tag._id}`, 
-      label: `${tag.name}`,
-      isTag: true
-    })))
+    // ...(questionTags.map(tag => ({ 
+    //   to: `/admin/questions/tag/${tag._id}`, 
+    //   label: `${tag.name}`,
+    //   isTag: true
+    // })))
   ] },
   { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
   { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
@@ -62,9 +62,12 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
   { to: '/admin/settings', label: 'Settings', icon: FaCog, submenu: [
     { to: '/admin/settings/password', label: 'Change Password' },
     { to: '/admin/settings/timezone', label: 'Choose Time Zone' },
-    { to: '/admin/settings/layers', label: 'Create New Tag Builder' },
-    { to: '/admin/settings/all-layers', label: 'Tag Builder' },
+
+    { to: '/admin/settings/tag', label: 'Create New Tag Builder' },
+    { to: '/admin/settings/all-tags', label: 'Tag Builder' },
+
     { to: '/admin/settings/ui-preferences', label: 'UI Preferences' },
+
   ] },
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
@@ -301,9 +304,16 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const handle = Meteor.subscribe('layers.all');
     const allTags = Layers.find({ active: true }).fetch();
     
+    // Filter out tags with specific names that should not appear in the menu
+    const excludedTagNames = ['DataTag', 'ABC', 'Category', 'DropDown', 'Test', 'DataA'];
+    
     return {
-      surveyTags: allTags.filter(tag => tag.location === 'surveys'),
-      questionTags: allTags.filter(tag => tag.location === 'questions'),
+      surveyTags: allTags.filter(tag => 
+        tag.location === 'surveys' && !excludedTagNames.includes(tag.name)
+      ),
+      questionTags: allTags.filter(tag => 
+        tag.location === 'questions' && !excludedTagNames.includes(tag.name)
+      ),
       isLoading: !handle.ready(),
     };
   }, []);

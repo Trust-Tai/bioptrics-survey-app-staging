@@ -17,7 +17,7 @@ import {
 } from 'react-icons/fa';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import { Layers, Layer, LayerField } from '../../../api/layers';
 import { FiPlus } from 'react-icons/fi';
@@ -254,17 +254,30 @@ const LayerBuilder: React.FC = () => {
   // Get URL parameters for editing
   const location = useLocation();
   const navigate = useNavigate();
+  const { id: editLayerId } = useParams<{ id: string }>();
   const searchParams = new URLSearchParams(location.search);
-  const editLayerId = searchParams.get('edit');
+  const editLayerIdFromQuery = searchParams.get('edit');
+  
+  // Use either path parameter or query parameter (for backward compatibility)
+  const layerId = editLayerId || editLayerIdFromQuery;
   
   // State for the active tab (builder or list)
   const [activeTab, setActiveTab] = useState<'builder' | 'list'>('builder');
   
-  // State for the current step in builder
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  // Step system has been removed - all fields are shown on a single page
   
   // State for layer data
-  const [layer, setLayer] = useState<Partial<Layer>>({ name: '', location: 'surveys', priority: 1, fields: [], active: true });
+  const [layer, setLayer] = useState<Partial<Layer>>({ 
+    name: '', 
+    location: '', 
+    fields: [], 
+    active: true,
+    color: '#552a47', // Default color
+    parentId: '' 
+  });
+  
+  // State for multiple locations
+  const [selectedLocations, setSelectedLocations] = useState<{surveys: boolean, questions: boolean}>({surveys: false, questions: false});
   
   // State to track if we're editing an existing layer
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -302,11 +315,19 @@ const LayerBuilder: React.FC = () => {
   
   // Load layer data when editing
   useEffect(() => {
-    if (editLayerId && layers.length > 0 && !isLoading) {
-      const layerToEdit = layers.find(l => l._id === editLayerId);
+    if (layerId && layers.length > 0 && !isLoading) {
+      const layerToEdit = layers.find(l => l._id === layerId);
       
       if (layerToEdit) {
         console.log('Loading layer for editing:', layerToEdit);
+        
+        // Parse location string to set multiple locations
+        const locationStr = layerToEdit.location || '';
+        const locationsObj = {
+          surveys: locationStr.includes('surveys'),
+          questions: locationStr.includes('questions')
+        };
+        setSelectedLocations(locationsObj);
         
         // Update layer state with the found layer
         setLayer({
@@ -314,9 +335,10 @@ const LayerBuilder: React.FC = () => {
           id: layerToEdit.id,
           name: layerToEdit.name,
           location: layerToEdit.location,
-          priority: layerToEdit.priority || 1, // Ensure priority has a default value
           fields: layerToEdit.fields || [],
-          active: layerToEdit.active !== undefined ? layerToEdit.active : true // Default to active if not specified
+          active: layerToEdit.active !== undefined ? layerToEdit.active : true, // Default to active if not specified
+          color: layerToEdit.color || '#552a47', // Load color or use default
+          parentId: layerToEdit.parentId || '' // Load parent tag ID or use empty string
         });
         
         // Mark standard fields as enabled if they exist in the layer
@@ -340,7 +362,7 @@ const LayerBuilder: React.FC = () => {
         
         setIsEditing(true);
         setActiveTab('builder');
-        setCurrentStep(1);
+        // No need to set current step as we only have one step now
       }
     }
   }, [editLayerId, layers, isLoading]); // Removed availableFields from dependency array to prevent circular updates
@@ -402,52 +424,41 @@ const LayerBuilder: React.FC = () => {
     }
   };
   
-  // Validate step 1
-  const validateStep1 = (): boolean => {
-    const newErrors: typeof errors = {};
+  // Validate step 1 fields
+  const validateStep1 = () => {
+    const newErrors: Record<string, string> = {};
     
-    if (!layer.name?.trim()) {
-      newErrors.name = 'Layer Name is required';
+    if (!layer.name) {
+      newErrors.name = 'Tag name is required';
     }
     
-    if (!layer.location) {
-      newErrors.location = 'Location is required';
-    }
-    
-    if (layer.priority === undefined || layer.priority < 1) {
-      newErrors.priority = 'Priority must be a positive number';
+    if (!layer.location || layer.location.trim() === '') {
+      newErrors.location = 'At least one location must be selected';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
   
-  // Handle next step
-  const handleNextStep = () => {
-    console.log('Attempting to move to next step');
+  // Save directly from step one
+  const handleSaveFromStepOne = () => {
+    console.log('Attempting to save from step one');
     console.log('Current layer data:', layer);
     
-    // Force validation to pass in edit mode if we have layer data
-    if (isEditing && layer._id) {
-      console.log('Edit mode - moving to step 2');
-      setCurrentStep(2);
+    // Validate step 1 data
+    if (!validateStep1()) {
+      console.log('Validation failed:', errors);
       return;
     }
     
-    // Normal validation for new layers
-    if (validateStep1()) {
-      console.log('Validation passed, moving to step 2');
-      setCurrentStep(2);
-    } else {
-      console.log('Validation failed:', errors);
-    }
+    // Proceed with saving
+    saveLayerConfiguration();
   };
   
-  // Handle previous step navigation
+  // No longer need step navigation
   const handlePreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+    // Navigation removed as we only have one step now
+    return;
   };
   
   // Toggle field selection
@@ -565,8 +576,8 @@ const LayerBuilder: React.FC = () => {
 
   // Save layer configuration
   const saveLayerConfiguration = () => {
-    // Combine selected standard fields and custom fields
-    const selectedStandardFields = availableFields.filter((field: LayerField) => field.enabled);
+    // Use default standard fields since we're skipping step 2
+    const selectedStandardFields = availableFields.filter((field: LayerField) => field.id === 'description' || field.id === 'color' || field.id === 'image' || field.id === 'startDate' || field.id === 'endDate');
     
     // Make sure we have valid field objects with all required properties
     const validatedStandardFields = selectedStandardFields.map(field => ({
@@ -576,7 +587,7 @@ const LayerBuilder: React.FC = () => {
       label: field.label || '',
       required: !!field.required,
       options: Array.isArray(field.options) ? field.options : [],
-      enabled: !!field.enabled
+      enabled: true
     }));
     
     const validatedCustomFields = customFields.map(field => ({
@@ -602,11 +613,6 @@ const LayerBuilder: React.FC = () => {
       return;
     }
     
-    if (layer.priority === undefined || layer.priority < 1) {
-      setStatus({ loading: false, message: 'Priority must be a positive number', type: 'error' });
-      return;
-    }
-    
     // Set loading state
     setStatus({ loading: true, message: isEditing ? 'Updating tag...' : 'Saving tag...', type: 'info' });
     
@@ -615,9 +621,10 @@ const LayerBuilder: React.FC = () => {
       const updatedLayer = {
         id: layer.id,
         name: layer.name || '',
-        location: layer.location as 'surveys' | 'questions',
-        priority: Number(layer.priority) || 1,
+        location: layer.location,
         active: layer.active !== undefined ? layer.active : true,
+        parentId: layer.parentId || undefined,
+        color: layer.color || '#552a47',
         fields: allSelectedFields
       };
       
@@ -636,7 +643,7 @@ const LayerBuilder: React.FC = () => {
           localStorage.setItem('layerActionSuccess', successMessage);
           
           // Only redirect after successful update
-          navigate('/admin/settings/all-layers');
+          navigate('/admin/settings/all-tags');
         }
       });
     } else {
@@ -644,9 +651,10 @@ const LayerBuilder: React.FC = () => {
       const newLayer = {
         id: `layer-${Date.now()}`,
         name: layer.name || '',
-        location: layer.location as 'surveys' | 'questions',
-        priority: Number(layer.priority) || 1,
+        location: layer.location,
         active: layer.active !== undefined ? layer.active : true,
+        parentId: layer.parentId || undefined,
+        color: layer.color || '#552a47',
         fields: allSelectedFields
       };
       
@@ -665,7 +673,7 @@ const LayerBuilder: React.FC = () => {
           localStorage.setItem('layerActionSuccess', successMessage);
           
           // Only redirect after successful creation
-          navigate('/admin/settings/all-layers');
+          navigate('/admin/settings/all-tags');
         }
       });
     }
@@ -683,16 +691,19 @@ const LayerBuilder: React.FC = () => {
                 if (isEditing) {
                   setLayer({
                     name: '',
-                    location: 'surveys',
-                    priority: 1,
-                    fields: []
+                    location: '',
+                    fields: [],
+                    active: true,
+                    color: '#552a47',
+                    parentId: ''
                   });
+                  setSelectedLocations({surveys: false, questions: false});
                   setAvailableFields(prev => prev.map(field => ({ ...field, enabled: false })));
                   setCustomFields([]);
                   setIsEditing(false);
                 }
                 setActiveTab('builder'); 
-                setCurrentStep(1); 
+                // Step system removed 
               }}>
                 <FaPlus /> Create New Tag
               </Button>
@@ -703,9 +714,9 @@ const LayerBuilder: React.FC = () => {
        
         
         
-        {activeTab === 'builder' && currentStep === 1 && (
+        {activeTab === 'builder' && (
           <StepContainer>
-            <StepTitle>Step 1: Tag Basic Info</StepTitle>
+            <StepTitle>Tag Basic Info</StepTitle>
             
             <FormGroup>
               <Label htmlFor="name">Tag Name</Label>
@@ -721,32 +732,137 @@ const LayerBuilder: React.FC = () => {
             </FormGroup>
             
             <FormGroup>
-              <Label htmlFor="location">Location</Label>
-              <Select
-                id="location"
-                name="location"
-                value={layer.location}
-                onChange={handleInputChange}
-              >
-                <option value="surveys">Surveys</option>
-                <option value="questions">Questions</option>
-              </Select>
+              <Label>Location</Label>
+              <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    cursor: 'pointer',
+                    padding: '10px 15px',
+                    border: `1px solid ${selectedLocations.surveys ? '#552a47' : '#ddd'}`,
+                    borderRadius: '8px',
+                    background: selectedLocations.surveys ? 'rgba(85, 42, 71, 0.05)' : 'white'
+                  }}
+                  onClick={() => {
+                    const newLocations = { ...selectedLocations, surveys: !selectedLocations.surveys };
+                    setSelectedLocations(newLocations);
+                    
+                    // Update the layer.location string based on selected checkboxes
+                    const locationStr = [
+                      newLocations.surveys ? 'surveys' : '',
+                      newLocations.questions ? 'questions' : ''
+                    ].filter(Boolean).join(',');
+                    
+                    setLayer(prev => ({ ...prev, location: locationStr }));
+                  }}
+                >
+                  <div style={{ 
+                    width: '20px', 
+                    height: '20px', 
+                    borderRadius: '4px',
+                    border: '2px solid #552a47',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: selectedLocations.surveys ? '#552a47' : 'white'
+                  }}>
+                    {selectedLocations.surveys && <FaCheck size={12} color="white" />}
+                  </div>
+                  <span style={{ fontWeight: selectedLocations.surveys ? '600' : '400' }}>Surveys</span>
+                </div>
+                
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    cursor: 'pointer',
+                    padding: '10px 15px',
+                    border: `1px solid ${selectedLocations.questions ? '#552a47' : '#ddd'}`,
+                    borderRadius: '8px',
+                    background: selectedLocations.questions ? 'rgba(85, 42, 71, 0.05)' : 'white'
+                  }}
+                  onClick={() => {
+                    const newLocations = { ...selectedLocations, questions: !selectedLocations.questions };
+                    setSelectedLocations(newLocations);
+                    
+                    // Update the layer.location string based on selected checkboxes
+                    const locationStr = [
+                      newLocations.surveys ? 'surveys' : '',
+                      newLocations.questions ? 'questions' : ''
+                    ].filter(Boolean).join(',');
+                    
+                    setLayer(prev => ({ ...prev, location: locationStr }));
+                  }}
+                >
+                  <div style={{ 
+                    width: '20px', 
+                    height: '20px', 
+                    borderRadius: '4px',
+                    border: '2px solid #552a47',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: selectedLocations.questions ? '#552a47' : 'white'
+                  }}>
+                    {selectedLocations.questions && <FaCheck size={12} color="white" />}
+                  </div>
+                  <span style={{ fontWeight: selectedLocations.questions ? '600' : '400' }}>Questions</span>
+                </div>
+              </div>
               {errors.location && <ErrorMessage>{errors.location}</ErrorMessage>}
             </FormGroup>
             
             <FormGroup>
-              <Label htmlFor="priority">Priority (Numeric)</Label>
-              <Input
-                id="priority"
-                name="priority"
-                type="number"
-                min="1"
-                value={layer.priority}
+              <Label htmlFor="parentId">Parent Tag</Label>
+              <Select
+                id="parentId"
+                name="parentId"
+                value={layer.parentId || ''}
                 onChange={handleInputChange}
-                placeholder="Enter priority"
-              />
-              {errors.priority && <ErrorMessage>{errors.priority}</ErrorMessage>}
+              >
+                <option value="">None (Top Level Tag)</option>
+                {layers.filter(l => l._id !== layer._id).map(parentLayer => (
+                  <option key={parentLayer._id} value={parentLayer._id}>
+                    {parentLayer.name}
+                  </option>
+                ))}
+              </Select>
             </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="color">Tag Color</Label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '4px',
+                    backgroundColor: layer.color || '#552a47',
+                    border: '1px solid #ddd',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    marginRight: '10px'
+                  }}
+                />
+                <Input
+                  id="color"
+                  name="color"
+                  type="color"
+                  value={layer.color || '#552a47'}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100px',
+                    height: '36px',
+                    padding: '2px',
+                    cursor: 'pointer'
+                  }}
+                />
+              </div>
+            </FormGroup>
+            
+            {/* Priority field removed as requested */}
             
             <FormGroup>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -767,14 +883,25 @@ const LayerBuilder: React.FC = () => {
             </FormGroup>
             
             <ButtonGroup>
-              <Button primary onClick={handleNextStep}>
-                Next <FaArrowRight />
+              <Button primary onClick={handleSaveFromStepOne} disabled={status.loading}>
+                {status.loading ? (
+                  <>
+                    <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
+                    <span style={{ marginLeft: '0.5rem' }}>{isEditing ? 'Updating...' : 'Saving...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <FaSave style={{ marginRight: '0.5rem' }} />
+                    {isEditing ? 'Update Tag' : 'Save Tag'}
+                  </>
+                )}
               </Button>
             </ButtonGroup>
           </StepContainer>
         )}
         
-        {activeTab === 'builder' && currentStep === 2 && (
+        {/* Step 2 has been removed as requested */}
+        {false && (
           <StepContainer>
             <StepTitle>Step 2: Select Tag Fields to Include</StepTitle>
             
@@ -1056,8 +1183,8 @@ const LayerBuilder: React.FC = () => {
             
             <ButtonGroup>
               <Button 
-                onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : null} 
-                disabled={status.loading || currentStep <= 1}
+                onClick={() => null} 
+                disabled={true}
               >
                 <FaArrowLeft /> Back
               </Button>

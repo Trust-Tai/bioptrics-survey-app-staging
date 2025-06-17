@@ -137,6 +137,147 @@
   margin-top: 4px;
 }
 
+/* Tom Select Custom Styling */
+.tom-select-container .ts-wrapper {
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.tom-select-container .ts-control {
+  border: 1px solid #d1d1d1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-height: 42px;
+  background-color: #fff;
+}
+
+.tom-select-container .ts-control:focus {
+  border-color: #552a47;
+  box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+}
+
+/* Dropdown styling - ensure it's visible */
+.ts-dropdown {
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border: 1px solid #d1d1d1;
+  z-index: 1000;
+  position: absolute;
+  background: white;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ts-dropdown .option {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.ts-dropdown .active {
+  background-color: #f5edf3;
+  color: #552a47;
+}
+
+/* Item styling */
+.ts-control .item {
+  background-color: #f5edf3;
+  color: #552a47;
+  border-radius: 4px;
+  padding: 3px 8px;
+  margin: 2px 4px 2px 0;
+  border: 1px solid rgba(85, 42, 71, 0.2);
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Remove button styling */
+.ts-control .item .remove {
+  margin-left: 6px;
+  color: #552a47;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.ts-control .item .remove:hover {
+  background-color: rgba(85, 42, 71, 0.1);
+  border-radius: 50%;
+}
+
+.ts-wrapper {
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.ts-dropdown {
+  z-index: 1000 !important;
+  width: 100% !important;
+  max-width: 500px !important;
+}
+
+.ts-dropdown-content {
+  max-height: 250px !important;
+  overflow-y: auto;
+}
+
+.ts-control {
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  padding: 8px !important;
+  min-height: 40px !important;
+}
+
+.ts-wrapper.multi .ts-control > div {
+  background-color: #f0f0f0 !important;
+  border: 1px solid #ddd !important;
+  border-radius: 3px !important;
+  padding: 2px 6px !important;
+  margin: 2px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.ts-wrapper.plugin-remove_button .item .remove {
+  border-left: 1px solid #ddd !important;
+  padding-left: 6px !important;
+  margin-left: 6px !important;
+  color: #999 !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+}
+
+.ts-wrapper.plugin-remove_button .item .remove:hover {
+  color: #333 !important;
+}
+
+.remove-tag-btn {
+  cursor: pointer !important;
+  font-weight: bold !important;
+  padding: 0 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Fix for dropdown positioning */
+body > .ts-dropdown {
+  position: absolute !important;
+  z-index: 10000 !important;
+}
+
+.tom-select-container .ts-control input {
+  min-height: 28px;
+}
+
 /* Welcome Screen Form Styles */
 .survey-builder-panel-content {
   padding: 16px 0;

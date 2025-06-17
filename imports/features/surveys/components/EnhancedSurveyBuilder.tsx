@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight, FiTrash2 } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
+import TomSelect from 'tom-select';
+import 'tom-select/dist/css/tom-select.css';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
+import { Layers, Layer } from '../../../api/layers';
 
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
@@ -60,10 +63,10 @@ import './EnhancedSurveyBuilder.css';
 const steps = [
   { id: 'welcome', label: 'Welcome Screen', icon: 'FiHome' },
   { id: 'sections', label: 'Sections', icon: 'FiLayers' },
-  { id: 'questions', label: 'Questions', icon: 'FiList' },
   { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'themes', label: 'Themes', icon: 'FiTag' },
   { id: 'categories', label: 'Categories', icon: 'FiGrid' },
+  { id: 'tags', label: 'Tags', icon: 'FiTag' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   { id: 'preview', label: 'Preview', icon: 'FiEye' },
@@ -129,6 +132,30 @@ const EnhancedSurveyBuilder: React.FC = () => {
   );
   const [selectedTheme, setSelectedTheme] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<Layer[]>([]);
+  
+  // Refs for Tom Select
+  const tagSelectRef = useRef<HTMLSelectElement>(null);
+  const tomSelectInstance = useRef<any>(null);
+  
+  // Subscribe to layers (tags) with location containing "Surveys"
+  useTracker(() => {
+    const subscription = Meteor.subscribe('layers.all');
+    
+    if (subscription.ready()) {
+      // Fetch all layers/tags that have "Surveys" in their location field
+      // Include both active and inactive tags to prevent DOM errors when tags are deactivated
+      const tags = Layers.find(
+        { location: { $regex: 'Surveys', $options: 'i' } },
+        { sort: { name: 1 } }
+      ).fetch();
+      
+      setAvailableTags(tags);
+    }
+    
+    return subscription.ready();
+  }, []);
   
   // State for modals
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
@@ -255,6 +282,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
       if (currentSurvey.selectedCategories && Array.isArray(currentSurvey.selectedCategories)) {
         setSelectedCategories(currentSurvey.selectedCategories);
       }
+      
+      // Initialize tags if they exist in the survey
+      if (currentSurvey.selectedTags && Array.isArray(currentSurvey.selectedTags)) {
+        console.log('Loading saved tags from survey:', currentSurvey.selectedTags);
+        setSelectedTags(currentSurvey.selectedTags);
+        
+        // If Tom Select is already initialized, update its value
+        if (activeStep === 'tags' && tomSelectInstance.current) {
+          setTimeout(() => {
+            if (tomSelectInstance.current) {
+              tomSelectInstance.current.setValue(currentSurvey.selectedTags);
+              console.log('Set saved tags in Tom Select');
+            }
+          }, 100);
+        }
+      }
     }
     
     return {
@@ -291,6 +334,121 @@ const EnhancedSurveyBuilder: React.FC = () => {
     setAlert({ type: 'success', message });
     setTimeout(() => setAlert(null), 5000);
   };
+  
+  // Effect to handle changes in availableTags (when tags are activated/deactivated)
+  useEffect(() => {
+    if (tomSelectInstance.current && activeStep === 'tags') {
+      // Get currently active tag IDs
+      const activeTagIds = availableTags.filter(tag => tag.active).map(tag => tag._id);
+      
+      // Update the selected tags to remove any that are now inactive
+      const updatedSelectedTags = selectedTags.filter(tagId => activeTagIds.includes(tagId));
+      
+      // Update state if needed
+      if (updatedSelectedTags.length !== selectedTags.length) {
+        setSelectedTags(updatedSelectedTags);
+      }
+      
+      // Refresh the options in Tom Select
+      tomSelectInstance.current.clear();
+      tomSelectInstance.current.clearOptions();
+      
+      // Add only active tags
+      availableTags.forEach(tag => {
+        if (tag.active) {
+          tomSelectInstance.current.addOption({
+            value: tag._id,
+            text: tag.name
+          });
+        }
+      });
+      
+      // Set the filtered values
+      tomSelectInstance.current.setValue(updatedSelectedTags, true);
+    }
+  }, [availableTags]);
+  
+  // Initialize Tom Select when Tags tab is active
+  useEffect(() => {
+    // Only initialize when the Tags tab is active and we have a valid reference
+    if (activeStep === 'tags' && tagSelectRef.current && availableTags.length > 0) {
+      // Skip initialization if Tom Select is already initialized with the same tags
+      if (tomSelectInstance.current) {
+        // Only update the values if they've changed
+        const currentValues = tomSelectInstance.current.getValue();
+        const currentValuesStr = currentValues.sort().join(',');
+        const newValuesStr = [...selectedTags].sort().join(',');
+        
+        if (currentValuesStr !== newValuesStr) {
+          console.log('Updating tag values without reinitializing');
+          tomSelectInstance.current.setValue(selectedTags, true);
+        }
+        return;
+      }
+      
+      console.log('Initializing Tom Select');
+      
+      // Create a configuration that allows multiple selection with proper remove button
+      const config: any = {
+        plugins: ['remove_button'],
+        placeholder: 'Select tags...',
+        create: false,
+        maxItems: null, // Allow multiple selections
+        sortField: { field: 'text', direction: 'asc' },
+        // Remove dropdownParent to fix the insertBefore Node error
+        // The dropdown will be appended to the select element's parent by default
+        onChange: function(values: string[]) {
+          // Only update state if values actually changed
+          const currentValuesStr = values.sort().join(',');
+          const existingValuesStr = [...selectedTags].sort().join(',');
+          
+          if (currentValuesStr !== existingValuesStr) {
+            console.log('Tags changed:', values);
+            setSelectedTags(values);
+          }
+        }
+      };
+      
+      // Initialize Tom Select with options
+      const ts = new TomSelect(tagSelectRef.current, config);
+      tomSelectInstance.current = ts;
+      
+      // Clear any existing options and add the available tags
+      ts.clearOptions();
+      availableTags.forEach(tag => {
+        // Only add active tags as selectable options
+        if (tag.active) {
+          ts.addOption({
+            value: tag._id,
+            text: tag.name
+          });
+        }
+      });
+      
+      // Set initial values if any, but filter out any tags that might be inactive
+      if (selectedTags.length > 0) {
+        console.log('Setting initial tag values:', selectedTags);
+        // Filter selectedTags to only include those that are active
+        const activeTagIds = availableTags.filter(tag => tag.active).map(tag => tag._id);
+        const activeSelectedTags = selectedTags.filter(tagId => activeTagIds.includes(tagId));
+        
+        // Update the selectedTags state if any inactive tags were removed
+        if (activeSelectedTags.length !== selectedTags.length) {
+          setSelectedTags(activeSelectedTags);
+        }
+        
+        ts.setValue(activeSelectedTags, true); // Silent update
+      }
+      
+      // Clean up Tom Select instance when component unmounts
+      return () => {
+        if (tomSelectInstance.current) {
+          tomSelectInstance.current.destroy();
+          tomSelectInstance.current = null;
+        }
+      };
+    }
+  }, [activeStep, availableTags]);
   
   // Show error alert
   const showErrorAlert = (message: string) => {
@@ -353,32 +511,31 @@ const EnhancedSurveyBuilder: React.FC = () => {
       setSaving(true);
       
       // Prepare survey data for saving
-      // Clean up paragraph tags from description at save time
-      const cleanDescription = survey?.description ? survey.description.replace(/<p>/g, '').replace(/<\/p>/g, '') : '';
-      
       // Log the current state of survey questions before saving
       console.log('Saving survey with questions:', surveyQuestions);
       
       const surveyData = {
         ...survey,
         title: survey?.title || 'Untitled Survey',
-        description: cleanDescription,
+        description: survey?.description || '',
         logo: survey?.logo || '',
         featuredImage: survey?.featuredImage || '',
         primaryColor: survey?.primaryColor || '#552a47',
-        surveySections: sections,
+        welcomeTitle: survey?.welcomeTitle || '',
+        welcomeMessage: survey?.welcomeMessage || '',
+        completionMessage: survey?.completionMessage || '',
+        sections,
         sectionQuestions: surveyQuestions,
-        // Include demographics, themes, and categories
-        selectedDemographics: selectedDemographics,
-        selectedTheme: selectedTheme,
-        selectedCategories: selectedCategories,
+        // Include demographics, themes, categories, and tags
+        selectedDemographics,
+        selectedTheme,
+        selectedCategories,
+        selectedTags,
         updatedAt: new Date(),
       };
       
       let savedSurveyId;
       
-      // If we have a surveyId, update the existing survey
-      // Otherwise create a new one
       if (surveyId) {
         await Meteor.callAsync('surveys.update', surveyId, surveyData);
         savedSurveyId = surveyId;
@@ -654,33 +811,142 @@ const EnhancedSurveyBuilder: React.FC = () => {
               <h1 className="survey-builder-title">
                 {survey?.title || 'Untitled Survey'}
               </h1>
-              <p style={{ color: '#666' }}>
+              {/* <p style={{ color: '#666' }}>
                 {survey?.description || 'No description'}
-              </p>
+              </p> */}
             </div>
-            <div className="survey-builder-actions">
+            <div className="survey-builder-actions" style={{ 
+              display: 'flex', 
+              gap: '12px',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end'
+            }}>
+              {/* Cancel Button */}
               <button 
-                className="btn btn-secondary"
                 onClick={() => navigate('/admin/surveys')}
+                className="action-button cancel-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d1d1',
+                  backgroundColor: '#f8f8f8',
+                  color: '#333',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  minWidth: '100px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ebebeb';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f8f8';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                }}
               >
                 Cancel
               </button>
+              
+              {/* Save Survey Button */}
               <button 
-                className="btn btn-primary"
                 onClick={handleSaveSurvey}
                 disabled={saving}
+                className="action-button save-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#552a47',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: saving ? 'wait' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease',
+                  minWidth: '140px',
+                  boxShadow: '0 2px 4px rgba(85,42,71,0.3)'
+                }}
+                onMouseOver={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.backgroundColor = '#6a3559';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(85,42,71,0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#552a47';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(85,42,71,0.3)';
+                }}
               >
-                <FiSave /> {saving ? 'Saving...' : 'Save Survey'}
+                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save Survey'}
               </button>
+              
+              {/* Publish Button */}
               <button 
-                className="btn btn-success"
                 onClick={handleGeneratePublicUrl}
                 disabled={!survey?._id}
-                style={{ marginLeft: '8px', backgroundColor: '#28a745', borderColor: '#28a745' }}
+                className="action-button publish-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#2ecc40',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                  opacity: !survey?._id ? 0.7 : 1,
+                  transition: 'all 0.3s ease',
+                  minWidth: '100px',
+                  boxShadow: '0 2px 4px rgba(46,204,64,0.3)'
+                }}
+                onMouseOver={(e) => {
+                  if (survey?._id) {
+                    e.currentTarget.style.backgroundColor = '#27ae60';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(46,204,64,0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2ecc40';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.3)';
+                }}
               >
                 Publish
               </button>
             </div>
+            
+            {/* Add responsive styles */}
+            <style jsx>{`
+              @media (max-width: 768px) {
+                .survey-builder-actions {
+                  flex-direction: column;
+                  width: 100%;
+                }
+                .action-button {
+                  width: 100%;
+                  margin-bottom: 8px;
+                }
+              }
+              
+              @media (max-width: 480px) {
+                .action-button {
+                  font-size: 14px !important;
+                  padding: 8px 16px !important;
+                }
+              }
+            `}</style>
           </div>
           
           {/* Main content */}
@@ -748,141 +1014,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 </div>
               )}
               
-              {activeStep === 'questions' && (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <div>
-                      <h2 className="survey-builder-panel-title">Survey Questions</h2>
-                      <p className="survey-builder-panel-subtitle">
-                        Manage all questions in your survey
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    {surveyQuestions.length > 0 ? (
-                      <div>
-                        <p style={{ marginBottom: 16, fontSize: 15, color: '#555' }}>
-                          All questions added to your survey sections are listed below.
-                        </p>
-                        
-                        <div style={{ 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          gap: 16,
-                          marginTop: 16
-                        }}>
-                          {surveyQuestions.map((question, index) => {
-                            // Find the section this question belongs to
-                            const section = sections.find(s => s.id === question.sectionId);
-                            
-                            // Remove HTML tags from question text
-                            const cleanQuestionText = question.text
-                              .replace(/<\/?p>/g, '')
-                              .replace(/<\/?[^>]+(>|$)/g, '');
-                            
-                            return (
-                              <div 
-                                key={question.id}
-                                style={{
-                                  padding: '18px',
-                                  borderRadius: 8,
-                                  border: '1px solid #e0e0e0',
-                                  background: '#fff',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'center',
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ 
-                                    fontWeight: 600, 
-                                    fontSize: 15, 
-                                    color: '#333',
-                                    lineHeight: '1.4'
-                                  }}>
-                                    {cleanQuestionText}
-                                  </div>
-                                  
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: 12,
-                                    marginTop: 8
-                                  }}>
-                                    <div style={{ 
-                                      fontSize: 13, 
-                                      color: '#666',
-                                      padding: '3px 8px',
-                                      background: '#f5f5f5',
-                                      borderRadius: 4
-                                    }}>
-                                      {question.type}
-                                    </div>
-                                    
-                                    {section && (
-                                      <div style={{ 
-                                        fontSize: 13, 
-                                        color: '#666',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 4
-                                      }}>
-                                        <span>Section:</span>
-                                        <span style={{ fontWeight: 500, color: '#552a47' }}>{section.name}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                <div className="remove-button-container">
-                                  <button 
-                                    className="remove-button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (question.sectionId) {
-                                        handleRemoveQuestion(question.id, question.sectionId);
-                                      }
-                                    }}
-                                    style={{ 
-                                      padding: '6px 10px', 
-                                      fontSize: 13,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: 6,
-                                      background: '#f8f8f8',
-                                      border: '1px solid #ddd',
-                                      borderRadius: 4,
-                                      color: '#d63031',
-                                      fontWeight: 500,
-                                      cursor: 'pointer',
-                                      transition: 'all 0.2s ease'
-                                    }}
-                                    aria-label="Remove question"
-                                  >
-                                    <FiTrash2 size={16} style={{ color: '#d63031' }} /> 
-                                    <span>Remove</span>
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: 'center', color: '#666', padding: '20px 0' }}>
-                        No questions have been added to any sections yet. 
-                        <div style={{ marginTop: 8 }}>
-                          Go to the Sections tab to add sections and questions to your survey.
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Questions tab has been removed */}
               
               {/* Welcome Screen */}
               {activeStep === 'welcome' && (
@@ -1225,6 +1357,65 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+                </div>
+              ) : activeStep === 'tags' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">
+                      {steps.find(step => step.id === activeStep)?.label}
+                    </h2>
+                  </div>
+                  
+                  <div style={{ padding: 20 }}>
+                    <p style={{ marginBottom: 16, fontSize: 15 }}>
+                      Select tags for your survey. Tags help categorize and filter your survey content.
+                    </p>
+                    
+                    <div style={{ 
+                      backgroundColor: '#f8f9fa', 
+                      padding: '12px 16px', 
+                      borderRadius: '6px', 
+                      marginBottom: '20px',
+                      border: '1px solid #e9ecef'
+                    }}>
+                      <h4 style={{ fontSize: '15px', marginBottom: '8px', fontWeight: 600, color: '#495057' }}>
+                        How to use:
+                      </h4>
+                      <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Click in the field to see available tags</li>
+                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Type to search for specific tags</li>
+                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Click on a tag to select it</li>
+                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Click the × to remove a selected tag</li>
+                      </ul>
+                    </div>
+                    
+                    <div style={{ marginBottom: 20 }}>
+                      <label htmlFor="survey-tags" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                        Survey Tags
+                      </label>
+                      <div className="tom-select-container" style={{ 
+                        marginBottom: 16,
+                        maxWidth: '600px',
+                        position: 'relative',
+                        zIndex: 100,
+                        overflow: 'visible' // Ensure dropdown is visible
+                      }}>
+                        <select 
+                          id="survey-tags"
+                          multiple 
+                          ref={tagSelectRef} 
+                          style={{ width: '100%' }}
+                        >
+                          {availableTags.map((tag) => (
+                            <option key={tag._id} value={tag._id}>{tag.name}</option>
+                          ))}
+                          {availableTags.length === 0 && (
+                            <option value="" disabled>Loading tags...</option>
+                          )}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>

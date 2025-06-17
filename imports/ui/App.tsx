@@ -34,6 +34,8 @@ import PublicSurveyPage from './PublicSurveyPage';
 import ModernSurveyPublic from './public/ModernSurveyPublic';
 import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
+import LayerBuilder from './admin/settings/LayerBuilder';
+import AllLayers from './admin/settings/AllLayers';
 import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
 // Router is now imported directly from 'react-router-dom'
@@ -182,6 +184,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Analytics />} />
         <Route path="/admin/settings" element={<Setting />} />
+        <Route path="/admin/settings/tag" element={<LayerBuilder />} />
+        <Route path="/admin/settings/tag/:id" element={<LayerBuilder />} />
+        <Route path="/admin/settings/all-tags" element={<AllLayers />} />
         <Route path="/admin/settings/password" element={<Setting view="password" />} />
         <Route path="/admin/settings/timezone" element={<Setting view="timezone" />} />
         <Route path="/admin/settings/ui-preferences" element={<Setting view="ui-preferences" />} />

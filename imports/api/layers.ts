@@ -17,10 +17,12 @@ export interface Layer {
   _id?: string;
   id?: string;
   name: string;
-  location: 'surveys' | 'questions';
-  priority: number;
+  location: string; // Changed to string to support multiple comma-separated locations
+  priority?: number; // Made optional as we're removing this field from the UI
   fields: LayerField[];
   active: boolean;
+  parentId?: string; // Reference to parent tag
+  color?: string; // Color for the tag
   createdAt: Date;
   createdBy?: string;
   updatedAt?: Date;
@@ -70,7 +72,8 @@ if (Meteor.isServer) {
         id: layerData.id,
         name: layerData.name,
         location: layerData.location,
-        priority: Number(layerData.priority),
+        parentId: layerData.parentId || undefined,
+        color: layerData.color || '#552a47',
         fields: Array.isArray(layerData.fields) ? layerData.fields.map((field: any) => {
           // Ensure each field has the required properties
           return {
