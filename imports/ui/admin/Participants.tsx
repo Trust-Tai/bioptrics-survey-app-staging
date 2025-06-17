@@ -7,7 +7,7 @@ import { FaUserPlus, FaFileImport, FaUsers, FaChartBar } from 'react-icons/fa';
 
 // Styled components
 const Container = styled.div`
-  background: white;
+  background: ${({ theme }) => theme.backgroundColor};
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
@@ -24,19 +24,19 @@ const PageHeader = styled.div`
 
 const PageTitle = styled.h1`
   font-size: 24px;
-  color: #333;
+  color: ${({ theme }) => theme.textColor};
   margin: 0;
 `;
 
 const Card = styled.div`
-  background: #f8f5f9;
+  background: ${({ theme }) => theme.accentColor};
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
 `;
 
 const CardTitle = styled.h3`
-  color: #552a47;
+  color: ${({ theme }) => theme.primaryColor};
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -44,7 +44,7 @@ const CardTitle = styled.h3`
 `;
 
 const CardContent = styled.div`
-  color: #6e5a67;
+  color: ${({ theme }) => theme.secondaryColor};
 `;
 
 const FeatureGrid = styled.div`
@@ -55,7 +55,7 @@ const FeatureGrid = styled.div`
 `;
 
 const FeatureCard = styled.div`
-  background: white;
+  background: ${({ theme }) => theme.backgroundColor};
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -66,7 +66,7 @@ const FeatureCard = styled.div`
 
 const FeatureIcon = styled.div`
   font-size: 24px;
-  color: #552a47;
+  color: ${({ theme }) => theme.primaryColor};
   display: flex;
   align-items: center;
   gap: 12px;
@@ -74,12 +74,12 @@ const FeatureIcon = styled.div`
 
 const FeatureTitle = styled.h4`
   margin: 0;
-  color: #333;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const FeatureDescription = styled.p`
   margin: 0;
-  color: #6e5a67;
+  color: ${({ theme }) => theme.secondaryColor};
   font-size: 14px;
 `;
 

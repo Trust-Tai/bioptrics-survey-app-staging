@@ -60,7 +60,7 @@ const SubmenuFlyout = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  background: #3d1f33;
+  background: var(--color-sidebar);
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.13);
   position: absolute;
@@ -69,7 +69,7 @@ const SubmenuFlyout = styled.ul`
   min-width: 180px;
   z-index: 9999;
   overflow: visible;
-  border: 1px solid #552a4733;
+  border: 1px solid rgba(0,0,0,0.1);
   pointer-events: auto;
 `;
 
@@ -81,27 +81,29 @@ const SubmenuInline = styled.ul`
   border-radius: 0 0 10px 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   overflow: hidden;
+  color: var(--color-sidebar-text, #fff);
 `;
 const SubmenuItem = styled(Link)<{active?: boolean}>`
   display: block;
-  color: #fff;
+  color: var(--color-sidebar-text, #fff);
   text-decoration: none;
   font-size: 15px;
   padding: 10px 24px;
   background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
-  border-left: ${({active}) => active ? '4px solid #7a3e68' : '4px solid transparent'};
+  border-left: ${({active}) => active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
   font-weight: ${({active}) => active ? 700 : 500};
-  transition: background 0.15s, border-left 0.15s;
+  transition: background 0.15s, border-left 0.15s, color 0.15s;
   &:hover {
     background: rgba(255,255,255,0.18);
+    color: var(--color-sidebar-text, #fff);
   }
 `;
 
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
-  background: linear-gradient(180deg, #552a47 0%, #3d1f33 100%);
-  color: #fff;
+  background: var(--color-sidebar);
+  color: var(--color-sidebar-text, #fff);
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
@@ -144,38 +146,39 @@ interface NavItemProps {
 const NavItem = styled(Link)<NavItemProps>`
   display: flex;
   align-items: center;
-  color: #fff;
+  color: var(--color-sidebar-text, #fff);
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   font-weight: ${props => props.active ? '700' : '500'};
   margin-bottom: 0.25rem;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   
   &:hover {
     background: rgba(255,255,255,0.08);
+    color: var(--color-sidebar-text, #fff);
   }
 `;
 
 const NavButton = styled.button<NavItemProps>`
   display: flex;
   align-items: center;
-  color: #fff;
+  color: var(--color-sidebar-text, #fff);
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   font-weight: ${props => props.active ? '700' : '500'};
   margin-bottom: 0.25rem;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   width: 100%;
   border: none;
@@ -184,6 +187,7 @@ const NavButton = styled.button<NavItemProps>`
   
   &:hover {
     background: rgba(255,255,255,0.08);
+    color: var(--color-sidebar-text, #fff);
   }
 `;
 
@@ -211,8 +215,8 @@ const NavLabel = styled.span<LabelProps>`
 const Tooltip = styled.div`
   position: absolute;
   left: 72px;
-  background: rgba(0,0,0,0.8);
-  color: white;
+  background: var(--color-sidebar);
+  color: var(--color-sidebar-text, #fff);
   padding: 5px 10px;
   border-radius: 4px;
   font-size: 14px;
