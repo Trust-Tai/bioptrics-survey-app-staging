@@ -7,7 +7,7 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 // Styled components
 
 const Container = styled.div`
-  background: white;
+  background: ${({ theme }) => theme.backgroundColor};
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
@@ -23,13 +23,13 @@ const PageHeader = styled.div`
 
 const PageTitle = styled.h1`
   font-size: 28px;
-  color: #333;
+  color: ${({ theme }) => theme.textColor};
   margin: 0;
 `;
 
 const Button = styled.button`
-  background: #552a47;
-  color: white;
+  background: ${({ theme }) => theme.primaryColor};
+  color: ${({ theme }) => theme.backgroundColor === '#000000' ? theme.textColor : '#fff'};
   border: none;
   border-radius: 6px;
   padding: 10px 16px;
@@ -42,7 +42,7 @@ const Button = styled.button`
   transition: background 0.2s;
   
   &:hover {
-    background: #7a3e68;
+    background: ${({ theme }) => theme.secondaryColor};
   }
 `;
 
@@ -54,7 +54,7 @@ const CardGrid = styled.div`
 `;
 
 const Card = styled.div`
-  background: #f9f9fb;
+  background: ${({ theme }) => theme.accentColor};
   border-radius: 10px;
   padding: 24px;
   display: flex;
@@ -74,24 +74,24 @@ const IconContainer = styled.div`
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #552a47;
+  background: ${({ theme }) => theme.primaryColor};
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  color: white;
+  color: ${({ theme }) => theme.backgroundColor === '#000000' ? theme.textColor : '#fff'};
   font-size: 24px;
 `;
 
 const CardTitle = styled.h3`
   margin: 0 0 8px 0;
   font-size: 18px;
-  color: #333;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const CardDescription = styled.p`
   margin: 0;
-  color: #666;
+  color: ${({ theme }) => theme.secondaryColor};
   font-size: 14px;
 `;
 
@@ -103,7 +103,7 @@ const StatsContainer = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: #f5f5f7;
+  background: ${({ theme }) => theme.accentColor};
   border-radius: 8px;
   padding: 16px;
   text-align: center;
@@ -112,13 +112,13 @@ const StatCard = styled.div`
 const StatValue = styled.div`
   font-size: 28px;
   font-weight: 600;
-  color: #552a47;
+  color: ${({ theme }) => theme.primaryColor};
   margin-bottom: 8px;
 `;
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: #666;
+  color: ${({ theme }) => theme.secondaryColor};
 `;
 
 

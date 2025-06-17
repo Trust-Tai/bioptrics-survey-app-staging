@@ -8,6 +8,7 @@ import { FiBarChart2, FiUsers, FiCheckCircle, FiClock, FiActivity, FiEdit } from
 
 // Styled components for the dashboard summary
 const SummaryContainer = styled.div`
+  background: ${({ theme }) => theme.backgroundColor};
   margin-bottom: 32px;
 `;
 
@@ -32,9 +33,15 @@ const SummaryHeader = styled.div`
 `;
 
 const SummaryTitle = styled.h2`
+<<<<<<< HEAD
+  font-size: 24px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.primaryColor};
+=======
   font-size: 26px;
   font-weight: 700;
   color: #552a47;
+>>>>>>> 2a2d2e75946c6bf764f9ddd5ee6cf5c4d3fdf9c4
   margin: 0;
   letter-spacing: -0.5px;
   position: relative;
@@ -61,10 +68,17 @@ const MetricsGrid = styled.div`
 `;
 
 const MetricCard = styled.div`
+<<<<<<< HEAD
+  background: ${({ theme }) => theme.accentColor};
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+=======
   background: linear-gradient(135deg, #ffffff 0%, #f8f4f9 100%);
   border-radius: 16px;
   box-shadow: 0 8px 20px rgba(85, 42, 71, 0.08);
   padding: 28px;
+>>>>>>> 2a2d2e75946c6bf764f9ddd5ee6cf5c4d3fdf9c4
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
@@ -99,6 +113,16 @@ const MetricHeader = styled.div`
 `;
 
 const MetricIcon = styled.div`
+<<<<<<< HEAD
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.backgroundColor === '#000000' ? theme.secondaryColor : theme.accentColor};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.primaryColor};
+=======
   width: 48px;
   height: 48px;
   border-radius: 12px;
@@ -110,12 +134,18 @@ const MetricIcon = styled.div`
   box-shadow: 0 4px 10px rgba(94, 59, 94, 0.2);
   margin-right: 4px;
   z-index: 1;
+>>>>>>> 2a2d2e75946c6bf764f9ddd5ee6cf5c4d3fdf9c4
 `;
 
 const MetricTitle = styled.h3`
   font-size: 16px;
+<<<<<<< HEAD
+  font-weight: 500;
+  color: ${({ theme }) => theme.secondaryColor};
+=======
   font-weight: 600;
   color: #666;
+>>>>>>> 2a2d2e75946c6bf764f9ddd5ee6cf5c4d3fdf9c4
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -124,9 +154,15 @@ const MetricTitle = styled.h3`
 `;
 
 const MetricValue = styled.div`
+<<<<<<< HEAD
+  font-size: 32px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.primaryColor};
+=======
   font-size: 36px;
   font-weight: 800;
   color: #552a47;
+>>>>>>> 2a2d2e75946c6bf764f9ddd5ee6cf5c4d3fdf9c4
   margin-bottom: 8px;
   letter-spacing: -0.5px;
   z-index: 1;
@@ -164,7 +200,7 @@ const MetricTrend = styled.div<{ positive?: boolean }>`
 // `;
 
 const ChartCard = styled.div`
-  background: white;
+  background: ${({ theme }) => theme.accentColor};
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   padding: 24px;
@@ -180,7 +216,7 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: ${({ theme }) => theme.primaryColor};
   margin: 0;
 `;
 
@@ -189,22 +225,31 @@ const ChartTitle = styled.h3`
 //   gap: 8px;
 // `;
 
-// const TimeframeButton = styled.button<{ active?: boolean }>`
-//   background: ${props => props.active ? '#552a47' : 'transparent'};
-//   color: ${props => props.active ? 'white' : '#666'};
-//   border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
-//   border-radius: 4px;
-//   padding: 6px 12px;
-//   font-size: 14px;
-//   cursor: pointer;
-//   transition: all 0.2s;
-//   
-//   &:hover {
-//     background: ${props => props.active ? '#552a47' : '#f5f5f5'};
-//   }
-// `;
+const TimeframeButton = styled.button<{ active?: boolean }>`
+  background: ${({ active, theme }) => active ? theme.primaryColor : 'transparent'};
+  color: ${({ active, theme }) => active ? (theme.backgroundColor === '#000000' ? theme.textColor : '#fff') : theme.secondaryColor};
+  border: 1px solid ${({ active, theme }) => active ? theme.primaryColor : theme.accentColor};
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${({ active, theme }) => active ? theme.primaryColor : theme.accentColor};
+    color: ${({ theme }) => theme.textColor};
+  }
+`;
 
-// const COLORS = ['#552a47', '#8e44ad', '#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+// For full theming, consider generating COLORS from the theme or context
+const COLORS = [
+  '#552a47', // theme.primaryColor
+  '#8e44ad',
+  '#3498db',
+  '#2ecc71',
+  '#f39c12',
+  '#e74c3c'
+]; // TODO: Replace with theme-driven palette for full dynamic theming
 
 interface AdminDashboardSummaryProps {
   organizationId?: string;

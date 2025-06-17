@@ -35,11 +35,12 @@ import SurveyGoalsPage from './admin/SurveyGoals';
 import AllSurveys from './admin/AllSurveys';
 import LayerBuilder from './admin/settings/LayerBuilder';
 import AllLayers from './admin/settings/AllLayers';
-import TagItemsComponent from './admin/tags/TagItems';
+import SurveyBuilder from './admin/SurveyBuilder';
 import { BrowserRouter as Router } from 'react-router-dom';
+// Router is now imported directly from 'react-router-dom'
+import QuestionBuilder from './admin/QuestionBuilder';
 import EnhancedQuestionBuilder from '../features/questions/components/admin/EnhancedQuestionBuilder';
 import SurveyPublic from './public/SurveyPublic';
-import ModernSurveyPublic from './public/ModernSurveyPublic';
 import SurveyResponses from './admin/SurveyResponses';
 import SurveyManagementDashboard from './admin/SurveyManagementDashboard';
 import LogoutPage from './LogoutPage';
@@ -126,11 +127,7 @@ const SurveyQuestionWrapper: React.FC = () => {
   const questionsLength = 4;
   return (
     <SurveyQuestion
-      question={{
-        _id: 'sample-question',
-        text: "How often does your manager provide clear direction for your work?",
-        type: 'scale'
-      }}
+      question="How often does your manager provide clear direction for your work?"
       progress={`${qIdx + 1}/${questionsLength}`}
       onNext={() => {}}
       onBack={qIdx > 0 ? () => navigate(`/survey/section/${sIdx}/question/${qIdx - 1}`) : () => navigate(`/survey/section/${sIdx}`)}
@@ -146,7 +143,6 @@ const PreviewSurvey: React.FC = () => {
   // If you want to check for preview data in localStorage, do it here (optional)
   // Otherwise, just render SurveyPublic for the preview flow
 
-  // Pass the token as a URL parameter so SurveyPublic can access it via useParams
   return <SurveyPublic />;
 };
 
@@ -158,8 +154,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
-      <Route path="/public/modern/:token" element={<ModernSurveyPublic />} />
-      <Route path="/public/:token" element={<ModernSurveyPublic />} />
+      <Route path="/survey/public/:token" element={<SurveyPublic />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
       <Route path="/leadership" element={<LeadershipManagement />} />
@@ -172,7 +167,6 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/surveys" element={<SurveyPage />} />
          <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
-        <Route path="/admin/surveys/tag/:tagId" element={<TagItemsComponent />} />
         <Route path="/admin/surveys/responses" element={<SurveyResponses />} />
         <Route path="/admin/surveys/builder" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
@@ -180,9 +174,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
-        <Route path="/admin/questions/tag/:tagId" element={<TagItemsComponent />} />
         <Route path="/admin/questions/builder" element={<EnhancedQuestionBuilder />} />
-        <Route path="/admin/questions/builder/:id" element={<EnhancedQuestionBuilder />} />
+        <Route path="/admin/questions/builder/:id" element={<QuestionBuilder />} />
         <Route path="/admin/questions/tags" element={<QuestionTagsPage />} />
         <Route path="/admin/questions/categories" element={<QuestionCategoriesPage />} />
         <Route path="/admin/questions/templates" element={<QuestionTemplatesPage />} />
@@ -192,6 +185,9 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/settings/tag" element={<LayerBuilder />} />
         <Route path="/admin/settings/tag/:id" element={<LayerBuilder />} />
         <Route path="/admin/settings/all-tags" element={<AllLayers />} />
+        <Route path="/admin/settings/password" element={<Setting view="password" />} />
+        <Route path="/admin/settings/timezone" element={<Setting view="timezone" />} />
+        <Route path="/admin/settings/ui-preferences" element={<Setting view="ui-preferences" />} />
         <Route path="/admin/participants" element={<Participants />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
