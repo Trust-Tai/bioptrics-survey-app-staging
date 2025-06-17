@@ -1,0 +1,65 @@
+.tag-builder {
+  margin-bottom: 20px;
+}
+
+.tag-builder-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: #28211e;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tag-builder-container {
+  position: relative;
+}
+
+.tag-select {
+  width: 100%;
+  color: #333;
+}
+
+.tag-loading {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* TomSelect customizations */
+.ts-wrapper.multi .ts-control .item {
+  background: #552a47;
+  color: #fff;
+  border-radius: 3px;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+}
+
+.ts-wrapper.plugin-remove_button .item .remove {
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+/* Fix for dropdown options */
+.ts-dropdown .option {
+  color: #333;
+}
+
+/* Fix for selected item text */
+.ts-wrapper.multi .ts-control .item {
+  color: #000;
+  font-weight: 500;
+}
+
+/* Fix for input text */
+.ts-wrapper .ts-control > input {
+  color: #333;
+}
+
+.ts-wrapper.plugin-remove_button .item .remove:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Make sure TomSelect dropdown is above other elements */
+.ts-dropdown {
+  z-index: 1000;
+}

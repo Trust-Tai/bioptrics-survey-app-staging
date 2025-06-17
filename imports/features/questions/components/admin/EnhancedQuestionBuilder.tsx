@@ -7,6 +7,7 @@ import ReactQuill from 'react-quill';
 import '../../../../ui/styles/quill-styles';
 import 'react-quill/dist/quill.snow.css';
 import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaTags, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing, FaArrowLeft } from 'react-icons/fa';
+import TagBuilder from './TagBuilder';
 import ToggleSwitch from './ToggleSwitch';
 
 // Import layouts
@@ -937,6 +938,14 @@ const EnhancedQuestionBuilder: React.FC = () => {
                                 <option value="date">Date</option>
                                 <option value="file">File Upload</option>
                               </select>
+                            </div>
+                            
+                            {/* Tag Builder */}
+                            <div className="form-group">
+                              <TagBuilder 
+                                selectedTagIds={question.labels || []} 
+                                onTagChange={(labels) => setQuestion(prev => ({ ...prev, labels }))}
+                              />
                             </div>
                             
                             <div className="form-group">

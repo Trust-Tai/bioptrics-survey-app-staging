@@ -27,6 +27,7 @@ export interface Question {
   isActive?: boolean;
   keywords?: string[];
   organizationId?: string;
+  labels?: string[];
 }
 
 // Helper to map QuestionBuilder state to QuestionVersion
@@ -49,6 +50,7 @@ export function mapQuestionToVersion(q: Question, userId: string, published: boo
     priority: q.priority,
     keywords: q.keywords || [],
     organizationId: q.organizationId || '',
+    labels: q.labels || [],
   };
 }
 

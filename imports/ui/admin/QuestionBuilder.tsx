@@ -3,6 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import ReactQuill from 'react-quill';
 import '../styles/quill-styles';
 import './QuestionBuilder.quill.css';
+import TagBuilder from '../../features/questions/components/admin/TagBuilder';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 import { useLocation } from 'react-router-dom';
@@ -44,6 +45,7 @@ interface Question {
   isActive?: boolean;
   keywords?: string[];
   organizationId?: string;
+  labels?: string[];
 }
 
 const QuestionBuilder: React.FC =  () => {
@@ -236,7 +238,8 @@ const QuestionBuilder: React.FC =  () => {
             isActive: (latest as any).isActive !== undefined ? (latest as any).isActive : true,
             priority: (latest as any).priority || 3,
             keywords: (latest as any).keywords || [],
-            organizationId: (latest as any).organizationId || ''
+            organizationId: (latest as any).organizationId || '',
+            labels: (latest as any).labels || []
           }
         ]);
       }
@@ -547,6 +550,18 @@ return (
             placeholder="Enter question description (optional)"
             style={{ marginBottom: 16, background: '#fff', borderRadius: 8, minHeight: 80 }}
           />
+
+          {/* Tag Builder */}
+          <div style={{ marginBottom: 18 }}>
+            <TagBuilder 
+              selectedTagIds={q.labels || []} 
+              onTagChange={(labels) => {
+                const updatedQuestions = [...questions];
+                updatedQuestions[qIdx] = { ...updatedQuestions[qIdx], labels };
+                setQuestions(updatedQuestions);
+              }}
+            />
+          </div>
 
           {/* WPS Categories Multi-Select */}
           <div style={{ marginBottom: 18 }}>
