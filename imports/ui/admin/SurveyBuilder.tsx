@@ -336,7 +336,6 @@ const [copied, setCopied] = useState(false);
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      // Only call publish if no published link exists
       if (publishedLink) {
         showSuccess('Survey already published!');
         setPublishing(false);
@@ -344,16 +343,14 @@ const [copied, setCopied] = useState(false);
       }
       const result = await Meteor.callAsync('surveys.publish', getSurveyData());
       if (result && result._id) {
-        // Generate an encrypted token for the survey ID
         const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', result._id);
         const url = `${window.location.origin}/public/${encryptedToken}`;
         setPublishedLink(url);
-        showSuccess('Survey published! Secure sharable link generated below.');
+        showSuccess('Survey published successfully!');
       } else if (result && result.shareToken) {
-        // Fallback to old method if token generation fails
         const url = `${window.location.origin}/public/${result.shareToken}`;
         setPublishedLink(url);
-        showSuccess('Survey published! Sharable link generated below.');
+        showSuccess('Survey published successfully!');
       }
     } catch (err: any) {
       showError(err?.reason || 'Error publishing survey.');
@@ -689,26 +686,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 textAlign: 'center'
               }}>
                 {alert.message}
-                {publishedLink && alert.type === 'success' && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ marginTop: 12 }}>
-                      <span style={{ fontWeight: 400, color: '#fff' }}>Sharable Link:</span>
-                      <div style={{ marginTop: 6, wordBreak: 'break-all', fontWeight: 700 }}>
-                        <a href={publishedLink} target="_blank" rel="noopener noreferrer" style={{ color: '#fff', textDecoration: 'underline' }}>{publishedLink}</a>
-                      </div>
-                    </div>
-                    <button
-                      style={{ background: '#fff', color: '#2ecc40', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 14, cursor: 'pointer' }}
-                      onClick={() => {
-                        navigator.clipboard.writeText(publishedLink ?? "");
-                        showSuccess('Copied!');
-                        setTimeout(() => setAlert(null), 2000);
-                      }}
-                    >
-                      Copy Link
-                    </button>
-                  </div>
-                )}
+
               </div>
             )}
             
@@ -821,6 +799,19 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                 >
                   {publishing ? 'Publishing...' : 'Publish'}
                 </button>
+                {publishedLink && (
+                  <button
+                    style={{ background: '#fff', color: '#2ecc40', border: '2px solid #2ecc40', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(publishedLink);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                      showSuccess('URL copied to clipboard!');
+                    }}
+                  >
+                    {copied ? 'Copied!' : 'Copy URL'}
+                  </button>
+                )}
               </div>
             </div>
             {/* Welcome Notice (like QuestionBuilder) */}
