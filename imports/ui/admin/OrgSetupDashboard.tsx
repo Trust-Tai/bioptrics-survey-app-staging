@@ -122,7 +122,7 @@ const OrgSetupDashboard: React.FC = () => {
   return (
     <AdminLayout>
       <Container>
-        <Title>Organization Setup</Title>
+        <Title>Branding / Custom Fields</Title>
         <CardGrid>
           {menuItems.map((item, index) => (
             <Card to={item.path} key={index}>

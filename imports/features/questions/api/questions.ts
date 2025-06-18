@@ -117,8 +117,17 @@ Meteor.methods({
     }
   },
   'questions.delete': async function (questionId: string) {
+    check(questionId, String);
     // Allow deletion from Bank admin (no Meteor user check)
-    return await Questions.removeAsync(questionId);
+    try {
+      // Use _id to ensure we're deleting the exact document
+      const result = await Questions.removeAsync({ _id: questionId });
+      console.log(`[questions.delete] Deleted question ${questionId}, result:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[questions.delete] Error deleting question ${questionId}:`, error);
+      throw new Meteor.Error('questions.delete.error', 'Failed to delete question');
+    }
   },
   'questions.insert': async function (data: Omit<QuestionVersion, 'version'|'updatedAt'|'updatedBy'>, userId: string) {
     try {

@@ -10,6 +10,14 @@ import UIPreferences from './UIPreferences';
 import { FaKey, FaClock, FaPalette, FaBell, FaDatabase, FaPlug } from 'react-icons/fa';
 
 // Styled components
+const PageContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+`;
+
 const Container = styled.div<{theme: any}>`
   background: ${({ theme }) => theme.backgroundColor};
   color: ${({ theme }) => theme.textColor};
@@ -38,21 +46,26 @@ const BackLink = styled.a<{theme: any}>`
 `;
 
 const PageTitle = styled.h1<{theme: any}>`
-  font-size: 24px;
-  color: ${({ theme }) => theme.textColor};
-  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #28211e;
 `;
 
 const Card = styled.div<{theme: any}>`
-  background: ${({ theme }) => `${theme.secondaryColor}10`};
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e5d6c7;
 `;
 
 const CardTitle = styled.h3<{theme: any}>`
-  color: ${({ theme }) => theme.primaryColor};
-  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #28211e;
 `;
 
 const CardContent = styled.div<{theme: any}>`
@@ -67,7 +80,7 @@ const Label = styled.label<{theme: any}>`
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: ${({ theme }) => theme.primaryColor};
+  color: #28211e;
 `;
 
 const Input = styled.input<{theme: any}>`
@@ -88,8 +101,8 @@ const Input = styled.input<{theme: any}>`
 `;
 
 const Button = styled.button<{theme: any}>`
-  background-color: ${({ theme }) => theme.primaryColor};
-  color: ${({ theme }) => theme.backgroundColor === '#000000' ? theme.textColor : '#fff'};
+  background-color: #552a47;
+  color: #fff;
   border: none;
   border-radius: 4px;
   padding: 10px 20px;
@@ -595,73 +608,50 @@ const SettingsGrid = styled.div`
   margin-top: 20px;
 `;
 
-const SettingCard = styled.div<{theme: any}>`
-  background: ${({ theme }) => theme.backgroundColor};
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  height: 100%;
-  border: 1px solid ${({ theme }) => `${theme.primaryColor}15`};
+const SettingCard = styled.div<{theme?: any}>`
+  background: #fff;
+  border: 1px solid #e5d6c7;
+  border-radius: 8px;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+  transition: all 0.2s ease;
+  height: 100%;
   
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-    border-color: ${({ theme }) => `${theme.primaryColor}30`};
+    border-color: #552a47;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     
-    div[data-icon-container] {
-      background-color: ${({ theme }) => `${theme.primaryColor}30`};
+    [data-icon-container] {
+      background: #552a47;
+      color: white;
     }
   }
 `;
 
-const SettingIcon = styled.div<{theme: any}>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background-color: ${({ theme }) => `${theme.primaryColor}15`};
-  margin-bottom: 15px;
-  color: ${({ theme }) => theme.primaryColor};
-  font-size: 24px;
-  transition: all 0.2s ease-in-out;
-`;
-
-// Deprecated - using SettingIcon instead
-const IconContainer = styled.div<{theme: any}>`
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background: ${({ theme }) => `${theme.primaryColor}20`};
+const SettingIcon = styled.div<{theme?: any}>`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(85, 42, 71, 0.2);
+  color: #552a47;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  
-  i {
-    font-size: 24px;
-    color: ${({ theme }) => theme.primaryColor};
-  }
+  font-size: 18px;
+  transition: all 0.2s ease;
 `;
 
 const SettingTitle = styled.h3<{theme: any}>`
   font-size: 18px;
   margin: 0 0 8px 0;
-  color: ${({ theme }) => theme.primaryColor};
+  color: #28211e;
   font-weight: 600;
 `;
 
 const SettingDescription = styled.p<{theme: any}>`
   font-size: 14px;
-  color: ${({ theme }) => `${theme.textColor}80`};
+  color: #6e5a67;
   margin: 0;
   line-height: 1.5;
 `;
@@ -721,23 +711,26 @@ const renderContent = () => {
   
 return (
   <AdminLayout>
-    <Container>
-      <PageHeader>
-        <PageTitle>
-          {currentView === 'password' && 'Password Settings'}
-          {currentView === 'timezone' && 'Time Zone Settings'}
-          {currentView === 'ui-preferences' && 'UI Preferences'}
-          {!currentView || currentView === 'default' ? 'Settings' : ''}
-        </PageTitle>
-        {currentView !== 'default' && (
-          <BackLink onClick={() => navigate('/admin/settings')}>
-            &larr; Back to Settings
-          </BackLink>
-        )}
-      </PageHeader>
-      
-      {renderContent()}
-    </Container>
+    <PageContainer>
+      <PageTitle>Settings</PageTitle>
+      <Container>
+        <PageHeader>
+          <PageTitle>
+            {currentView === 'password' && 'Password Settings'}
+            {currentView === 'timezone' && 'Time Zone Settings'}
+            {currentView === 'ui-preferences' && 'UI Preferences'}
+            {!currentView || currentView === 'default' ? 'Settings' : ''}
+          </PageTitle>
+          {currentView !== 'default' && (
+            <BackLink onClick={() => navigate('/admin/settings')}>
+              &larr; Back to Settings
+            </BackLink>
+          )}
+        </PageHeader>
+        
+        {renderContent()}
+      </Container>
+    </PageContainer>
   </AdminLayout>
 );
 };
