@@ -1240,15 +1240,15 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           type="color"
                           id="surveyPrimaryColor"
                           className="form-control color-picker"
-                          value={survey?.primaryColor || '#552a47'}
-                          onChange={(e) => setSurvey({...survey, primaryColor: e.target.value})}
+                          value={survey?.color || '#552a47'}
+                          onChange={(e) => setSurvey({...survey, color: e.target.value})}
                           style={{ width: '50px', height: '40px', padding: '0' }}
                         />
                         <input
                           type="text"
                           className="form-control"
-                          value={survey?.primaryColor || '#552a47'}
-                          onChange={(e) => setSurvey({...survey, primaryColor: e.target.value})}
+                          value={survey?.color || '#552a47'}
+                          onChange={(e) => setSurvey({...survey, color: e.target.value})}
                           placeholder="#552a47"
                           style={{ width: '120px' }}
                         />

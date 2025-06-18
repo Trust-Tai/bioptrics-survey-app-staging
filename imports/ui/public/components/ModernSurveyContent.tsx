@@ -1121,6 +1121,9 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
             color={survey.color}
             isLastQuestion={isLastQuestionInSurvey}
             onSubmit={handleSubmit}
+            backgroundImage={survey.featuredImage}
+            sectionName={questionSection?.name || 'Survey'}
+            sectionDescription={questionSection?.description || 'Please provide your feedback'}
           />
         );
         
