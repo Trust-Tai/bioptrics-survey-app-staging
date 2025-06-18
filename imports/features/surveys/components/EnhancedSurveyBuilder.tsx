@@ -163,9 +163,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [currentSectionId, setCurrentSectionId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState<SurveySectionItem | undefined>(undefined);
   
-  // State for public URL
+  // State for public URL and published status
   const [publicUrl, setPublicUrl] = useState<string>('');
-  const [showPublicUrl, setShowPublicUrl] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
+  // Removed showPublicUrl state as we no longer need the popup
   
   // Use Meteor's reactive data system to load questions and survey data
   const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
@@ -234,14 +236,60 @@ const EnhancedSurveyBuilder: React.FC = () => {
       setSurvey(currentSurvey);
       
       // Initialize sections if they exist in the survey
+      console.log('Survey sections data:', { 
+        surveySections: currentSurvey.surveySections, 
+        sections: currentSurvey.sections 
+      });
+      
       if (currentSurvey.surveySections && Array.isArray(currentSurvey.surveySections)) {
+        console.log('Using surveySections:', currentSurvey.surveySections);
         setSections(currentSurvey.surveySections);
       } else if (currentSurvey.sections && Array.isArray(currentSurvey.sections)) {
+        console.log('Using sections:', currentSurvey.sections);
         setSections(currentSurvey.sections);
+      } else {
+        console.log('No sections found in survey data');
+      }
+      
+      // Check if the survey is already published and set the public URL
+      console.log('Survey loaded:', currentSurvey);
+      console.log('Is survey published?', currentSurvey.published);
+      console.log('Survey share token:', currentSurvey.shareToken);
+      
+      // Check if the survey is published by either published flag or having a shareToken
+      if (currentSurvey.published || currentSurvey.shareToken) {
+        console.log('Survey is published, generating public URL');
+        setIsPublished(true);
+        const loadPublicUrl = async () => {
+          try {
+            // Try to generate an encrypted token for the survey
+            const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', currentSurvey._id);
+            const baseUrl = window.location.origin;
+            const publicSurveyUrl = `${baseUrl}/public/${encryptedToken}`;
+            console.log('Generated public URL with encrypted token:', publicSurveyUrl);
+            setPublicUrl(publicSurveyUrl);
+          } catch (error) {
+            console.error('Error generating encrypted token:', error);
+            // Fallback to shareToken if available
+            if (currentSurvey.shareToken) {
+              const baseUrl = window.location.origin;
+              const publicSurveyUrl = `${baseUrl}/public/${currentSurvey.shareToken}`;
+              console.log('Using fallback shareToken for URL:', publicSurveyUrl);
+              setPublicUrl(publicSurveyUrl);
+            }
+          }
+        };
+        
+        loadPublicUrl();
       }
       
       // Initialize questions if they exist in the survey
+      console.log('Survey questions data:', { 
+        sectionQuestions: currentSurvey.sectionQuestions 
+      });
+      
       if (currentSurvey.sectionQuestions && Array.isArray(currentSurvey.sectionQuestions)) {
+        console.log('Found section questions:', currentSurvey.sectionQuestions.length);
         // Make sure all required fields are present
         const validatedQuestions = currentSurvey.sectionQuestions.map((q: SectionQuestion) => {
           // Find the full question document to get the proper text
@@ -482,10 +530,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
         
         // Update state
         setPublicUrl(publicSurveyUrl);
-        setShowPublicUrl(true);
+        setIsPublished(true);
         
         // Show success message
-        showSuccessAlert('Secure public URL generated successfully!');
+        showSuccessAlert('Survey published successfully!');
       } catch (tokenError: any) {
         // Fallback to shareToken if token generation fails
         if (updatedSurvey.shareToken) {
@@ -493,9 +541,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
           const publicSurveyUrl = `${baseUrl}/public/${updatedSurvey.shareToken}`;
           
           setPublicUrl(publicSurveyUrl);
-          setShowPublicUrl(true);
+          setIsPublished(true);
           
-          showSuccessAlert('Public URL generated successfully (using legacy token).');
+          showSuccessAlert('Survey published successfully!');
         } else {
           showErrorAlert('Failed to generate secure token for the survey.');
         }
@@ -524,7 +572,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
         welcomeTitle: survey?.welcomeTitle || '',
         welcomeMessage: survey?.welcomeMessage || '',
         completionMessage: survey?.completionMessage || '',
-        sections,
+        // Use surveySections instead of sections to match the server-side property name
+        surveySections: sections,
         sectionQuestions: surveyQuestions,
         // Include demographics, themes, categories, and tags
         selectedDemographics,
@@ -533,6 +582,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
         selectedTags,
         updatedAt: new Date(),
       };
+      
+      console.log('Saving survey data with sections and questions:', {
+        surveySections: sections,
+        sectionQuestions: surveyQuestions
+      });
       
       let savedSurveyId;
       
@@ -923,8 +977,46 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.3)';
                 }}
               >
-                Publish
+                {isPublished ? 'Published' : 'Publish'}
               </button>
+              
+              {/* Copy URL Button - Only shows when publicUrl is available */}
+              {publicUrl && (
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(publicUrl);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                    showSuccessAlert('URL copied to clipboard!');
+                  }}
+                  className="action-button copy-url-button"
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: '2px solid #2ecc40',
+                    backgroundColor: '#fff',
+                    color: '#2ecc40',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    minWidth: '100px',
+                    boxShadow: '0 2px 4px rgba(46,204,64,0.1)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f0fff0';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(46,204,64,0.2)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fff';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.1)';
+                  }}
+                >
+                  {copied ? 'Copied!' : 'Copy URL'}
+                </button>
+              )}
             </div>
             
             {/* Add responsive styles */}
@@ -1532,85 +1624,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
           </div>
         </div>
 
-        {/* Public URL Modal */}
-        {showPublicUrl && (
-            <div className="modal-overlay" style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000
-            }}>
-              <div className="modal-content" style={{
-                backgroundColor: 'white',
-                padding: '20px',
-                borderRadius: '8px',
-                width: '500px',
-                maxWidth: '90%',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-              }}>
-                <h3 style={{ marginTop: 0 }}>Public Survey URL</h3>
-                <p>Share this URL with participants to allow them to take the survey:</p>
-                
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  marginBottom: '20px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  padding: '8px'
-                }}>
-                  <input 
-                    type="text" 
-                    value={publicUrl} 
-                    readOnly 
-                    style={{ 
-                      flex: 1, 
-                      border: 'none', 
-                      outline: 'none',
-                      padding: '4px'
-                    }} 
-                  />
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(publicUrl);
-                      showSuccessAlert('URL copied to clipboard!');
-                    }}
-                    style={{
-                      backgroundColor: '#552a47',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '8px 12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Copy
-                  </button>
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button 
-                    onClick={() => setShowPublicUrl(false)}
-                    style={{
-                      backgroundColor: '#f0f0f0',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '8px 16px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Public URL Modal removed - now using inline Copy URL button */}
         
         {/* Question Selector Modal */}
         <QuestionSelector
