@@ -64,15 +64,15 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   const [mappedQuestions, setMappedQuestions] = useState<ParsedQuestion[]>([]);
   const [showMapping, setShowMapping] = useState(false);
   const [fieldMappings, setFieldMappings] = useState<MappedField[]>([
-    { sourceField: 'question', targetField: 'questionText', required: true, type: 'text' },
+    { sourceField: 'questionText', targetField: 'questionText', required: true, type: 'text' },
     { sourceField: 'description', targetField: 'description', required: false, type: 'text' },
-    { sourceField: 'type', targetField: 'responseType', required: true, type: 'select', options: RESPONSE_TYPES },
+    { sourceField: 'responseType', targetField: 'responseType', required: true, type: 'select', options: RESPONSE_TYPES },
     { sourceField: 'category', targetField: 'category', required: true, type: 'text' },
     { sourceField: 'options', targetField: 'options', required: false, type: 'text' },
-    { sourceField: 'themes', targetField: 'surveyThemes', required: false, type: 'multiSelect', options: [] },
-    { sourceField: 'tags', targetField: 'categoryTags', required: false, type: 'multiSelect', options: [] },
-    { sourceField: 'reusable', targetField: 'isReusable', required: false, type: 'boolean', defaultValue: true },
-    { sourceField: 'active', targetField: 'isActive', required: false, type: 'boolean', defaultValue: true },
+    { sourceField: 'surveyThemes', targetField: 'surveyThemes', required: false, type: 'multiSelect', options: [] },
+    { sourceField: 'categoryTags', targetField: 'categoryTags', required: false, type: 'multiSelect', options: [] },
+    { sourceField: 'isReusable', targetField: 'isReusable', required: false, type: 'boolean', defaultValue: true },
+    { sourceField: 'isActive', targetField: 'isActive', required: false, type: 'boolean', defaultValue: true },
     { sourceField: 'priority', targetField: 'priority', required: false, type: 'number', defaultValue: 1 }
   ]);
   const [importFormat, setImportFormat] = useState('xlsx');
@@ -298,22 +298,31 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   };
 
   const applyMappings = () => {
+    // Since our source fields now match the target fields directly,
+    // we can just use the parsed questions as they are
+    console.log('Applying mappings to parsed questions:', parsedQuestions);
+    
+    // But we still need to ensure all required fields have values
     const mapped = parsedQuestions.map(question => {
-      const mappedQuestion: any = {};
+      // Create a copy of the question to avoid modifying the original
+      const mappedQuestion: Partial<ParsedQuestion> = {...question};
       
       fieldMappings.forEach(mapping => {
-        // Apply the mapping from source field to target field
-        if (question[mapping.sourceField as keyof ParsedQuestion] !== undefined) {
-          mappedQuestion[mapping.targetField] = question[mapping.sourceField as keyof ParsedQuestion];
-        } else if (mapping.required && mapping.defaultValue !== undefined) {
-          // Use default value for required fields if source field doesn't exist
-          mappedQuestion[mapping.targetField] = mapping.defaultValue;
+        const targetField = mapping.targetField as keyof ParsedQuestion;
+        // If a required field is missing, use the default value
+        if (mapping.required && 
+            (mappedQuestion[targetField] === undefined || 
+             mappedQuestion[targetField] === null) && 
+            mapping.defaultValue !== undefined) {
+          // Type assertion to handle the assignment
+          (mappedQuestion as any)[targetField] = mapping.defaultValue;
         }
       });
       
       return mappedQuestion as ParsedQuestion;
     });
     
+    console.log('Mapped questions:', mapped);
     setMappedQuestions(mapped);
   };
 
@@ -327,9 +336,18 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
     setError(null);
     
     try {
+      // Parse the Excel file
       const parsed = await parseFile(file);
+      console.log('Successfully parsed questions:', parsed);
+      
+      // Store the parsed questions
       setParsedQuestions(parsed);
-      setShowMapping(true);
+      
+      // Apply mappings immediately to ensure data is ready
+      setTimeout(() => {
+        applyMappings();
+        setShowMapping(true);
+      }, 0);
     } catch (err: any) {
       console.error('Error parsing file:', err);
       setError(`Failed to parse file: ${err.message || 'Unknown error'}`);
@@ -374,16 +392,22 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   };
 
   const handleImport = () => {
+    // Always apply mappings to ensure we have the latest data
+    applyMappings();
+    
+    // Check if we have questions to import after mapping
     if (mappedQuestions.length === 0) {
-      // If no mapping was done, apply default mappings
-      applyMappings();
-      setError('Please review and confirm the field mappings before importing');
+      setError('No questions to import. Please check your file and try again.');
       return;
     }
     
     try {
+      // Log the questions being imported for debugging
+      console.log('Questions being imported:', mappedQuestions);
+      
       // Convert mapped questions to QuestionDoc format
       const questionDocs = convertToQuestionDocs(mappedQuestions);
+      console.log('Converted question docs:', questionDocs);
       
       // Call the callback with the imported questions
       onImportComplete(questionDocs);
