@@ -301,7 +301,13 @@ const CustomerSatisfactionTemplate: React.FC<CustomerSatisfactionTemplateProps> 
       <div className="modern-survey-wrapper">
         <div 
           className="modern-survey-sidebar"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          style={{ 
+            backgroundImage: `url(${backgroundImage})`, 
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            display: 'block',
+            width: '100%'
+          }}
         >
           <div className="modern-survey-sidebar-overlay">
             <div className="sidebar-text-container">
