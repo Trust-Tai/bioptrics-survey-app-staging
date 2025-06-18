@@ -51,16 +51,16 @@ const RoleGrid = styled.div`
 `;
 
 const RoleCard = styled.div<{ active: boolean }>`
-  background: ${props => props.active ? '#f9f5f0' : '#fff'};
-  border: 1px solid ${props => props.active ? '#b0802b' : '#e5d6c7'};
+  background: ${props => props.active ? '#f8f5f7' : '#fff'};
+  border: 1px solid ${props => props.active ? '#552a47' : '#e5d6c7'};
   border-radius: 8px;
   padding: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    border-color: #b0802b;
-    background: ${props => props.active ? '#f9f5f0' : '#fff9f0'};
+    border-color: #552a47;
+    background: ${props => props.active ? '#f8f5f7' : '#f9f5f9'};
   }
 `;
 
@@ -68,7 +68,7 @@ const RoleIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #b0802b;
+  background: #552a47;
   color: #fff;
   display: flex;
   align-items: center;
@@ -118,7 +118,7 @@ const Checkbox = styled.input`
   height: 20px;
   margin-right: 12px;
   margin-top: 2px;
-  accent-color: #b0802b;
+  accent-color: #552a47;
 `;
 
 const PermissionLabel = styled.label`
@@ -141,7 +141,7 @@ const ButtonRow = styled.div`
 `;
 
 const Button = styled.button<{ primary?: boolean }>`
-  background: ${props => props.primary ? '#b0802b' : 'transparent'};
+  background: ${props => props.primary ? '#552a47' : 'transparent'};
   color: ${props => props.primary ? '#fff' : '#6e5a67'};
   border: ${props => props.primary ? 'none' : '1.5px solid #e5d6c7'};
   border-radius: 8px;
@@ -156,7 +156,7 @@ const Button = styled.button<{ primary?: boolean }>`
   transition: all 0.2s ease;
   
   &:hover {
-    background: ${props => props.primary ? '#9a6f25' : '#f9f5f0'};
+    background: ${props => props.primary ? '#3d1f33' : '#f8f5f7'};
   }
 `;
 
@@ -172,7 +172,7 @@ const Alert = styled.div<{ type: 'success' | 'error' }>`
   font-weight: 600;
   font-size: 16px;
   z-index: 2000;
-  box-shadow: 0 2px 12px #b0802b33;
+  box-shadow: 0 2px 12px #552a4733;
 `;
 
 // Role definitions

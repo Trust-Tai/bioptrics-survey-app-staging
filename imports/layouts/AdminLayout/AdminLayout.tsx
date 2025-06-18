@@ -13,7 +13,8 @@ import {
   FaSignOutAlt, 
   FaBars, 
   FaTimes,
-  FaBuilding
+  FaBuilding,
+  FaTag
 } from 'react-icons/fa';
 import { 
   FiBarChart2, 
@@ -26,13 +27,9 @@ import styled from 'styled-components';
 // Function to get sidebar links with customized terminology and dynamic tags
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
-  { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
   { to: '/admin/surveys', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
     { to: '/admin/surveys/all', label: `All ${getTerminology('surveyLabel')}s` },
     { to: '/admin/surveys/builder', label: `${getTerminology('surveyLabel')} Builder` },
-    { to: '/admin/surveys/responses', label: `${getTerminology('surveyLabel')} Responses` },
-    { to: '/admin/surveys/goals', label: `${getTerminology('surveyLabel')} Goals` },
-    { to: '/admin/surveys/wps-framework', label: 'WPS Framework' },
     { to: '/admin/surveys/theme', label: 'Theme' },
     // Dynamically add survey tags as submenu items
     // ...(surveyTags.map(tag => ({ 
@@ -44,8 +41,6 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
   { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
     { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
-    { to: '/admin/questions/tags', label: 'Tags' },
-    { to: '/admin/questions/categories', label: 'Categories' },
     // Dynamically add question tags as submenu items
     // ...(questionTags.map(tag => ({ 
     //   to: `/admin/questions/tag/${tag._id}`, 
@@ -53,23 +48,28 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     //   isTag: true
     // })))
   ] },
-  { to: '/admin/participants', label: `${getTerminology('participantLabel')}s`, icon: FaUserCheck },
-  { to: '/admin/users', label: 'Users', icon: FiUsers, submenu: [
-    { to: '/admin/users/all', label: 'All Users' },
-    { to: '/admin/users/add', label: 'Add New' },
-    { to: '/admin/users/roles', label: 'Role Management' },
+  { to: '/admin/tags/manage', label: 'Tags & Classifications', icon: FaTag },
+  { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie, submenu: [
+    { to: '/admin/analytics/dashboard', label: 'Dashboard' },
+    { to: '/admin/analytics/compare-cohorts', label: 'Compare Cohorts' },
+    { to: '/admin/analytics/export-reports', label: 'Export Reports' },
   ] },
-  { to: '/admin/settings', label: 'Settings', icon: FaCog, submenu: [
-    { to: '/admin/settings/password', label: 'Change Password' },
-    { to: '/admin/settings/timezone', label: 'Choose Time Zone' },
-
-    { to: '/admin/settings/tag', label: 'Create New Tag Builder' },
-    { to: '/admin/settings/all-tags', label: 'Tag Builder' },
-
-    { to: '/admin/settings/ui-preferences', label: 'UI Preferences' },
-
+  // Participants moved to be a submenu under Org Setup
+  // Users and Settings moved to be submenus under Org Setup
+  { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding, submenu: [
+    { to: '/admin/org-setup/participants', label: `${getTerminology('participantLabel')}s` },
+    { to: '/admin/org-setup/users', label: 'Users', submenu: [
+      { to: '/admin/org-setup/users/all', label: 'All Users' },
+      { to: '/admin/org-setup/users/add', label: 'Add New' },
+    ] },
+    { to: '/admin/org-setup/settings', label: 'Settings', submenu: [
+      { to: '/admin/org-setup/settings/password', label: 'Change Password' },
+      { to: '/admin/org-setup/settings/timezone', label: 'Choose Time Zone' },
+      { to: '/admin/org-setup/settings/ui-preferences', label: 'UI Preferences' },
+    ] },
+    { to: '/admin/org-setup/roles', label: 'Permissions / Roles' },
+    { to: '/admin/org-setup/branding', label: 'Branding / Custom Fields' },
   ] },
-  { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 

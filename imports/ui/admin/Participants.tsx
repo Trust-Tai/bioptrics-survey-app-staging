@@ -1,5 +1,5 @@
 import React from 'react';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 import styled from 'styled-components';
