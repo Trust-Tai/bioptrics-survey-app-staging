@@ -3,6 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import ReactQuill from 'react-quill';
 import '../styles/quill-styles';
 import './QuestionBuilder.quill.css';
+import TagBuilder from '../../features/questions/components/admin/TagBuilder';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import DashboardBg from './DashboardBg';
 import { useLocation } from 'react-router-dom';
@@ -44,14 +45,22 @@ interface Question {
   isActive?: boolean;
   keywords?: string[];
   organizationId?: string;
+  labels?: string[];
 }
 
 const QuestionBuilder: React.FC =  () => {
   const userId = Meteor.userId()!;
-  // Get ?edit=... param from URL
+  // Get ID from URL path parameter
   const location = useLocation();
+  const pathname = location.pathname;
+  // Extract ID from URL path (e.g., /admin/questions/builder/:id)
+  const pathParts = pathname.split('/');
+  const editId = pathParts[pathParts.length - 1];
+  // Also check for ?edit=... param as fallback
   const params = new URLSearchParams(location.search);
-  const editId = params.get('edit');
+  const queryEditId = params.get('edit');
+  // Use path ID if available, otherwise use query param
+  const questionId = editId || queryEditId;
   // Alert state and helpers (matching WPSFramework)
   const [alert, setAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
   function showSuccess(msg: string) {
@@ -68,8 +77,26 @@ const QuestionBuilder: React.FC =  () => {
   const handleClosePreview = () => setPreviewIdx(null);
   // ...existing state and handlers...
 
+  // Subscribe to the specific question data if in edit mode
+  const questionSub = useTracker(() => {
+    if (questionId) {
+      return Meteor.subscribe('questions.single', questionId);
+    }
+    return { ready: () => true };
+  }, [questionId]);
+  
   // Fetch the editing question if in edit mode
-  const editingDoc = useTracker(() => (editId ? Questions.findOne(editId) : null), [editId]);
+  const editingDoc = useTracker(() => {
+    if (questionId && questionSub.ready()) {
+      return Questions.findOne(questionId);
+    }
+    return null;
+  }, [questionId, questionSub.ready()]);
+  
+  // Track loading state
+  const isLoading = useTracker(() => {
+    return questionId && !questionSub.ready();
+  }, [questionId, questionSub.ready()]);
 
   // Meteor subscriptions 
   const wpsCategoriesSub = useTracker(() => Meteor.subscribe('wpsCategories.all'));
@@ -174,10 +201,10 @@ const QuestionBuilder: React.FC =  () => {
   const publishQuestions = async () => {
     try {
       const userId = Meteor.userId?.() || '';
-      if (editId) {
+      if (questionId) {
         // Only publish the currently edited question
         const q = questions[0];
-        await Meteor.callAsync('questions.update', editId, mapQuestionToVersion(q, userId, true), userId);
+        await Meteor.callAsync('questions.update', questionId, mapQuestionToVersion(q, userId, true), userId);
       } else {
         await publishQuestionsToDB(questions, userId);
       }
@@ -210,6 +237,14 @@ const QuestionBuilder: React.FC =  () => {
     }
   ]);
 
+  // Helper function to strip HTML tags
+  const stripHtmlTags = (html: string): string => {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  };
+
   // Prepopulate form if editing
   React.useEffect(() => {
     if (editingDoc) {
@@ -218,10 +253,14 @@ const QuestionBuilder: React.FC =  () => {
       if (latest && typeof latest === 'object') {
         setQuestions([
           {
-            text: (latest as any).questionText || '',
+            text: stripHtmlTags((latest as any).questionText || ''),
             description: (latest as any).description || '',
             answerType: (latest as any).responseType || 'short_text',
-            answers: Array.isArray((latest as any).options) ? (latest as any).options : (Array.isArray((latest as any).answers) ? (latest as any).answers : ['']),
+            answers: Array.isArray((latest as any).options) 
+              ? (latest as any).options.map((opt: any) => typeof opt === 'object' ? (opt.text || opt.label || JSON.stringify(opt)) : String(opt)) 
+              : (Array.isArray((latest as any).answers) 
+                ? (latest as any).answers.map((ans: any) => typeof ans === 'object' ? (ans.text || ans.label || JSON.stringify(ans)) : String(ans)) 
+                : ['']),
             required: !!(latest as any).required,
             image: (latest as any).image || '',
             leftLabel: (latest as any).leftLabel,
@@ -236,7 +275,8 @@ const QuestionBuilder: React.FC =  () => {
             isActive: (latest as any).isActive !== undefined ? (latest as any).isActive : true,
             priority: (latest as any).priority || 3,
             keywords: (latest as any).keywords || [],
-            organizationId: (latest as any).organizationId || ''
+            organizationId: (latest as any).organizationId || '',
+            labels: (latest as any).labels || []
           }
         ]);
       }
@@ -365,10 +405,10 @@ const removeAnswer = (qIdx: number, aIdx: number) => {
 const saveQuestions = async () => {
   try {
     const userId = Meteor.userId?.() || '';
-    if (editId) {
+    if (questionId) {
       // Only update the existing question (single-question edit)
       const q = questions[0];
-      await Meteor.callAsync('questions.update', editId, mapQuestionToVersion(q, userId, false), userId);
+      await Meteor.callAsync('questions.update', questionId, mapQuestionToVersion(q, userId, false), userId);
     } else {
       await saveQuestionsToDB(questions, userId);
     }
@@ -547,6 +587,18 @@ return (
             placeholder="Enter question description (optional)"
             style={{ marginBottom: 16, background: '#fff', borderRadius: 8, minHeight: 80 }}
           />
+
+          {/* Tag Builder */}
+          <div style={{ marginBottom: 18 }}>
+            <TagBuilder 
+              selectedTagIds={q.labels || []} 
+              onTagChange={(labels) => {
+                const updatedQuestions = [...questions];
+                updatedQuestions[qIdx] = { ...updatedQuestions[qIdx], labels };
+                setQuestions(updatedQuestions);
+              }}
+            />
+          </div>
 
           {/* WPS Categories Multi-Select */}
           <div style={{ marginBottom: 18 }}>
