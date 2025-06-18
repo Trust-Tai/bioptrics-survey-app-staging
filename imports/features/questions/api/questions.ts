@@ -3,6 +3,11 @@ import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import SimpleSchema from 'simpl-schema';
 
+export interface CustomField {
+  title: string;
+  content: string;
+}
+
 export interface QuestionVersion {
   category: string;
   version: number;
@@ -23,6 +28,7 @@ export interface QuestionVersion {
   priority?: number;
   isActive?: boolean;
   keywords?: string[];
+  customFields?: CustomField[];
 }
 
 export interface QuestionDoc {
@@ -70,6 +76,10 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.isActive': { type: Boolean, optional: true },
     'versions.$.keywords': { type: Array, optional: true },
     'versions.$.keywords.$': { type: String },
+    'versions.$.customFields': { type: Array, optional: true },
+    'versions.$.customFields.$': { type: Object, blackbox: true },
+    'versions.$.customFields.$.title': { type: String },
+    'versions.$.customFields.$.content': { type: String },
     createdAt: { type: Date },
     createdBy: { type: String },
   });

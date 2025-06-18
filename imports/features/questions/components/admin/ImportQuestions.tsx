@@ -14,6 +14,11 @@ interface ImportQuestionsProps {
   organizationId?: string;
 }
 
+interface CustomField {
+  title: string;
+  content: string;
+}
+
 interface ParsedQuestion {
   questionText: string;
   description: string;
@@ -25,6 +30,7 @@ interface ParsedQuestion {
   isReusable?: boolean;
   isActive?: boolean;
   priority?: number;
+  customFields?: CustomField[];
 }
 
 interface MappedField {
@@ -167,6 +173,20 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
             row.categoryTags.split(',').map((tag: string) => tag.trim()) : 
             [];
           
+          // Extract custom fields
+          const customFields: CustomField[] = [];
+          
+          // Look for columns that start with 'custom_' prefix
+          Object.keys(row).forEach(key => {
+            if (key.startsWith('custom_') && row[key]) {
+              const title = key.replace('custom_', '').replace(/_/g, ' ');
+              customFields.push({
+                title: title.charAt(0).toUpperCase() + title.slice(1),
+                content: row[key].toString()
+              });
+            }
+          });
+          
           return {
             questionText: row.questionText || '',
             description: row.description || '',
@@ -177,7 +197,8 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
             categoryTags,
             isReusable: row.isReusable === 'FALSE' ? false : true,
             isActive: row.isActive === 'FALSE' ? false : true,
-            priority: Number(row.priority) || 1
+            priority: Number(row.priority) || 1,
+            customFields: customFields.length > 0 ? customFields : undefined
           };
         });
         
@@ -213,50 +234,52 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   
   // Function to generate and download a sample Excel template
   const downloadSampleTemplate = () => {
-    // Create sample data
+    // Create a sample Excel file with the required columns
     const sampleData = [
       {
-        questionText: "How satisfied are you with our service?",
-        description: "Rate your overall satisfaction with our services",
+        questionText: "How satisfied are you with our product?",
+        description: "Rate your overall satisfaction",
         responseType: "scale",
         category: "Customer Satisfaction",
-        options: "1:5:1",  // min:max:step format for scale
-        surveyThemes: "Customer Experience, Satisfaction",
-        categoryTags: "Feedback, Service Quality",
+        options: "1:5:1", // min:max:step format for scale questions
+        surveyThemes: "Product Feedback,Customer Experience",
+        categoryTags: "Satisfaction,Rating",
         isReusable: "TRUE",
         isActive: "TRUE",
-        priority: "1"
+        priority: "1",
+        custom_department: "Sales",
+        custom_target_audience: "New customers"
       },
       {
-        questionText: "Which products do you use regularly?",
-        description: "Select all products that you use at least once a week",
+        questionText: "Which features do you use most?",
+        description: "Select all features that you use regularly",
         responseType: "multiSelect",
         category: "Product Usage",
-        options: "Product A, Product B, Product C, Product D, Other",  // comma-separated options
-        surveyThemes: "Product Adoption, Usage Patterns",
-        categoryTags: "Products, Usage",
+        options: "Dashboard,Reports,Analytics,User Management,Settings", // comma-separated options
+        surveyThemes: "Product Usage",
+        categoryTags: "Features,Usage",
         isReusable: "TRUE",
         isActive: "TRUE",
-        priority: "2"
+        priority: "2",
+        custom_frequency: "Monthly",
+        custom_data_source: "User analytics"
       },
       {
-        questionText: "What improvements would you suggest for our product?",
-        description: "Please provide your feedback on how we can improve",
-        responseType: "text",
-        category: "Feedback",
-        options: "",  // No options for text questions
-        surveyThemes: "Product Improvement, Feedback",
-        categoryTags: "Suggestions, Improvement",
+        questionText: "Please describe any issues you've encountered.",
+        description: "Provide details about any problems or bugs",
+        responseType: "long_text",
+        category: "Technical Support",
+        surveyThemes: "Bug Reports,Technical Feedback",
+        categoryTags: "Issues,Bugs,Support",
         isReusable: "TRUE",
         isActive: "TRUE",
-        priority: "3"
+        priority: "3",
+        custom_severity_level: "Medium",
+        custom_follow_up_required: "Yes"
       }
     ];
     
-    // Create worksheet
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
-    
-    // Create workbook
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Questions");
     
@@ -264,7 +287,7 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     
-    // Save file
+    // Trigger download
     saveAs(data, 'question_import_template.xlsx');
   };
 
@@ -337,7 +360,8 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
         keywords: [
           ...(question.categoryTags || []), 
           ...(question.surveyThemes || [])
-        ]
+        ],
+        customFields: question.customFields
       };
       
       return {
@@ -381,6 +405,7 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
       <Title>Import Questions</Title>
       <Description>
         Upload an Excel (.xlsx) file containing questions to import into the survey application.
+        You can add custom fields by using columns with the prefix <code>custom_</code> (e.g., <code>custom_department</code>, <code>custom_priority_level</code>).
       </Description>
       <UploadSection>
         <UploadButton onClick={handleBrowseClick} disabled={isLoading}>
