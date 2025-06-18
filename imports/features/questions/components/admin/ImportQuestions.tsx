@@ -1,15 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
-import { FiUpload, FiCheck, FiAlertTriangle, FiEdit, FiSave } from 'react-icons/fi';
+import { FiUpload, FiCheck, FiAlertTriangle, FiEdit, FiSave, FiDownload } from 'react-icons/fi';
 import { QuestionDoc, QuestionVersion } from '../../api/questions';
 import { WPSCategories } from '../../../../features/wps-framework/api/wpsCategories';
 import { SurveyThemes } from '../../../../features/survey-themes/api/surveyThemes';
 import { useTracker } from 'meteor/react-meteor-data';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface ImportQuestionsProps {
   onImportComplete: (questions: Partial<QuestionDoc>[]) => void;
   organizationId?: string;
+}
+
+interface CustomField {
+  title: string;
+  content: string;
 }
 
 interface ParsedQuestion {
@@ -23,6 +30,7 @@ interface ParsedQuestion {
   isReusable?: boolean;
   isActive?: boolean;
   priority?: number;
+  customFields?: CustomField[];
 }
 
 interface MappedField {
@@ -56,18 +64,18 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   const [mappedQuestions, setMappedQuestions] = useState<ParsedQuestion[]>([]);
   const [showMapping, setShowMapping] = useState(false);
   const [fieldMappings, setFieldMappings] = useState<MappedField[]>([
-    { sourceField: 'question', targetField: 'questionText', required: true, type: 'text' },
+    { sourceField: 'questionText', targetField: 'questionText', required: true, type: 'text' },
     { sourceField: 'description', targetField: 'description', required: false, type: 'text' },
-    { sourceField: 'type', targetField: 'responseType', required: true, type: 'select', options: RESPONSE_TYPES },
+    { sourceField: 'responseType', targetField: 'responseType', required: true, type: 'select', options: RESPONSE_TYPES },
     { sourceField: 'category', targetField: 'category', required: true, type: 'text' },
     { sourceField: 'options', targetField: 'options', required: false, type: 'text' },
-    { sourceField: 'themes', targetField: 'surveyThemes', required: false, type: 'multiSelect', options: [] },
-    { sourceField: 'tags', targetField: 'categoryTags', required: false, type: 'multiSelect', options: [] },
-    { sourceField: 'reusable', targetField: 'isReusable', required: false, type: 'boolean', defaultValue: true },
-    { sourceField: 'active', targetField: 'isActive', required: false, type: 'boolean', defaultValue: true },
+    { sourceField: 'surveyThemes', targetField: 'surveyThemes', required: false, type: 'multiSelect', options: [] },
+    { sourceField: 'categoryTags', targetField: 'categoryTags', required: false, type: 'multiSelect', options: [] },
+    { sourceField: 'isReusable', targetField: 'isReusable', required: false, type: 'boolean', defaultValue: true },
+    { sourceField: 'isActive', targetField: 'isActive', required: false, type: 'boolean', defaultValue: true },
     { sourceField: 'priority', targetField: 'priority', required: false, type: 'number', defaultValue: 1 }
   ]);
-  const [importFormat, setImportFormat] = useState('docx');
+  const [importFormat, setImportFormat] = useState('xlsx');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch categories and themes for mapping
@@ -114,13 +122,15 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
       setParsedQuestions([]);
       setMappedQuestions([]);
       
-      // Auto-detect file type
-      if (selectedFile.name.endsWith('.csv') || selectedFile.name.endsWith('.xls') || selectedFile.name.endsWith('.xlsx')) {
-        setImportFormat('spreadsheet');
-      } else if (selectedFile.name.endsWith('.json')) {
-        setImportFormat('json');
+      // Check if file is Excel format
+      if (selectedFile.name.endsWith('.xlsx')) {
+        setImportFormat('xlsx');
       } else {
-        setImportFormat('docx');
+        setError('Please upload an Excel (.xlsx) file');
+        setFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     }
   };
@@ -129,64 +139,156 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
     setIsLoading(true);
     
     try {
-      // In a real implementation, we would use appropriate libraries based on file type
-      // For now, we'll simulate parsing with sample questions
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Read Excel file using xlsx library
+      const reader = new FileReader();
       
-      // Sample questions that would be parsed from the document
-      const sampleQuestions: ParsedQuestion[] = [
-        {
-          questionText: "How satisfied are you with the response time?",
-          description: "Rate your satisfaction with how quickly we respond to your requests",
-          responseType: "scale",
-          category: "Customer Support",
-          options: { min: 1, max: 5, step: 1 },
-          surveyThemes: ["Customer Satisfaction", "Response Time"],
-          categoryTags: ["Support", "Response Time"]
-        },
-        {
-          questionText: "How would you rate the quality of training provided?",
-          description: "Evaluate the effectiveness and relevance of training sessions",
-          responseType: "scale",
-          category: "Training",
-          options: { min: 1, max: 5, step: 1 },
-          surveyThemes: ["Training", "Employee Development"],
-          categoryTags: ["Training", "Knowledge Transfer"]
-        },
-        {
-          questionText: "Which services do you use most frequently?",
-          description: "Select all services that you regularly use",
-          responseType: "multiSelect",
-          category: "Usage Patterns",
-          options: ["Email", "Intranet", "VPN", "File Sharing", "Video Conferencing", "Ticketing System", "Other"],
-          surveyThemes: ["Service Usage", "User Behavior"],
-          categoryTags: ["Usage", "Services"]
-        },
-        {
-          questionText: "What improvements would you suggest for our infrastructure?",
-          description: "Provide feedback on how we can enhance our systems and services",
-          responseType: "text",
-          category: "Improvement",
-          surveyThemes: ["Feedback", "Improvement"],
-          categoryTags: ["Feedback", "Infrastructure"]
-        },
-        {
-          questionText: "How often do you experience issues that impact your work?",
-          description: "Indicate the frequency of problems that affect your productivity",
-          responseType: "singleSelect",
-          category: "Issues",
-          options: ["Daily", "Several times a week", "Once a week", "A few times a month", "Rarely", "Never"],
-          surveyThemes: ["Issues", "Productivity"],
-          categoryTags: ["Problems", "Productivity"]
-        }
-      ];
+      const parseExcel = (data: ArrayBuffer) => {
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Map the Excel data to our question format
+        const parsedQuestions: ParsedQuestion[] = jsonData.map((row: any) => {
+          // Parse options based on the response type
+          let options: string[] | { min: number; max: number; step: number } | undefined;
+          
+          if (row.options) {
+            if (['scale', 'likert'].includes(row.responseType)) {
+              // Parse min:max:step format for scale questions
+              const [min, max, step] = row.options.split(':').map(Number);
+              options = { min, max, step: step || 1 };
+            } else if (['singleSelect', 'multiSelect', 'dropdown', 'checkbox'].includes(row.responseType)) {
+              // Parse comma-separated options for select questions
+              options = row.options.split(',').map((opt: string) => opt.trim());
+            }
+          }
+          
+          // Parse themes and tags as arrays
+          const surveyThemes = row.surveyThemes ? 
+            row.surveyThemes.split(',').map((theme: string) => theme.trim()) : 
+            [];
+            
+          const categoryTags = row.categoryTags ? 
+            row.categoryTags.split(',').map((tag: string) => tag.trim()) : 
+            [];
+          
+          // Extract custom fields
+          const customFields: CustomField[] = [];
+          
+          // Look for columns that start with 'custom_' prefix
+          Object.keys(row).forEach(key => {
+            if (key.startsWith('custom_') && row[key]) {
+              const title = key.replace('custom_', '').replace(/_/g, ' ');
+              customFields.push({
+                title: title.charAt(0).toUpperCase() + title.slice(1),
+                content: row[key].toString()
+              });
+            }
+          });
+          
+          return {
+            questionText: row.questionText || '',
+            description: row.description || '',
+            responseType: row.responseType || 'text',
+            category: row.category || 'General',
+            options,
+            surveyThemes,
+            categoryTags,
+            isReusable: row.isReusable === 'FALSE' ? false : true,
+            isActive: row.isActive === 'FALSE' ? false : true,
+            priority: Number(row.priority) || 1,
+            customFields: customFields.length > 0 ? customFields : undefined
+          };
+        });
+        
+        return parsedQuestions;
+      };
       
-      setIsLoading(false);
-      return sampleQuestions;
+      return new Promise((resolve, reject) => {
+        reader.onload = (e) => {
+          try {
+            if (e.target?.result) {
+              const parsedQuestions = parseExcel(e.target.result as ArrayBuffer);
+              setIsLoading(false);
+              resolve(parsedQuestions);
+            } else {
+              throw new Error('Failed to read file');
+            }
+          } catch (err: any) {
+            reject(err);
+          }
+        };
+        
+        reader.onerror = () => {
+          reject(new Error('Error reading file'));
+        };
+        
+        reader.readAsArrayBuffer(file);
+      });
     } catch (err: any) {
       setIsLoading(false);
       throw new Error(`Failed to parse file: ${err.message}`);
     }
+  };
+  
+  // Function to generate and download a sample Excel template
+  const downloadSampleTemplate = () => {
+    // Create a sample Excel file with the required columns
+    const sampleData = [
+      {
+        questionText: "How satisfied are you with our product?",
+        description: "Rate your overall satisfaction",
+        responseType: "scale",
+        category: "Customer Satisfaction",
+        options: "1:5:1", // min:max:step format for scale questions
+        surveyThemes: "Product Feedback,Customer Experience",
+        categoryTags: "Satisfaction,Rating",
+        isReusable: "TRUE",
+        isActive: "TRUE",
+        priority: "1",
+        custom_department: "Sales",
+        custom_target_audience: "New customers"
+      },
+      {
+        questionText: "Which features do you use most?",
+        description: "Select all features that you use regularly",
+        responseType: "multiSelect",
+        category: "Product Usage",
+        options: "Dashboard,Reports,Analytics,User Management,Settings", // comma-separated options
+        surveyThemes: "Product Usage",
+        categoryTags: "Features,Usage",
+        isReusable: "TRUE",
+        isActive: "TRUE",
+        priority: "2",
+        custom_frequency: "Monthly",
+        custom_data_source: "User analytics"
+      },
+      {
+        questionText: "Please describe any issues you've encountered.",
+        description: "Provide details about any problems or bugs",
+        responseType: "long_text",
+        category: "Technical Support",
+        surveyThemes: "Bug Reports,Technical Feedback",
+        categoryTags: "Issues,Bugs,Support",
+        isReusable: "TRUE",
+        isActive: "TRUE",
+        priority: "3",
+        custom_severity_level: "Medium",
+        custom_follow_up_required: "Yes"
+      }
+    ];
+    
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Questions");
+    
+    // Generate Excel file
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // Trigger download
+    saveAs(data, 'question_import_template.xlsx');
   };
 
   const handleFieldMappingChange = (index: number, field: string, value: any) => {
@@ -196,22 +298,31 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   };
 
   const applyMappings = () => {
+    // Since our source fields now match the target fields directly,
+    // we can just use the parsed questions as they are
+    console.log('Applying mappings to parsed questions:', parsedQuestions);
+    
+    // But we still need to ensure all required fields have values
     const mapped = parsedQuestions.map(question => {
-      const mappedQuestion: any = {};
+      // Create a copy of the question to avoid modifying the original
+      const mappedQuestion: Partial<ParsedQuestion> = {...question};
       
       fieldMappings.forEach(mapping => {
-        // Apply the mapping from source field to target field
-        if (question[mapping.sourceField as keyof ParsedQuestion] !== undefined) {
-          mappedQuestion[mapping.targetField] = question[mapping.sourceField as keyof ParsedQuestion];
-        } else if (mapping.required && mapping.defaultValue !== undefined) {
-          // Use default value for required fields if source field doesn't exist
-          mappedQuestion[mapping.targetField] = mapping.defaultValue;
+        const targetField = mapping.targetField as keyof ParsedQuestion;
+        // If a required field is missing, use the default value
+        if (mapping.required && 
+            (mappedQuestion[targetField] === undefined || 
+             mappedQuestion[targetField] === null) && 
+            mapping.defaultValue !== undefined) {
+          // Type assertion to handle the assignment
+          (mappedQuestion as any)[targetField] = mapping.defaultValue;
         }
       });
       
       return mappedQuestion as ParsedQuestion;
     });
     
+    console.log('Mapped questions:', mapped);
     setMappedQuestions(mapped);
   };
 
@@ -225,9 +336,18 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
     setError(null);
     
     try {
+      // Parse the Excel file
       const parsed = await parseFile(file);
+      console.log('Successfully parsed questions:', parsed);
+      
+      // Store the parsed questions
       setParsedQuestions(parsed);
-      setShowMapping(true);
+      
+      // Apply mappings immediately to ensure data is ready
+      setTimeout(() => {
+        applyMappings();
+        setShowMapping(true);
+      }, 0);
     } catch (err: any) {
       console.error('Error parsing file:', err);
       setError(`Failed to parse file: ${err.message || 'Unknown error'}`);
@@ -258,7 +378,8 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
         keywords: [
           ...(question.categoryTags || []), 
           ...(question.surveyThemes || [])
-        ]
+        ],
+        customFields: question.customFields
       };
       
       return {
@@ -271,16 +392,22 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
   };
 
   const handleImport = () => {
+    // Always apply mappings to ensure we have the latest data
+    applyMappings();
+    
+    // Check if we have questions to import after mapping
     if (mappedQuestions.length === 0) {
-      // If no mapping was done, apply default mappings
-      applyMappings();
-      setError('Please review and confirm the field mappings before importing');
+      setError('No questions to import. Please check your file and try again.');
       return;
     }
     
     try {
+      // Log the questions being imported for debugging
+      console.log('Questions being imported:', mappedQuestions);
+      
       // Convert mapped questions to QuestionDoc format
       const questionDocs = convertToQuestionDocs(mappedQuestions);
+      console.log('Converted question docs:', questionDocs);
       
       // Call the callback with the imported questions
       onImportComplete(questionDocs);
@@ -299,36 +426,63 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
 
   return (
     <Container>
+      <Title>Import Questions</Title>
       <Description>
-        Upload a file containing questions to import into the survey application.
-        The system supports various file formats including DOCX, CSV, Excel, and JSON.
+        Upload an Excel (.xlsx) file containing questions to import into the survey application.
+        You can add custom fields by using columns with the prefix <code>custom_</code> (e.g., <code>custom_department</code>, <code>custom_priority_level</code>).
       </Description>
+      <UploadSection>
+        <UploadButton onClick={handleBrowseClick} disabled={isLoading}>
+          <FiUpload style={{ marginRight: '8px' }} />
+          Browse Files
+        </UploadButton>
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+          accept=".xlsx"
+        />
+        <TemplateButton onClick={downloadSampleTemplate} type="button">
+          <FiDownload style={{ marginRight: '8px' }} />
+          Download Template
+        </TemplateButton>
+      </UploadSection>
       
-      {!showMapping ? (
-        <>
-          <InputContainer>
-            <HiddenInput 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept=".docx,.doc,.csv,.xls,.xlsx,.json"
-            />
-            <FileSelectButton onClick={handleBrowseClick}>
-              <FiUpload /> Browse Files
-            </FileSelectButton>
-            {file && (
-              <SelectedFile>
-                <span>{file.name}</span>
-                <FileSize>({(file.size / 1024).toFixed(1)} KB)</FileSize>
-              </SelectedFile>
-            )}
-          </InputContainer>
-          
-          <ImportButton onClick={handleParseFile} disabled={!file || isLoading}>
-            {isLoading ? 'Processing...' : 'Parse File'}
-          </ImportButton>
-        </>
-      ) : (
+      <FileInfo>
+        {file ? (
+          <>
+            <strong>Selected file:</strong> {file.name} ({(file.size / 1024).toFixed(2)} KB)
+          </>
+        ) : (
+          <>
+            <span>No file selected. Please upload an Excel (.xlsx) file.</span>
+            <FileFormatInfo>
+              <strong>Required format:</strong> Excel (.xlsx) file with columns for questionText, description, responseType, category, options, etc.
+              <br />
+              Download the template for the correct format.
+            </FileFormatInfo>
+          </>
+        )}
+      </FileInfo>
+      
+      <ImportButton onClick={handleParseFile} disabled={!file || isLoading}>
+        {isLoading ? 'Processing...' : 'Parse File'}
+      </ImportButton>
+      
+      {error && (
+        <ErrorMessage>
+          <FiAlertTriangle style={{ marginRight: '8px' }} /> {error}
+        </ErrorMessage>
+      )}
+      
+      {success && (
+        <SuccessMessage>
+          <FiCheck style={{ marginRight: '8px' }} /> Successfully imported {mappedQuestions.length} questions
+        </SuccessMessage>
+      )}
+      
+      {showMapping && (
         <>
           <MappingTitle>Field Mapping</MappingTitle>
           <MappingDescription>
@@ -381,7 +535,7 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
                   <td>
                     <select 
                       value={mapping.type} 
-                      onChange={(e) => handleFieldMappingChange(index, 'type', e.target.value)}
+                      onChange={(e) => handleFieldMappingChange(index, 'type', e.target.value as any)}
                     >
                       <option value="text">Text</option>
                       <option value="select">Select</option>
@@ -395,55 +549,18 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
             </tbody>
           </MappingTable>
           
-          <PreviewTitle>Preview ({parsedQuestions.length} questions)</PreviewTitle>
-          <PreviewContainer>
-            {parsedQuestions.slice(0, 3).map((question, index) => (
-              <PreviewCard key={index}>
-                <PreviewHeader>
-                  <span>Question {index + 1}</span>
-                  <span>{question.responseType}</span>
-                </PreviewHeader>
-                <PreviewContent>
-                  <PreviewQuestion>{question.questionText}</PreviewQuestion>
-                  <PreviewDescription>{question.description}</PreviewDescription>
-                  <PreviewMeta>
-                    <span>Category: {question.category}</span>
-                    {question.surveyThemes && question.surveyThemes.length > 0 && (
-                      <span>Themes: {question.surveyThemes.join(', ')}</span>
-                    )}
-                  </PreviewMeta>
-                </PreviewContent>
-              </PreviewCard>
-            ))}
-            {parsedQuestions.length > 3 && (
-              <MoreQuestions>+ {parsedQuestions.length - 3} more questions</MoreQuestions>
-            )}
-          </PreviewContainer>
-          
           <ButtonGroup>
             <SecondaryButton onClick={() => setShowMapping(false)}>
               Back
             </SecondaryButton>
             <ImportButton onClick={applyMappings}>
-              <FiEdit /> Apply Mappings
+              <FiEdit style={{ marginRight: '8px' }} /> Apply Mappings
             </ImportButton>
             <ImportButton onClick={handleImport} disabled={isLoading}>
-              <FiSave /> Save Questions
+              <FiSave style={{ marginRight: '8px' }} /> Save Questions
             </ImportButton>
           </ButtonGroup>
         </>
-      )}
-      
-      {error && (
-        <ErrorMessage>
-          <FiAlertTriangle /> {error}
-        </ErrorMessage>
-      )}
-      
-      {success && (
-        <SuccessMessage>
-          <FiCheck /> Successfully imported {mappedQuestions.length} questions
-        </SuccessMessage>
       )}
     </Container>
   );
@@ -468,47 +585,71 @@ const Description = styled.p`
   line-height: 1.5;
 `;
 
-const InputContainer = styled.div`
+const UploadSection = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 12px;
+  margin-bottom: 16px;
 `;
 
-const HiddenInput = styled.input`
-  display: none;
-`;
-
-const FileSelectButton = styled.button`
-  background: #f7f2f5;
-  border: 1px dashed #d1c1cc;
+const UploadButton = styled.button`
+  background-color: #552a47;
+  color: white;
+  border: none;
   border-radius: 4px;
-  padding: 12px 24px;
-  color: #552a47;
-  font-weight: 500;
+  padding: 10px 16px;
+  font-size: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
+  justify-content: center;
+  transition: background-color 0.2s;
+  margin-right: 10px;
   
   &:hover {
-    background: #f0e8ee;
+    background-color: #3d1f33;
+  }
+  
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
   }
 `;
 
-const SelectedFile = styled.div`
+const TemplateButton = styled.button`
+  background-color: #ffffff;
+  color: #552a47;
+  border: 1px solid #552a47;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: #333;
+  justify-content: center;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #f8f5f7;
+    border-color: #3d1f33;
+  }
 `;
 
-const FileSize = styled.span`
-  color: #888;
-  font-size: 0.8rem;
+const FileInfo = styled.div`
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 16px;
+`;
+
+const FileFormatInfo = styled.div`
+  margin-top: 8px;
+  padding: 10px;
+  background-color: #f8f5f7;
+  border-left: 3px solid #552a47;
+  font-size: 13px;
+  line-height: 1.5;
 `;
 
 const ImportButton = styled.button`
@@ -560,7 +701,6 @@ const ErrorMessage = styled.div`
   margin-top: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
 `;
 
 const SuccessMessage = styled.div`
@@ -571,13 +711,12 @@ const SuccessMessage = styled.div`
   margin-top: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
 `;
 
 const MappingTitle = styled.h3`
   font-size: 1.2rem;
   color: #552a47;
-  margin: 0 0 8px 0;
+  margin: 24px 0 8px 0;
 `;
 
 const MappingDescription = styled.p`
@@ -613,69 +752,6 @@ const MappingTable = styled.table`
   input[type="checkbox"] {
     width: auto;
   }
-`;
-
-const PreviewTitle = styled.h3`
-  font-size: 1.1rem;
-  color: #552a47;
-  margin: 24px 0 12px 0;
-`;
-
-const PreviewContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-  max-height: 400px;
-  overflow-y: auto;
-`;
-
-const PreviewCard = styled.div`
-  border: 1px solid #eee;
-  border-radius: 8px;
-  overflow: hidden;
-`;
-
-const PreviewHeader = styled.div`
-  background: #f7f2f5;
-  padding: 8px 16px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: #666;
-  border-bottom: 1px solid #eee;
-`;
-
-const PreviewContent = styled.div`
-  padding: 16px;
-`;
-
-const PreviewQuestion = styled.div`
-  font-weight: 500;
-  margin-bottom: 8px;
-`;
-
-const PreviewDescription = styled.div`
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 12px;
-`;
-
-const PreviewMeta = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 0.8rem;
-  color: #888;
-`;
-
-const MoreQuestions = styled.div`
-  text-align: center;
-  padding: 12px;
-  background: #f7f2f5;
-  border-radius: 4px;
-  color: #666;
-  font-size: 0.9rem;
 `;
 
 const ButtonGroup = styled.div`

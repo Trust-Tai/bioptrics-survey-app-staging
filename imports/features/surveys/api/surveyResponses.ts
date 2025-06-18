@@ -47,7 +47,7 @@ export const SurveyResponses = new Mongo.Collection<SurveyResponseDoc>('surveyRe
 
 if (Meteor.isServer) {
   // Publications
-  Meteor.publish('surveyResponses.bySurvey', function(surveyId: string) {
+  Meteor.publish('surveyResponses.bySurvey', async function(surveyId: string) {
     check(surveyId, String);
     
     // Check if user has permission to view responses
@@ -59,16 +59,65 @@ if (Meteor.isServer) {
     return SurveyResponses.find({ surveyId });
   });
   
-  Meteor.publish('surveyResponses.byUser', function(userId: string) {
+  Meteor.publish('surveyResponses.byUser', async function(userId: string) {
     check(userId, String);
     
     // Only allow users to see their own responses or admins
     const currentUserId = this.userId;
-    if (!currentUserId || (currentUserId !== userId && !Meteor.users.findOne({ _id: currentUserId, roles: { $in: ['admin'] } }))) {
+    if (!currentUserId) {
       return this.ready();
     }
     
+    if (currentUserId !== userId) {
+      const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
+      if (!user) {
+        return this.ready();
+      }
+    }
+    
     return SurveyResponses.find({ userId });
+  });
+  
+  // Publication for all survey responses - for admin use
+  Meteor.publish('responses.all', async function() {
+    // Check if user is an admin
+    const currentUserId = this.userId;
+    if (!currentUserId) {
+      return this.ready();
+    }
+    
+    const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
+    if (!user) {
+      return this.ready();
+    }
+    
+    return SurveyResponses.find({});
+  });
+  
+  // Alias for backward compatibility
+  Meteor.publish('survey_responses.all', async function() {
+    console.log('survey_responses.all publication called');
+    
+    // Check if user is an admin
+    const currentUserId = this.userId;
+    if (!currentUserId) {
+      console.log('No user ID found, not publishing responses');
+      return this.ready();
+    }
+    
+    console.log('Checking if user is admin:', currentUserId);
+    const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
+    if (!user) {
+      console.log('User is not an admin, not publishing responses');
+      return this.ready();
+    }
+    
+    console.log('User is admin, publishing all survey responses');
+    const responseCount = SurveyResponses.find({}).count();
+    console.log(`Found ${responseCount} survey responses to publish`);
+    
+    // Return all survey responses
+    return SurveyResponses.find({});
   });
   
   // Methods
@@ -141,11 +190,11 @@ if (Meteor.isServer) {
       return SurveyResponses.insert(responseData as unknown as SurveyResponseDoc);
     },
     
-    'surveyResponses.update'(responseId: string, updates: Partial<SurveyResponseInput>) {
+    async 'surveyResponses.update'(responseId: string, updates: Partial<SurveyResponseInput>) {
       check(responseId, String);
       check(updates, Object);
       
-      const response = SurveyResponses.findOne(responseId);
+      const response = await SurveyResponses.findOneAsync(responseId);
       
       // Check permissions
       if (!response) {
@@ -153,8 +202,15 @@ if (Meteor.isServer) {
       }
       
       const currentUserId = this.userId;
-      if (!currentUserId || (currentUserId !== response.userId && !Meteor.users.findOne({ _id: currentUserId, roles: { $in: ['admin'] } }))) {
+      if (!currentUserId) {
         throw new Meteor.Error('not-authorized', 'Not authorized to update this response');
+      }
+      
+      if (currentUserId !== response.userId) {
+        const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
+        if (!user) {
+          throw new Meteor.Error('not-authorized', 'Not authorized to update this response');
+        }
       }
       
       // Update the response
@@ -163,10 +219,10 @@ if (Meteor.isServer) {
       return SurveyResponses.update(responseId, { $set: updates });
     },
     
-    'surveyResponses.delete'(responseId: string) {
+    async 'surveyResponses.delete'(responseId: string) {
       check(responseId, String);
       
-      const response = SurveyResponses.findOne(responseId);
+      const response = await SurveyResponses.findOneAsync(responseId);
       
       // Check permissions
       if (!response) {
@@ -174,7 +230,12 @@ if (Meteor.isServer) {
       }
       
       const currentUserId = this.userId;
-      if (!currentUserId || !Meteor.users.findOne({ _id: currentUserId, roles: { $in: ['admin'] } })) {
+      if (!currentUserId) {
+        throw new Meteor.Error('not-authorized', 'Not authorized to delete responses');
+      }
+      
+      const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
+      if (!user) {
         throw new Meteor.Error('not-authorized', 'Not authorized to delete responses');
       }
       

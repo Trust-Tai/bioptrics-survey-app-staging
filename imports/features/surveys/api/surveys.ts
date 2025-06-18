@@ -194,20 +194,8 @@ if (Meteor.isServer) {
     return surveyId ? Surveys.find({ _id: surveyId }) : Surveys.find({ shareToken: encryptedToken });
   });
   
-  // Publication for survey responses - only accessible to admin users
-  Meteor.publish('survey_responses.all', async function () {
-    if (!this.userId) {
-      return this.ready();
-    }
-    
-    // Check if user is admin
-    const user = await Meteor.users.findOneAsync(this.userId);
-    if (user?.roles?.includes('admin')) {
-      return SurveyResponses.find({});
-    }
-    
-    return this.ready();
-  });
+  // Publication for survey responses has been moved to surveyResponses.ts
+  // to avoid duplicate publications
   
   // Publication for responses to a specific survey
   Meteor.publish('survey_responses.bySurvey', async function (surveyId) {
@@ -531,31 +519,59 @@ Meteor.methods({
     return generateSurveyToken(surveyId);
   },
   
-  async 'surveys.submitResponse'(surveyId: string, answers: { [questionId: string]: any }) {
-    check(surveyId, String);
-    check(answers, Object);
+  async 'surveys.submitResponse'(data: { surveyId: string, responses: Record<string, any>, token?: string }) {
+    check(data.surveyId, String);
+    check(data.responses, Object);
+    
     // Optionally, validate that the survey exists
-    if (!(await Surveys.findOneAsync({ _id: surveyId }))) {
+    const survey = await Surveys.findOneAsync({ _id: data.surveyId });
+    if (!survey) {
       throw new Meteor.Error('not-found', 'Survey not found');
     }
     
-    // Convert answers object to responses array format expected by SurveyResponseDoc
-    const responses = Object.entries(answers).map(([questionId, answer]) => ({
-      questionId,
-      answer,
-    }));
+    console.log('Received survey response submission:', {
+      surveyId: data.surveyId,
+      responseCount: Object.keys(data.responses).length,
+      hasToken: !!data.token,
+      responseKeys: Object.keys(data.responses)
+    });
+    
+    // Convert responses object to array format expected by SurveyResponseDoc
+    const responsesArray = Object.entries(data.responses).map(([questionId, answer]) => {
+      console.log(`Processing response for question ${questionId}:`, answer);
+      return {
+        questionId,
+        answer,
+      };
+    });
     
     // Create a document that matches the SurveyResponseDoc interface
-    return SurveyResponses.insert({
-      surveyId,
-      responses,
+    const responseDoc = {
+      surveyId: data.surveyId,
+      responses: responsesArray,
       completed: true,
       startTime: new Date(),
       endTime: new Date(),
       progress: 100,
       createdAt: new Date(),
       updatedAt: new Date()
-    });
+    };
+    
+    console.log('Inserting survey response document:', responseDoc);
+    
+    try {
+      const responseId = SurveyResponses.insert(responseDoc);
+      console.log('Survey response saved with ID:', responseId);
+      
+      // Verify the response was saved correctly
+      const savedResponse = await SurveyResponses.findOneAsync(responseId);
+      console.log('Verified saved response:', savedResponse);
+      
+      return responseId;
+    } catch (error) {
+      console.error('Error saving survey response:', error);
+      throw new Meteor.Error('db-error', 'Failed to save survey response');
+    }
   },
   
   /**

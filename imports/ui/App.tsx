@@ -5,9 +5,13 @@ import { Meteor } from 'meteor/meteor';
 import { AdminLogin } from './AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Analytics from './admin/Analytics';
+import AnalyticsDashboard from './admin/AnalyticsDashboard';
+import AnalyticsCompareCohorts from './admin/AnalyticsCompareCohorts';
+import AnalyticsExportReports from './admin/AnalyticsExportReports';
 import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
 import OrgSetup from './admin/OrgSetup';
+import OrgSetupDashboard from './admin/OrgSetupDashboard';
 import { OrganizationProvider } from '/imports/features/organization/contexts/OrganizationContext';
 import Setting from './admin/Setting';
 import Participants from './admin/Participants';
@@ -182,22 +186,46 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/questions/categories" element={<QuestionCategoriesPage />} />
         <Route path="/admin/questions/templates" element={<QuestionTemplatesPage />} />
         <Route path="/admin/bank" element={<Bank />} />
-        <Route path="/admin/analytics" element={<Analytics />} />
-        <Route path="/admin/settings" element={<Setting />} />
-        <Route path="/admin/settings/tag" element={<LayerBuilder />} />
-        <Route path="/admin/settings/tag/:id" element={<LayerBuilder />} />
-        <Route path="/admin/settings/all-tags" element={<AllLayers />} />
-        <Route path="/admin/settings/password" element={<Setting view="password" />} />
-        <Route path="/admin/settings/timezone" element={<Setting view="timezone" />} />
-        <Route path="/admin/settings/ui-preferences" element={<Setting view="ui-preferences" />} />
-        <Route path="/admin/participants" element={<Participants />} />
+        <Route path="/admin/analytics" element={<Navigate to="/admin/analytics/dashboard" replace />} />
+        <Route path="/admin/analytics/dashboard" element={<AnalyticsDashboard />} />
+        <Route path="/admin/analytics/compare-cohorts" element={<AnalyticsCompareCohorts />} />
+        <Route path="/admin/analytics/export-reports" element={<AnalyticsExportReports />} />
+        <Route path="/admin/tags/create" element={<LayerBuilder />} />
+        <Route path="/admin/tags/create/:id" element={<LayerBuilder />} />
+        <Route path="/admin/tags/manage" element={<AllLayers />} />
+        
+        {/* New routes for Settings under org-setup */}
+        <Route path="/admin/org-setup/settings" element={<Setting />} />
+        <Route path="/admin/org-setup/settings/password" element={<Setting view="password" />} />
+        <Route path="/admin/org-setup/settings/timezone" element={<Setting view="timezone" />} />
+        <Route path="/admin/org-setup/settings/ui-preferences" element={<Setting view="ui-preferences" />} />
+        
+        {/* Redirects from old paths to new paths for Settings */}
+        <Route path="/admin/settings" element={<Navigate to="/admin/org-setup/settings" replace />} />
+        <Route path="/admin/settings/password" element={<Navigate to="/admin/org-setup/settings/password" replace />} />
+        <Route path="/admin/settings/timezone" element={<Navigate to="/admin/org-setup/settings/timezone" replace />} />
+        <Route path="/admin/settings/ui-preferences" element={<Navigate to="/admin/org-setup/settings/ui-preferences" replace />} />
+        <Route path="/admin/org-setup/participants" element={<Participants />} />
+        {/* Add redirect from old path to new path */}
+        <Route path="/admin/participants" element={<Navigate to="/admin/org-setup/participants" replace />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
-        <Route path="/admin/users" element={<Users />} />
-        <Route path="/admin/users/all" element={<AllUsers />} />
-        <Route path="/admin/users/add" element={<AddUser />} />
-        <Route path="/admin/users/roles" element={<RoleManagement />} />
-        <Route path="/admin/org-setup" element={<OrgSetup />} />
+        {/* New routes for Users under org-setup */}
+        <Route path="/admin/org-setup/users" element={<Users />} />
+        <Route path="/admin/org-setup/users/all" element={<AllUsers />} />
+        <Route path="/admin/org-setup/users/add" element={<AddUser />} />
+        
+        {/* Redirects from old paths to new paths for Users */}
+        <Route path="/admin/users" element={<Navigate to="/admin/org-setup/users" replace />} />
+        <Route path="/admin/users/all" element={<Navigate to="/admin/org-setup/users/all" replace />} />
+        <Route path="/admin/users/add" element={<Navigate to="/admin/org-setup/users/add" replace />} />
+        
+        {/* New route for Role Management as a separate section */}
+        <Route path="/admin/org-setup/roles" element={<RoleManagement />} />
+        <Route path="/admin/users/roles" element={<Navigate to="/admin/org-setup/roles" replace />} />
+        <Route path="/admin/org-setup/users/roles" element={<Navigate to="/admin/org-setup/roles" replace />} />
+        <Route path="/admin/org-setup" element={<OrgSetupDashboard />} />
+        <Route path="/admin/org-setup/branding" element={<OrgSetup />} />
       </Route>
     </Routes>
   );

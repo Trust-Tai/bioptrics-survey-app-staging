@@ -619,10 +619,15 @@ const SurveyResponses: React.FC = () => {
   // Load surveys and responses
   const { surveys, responses, loading, error } = useTracker(() => {
     try {
+      console.log('Setting up subscriptions for survey responses');
       const surveysHandle = Meteor.subscribe('surveys.all');
       const responsesHandle = Meteor.subscribe('survey_responses.all');
       
       const isLoading = !surveysHandle.ready() || !responsesHandle.ready();
+      console.log('Subscriptions loading status:', isLoading, {
+        surveysReady: surveysHandle.ready(),
+        responsesReady: responsesHandle.ready()
+      });
       
       // Only fetch data if subscriptions are ready
       let surveyDocs: Survey[] = [];
@@ -630,20 +635,28 @@ const SurveyResponses: React.FC = () => {
       
       if (!isLoading) {
         surveyDocs = Surveys.find({}, { sort: { updatedAt: -1 } }).fetch() || [];
+        console.log('Fetched surveys:', surveyDocs.length);
+        
         // Convert SurveyResponseDoc to SurveyResponse
         const fetchedResponses = SurveyResponsesCollection.find({}).fetch() || [];
-        responseDocs = fetchedResponses.map(doc => ({
-          _id: doc._id,
-          surveyId: doc.surveyId,
-          answers: doc.responses ? doc.responses.reduce((acc, resp) => {
-            acc[resp.questionId] = resp.answer;
-            return acc;
-          }, {} as Record<string, any>) : {},
-          createdAt: doc.startTime || new Date(),
-          startedAt: doc.startTime,
-          userId: doc.userId,
-          completionStatus: doc.completed ? 'complete' : 'partial'
-        }));
+        console.log('Fetched raw responses:', fetchedResponses.length, fetchedResponses);
+        
+        responseDocs = fetchedResponses.map(doc => {
+          console.log('Processing response doc:', doc);
+          return {
+            _id: doc._id,
+            surveyId: doc.surveyId,
+            answers: doc.responses ? doc.responses.reduce((acc, resp) => {
+              acc[resp.questionId] = resp.answer;
+              return acc;
+            }, {} as Record<string, any>) : {},
+            createdAt: doc.startTime || new Date(),
+            startedAt: doc.startTime,
+            userId: doc.userId,
+            completionStatus: doc.completed ? 'complete' : 'partial'
+          };
+        });
+        console.log('Processed responses:', responseDocs.length);
       }
       
       return {

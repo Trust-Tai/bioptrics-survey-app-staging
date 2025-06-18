@@ -3,6 +3,11 @@ import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import SimpleSchema from 'simpl-schema';
 
+export interface CustomField {
+  title: string;
+  content: string;
+}
+
 export interface QuestionVersion {
   category: string;
   version: number;
@@ -23,6 +28,7 @@ export interface QuestionVersion {
   priority?: number;
   isActive?: boolean;
   keywords?: string[];
+  customFields?: CustomField[];
 }
 
 export interface QuestionDoc {
@@ -70,6 +76,10 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.isActive': { type: Boolean, optional: true },
     'versions.$.keywords': { type: Array, optional: true },
     'versions.$.keywords.$': { type: String },
+    'versions.$.customFields': { type: Array, optional: true },
+    'versions.$.customFields.$': { type: Object, blackbox: true },
+    'versions.$.customFields.$.title': { type: String },
+    'versions.$.customFields.$.content': { type: String },
     createdAt: { type: Date },
     createdBy: { type: String },
   });
@@ -117,8 +127,17 @@ Meteor.methods({
     }
   },
   'questions.delete': async function (questionId: string) {
+    check(questionId, String);
     // Allow deletion from Bank admin (no Meteor user check)
-    return await Questions.removeAsync(questionId);
+    try {
+      // Use _id to ensure we're deleting the exact document
+      const result = await Questions.removeAsync({ _id: questionId });
+      console.log(`[questions.delete] Deleted question ${questionId}, result:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[questions.delete] Error deleting question ${questionId}:`, error);
+      throw new Meteor.Error('questions.delete.error', 'Failed to delete question');
+    }
   },
   'questions.insert': async function (data: Omit<QuestionVersion, 'version'|'updatedAt'|'updatedBy'>, userId: string) {
     try {
