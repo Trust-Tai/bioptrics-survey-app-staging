@@ -386,7 +386,7 @@ const AllLayers: React.FC = () => {
 
   // Edit a tag
   const editTag = (layerId: string) => {
-    navigate(`/admin/settings/tag/${layerId}`);
+    navigate(`/admin/tags/create/${layerId}`);
   };
 
   // Toggle tag active status
@@ -415,7 +415,7 @@ const AllLayers: React.FC = () => {
 
   // Create a new tag
   const createNewTag = () => {
-    navigate('/admin/settings/tag');
+    navigate('/admin/tags/create');
   };
 
   // Toggle item expansion in list view
