@@ -523,7 +523,7 @@ const AllLayers: React.FC = () => {
     <AdminLayout>
       <Container>
         <Header>
-          <Title>All Tag Builder</Title>
+          <Title>Tags and Classifications</Title>
           <ButtonGroup>
             <Button primary onClick={createNewTag}>
               <FaPlus /> Create New Tag
