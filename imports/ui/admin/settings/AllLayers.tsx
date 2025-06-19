@@ -554,6 +554,7 @@ const AllLayers = () => {
   const createNewTag = () => {
     // Reset form state
     setLayer({
+      id: `tag-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Generate a unique ID
       name: '',
       parentId: '',
       fields: [],
@@ -613,7 +614,7 @@ const AllLayers = () => {
     setStatus({ loading: true, message: '', type: 'info' });
     
     // Create new tag
-    Meteor.call('layers.insert', layer, (error: Meteor.Error, result: string) => {
+    Meteor.call('layers.create', layer, (error: Meteor.Error, result: string) => {
       if (error) {
         setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
       } else {
