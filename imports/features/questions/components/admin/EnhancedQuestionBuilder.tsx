@@ -631,7 +631,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
             {!isEditMode && (
               <div className="question-builder-sections">
                 <div className="sections-header">
-                  <h1>Question Builder</h1>
+                  <h1>Add Question</h1>
                   <div className="bulk-action-buttons">
                     <button
                       className="save-all-button"

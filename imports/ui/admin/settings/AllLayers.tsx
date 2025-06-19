@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
-import { Layers, LayerField } from '../../../api/layers';
+import { Layers, LayerField, Layer } from '../../../api/layers';
 
 // Define local Layer interface that extends the imported one
 interface LayerDisplay {
@@ -271,6 +271,121 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+// Modal components for tag creation popup
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+`;
+
+const ModalBody = styled.div`
+  padding: 1.5rem;
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 50%;
+  
+  &:hover {
+    background-color: #f5f5f5;
+    color: #333;
+  }
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  
+  &:focus {
+    outline: none;
+    border-color: #7a4e7a;
+    box-shadow: 0 0 0 2px rgba(122, 78, 122, 0.2);
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: white;
+  
+  &:focus {
+    outline: none;
+    border-color: #7a4e7a;
+    box-shadow: 0 0 0 2px rgba(122, 78, 122, 0.2);
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #e74c3c;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+`;
+
 const StatusMessage = styled.div<{ success?: boolean; error?: boolean }>`
   margin: 1rem 0;
   padding: 1rem;
@@ -281,15 +396,37 @@ const StatusMessage = styled.div<{ success?: boolean; error?: boolean }>`
 `;
 
 // AllLayers Component
-const AllLayers: React.FC = () => {
+const AllLayers = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'table' | 'list'>('table');
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [status, setStatus] = useState<{ loading: boolean; message: string; type: 'success' | 'error' | 'info' }>({ 
+  const [status, setStatus] = useState<{ 
+    loading: boolean; 
+    message: string; 
+    type: 'success' | 'error' | 'info' 
+  }>({ 
     loading: false, 
     message: '', 
     type: 'info' 
   });
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  
+  // Tag form state
+  const [layer, setLayer] = useState<Partial<Layer>>({
+    name: '',
+    parentId: '',
+    fields: [],
+    active: true,
+    color: '#552a47',
+    location: 'surveys', // Default location - surveys only
+  });
+  
+  // Validation errors state
+  const [errors, setErrors] = useState<{
+    name?: string;
+  }>({});
   
   // Subscribe to layers collection
   const { layers, isLoading } = useTracker(() => {
@@ -413,9 +550,77 @@ const AllLayers: React.FC = () => {
     });
   };
 
-  // Create a new tag
+  // Open the create tag modal
   const createNewTag = () => {
-    navigate('/admin/tags/create');
+    // Reset form state
+    setLayer({
+      name: '',
+      parentId: '',
+      fields: [],
+      active: true,
+      color: '#552a47',
+      location: 'surveys', // Default location - surveys only
+    });
+    setErrors({});
+    setIsModalOpen(true);
+  };
+  
+  // Close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+  
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    // Clear validation error when field is edited
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name as keyof typeof errors];
+        return newErrors;
+      });
+    }
+    
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setLayer(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setLayer(prev => ({ ...prev, [name]: value }));
+    }
+  };
+  
+  // Validate form
+  const validateForm = () => {
+    const newErrors: { name?: string } = {};
+    
+    if (!layer.name) {
+      newErrors.name = 'Tag name is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  // Save tag
+  const handleSaveTag = () => {
+    if (!validateForm()) {
+      return;
+    }
+    
+    setStatus({ loading: true, message: '', type: 'info' });
+    
+    // Create new tag
+    Meteor.call('layers.insert', layer, (error: Meteor.Error, result: string) => {
+      if (error) {
+        setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
+      } else {
+        setStatus({ loading: false, message: 'Tag created successfully!', type: 'success' });
+        closeModal();
+      }
+    });
   };
 
   // Toggle item expansion in list view
@@ -571,7 +776,7 @@ const AllLayers: React.FC = () => {
             <thead>
               <tr>
                 <th>Tag Name</th>
-                <th>Location</th>
+                {/* Location column removed */}
                 <th>Priority</th>
                 <th>Status</th>
                 <th>Created Date</th>
@@ -583,7 +788,7 @@ const AllLayers: React.FC = () => {
               {layers.map(layer => (
                 <tr key={layer._id}>
                   <td>{layer.name}</td>
-                  <td style={{ textTransform: 'capitalize' }}>{layer.location}</td>
+                  {/* Location column data removed */}
                   <td>{layer.priority}</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -629,6 +834,117 @@ const AllLayers: React.FC = () => {
           </ListViewContainer>
         )}
       </Container>
+      
+      {/* Tag Creation Modal */}
+      {isModalOpen && (
+        <ModalOverlay>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Create New Tag</ModalTitle>
+              <CloseButton onClick={closeModal}>
+                <FaTimes />
+              </CloseButton>
+            </ModalHeader>
+            
+            <ModalBody>
+              <FormGroup>
+                <Label htmlFor="name">Tag Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={layer.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter tag name"
+                />
+                {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
+              </FormGroup>
+              
+              <FormGroup>
+                <Label htmlFor="parentId">Parent Tag</Label>
+                <Select
+                  id="parentId"
+                  name="parentId"
+                  value={layer.parentId || ''}
+                  onChange={handleInputChange}
+                >
+                  <option value="">None (Top Level Tag)</option>
+                  {layers.filter(l => l._id !== layer._id).map(parentLayer => (
+                    <option key={parentLayer._id} value={parentLayer._id}>
+                      {parentLayer.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormGroup>
+              
+              <FormGroup>
+                <Label htmlFor="color">Tag Color</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '4px',
+                      backgroundColor: layer.color || '#552a47',
+                      border: '1px solid #ddd',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      marginRight: '10px'
+                    }}
+                  />
+                  <Input
+                    id="color"
+                    name="color"
+                    type="color"
+                    value={layer.color || '#552a47'}
+                    onChange={handleInputChange}
+                    style={{
+                      width: '100px',
+                      height: '36px',
+                      padding: '2px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                </div>
+              </FormGroup>
+              
+              <FormGroup>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <Label htmlFor="active" style={{ margin: 0 }}>Status</Label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div 
+                      onClick={() => setLayer(prev => ({ ...prev, active: !prev.active }))} 
+                      style={{ 
+                        cursor: 'pointer',
+                        color: layer.active ? '#4CAF50' : '#ccc'
+                      }}
+                    >
+                      {layer.active ? <FaToggleOn size={24} /> : <FaToggleOff size={24} />}
+                    </div>
+                    <span>{layer.active ? 'Active' : 'Inactive'}</span>
+                  </div>
+                </div>
+              </FormGroup>
+            </ModalBody>
+            
+            <ModalFooter>
+              <Button onClick={closeModal}>Cancel</Button>
+              <Button primary onClick={handleSaveTag} disabled={status.loading}>
+                {status.loading ? (
+                  <>
+                    <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
+                    <span style={{ marginLeft: '0.5rem' }}>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaSave style={{ marginRight: '0.5rem' }} />
+                    Save Tag
+                  </>
+                )}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </AdminLayout>
   );
 };
