@@ -18,6 +18,8 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
 import { Surveys } from '../../features/surveys/api/surveys';
 import DatabaseStats from './DatabaseStats';
+import CheckDatabase from './CheckDatabase';
+import DbChecker from './DbChecker';
 
 // Import components from the feature-based structure
 import {
@@ -384,7 +386,8 @@ const AdminAnalytics: React.FC = () => {
       icon: FiMessageSquare
     },
     completedSurveys: {
-      value: completedSurveysCount,
+      // Use the direct database count if available, otherwise fall back to the tracker count
+      value: directDbCount !== null ? directDbCount : completedSurveysCount,
       icon: FiFileText
     },
     timeToComplete: {
@@ -495,7 +498,7 @@ const AdminAnalytics: React.FC = () => {
         </TabContainer>
         
         {/* Database Statistics Component */}
-        <DatabaseStats />
+        <DbChecker />
         
         {/* 6. Quick Actions */}
         <QuickActionsContainer>

@@ -603,11 +603,11 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     const isLastSection = currentSectionIndex === sections.length - 1;
     const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
     
-    // If this is the last question in the survey, automatically submit the survey
-    // This ensures the survey always navigates to the thank you page after the last question
+    // If this is the last question in the survey, we'll let the user submit manually via the button
+    // The submission will be handled by the onSubmit prop passed to ModernSurveyQuestion
     if (isLastQuestionInSurvey) {
-      console.log('Last question in survey detected - automatically submitting survey');
-      handleSubmit();
+      console.log('Last question in survey detected - waiting for user to submit manually');
+      // Not automatically submitting to avoid duplicate submissions
       return;
     }
     
@@ -1154,12 +1154,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   
   return (
     <ContentContainer>
-      <ModernSurveyProgress 
-        progress={calculateProgress()} 
-        color={survey.color}
-        currentStep={calculateProgressInfo().currentStepNumber}
-        totalSteps={calculateProgressInfo().totalSteps}
-      />
+      {/* Progress indicator hidden as requested */}
       {renderContent()}
     </ContentContainer>
   );
