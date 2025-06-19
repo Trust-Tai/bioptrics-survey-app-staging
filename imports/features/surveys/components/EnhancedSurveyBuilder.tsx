@@ -1472,9 +1472,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         marginBottom: 16,
                         maxWidth: '600px',
                         position: 'relative',
-                        zIndex: 100,
-                        overflow: 'visible' // Ensure dropdown is visible
+                        zIndex: 1000,
+                        overflow: 'visible'
                       }}>
+                      {/* Add a style tag to ensure the dropdown menu is visible */}
+                      <style>
+                        {`
+                          .ts-dropdown { 
+                            z-index: 1001 !important; 
+                            max-height: 300px !important;
+                            overflow-y: auto !important;
+                            position: absolute !important;
+                          }
+                          .survey-builder-panel { overflow: visible !important; }
+                          .survey-builder-content { overflow: visible !important; }
+                        `}
+                      </style>
                         <select 
                           id="survey-tags"
                           multiple 
