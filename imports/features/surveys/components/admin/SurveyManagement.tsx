@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AdminLayout } from '../../../../layouts/AdminLayout';
-import { DashboardBg } from '../../../../shared/components/DashboardBg';
+import AdminLayout from '../../../../layouts/AdminLayout';
+import DashboardBg from '../../../../shared/components/DashboardBg';
 
 interface Survey {
   id: string;

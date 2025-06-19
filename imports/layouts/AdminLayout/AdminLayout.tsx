@@ -28,8 +28,8 @@ import styled from 'styled-components';
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/surveys', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
-    { to: '/admin/surveys/all', label: `All ${getTerminology('surveyLabel')}s` },
-    { to: '/admin/surveys/builder', label: `${getTerminology('surveyLabel')} Builder` },
+    { to: '/admin/surveys/builder', label: 'Create Survey' },
+    { to: '/admin/surveys/all', label: `Manage ${getTerminology('surveyLabel')}s` },
     { to: '/admin/surveys/theme', label: 'Theme' },
     // Dynamically add survey tags as submenu items
     // ...(surveyTags.map(tag => ({ 

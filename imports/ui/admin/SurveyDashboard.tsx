@@ -737,7 +737,7 @@ const SurveyDashboard: React.FC = () => {
       <DashboardBg>
         <Container>
           <TitleRow>
-            <Title>All Surveys</Title>
+            <Title>Manage Surveys</Title>
             <div style={{ display: 'flex', gap: 12 }}>
               <button 
                 onClick={() => navigate('/admin/surveys/builder')} 
