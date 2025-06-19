@@ -24,7 +24,6 @@ const steps = [
   { label: 'Questions' },
   { label: 'Demographics' },
   { label: 'Themes' },
-  { label: 'Categories' },
   { label: 'Branching Logic' },
   { label: 'Completion' },
   { label: 'Preview' },
@@ -1113,7 +1112,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                             })}
                           </div>
                         </div>
-                      ) : (i >= 1 && i <= 3 || i === 5) ? (
+                      ) : (i >= 1 && i <= 3) ? (
                         <>
                           <SurveySectionQuestionDropdown
                             sectionLabel={s.label}
