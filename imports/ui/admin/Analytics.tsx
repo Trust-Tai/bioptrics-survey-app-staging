@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
 import {
   FiFilter,
   FiDownload,
@@ -294,6 +297,20 @@ const ExportButtonsContainer = styled.div`
 
 const Analytics: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Fetch completed survey responses count from the database
+  const { completedSurveysCount, isLoading } = useTracker(() => {
+    const subscription = Meteor.subscribe('responses.all');
+    const loading = !subscription.ready();
+    
+    // Count completed survey responses
+    const completed = SurveyResponses.find({ completed: true }).count();
+    
+    return {
+      completedSurveysCount: completed,
+      isLoading: loading
+    };
+  }, []);
   const [filterVisible, setFilterVisible] = useState(true);
 
   // Sample data
@@ -405,7 +422,7 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <StatCard>
-                <StatValue>1,234</StatValue>
+                <StatValue>{completedSurveysCount}</StatValue>
                 <StatLabel>Surveys Completed</StatLabel>
               </StatCard>
             </Card>

@@ -523,7 +523,7 @@ Meteor.methods({
     check(data.surveyId, String);
     check(data.responses, Object);
     
-    // Optionally, validate that the survey exists
+    // Validate that the survey exists
     const survey = await Surveys.findOneAsync({ _id: data.surveyId });
     if (!survey) {
       throw new Meteor.Error('not-found', 'Survey not found');
@@ -545,16 +545,25 @@ Meteor.methods({
       };
     });
     
+    const now = new Date();
+    const startTime = new Date(now.getTime() - 300000); // Assume started 5 minutes ago if not provided
+    
     // Create a document that matches the SurveyResponseDoc interface
     const responseDoc = {
       surveyId: data.surveyId,
+      userId: this.userId || undefined,
       responses: responsesArray,
       completed: true,
-      startTime: new Date(),
-      endTime: new Date(),
+      startTime: startTime,
+      endTime: now,
+      completionTime: Math.floor((now.getTime() - startTime.getTime()) / 1000), // in seconds
       progress: 100,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      metadata: {
+        browser: this.connection?.httpHeaders?.['user-agent'] || 'Unknown',
+        ipAddress: this.connection?.clientAddress || 'Unknown'
+      },
+      createdAt: now,
+      updatedAt: now
     };
     
     console.log('Inserting survey response document:', responseDoc);

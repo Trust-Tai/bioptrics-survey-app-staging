@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { IconType } from 'react-icons';
 
-interface KPIData {
+export interface KPIData {
   participationRate: {
     value: number;
     icon: IconType;
@@ -15,7 +15,11 @@ interface KPIData {
     value: number;
     icon: IconType;
   };
-  daysRemaining: {
+  completedSurveys: {
+    value: number;
+    icon: IconType;
+  };
+  timeToComplete: {
     value: number;
     icon: IconType;
   };
@@ -29,9 +33,13 @@ interface KPIGridProps {
 
 const Container = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 24px;
+  
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
   
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
@@ -147,17 +155,30 @@ const KPIGrid: React.FC<KPIGridProps> = ({ data, isLoading, isBlurred }) => {
         <Label>Total Responses</Label>
       </Card>
       
-      {/* Days Remaining */}
+      {/* Completed Surveys */}
       <Card isBlurred={isBlurred}>
         <IconWrapper>
-          <data.daysRemaining.icon />
+          <data.completedSurveys.icon />
         </IconWrapper>
         {isLoading ? (
           <LoadingPlaceholder />
         ) : (
-          <Value>{data.daysRemaining.value}</Value>
+          <Value>{data.completedSurveys.value}</Value>
         )}
-        <Label>Days Until Survey Closes</Label>
+        <Label>Surveys Completed</Label>
+      </Card>
+      
+      {/* Time to Complete */}
+      <Card isBlurred={isBlurred}>
+        <IconWrapper>
+          <data.timeToComplete.icon />
+        </IconWrapper>
+        {isLoading ? (
+          <LoadingPlaceholder />
+        ) : (
+          <Value>{data.timeToComplete.value}</Value>
+        )}
+        <Label>Time to Complete (min)</Label>
       </Card>
     </Container>
   );

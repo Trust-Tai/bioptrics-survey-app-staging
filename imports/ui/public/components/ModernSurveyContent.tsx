@@ -868,6 +868,9 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     return [];
   };
   
+  // Session start time is used for completion time calculation
+  const [sessionStartTime] = useState<Date>(new Date());
+  
   const handleSubmit = () => {
     console.log('handleSubmit called - preparing to submit survey');
     
@@ -878,42 +881,50 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
       return;
     }
     
-    // Set submitting state
-    setIsSubmitting(true);
-    setSubmitError(null);
+    // Prepare the response data according to the SurveyResponseInput interface
+    const now = new Date();
+    const startTime = sessionStartTime;
     
-    console.log('Submitting survey responses to server:', {
-      surveyId: survey._id,
-      responseCount: Object.keys(responses).length,
-    });
+    // Format responses to match the expected structure
+    const formattedResponses = Object.entries(responses).map(([questionId, answer]) => ({
+      questionId,
+      answer,
+      sectionId: questions.find(q => q._id === questionId)?.sectionId
+    }));
     
-    // Submit responses to the server
-    Meteor.call('surveys.submitResponse', {
+    // Call the surveyResponses.submit method
+    Meteor.call('surveyResponses.submit', {
       surveyId: survey._id,
-      responses,
-      token
-    }, (error: Error | null) => {
-      setIsSubmitting(false);
-      
+      responses: formattedResponses,
+      completed: true,
+      startTime: startTime,
+      endTime: now,
+      progress: 100,
+      metadata: {
+        userAgent: navigator.userAgent,
+        token: token || undefined,
+        isPublic: true
+      },
+      // Add optional fields that might be required by the server validation
+      demographics: {}, // Empty demographics object
+      sectionTimes: {} // Empty section times object
+    }, (error: Meteor.Error | null) => {
       if (error) {
         console.error('Error submitting survey:', error);
         setSubmitError(error.message);
-        // Even if there's an error, we should still show the thank you screen
-        // This ensures the user doesn't get stuck on the last question
-        console.log('Showing thank you screen despite submission error');
-        updateCurrentStep({ type: 'thank-you' });
-      } else {
-        console.log('Survey successfully submitted - showing thank you screen');
-        // Show thank you screen and clear saved progress
-        updateCurrentStep({ type: 'thank-you' });
-        
-        // Clear saved progress since survey is complete
-        try {
-          localStorage.removeItem(getProgressStorageKey());
-          console.log('Cleared saved progress after successful submission');
-        } catch (e) {
-          console.error('Error clearing saved progress:', e);
-        }
+      }
+      
+      // Show thank you screen regardless of submission success/failure
+      // This ensures the user doesn't get stuck on the last question
+      console.log(error ? 'Showing thank you screen despite submission error' : 'Survey successfully submitted - showing thank you screen');
+      updateCurrentStep({ type: 'thank-you' });
+      
+      // Clear saved progress since survey is complete
+      try {
+        localStorage.removeItem(getProgressStorageKey());
+        console.log('Cleared saved progress after completion');
+      } catch (e) {
+        console.error('Error clearing saved progress:', e);
       }
     });
   };

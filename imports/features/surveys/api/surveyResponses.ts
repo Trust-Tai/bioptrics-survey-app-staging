@@ -2,6 +2,7 @@ import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
 import { Random } from 'meteor/random';
+import { Surveys } from './surveys';
 
 export interface SurveyResponseDoc {
   _id?: string;
@@ -144,50 +145,130 @@ if (Meteor.isServer) {
   }
 
   Meteor.methods({
-    'surveyResponses.submit'(responseData: SurveyResponseInput) {
-      check(responseData, {
-        surveyId: String,
-        responses: Match.Where(responses => {
-          // Validate that responses is an array
-          if (!Array.isArray(responses)) return false;
-          
-          // Validate each response item
-          return responses.every(item => {
-            return typeof item === 'object' && 
-                   typeof item.questionId === 'string' &&
-                   (item.sectionId === undefined || typeof item.sectionId === 'string');
-          });
-        }),
-        completed: Boolean,
-        startTime: Date,
-        endTime: Date,
-        progress: Number,
-        metadata: Object,
-        demographics: Match.Maybe(Object),
-        sectionTimes: Match.Maybe(Object)
-      });
+    // Method to get the count of completed surveys directly from the database
+    async 'getCompletedSurveysCount'() {
+      console.log('getCompletedSurveysCount method called');
       
-      // Add timestamps
-      const now = new Date();
-      responseData.createdAt = now;
-      responseData.updatedAt = now;
-      
-      // Add user ID if logged in
-      if (this.userId) {
-        responseData.userId = this.userId;
-      } else if (!responseData.respondentId) {
-        // Generate anonymous respondent ID if not provided
-        responseData.respondentId = Random.id();
+      // Check if user is an admin (optional security check)
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get survey counts');
       }
       
-      // Calculate completion time
-      if (responseData.startTime && responseData.endTime) {
-        responseData.completionTime = (responseData.endTime.getTime() - responseData.startTime.getTime()) / 1000;
+      try {
+        // Direct database query to count completed surveys
+        const count = await SurveyResponses.find({ completed: true }).countAsync();
+        console.log('Direct DB query found completed surveys:', count);
+        return count;
+      } catch (error: unknown) {
+        console.error('Error counting completed surveys:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error counting completed surveys: ${errorMessage}`);
       }
+    },
+    
+    // Method to get database statistics
+    async 'getDatabaseStats'() {
+      console.log('getDatabaseStats method called');
       
-      // Timestamps are already added above, so we can proceed with insertion
-      // Use type assertion to satisfy TypeScript
-      return SurveyResponses.insert(responseData as unknown as SurveyResponseDoc);
+      try {
+        // Get counts from different collections
+        const totalSurveys = await Surveys.find().countAsync();
+        const totalResponses = await SurveyResponses.find().countAsync();
+        const completedResponses = await SurveyResponses.find({ completed: true }).countAsync();
+        const inProgressResponses = await SurveyResponses.find({ completed: false }).countAsync();
+        
+        // Get a sample of survey responses for debugging
+        const sampleResponses = await SurveyResponses.find({}, { limit: 3 }).fetchAsync();
+        
+        return {
+          totalSurveys,
+          totalResponses,
+          completedResponses,
+          inProgressResponses,
+          sampleResponses: sampleResponses.map(r => ({
+            _id: r._id,
+            surveyId: r.surveyId,
+            completed: r.completed,
+            createdAt: r.createdAt
+          }))
+        };
+      } catch (error: unknown) {
+        console.error('Error getting database stats:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error getting database stats: ${errorMessage}`);
+      }
+    },
+    
+    async 'surveyResponses.submit'(responseData: SurveyResponseInput) {
+      console.log('surveyResponses.submit called with data:', JSON.stringify(responseData, null, 2));
+      
+      try {
+        // Validate input data
+        check(responseData, {
+          surveyId: String,
+          responses: Match.Where(responses => {
+            // Validate that responses is an array
+            if (!Array.isArray(responses)) {
+              console.log('Validation failed: responses is not an array');
+              return false;
+            }
+            
+            // Validate each response item
+            return responses.every(item => {
+              const valid = typeof item === 'object' && 
+                     typeof item.questionId === 'string' &&
+                     (item.sectionId === undefined || typeof item.sectionId === 'string');
+              
+              if (!valid) {
+                console.log('Invalid response item:', item);
+              }
+              return valid;
+            });
+          }),
+          completed: Boolean,
+          startTime: Date,
+          endTime: Date,
+          progress: Number,
+          metadata: Object,
+          demographics: Match.Maybe(Object),
+          sectionTimes: Match.Maybe(Object)
+        });
+        
+        console.log('Input validation passed');
+        
+        // Add timestamps
+        const now = new Date();
+        responseData.createdAt = now;
+        responseData.updatedAt = now;
+        
+        // Add user ID if logged in
+        if (this.userId) {
+          responseData.userId = this.userId;
+          console.log('Using logged in user ID:', this.userId);
+        } else if (!responseData.respondentId) {
+          // Generate anonymous respondent ID if not provided
+          responseData.respondentId = Random.id();
+          console.log('Generated anonymous respondent ID:', responseData.respondentId);
+        }
+        
+        // Calculate completion time
+        if (responseData.startTime && responseData.endTime) {
+          responseData.completionTime = (responseData.endTime.getTime() - responseData.startTime.getTime()) / 1000;
+          console.log('Calculated completion time:', responseData.completionTime);
+        }
+        
+        console.log('Attempting to insert survey response using insertAsync');
+        
+        // Use insertAsync instead of insert as required by newer Meteor versions
+        // Use type assertion to satisfy TypeScript
+        const responseId = await SurveyResponses.insertAsync(responseData as unknown as SurveyResponseDoc);
+        console.log('Survey response inserted successfully with ID:', responseId);
+        return responseId;
+      } catch (error: unknown) {
+        console.error('Error in surveyResponses.submit method:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('submission-error', `Failed to submit survey response: ${errorMessage}`);
+      }
     },
     
     async 'surveyResponses.update'(responseId: string, updates: Partial<SurveyResponseInput>) {
