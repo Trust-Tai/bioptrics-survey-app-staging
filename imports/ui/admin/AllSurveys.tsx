@@ -355,8 +355,16 @@ const AllSurveys: React.FC = () => {
                       </span>
                       <button 
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/survey/public/${s.shareToken}`);
-                          setNotification({ type: 'success', message: 'URL copied to clipboard!' });
+                          // Use the same server-side token generation as the survey edit page
+                          Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
+                            if (err) {
+                              console.error('Error generating token:', err);
+                              setNotification({ type: 'error', message: 'Failed to generate survey URL' });
+                            } else {
+                              navigator.clipboard.writeText(`${window.location.origin}/public/${token}`);
+                              setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
+                            }
+                          });
                         }}
                         style={{
                           display: 'flex',

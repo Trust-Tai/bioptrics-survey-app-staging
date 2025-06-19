@@ -1,3 +1,32 @@
+export interface VisibilityCondition {
+  dependsOnSectionId?: string;
+  dependsOnQuestionId?: string;
+  condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
+  value: any;
+}
+
+export interface SectionTemplate {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+  isDefault?: boolean;
+  color?: string;
+  isRequired?: boolean;
+  progressIndicator?: boolean;
+  timeLimit?: number;
+  customCss?: string;
+  layout?: string;
+  theme?: string | {
+    backgroundColor?: string;
+    textColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+  };
+  skipLogic?: any;
+  feedback?: any;
+}
+
 export interface SurveySectionItem {
   id: string;
   name: string;
@@ -8,17 +37,23 @@ export interface SurveySectionItem {
   color?: string;
   priority: number;
   icon?: string;
-  visibilityCondition?: {
-    dependsOnSectionId?: string;
-    dependsOnQuestionId?: string;
-    condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
-    value: any;
-  };
+  visibilityCondition?: VisibilityCondition;
   timeLimit?: number;
   questionIds?: string[];
   templateId?: string;
   customCss?: string;
   progressIndicator?: boolean;
+  completionPercentage?: number;
+  averageTimeSpent?: number;
+  skipLogic?: any;
+  layout?: string;
+  theme?: string | {
+    backgroundColor?: string;
+    textColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+  };
+  feedback?: any;
 }
 
 export interface QuestionItem {

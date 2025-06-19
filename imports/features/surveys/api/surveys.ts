@@ -448,8 +448,8 @@ Meteor.methods({
     }
   },
 
-  'surveys.remove'(surveyId: string) {
-    return Surveys.remove(surveyId);
+  async 'surveys.remove'(surveyId: string) {
+    return await Surveys.removeAsync(surveyId);
   },
 
   // Update an existing survey with all data including sections and questions

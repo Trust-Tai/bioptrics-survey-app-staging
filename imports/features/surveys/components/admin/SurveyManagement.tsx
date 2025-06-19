@@ -10,6 +10,11 @@ interface Survey {
   createdAt: string;
 }
 
+// Use base64 encoding for the token, matching builder/edit logic
+function getEncodedToken(id: string): string {
+  return window.btoa(unescape(encodeURIComponent(id)));
+} // Handles unicode IDs safely
+
 // For demo: use localStorage for persistence
 function getAllSurveys(): Survey[] {
   try {
@@ -165,6 +170,18 @@ const SurveyManagement: React.FC = () => {
                       style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 700, cursor: 'pointer', fontSize: 15 }}
                     >
                       Delete
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const encodedToken = getEncodedToken(s.id);
+                        const url = `${window.location.origin}/public/${encodedToken}`;
+                        await navigator.clipboard.writeText(url);
+                        alert('Survey URL copied to clipboard!');
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#27ae60', fontWeight: 700, cursor: 'pointer', fontSize: 15 }}
+                      title="Copy Public Survey URL"
+                    >
+                      Copy URL
                     </button>
                   </div>
                 </div>
