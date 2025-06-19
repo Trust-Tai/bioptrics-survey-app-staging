@@ -245,8 +245,10 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
           >
             <div className="modern-survey-sidebar-overlay">
               <div className="sidebar-text-container">
-                {/* Survey title removed from sidebar as requested */}
-                {/* Section title and description removed from sidebar as requested */}
+              <h2>{surveyTitle}</h2>
+                {surveyDescription && (
+                  <p>{surveyDescription.replace(/<[^>]*>/g, '')}</p>
+                )}
               </div>
             </div>
           </div>
