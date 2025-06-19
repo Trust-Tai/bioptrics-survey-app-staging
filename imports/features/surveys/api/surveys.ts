@@ -560,7 +560,7 @@ Meteor.methods({
     console.log('Inserting survey response document:', responseDoc);
     
     try {
-      const responseId = SurveyResponses.insert(responseDoc);
+      const responseId = await SurveyResponses.insertAsync(responseDoc);
       console.log('Survey response saved with ID:', responseId);
       
       // Verify the response was saved correctly
