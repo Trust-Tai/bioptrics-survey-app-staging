@@ -124,9 +124,9 @@ const CustomerSatisfactionTemplate: React.FC<CustomerSatisfactionTemplateProps> 
     }
   };
   
-  // Render numeric scale (0-10)
+  // Render numeric scale (1-5)
   const renderNumericScale = () => {
-    const scaleOptions = Array.from({ length: 11 }, (_, i) => i);
+    const scaleOptions = Array.from({ length: 5 }, (_, i) => i + 1);
     const minLabel = question.labels && question.labels.length > 0 ? question.labels[0] : 'NOT AT ALL LIKELY';
     const maxLabel = question.labels && question.labels.length > 1 ? question.labels[1] : 'EXTREMELY LIKELY';
     

@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
 import {
   FiFilter,
   FiDownload,
@@ -22,6 +25,7 @@ const DashboardContainer = styled.div`
     padding: 16px;
   }
 `;
+
 
 const PageHeader = styled.div`
   display: flex;
@@ -294,6 +298,65 @@ const ExportButtonsContainer = styled.div`
 
 const Analytics: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // State for all KPI metrics
+  const [completedSurveysCount, setCompletedSurveysCount] = useState(0);
+  const [participationRate, setParticipationRate] = useState(0);
+  const [avgEngagementScore, setAvgEngagementScore] = useState(0);
+  const [avgCompletionTime, setAvgCompletionTime] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use useTracker for subscription
+  const { loading } = useTracker(() => {
+    const subscription = Meteor.subscribe('responses.all');
+    return {
+      loading: !subscription.ready()
+    };
+  }, []);
+  
+  // Use direct database query for accurate metrics
+  useEffect(() => {
+    // Get completed surveys count
+    Meteor.call('getCompletedSurveysCount', (error: any, result: number) => {
+      if (error) {
+        console.error('Error getting completed surveys count:', error);
+      } else {
+        console.log('Direct DB query result - completed surveys count:', result);
+        setCompletedSurveysCount(result);
+      }
+    });
+    
+    // Get participation rate
+    Meteor.call('getParticipationRate', (error: any, result: number) => {
+      if (error) {
+        console.error('Error getting participation rate:', error);
+      } else {
+        console.log('Direct DB query result - participation rate:', result);
+        setParticipationRate(result);
+      }
+    });
+    
+    // Get average engagement score
+    Meteor.call('getAverageEngagementScore', (error: any, result: number) => {
+      if (error) {
+        console.error('Error getting average engagement score:', error);
+      } else {
+        console.log('Direct DB query result - avg engagement score:', result);
+        setAvgEngagementScore(result);
+      }
+    });
+    
+    // Get average completion time
+    Meteor.call('getAverageCompletionTime', (error: any, result: number) => {
+      if (error) {
+        console.error('Error getting average completion time:', error);
+      } else {
+        console.log('Direct DB query result - avg completion time:', result);
+        setAvgCompletionTime(result);
+      }
+      setIsLoading(loading);
+    });
+  }, [loading]);
   const [filterVisible, setFilterVisible] = useState(true);
 
   // Sample data
@@ -405,7 +468,7 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <StatCard>
-                <StatValue>1,234</StatValue>
+                <StatValue>{completedSurveysCount}</StatValue>
                 <StatLabel>Surveys Completed</StatLabel>
               </StatCard>
             </Card>
@@ -418,7 +481,7 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <StatCard>
-                <StatValue>82%</StatValue>
+                <StatValue>{isLoading ? '...' : `${participationRate}%`}</StatValue>
                 <StatLabel>Participation Rate</StatLabel>
               </StatCard>
             </Card>
@@ -431,7 +494,7 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <StatCard>
-                <StatValue>4.1</StatValue>
+                <StatValue>{isLoading ? '...' : avgEngagementScore.toFixed(1)}</StatValue>
                 <StatLabel>Out of 5.0</StatLabel>
               </StatCard>
             </Card>
@@ -444,7 +507,7 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <StatCard>
-                <StatValue>8.5</StatValue>
+                <StatValue>{isLoading ? '...' : avgCompletionTime.toFixed(1)}</StatValue>
                 <StatLabel>Minutes (Average)</StatLabel>
               </StatCard>
             </Card>

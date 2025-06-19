@@ -350,26 +350,6 @@ if (Meteor.isServer) {
           surveyId: String,
           responses: Match.Where(responses => {
             // Validate that responses is an array
-            if (!Array.isArray(responses)) {
-              console.log('Validation failed: responses is not an array');
-              return false;
-            }
-            
-            // Validate each response item
-            return responses.every(item => {
-              const valid = typeof item === 'object' && 
-                     typeof item.questionId === 'string' &&
-                     (item.sectionId === undefined || typeof item.sectionId === 'string');
-              
-              if (!valid) {
-                console.log('Invalid response item:', item);
-              }
-              return valid;
-            });
-          }),
-          completed: Boolean,
-          startTime: Date,
-          endTime: Date,
           progress: Number,
           metadata: Object,
           demographics: Match.Maybe(Object),

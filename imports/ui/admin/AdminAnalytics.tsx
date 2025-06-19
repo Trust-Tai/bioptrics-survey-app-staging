@@ -17,6 +17,9 @@ import {
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
 import { Surveys } from '../../features/surveys/api/surveys';
+import DatabaseStats from './DatabaseStats';
+import CheckDatabase from './CheckDatabase';
+import DbChecker from './DbChecker';
 
 // Import components from the feature-based structure
 import {
@@ -28,6 +31,9 @@ import {
   FlaggedIssuesList,
   CommentClusterView
 } from '/imports/features/analytics/components/admin';
+
+// Import the KPIData interface
+import type { KPIData } from '/imports/features/analytics/components/admin/KPIGrid';
 
 // Types
 interface FilterState {
@@ -160,6 +166,19 @@ const AdminAnalytics: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'charts' | 'comments'>('charts');
+  const [directDbCount, setDirectDbCount] = useState<number | null>(null);
+  
+  // Direct database check for completed surveys
+  useEffect(() => {
+    Meteor.call('getCompletedSurveysCount', (error: any, result: number) => {
+      if (error) {
+        console.error('Error getting completed surveys count:', error);
+      } else {
+        console.log('Direct DB query result - completed surveys count:', result);
+        setDirectDbCount(result);
+      }
+    });
+  }, []);
   
   // Parse URL query params
   const queryParams = new URLSearchParams(location.search);
@@ -173,7 +192,7 @@ const AdminAnalytics: React.FC = () => {
   });
   
   // Fetch data
-  const { responses, surveys, isLoading, responseCount } = useTracker(() => {
+  const { responses, surveys, isLoading, responseCount, completedSurveysCount, avgCompletionTime, avgEngagementScore } = useTracker(() => {
     const responsesSubscription = Meteor.subscribe('responses.all');
     const surveysSubscription = Meteor.subscribe('surveys.all');
     const loading = !responsesSubscription.ready() || !surveysSubscription.ready();
@@ -190,11 +209,58 @@ const AdminAnalytics: React.FC = () => {
     const allResponses = SurveyResponses.find(responsesQuery).fetch();
     const allSurveys = Surveys.find().fetch();
     
+    // Debug: Log all responses to see what's in the database
+    console.log('All survey responses:', allResponses);
+    console.log('Total responses count:', allResponses.length);
+    
+    // Count completed survey responses
+    const completedResponses = SurveyResponses.find({ ...responsesQuery, completed: true }).count();
+    console.log('Completed survey responses count:', completedResponses);
+    
+    // Calculate average completion time in minutes
+    let avgCompletionTimeValue = 0;
+    const responsesWithCompletionTime = allResponses.filter(r => r.completionTime && r.completed);
+    if (responsesWithCompletionTime.length > 0) {
+      const totalCompletionTimeSeconds = responsesWithCompletionTime.reduce(
+        (sum, r) => sum + (r.completionTime || 0), 0
+      );
+      avgCompletionTimeValue = Math.round((totalCompletionTimeSeconds / responsesWithCompletionTime.length) / 60 * 10) / 10; // Convert to minutes and round to 1 decimal
+    }
+    
+    // Calculate average engagement score
+    let avgEngagementScoreValue = 0;
+    // Calculate engagement score based on responses
+    // This is a simplified example - you may need to adjust based on your actual data structure
+    if (allResponses.length > 0) {
+      // Example: calculate average of all numeric answers as a proxy for engagement
+      let totalScore = 0;
+      let scoreCount = 0;
+      
+      allResponses.forEach(response => {
+        if (response.responses && Array.isArray(response.responses)) {
+          response.responses.forEach(answer => {
+            // Check if the answer is a number between 1-5 (assuming Likert scale)
+            if (typeof answer.answer === 'number' && answer.answer >= 1 && answer.answer <= 5) {
+              totalScore += answer.answer;
+              scoreCount++;
+            }
+          });
+        }
+      });
+      
+      if (scoreCount > 0) {
+        avgEngagementScoreValue = Math.round((totalScore / scoreCount) * 10) / 10; // Round to 1 decimal
+      }
+    }
+    
     return {
       responses: allResponses,
       surveys: allSurveys,
       isLoading: loading,
-      responseCount: allResponses.length
+      responseCount: allResponses.length,
+      completedSurveysCount: completedResponses,
+      avgCompletionTime: avgCompletionTimeValue,
+      avgEngagementScore: avgEngagementScoreValue
     };
   }, [filters]);
   
@@ -306,23 +372,26 @@ const AdminAnalytics: React.FC = () => {
   ];
   
   // KPI data
-  const kpiData = {
+  const kpiData: KPIData = {
     participationRate: {
-      value: responseCount > 0 ? Math.round((responses.filter(r => r.completed).length / responseCount) * 100) : 0,
+      value: responseCount > 0 ? Math.round((completedSurveysCount / responseCount) * 100) : 0,
       icon: FiUsers
     },
     engagementScore: {
-      value: responses.length > 0 
-        ? (responses.reduce((sum: number, r: any) => sum + (r.engagementScore || 0), 0) / responses.length).toFixed(1)
-        : '0.0',
+      value: avgEngagementScore || '0.0',
       icon: FiStar
     },
     responsesCount: {
       value: responseCount,
       icon: FiMessageSquare
     },
-    daysRemaining: {
-      value: 14, // Sample value - should be calculated from active survey end date
+    completedSurveys: {
+      // Use the direct database count if available, otherwise fall back to the tracker count
+      value: directDbCount !== null ? directDbCount : completedSurveysCount,
+      icon: FiFileText
+    },
+    timeToComplete: {
+      value: avgCompletionTime || 0,
       icon: FiCalendar
     }
   };
@@ -348,6 +417,16 @@ const AdminAnalytics: React.FC = () => {
               <strong>Insufficient responses to display data.</strong> Some analytics are hidden to protect employee anonymity (requires 5+ responses).
             </div>
           </AnonymityWarning>
+        )}
+        
+        {/* Debug Info */}
+        {directDbCount !== null && (
+          <div style={{ background: '#f0f8ff', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc' }}>
+            <h4 style={{ margin: '0 0 10px 0' }}>Debug Information</h4>
+            <p><strong>Direct DB Query - Completed Surveys Count:</strong> {directDbCount}</p>
+            <p><strong>Tracker Method - Completed Surveys Count:</strong> {completedSurveysCount}</p>
+            <p><strong>Total Responses Count:</strong> {responseCount}</p>
+          </div>
         )}
         
         {/* 2. KPI Cards */}
@@ -417,6 +496,9 @@ const AdminAnalytics: React.FC = () => {
             </FullWidthCard>
           )}
         </TabContainer>
+        
+        {/* Database Statistics Component */}
+        <DbChecker />
         
         {/* 6. Quick Actions */}
         <QuickActionsContainer>
