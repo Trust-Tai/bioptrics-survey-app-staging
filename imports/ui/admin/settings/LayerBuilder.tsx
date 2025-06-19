@@ -643,7 +643,7 @@ const LayerBuilder: React.FC = () => {
           localStorage.setItem('layerActionSuccess', successMessage);
           
           // Only redirect after successful update
-          navigate('/admin/settings/all-tags');
+          navigate('/admin/tags/manage');
         }
       });
     } else {
@@ -673,7 +673,7 @@ const LayerBuilder: React.FC = () => {
           localStorage.setItem('layerActionSuccess', successMessage);
           
           // Only redirect after successful creation
-          navigate('/admin/settings/all-tags');
+          navigate('/admin/tags/manage');
         }
       });
     }
@@ -1203,7 +1203,7 @@ const LayerBuilder: React.FC = () => {
                     setIsEditing(false);
                     
                     // Redirect to All Tags page
-                    navigate('/admin/settings/all-layers');
+                    navigate('/admin/tags/manage');
                   }}
                   style={{ backgroundColor: '#f5f5f5', color: '#555' }}
                 >

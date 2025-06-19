@@ -933,7 +933,7 @@ const TagItemsComponent: React.FC = () => {
           <StatusMessage error>
             Tag not found. Please select a valid tag.
           </StatusMessage>
-          <Button onClick={() => navigate('/admin/settings/all-layers')}>
+          <Button onClick={() => navigate('/admin/tags/manage')}>
             Back to All Tags
           </Button>
         </Container>
