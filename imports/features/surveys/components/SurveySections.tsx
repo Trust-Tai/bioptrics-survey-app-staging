@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { FiEdit2, FiTrash2, FiPlus, FiMove, FiInfo, FiCheckCircle, FiCopy, FiLayout, FiEye, FiBarChart2 } from 'react-icons/fi';
 import SectionPreview from './sections/SectionPreview';
 import SectionTemplates from './sections/SectionTemplates';
-import { SectionTemplate, SurveySectionItem, VisibilityCondition } from '/imports/features/surveys/types';
+import { SectionTemplate, SurveySectionItem } from '/imports/features/surveys/types';
 import SectionVisibilityConditions from './sections/SectionVisibilityConditions';
 import SectionInstructions from './sections/SectionInstructions';
 
@@ -421,7 +421,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
         textColor: '#333333',
         accentColor: '#4a90e2',
         fontFamily: 'Arial, sans-serif'
-      },
+      } as SurveySectionItem['theme'],
       skipLogic: template.skipLogic || {
         enabled: false,
         rules: []
@@ -736,7 +736,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
       
       {showTemplates && (
         <div style={{ marginTop: 16 }}>
-          <SectionTemplates onSelectTemplate={handleSelectTemplate} />
+          <SectionTemplates onSelect={handleSelectTemplate} />
           <Button 
             onClick={() => setShowTemplates(false)}
             style={{ marginTop: 16 }}

@@ -191,7 +191,7 @@ const ModernSurveyPublic: React.FC = () => {
           <ModernSurveyLoader />
         </MainContent>
         <Footer>
-          © {new Date().getFullYear()} Survey Platform. All rights reserved.
+          © {new Date().getFullYear()} Bioptrics Platform. All rights reserved.
         </Footer>
       </PageContainer>
     );
@@ -209,7 +209,7 @@ const ModernSurveyPublic: React.FC = () => {
           <ModernSurveyError message={loadError || "Survey not found"} />
         </MainContent>
         <Footer>
-          © {new Date().getFullYear()} Survey Platform. All rights reserved.
+          © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.
         </Footer>
       </PageContainer>
     );
