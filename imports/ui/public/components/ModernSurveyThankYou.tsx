@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiCheckCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiRefreshCw } from 'react-icons/fi';
+import '../components/ModernSurvey.css';
 
 interface Survey {
   _id: string;
@@ -19,51 +20,19 @@ interface ModernSurveyThankYouProps {
 }
 
 const ThankYouContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 120px);
-  padding: 20px;
+  width: 100%;
   animation: fadeIn 0.6s ease-out;
   
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 `;
 
-const ThankYouCard = styled.div`
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  padding: 40px;
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: ${props => props.color || '#552a47'};
-  }
-  
-  @media (max-width: 768px) {
-    padding: 30px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
 const IconWrapper = styled.div<{ iconColor?: string }>`
-  font-size: 80px;
+  font-size: 60px;
   color: ${props => props.iconColor || '#552a47'};
   margin-bottom: 24px;
   animation: scaleIn 0.5s ease-out;
@@ -74,62 +43,63 @@ const IconWrapper = styled.div<{ iconColor?: string }>`
   }
   
   @media (max-width: 768px) {
-    font-size: 64px;
+    font-size: 48px;
   }
 `;
 
-const Title = styled.h2`
-  font-size: 32px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 16px 0;
-  
-  @media (max-width: 768px) {
-    font-size: 28px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const Message = styled.p`
-  font-size: 18px;
-  color: #555;
-  margin: 0 0 32px 0;
-  line-height: 1.6;
-  max-width: 500px;
-  
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const Logo = styled.img`
-  max-width: 160px;
-  max-height: 60px;
-  margin-top: 32px;
-  opacity: 0.8;
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const ActionButton = styled.button<{ btnColor?: string }>`
-  background: ${props => props.btnColor || '#552a47'};
-  color: white;
-  border: none;
-  border-radius: 50px;
-  padding: 14px 28px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 16px;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+
+// Helper function to adjust color brightness
+const adjustColor = (color: string, amount: number): string => {
+  if (!color) return '#552a47';
   
-  &:hover {
-    background: ${props => props.btnColor ? `${props.btnColor}dd` : '#6d3a5e'};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  let usePound = false;
+  
+  if (color[0] === '#') {
+    color = color.slice(1);
+    usePound = true;
   }
   
-  &:active {
-    transform: translateY(0);
+  const num = parseInt(color, 16);
+  
+  let r = (num >> 16) + amount;
+  r = Math.max(Math.min(255, r), 0);
+  
+  let g = ((num >> 8) & 0x00FF) + amount;
+  g = Math.max(Math.min(255, g), 0);
+  
+  let b = (num & 0x0000FF) + amount;
+  b = Math.max(Math.min(255, b), 0);
+  
+  return (usePound ? '#' : '') + (g | (r << 8) | (b << 16)).toString(16).padStart(6, '0');
+};
+
+// Convert hex color to RGB values for CSS variables
+const hexToRgb = (hex: string): string => {
+  if (!hex || hex === '') return '85, 42, 71'; // Default color
+  
+  // Remove the # if present
+  hex = hex.replace('#', '');
+  
+  try {
+    // Parse the hex values
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    
+    return `${r}, ${g}, ${b}`;
+  } catch (error) {
+    console.error('Error parsing color:', error);
+    return '85, 42, 71'; // Default color
   }
-`;
+};
 
 const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, color, onRestart }) => {
   const handleRestart = () => {
@@ -139,28 +109,80 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, col
     }
   };
 
+  const effectiveColor = color || survey.color || '#552a47';
+  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '85, 42, 71';
+  const surveyImage = survey.featuredImage || survey.image || 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+
   return (
     <ThankYouContainer>
-      <ThankYouCard color={color}>
-        <IconWrapper iconColor={color}>
-          <FiCheckCircle />
-        </IconWrapper>
-        
-        <Title>Thank You!</Title>
-        
-        <Message>
-          Your responses have been successfully submitted. We appreciate your time and feedback.
-        </Message>
-        
-        <ActionButton 
-          onClick={handleRestart}
-          btnColor={color}
-        >
-          Restart Survey
-        </ActionButton>
-        
-        {survey.logo && <Logo src={survey.logo} alt="Survey Logo" />}
-      </ThankYouCard>
+      <div 
+        className="modern-survey-container"
+        style={{
+          '--primary-color': effectiveColor,
+          '--primary-color-rgb': primaryColorRgb,
+          '--primary-dark': adjustColor(effectiveColor, -20)
+        } as React.CSSProperties}
+      >
+        <div className="modern-survey-wrapper">
+          {/* Left side image - same as question screen */}
+          <div 
+            className="modern-survey-sidebar"
+            style={{ 
+              backgroundImage: `url(${surveyImage})`, 
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            <div className="modern-survey-sidebar-overlay">
+              <div className="sidebar-text-container">
+                <h2>{survey.title}</h2>
+                {survey.description && (
+                  <p>{survey.description.replace(/<[^>]*>/g, '')}</p>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Right side content */}
+          <div className="modern-survey-content">
+            {survey.logo && (
+              <div style={{ marginBottom: '20px', maxHeight: '60px' }}>
+                <img 
+                  src={survey.logo} 
+                  alt={survey.title} 
+                  style={{ maxHeight: '60px', objectFit: 'contain' }} 
+                />
+              </div>
+            )}
+            
+            <div className="modern-survey-header">
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                <IconWrapper iconColor={effectiveColor}>
+                  <FiCheckCircle />
+                </IconWrapper>
+              </div>
+              <h1 className="modern-survey-question">Thank You!</h1>
+            </div>
+            
+            <div style={{ fontSize: '18px', color: '#444', lineHeight: '1.6', marginBottom: '40px' }}>
+              Your responses have been successfully submitted. We appreciate your time and feedback.
+            </div>
+            
+            <div className="modern-survey-actions">
+              <button 
+                className="modern-survey-button button-primary"
+                onClick={handleRestart}
+                style={{ 
+                  '--primary-color': effectiveColor,
+                  '--primary-dark': adjustColor(effectiveColor, -20)
+                } as React.CSSProperties}
+              >
+                Restart Survey <FiRefreshCw style={{ marginLeft: '8px' }} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </ThankYouContainer>
   );
 };

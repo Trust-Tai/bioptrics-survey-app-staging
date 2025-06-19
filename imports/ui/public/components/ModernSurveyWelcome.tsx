@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiArrowRight } from 'react-icons/fi';
+import { FiArrowRight, FiClock, FiShield } from 'react-icons/fi';
+import '../components/ModernSurvey.css';
 
 interface Survey {
   _id: string;
@@ -18,10 +19,6 @@ interface ModernSurveyWelcomeProps {
 }
 
 const WelcomeContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   width: 100%;
   animation: fadeIn 0.6s ease-out;
   
@@ -31,69 +28,11 @@ const WelcomeContainer = styled.div`
   }
 `;
 
-const WelcomeCard = styled.div<{ color?: string }>`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  overflow: hidden;
-  position: relative;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const WelcomeImageSection = styled.div<{ featuredImage?: string }>`
-  background-image: ${props => props.featuredImage ? `url(${props.featuredImage})` : 'linear-gradient(135deg, #6B73FF 0%, #000DFF 100%)'};
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  position: relative;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.2);
-    z-index: 1;
-  }
-  
-  @media (max-width: 768px) {
-    min-height: 200px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const WelcomeContentSection = styled.div<{ color?: string }>`
-  padding: 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  position: relative;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 60px;
-    background: ${props => props.color || '#552a47'};
-  }
-  
-  @media (max-width: 768px) {
-    padding: 32px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
 const LogoSmall = styled.img`
   max-width: 120px;
@@ -104,137 +43,148 @@ const LogoSmall = styled.img`
   z-index: 2;
 `;
 
-const Title = styled.h1`
-  font-size: 36px;
-  font-weight: 800;
-  color: #222;
-  margin: 0 0 24px 0;
-  line-height: 1.2;
-  
-  @media (max-width: 768px) {
-    font-size: 28px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const Description = styled.div`
-  font-size: 18px;
-  color: #444;
-  margin-bottom: 40px;
-  line-height: 1.7;
-  
-  p {
-    margin: 0 0 16px 0;
-  }
-  
-  @media (max-width: 768px) {
-    font-size: 16px;
-    margin-bottom: 32px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
-const StartButton = styled.button<{ btnColor?: string }>`
-  background: ${props => props.btnColor || '#552a47'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 16px 32px;
-  font-size: 17px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+
+// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+
+// Helper function to adjust color brightness
+const adjustColor = (color: string, amount: number): string => {
+  if (!color) return '#552a47';
   
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-    filter: brightness(1.05);
+  let usePound = false;
+  
+  if (color[0] === '#') {
+    color = color.slice(1);
+    usePound = true;
   }
   
-  &:active {
-    transform: translateY(0);
-    filter: brightness(0.95);
-  }
+  const num = parseInt(color, 16);
   
-  @media (max-width: 768px) {
-    padding: 14px 28px;
-    font-size: 16px;
-    width: 100%;
-    justify-content: center;
+  let r = (num >> 16) + amount;
+  r = Math.max(Math.min(255, r), 0);
+  
+  let g = ((num >> 8) & 0x00FF) + amount;
+  g = Math.max(Math.min(255, g), 0);
+  
+  let b = (num & 0x0000FF) + amount;
+  b = Math.max(Math.min(255, b), 0);
+  
+  return (usePound ? '#' : '') + (g | (r << 8) | (b << 16)).toString(16).padStart(6, '0');
+};
+
+// Convert hex color to RGB values for CSS variables
+const hexToRgb = (hex: string): string => {
+  if (!hex || hex === '') return '85, 42, 71'; // Default color
+  
+  // Remove the # if present
+  hex = hex.replace('#', '');
+  
+  try {
+    // Parse the hex values
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    
+    return `${r}, ${g}, ${b}`;
+  } catch (error) {
+    console.error('Error parsing color:', error);
+    return '85, 42, 71'; // Default color
   }
-`;
-
-const SurveyInfo = styled.div`
-  display: flex;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 24px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  font-size: 14px;
-  color: #666;
-  gap: 16px;
-`;
-
-const InfoItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const ImageOverlayText = styled.div`
-  color: white;
-  font-size: 24px;
-  font-weight: 700;
-  text-align: center;
-  position: relative;
-  z-index: 2;
-  padding: 0 32px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-`;
-
-const PrivacyNote = styled.p`
-  font-size: 14px;
-  color: #777;
-  margin-top: 24px;
-  max-width: 400px;
-`;
+};
 
 const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onStart }) => {
+  const effectiveColor = survey.color || '#552a47';
+  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '85, 42, 71';
+  const surveyImage = survey.featuredImage || survey.image || 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+
   return (
     <WelcomeContainer>
-      <WelcomeCard color={survey.color}>
-        <WelcomeImageSection featuredImage={survey.featuredImage || survey.image}>
-          <ImageOverlayText>
-            {survey.title.split(' ').slice(0, 2).join(' ')}
-          </ImageOverlayText>
-        </WelcomeImageSection>
-        
-        <WelcomeContentSection color={survey.color}>
-          {survey.logo && <LogoSmall src={survey.logo} alt={survey.title} />}
+      <div 
+        className="modern-survey-container"
+        style={{
+          '--primary-color': effectiveColor,
+          '--primary-color-rgb': primaryColorRgb,
+          '--primary-dark': adjustColor(effectiveColor, -20)
+        } as React.CSSProperties}
+      >
+        <div className="modern-survey-wrapper">
+          {/* Left side image - same as question screen */}
+          <div 
+            className="modern-survey-sidebar"
+            style={{ 
+              backgroundImage: `url(${surveyImage})`, 
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            <div className="modern-survey-sidebar-overlay">
+              <div className="sidebar-text-container">
+                <h2>{survey.title}</h2>
+                {survey.description && (
+                  <p>{survey.description.replace(/<[^>]*>/g, '')}</p>
+                )}
+              </div>
+            </div>
+          </div>
           
-          <Title>{survey.title}</Title>
-          
-          {survey.description && (
-            <Description dangerouslySetInnerHTML={{ __html: survey.description }} />
-          )}
-          
-          <StartButton btnColor={survey.color} onClick={onStart}>
-            Start Survey <FiArrowRight size={18} />
-          </StartButton>
-          
-          <SurveyInfo>
-            <InfoItem>
-              <FiArrowRight size={14} /> Estimated time: 5-10 minutes
-            </InfoItem>
-          </SurveyInfo>
-          
-          <PrivacyNote>
-            Your responses are anonymous and confidential.
-          </PrivacyNote>
-        </WelcomeContentSection>
-      </WelcomeCard>
+          {/* Right side content */}
+          <div className="modern-survey-content">
+            {survey.logo && (
+              <div style={{ marginBottom: '20px', maxHeight: '60px' }}>
+                <img 
+                  src={survey.logo} 
+                  alt={survey.title} 
+                  style={{ maxHeight: '60px', objectFit: 'contain' }} 
+                />
+              </div>
+            )}
+            
+            <div className="modern-survey-header">
+              <h1 className="modern-survey-question">{survey.title}</h1>
+            </div>
+            
+            {survey.description && (
+              <div className="modern-survey-description" style={{ marginBottom: '30px' }}>
+                <div dangerouslySetInnerHTML={{ __html: survey.description }} />
+              </div>
+            )}
+            
+            <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontSize: '14px', color: '#666' }}>
+                <FiClock size={16} /> <span>Estimated time: 5-10 minutes</span>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px', fontSize: '14px', color: '#666' }}>
+                <FiShield size={16} /> <span>Your responses are anonymous and confidential.</span>
+              </div>
+              
+              <div className="modern-survey-actions">
+                <button 
+                  className="modern-survey-button button-primary"
+                  onClick={onStart}
+                  style={{ 
+                    '--primary-color': effectiveColor,
+                    '--primary-dark': adjustColor(effectiveColor, -20)
+                  } as React.CSSProperties}
+                >
+                  Start Survey <FiArrowRight />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </WelcomeContainer>
   );
 };

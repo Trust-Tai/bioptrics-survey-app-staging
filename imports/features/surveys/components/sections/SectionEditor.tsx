@@ -1,6 +1,321 @@
 import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiTrash2, FiImage, FiInfo, FiAlertCircle } from 'react-icons/fi';
 import { SurveySectionItem } from '../../types';
+import styled from 'styled-components';
+
+// Styled components for the redesigned modal
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.3s ease;
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eaeaea;
+  position: sticky;
+  top: 0;
+  background: white;
+  border-radius: 12px 12px 0 0;
+  z-index: 1;
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #552a47;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #f0f0f0;
+    color: #552a47;
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FormLabel = styled.label`
+  font-weight: 500;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  svg {
+    color: #552a47;
+  }
+`;
+
+const FormInput = styled.input`
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.1);
+  }
+`;
+
+const FormTextarea = styled.textarea`
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  min-height: 100px;
+  resize: vertical;
+  transition: border-color 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.1);
+  }
+`;
+
+const ColorPickerContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const ColorPreview = styled.label<{ color: string }>`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: ${props => props.color};
+  border: 1px solid #ddd;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+`;
+
+const ColorInput = styled.input`
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  cursor: pointer;
+  opacity: 0;
+`;
+
+const ColorText = styled.input`
+  width: 120px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: monospace;
+`;
+
+const CheckboxGroup = styled.div`
+  display: flex;
+  gap: 24px;
+  margin-top: 8px;
+`;
+
+const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: #552a47;
+  }
+`;
+
+const ImageUploadContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const ImageUploadInput = styled.label`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9f9f9;
+  
+  &:hover {
+    border-color: #552a47;
+    background: #f5f0f4;
+  }
+  
+  input {
+    display: none;
+  }
+  
+  svg {
+    font-size: 32px;
+    color: #552a47;
+    margin-bottom: 8px;
+  }
+`;
+
+const ImagePreviewContainer = styled.div`
+  position: relative;
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const ImagePreview = styled.img`
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  background: #f0f0f0;
+  display: block;
+`;
+
+const DeleteImageButton = styled.button`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+  
+  &:hover {
+    background: white;
+    transform: scale(1.1);
+  }
+  
+  svg {
+    color: #d9534f;
+  }
+`;
+
+const HelpText = styled.div`
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  
+  svg {
+    font-size: 14px;
+    color: #888;
+  }
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #eaeaea;
+  background: #f9f9f9;
+  border-radius: 0 0 12px 12px;
+`;
+
+const Button = styled.button<{ primary?: boolean }>`
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  
+  background: ${props => props.primary ? '#552a47' : 'white'};
+  color: ${props => props.primary ? 'white' : '#333'};
+  border: 1px solid ${props => props.primary ? '#552a47' : '#ddd'};
+  
+  &:hover {
+    background: ${props => props.primary ? '#6a3559' : '#f5f5f5'};
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
 
 interface SectionEditorProps {
   isOpen: boolean;
@@ -15,13 +330,14 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   section,
   onSave,
 }) => {
-  const [formData, setFormData] = useState<Partial<SurveySectionItem>>({
+  const [formData, setFormData] = useState<Partial<SurveySectionItem> & { image?: string }>({
     name: '',
     description: '',
     isActive: true,
     isRequired: false,
     color: '#552a47',
     priority: 0,
+    image: undefined,
   });
   
   // Reset form data when the modal opens with a new section
@@ -35,6 +351,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
         color: section.color || '#552a47',
         priority: section.priority || 0,
         instructions: section.instructions || '',
+        image: section.image || undefined,
       });
     } else {
       setFormData({
@@ -45,6 +362,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
         color: '#552a47',
         priority: 0,
         instructions: '',
+        image: undefined,
       });
     }
   }, [section, isOpen]);
@@ -56,9 +374,24 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (type === 'file') {
+      const fileInput = e.target as HTMLInputElement;
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData(prev => ({ ...prev, image: reader.result as string }));
+        };
+        reader.readAsDataURL(file);
+      }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+  
+  // Handle image deletion
+  const handleDeleteImage = () => {
+    setFormData(prev => ({ ...prev, image: undefined }));
   };
   
   // Handle form submission
@@ -76,6 +409,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
       color: formData.color || '#552a47',
       priority: formData.priority ?? 0,
       instructions: formData.instructions || '',
+      image: formData.image,
     };
     
     onSave(sectionData);
@@ -85,132 +419,178 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   if (!isOpen) return null;
   
   return (
-    <div className="question-selector-modal">
-      <div className="question-selector-content" style={{ maxWidth: 600 }}>
-        <div className="question-selector-header">
-          <h3 className="question-selector-title">
+    <ModalOverlay>
+      <ModalContent>
+        <ModalHeader>
+          <ModalTitle>
             {section ? 'Edit Section' : 'Create New Section'}
-          </h3>
-          <button 
-            className="btn btn-icon btn-secondary"
-            onClick={onClose}
-          >
-            <FiX />
-          </button>
-        </div>
+          </ModalTitle>
+          <CloseButton onClick={onClose}>
+            <FiX size={20} />
+          </CloseButton>
+        </ModalHeader>
         
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Section Name*</label>
-            <input
+          <ModalBody>
+          <FormGroup>
+            <FormLabel>
+              Section Name*
+            </FormLabel>
+            <FormInput
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              className="form-input"
               placeholder="Enter section name"
               required
             />
-          </div>
+          </FormGroup>
           
-          <div className="form-group">
-            <label className="form-label">Description</label>
-            <textarea
+          <FormGroup>
+            <FormLabel>
+              Description
+            </FormLabel>
+            <FormTextarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              className="form-textarea"
               placeholder="Enter section description"
             />
-          </div>
+          </FormGroup>
           
-          <div className="form-group">
-            <label className="form-label">Instructions for Respondents</label>
-            <textarea
+          <FormGroup>
+            <FormLabel>
+              Instructions for Respondents
+            </FormLabel>
+            <FormTextarea
               name="instructions"
               value={formData.instructions}
               onChange={handleInputChange}
-              className="form-textarea"
               placeholder="Enter instructions for survey respondents"
             />
-          </div>
+          </FormGroup>
           
-          <div className="form-group">
-            <label className="form-label">Section Color</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input
-                type="color"
-                name="color"
-                value={formData.color}
-                onChange={handleInputChange}
-                style={{ width: 40, height: 40, padding: 0, border: 'none' }}
-              />
-              <input
+          <FormGroup>
+            <FormLabel>
+              <FiImage size={16} />
+              Section Image
+            </FormLabel>
+            <ImageUploadContainer>
+              {!formData.image ? (
+                <ImageUploadInput htmlFor="image-upload">
+                  <FiImage />
+                  <span>Click to upload an image</span>
+                  <span style={{ fontSize: '12px', opacity: 0.7 }}>or drag and drop</span>
+                  <input
+                    id="image-upload"
+                    type="file"
+                    name="image"
+                    accept="image/*"
+                    onChange={handleInputChange}
+                  />
+                </ImageUploadInput>
+              ) : (
+                <ImagePreviewContainer>
+                  <ImagePreview 
+                    src={formData.image} 
+                    alt="Section background" 
+                  />
+                  <DeleteImageButton
+                    type="button"
+                    onClick={handleDeleteImage}
+                    aria-label="Delete image"
+                  >
+                    <FiTrash2 size={16} />
+                  </DeleteImageButton>
+                </ImagePreviewContainer>
+              )}
+              <HelpText>
+                <FiInfo size={14} />
+                Recommended size: 800x600px. The image will be used as the section background.
+              </HelpText>
+            </ImageUploadContainer>
+          </FormGroup>
+          
+          <FormGroup>
+            <FormLabel>
+              Section Color
+            </FormLabel>
+            <ColorPickerContainer>
+              <ColorPreview color={formData.color}>
+                <ColorInput
+                  type="color"
+                  name="color"
+                  value={formData.color}
+                  onChange={handleInputChange}
+                />
+              </ColorPreview>
+              <ColorText
                 type="text"
                 name="color"
                 value={formData.color}
                 onChange={handleInputChange}
-                className="form-input"
-                style={{ width: 120 }}
               />
-            </div>
-          </div>
+            </ColorPickerContainer>
+          </FormGroup>
           
-          <div className="form-group" style={{ display: 'flex', gap: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                id="isActive"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleInputChange}
-              />
-              <label htmlFor="isActive">Active</label>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                id="isRequired"
-                name="isRequired"
-                checked={formData.isRequired}
-                onChange={handleInputChange}
-              />
-              <label htmlFor="isRequired">Required</label>
-            </div>
-          </div>
+          <FormGroup>
+            <CheckboxGroup>
+              <CheckboxLabel htmlFor="isActive">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  name="isActive"
+                  checked={formData.isActive}
+                  onChange={handleInputChange}
+                />
+                Active
+              </CheckboxLabel>
+              
+              <CheckboxLabel htmlFor="isRequired">
+                <input
+                  type="checkbox"
+                  id="isRequired"
+                  name="isRequired"
+                  checked={formData.isRequired}
+                  onChange={handleInputChange}
+                />
+                Required
+              </CheckboxLabel>
+            </CheckboxGroup>
+          </FormGroup>
           
-          <div className="form-group">
-            <label className="form-label">Display Order</label>
-            <input
+          <FormGroup>
+            <FormLabel>
+              Display Order
+            </FormLabel>
+            <FormInput
               type="number"
               name="priority"
               value={formData.priority}
               onChange={handleInputChange}
-              className="form-input"
               min="0"
-              style={{ width: 100 }}
+              style={{ width: '100px' }}
             />
-          </div>
+          </FormGroup>
+          </ModalBody>
           
-          <div className="question-selector-actions">
-            <button 
+          <ModalFooter>
+            <Button 
               type="button"
-              className="btn btn-secondary"
               onClick={onClose}
             >
               Cancel
-            </button>
-            <button 
+            </Button>
+            <Button 
               type="submit"
-              className="btn btn-primary"
+              primary
             >
               Save Section
-            </button>
-          </div>
+            </Button>
+          </ModalFooter>
         </form>
-      </div>
-    </div>
+      </ModalContent>
+    </ModalOverlay>
   );
 };
 

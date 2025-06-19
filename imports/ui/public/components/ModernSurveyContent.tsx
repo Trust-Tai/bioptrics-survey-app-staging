@@ -1062,6 +1062,9 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
             onContinue={() => handleSectionContinue(currentSection.id)}
             onBack={handleBack}
             color={survey.color}
+            surveyTitle={survey.title}
+            surveyDescription={survey.description}
+            image={currentSection.image || survey.image}
           />
         );
         
