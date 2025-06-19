@@ -29,7 +29,7 @@ Meteor.methods({
   'surveyThemes.update'(id: string, updates: Partial<SurveyThemeType>) {
     return SurveyThemes.update(id, { $set: updates });
   },
-  'surveyThemes.remove'(id: string) {
-    return SurveyThemes.remove(id);
+  async 'surveyThemes.remove'(id: string) {
+    return await SurveyThemes.removeAsync(id);
   },
 });

@@ -63,10 +63,9 @@ import './EnhancedSurveyBuilder.css';
 const steps = [
   { id: 'welcome', label: 'Welcome Screen', icon: 'FiHome' },
   { id: 'sections', label: 'Sections', icon: 'FiLayers' },
+  { id: 'tags', label: 'Tags', icon: 'FiTag' },
   { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'themes', label: 'Themes', icon: 'FiTag' },
-  { id: 'categories', label: 'Categories', icon: 'FiGrid' },
-  { id: 'tags', label: 'Tags', icon: 'FiTag' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   { id: 'preview', label: 'Preview', icon: 'FiEye' },
@@ -1461,27 +1460,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   </div>
                   
                   <div style={{ padding: 20 }}>
-                    <p style={{ marginBottom: 16, fontSize: 15 }}>
+                    <p style={{ marginBottom: 16, fontSize: 18 }}>
                       Select tags for your survey. Tags help categorize and filter your survey content.
                     </p>
-                    
-                    <div style={{ 
-                      backgroundColor: '#f8f9fa', 
-                      padding: '12px 16px', 
-                      borderRadius: '6px', 
-                      marginBottom: '20px',
-                      border: '1px solid #e9ecef'
-                    }}>
-                      <h4 style={{ fontSize: '15px', marginBottom: '8px', fontWeight: 600, color: '#495057' }}>
-                        How to use:
-                      </h4>
-                      <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Click in the field to see available tags</li>
-                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Type to search for specific tags</li>
-                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Click on a tag to select it</li>
-                        <li style={{ marginBottom: '4px', fontSize: '14px', color: '#495057' }}>Click the × to remove a selected tag</li>
-                      </ul>
-                    </div>
                     
                     <div style={{ marginBottom: 20 }}>
                       <label htmlFor="survey-tags" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
@@ -1491,9 +1472,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         marginBottom: 16,
                         maxWidth: '600px',
                         position: 'relative',
-                        zIndex: 100,
-                        overflow: 'visible' // Ensure dropdown is visible
+                        zIndex: 1000,
+                        overflow: 'visible'
                       }}>
+                      {/* Add a style tag to ensure the dropdown menu is visible */}
+                      <style>
+                        {`
+                          .ts-dropdown { 
+                            z-index: 1001 !important; 
+                            max-height: 300px !important;
+                            overflow-y: auto !important;
+                            position: absolute !important;
+                          }
+                          .survey-builder-panel { overflow: visible !important; }
+                          .survey-builder-content { overflow: visible !important; }
+                        `}
+                      </style>
                         <select 
                           id="survey-tags"
                           multiple 
@@ -1508,102 +1502,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           )}
                         </select>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ) : activeStep === 'categories' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">
-                      {steps.find(step => step.id === activeStep)?.label}
-                    </h2>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    <p style={{ marginBottom: 16, fontSize: 15 }}>
-                      Select categories for your survey. Categories help organize and classify your survey content.
-                    </p>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
-                      {wpsCategories.map((category: any) => {
-                        const isSelected = selectedCategories.includes(category._id);
-                        return (
-                          <div 
-                            key={category._id} 
-                            onClick={() => {
-                              const updatedCategories = isSelected
-                                ? selectedCategories.filter((id: string) => id !== category._id)
-                                : [...selectedCategories, category._id];
-                              setSelectedCategories(updatedCategories);
-                            }}
-                            style={{ 
-                              cursor: 'pointer',
-                              borderRadius: 8,
-                              border: `2px solid ${isSelected ? category.color || '#552a47' : '#e0e0e0'}`,
-                              background: isSelected ? '#f5edf3' : '#fff',
-                              padding: '16px',
-                              transition: 'all 0.2s',
-                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: 12
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{ 
-                                width: 24, 
-                                height: 24, 
-                                borderRadius: '4px', 
-                                background: category.color || '#552a47',
-                                border: '1px solid #e0e0e0'
-                              }} />
-                              <div style={{ 
-                                fontWeight: isSelected ? 600 : 500, 
-                                fontSize: 16,
-                                color: isSelected ? '#552a47' : '#333'
-                              }}>
-                                {category.name}
-                              </div>
-                            </div>
-                            
-                            <div style={{ 
-                              fontSize: 14, 
-                              color: '#666',
-                              marginTop: 5,
-                              lineHeight: '1.4'
-                            }}>
-                              {category.description || 'No description'}
-                            </div>
-                            
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'flex-end',
-                              marginTop: 10
-                            }}>
-                              <div style={{ 
-                                width: 20, 
-                                height: 20, 
-                                borderRadius: '4px', 
-                                border: `2px solid ${isSelected ? category.color || '#552a47' : '#ddd'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: '#fff'
-                              }}>
-                                {isSelected && (
-                                  <div style={{ 
-                                    width: 12, 
-                                    height: 12, 
-                                    borderRadius: '2px', 
-                                    background: category.color || '#552a47' 
-                                  }} />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
                     </div>
                   </div>
                 </div>

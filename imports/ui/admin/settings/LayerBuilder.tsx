@@ -266,14 +266,14 @@ const LayerBuilder: React.FC = () => {
   
   // Step system has been removed - all fields are shown on a single page
   
-  // State for layer data
-  const [layer, setLayer] = useState<Partial<Layer>>({ 
-    name: '', 
-    location: '', 
-    fields: [], 
+  // State for form data
+  const [layer, setLayer] = useState<Partial<Layer>>({
+    name: '',
+    parentId: '',
+    fields: [],
     active: true,
     color: '#552a47', // Default color
-    parentId: '' 
+    location: 'surveys', // Default location - surveys only
   });
   
   // State for multiple locations
@@ -432,9 +432,7 @@ const LayerBuilder: React.FC = () => {
       newErrors.name = 'Tag name is required';
     }
     
-    if (!layer.location || layer.location.trim() === '') {
-      newErrors.location = 'At least one location must be selected';
-    }
+    // Location validation removed as requested
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -731,89 +729,7 @@ const LayerBuilder: React.FC = () => {
               {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
             </FormGroup>
             
-            <FormGroup>
-              <Label>Location</Label>
-              <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-                <div 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    cursor: 'pointer',
-                    padding: '10px 15px',
-                    border: `1px solid ${selectedLocations.surveys ? '#552a47' : '#ddd'}`,
-                    borderRadius: '8px',
-                    background: selectedLocations.surveys ? 'rgba(85, 42, 71, 0.05)' : 'white'
-                  }}
-                  onClick={() => {
-                    const newLocations = { ...selectedLocations, surveys: !selectedLocations.surveys };
-                    setSelectedLocations(newLocations);
-                    
-                    // Update the layer.location string based on selected checkboxes
-                    const locationStr = [
-                      newLocations.surveys ? 'surveys' : '',
-                      newLocations.questions ? 'questions' : ''
-                    ].filter(Boolean).join(',');
-                    
-                    setLayer(prev => ({ ...prev, location: locationStr }));
-                  }}
-                >
-                  <div style={{ 
-                    width: '20px', 
-                    height: '20px', 
-                    borderRadius: '4px',
-                    border: '2px solid #552a47',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: selectedLocations.surveys ? '#552a47' : 'white'
-                  }}>
-                    {selectedLocations.surveys && <FaCheck size={12} color="white" />}
-                  </div>
-                  <span style={{ fontWeight: selectedLocations.surveys ? '600' : '400' }}>Surveys</span>
-                </div>
-                
-                <div 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    cursor: 'pointer',
-                    padding: '10px 15px',
-                    border: `1px solid ${selectedLocations.questions ? '#552a47' : '#ddd'}`,
-                    borderRadius: '8px',
-                    background: selectedLocations.questions ? 'rgba(85, 42, 71, 0.05)' : 'white'
-                  }}
-                  onClick={() => {
-                    const newLocations = { ...selectedLocations, questions: !selectedLocations.questions };
-                    setSelectedLocations(newLocations);
-                    
-                    // Update the layer.location string based on selected checkboxes
-                    const locationStr = [
-                      newLocations.surveys ? 'surveys' : '',
-                      newLocations.questions ? 'questions' : ''
-                    ].filter(Boolean).join(',');
-                    
-                    setLayer(prev => ({ ...prev, location: locationStr }));
-                  }}
-                >
-                  <div style={{ 
-                    width: '20px', 
-                    height: '20px', 
-                    borderRadius: '4px',
-                    border: '2px solid #552a47',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: selectedLocations.questions ? '#552a47' : 'white'
-                  }}>
-                    {selectedLocations.questions && <FaCheck size={12} color="white" />}
-                  </div>
-                  <span style={{ fontWeight: selectedLocations.questions ? '600' : '400' }}>Questions</span>
-                </div>
-              </div>
-              {errors.location && <ErrorMessage>{errors.location}</ErrorMessage>}
-            </FormGroup>
+            {/* Location field removed as requested */}
             
             <FormGroup>
               <Label htmlFor="parentId">Parent Tag</Label>
