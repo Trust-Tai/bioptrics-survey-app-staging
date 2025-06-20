@@ -108,6 +108,8 @@ export interface SurveyDoc {
     allowedGroups?: string[];
     passwordProtected?: boolean;
     accessPassword?: string;
+    // Survey retake setting
+    allowRetake?: boolean;
   };
   isActive?: boolean;
   priority?: number;
@@ -471,6 +473,8 @@ Meteor.methods({
         logo: surveyData.logo,
         featuredImage: surveyData.featuredImage,
         primaryColor: surveyData.primaryColor,
+        // Save default settings including allowRetake
+        defaultSettings: surveyData.defaultSettings || {},
         // Save sections and questions
         surveySections: surveyData.surveySections || [],
         sectionQuestions: surveyData.sectionQuestions || [],
