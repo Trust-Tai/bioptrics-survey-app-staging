@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiX, FiCheck } from 'react-icons/fi';
 import { QuestionItem } from '../../types';
+import RichTextRenderer from './RichTextRenderer';
 
 interface QuestionSelectorProps {
   isOpen: boolean;
@@ -311,7 +312,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     marginBottom: '4px',
                     lineHeight: 1.4
                   }}>
-                    {question.text.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '')}
+                    <RichTextRenderer content={question.text} />
                   </div>
                   <div style={{
                     fontSize: '13px',
