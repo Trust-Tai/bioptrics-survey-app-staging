@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FiChevronDown, FiChevronUp, FiEdit2, FiTrash2, FiPlus, FiMove } from 'react-icons/fi';
 import { SurveySectionItem, QuestionItem } from '../../types';
+import RichTextRenderer from './RichTextRenderer';
 
 interface EnhancedSurveySectionProps {
   section: SurveySectionItem;
@@ -109,7 +110,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                     <FiMove />
                   </div>
                   <div className="survey-section-question-title">
-                    {question.text.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '')}
+                    <RichTextRenderer content={question.text} />
                   </div>
                   <div className="survey-section-question-actions">
                     <button 

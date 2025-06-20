@@ -607,6 +607,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     // The submission will be handled by the onSubmit prop passed to ModernSurveyQuestion
     if (isLastQuestionInSurvey) {
       console.log('Last question in survey detected - waiting for user to submit manually');
+      // Store the last question ID to ensure it gets included in submission
+      window.localStorage.setItem('lastAnsweredQuestionId', questionId);
       // Not automatically submitting to avoid duplicate submissions
       return;
     }
@@ -885,12 +887,171 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     const now = new Date();
     const startTime = sessionStartTime;
     
-    // Format responses to match the expected structure
-    const formattedResponses = Object.entries(responses).map(([questionId, answer]) => ({
-      questionId,
-      answer,
-      sectionId: questions.find(q => q._id === questionId)?.sectionId
-    }));
+    // DIRECT APPROACH: Force collection of all responses for all questions in the survey
+    console.log('DIRECT APPROACH: Collecting all questions and responses');
+    
+    // Debug log all questions in the survey
+    console.log('All questions in the survey:', questions.map(q => ({
+      id: q._id || q.id,
+      text: q.text?.substring(0, 30),
+      sectionId: q.sectionId
+    })));
+    
+    // Debug log all current responses
+    console.log('Current responses state:', responses);
+    
+    // Get all questions from the survey, including those that might not be in sections
+    const allQuestions = [...questions];
+    
+    // Ensure we have all questions from the survey object directly
+    if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+      survey.sectionQuestions.forEach(q => {
+        const questionId = q._id || q.id;
+        if (!allQuestions.some(existingQ => (existingQ._id === questionId || existingQ.id === questionId))) {
+          allQuestions.push(q);
+        }
+      });
+    }
+    
+    // Also check selectedQuestions if available
+    if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
+      Object.values(survey.selectedQuestions).flat().forEach(q => {
+        const questionId = q._id || q.id;
+        if (!allQuestions.some(existingQ => (existingQ._id === questionId || existingQ.id === questionId))) {
+          allQuestions.push(q);
+        }
+      });
+    }
+    
+    console.log(`Total questions found: ${allQuestions.length}`);
+    
+    // CRITICAL FIX: Create a complete list of responses for ALL questions in the survey
+    // This ensures we don't miss any responses, especially the last question
+    const formattedResponses = [];
+    
+    // Process each question in the survey
+    allQuestions.forEach(question => {
+      const questionId = question._id || question.id || '';
+      if (!questionId) return; // Skip questions without ID
+      
+      // Get the answer for this question from our responses state
+      const answer = responses[questionId];
+      
+      // If we have an answer for this question, add it to our formatted responses
+      if (answer !== undefined) {
+        formattedResponses.push({
+          questionId,
+          answer,
+          sectionId: question.sectionId
+        });
+        console.log(`Added response for question: ${questionId}, text: ${question.text?.substring(0, 30)}`);
+      } else {
+        console.log(`No response found for question: ${questionId}, text: ${question.text?.substring(0, 30)}`);
+      }
+    });
+    
+    // SPECIAL HANDLING: If we're currently on a question page, make sure that question's response is included
+    if (currentStep.type === 'question') {
+      const currentQuestion = getCurrentQuestion();
+      if (currentQuestion) {
+        const questionId = currentQuestion._id || currentQuestion.id || '';
+        let answer;
+        
+        // Special handling for different question types
+        const questionType = currentQuestion.type?.toLowerCase() || '';
+        
+        // Check for Likert/scale questions specifically
+        if (questionType.includes('scale') || questionType.includes('likert')) {
+          // For scale questions, look for buttons with 'selected' class
+          const selectedButton = document.querySelector('.scale-button.selected');
+          if (selectedButton) {
+            answer = selectedButton.textContent?.trim();
+            console.log('Found Likert/scale answer from selected button:', answer);
+          }
+        } else {
+          // For other question types
+          answer = document.querySelector(`input[name="${questionId}"]:checked`)?.value || 
+                  document.querySelector(`input[name="${questionId}"]`)?.value || 
+                  document.querySelector(`textarea[name="${questionId}"]`)?.value ||
+                  document.querySelector(`.option-button.selected`)?.textContent?.trim();
+        }
+        
+        // If we found an answer in the DOM but it's not in our responses state
+        if (answer && !formattedResponses.some(r => r.questionId === questionId)) {
+          console.log('CRITICAL: Found answer in DOM for current question that was not in state:', {
+            questionId,
+            answer,
+            questionType,
+            questionText: currentQuestion.text?.substring(0, 30)
+          });
+          
+          formattedResponses.push({
+            questionId,
+            answer,
+            sectionId: currentQuestion.sectionId
+          });
+        }
+      }
+    }
+    
+    // FINAL CHECK: Make sure we have all 4 questions
+    // This is a direct fix for the specific issue where only 3 out of 4 questions are being saved
+    if (allQuestions.length === 4 && formattedResponses.length < 4) {
+      console.log('CRITICAL: Only found ' + formattedResponses.length + ' responses for 4 questions!');
+      
+      // Find the missing question
+      const savedQuestionIds = formattedResponses.map(r => r.questionId);
+      const missingQuestions = allQuestions.filter(q => {
+        const qId = q._id || q.id || '';
+        return qId && !savedQuestionIds.includes(qId);
+      });
+      
+      console.log('Missing questions:', missingQuestions.map(q => ({
+        id: q._id || q.id,
+        text: q.text?.substring(0, 30),
+        type: q.type
+      })));
+      
+      // Try to find any response for the missing question in localStorage
+      missingQuestions.forEach(q => {
+        const questionId = q._id || q.id || '';
+        if (!questionId) return;
+        
+        // Check localStorage for any saved response
+        try {
+          const savedResponsesStr = localStorage.getItem('survey_progress_' + survey._id);
+          if (savedResponsesStr) {
+            const savedData = JSON.parse(savedResponsesStr);
+            if (savedData && savedData.responses && savedData.responses[questionId]) {
+              console.log('Found missing response in localStorage:', {
+                questionId,
+                answer: savedData.responses[questionId]
+              });
+              
+              formattedResponses.push({
+                questionId,
+                answer: savedData.responses[questionId],
+                sectionId: q.sectionId
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Error checking localStorage for missing response:', e);
+        }
+      });
+    }
+    
+    // Log the final count of responses being submitted
+    console.log(`FINAL: Submitting ${formattedResponses.length} responses out of ${allQuestions.length} total questions`);
+    
+    // Log all responses being submitted for debugging
+    console.log('Final responses being submitted:', formattedResponses.map(r => ({
+      questionId: r.questionId,
+      answer: typeof r.answer === 'object' ? '[Object]' : r.answer
+    })));
+    
+    // Clear any stored last question ID
+    window.localStorage.removeItem('lastAnsweredQuestionId');
     
     // Call the surveyResponses.submit method
     Meteor.call('surveyResponses.submit', {

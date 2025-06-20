@@ -381,8 +381,10 @@ const QuestionClassification = ({
   
   // Fetch all tags from Layers collection with location containing "Questions"
   const { allTags, isLoading: tagsLoading } = useTracker(() => {
+    // const subscription = Meteor.subscribe('layers.all');
+    // const tags = Layers.find({ location: { $regex: 'Questions', $options: 'i' } }).fetch();
     const subscription = Meteor.subscribe('layers.all');
-    const tags = Layers.find({ location: { $regex: 'Questions', $options: 'i' } }).fetch();
+        const tags = Layers.find({}).fetch();
     console.log('Fetched tags from Layers:', tags); // Debug log
     return {
       allTags: tags,

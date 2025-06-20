@@ -137,6 +137,32 @@
   display: block;
 }
 
+/* Styles for HTML elements within questions */
+.modern-survey-question p {
+  margin: 0.5rem 0;
+  display: block;
+}
+
+.modern-survey-question b, 
+.modern-survey-question strong {
+  font-weight: bold;
+}
+
+.modern-survey-question i, 
+.modern-survey-question em {
+  font-style: italic;
+}
+
+.modern-survey-question u {
+  text-decoration: underline;
+}
+
+.modern-survey-question br {
+  display: block;
+  margin: 0.5rem 0;
+  content: "";
+}
+
 .modern-survey-scale {
   display: flex;
   justify-content: space-between;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import RichTextRenderer from './RichTextRenderer';
 import '../components/ModernSurvey.css';
 
 interface Question {
@@ -332,7 +333,10 @@ const CustomerSatisfactionTemplate: React.FC<CustomerSatisfactionTemplateProps> 
         </div>
         
         <div className="modern-survey-header">
-          <h1 className="modern-survey-question">{question.text}</h1>
+          <RichTextRenderer 
+            content={question.text || ''} 
+            className="modern-survey-question"
+          />
         </div>
         
         {renderQuestionInput()}

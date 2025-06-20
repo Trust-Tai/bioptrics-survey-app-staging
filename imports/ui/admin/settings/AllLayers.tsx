@@ -413,6 +413,20 @@ const AllLayers = () => {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
+  // Function to close the modal and reset form
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setLayer({
+      name: '',
+      parentId: '',
+      fields: [],
+      active: true,
+      color: '#552a47',
+      location: 'surveys',
+    });
+    setErrors({});
+  };
+  
   // Tag form state
   const [layer, setLayer] = useState<Partial<Layer>>({
     name: '',
@@ -523,7 +537,28 @@ const AllLayers = () => {
 
   // Edit a tag
   const editTag = (layerId: string) => {
-    navigate(`/admin/tags/create/${layerId}`);
+    // Find the layer by ID
+    const layerToEdit = Layers.findOne(layerId);
+    
+    if (layerToEdit) {
+      // Set the layer data in the form
+      setLayer({
+        _id: layerToEdit._id,
+        id: layerToEdit.id,
+        name: layerToEdit.name || '',
+        location: layerToEdit.location || 'surveys',
+        fields: layerToEdit.fields || [],
+        active: layerToEdit.active !== undefined ? layerToEdit.active : true,
+        parentId: layerToEdit.parentId || '',
+        color: layerToEdit.color || '#552a47',
+      });
+      
+      // Open the modal
+      setIsModalOpen(true);
+    } else {
+      console.error('Layer not found:', layerId);
+      setStatus({ loading: false, message: 'Error: Tag not found', type: 'error' });
+    }
   };
 
   // Toggle tag active status
@@ -567,9 +602,9 @@ const AllLayers = () => {
   };
   
   // Close the modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
+  // const closeModal = () => {
+  //   setIsModalOpen(false);
+  // };
   
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -605,23 +640,61 @@ const AllLayers = () => {
     return Object.keys(newErrors).length === 0;
   };
   
-  // Save tag
+  // Save tag (create or update)
   const handleSaveTag = () => {
     if (!validateForm()) {
       return;
     }
     
-    setStatus({ loading: true, message: '', type: 'info' });
-    
-    // Create new tag
-    Meteor.call('layers.create', layer, (error: Meteor.Error, result: string) => {
-      if (error) {
-        setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
-      } else {
-        setStatus({ loading: false, message: 'Tag created successfully!', type: 'success' });
-        closeModal();
-      }
-    });
+    if (layer._id) {
+      // Update existing tag
+      setStatus({ loading: true, message: 'Updating tag...', type: 'info' });
+      
+      const updatedLayer = {
+        id: layer.id,
+        name: layer.name || '',
+        location: layer.location || 'surveys',
+        active: layer.active !== undefined ? layer.active : true,
+        parentId: layer.parentId || undefined,
+        color: layer.color || '#552a47',
+        fields: layer.fields || []
+      };
+      
+      Meteor.call('layers.update', layer._id, updatedLayer, (error: Meteor.Error) => {
+        if (error) {
+          console.error('Error updating tag:', error);
+          setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
+        } else {
+          console.log('Tag updated successfully');
+          setStatus({ loading: false, message: 'Tag updated successfully!', type: 'success' });
+          closeModal();
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setStatus({ loading: false, message: '', type: 'info' });
+          }, 3000);
+        }
+      });
+    } else {
+      // Create new tag
+      setStatus({ loading: true, message: 'Creating tag...', type: 'info' });
+      
+      Meteor.call('layers.create', layer, (error: Meteor.Error) => {
+        if (error) {
+          console.error('Error creating tag:', error);
+          setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
+        } else {
+          console.log('Tag created successfully');
+          setStatus({ loading: false, message: 'Tag created successfully!', type: 'success' });
+          closeModal();
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setStatus({ loading: false, message: '', type: 'info' });
+          }, 3000);
+        }
+      });
+    }
   };
 
   // Toggle item expansion in list view
@@ -841,7 +914,7 @@ const AllLayers = () => {
         <ModalOverlay>
           <ModalContent>
             <ModalHeader>
-              <ModalTitle>Create New Tag</ModalTitle>
+              <ModalTitle>{layer._id ? 'Edit Tag' : 'Create New Tag'}</ModalTitle>
               <CloseButton onClick={closeModal}>
                 <FaTimes />
               </CloseButton>
