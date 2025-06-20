@@ -469,7 +469,7 @@ const Analytics: React.FC = () => {
               </CardHeader>
               <StatCard>
                 <StatValue>{completedSurveysCount}</StatValue>
-                <StatLabel>Responses</StatLabel>
+                <StatLabel>Surveys Completed</StatLabel>
               </StatCard>
             </Card>
 

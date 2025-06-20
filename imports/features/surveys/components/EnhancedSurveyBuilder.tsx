@@ -571,8 +571,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
         welcomeTitle: survey?.welcomeTitle || '',
         welcomeMessage: survey?.welcomeMessage || '',
         completionMessage: survey?.completionMessage || '',
-        // Explicitly include defaultSettings to ensure they're saved
-        defaultSettings: survey?.defaultSettings || {},
         // Use surveySections instead of sections to match the server-side property name
         surveySections: sections,
         sectionQuestions: surveyQuestions,
@@ -1507,43 +1505,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ) : activeStep === 'settings' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Settings</h2>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    <div style={{ marginBottom: 20 }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 600, color: '#552a47', marginBottom: 16 }}>Response Settings</h3>
-                      
-                      <div style={{ marginBottom: 12 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={survey.defaultSettings?.allowRetake !== false}
-                            onChange={() => {
-                              const currentValue = survey.defaultSettings?.allowRetake !== false;
-                              const updatedSurvey = {
-                                ...survey,
-                                defaultSettings: {
-                                  ...survey.defaultSettings,
-                                  allowRetake: !currentValue
-                                }
-                              };
-                              setSurvey(updatedSurvey);
-                            }}
-                          />
-                          Allow Survey Retake
-                        </label>
-                        <div style={{ marginLeft: 24, fontSize: 14, color: '#666', marginTop: 4 }}>
-                          When enabled, users can restart the survey after completion
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : activeStep !== 'sections' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'welcome' && (
+              ) : activeStep !== 'sections' && activeStep !== 'questions' && activeStep !== 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">
