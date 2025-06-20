@@ -12,6 +12,7 @@ import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';
 import DOMPurify from 'dompurify';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import QuestionPreviewModal from './QuestionPreviewModal';
+import AdminRichTextRenderer from './components/AdminRichTextRenderer';
 
 // Alert component for success and error messages
 interface AlertProps {
@@ -655,7 +656,9 @@ const AllQuestions: React.FC = () => {
                     </div>
                   </QuestionHeader>
                   <QuestionContent>
-                    <QuestionText>{truncateText(latestVersion.questionText, 120)}</QuestionText>
+                    <QuestionText>
+                    <AdminRichTextRenderer content={latestVersion.questionText} truncate={120} />
+                  </QuestionText>
                     <QuestionMeta>
                       {latestVersion.surveyThemes && latestVersion.surveyThemes.map((themeId: string) => (
                         <MetaTag key={themeId}>{surveyThemeMap[themeId] || themeId}</MetaTag>
