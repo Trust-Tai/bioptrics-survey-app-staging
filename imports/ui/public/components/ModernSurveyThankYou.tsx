@@ -11,10 +11,6 @@ interface Survey {
   image?: string;
   featuredImage?: string;
   color?: string;
-  defaultSettings?: {
-    allowRetake?: boolean;
-    [key: string]: any;
-  };
 }
 
 interface ModernSurveyThankYouProps {
@@ -173,19 +169,16 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, col
             </div>
             
             <div className="modern-survey-actions">
-              {/* Only show the restart button if allowRetake is enabled or not specified */}
-              {(survey.defaultSettings?.allowRetake !== false) && (
-                <button 
-                  className="modern-survey-button button-primary"
-                  onClick={handleRestart}
-                  style={{ 
-                    '--primary-color': effectiveColor,
-                    '--primary-dark': adjustColor(effectiveColor, -20)
-                  } as React.CSSProperties}
-                >
-                  Restart Survey <FiRefreshCw style={{ marginLeft: '8px' }} />
-                </button>
-              )}
+              <button 
+                className="modern-survey-button button-primary"
+                onClick={handleRestart}
+                style={{ 
+                  '--primary-color': effectiveColor,
+                  '--primary-dark': adjustColor(effectiveColor, -20)
+                } as React.CSSProperties}
+              >
+                Restart Survey <FiRefreshCw style={{ marginLeft: '8px' }} />
+              </button>
             </div>
           </div>
         </div>
