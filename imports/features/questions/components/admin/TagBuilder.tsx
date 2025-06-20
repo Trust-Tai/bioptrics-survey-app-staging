@@ -18,10 +18,9 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
 
   // Subscribe to and fetch tags from Layers collection
   const { allTags, loading } = useTracker(() => {
-    const subscription = Meteor.subscribe('layers.byLocation', 'Questions');
-    const allTags = Layers.find({ 
-      location: { $regex: 'Questions', $options: 'i' } 
-    }).fetch();
+    
+    const subscription = Meteor.subscribe('layers.all');
+    const allTags = Layers.find({}).fetch();
 
     return {
       allTags,
