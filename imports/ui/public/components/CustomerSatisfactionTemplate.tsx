@@ -46,10 +46,10 @@ const CustomerSatisfactionTemplate: React.FC<CustomerSatisfactionTemplateProps> 
   const [answer, setAnswer] = useState<any>(value || '');
   const [error, setError] = useState<string | null>(null);
   
-  // Update local state when value prop changes
+  // Update local state when value prop changes or when question changes
   useEffect(() => {
     setAnswer(value || '');
-  }, [value]);
+  }, [value, question._id]); // Added question._id to dependencies to reset state when question changes
   
   // Parse progress string to get current and total questions
   let currentQuestion = 1;
