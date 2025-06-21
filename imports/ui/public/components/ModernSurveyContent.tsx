@@ -90,20 +90,158 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   // Store user responses
   const [responses, setResponses] = useState<Record<string, any>>({});
   
+  // Flag to track if survey has been submitted
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  
   // Generate a unique key for storing this survey's progress in localStorage
   const getProgressStorageKey = () => {
     return `survey-progress-${survey._id}-${token}`;
   };
   
-  // Save current progress to localStorage
+  // Save current progress to localStorage and server
   const saveProgress = () => {
+    // Don't save progress if the survey has been submitted
+    if (isSubmitted) {
+      console.log('Survey already submitted, skipping progress save');
+      return;
+    }
+    
     try {
+      // Save to localStorage for client-side persistence
       const progressData = {
         currentStep,
         responses,
         timestamp: new Date().toISOString(),
       };
       localStorage.setItem(getProgressStorageKey(), JSON.stringify(progressData));
+      
+      // Calculate progress percentage based on answered questions vs total questions
+      const answeredCount = Object.keys(responses).length;
+      const totalQuestions = questions.length;
+      const progressPercentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+      
+      console.log(`Saving progress: ${answeredCount}/${totalQuestions} questions answered (${progressPercentage}%)`);
+      
+      // Get existing responseId from localStorage if available
+      let existingResponseId = null;
+      try {
+        const savedData = localStorage.getItem(getProgressStorageKey());
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          existingResponseId = parsedData.responseId;
+          console.log('Found existing response ID in localStorage:', existingResponseId);
+        }
+      } catch (e) {
+        console.error('Error retrieving existing response ID:', e);
+      }
+      
+      // Save to server for tracking incomplete responses
+      if (!isPreviewMode && token && !isSubmitted) {
+        try {
+          // If we already have a responseId, update it, otherwise create a new one
+          if (existingResponseId) {
+            console.log('Updating existing incomplete survey response:', existingResponseId);
+            
+            // Update the incomplete response with current answers - one at a time to avoid overwhelming the server
+            const updatePromises = Object.entries(responses).map(([questionId, answer]) => {
+              return new Promise((resolve) => {
+                // Find the question to get its section ID
+                const question = questions.find(q => q._id === questionId || q.id === questionId);
+                const sectionId = question?.sectionId || '';
+                
+                Meteor.call(
+                  'incompleteSurveyResponses.update',
+                  existingResponseId,
+                  questionId,
+                  answer,
+                  sectionId,
+                  (updateError: any) => {
+                    if (updateError) {
+                      console.error(`Error updating response for question ${questionId}:`, updateError);
+                    } else {
+                      console.log(`Successfully updated response for question ${questionId}`);
+                    }
+                    resolve(null);
+                  }
+                );
+              });
+            });
+            
+            // Wait for all updates to complete
+            Promise.all(updatePromises).then(() => {
+              console.log('All response updates completed');
+            }).catch(err => {
+              console.error('Error in update promises:', err);
+            });
+          } else if (!isSubmitted) {
+            // Create a new incomplete survey response only if not submitted
+            // Make sure we have a valid token to use as respondentId
+            const respondentId = token || `anonymous-${new Date().getTime()}`;
+            console.log('Starting incomplete survey with respondentId:', respondentId);
+            
+            Meteor.call(
+              'incompleteSurveyResponses.start',
+              survey._id,
+              respondentId,
+              (error: any, responseId: string) => {
+                if (error) {
+                  console.error('Error starting survey tracking:', error);
+                } else {
+                  console.log('Created new incomplete survey response:', responseId);
+                  
+                  // Store the responseId in localStorage for later retrieval
+                  try {
+                    const savedData = localStorage.getItem(getProgressStorageKey());
+                    if (savedData) {
+                      const parsedData = JSON.parse(savedData);
+                      parsedData.responseId = responseId;
+                      localStorage.setItem(getProgressStorageKey(), JSON.stringify(parsedData));
+                      console.log('Saved responseId to localStorage');
+                    }
+                  } catch (e) {
+                    console.error('Error saving responseId to localStorage:', e);
+                  }
+                  
+                  // Update the incomplete response with current answers - one at a time
+                  const updatePromises = Object.entries(responses).map(([questionId, answer]) => {
+                    return new Promise((resolve) => {
+                      // Find the question to get its section ID
+                      const question = questions.find(q => q._id === questionId || q.id === questionId);
+                      const sectionId = question?.sectionId || '';
+                      
+                      Meteor.call(
+                        'incompleteSurveyResponses.update',
+                        responseId,
+                        questionId,
+                        answer,
+                        sectionId,
+                        (updateError: any) => {
+                          if (updateError) {
+                            console.error(`Error updating response for question ${questionId}:`, updateError);
+                          } else {
+                            console.log(`Successfully updated response for question ${questionId}`);
+                          }
+                          resolve(null);
+                        }
+                      );
+                    });
+                  });
+                  
+                  // Wait for all updates to complete
+                  Promise.all(updatePromises).then(() => {
+                    console.log('All initial response updates completed');
+                  }).catch(err => {
+                    console.error('Error in update promises:', err);
+                  });
+                }
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Error in server-side progress saving:', error);
+        }
+      }
+      
       console.log('Survey progress saved successfully');
     } catch (error) {
       console.error('Error saving survey progress:', error);
@@ -371,7 +509,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
       questionsBySection: surveySection.map(section => ({
         sectionId: section.id,
         sectionName: section.name,
-        questionCount: allQuestions.filter(q => questionBelongsToSection(q, section.id)).length
+        questionCount: allQuestions.filter(q => q.sectionId === section.id).length
       }))
     });
   }, [survey]);
@@ -427,9 +565,12 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   }) => {
     setCurrentStep(newStep);
     
-    // Don't save welcome screen progress
-    if (newStep.type !== 'welcome') {
+    // Don't save welcome screen progress or if survey has been submitted
+    if (newStep.type !== 'welcome' && !isSubmitted) {
+      console.log('Saving progress after step update (isSubmitted:', isSubmitted, ')');
       setTimeout(() => saveProgress(), 0);
+    } else if (isSubmitted) {
+      console.log('Skipping progress save after step update because survey is already submitted');
     }
   };
   
@@ -461,7 +602,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     }
     // If no questions or sections, go to thank you
     else {
-      console.log('No sections or questions available, going to thank you screen');
+      console.log('No sections or questions available, going to thank-you screen');
       updateCurrentStep({ type: 'thank-you' });
     }
   };
@@ -564,8 +705,13 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
         [questionId]: answer
       };
       
-      // Save progress to localStorage
-      saveProgress();
+      // Save progress to localStorage only if survey hasn't been submitted
+      if (!isSubmitted) {
+        console.log('Saving progress after question answer (isSubmitted:', isSubmitted, ')');
+        saveProgress();
+      } else {
+        console.log('Skipping progress save after question answer because survey is already submitted');
+      }
       
       return updatedResponses;
     });
@@ -586,7 +732,9 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     
     // Find the current question index in its section
     const sectionQuestions = getQuestionsForSection(currentSectionId);
-    const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === questionId || q.id === questionId);
+    const currentQuestionIndex = sectionQuestions.findIndex(
+      q => q._id === questionId || q.id === questionId
+    );
     
     console.log('Question navigation info:', {
       questionId,
@@ -873,14 +1021,67 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   // Session start time is used for completion time calculation
   const [sessionStartTime] = useState<Date>(new Date());
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log('handleSubmit called - preparing to submit survey');
+    
+    // Set the submitted flag early to prevent any new incomplete responses
+    // This will prevent any auto-saves from creating new incomplete responses
+    setIsSubmitted(true);
+    console.log('Setting isSubmitted flag to true to prevent new incomplete responses');
     
     if (isPreviewMode) {
       // In preview mode, just show thank you
       console.log('Preview mode detected - skipping server submission and showing thank you screen');
       updateCurrentStep({ type: 'thank-you' });
       return;
+    }
+    
+    // IMPORTANT: Save the current question's response before submission
+    if (currentStep.type === 'question') {
+      const currentQuestion = getCurrentQuestion();
+      if (currentQuestion) {
+        const questionId = currentQuestion._id || currentQuestion.id || '';
+        if (questionId) {
+          // Make sure the response is in the responses state object
+          if (responses[questionId] === undefined) {
+            // Try to get the response from the DOM if it's not in the state
+            const questionType = currentQuestion.type?.toLowerCase() || '';
+            let answer;
+            
+            // Check for Likert/scale questions specifically
+            if (questionType.includes('scale') || questionType.includes('likert')) {
+              const selectedButton = document.querySelector('.scale-button.selected');
+              if (selectedButton) {
+                answer = selectedButton.textContent?.trim();
+              }
+            } else {
+              // For other question types
+              answer = (document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement)?.value || 
+                     (document.querySelector(`input[name="${questionId}"]`) as HTMLInputElement)?.value || 
+                     (document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement)?.value ||
+                     document.querySelector(`.option-button.selected`)?.textContent?.trim();
+            }
+            
+            if (answer) {
+              // Update the responses state with the current answer
+              setResponses(prev => ({
+                ...prev,
+                [questionId]: answer
+              }));
+              console.log(`Added response for last question ${questionId} before submission:`, answer);
+            }
+          }
+          
+          // Now save all progress including the last question
+          // We don't need to call saveProgress() here since we've already set isSubmitted to true
+          // and saveProgress() will be skipped
+          console.log('Skipping final progress save before submission since isSubmitted is true');
+          
+          // Wait a moment to ensure state updates are processed
+          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log('Successfully waited for state updates before submission');
+        }
+      }
     }
     
     // Prepare the response data according to the SurveyResponseInput interface
@@ -927,11 +1128,17 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     
     // CRITICAL FIX: Create a complete list of responses for ALL questions in the survey
     // This ensures we don't miss any responses, especially the last question
-    const formattedResponses = [];
+    interface FormattedResponse {
+      questionId: string;
+      answer: string | string[] | Record<string, any>;
+      sectionId: string;
+    }
+    
+    const formattedResponses: FormattedResponse[] = [];
     
     // Process each question in the survey
     allQuestions.forEach(question => {
-      const questionId = question._id || question.id || '';
+      const questionId = (question._id || question.id || '') as string;
       if (!questionId) return; // Skip questions without ID
       
       // Get the answer for this question from our responses state
@@ -942,7 +1149,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
         formattedResponses.push({
           questionId,
           answer,
-          sectionId: question.sectionId
+          sectionId: question.sectionId || '' // Provide empty string as fallback if sectionId is undefined
         });
         console.log(`Added response for question: ${questionId}, text: ${question.text?.substring(0, 30)}`);
       } else {
@@ -1053,6 +1260,33 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     // Clear any stored last question ID
     window.localStorage.removeItem('lastAnsweredQuestionId');
     
+    // First, find the incomplete survey response ID from localStorage
+    const progressKey = getProgressStorageKey();
+    let incompleteResponseId: string | null = null;
+    
+    try {
+      // Get the stored survey progress data
+      const savedData = localStorage.getItem(progressKey);
+      console.log('Retrieved saved progress data:', savedData);
+      
+      if (savedData) {
+        // Parse the saved data to extract the response ID
+        const parsedData = JSON.parse(savedData);
+        console.log('Parsed saved data:', parsedData);
+        
+        if (parsedData.responseId) {
+          incompleteResponseId = parsedData.responseId;
+          console.log('Found incomplete response ID:', incompleteResponseId);
+        } else {
+          console.warn('No responseId found in saved progress data');
+        }
+      } else {
+        console.warn('No saved progress data found in localStorage');
+      }
+    } catch (error) {
+      console.error('Error retrieving incomplete response ID:', error);
+    }
+    
     // Call the surveyResponses.submit method
     Meteor.call('surveyResponses.submit', {
       surveyId: survey._id,
@@ -1073,6 +1307,114 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
       if (error) {
         console.error('Error submitting survey:', error);
         setSubmitError(error.message);
+      } else {
+        // The submitted flag was already set at the beginning of handleSubmit
+        console.log('Survey submitted successfully, already marked as submitted to prevent new incomplete responses');
+        
+        // First mark the incomplete survey response as completed, then remove it after a delay
+        if (!isPreviewMode) {
+          const surveyId = survey._id;
+          const respondentId = token || `anonymous-${new Date().getTime()}`;
+          
+          console.log(`Handling incomplete response for surveyId: ${surveyId} and respondentId: ${respondentId}`);
+          
+          // IMPORTANT: Get the CURRENT incomplete response ID from localStorage
+          // This ensures we're using the most up-to-date ID
+          let currentIncompleteResponseId = null;
+          try {
+            const savedData = localStorage.getItem(getProgressStorageKey());
+            if (savedData) {
+              const parsedData = JSON.parse(savedData);
+              currentIncompleteResponseId = parsedData.responseId;
+              console.log('Found current incomplete response ID in localStorage:', currentIncompleteResponseId);
+            }
+          } catch (e) {
+            console.error('Error retrieving current response ID:', e);
+          }
+          
+          // Use the most current ID (from localStorage) or fall back to the one passed to handleSubmit
+          const responseIdToProcess = currentIncompleteResponseId || incompleteResponseId;
+          
+          // First mark as completed to prevent new responses from being created
+          if (responseIdToProcess) {
+            console.log(`First marking as completed: ${responseIdToProcess}`);
+            Meteor.call('incompleteSurveyResponses.markAsCompleted', responseIdToProcess, (markError: any, markResult: boolean) => {
+              if (markError) {
+                console.error('Error marking as completed:', markError);
+                // Fall back to removal by surveyId and respondentId
+                markByAttributes();
+              } else {
+                console.log(`Mark as completed result: ${markResult ? 'Success' : 'Failed'} for ID: ${responseIdToProcess}`);
+                if (!markResult) {
+                  // If marking by ID failed, try by attributes
+                  markByAttributes();
+                } else {
+                  // Schedule deletion after a delay
+                  scheduleRemoval(responseIdToProcess);
+                }
+              }
+            });
+          } else {
+            // No ID available, try by attributes directly
+            markByAttributes();
+          }
+          
+          // Helper function to mark by surveyId and respondentId
+          function markByAttributes() {
+            console.log(`No direct ID available, will use removal by attributes after delay`);
+            // Clear localStorage now since we don't have a specific ID to track
+            clearLocalStorage();
+            // Schedule removal by attributes
+            setTimeout(() => {
+              removeByAttributes();
+            }, 3000);
+          }
+          
+          // Helper function to schedule removal after delay
+          function scheduleRemoval(id: string) {
+            console.log(`Scheduling removal of ${id} after delay`);
+            // Clear localStorage now that we've marked as completed
+            clearLocalStorage();
+            // Schedule actual removal
+            setTimeout(() => {
+              console.log(`Now removing completed response: ${id}`);
+              Meteor.call('incompleteSurveyResponses.removeCompleted', id, (removeError: any, removeResult: boolean) => {
+                if (removeError) {
+                  console.error('Error removing after delay:', removeError);
+                } else {
+                  console.log(`Delayed removal result: ${removeResult ? 'Success' : 'Failed'}`);
+                }
+              });
+            }, 3000); // 3 seconds delay
+          }
+          
+          // Helper function to remove by surveyId and respondentId
+          function removeByAttributes() {
+            console.log(`Removing by surveyId: ${surveyId} and respondentId: ${respondentId}`);
+            Meteor.call('incompleteSurveyResponses.removeBySurveyAndRespondent', surveyId, respondentId, (attrError: any, attrResult: boolean) => {
+              if (attrError) {
+                console.error('Error removing by attributes:', attrError);
+              } else {
+                console.log(`Removal by attributes result: ${attrResult ? 'Success' : 'Failed'}`);
+              }
+            });
+          }
+          
+          // Helper function to clear localStorage
+          function clearLocalStorage() {
+            try {
+              localStorage.removeItem(`survey_progress_${surveyId}`);
+              localStorage.removeItem(`last_answered_question_${surveyId}`);
+              localStorage.removeItem(getProgressStorageKey());
+              console.log(`Cleared localStorage items for survey: ${surveyId}`);
+            } catch (error) {
+              console.error('Error clearing localStorage:', error);
+            }
+          }
+        }
+        
+        // Clear the progress from localStorage
+        localStorage.removeItem(progressKey);
       }
       
       // Show thank you screen regardless of submission success/failure

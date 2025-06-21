@@ -7,6 +7,8 @@ import '../imports/api/questions';
 import '../imports/api/goals';
 import '../imports/api/goals.methods';
 import '../imports/features/surveys/api/surveyResponses';
+import '../imports/features/surveys/api/incompleteSurveyResponses';
+import '../imports/features/surveys/api/surveyMethods';
 import { WPSCategories } from '../imports/api/wpsCategories';
 import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
@@ -40,6 +42,30 @@ Meteor.startup(async () => {
   seedWPSCategories().catch(err => {
     console.error('WPS Categories seed error:', err);
   });
+  
+  // Initialize IncompleteSurveyResponses collection if empty
+  const { IncompleteSurveyResponses } = require('../imports/features/surveys/api/incompleteSurveyResponses');
+  
+  // Check if the collection is empty
+  const incompleteResponsesCount = await IncompleteSurveyResponses.find().countAsync();
+  console.log(`Found ${incompleteResponsesCount} incomplete survey responses`);
+  
+  if (incompleteResponsesCount === 0) {
+    // Add a sample document to make the collection visible
+    try {
+      const sampleId = await IncompleteSurveyResponses.insert({
+        surveyId: 'sample-survey-id',
+        respondentId: 'sample-respondent-id',
+        startedAt: new Date(),
+        lastUpdatedAt: new Date(),
+        responses: [],
+        isCompleted: false
+      });
+      console.log('Created sample incomplete survey response with ID:', sampleId);
+    } catch (error) {
+      console.error('Error creating sample incomplete survey response:', error);
+    }
+  }
 
   // --- ADMIN USER CREATION ---
   const adminEmail = 'tayeshobajo@gmail.com';

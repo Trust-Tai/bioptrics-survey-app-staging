@@ -14,6 +14,7 @@ import {
   FiUsers,
 } from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
+import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
@@ -155,14 +156,14 @@ const DashboardGrid = styled.div`
 `;
 
 const Card = styled.div<{ cols?: number }>`
-  grid-column: span ${(props) => props.cols || 4};
+  grid-column: span ${(props) => props.cols || 1};
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 20px;
 
   @media (max-width: 1200px) {
-    grid-column: span ${(props) => Math.min(props.cols || 4, 6)};
+    grid-column: span ${(props) => Math.min(props.cols || 1, 6)};
   }
 
   @media (max-width: 768px) {
@@ -220,8 +221,24 @@ const StatValue = styled.div`
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: #8a6d8a;
-  font-weight: 500;
+  color: #666;
+  margin-top: 4px;
+`;
+
+const KPIContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  grid-column: 1 / -1;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const ThemeCard = styled.div`
@@ -304,6 +321,7 @@ const Analytics: React.FC = () => {
   const [participationRate, setParticipationRate] = useState(0);
   const [avgEngagementScore, setAvgEngagementScore] = useState(0);
   const [avgCompletionTime, setAvgCompletionTime] = useState(0);
+  const [responseRate, setResponseRate] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
   // Use useTracker for subscription
@@ -353,6 +371,16 @@ const Analytics: React.FC = () => {
       } else {
         console.log('Direct DB query result - avg completion time:', result);
         setAvgCompletionTime(result);
+      }
+    });
+    
+    // Get enhanced response rate that includes incomplete surveys
+    Meteor.call('getEnhancedResponseRate', (error: any, result: number) => {
+      if (error) {
+        console.error('Error getting response rate:', error);
+      } else {
+        console.log('Direct DB query result - response rate:', result);
+        setResponseRate(result);
       }
       setIsLoading(loading);
     });
@@ -459,97 +487,77 @@ const Analytics: React.FC = () => {
 
         {activeTab === 'overview' && (
           <DashboardGrid>
-            {/* KPI Cards */}
-            <Card cols={3}>
-              <CardHeader>
-                <CardTitle>Participation</CardTitle>
-                <CardIcon>
-                  <FiUsers />
-                </CardIcon>
-              </CardHeader>
-              <StatCard>
-                <StatValue>{completedSurveysCount}</StatValue>
-                <StatLabel>Responses</StatLabel>
-              </StatCard>
-            </Card>
+            {/* KPI Cards - Single Row */}
+            <KPIContainer>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Participation</CardTitle>
+                  <CardIcon>
+                    <FiUsers />
+                  </CardIcon>
+                </CardHeader>
+                <StatCard>
+                  <StatValue>{completedSurveysCount}</StatValue>
+                  <StatLabel>Responses</StatLabel>
+                </StatCard>
+              </Card>
 
-            <Card cols={3}>
-              <CardHeader>
-                <CardTitle>Completion Rate</CardTitle>
-                <CardIcon>
-                  <FiPieChart />
-                </CardIcon>
-              </CardHeader>
-              <StatCard>
-                <StatValue>{isLoading ? '...' : `${participationRate}%`}</StatValue>
-                <StatLabel>Participation Rate</StatLabel>
-              </StatCard>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Completion Rate</CardTitle>
+                  <CardIcon>
+                    <FiPieChart />
+                  </CardIcon>
+                </CardHeader>
+                <StatCard>
+                  <StatValue>{isLoading ? '...' : `${participationRate}%`}</StatValue>
+                  <StatLabel>Participation Rate</StatLabel>
+                </StatCard>
+              </Card>
 
-            <Card cols={3}>
-              <CardHeader>
-                <CardTitle>Avg. Engagement</CardTitle>
-                <CardIcon>
-                  <FiBarChart2 />
-                </CardIcon>
-              </CardHeader>
-              <StatCard>
-                <StatValue>{isLoading ? '...' : avgEngagementScore.toFixed(1)}</StatValue>
-                <StatLabel>Out of 5.0</StatLabel>
-              </StatCard>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Avg. Engagement</CardTitle>
+                  <CardIcon>
+                    <FiBarChart2 />
+                  </CardIcon>
+                </CardHeader>
+                <StatCard>
+                  <StatValue>{isLoading ? '...' : avgEngagementScore.toFixed(1)}</StatValue>
+                  <StatLabel>Out of 5.0</StatLabel>
+                </StatCard>
+              </Card>
 
-            <Card cols={3}>
-              <CardHeader>
-                <CardTitle>Time to Complete</CardTitle>
-                <CardIcon>
-                  <FiCalendar />
-                </CardIcon>
-              </CardHeader>
-              <StatCard>
-                <StatValue>{isLoading ? '...' : avgCompletionTime.toFixed(1)}</StatValue>
-                <StatLabel>Minutes (Average)</StatLabel>
-              </StatCard>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Time to Complete</CardTitle>
+                  <CardIcon>
+                    <FiCalendar />
+                  </CardIcon>
+                </CardHeader>
+                <StatCard>
+                  <StatValue>{isLoading ? '...' : avgCompletionTime.toFixed(1)}</StatValue>
+                  <StatLabel>Minutes (Average)</StatLabel>
+                </StatCard>
+              </Card>
 
-            {/* Theme Breakdown */}
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>WPS Zone / Theme Breakdown</CardTitle>
-              </CardHeader>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-                  gap: '16px',
-                }}
-              >
-                <ThemeCard>
-                  <ThemeName>Safety</ThemeName>
-                  <ThemeScore>4.2</ThemeScore>
-                  <ThemeLabel>Avg. Score</ThemeLabel>
-                </ThemeCard>
-                <ThemeCard>
-                  <ThemeName>Engagement</ThemeName>
-                  <ThemeScore>3.8</ThemeScore>
-                  <ThemeLabel>Avg. Score</ThemeLabel>
-                </ThemeCard>
-                <ThemeCard>
-                  <ThemeName>Leadership</ThemeName>
-                  <ThemeScore>4.0</ThemeScore>
-                  <ThemeLabel>Avg. Score</ThemeLabel>
-                </ThemeCard>
-                <ThemeCard>
-                  <ThemeName>Wellbeing</ThemeName>
-                  <ThemeScore>3.6</ThemeScore>
-                  <ThemeLabel>Avg. Score</ThemeLabel>
-                </ThemeCard>
-                <ThemeCard>
-                  <ThemeName>Inclusion</ThemeName>
-                  <ThemeScore>4.3</ThemeScore>
-                  <ThemeLabel>Avg. Score</ThemeLabel>
-                </ThemeCard>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Response Rate</CardTitle>
+                  <CardIcon>
+                    <FiTrendingUp />
+                  </CardIcon>
+                </CardHeader>
+                <StatCard>
+                  <StatValue>{isLoading ? '...' : `${responseRate}%`}</StatValue>
+                  <StatLabel>Last 7 days</StatLabel>
+                </StatCard>
+              </Card>
+            </KPIContainer>
+
+            {/* Response Trends - Moved to left side */}
+            <Card cols={6}>
+              <ResponseTrendsChart />
             </Card>
 
             {/* Heatmap */}
@@ -559,19 +567,6 @@ const Analytics: React.FC = () => {
               </CardHeader>
               <ChartContainer>
                 <div>Heatmap Visualization Coming Soon</div>
-              </ChartContainer>
-            </Card>
-
-            {/* Trendlines */}
-            <Card cols={6}>
-              <CardHeader>
-                <CardTitle>Engagement Trends</CardTitle>
-                <CardIcon>
-                  <FiTrendingUp />
-                </CardIcon>
-              </CardHeader>
-              <ChartContainer>
-                <div>Trendline Visualization Coming Soon</div>
               </ChartContainer>
             </Card>
 
@@ -618,12 +613,7 @@ const Analytics: React.FC = () => {
         {activeTab === 'trends' && (
           <DashboardGrid>
             <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Trend Analysis</CardTitle>
-              </CardHeader>
-              <ChartContainer>
-                <div>Detailed Trend Analysis Coming Soon</div>
-              </ChartContainer>
+              <ResponseTrendsChart title="Detailed Response Trends" />
             </Card>
           </DashboardGrid>
         )}
