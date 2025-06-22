@@ -523,7 +523,14 @@ Meteor.methods({
     return generateSurveyToken(surveyId);
   },
   
-  async 'surveys.submitResponse'(data: { surveyId: string, responses: Record<string, any>, token?: string }) {
+  async 'surveys.submitResponse'(data: { surveyId: string, responses: Record<string, any>, token?: string, deviceType?: 'desktop' | 'tablet' | 'mobile' }) {
+    // Log the incoming data to verify deviceType is being received
+    console.log('surveys.submitResponse received data:', { 
+      surveyId: data.surveyId,
+      responseCount: Object.keys(data.responses).length,
+      deviceType: data.deviceType,
+      token: data.token
+    });
     check(data.surveyId, String);
     check(data.responses, Object);
     
@@ -552,33 +559,60 @@ Meteor.methods({
     const now = new Date();
     const startTime = new Date(now.getTime() - 300000); // Assume started 5 minutes ago if not provided
     
+    // First, create a properly structured metadata object with explicit type
+    const metadata: {
+      browser: string;
+      ipAddress: string;
+      deviceType: 'desktop' | 'tablet' | 'mobile';
+      userAgent: string;
+    } = {
+      browser: this.connection?.httpHeaders?.['user-agent'] || 'Unknown',
+      ipAddress: this.connection?.clientAddress || 'Unknown',
+      deviceType: data.deviceType || 'desktop', // Include device type from client or default to desktop
+      userAgent: this.connection?.httpHeaders?.['user-agent'] || 'Unknown'
+    };
+    
+    console.log('Creating metadata with deviceType:', metadata.deviceType);
+    
     // Create a document that matches the SurveyResponseDoc interface
     const responseDoc = {
       surveyId: data.surveyId,
       userId: this.userId || undefined,
+      respondentId: data.token, // Store the token as respondentId
       responses: responsesArray,
       completed: true,
       startTime: startTime,
       endTime: now,
       completionTime: Math.floor((now.getTime() - startTime.getTime()) / 1000), // in seconds
       progress: 100,
-      metadata: {
-        browser: this.connection?.httpHeaders?.['user-agent'] || 'Unknown',
-        ipAddress: this.connection?.clientAddress || 'Unknown'
-      },
+      metadata: metadata, // Use the metadata object we created above
       createdAt: now,
       updatedAt: now
     };
     
+    console.log('Survey response document with device type:', responseDoc.metadata);
+    
     console.log('Inserting survey response document:', responseDoc);
     
     try {
+      // We've already created the metadata object above, so no need to redefine it here
+      console.log('Final response document with metadata:', responseDoc);
+      
       const responseId = await SurveyResponses.insertAsync(responseDoc);
       console.log('Survey response saved with ID:', responseId);
       
       // Verify the response was saved correctly
       const savedResponse = await SurveyResponses.findOneAsync(responseId);
-      console.log('Verified saved response:', savedResponse);
+      console.log('Verified saved response metadata:', savedResponse?.metadata);
+      
+      // If we have an incomplete response with the same token, mark it as completed
+      if (data.token) {
+        const { IncompleteSurveyResponses } = await import('./incompleteSurveyResponses');
+        await IncompleteSurveyResponses.updateAsync(
+          { respondentId: data.token, surveyId: data.surveyId },
+          { $set: { isCompleted: true } }
+        );
+      }
       
       return responseId;
     } catch (error) {

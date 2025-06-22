@@ -9,6 +9,14 @@ import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLi
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
+// Import our new components
+import SurveyStatsSummary from './components/SurveyStatsSummary';
+import SurveyListView from './components/SurveyListView';
+import ViewToggle from './components/ViewToggle';
+
+// Import the survey stats method
+import '../../features/surveys/api/surveyStats';
+
 interface SurveyDisplay {
   _id: string;
   title: string;
@@ -17,7 +25,17 @@ interface SurveyDisplay {
   updatedAt: string;
   published: boolean;
   createdBy?: string;
+  createdByName?: string;
   shareToken?: string;
+  sections?: any[];
+  questionCount?: number;
+  responseStats?: {
+    totalResponses: number;
+    completedResponses: number;
+    completionRate: number;
+  };
+  scheduledFor?: string;
+  potentialRespondents?: number;
 }
 
 function stripHtml(html: string): string {
@@ -60,14 +78,35 @@ const AllSurveys: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  
+  // Add view state (grid or list) - default to list view as requested
+  const [view, setView] = useState<'grid' | 'list'>('list');
 
   const surveys = useTracker(() => {
     Meteor.subscribe('surveys.all');
-    return Surveys.find({}, { sort: { updatedAt: -1 } }).fetch().map((s: any) => ({
-      ...s,
-      createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
-      updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt),
-    })) as SurveyDisplay[];
+    return Surveys.find({}, { sort: { updatedAt: -1 } }).fetch().map((s: any) => {
+      // Calculate additional fields needed for list view
+      const sections = s.sections || [];
+      const questionCount = sections.reduce((total: number, section: any) => {
+        return total + (section.questions?.length || 0);
+      }, 0);
+      
+      // Calculate response stats
+      const responseStats = s.responseStats || {
+        totalResponses: 0,
+        completedResponses: 0,
+        completionRate: 0
+      };
+      
+      return {
+        ...s,
+        createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
+        updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt),
+        sections,
+        questionCount,
+        responseStats
+      };
+    }) as SurveyDisplay[];
   }, []);
 
   const pageSize = 10;
@@ -81,8 +120,6 @@ const AllSurveys: React.FC = () => {
   useEffect(() => {
     setPage(1);
   }, [search]);
-
-  // Optionally, add handlers for edit, preview, and delete here
 
   return (
     <AdminLayout>
@@ -154,6 +191,9 @@ const AllSurveys: React.FC = () => {
           overflow: 'hidden'
         }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>All {surveyLabelPlural}</h1>
+          {/* Survey Statistics Summary */}
+          <SurveyStatsSummary />
+          
           <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 24, flexWrap: 'wrap', justifyContent: 'space-between' }}>
             <div style={{ position: 'relative', minWidth: 280 }}>
               <FaSearch style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#552a47', opacity: 0.6 }} />
@@ -176,15 +216,20 @@ const AllSurveys: React.FC = () => {
                 }}
               />
             </div>
-            <button
-              onClick={() => {
-                window.location.href = '/admin/surveys/builder';
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
-            >
-              <FaPlus style={{ fontSize: 14 }} />
-              <span style={{ marginLeft: 6 }}>Add Survey</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* View Toggle */}
+              <ViewToggle view={view} onViewChange={setView} />
+              
+              <button
+                onClick={() => {
+                  window.location.href = '/admin/surveys/builder';
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+              >
+                <FaPlus style={{ fontSize: 14 }} />
+                <span style={{ marginLeft: 6 }}>Add Survey</span>
+              </button>
+            </div>
           </div>
           {/* Notification Bar */}
           {notification && (
@@ -220,310 +265,329 @@ const AllSurveys: React.FC = () => {
           {/* Survey List */}
           {filtered.length === 0 && <div style={{ textAlign: 'center', padding: '40px 0', color: '#6e5a67' }}>No {surveyLabelPlural.toLowerCase()} found.</div>}
           {paginated.length > 0 && (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-              gap: '65px 24px',
-              width: '100%',
-              maxWidth: '100%',
-              overflow: 'hidden'
-            }}>
-              {paginated.map((s) => (
-                <div
-                  key={s._id}
-                  style={{
-                    background: '#fff',
-                    borderRadius: 16,
-                    boxShadow: '0 4px 16px rgba(85, 42, 71, 0.08)',
-                    padding: '22px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                    position: 'relative',
-                    transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
-                    height: '100%',
-                    margin: 0,
-                    border: '1px solid #f4ebf1',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    maxWidth: '100%',
-                    overflow: 'hidden'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(85, 42, 71, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 3px 12px rgba(85, 42, 71, 0.08)';
-                  }}
-                >
-                  <div style={{ 
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    width: '100%',
-                    marginTop: 12,
-                    marginBottom: 8
-                  }}>
-                    <div style={{ 
-                      background: s.published ? 'linear-gradient(135deg, #e6f8e0, #d7f9c8)' : 'linear-gradient(135deg, #ffe6e6, #ffcece)', 
-                      color: s.published ? '#0a8043' : '#c0392b', 
-                      borderRadius: 30, 
-                      padding: '6px 14px', 
-                      fontSize: 13, 
-                      fontWeight: 700, 
-                      letterSpacing: 0.3,
+            view === 'grid' ? (
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                gap: '65px 24px',
+                width: '100%',
+                maxWidth: '100%',
+                overflow: 'hidden'
+              }}>
+                {paginated.map((s) => (
+                  <div
+                    key={s._id}
+                    style={{
+                      background: '#fff',
+                      borderRadius: 16,
+                      boxShadow: '0 4px 16px rgba(85, 42, 71, 0.08)',
+                      padding: '22px',
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                    }}>
-                      <div style={{ 
-                        width: 8, 
-                        height: 8, 
-                        borderRadius: '50%', 
-                        background: s.published ? '#0a8043' : '#c0392b',
-                        marginRight: 2
-                      }}></div>
-                      {s.published ? 'Published' : 'Draft'}
-                    </div>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      gap: 6,
-                      color: '#777',
-                      fontSize: 12,
-                      fontWeight: 500,
-                    }}>
-                      <FaClock style={{ fontSize: 11 }} />
-                      {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </div>
-                  </div>
-                  <h3 
-                    style={{ 
-                      color: '#28211e', 
-                      fontWeight: 700, 
-                      fontSize: 20, 
-                      letterSpacing: 0.2,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      margin: '0 0 14px 0',
-                      paddingRight: '20px',
-                      borderLeft: '3px solid #552a47',
-                      paddingLeft: '12px',
-                      lineHeight: 1.3,
-                      wordBreak: 'break-word',
-                      overflowWrap: 'break-word',
-                      width: '100%',
-                      boxSizing: 'border-box'
-                    }} 
-                    onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#552a47';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#28211e';
-                    }}
-                    title="Click to manage this survey"
-                  >
-                    {s.title}
-                  </h3>
-                  {s.shareToken && s.published && (
-                    <div style={{ 
-                      marginTop: 'auto', 
-                      padding: '14px 16px', 
-                      borderTop: '1px solid #f4ebf1',
-                      backgroundColor: '#f9f4f7',
-                      borderRadius: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      flexDirection: 'column',
+                      gap: 12,
+                      position: 'relative',
+                      transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                      height: '100%',
+                      margin: 0,
+                      border: '1px solid #f4ebf1',
                       width: '100%',
                       boxSizing: 'border-box',
-                      maxWidth: '100%'
+                      maxWidth: '100%',
+                      overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(85, 42, 71, 0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(85, 42, 71, 0.08)';
+                    }}
+                  >
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      width: '100%',
+                      marginTop: 12,
+                      marginBottom: 8
                     }}>
-                      <span style={{ 
-                        fontWeight: 600, 
-                        color: '#552a47', 
-                        fontSize: 14,
+                      <div style={{ 
+                        background: s.published ? 'linear-gradient(135deg, #e6f8e0, #d7f9c8)' : 'linear-gradient(135deg, #ffe6e6, #ffcece)', 
+                        color: s.published ? '#0a8043' : '#c0392b', 
+                        borderRadius: 30, 
+                        padding: '6px 14px', 
+                        fontSize: 13, 
+                        fontWeight: 700, 
+                        letterSpacing: 0.3,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 6
+                        gap: 6,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                       }}>
-                        <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
-                      </span>
-                      <button 
-                        onClick={() => {
-                          // Use the same server-side token generation as the survey edit page
-                          Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
-                            if (err) {
-                              console.error('Error generating token:', err);
-                              setNotification({ type: 'error', message: 'Failed to generate survey URL' });
-                            } else {
-                              navigator.clipboard.writeText(`${window.location.origin}/public/${token}`);
-                              setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
-                            }
-                          });
-                        }}
-                        style={{
+                        <div style={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          background: s.published ? '#0a8043' : '#c0392b',
+                          marginRight: 2
+                        }}></div>
+                        {s.published ? 'Published' : 'Draft'}
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        gap: 6,
+                        color: '#777',
+                        fontSize: 12,
+                        fontWeight: 500,
+                      }}>
+                        <FaClock style={{ fontSize: 11 }} />
+                        {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </div>
+                    </div>
+                    <h3 
+                      style={{ 
+                        color: '#28211e', 
+                        fontWeight: 700, 
+                        fontSize: 20, 
+                        letterSpacing: 0.2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        margin: '0 0 14px 0',
+                        paddingRight: '20px',
+                        borderLeft: '3px solid #552a47',
+                        paddingLeft: '12px',
+                        lineHeight: 1.3,
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }} 
+                      onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#552a47';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#28211e';
+                      }}
+                      title="Click to manage this survey"
+                    >
+                      {s.title}
+                    </h3>
+                    {s.shareToken && s.published && (
+                      <div style={{ 
+                        marginTop: 'auto', 
+                        padding: '14px 16px', 
+                        borderTop: '1px solid #f4ebf1',
+                        backgroundColor: '#f9f4f7',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        maxWidth: '100%'
+                      }}>
+                        <span style={{ 
+                          fontWeight: 600, 
+                          color: '#552a47', 
+                          fontSize: 14,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 6,
-                          background: '#552a47',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: 6,
-                          padding: '8px 14px',
-                          fontSize: 13,
-                          fontWeight: 600,
+                          gap: 6
+                        }}>
+                          <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
+                        </span>
+                        <button 
+                          onClick={() => {
+                            // Use the same server-side token generation as the survey edit page
+                            Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
+                              if (err) {
+                                console.error('Error generating token:', err);
+                                setNotification({ type: 'error', message: 'Failed to generate survey URL' });
+                              } else {
+                                navigator.clipboard.writeText(`${window.location.origin}/public/${token}`);
+                                setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
+                              }
+                            });
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            background: '#552a47',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '8px 14px',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 4px rgba(85, 42, 71, 0.15)',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.2)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.15)';
+                          }}
+                        >
+                          <FaCopy style={{ fontSize: 12 }} /> Copy URL
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      gap: 16, 
+                      marginTop: 'auto', 
+                      paddingTop: s.shareToken && s.published ? 0 : 16, 
+                      borderTop: s.shareToken && s.published ? 'none' : '1px solid #f4ebf1' 
+                    }}>
+                      <button
+                        style={{ 
+                          background: '#f9f4f7', 
+                          border: 'none', 
+                          borderRadius: '50%',
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.15)',
+                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
                           transition: 'all 0.2s ease'
                         }}
+                        onClick={() => {
+                          window.open(`/preview/survey/${s._id}?status=preview`, '_blank');
+                        }}
+                        title="Preview"
                         onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f4ebf1';
                           e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.2)';
+                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
                         }}
                         onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f9f4f7';
                           e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.15)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
                         }}
                       >
-                        <FaCopy style={{ fontSize: 12 }} /> Copy URL
+                        <FaEye style={{ color: '#552a47', fontSize: 16 }} />
+                      </button>
+                      <button
+                        style={{ 
+                          background: '#f9f4f7', 
+                          border: 'none', 
+                          borderRadius: '50%',
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
+                        title="Manage"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f4ebf1';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f9f4f7';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                        }}
+                      >
+                        <FaTasks style={{ color: '#552a47', fontSize: 16 }} />
+                      </button>
+                      <button
+                        style={{ 
+                          background: '#f9f4f7', 
+                          border: 'none', 
+                          borderRadius: '50%',
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
+                        title="Edit"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f4ebf1';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f9f4f7';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                        }}
+                      >
+                        <FaEdit style={{ color: '#552a47', fontSize: 16 }} />
+                      </button>
+                      <button
+                        style={{ 
+                          background: '#f9f4f7', 
+                          border: 'none', 
+                          borderRadius: '50%',
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
+                        title="Delete"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#ffeeee';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(192, 57, 43, 0.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f9f4f7';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
+                        }}
+                      >
+                        <FaTrash style={{ color: '#c0392b', fontSize: 16 }} />
                       </button>
                     </div>
-                  )}
-                   <div style={{ 
-                     display: 'flex', 
-                     justifyContent: 'center', 
-                     gap: 16, 
-                     marginTop: 'auto', 
-                     paddingTop: s.shareToken && s.published ? 0 : 16, 
-                     borderTop: s.shareToken && s.published ? 'none' : '1px solid #f4ebf1' 
-                   }}>
-                    <button
-                      style={{ 
-                        background: '#f9f4f7', 
-                        border: 'none', 
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={() => {
-                        window.open(`/preview/survey/${s._id}?status=preview`, '_blank');
-                      }}
-                      title="Preview"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f4ebf1';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f9f4f7';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                      }}
-                    >
-                      <FaEye style={{ color: '#552a47', fontSize: 16 }} />
-                    </button>
-                    <button
-                      style={{ 
-                        background: '#f9f4f7', 
-                        border: 'none', 
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
-                      title="Manage"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f4ebf1';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f9f4f7';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                      }}
-                    >
-                      <FaTasks style={{ color: '#552a47', fontSize: 16 }} />
-                    </button>
-                    <button
-                      style={{ 
-                        background: '#f9f4f7', 
-                        border: 'none', 
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
-                      title="Edit"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f4ebf1';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f9f4f7';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                      }}
-                    >
-                      <FaEdit style={{ color: '#552a47', fontSize: 16 }} />
-                    </button>
-                    <button
-                      style={{ 
-                        background: '#f9f4f7', 
-                        border: 'none', 
-                        borderRadius: '50%',
-                        width: 40,
-                        height: 40,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
-                      title="Delete"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#ffeeee';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(192, 57, 43, 0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f9f4f7';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                      }}
-                    >
-                      <FaTrash style={{ color: '#c0392b', fontSize: 16 }} />
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <SurveyListView 
+                surveys={paginated} 
+                onEdit={(id) => navigate(`/admin/surveys/builder/${id}`)}
+                onDelete={(id, title) => setConfirmDelete({ _id: id, title })}
+                onPreview={(id, isPublic) => {
+                  Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
+                    if (!err && token) {
+                      if (isPublic) {
+                        window.open(`/public/${token}`, '_blank');
+                      } else {
+                        window.open(`/preview/survey/${id}?status=preview`, '_blank');
+                      }
+                    }
+                  });
+                }}
+              />
+            )
           )}
           {/* Pagination */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 32 }}>

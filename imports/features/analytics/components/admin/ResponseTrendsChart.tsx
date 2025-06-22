@@ -23,7 +23,7 @@ const ChartContainer = styled.div`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 24px;
   height: 100%;
-  min-height: 400px;
+  min-height: 380px;
 `;
 
 const ChartHeader = styled.div`
@@ -188,49 +188,21 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
 
   // Generate dummy data for development/preview
   const generateDummyData = (): DataPoint[] => {
-    const today = new Date();
-    console.log('Today in dummy data generation:', today.toISOString());
     const data: DataPoint[] = [];
     
-    // Generate data for the last 7 days including today
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      console.log(`Generating dummy data for day ${i}, date:`, date.toISOString());
-      
-      // Format date as YYYY-MM-DD
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Generate more realistic values with a pattern that ensures all days have data
-      // Create a wave pattern with higher values on some days
-      let baseResponses = 0;
-      
-      // Ensure all days have at least some data
-      if (i === 6 || i === 5) {
-        // Lower values for older days
-        baseResponses = 5 + Math.floor(Math.random() * 8);
-      } else if (i === 4 || i === 3) {
-        // Medium values for middle days
-        baseResponses = 15 + Math.floor(Math.random() * 10);
-      } else if (i === 2 || i === 1) {
-        // Higher values for recent days
-        baseResponses = 25 + Math.floor(Math.random() * 15);
-      } else {
-        // Highest value for today/yesterday
-        baseResponses = 40 + Math.floor(Math.random() * 25);
-      }
-      
-      // Most responses are completed (80-90%)
-      const completions = Math.floor(baseResponses * (0.8 + (Math.random() * 0.1)));
-      
-      data.push({
-        date: dateStr,
-        responses: baseResponses,
-        completions: completions
-      });
-    }
+    // Generate data that matches the reference image exactly
+    // Data for Jun 15 to Jun 21
+    const dummyData = [
+      { date: '2025-06-15', responses: 0, completions: 0 },
+      { date: '2025-06-16', responses: 15, completions: 10 },
+      { date: '2025-06-17', responses: 35, completions: 25 },
+      { date: '2025-06-18', responses: 70, completions: 55 },
+      { date: '2025-06-19', responses: 90, completions: 70 },
+      { date: '2025-06-20', responses: 70, completions: 55 },
+      { date: '2025-06-21', responses: 55, completions: 40 }
+    ];
     
-    return data;
+    return dummyData;
   };
 
   const handleMouseMove = (e: any) => {
@@ -251,7 +223,7 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
       const day = date.getDate();
       const month = date.toLocaleString('default', { month: 'short' });
       const formatted = `${month} ${day}`;
-      console.log('Formatting date:', dateStr, 'to display as:', formatted);
+      // console.log('Formatting date:', dateStr, 'to display as:', formatted);
       return formatted;
     } catch (e) {
       console.error('Error formatting date:', e, dateStr);
@@ -315,7 +287,7 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
         </ChartControls>
       </ChartHeader>
       
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={250}>
         <AreaChart
           data={data}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
@@ -342,10 +314,11 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
             ticks={data.map(item => item.date)}
           />
           <YAxis 
-            domain={[0, 'dataMax + 60']}
+            domain={[0, 125]}
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: '#666' }}
+            ticks={[0, 25, 70, 125]}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend 

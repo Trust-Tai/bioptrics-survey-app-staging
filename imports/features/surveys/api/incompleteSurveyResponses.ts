@@ -16,6 +16,7 @@ export interface IncompleteSurveyResponse {
   }>;
   isCompleted: boolean; // Will be set to true when moved to surveyResponses
   isAbandoned?: boolean; // Will be set to true if the user abandons the survey
+  deviceType?: 'desktop' | 'tablet' | 'mobile'; // Track which device type was used
 }
 
 // Create the collection
@@ -24,7 +25,7 @@ export const IncompleteSurveyResponses = new Mongo.Collection<IncompleteSurveyRe
 // Define methods
 if (Meteor.isServer) {
   Meteor.methods({
-    async 'incompleteSurveyResponses.start'(surveyId: string, respondentId: string) {
+    async 'incompleteSurveyResponses.start'(surveyId: string, respondentId: string, deviceType?: 'desktop' | 'tablet' | 'mobile') {
       console.log('incompleteSurveyResponses.start called with:', { surveyId, respondentId });
       
       try {
@@ -53,7 +54,8 @@ if (Meteor.isServer) {
             startedAt: new Date(),
             lastUpdatedAt: new Date(),
             responses: [],
-            isCompleted: false
+            isCompleted: false,
+            deviceType: deviceType || 'desktop' // Track which device type was used
           };
           
           console.log('Creating new incomplete survey response:', newResponse);

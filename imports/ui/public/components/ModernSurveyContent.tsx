@@ -6,6 +6,7 @@ import ModernSurveySection from './ModernSurveySection';
 import ModernSurveyQuestion from './ModernSurveyQuestion';
 import ModernSurveyThankYou from './ModernSurveyThankYou';
 import ModernSurveyProgress from './ModernSurveyProgress';
+import DeviceTracker from './DeviceTracker';
 
 // Types
 interface Question {
@@ -1662,6 +1663,14 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     <ContentContainer>
       {/* Progress indicator hidden as requested */}
       {renderContent()}
+      
+      {/* Silent device tracking component */}
+      {!isPreviewMode && survey._id && token && (
+        <DeviceTracker 
+          surveyId={survey._id} 
+          respondentId={token} 
+        />
+      )}
     </ContentContainer>
   );
 };

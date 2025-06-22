@@ -25,6 +25,8 @@ export interface SurveyResponseDoc {
     os?: string;
     ipAddress?: string;
     location?: string;
+    deviceType?: 'desktop' | 'tablet' | 'mobile';
+    userAgent?: string;
   };
   demographics?: {
     age?: string;

@@ -12,9 +12,12 @@ import {
   FiMessageSquare,
   FiCalendar,
   FiUsers,
+  FiList,
 } from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
+import DeviceUsageChart from '/imports/features/analytics/components/admin/DeviceUsageChart';
+import QuestionPerformanceChart from '/imports/features/analytics/components/admin/QuestionPerformanceChart';
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
@@ -315,6 +318,7 @@ const ExportButtonsContainer = styled.div`
 
 const Analytics: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showQuestionPerformance, setShowQuestionPerformance] = useState(false);
   
   // State for all KPI metrics
   const [completedSurveysCount, setCompletedSurveysCount] = useState(0);
@@ -334,42 +338,42 @@ const Analytics: React.FC = () => {
   
   // Use direct database query for accurate metrics
   useEffect(() => {
-    // Get completed surveys count
-    Meteor.call('getCompletedSurveysCount', (error: any, result: number) => {
+    // Get enhanced surveys count (completed + incomplete)
+    Meteor.call('getEnhancedSurveysCount', (error: any, result: number) => {
       if (error) {
-        console.error('Error getting completed surveys count:', error);
+        console.error('Error getting enhanced surveys count:', error);
       } else {
-        console.log('Direct DB query result - completed surveys count:', result);
+        console.log('Direct DB query result - enhanced surveys count:', result);
         setCompletedSurveysCount(result);
       }
     });
     
-    // Get participation rate
-    Meteor.call('getParticipationRate', (error: any, result: number) => {
+    // Get enhanced participation rate
+    Meteor.call('getEnhancedParticipationRate', (error: any, result: number) => {
       if (error) {
-        console.error('Error getting participation rate:', error);
+        console.error('Error getting enhanced participation rate:', error);
       } else {
-        console.log('Direct DB query result - participation rate:', result);
+        console.log('Direct DB query result - enhanced participation rate:', result);
         setParticipationRate(result);
       }
     });
     
-    // Get average engagement score
-    Meteor.call('getAverageEngagementScore', (error: any, result: number) => {
+    // Get enhanced average engagement score
+    Meteor.call('getEnhancedEngagementScore', (error: any, result: number) => {
       if (error) {
-        console.error('Error getting average engagement score:', error);
+        console.error('Error getting enhanced engagement score:', error);
       } else {
-        console.log('Direct DB query result - avg engagement score:', result);
+        console.log('Direct DB query result - enhanced avg engagement score:', result);
         setAvgEngagementScore(result);
       }
     });
     
-    // Get average completion time
-    Meteor.call('getAverageCompletionTime', (error: any, result: number) => {
+    // Get enhanced average completion time
+    Meteor.call('getEnhancedCompletionTime', (error: any, result: number) => {
       if (error) {
-        console.error('Error getting average completion time:', error);
+        console.error('Error getting enhanced completion time:', error);
       } else {
-        console.log('Direct DB query result - avg completion time:', result);
+        console.log('Direct DB query result - enhanced avg completion time:', result);
         setAvgCompletionTime(result);
       }
     });
@@ -471,17 +475,29 @@ const Analytics: React.FC = () => {
         )}
 
         <TabsContainer>
-          <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
+          <Tab
+            active={activeTab === 'overview'}
+            onClick={() => setActiveTab('overview')}
+          >
             Overview
           </Tab>
-          <Tab active={activeTab === 'themes'} onClick={() => setActiveTab('themes')}>
+          <Tab
+            active={activeTab === 'themes'}
+            onClick={() => setActiveTab('themes')}
+          >
             Themes
           </Tab>
-          <Tab active={activeTab === 'trends'} onClick={() => setActiveTab('trends')}>
-            Trends
-          </Tab>
-          <Tab active={activeTab === 'insights'} onClick={() => setActiveTab('insights')}>
+          <Tab
+            active={activeTab === 'insights'}
+            onClick={() => setActiveTab('insights')}
+          >
             Insights
+          </Tab>
+          <Tab
+            active={activeTab === 'questions'}
+            onClick={() => setActiveTab('questions')}
+          >
+            Questions
           </Tab>
         </TabsContainer>
 
@@ -555,23 +571,18 @@ const Analytics: React.FC = () => {
               </Card>
             </KPIContainer>
 
-            {/* Response Trends - Moved to left side */}
-            <Card cols={6}>
+            {/* Response Trends - 70% width */}
+            <Card cols={8}>
               <ResponseTrendsChart />
             </Card>
 
-            {/* Heatmap */}
-            <Card cols={6}>
-              <CardHeader>
-                <CardTitle>Site Performance Heatmap</CardTitle>
-              </CardHeader>
-              <ChartContainer>
-                <div>Heatmap Visualization Coming Soon</div>
-              </ChartContainer>
+            {/* Device Usage Chart - 30% width */}
+            <Card cols={4}>
+              <DeviceUsageChart />
             </Card>
 
             {/* Open-text Insights */}
-            <Card cols={12}>
+            {/* <Card cols={12}>
               <CardHeader>
                 <CardTitle>Open-text Insights</CardTitle>
                 <CardIcon>
@@ -580,6 +591,19 @@ const Analytics: React.FC = () => {
               </CardHeader>
               <ChartContainer>
                 <div>NLP Topic Modeling Coming Soon</div>
+              </ChartContainer>
+            </Card> */}
+            
+            {/* Question Performance */}
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Question Performance</CardTitle>
+                <CardIcon>
+                  <FiList />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer>
+                <QuestionPerformanceChart />
               </ChartContainer>
             </Card>
 
@@ -622,11 +646,25 @@ const Analytics: React.FC = () => {
           <DashboardGrid>
             <Card cols={12}>
               <CardHeader>
-                <CardTitle>AI-Powered Insights</CardTitle>
+                <CardTitle>Insights</CardTitle>
               </CardHeader>
               <ChartContainer>
-                <div>AI-Powered Insights Coming Soon</div>
+                <div>Insights Coming Soon</div>
               </ChartContainer>
+            </Card>
+          </DashboardGrid>
+        )}
+        
+        {activeTab === 'questions' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Question Performance Analysis</CardTitle>
+                <CardIcon>
+                  <FiList />
+                </CardIcon>
+              </CardHeader>
+              <QuestionPerformanceChart />
             </Card>
           </DashboardGrid>
         )}
