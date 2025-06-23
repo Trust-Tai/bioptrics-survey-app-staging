@@ -494,6 +494,37 @@ const QuestionActions = styled.div`
   gap: 8px;
 `;
 
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+`;
+
+const PaginationButton = styled.button<{ active?: boolean }>`
+  padding: 8px 12px;
+  margin: 0 4px;
+  border-radius: 4px;
+  border: 1px solid ${props => props.active ? '#7c3aed' : '#e0e0e0'};
+  background-color: ${props => props.active ? '#7c3aed' : 'white'};
+  color: ${props => props.active ? 'white' : '#333'};
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${props => props.active ? '#6025c0' : '#f5f5f5'};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+  }
+`;
+
 const ActionButton = styled.button`
   padding: 6px 12px;
   border-radius: 4px;
@@ -693,6 +724,9 @@ const AllQuestions: React.FC = () => {
   const [alert, setAlert] = useState<{type: 'success' | 'error', message: string} | null>(null);
   // View toggle state - default to list view
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   
   // Get categories and themes for filtering
   const wpsCategories = useTracker(() => {
@@ -1108,23 +1142,108 @@ const AllQuestions: React.FC = () => {
           </QuestionsGrid>
         ) : (
           /* List View */
-          <QuestionListView 
-            questions={filteredQuestions}
-            onPreview={(question) => {
-              setPreviewQuestion(question);
-              setPreviewOpen(true);
-            }}
-            onAnalytics={(question) => {
-              setQuestionForAnalytics(question);
-              setAnalyticsModalOpen(true);
-            }}
-            onEdit={(questionId) => navigate(`/admin/questions/builder/${questionId}`)}
-            onDelete={(questionId) => {
-              setQuestionToDelete(questionId);
-              setShowDeleteConfirm(true);
-            }}
-            layerMap={layerMap}
-          />
+          <>
+            <QuestionListView 
+              questions={filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+              onPreview={(question) => {
+                setPreviewQuestion(question);
+                setPreviewOpen(true);
+              }}
+              onAnalytics={(question) => {
+                setQuestionForAnalytics(question);
+                setAnalyticsModalOpen(true);
+              }}
+              onEdit={(questionId) => navigate(`/admin/questions/builder/${questionId}`)}
+              onDelete={(questionId) => {
+                setQuestionToDelete(questionId);
+                setShowDeleteConfirm(true);
+              }}
+              layerMap={layerMap}
+            />
+            
+            {/* Pagination Controls */}
+            <PaginationContainer>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ marginRight: '10px' }}>Items per page:</span>
+                <select 
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing items per page
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    border: '1px solid #e0e0e0',
+                    backgroundColor: 'white',
+                    marginRight: '20px'
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredQuestions.length)} - {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of {filteredQuestions.length}</span>
+              </div>
+              
+              <div>
+                <PaginationButton 
+                  onClick={() => setCurrentPage(1)} 
+                  disabled={currentPage === 1}
+                >
+                  First
+                </PaginationButton>
+                <PaginationButton 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </PaginationButton>
+                {Array.from({ length: Math.min(5, Math.ceil(filteredQuestions.length / itemsPerPage)) }, (_, i) => {
+                  // Show current page and 2 pages before and after
+                  const pageNumbers = [];
+                  const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
+                  
+                  let startPage = Math.max(1, currentPage - 2);
+                  let endPage = Math.min(totalPages, currentPage + 2);
+                  
+                  // Adjust if we're near the start or end
+                  if (currentPage <= 3) {
+                    endPage = Math.min(5, totalPages);
+                  } else if (currentPage >= totalPages - 2) {
+                    startPage = Math.max(1, totalPages - 4);
+                  }
+                  
+                  for (let i = startPage; i <= endPage; i++) {
+                    pageNumbers.push(
+                      <PaginationButton 
+                        key={i} 
+                        onClick={() => setCurrentPage(i)}
+                        active={i === currentPage}
+                      >
+                        {i}
+                      </PaginationButton>
+                    );
+                  }
+                  
+                  return pageNumbers;
+                })}
+                <PaginationButton 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredQuestions.length / itemsPerPage)))} 
+                  disabled={currentPage === Math.ceil(filteredQuestions.length / itemsPerPage)}
+                >
+                  Next
+                </PaginationButton>
+                <PaginationButton 
+                  onClick={() => setCurrentPage(Math.ceil(filteredQuestions.length / itemsPerPage))} 
+                  disabled={currentPage === Math.ceil(filteredQuestions.length / itemsPerPage)}
+                >
+                  Last
+                </PaginationButton>
+              </div>
+            </PaginationContainer>
+          </>
         )}
           
         {/* Import Questions Modal */}
