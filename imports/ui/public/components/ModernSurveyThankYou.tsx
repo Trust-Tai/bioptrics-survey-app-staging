@@ -154,24 +154,35 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       return;
     }
     
-    // Otherwise, use the Meteor method call with the current survey ID
-    console.log('Using Meteor method call to get data for survey:', currentSurveyId);
+    // Otherwise, use the separate Meteor method calls with the current survey ID
+    console.log('Using separate Meteor method calls to get data for survey:', currentSurveyId);
     
-    Meteor.call('getSurveyResponseData', currentSurveyId, (error: any, result: any) => {
+    // Get total responses count
+    Meteor.call('getTotalResponsesCount', currentSurveyId, (error: any, responseCount: number) => {
       if (error) {
-        console.error('Error getting survey response data:', error);
-        // If there's an error, we'll use default values
-        setCurrentResponseData({
-          responseCount: 4,
-          completionTime: 9.673
-        });
-      } else if (result) {
-        console.log('Received data from method call:', result);
-        setCurrentResponseData({
-          responseCount: result.responseCount || 0,
-          completionTime: result.completionTime || 0
-        });
+        console.error('Error getting total responses count:', error);
+        // Use default value for response count
+        responseCount = 4;
       }
+      
+      console.log('Received total responses count:', responseCount);
+      
+      // Get completion time
+      Meteor.call('getSurveyCompletionTime', currentSurveyId, (error2: any, completionTime: number) => {
+        if (error2) {
+          console.error('Error getting completion time:', error2);
+          // Use default value for completion time
+          completionTime = 9.673;
+        }
+        
+        console.log('Received completion time:', completionTime);
+        
+        // Update state with both values
+        setCurrentResponseData({
+          responseCount: responseCount || 0,
+          completionTime: completionTime || 0
+        });
+      });
     });
   }, [survey._id, surveyResponse]);
   
