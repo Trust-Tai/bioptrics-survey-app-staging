@@ -258,7 +258,56 @@ const StatLabel = styled.div`
   color: #666;
 `;
 
+const TrustedSection = styled.div`
+  margin: 40px 0;
+  padding: 20px 0;
+  text-align: center;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  display: none;
+`;
 
+const TrustedTitle = styled.h3`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+  text-align: center;
+`;
+
+const TrustedLogos = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  margin: 0 auto;
+  max-width: 1000px;
+  
+  @media (max-width: 768px) {
+    gap: 20px;
+  }
+`;
+
+const TrustedLogo = styled.div`
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  
+  img {
+    height: 40px;
+    width: auto;
+    filter: grayscale(100%);
+    transition: filter 0.3s ease;
+  }
+  
+  &:hover {
+    opacity: 1;
+    
+    img {
+      filter: grayscale(0%);
+    }
+  }
+`;
 
 const ButtonContainer = styled.div`
   display: flex;
@@ -452,6 +501,43 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             <StatLabel>Anonymous</StatLabel>
           </StatCard>
         </StatsContainer>
+
+        {/* Trusted by thousands of customers section */}
+        <TrustedSection>
+          <TrustedTitle>Trusted by thousands of customers</TrustedTitle>
+          <TrustedLogos>
+            <TrustedLogo>
+              <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="40" fill="#f8f8f8"/>
+                <text x="60" y="25" fontFamily="Arial" fontSize="12" fill="#333" textAnchor="middle">Company 1</text>
+              </svg>
+            </TrustedLogo>
+            <TrustedLogo>
+              <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="40" fill="#f8f8f8"/>
+                <text x="60" y="25" fontFamily="Arial" fontSize="12" fill="#333" textAnchor="middle">Company 2</text>
+              </svg>
+            </TrustedLogo>
+            <TrustedLogo>
+              <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="40" fill="#f8f8f8"/>
+                <text x="60" y="25" fontFamily="Arial" fontSize="12" fill="#333" textAnchor="middle">Company 3</text>
+              </svg>
+            </TrustedLogo>
+            <TrustedLogo>
+              <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="40" fill="#f8f8f8"/>
+                <text x="60" y="25" fontFamily="Arial" fontSize="12" fill="#333" textAnchor="middle">Company 4</text>
+              </svg>
+            </TrustedLogo>
+            <TrustedLogo>
+              <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="40" fill="#f8f8f8"/>
+                <text x="60" y="25" fontFamily="Arial" fontSize="12" fill="#333" textAnchor="middle">Company 5</text>
+              </svg>
+            </TrustedLogo>
+          </TrustedLogos>
+        </TrustedSection>
 
         {/* What to expect section */}
         <ExpectationSection>
