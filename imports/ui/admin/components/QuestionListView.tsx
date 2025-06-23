@@ -1,11 +1,12 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FaEdit, FaTrash, FaEye, FaCheckSquare, FaList, FaFont, FaStar, FaThList, FaSlidersH } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheckSquare, FaList, FaFont, FaStar, FaThList, FaSlidersH, FaChartLine } from 'react-icons/fa';
 import AdminRichTextRenderer from './AdminRichTextRenderer';
 
 interface QuestionListViewProps {
   questions: any[];
   onPreview: (question: any) => void;
+  onAnalytics: (question: any) => void;
   onEdit: (questionId: string) => void;
   onDelete: (questionId: string) => void;
   layerMap?: Record<string, string>; // Map of layer IDs to layer names
@@ -196,6 +197,15 @@ const ActionButton = styled.button`
     }
   }
   
+  &.analytics {
+    color: #4a2748;
+    &:hover {
+      background-color: #f0e6ef;
+      border-color: #d4c2d3;
+      color: #4a2748;
+    }
+  }
+  
   &.edit {
     color: #2c6ecb;
     &:hover {
@@ -236,6 +246,7 @@ const StatusIndicator = styled.span<{ active: boolean }>`
 const QuestionListView: React.FC<QuestionListViewProps> = ({ 
   questions, 
   onPreview, 
+  onAnalytics,
   onEdit, 
   onDelete,
   layerMap = {}
@@ -318,6 +329,14 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
                   title="Preview"
                 >
                   <FaEye size={16} />
+                </ActionButton>
+                
+                <ActionButton 
+                  className="analytics" 
+                  onClick={() => onAnalytics(question)}
+                  title="Analytics"
+                >
+                  <FaChartLine size={16} />
                 </ActionButton>
                 
                 <ActionButton 

@@ -1,8 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye, FaFileAlt, FaCheckCircle, FaThLarge, FaList } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye, FaFileAlt, FaCheckCircle, FaThLarge, FaList, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar } from 'react-icons/fa';
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  ArcElement,
+  Tooltip, 
+  Legend 
+} from 'chart.js';
+import { Line, Doughnut } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  ArcElement,
+  Tooltip, 
+  Legend
+);
 import { ImportQuestions } from '../../features/questions/components/admin';
+import { format } from 'date-fns';
 import DashboardBg from './DashboardBg';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
@@ -86,6 +109,160 @@ const QUE_TYPE_LABELS: Record<string, string> = {
   number: 'Number',
   date: 'Date'
 };
+
+// Analytics Modal Styled Components
+const AnalyticsSubtitle = styled.p`
+  color: #666;
+  font-size: 16px;
+  margin-top: 5px;
+  margin-bottom: 20px;
+`;
+
+const MetricsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+`;
+
+const MetricCard = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const MetricValue = styled.div`
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin: 10px 0;
+`;
+
+const MetricLabel = styled.div`
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+`;
+
+const ChartContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 30px;
+`;
+
+const ChartCard = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const ChartTitle = styled.h3`
+  font-size: 18px;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 20px;
+`;
+
+const IconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #4a2748;
+`;
+
+// Modal styled components
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+`;
+
+// const ModalHeader = styled.div`
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   padding: 20px 24px;
+//   border-bottom: 1px solid #eee;
+// `;
+
+const ModalBody = styled.div`
+  padding: 24px;
+`;
+
+const CloseButton = styled.button`
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #f0f0f0;
+  }
+`;
+
+const ExportButton = styled.button`
+  background-color: #4a2748;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #3a1d38;
+  }
+`;
+
+// const IconWrapper = styled.div`
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   width: 40px;
+//   height: 40px;
+//   border-radius: 50%;
+//   background-color: #f0f0f0;
+//   color: #4a2748;
+// `;
 
 const Container = styled.div`
   padding: 40px;
@@ -341,58 +518,132 @@ const ActionButton = styled.button`
 `;
 
 // Modal components for the import functionality
-const Modal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-`;
+// const Modal = styled.div`
+//   position: fixed;
+//   top: 0;
+//   left: 0;
+//   width: 100%;
+//   height: 100%;
+//   background-color: rgba(0, 0, 0, 0.5);
+//   display: flex;
+//   justify-content: center;
+//   align-items: center;
+//   z-index: 1000;
+// `;
 
-const ModalContent = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-`;
+// const ModalContent = styled.div`
+//   background-color: white;
+//   border-radius: 8px;
+//   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+//   width: 90%;
+//   max-width: 800px;
+//   max-height: 90vh;
+//   overflow-y: auto;
+// `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 20px 30px;
   border-bottom: 1px solid #eee;
   
   h3 {
     margin: 0;
-    font-size: 18px;
-    color: #552a47;
-  }
-`;
-
-const ModalBody = styled.div`
-  padding: 24px;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  
-  &:hover {
+    font-size: 24px;
+    font-weight: 600;
     color: #333;
   }
 `;
+
+// AnalyticsSubtitle is already defined above
+
+// ModalBody is already defined above
+
+// const CloseButton = styled.button`
+//   background: none;
+//   border: none;
+//   font-size: 24px;
+//   cursor: pointer;
+//   color: #666;
+  
+//   &:hover {
+//     color: #333;
+//   }
+// `;
+
+// Analytics Modal Styled Components
+// const AnalyticsSubtitle = styled.p`
+//   color: #666;
+//   font-size: 16px;
+//   margin-top: 5px;
+//   margin-bottom: 20px;
+// `;
+
+// const MetricsGrid = styled.div`
+//   display: grid;
+//   grid-template-columns: repeat(4, 1fr);
+//   gap: 20px;
+//   margin-bottom: 30px;
+// `;
+
+// MetricCard is already defined above
+
+
+// const MetricValue = styled.div`
+//   font-size: 32px;
+//   font-weight: bold;
+//   color: #333;
+//   margin: 10px 0;
+// `;
+
+// MetricLabel is already defined above
+
+// ChartContainer is already defined above
+
+// const ChartCard = styled.div`
+//   background-color: white;
+//   border-radius: 8px;
+//   padding: 20px;
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+// `;
+
+// const ChartTitle = styled.h3`
+//   font-size: 18px;
+//   color: #333;
+//   margin-top: 0;
+//   margin-bottom: 20px;
+// `;
+
+// const IconWrapper = styled.div`
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   width: 40px;
+//   height: 40px;
+//   border-radius: 50%;
+//   background-color: #f0f0f0;
+//   color: #4a2748;
+// `;
+
+// ExportButton is already defined above
+//  const ExportButton = styled.button`
+//   background-color: #552a47;
+//   color: white;
+//   border: none;
+//   border-radius: 4px;
+//   padding: 8px 16px;
+//   font-size: 14px;
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+//   cursor: pointer;
+//   margin-left: auto;
+  
+//   &:hover {
+//     background-color: #3a1d38;
+//   }
+// `;
 
 // Helper function to get the latest version of a question
 const getLatestVersion = (question: any) => {
@@ -428,6 +679,8 @@ const AllQuestions: React.FC = () => {
   // Preview modal state
   const [previewQuestion, setPreviewQuestion] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
+  const [questionForAnalytics, setQuestionForAnalytics] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [filterTheme, setFilterTheme] = useState<string | null>(null);
@@ -817,10 +1070,10 @@ const AllQuestions: React.FC = () => {
                       <ActionButton 
                         className="preview"
                         onClick={() => {
-                          setPreviewQuestion(doc);
-                          setPreviewOpen(true);
+                          setQuestionForAnalytics(doc);
+                          setAnalyticsModalOpen(true);
                         }}
-                        title="Preview"
+                        title="View Analytics"
                       >
                         <FaEye size={16} />
                       </ActionButton>
@@ -861,6 +1114,10 @@ const AllQuestions: React.FC = () => {
               setPreviewQuestion(question);
               setPreviewOpen(true);
             }}
+            onAnalytics={(question) => {
+              setQuestionForAnalytics(question);
+              setAnalyticsModalOpen(true);
+            }}
             onEdit={(questionId) => navigate(`/admin/questions/builder/${questionId}`)}
             onDelete={(questionId) => {
               setQuestionToDelete(questionId);
@@ -872,27 +1129,143 @@ const AllQuestions: React.FC = () => {
           
         {/* Import Questions Modal */}
         {showImportModal && (
-            <Modal>
-              <ModalContent>
-                <ModalHeader>
-                  <h3>Import Questions</h3>
-                  <CloseButton onClick={() => setShowImportModal(false)}>&times;</CloseButton>
-                </ModalHeader>
-                <ModalBody>
-                  <ImportQuestions
-                    onImportComplete={(questions) => {
-                      handleImportQuestions(questions);
-                      
-                      // Close the modal after import is complete
-                      setTimeout(() => {
-                        setShowImportModal(false);
-                      }, 2000);
-                    }}
-                  />
-                </ModalBody>
-              </ModalContent>
-            </Modal>
-          )}
+          <ImportQuestions
+            onClose={() => setShowImportModal(false)}
+            onImport={handleImportQuestions}
+          />
+        )}
+
+        {/* Question Analytics Modal */}
+        {analyticsModalOpen && questionForAnalytics && (
+          <Modal>
+            <ModalContent>
+              <ModalHeader>
+                <div>
+                  <h3>Question Analytics</h3>
+                  <AnalyticsSubtitle>
+                    Performance insights for "{questionForAnalytics.versions[questionForAnalytics.versions.length - 1].questionText.replace(/<[^>]*>/g, '')}"  
+                  </AnalyticsSubtitle>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <ExportButton onClick={() => alert('Exporting data...')}>
+                    <FaDownload size={14} /> Export Data
+                  </ExportButton>
+                  <CloseButton onClick={() => setAnalyticsModalOpen(false)}>
+                    <FaTimes />
+                  </CloseButton>
+                </div>
+              </ModalHeader>
+              
+              <ModalBody>
+                {/* Metrics Cards */}
+                <MetricsGrid>
+                  <MetricCard>
+                    <IconWrapper>
+                      <FaUsers size={20} />
+                    </IconWrapper>
+                    <MetricValue>31</MetricValue>
+                    <MetricLabel>Total Usage</MetricLabel>
+                  </MetricCard>
+                  
+                  <MetricCard>
+                    <IconWrapper>
+                      <FaComments size={20} />
+                    </IconWrapper>
+                    <MetricValue>1,247</MetricValue>
+                    <MetricLabel>Total Responses</MetricLabel>
+                  </MetricCard>
+                  
+                  <MetricCard>
+                    <IconWrapper>
+                      <FaPercentage size={20} />
+                    </IconWrapper>
+                    <MetricValue>87%</MetricValue>
+                    <MetricLabel>Avg Response Rate</MetricLabel>
+                  </MetricCard>
+                  
+                  <MetricCard>
+                    <IconWrapper>
+                      <FaStar size={20} />
+                    </IconWrapper>
+                    <MetricValue>4.9</MetricValue>
+                    <MetricLabel>Quality Score</MetricLabel>
+                  </MetricCard>
+                </MetricsGrid>
+
+                {/* Charts */}
+                <ChartContainer>
+                  <ChartCard>
+                    <ChartTitle>Usage Over Time</ChartTitle>
+                    <Line 
+                      data={{
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [
+                          {
+                            label: 'Usage',
+                            data: [2, 4, 3, 6, 8, 5],
+                            borderColor: '#3e95cd',
+                            backgroundColor: 'rgba(62, 149, 205, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                          }
+                        ]
+                      }}
+                      options={{
+                        responsive: true,
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: {
+                              precision: 0
+                            }
+                          }
+                        },
+                        plugins: {
+                          legend: {
+                            display: false
+                          }
+                        }
+                      }}
+                    />
+                  </ChartCard>
+                  
+                  <ChartCard>
+                    <ChartTitle>Response Distribution</ChartTitle>
+                    <div style={{ height: '300px', display: 'flex', justifyContent: 'center' }}>
+                      <Doughnut 
+                        data={{
+                          labels: ['Strongly Agree', 'Agree', 'Neutral', 'Disagree', 'Strongly Disagree'],
+                          datasets: [
+                            {
+                              data: [35, 42, 15, 6, 2],
+                              backgroundColor: [
+                                '#36A2EB', // Blue
+                                '#4BC0C0', // Teal
+                                '#FFCD56', // Yellow
+                                '#FF9F40', // Orange
+                                '#FF6384'  // Red
+                              ],
+                              borderWidth: 1
+                            }
+                          ]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              position: 'bottom'
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </ChartCard>
+                </ChartContainer>
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+        )}
           
           {/* Delete Confirmation Modal */}
           {showDeleteConfirm && (
