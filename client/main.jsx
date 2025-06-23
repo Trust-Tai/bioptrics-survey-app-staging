@@ -66,8 +66,8 @@ Meteor.startup(() => {
       return;
     }
     
-    // Show loading indicator before React mounts
-    container.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>Loading Bioptrics Survey Application...</h3></div>';
+    // Empty the container - no loading text needed
+    container.innerHTML = '';
     
     // Short timeout to ensure the DOM is ready
     setTimeout(() => {

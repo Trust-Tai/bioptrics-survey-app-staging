@@ -273,8 +273,9 @@ if (Meteor.isServer) {
           throw new Meteor.Error('not-found', 'Survey not found');
         }
         
-        // Count questions in the survey
-        const questionCount = Object.keys(survey.selectedQuestions || {}).length + (survey.siteTextQuestions?.length || 0);
+        // Count unique questions in the survey (avoid counting duplicates)
+        const uniqueQuestionIds = new Set(Object.keys(survey.selectedQuestions || {}));
+        const questionCount = uniqueQuestionIds.size + (survey.siteTextQuestions?.length || 0);
         
         // Get categories as sections
         let sections: Array<{title: string; description: string; questionCount?: number}> = [];
@@ -316,9 +317,34 @@ if (Meteor.isServer) {
           }];
         }
         
-        // Calculate estimated time (roughly 30 seconds per question)
-        const estimatedMinutes = Math.max(1, Math.ceil(questionCount * 0.5));
-        const estimatedTimeRange = `${estimatedMinutes}-${estimatedMinutes + 2}`;
+        // Calculate estimated time based on question count with a more accurate formula
+        // For very short surveys, use a fixed range that makes sense
+        if (questionCount <= 2) {
+          return {
+            questionCount,
+            sectionCount: sections.length,
+            sections,
+            estimatedTime: "1-2" // Fixed range for very short surveys
+          };
+        }
+        
+        // Base time: 1 minute + 30 seconds per question
+        const baseMinutes = Math.max(1, Math.round(1 + (questionCount * 0.5)));
+        
+        // For surveys with many questions, the per-question time tends to decrease
+        // as respondents get into a rhythm
+        let estimatedMinutes;
+        if (questionCount <= 5) {
+          estimatedMinutes = baseMinutes;
+        } else if (questionCount <= 15) {
+          estimatedMinutes = Math.round(baseMinutes * 0.9); // 10% efficiency for medium surveys
+        } else {
+          estimatedMinutes = Math.round(baseMinutes * 0.8); // 20% efficiency for longer surveys
+        }
+        
+        // Ensure the range is always at least 2 minutes difference
+        const upperBound = Math.max(estimatedMinutes + 2, estimatedMinutes + Math.ceil(questionCount / 10));
+        const estimatedTimeRange = `${estimatedMinutes}-${upperBound}`;
         
         return {
           questionCount,

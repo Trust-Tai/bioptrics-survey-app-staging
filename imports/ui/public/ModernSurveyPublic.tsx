@@ -182,11 +182,7 @@ const ModernSurveyPublic: React.FC = () => {
   if (isLoading) {
     return (
       <PageContainer>
-        <Header>
-          <HeaderContent>
-            {/* No logo in this state */}
-          </HeaderContent>
-        </Header>
+        {/* Remove header completely during loading */}
         <MainContent>
           <ModernSurveyLoader />
         </MainContent>
@@ -217,13 +213,6 @@ const ModernSurveyPublic: React.FC = () => {
   
   return (
     <PageContainer>
-      <Header>
-        <HeaderContent>
-          {surveyData.logo ? (
-            <Logo src={surveyData.logo} alt={surveyData.title} />
-          ) : null}
-        </HeaderContent>
-      </Header>
       <MainContent>
         <ModernSurveyContent 
           survey={surveyData} 
