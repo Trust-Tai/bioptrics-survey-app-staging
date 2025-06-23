@@ -171,9 +171,9 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
             <TableRow key={survey._id}>
               <TableCell>
                 <div style={{ fontWeight: 600 }}>{survey.title}</div>
-                <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
                   {survey.description ? survey.description.substring(0, 100) + (survey.description.length > 100 ? '...' : '') : ''}
-                </div>
+                </div> */}
               </TableCell>
               <TableCell>
                 <StatusBadge status={status}>{status}</StatusBadge>

@@ -188,6 +188,26 @@ if (Meteor.isServer) {
         console.error('Error updating layer status:', error);
         throw new Meteor.Error('db-error', `Failed to update layer status: ${error.message || 'Unknown error'}`);
       }
+    },
+    
+    // Get layers by array of IDs
+    async 'layers.getByIds'(layerIds: string[]) {
+      check(layerIds, [String]);
+      
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to fetch layers');
+      }
+      
+      try {
+        console.log('Fetching layers with IDs:', layerIds);
+        const layers = await Layers.find({ _id: { $in: layerIds } }).fetchAsync();
+        console.log(`Found ${layers.length} layers`);
+        return layers;
+      } catch (error: any) {
+        console.error('Error fetching layers by IDs:', error);
+        throw new Meteor.Error('db-error', `Failed to fetch layers: ${error.message || 'Unknown error'}`);
+      }
     }
   });
 }
