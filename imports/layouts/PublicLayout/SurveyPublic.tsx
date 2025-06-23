@@ -613,18 +613,30 @@ const SurveyPublic: React.FC = () => {
     
     console.log('[SurveyPublic] Submitting responses:', formattedResponses);
     
-    // Call the Meteor method to save responses
-    Meteor.call('surveys.submitResponse', survey._id, formattedResponses, (error: Error | null) => {
-      setSubmitting(false);
+    // Import device detection utility
+    import('../../utils/deviceDetection').then(({ getCurrentDeviceType }) => {
+      // Detect device type
+      const deviceType = getCurrentDeviceType();
+      console.log('[SurveyPublic] Detected device type:', deviceType);
       
-      if (error) {
-        console.error('[SurveyPublic] Error submitting responses:', error);
-        setSubmitError('Failed to submit your responses. Please try again.');
-      } else {
-        console.log('[SurveyPublic] Responses submitted successfully');
-        // Clear responses after successful submission
-        setResponses({});
-      }
+      // Call the Meteor method to save responses with device type
+      Meteor.call('surveys.submitResponse', {
+        surveyId: survey._id,
+        responses: formattedResponses,
+        token: token, // Make sure token is passed
+        deviceType: deviceType // Explicitly specify the property name
+      }, (error: Error | null) => {
+        setSubmitting(false);
+        
+        if (error) {
+          console.error('[SurveyPublic] Error submitting responses:', error);
+          setSubmitError('Failed to submit your responses. Please try again.');
+        } else {
+          console.log('[SurveyPublic] Responses submitted successfully');
+          // Clear responses after successful submission
+          setResponses({});
+        }
+      });
     });
   };
 

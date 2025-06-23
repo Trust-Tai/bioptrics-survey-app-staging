@@ -38,7 +38,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     //   isTag: true
     // })))
   ] },
-  { to: '/admin/questions', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
+  { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
     { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
     { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
     // Dynamically add question tags as submenu items

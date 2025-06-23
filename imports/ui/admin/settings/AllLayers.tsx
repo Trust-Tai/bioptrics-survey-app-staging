@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes } from 'react-icons/fa';
+import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes, FaFolder, FaArrowDown, FaChartBar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import { Layers, LayerField, Layer } from '../../../api/layers';
+import { Questions } from '../../../features/questions/api/questions';
+import { Surveys } from '../../../features/surveys/api/surveys';
 
 // Define local Layer interface that extends the imported one
 interface LayerDisplay {
@@ -18,6 +20,9 @@ interface LayerDisplay {
   active?: boolean;
   parentId?: string;
   children?: LayerDisplay[];
+  color?: string;
+  questionCount?: number;
+  surveyCount?: number;
 }
 
 // Styled Components
@@ -51,6 +56,7 @@ const ViewToggleGroup = styled.div`
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 1rem;
+  width: fit-content;
 `;
 
 const ViewToggleButton = styled.button<{ active?: boolean }>`
@@ -73,42 +79,103 @@ const ViewToggleButton = styled.button<{ active?: boolean }>`
 const ListViewContainer = styled.div`
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  margin-bottom: 2rem;
+`;
+
+const StatsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const StatCard = styled.div`
+  background: white;
+  border-radius: 8px;
   padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const StatContent = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const StatTitle = styled.div`
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+`;
+
+const StatValue = styled.div`
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+`;
+
+const StatIcon = styled.div<{ color?: string }>`
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${props => props.color || '#552a47'};
+`;
+
+const TagHierarchyTitle = styled.h2`
+  font-size: 1.2rem;
+  padding: 1rem;
+  margin: 0;
+  color: #333;
+  border-bottom: 1px solid #eee;
 `;
 
 const ListItem = styled.div<{ level: number }>`
   display: flex;
   align-items: center;
-  padding: 0.75rem;
-  border-radius: 8px;
+  padding: 0.75rem 1rem;
   transition: all 0.2s ease;
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-left: 3px solid #7a4e7a;
-  margin-left: ${props => props.level * 20}px;
+  margin-left: ${props => props.level * 40}px;
   margin-bottom: 0.5rem;
-  width: calc(100% - ${props => props.level * 20}px);
+  margin-right: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
   
   &:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    background: #f9f9f9;
   }
 `;
 
 const ListItemContent = styled.div`
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   flex: 1;
   margin-left: 0.5rem;
 `;
 
-const ListItemName = styled.span<{ isParent?: boolean }>`
-  font-weight: ${props => props.isParent ? '700' : '600'};
-  color: ${props => props.isParent ? '#552a47' : '#333'};
+const ListItemName = styled.div<{ isParent?: boolean; color?: string }>`
+  font-weight: ${props => props.isParent ? '500' : '400'};
   font-size: 1rem;
-  margin-bottom: 0.25rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  
+  &:before {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: ${props => props.color || '#7a4e7a'};
+    margin-right: 8px;
+  }
 `;
 
 const ListItemLocation = styled.span`
@@ -118,9 +185,22 @@ const ListItemLocation = styled.span`
   margin-bottom: 0.25rem;
 `;
 
-const ListItemFields = styled.span`
-  font-size: 0.8rem;
+const ListItemFields = styled.div`
+  font-size: 0.9rem;
   color: #777;
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+`;
+
+const UsageTag = styled.span`
+  background-color: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 const ListItemActions = styled.div`
@@ -135,17 +215,17 @@ const ListItemActions = styled.div`
 `;
 
 const ToggleIcon = styled.div`
+  cursor: pointer;
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   margin-right: 8px;
-  color: #552a47;
+  color: #999;
   
   &:hover {
-    color: #7a4e7a;
+    color: #333;
   }
 `;
 
@@ -398,8 +478,10 @@ const StatusMessage = styled.div<{ success?: boolean; error?: boolean }>`
 // AllLayers Component
 const AllLayers = () => {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<'table' | 'list'>('table');
+  const [viewMode, setViewMode] = useState<'list' | 'tree'>('tree');
+  // Initialize with all items expanded by default
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  
   const [status, setStatus] = useState<{ 
     loading: boolean; 
     message: string; 
@@ -442,17 +524,83 @@ const AllLayers = () => {
     name?: string;
   }>({});
   
-  // Subscribe to layers collection
+  // Subscribe to layers collection and get usage data
   const { layers, isLoading } = useTracker(() => {
-    const subscription = Meteor.subscribe('layers.all');
-    const isReady = subscription.ready();
+    const layersSub = Meteor.subscribe('layers.all');
+    const questionsSub = Meteor.subscribe('questions.all');
+    const surveysSub = Meteor.subscribe('surveys.all');
+    
+    const isReady = layersSub.ready() && questionsSub.ready() && surveysSub.ready();
     const layers = Layers.find({}, { sort: { createdAt: -1 } }).fetch();
     
+    // Get all questions and surveys to calculate usage
+    const questions = Questions.find({}).fetch();
+    const surveys = Surveys.find({}).fetch();
+    
+    // Count tag usage in questions and surveys
+    const tagUsage = new Map();
+    
+    // Count question usage
+    questions.forEach(question => {
+      const currentVersion = question.versions[question.currentVersion - 1];
+      if (currentVersion) {
+        // Check categoryTags
+        if (currentVersion.categoryTags && Array.isArray(currentVersion.categoryTags)) {
+          currentVersion.categoryTags.forEach(tagId => {
+            if (!tagUsage.has(tagId)) {
+              tagUsage.set(tagId, { questions: 0, surveys: 0 });
+            }
+            tagUsage.get(tagId).questions += 1;
+          });
+        }
+        
+        // Check labels (as shown in the screenshot)
+        if (currentVersion.labels && Array.isArray(currentVersion.labels)) {
+          currentVersion.labels.forEach(tagId => {
+            if (!tagUsage.has(tagId)) {
+              tagUsage.set(tagId, { questions: 0, surveys: 0 });
+            }
+            tagUsage.get(tagId).questions += 1;
+          });
+        }
+      }
+    });
+    
+    // Count survey usage
+    surveys.forEach(survey => {
+      // Check selectedTags array
+      if (survey.selectedTags && Array.isArray(survey.selectedTags)) {
+        survey.selectedTags.forEach(tagId => {
+          if (!tagUsage.has(tagId)) {
+            tagUsage.set(tagId, { questions: 0, surveys: 0 });
+          }
+          tagUsage.get(tagId).surveys += 1;
+        });
+      }
+      
+      // Check templateTags if present
+      if (survey.templateTags && Array.isArray(survey.templateTags)) {
+        survey.templateTags.forEach(tagId => {
+          if (!tagUsage.has(tagId)) {
+            tagUsage.set(tagId, { questions: 0, surveys: 0 });
+          }
+          tagUsage.get(tagId).surveys += 1;
+        });
+      }
+    });
+    
+    // Add usage counts to layers
+    const layersWithUsage = layers.map(layer => ({
+      ...layer,
+      questionCount: (tagUsage.get(layer._id) || { questions: 0 }).questions,
+      surveyCount: (tagUsage.get(layer._id) || { surveys: 0 }).surveys
+    }));
+    
     console.log('Subscription ready:', isReady);
-    console.log('Layers found:', layers.length);
+    console.log('Layers found:', layersWithUsage.length);
     
     return {
-      layers,
+      layers: layersWithUsage,
       isLoading: !isReady
     };
   }, []);
@@ -512,6 +660,14 @@ const AllLayers = () => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Set all items to be expanded by default when layers are loaded
+  useEffect(() => {
+    if (layers.length > 0) {
+      const allItemIds = layers.map(layer => layer._id || '');
+      setExpandedItems(allItemIds);
+    }
+  }, [layers]);
 
   // Delete a tag
   const deleteTag = (layerId: string, layerName: string) => {
@@ -726,9 +882,21 @@ const AllLayers = () => {
           </StatusIndicator>
           
           <ListItemContent>
-            <ListItemName isParent={hasChildren}>{layer.name}</ListItemName>
-            <ListItemLocation>{layer.location}</ListItemLocation>
-            <ListItemFields>{layer.fields.length} fields</ListItemFields>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {hasChildren ? (
+                <div style={{ marginRight: '8px', color: '#555' }}>
+                  <FaFolder size={16} color={layer.color || '#7a4e7a'} />
+                </div>
+              ) : (
+                <div style={{ marginRight: '8px', width: '16px' }}></div>
+              )}
+              <ListItemName isParent={hasChildren} color={layer.color}>{layer.name}</ListItemName>
+            </div>
+            <ListItemFields>
+              <UsageTag title="Total uses in questions and surveys">
+                {(layer.questionCount || 0) + (layer.surveyCount || 0)} uses
+              </UsageTag>
+            </ListItemFields>
           </ListItemContent>
           
           <ListItemActions>
@@ -755,7 +923,46 @@ const AllLayers = () => {
     );
   };
   
-  // Organize layers into hierarchical structure for list view
+  // Calculate statistics for the dashboard
+  const stats = useMemo(() => {
+    // Total tags count
+    const totalTags = layers.length;
+    
+    // Count unique categories (parent tags)
+    const categories = new Set();
+    layers.forEach(layer => {
+      if (!layer.parentId) {
+        categories.add(layer._id);
+      }
+    });
+    
+    // Calculate max depth of the tag hierarchy
+    const getDepth = (layerId: string, currentDepth = 1): number => {
+      const children = layers.filter(l => l.parentId === layerId);
+      if (children.length === 0) return currentDepth;
+      
+      return Math.max(...children.map(child => getDepth(child._id || '', currentDepth + 1)));
+    };
+    
+    const rootLayers = layers.filter(l => !l.parentId);
+    const maxDepth = rootLayers.length > 0 
+      ? Math.max(...rootLayers.map(root => getDepth(root._id || ''))) 
+      : 0;
+    
+    // Calculate total usage (sum of question and survey usage across all tags)
+    const totalUsage = layers.reduce((sum, layer) => {
+      return sum + (layer.questionCount || 0) + (layer.surveyCount || 0);
+    }, 0);
+    
+    return {
+      totalTags,
+      categories: categories.size,
+      maxDepth,
+      totalUsage
+    };
+  }, [layers]);
+
+  // Organize layers into hierarchical structure for tree view
   const hierarchicalLayers = useMemo(() => {
     // First pass: create a map of all layers with empty children arrays
     const layerMap = new Map<string, LayerDisplay>();
@@ -810,20 +1017,67 @@ const AllLayers = () => {
           </ButtonGroup>
         </Header>
         
-        <ViewToggleGroup>
-          <ViewToggleButton 
-            active={viewMode === 'table'} 
-            onClick={() => setViewMode('table')}
-          >
-            <FaTable /> Table View
-          </ViewToggleButton>
-          <ViewToggleButton 
-            active={viewMode === 'list'} 
-            onClick={() => setViewMode('list')}
-          >
-            <FaList /> List View
-          </ViewToggleButton>
-        </ViewToggleGroup>
+        <StatsContainer>
+          <StatCard>
+            <StatContent>
+              <StatTitle>Total Tags</StatTitle>
+              <StatValue>{stats.totalTags}</StatValue>
+            </StatContent>
+            <StatIcon color="#3498db">
+              <FaLayerGroup size={24} />
+            </StatIcon>
+          </StatCard>
+          
+          <StatCard>
+            <StatContent>
+              <StatTitle>Max Depth</StatTitle>
+              <StatValue>{stats.maxDepth}</StatValue>
+            </StatContent>
+            <StatIcon color="#9b59b6">
+              <FaArrowDown size={24} />
+            </StatIcon>
+          </StatCard>
+          
+          <StatCard>
+            <StatContent>
+              <StatTitle>Total Usage</StatTitle>
+              <StatValue>{stats.totalUsage}</StatValue>
+            </StatContent>
+            <StatIcon color="#e67e22">
+              <FaChartBar size={24} />
+            </StatIcon>
+          </StatCard>
+        </StatsContainer>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <input
+            type="text"
+            placeholder="Search tags..."
+            style={{ 
+              height: '38px', 
+              fontSize: '14px', 
+              padding: '0 12px', 
+              borderRadius: '4px', 
+              border: '1px solid #ddd', 
+              width: '300px'
+            }}
+          />
+          
+          <ViewToggleGroup>
+            <ViewToggleButton 
+              active={viewMode === 'tree'} 
+              onClick={() => setViewMode('tree')}
+            >
+              <FaList /> Tree
+            </ViewToggleButton>
+            <ViewToggleButton 
+              active={viewMode === 'list'} 
+              onClick={() => setViewMode('list')}
+            >
+              <FaTable /> List
+            </ViewToggleButton>
+          </ViewToggleGroup>
+        </div>
 
         {status.message && (
           <StatusMessage success={status.type === 'success'} error={status.type === 'error'}>
@@ -845,7 +1099,7 @@ const AllLayers = () => {
               Create Your First Tag
             </Button>
           </EmptyState>
-        ) : viewMode === 'table' ? (
+        ) : viewMode === 'list' ? (
           <Table>
             <thead>
               <tr>
@@ -904,7 +1158,10 @@ const AllLayers = () => {
           </Table>
         ) : (
           <ListViewContainer>
-            {hierarchicalLayers.map(layer => renderTagItem(layer))}
+            <TagHierarchyTitle>Tag Hierarchy</TagHierarchyTitle>
+            <div style={{ padding: '1rem' }}>
+              {hierarchicalLayers.map(layer => renderTagItem(layer))}
+            </div>
           </ListViewContainer>
         )}
       </Container>

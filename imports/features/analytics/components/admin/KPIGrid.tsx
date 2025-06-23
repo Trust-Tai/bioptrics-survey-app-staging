@@ -23,6 +23,10 @@ export interface KPIData {
     value: number;
     icon: IconType;
   };
+  responseRate: {
+    value: number;
+    icon: IconType;
+  };
 }
 
 interface KPIGridProps {
@@ -179,6 +183,19 @@ const KPIGrid: React.FC<KPIGridProps> = ({ data, isLoading, isBlurred }) => {
           <Value>{data.timeToComplete.value}</Value>
         )}
         <Label>Time to Complete (min)</Label>
+      </Card>
+
+      {/* Response Rate */}
+      <Card isBlurred={isBlurred}>
+        <IconWrapper>
+          <data.responseRate.icon />
+        </IconWrapper>
+        {isLoading ? (
+          <LoadingPlaceholder />
+        ) : (
+          <Value>{data.responseRate.value}%</Value>
+        )}
+        <Label>Response Rate</Label>
       </Card>
     </Container>
   );
