@@ -180,20 +180,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               </TableCell>
 
               <TableCell>
-                <div>{survey.sections?.length || 0} sections</div>
+                <div>
+                  {survey.surveySections?.length || 0} {(survey.surveySections?.length || 0) === 1 ? 'Section' : 'Sections'}
+                </div>
                 <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                  {(() => {
-                    // Calculate total questions dynamically from sections
-                    let totalQuestions = 0;
-                    if (survey.sections && Array.isArray(survey.sections)) {
-                      survey.sections.forEach((section: { questions?: any[] }) => {
-                        if (section.questions && Array.isArray(section.questions)) {
-                          totalQuestions += section.questions.length;
-                        }
-                      });
-                    }
-                    return totalQuestions;
-                  })()} questions
+                  {survey.sectionQuestions?.length || 0} {(survey.sectionQuestions?.length || 0) === 1 ? 'Question' : 'Questions'}
                 </div>
               </TableCell>
               <TableCell>{updatedDate}</TableCell>
