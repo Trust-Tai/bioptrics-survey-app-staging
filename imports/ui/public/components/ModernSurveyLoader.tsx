@@ -4,7 +4,7 @@ import '../components/ModernSurvey.css';
 
 // Helper function to adjust color brightness
 const adjustColor = (color: string, amount: number): string => {
-  if (!color) return '#552a47';
+  if (!color) return '#2c3e50';
   
   let usePound = false;
   
@@ -29,7 +29,7 @@ const adjustColor = (color: string, amount: number): string => {
 
 // Convert hex color to RGB values for CSS variables
 const hexToRgb = (hex: string): string => {
-  if (!hex || hex === '') return '85, 42, 71'; // Default color
+  if (!hex || hex === '') return '44, 62, 80'; // Default color (2c3e50)
   
   // Remove the # if present
   hex = hex.replace('#', '');
@@ -44,7 +44,7 @@ const hexToRgb = (hex: string): string => {
     return `${r}, ${g}, ${b}`;
   } catch (error) {
     console.error('Error parsing color:', error);
-    return '85, 42, 71'; // Default color
+    return '44, 62, 80'; // Default color (2c3e50)
   }
 };
 
@@ -95,10 +95,10 @@ interface ModernSurveyLoaderProps {
 }
 
 const ModernSurveyLoader: React.FC<ModernSurveyLoaderProps> = ({ 
-  color = '#552a47'
+  color = '#2c3e50'
 }) => {
-  const effectiveColor = color || '#552a47';
-  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '85, 42, 71';
+  const effectiveColor = color || '#2c3e50';
+  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '44, 62, 80';
 
   return (
     <LoaderContainer>

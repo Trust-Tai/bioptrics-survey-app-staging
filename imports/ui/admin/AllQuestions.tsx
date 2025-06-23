@@ -1249,8 +1249,8 @@ const AllQuestions: React.FC = () => {
         {/* Import Questions Modal */}
         {showImportModal && (
           <ImportQuestions
-            onClose={() => setShowImportModal(false)}
-            onImport={handleImportQuestions}
+            onImportComplete={handleImportQuestions}
+            organizationId={organizationId}
           />
         )}
 

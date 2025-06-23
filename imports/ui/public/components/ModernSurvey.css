@@ -1,9 +1,9 @@
 /* Modern Survey Styles */
 /* Default color variables */
 :root {
-  --primary-color: #552a47;
-  --primary-color-rgb: 85, 42, 71;
-  --primary-dark: #3e1e34;
+  --primary-color: #2c3e50;
+  --primary-color-rgb: 44, 62, 80;
+  --primary-dark: #1a252f;
 }
 
 /* Hide duplicate progress indicator */

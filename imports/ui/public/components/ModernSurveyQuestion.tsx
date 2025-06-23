@@ -41,7 +41,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   onAnswer,
   onBack,
   value,
-  color = '#7c3aed',
+  color = '#2c3e50',
   isLastQuestion = false,
   onSubmit
 }) => {

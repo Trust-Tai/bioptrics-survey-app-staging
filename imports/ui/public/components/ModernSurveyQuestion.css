@@ -1,10 +1,10 @@
 /* Modern Survey Question Styles */
 :root {
-  --primary-color: #7c3aed;
-  --primary-light: #a78bfa;
-  --primary-dark: #6d28d9;
-  --error-color: #ef4444;
-  --error-bg: #fee2e2;
+  --primary-color: #2c3e50;
+  --primary-light: #34495e;
+  --primary-dark: #1a252f;
+  --error-color: #7f8c8d;
+  --error-bg: #ecf0f1;
 }
 
 /* Progress Bar Styles */
@@ -146,12 +146,12 @@
 
 .option-item:hover {
   border-color: var(--primary-color);
-  background-color: rgba(124, 58, 237, 0.05);
+  background-color: rgba(44, 62, 80, 0.05);
 }
 
 .option-item.selected {
   border-color: var(--primary-color);
-  background-color: rgba(124, 58, 237, 0.05);
+  background-color: rgba(44, 62, 80, 0.05);
 }
 
 .option-checkmark {
@@ -170,7 +170,7 @@
   border-color: var(--primary-color);
   background-color: var(--primary-color);
   color: white;
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.2);
 }
 
 .option-text {
@@ -188,12 +188,12 @@
   text-align: center;
   margin-top: 20px;
   padding: 8px 16px;
-  background-color: rgba(124, 58, 237, 0.1);
+  background-color: rgba(44, 62, 80, 0.1);
   border-radius: 20px;
   display: inline-block;
   font-weight: 500;
   color: var(--primary-color);
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(44, 62, 80, 0.2);
 }
 
 .selected-answer-display span {
@@ -255,7 +255,7 @@
 
 .scale-option:hover {
   border-color: var(--primary-color);
-  background-color: rgba(124, 58, 237, 0.05);
+  background-color: rgba(44, 62, 80, 0.05);
 }
 
 .scale-option.selected {
@@ -278,7 +278,7 @@
 .text-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.2);
 }
 
 /* Button Styles */
@@ -318,13 +318,13 @@
   background-color: var(--primary-color);
   border: none;
   color: white;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 2px 6px rgba(44, 62, 80, 0.2);
 }
 
 .button-continue:hover {
   background-color: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(44, 62, 80, 0.25);
 }
 
 .button-continue:active {

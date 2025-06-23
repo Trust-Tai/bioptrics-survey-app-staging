@@ -69,7 +69,7 @@ const WelcomeHeaderContent = styled.div`
     font-size: 3.5rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    color: #7c3aed;
+    color: #2c3e50;
   }
   
   p {
@@ -149,7 +149,7 @@ const ExpectationNumber = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #8b5cf6;
+  background-color: #2c3e50;
   color: white;
   display: flex;
   align-items: center;
@@ -177,7 +177,7 @@ const SurveyIcon = styled.div`
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8a4baf 0%, #7c3aed 100%);
+  background: #2c3e50;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,7 +316,7 @@ const ButtonContainer = styled.div`
 `;
 
 const StartButton = styled.button`
-  background-color: #7c3aed;
+  background-color: #2c3e50;
   color: white;
   border: none;
   border-radius: 50px;
@@ -328,12 +328,12 @@ const StartButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
   
   &:hover {
-    background-color: #6d28d9;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+    background-color: #1a252f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.4);
   }
   
   svg {
@@ -343,7 +343,7 @@ const StartButton = styled.button`
 
 // Helper function to adjust color brightness
 const adjustColor = (color: string, amount: number): string => {
-  if (!color) return '#552a47';
+  if (!color) return '#2c3e50';
   
   let usePound = false;
   
@@ -368,7 +368,7 @@ const adjustColor = (color: string, amount: number): string => {
 
 // Convert hex color to RGB values for CSS variables
 const hexToRgb = (hex: string): string => {
-  if (!hex || hex === '') return '85, 42, 71'; // Default color
+  if (!hex || hex === '') return '44, 62, 80'; // Default color (2c3e50)
   
   // Remove the # if present
   hex = hex.replace('#', '');
@@ -383,7 +383,7 @@ const hexToRgb = (hex: string): string => {
     return `${r}, ${g}, ${b}`;
   } catch (error) {
     console.error('Error parsing color:', error);
-    return '85, 42, 71'; // Default color
+    return '44, 62, 80'; // Default color (2c3e50)
   }
 };
 
@@ -472,7 +472,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
         {/* Stats Cards */}
         <StatsContainer>
           <StatCard>
-            <StatIcon color="#4f46e5">
+            <StatIcon color="#2c3e50">
               <FaRegClock size={20} />
             </StatIcon>
             <StatValue>{loading ? '...' : estimatedTime}</StatValue>
@@ -480,7 +480,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
           </StatCard>
           
           <StatCard>
-            <StatIcon color="#10b981">
+            <StatIcon color="#2c3e50">
               <FaRegCheckCircle size={20} />
             </StatIcon>
             <StatValue>{loading ? '...' : (totalQuestions || questionCount || survey.questionCount || 0)}</StatValue>
@@ -488,7 +488,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
           </StatCard>
           
           <StatCard>
-            <StatIcon color="#8b5cf6">
+            <StatIcon color="#2c3e50">
               <FaRegListAlt size={20} />
             </StatIcon>
             <StatValue>{loading ? '...' : (totalSections || sectionCount || 0)}</StatValue>
@@ -496,7 +496,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
           </StatCard>
           
           <StatCard>
-            <StatIcon color="#f43f5e">
+            <StatIcon color="#2c3e50">
               <FaRegHeart size={20} />
             </StatIcon>
             <StatValue>100%</StatValue>

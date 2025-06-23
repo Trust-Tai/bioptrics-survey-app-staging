@@ -76,7 +76,7 @@ const SectionNumberBadge = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: #7c3aed;
+  background-color: #2c3e50;
   color: white;
   display: flex;
   align-items: center;
@@ -168,7 +168,7 @@ const BackButton = styled.button`
 `;
 
 const StartSectionButton = styled.button`
-  background: #7c3aed;
+  background: #2c3e50;
   color: white;
   border: none;
   border-radius: 50px;
@@ -185,7 +185,7 @@ const StartSectionButton = styled.button`
   justify-content: center;
   
   &:hover {
-    background: #6d28d9;
+    background: #2c3e50;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
   }
@@ -245,7 +245,7 @@ const StatIcon = styled.div<{ color?: string }>`
   height: 48px;
   border-radius: 50%;
   background-color: ${props => props.color ? `${props.color}15` : '#7c3aed15'};
-  color: ${props => props.color || '#7c3aed'};
+  color: ${props => props.color || '#2c3e50'};
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -306,15 +306,15 @@ const ImageNumberBadge = styled.div`
 const DefaultImage = () => (
   <svg width="100%" height="100%" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="400" height="400" fill="#f5f5f5" />
-    <path d="M300 150C300 232.843 232.843 300 150 300C67.1573 300 0 232.843 0 150C0 67.1573 67.1573 0 150 0C232.843 0 300 67.1573 300 150Z" fill="#552a47" fillOpacity="0.1" />
-    <path d="M200 170C217.673 170 232 155.673 232 138C232 120.327 217.673 106 200 106C182.327 106 168 120.327 168 138C168 155.673 182.327 170 200 170Z" fill="#552a47" />
-    <path d="M120 290C120 257.909 153.49 232 195 232C236.51 232 270 257.909 270 290C270 291.657 268.657 293 267 293H123C121.343 293 120 291.657 120 290Z" fill="#552a47" />
+    <path d="M300 150C300 232.843 232.843 300 150 300C67.1573 300 0 232.843 0 150C0 67.1573 67.1573 0 150 0C232.843 0 300 67.1573 300 150Z" fill="#2c3e50" fillOpacity="0.1" />
+    <path d="M200 170C217.673 170 232 155.673 232 138C232 120.327 217.673 106 200 106C182.327 106 168 120.327 168 138C168 155.673 182.327 170 200 170Z" fill="#2c3e50" />
+    <path d="M120 290C120 257.909 153.49 232 195 232C236.51 232 270 257.909 270 290C270 291.657 268.657 293 267 293H123C121.343 293 120 291.657 120 290Z" fill="#2c3e50" />
   </svg>
 );
 
 // Helper function to adjust color brightness
 const adjustColor = (color: string, amount: number): string => {
-  if (!color) return '#552a47';
+  if (!color) return '#2c3e50';
   
   let usePound = false;
   
@@ -339,7 +339,7 @@ const adjustColor = (color: string, amount: number): string => {
 
 // Convert hex color to RGB values for CSS variables
 const hexToRgb = (hex: string): string => {
-  if (!hex || hex === '') return '85, 42, 71'; // Default color
+  if (!hex || hex === '') return '44, 62, 80'; // Default color (2c3e50)
   
   // Remove the # if present
   hex = hex.replace('#', '');
@@ -354,7 +354,7 @@ const hexToRgb = (hex: string): string => {
     return `${r}, ${g}, ${b}`;
   } catch (error) {
     console.error('Error parsing color:', error);
-    return '85, 42, 71'; // Default color
+    return '44, 62, 80'; // Default color (2c3e50)
   }
 };
 

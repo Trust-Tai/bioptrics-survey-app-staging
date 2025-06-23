@@ -61,7 +61,7 @@ const ProgressFill = styled.div<{ width: number; color?: string }>`
   background: ${props => 
     props.color ? 
     `linear-gradient(90deg, ${props.color}dd 0%, ${props.color} 100%)` : 
-    'linear-gradient(90deg, #4776E6 0%, #8E54E9 100%)'
+    'linear-gradient(90deg, #2c3e50 0%, #2c3e50 100%)'
   };
   border-radius: 100px;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,7 +81,7 @@ const Step = styled.div<{ active: boolean; completed: boolean; color?: string }>
   border-radius: 50%;
   background-color: ${props => 
     props.completed ? 
-    (props.color || '#8E54E9') : 
+    (props.color || '#2c3e50') : 
     (props.active ? '#aab7c4' : '#edf2f7')
   };
   transition: all 0.3s ease;

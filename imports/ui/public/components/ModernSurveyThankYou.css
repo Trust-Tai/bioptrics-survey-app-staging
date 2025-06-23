@@ -1,10 +1,10 @@
 /* ModernSurveyThankYou.css */
 :root {
-  --primary-color: #7c3aed;
-  --blue-color: #3b82f6;
-  --green-color: #10b981;
-  --yellow-color: #f59e0b;
-  --purple-color: #8b5cf6;
+  --primary-color: #2c3e50;
+  --blue-color: #3498db;
+  --green-color: #2ecc71;
+  --yellow-color: #f39c12;
+  --purple-color: #2c3e50;
   --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease;
 }
@@ -33,7 +33,7 @@
   margin: 0 auto 20px;
   width: 80px;
   height: 80px;
-  background-color: rgba(124, 58, 237, 0.1);
+  background-color: rgba(44, 62, 80, 0.1);
   border-radius: 50%;
   display: flex;
   align-items: center;

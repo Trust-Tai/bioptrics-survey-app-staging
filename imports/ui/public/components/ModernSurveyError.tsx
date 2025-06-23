@@ -53,7 +53,7 @@ const ErrorMessage = styled.p`
 `;
 
 const BackButton = styled.button`
-  background: #552a47;
+  background: #2c3e50;
   color: white;
   border: none;
   border-radius: 8px;
@@ -64,8 +64,8 @@ const BackButton = styled.button`
   transition: all 0.2s ease;
   
   &:hover {
-    background: #6d3a5e;
-    transform: translateY(-2px);
+    background: #1a252f;
+    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
   
