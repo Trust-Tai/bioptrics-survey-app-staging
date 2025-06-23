@@ -409,7 +409,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   }, []);
   const effectiveColor = survey.color || '#7c3aed'; // Default to purple if no color provided
   const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '124, 58, 237';
-  const surveyImage = survey.featuredImage || survey.image || 'https://images.unsplash.com/photo-1581092921461-eab10380ed66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+  const surveyImage = survey.featuredImage || survey.image || null;
 
   // State for survey metadata
   const [loading, setLoading] = useState<boolean>(true);
@@ -423,8 +423,8 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
     sectionCount: 3
   });
 
-  // Featured image for the header (would be dynamic in a real implementation)
-  const featuredImage = survey.featuredImage || 'https://images.unsplash.com/photo-1581092921461-eab10380ed66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+  // Featured image for the header
+  const featuredImage = survey.featuredImage || survey.image || null;
 
   // Fetch survey metadata
   useEffect(() => {
@@ -456,13 +456,15 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   return (
     <WelcomeContainer>
       <WelcomeHeader>
-        <WelcomeHeaderContent>
+        <WelcomeHeaderContent style={{ flex: featuredImage ? 1 : 'auto', maxWidth: featuredImage ? '60%' : '100%' }}>
           <h1>{survey.title || 'Customer Experience Survey'}</h1>
           <p dangerouslySetInnerHTML={{ __html: survey.description || 'Help us understand your experience and improve our services. Your feedback matters and takes just a few minutes to complete.' }} />
         </WelcomeHeaderContent>
-        <WelcomeHeaderImage>
-          <img src={featuredImage} alt="Survey featured image" />
-        </WelcomeHeaderImage>
+        {featuredImage && (
+          <WelcomeHeaderImage>
+            <img src={featuredImage} alt="Survey featured image" />
+          </WelcomeHeaderImage>
+        )}
       </WelcomeHeader>
       <ContentContainer>
 

@@ -907,10 +907,6 @@ const AdminDashboardContent: React.FC = () => {
                           Your intelligent assistant for creating better surveys. Marvin helps admins design effective questions, 
                           optimize survey flow, and generate insights from responses.
                         </MarvinAIDescription>
-                        
-                        <NotifyButton onClick={() => alert('Thank you for your interest in Marvin AI! We will notify you when it launches.')}>
-                          Notify me when Marvin launches <FaArrowRight size={16} />
-                        </NotifyButton>
                       </MarvinAIHeader>
                     </MarvinAILeft>
                     

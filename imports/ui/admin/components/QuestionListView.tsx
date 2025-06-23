@@ -251,10 +251,15 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
   onDelete,
   layerMap = {}
 }) => {
-  // Helper function to strip HTML tags
+  // Helper function to strip HTML tags and decode HTML entities
   const stripHtml = (html: string) => {
     if (!html) return '';
-    return html.replace(/<[^>]*>/g, '');
+    // First remove HTML tags
+    const textWithoutTags = html.replace(/<[^>]*>/g, '');
+    // Then decode HTML entities using a temporary DOM element
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = textWithoutTags;
+    return textarea.value;
   };
 
   // Helper function to get answer type icon
