@@ -15,7 +15,12 @@ import {
   FaUndo,
   FaInfoCircle,
   FaExclamationTriangle,
-  FaBell
+  FaBell,
+  FaRobot,
+  FaBrain,
+  FaLightbulb,
+  FaMagic,
+  FaArrowRight
 } from 'react-icons/fa';
 import Countdown from '../../ui/admin/Countdown';
 
@@ -238,7 +243,7 @@ const QuarterWidthCard = styled(Card)`
 
 // Welcome back section styled components
 const WelcomeBackSection = styled.div`
-  background: #3a7bfd;
+  background: #a0cf4e;
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
@@ -494,7 +499,7 @@ const ActionButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   color: #1c1c1c;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   
   &:hover {
     background: #f5f5f5;
@@ -863,31 +868,7 @@ const AdminDashboardContent: React.FC = () => {
   return (
     <AdminLayout>
       <div className="dashboard-bg">
-        {/* Survey Countdown Header */}
-        <GoldHeaderCard>
-          <div>
-            <HeaderLabel>MAY 25</HeaderLabel>
-            <HeaderTitle>BIOPTRICS Employee Survey</HeaderTitle>
-            <HeaderEnds>
-              ENDS IN: <Countdown end={new Date('2025-05-31T23:59:59')} />
-            </HeaderEnds>
-          </div>
-          <QuickActionBar>
-            <ActionButton className="primary" onClick={() => navigate('/admin/surveys/all')}>
-              <FaClipboardList /> Create Survey
-            </ActionButton>
-            <ActionButton onClick={() => navigate('/admin/questions/builder')}>
-              <FaQuestionCircle /> Add Question
-            </ActionButton>
-            <ActionButton onClick={() => navigate('/admin/analytics')}>
-              <FaFileExport /> Export Results
-            </ActionButton>
-            <ActionButton onClick={() => navigate('/admin/org-setup')}>
-              <FaEnvelope /> Invite Participants
-            </ActionButton>
-          </QuickActionBar>
-        </GoldHeaderCard>
-        
+      
         {/* Welcome Back Section */}
         <WelcomeBackSection>
           <WelcomeTitle>
@@ -908,6 +889,77 @@ const AdminDashboardContent: React.FC = () => {
             </MetricItem> */}
           </MetricsRow>
         </WelcomeBackSection>
+
+                {/* Marvin AI Coming Soon Section */}
+                <MarvinAICard>
+                  <BackgroundDecoration />
+                  <BackgroundDecoration2 />
+                  
+                  <MarvinAIContainer>
+                    {/* Left Side - Header */}
+                    <MarvinAILeft>
+                      <MarvinAIHeader>
+                        <ComingSoonBadge>
+                          <FaRobot size={14} /> Coming Soon
+                        </ComingSoonBadge>
+                        <MarvinAITitle>Meet Marvin AI</MarvinAITitle>
+                        <MarvinAIDescription>
+                          Your intelligent assistant for creating better surveys. Marvin helps admins design effective questions, 
+                          optimize survey flow, and generate insights from responses.
+                        </MarvinAIDescription>
+                        
+                        <NotifyButton onClick={() => alert('Thank you for your interest in Marvin AI! We will notify you when it launches.')}>
+                          Notify me when Marvin launches <FaArrowRight size={16} />
+                        </NotifyButton>
+                      </MarvinAIHeader>
+                    </MarvinAILeft>
+                    
+                    {/* Right Side - Features */}
+                    <MarvinAIRight>
+                      <FeaturesGrid>
+                        <FeatureCard>
+                          <FeatureIcon>
+                            <FaLightbulb size={18} />
+                          </FeatureIcon>
+                          <FeatureTitle>Smart Question Generation</FeatureTitle>
+                          <FeatureDescription>
+                            Marvin helps you craft clear, unbiased questions that get you the insights you need.
+                          </FeatureDescription>
+                        </FeatureCard>
+                        
+                        <FeatureCard>
+                          <FeatureIcon>
+                            <FaBrain size={18} />
+                          </FeatureIcon>
+                          <FeatureTitle>Survey Flow Optimization</FeatureTitle>
+                          <FeatureDescription>
+                            Create logical, engaging survey flows that keep respondents interested.
+                          </FeatureDescription>
+                        </FeatureCard>
+                        
+                        <FeatureCard>
+                          <FeatureIcon>
+                            <FaMagic size={18} />
+                          </FeatureIcon>
+                          <FeatureTitle>Best Practice Recommendations</FeatureTitle>
+                          <FeatureDescription>
+                            Get expert advice on survey design based on industry best practices.
+                          </FeatureDescription>
+                        </FeatureCard>
+                        
+                        <FeatureCard>
+                          <FeatureIcon>
+                            <FaChartLine size={18} />
+                          </FeatureIcon>
+                          <FeatureTitle>Instant Response Analysis</FeatureTitle>
+                          <FeatureDescription>
+                            Turn raw survey data into actionable insights and understand what your data means.
+                          </FeatureDescription>
+                        </FeatureCard>
+                      </FeaturesGrid>
+                    </MarvinAIRight>
+                  </MarvinAIContainer>
+                </MarvinAICard>
         
         {/* KPI Cards */}
         <div style={{ 
@@ -1511,6 +1563,7 @@ const AdminDashboardContent: React.FC = () => {
             </TrendContainer>
           </HalfWidthCard>
           
+          
           {/* Survey Types Section */}
           <HalfWidthCard style={{ gridColumn: '7 / span 6', marginTop: '100px' }}>
             <TrendContainer>
@@ -1767,18 +1820,20 @@ const SurveyTypesContainer = styled.div`
 const SurveyTypeCard = styled.div`
   background: white;
   border-radius: 10px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
   padding: 15px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   gap: 10px;
   border: 1px solid rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   }
 `;
 
@@ -1822,8 +1877,215 @@ const SurveyTypeValue = styled.div`
 `;
 
 const SurveyTypeLabel = styled.div`
-  font-size: 12px;
-  color: #777;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 2px;
+`;
+
+// Marvin AI Coming Soon Section Styles
+const MarvinAICard = styled.div`
+  grid-column: 1 / -1;
+  margin: 30px 0;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  border-radius: 16px;
+  padding: 1.8rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+`;
+
+const MarvinAIContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
+  
+  @media (max-width: 992px) {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+`;
+
+const MarvinAILeft = styled.div`
+  flex: 0 0 300px;
+  
+  @media (max-width: 992px) {
+    flex: 1;
+    width: 100%;
+  }
+`;
+
+const MarvinAIRight = styled.div`
+  flex: 1;
+  
+  @media (max-width: 992px) {
+    width: 100%;
+  }
+`;
+
+const MarvinAIHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+  position: relative;
+  z-index: 2;
+  
+  @media (max-width: 992px) {
+    align-items: center;
+  }
+`;
+
+const ComingSoonBadge = styled.div`
+  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const MarvinAITitle = styled.h2`
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem 0;
+  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: left;
+  
+  @media (max-width: 992px) {
+    text-align: center;
+  }
+`;
+
+const MarvinAIDescription = styled.p`
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: left;
+  margin: 0;
+  
+  @media (max-width: 992px) {
+    text-align: center;
+    max-width: 650px;
+    margin: 0 auto;
+  }
+`;
+
+const FeaturesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 0;
+  position: relative;
+  z-index: 2;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const FeatureCard = styled.div`
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 1.2rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  z-index: 2;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  }
+`;
+
+const FeatureIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+`;
+
+const FeatureTitle = styled.h3`
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+`;
+
+const FeatureDescription = styled.p`
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+`;
+
+const NotifyButton = styled.button`
+  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 0.7rem 1.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 3px 8px rgba(85, 42, 71, 0.15);
+  
+  @media (max-width: 992px) {
+    margin: 1.5rem auto 0;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(85, 42, 71, 0.2);
+  }
+`;
+
+const BackgroundDecoration = styled.div`
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(85, 42, 71, 0.1) 0%, rgba(85, 42, 71, 0) 70%);
+  top: -200px;
+  right: -100px;
+  z-index: 1;
+`;
+
+const BackgroundDecoration2 = styled.div`
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 29, 49, 0.1) 0%, rgba(59, 29, 49, 0) 70%);
+  bottom: -150px;
+  left: -100px;
+  z-index: 1;
 `;
 
 const KPICard = styled.div`
