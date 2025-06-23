@@ -675,10 +675,8 @@ const AdminDashboardContent: React.FC = () => {
   const user = useTracker(() => Meteor.user(), []);
   const userName = user?.profile?.name || user?.username || 'Admin';
   
-  // State for metrics
-  const [responseRate, setResponseRate] = useState(0);
-  const [participationRate, setParticipationRate] = useState<number>(0);
-  const [participantCount, setParticipantCount] = useState<number>(0);
+  // Get enhanced response rate
+  const [responseRate, setResponseRate] = useState<number>(0);
   
   // State for response trends data
   const [responseTrendsData, setResponseTrendsData] = useState<{labels: string[], data: number[]}>({ 
@@ -687,7 +685,7 @@ const AdminDashboardContent: React.FC = () => {
   });
   const [isLoadingTrends, setIsLoadingTrends] = useState<boolean>(true);
   
-  // Fetch enhanced metrics and trends data
+  // Fetch enhanced response rate and trends data
   useEffect(() => {
     // Get enhanced response rate
     Meteor.call('getEnhancedResponseRate', (error: any, result: number) => {
@@ -695,26 +693,6 @@ const AdminDashboardContent: React.FC = () => {
         console.error('Error fetching enhanced response rate:', error);
       } else {
         setResponseRate(result);
-      }
-    });
-    
-    // Get enhanced participation rate
-    Meteor.call('getEnhancedParticipationRate', (error: any, result: number) => {
-      if (error) {
-        console.error('Error fetching enhanced participation rate:', error);
-      } else {
-        console.log('Participation rate received:', result);
-        setParticipationRate(result);
-      }
-    });
-    
-    // Get participant count from SurveyResponses collection
-    Meteor.call('getUniqueParticipantCount', (error: any, result: number) => {
-      if (error) {
-        console.error('Error fetching participant count:', error);
-      } else {
-        console.log('Participant count received:', result);
-        setParticipantCount(result);
       }
     });
     
@@ -825,7 +803,7 @@ const AdminDashboardContent: React.FC = () => {
     { label: 'Total Surveys', value: surveys.length, icon: FaClipboardList, link: '/admin/surveys/all' },
     { label: 'Active Surveys', value: activeSurveys.length, icon: FaCalendarAlt, link: '/admin/surveys/all' },
     { label: 'Question Bank', value: totalQuestions, icon: FaQuestionCircle, link: '/admin/questions/all' },
-    { label: 'Survey Responses', value: participantCount, icon: FaUsers, link: '/admin/analytics' }
+    { label: 'Participants', value: uniqueParticipants, icon: FaUsers, link: '/admin/analytics' }
   ];
 
   // Participation percentage
@@ -903,9 +881,6 @@ const AdminDashboardContent: React.FC = () => {
             <MetricItem>
               <FaChartLine /> {responseRate}% response rate
             </MetricItem>
-            {/* <MetricItem>
-              <FaUsers /> {participationRate}% participation rate
-            </MetricItem> */}
           </MetricsRow>
         </WelcomeBackSection>
         
@@ -1107,121 +1082,53 @@ const AdminDashboardContent: React.FC = () => {
               </div>
           </ChartCard>
           
-          {/* Survey Tags Chart */}
+          {/* Survey Categories Chart */}
           <ChartCard>
             <ChartHeader>
-              <ChartTitle>Survey Tags</ChartTitle>
+              <ChartTitle>Survey Categories</ChartTitle>
             </ChartHeader>
             <div style={{ height: '250px', display: 'flex', justifyContent: 'center' }}>
-              {(() => {
-                // Default data in case the API call fails
-                const defaultData = {
+              <Doughnut 
+                data={{
                   labels: ['Engagement', 'Safety', 'Leadership', 'Culture'],
                   datasets: [
                     {
-                      data: [25, 20, 30, 25],
+                      data: [35, 25, 20, 20],
                       backgroundColor: [
-                        '#3498db',
-                        '#2ecc71',
-                        '#f39c12',
-                        '#9b59b6'
+                        '#3a7bfd', // Blue
+                        '#2cc389', // Green
+                        '#f7b84b', // Orange
+                        '#a66df5'  // Purple
                       ],
                       borderWidth: 0
                     }
                   ]
-                };
-                
-                const [chartData, setChartData] = useState(defaultData);
-                const [isLoading, setIsLoading] = useState(true);
-                
-                // Fetch tag data on component mount
-                useEffect(() => {
-                  setIsLoading(true);
-                  Meteor.call('getMostUsedTags', 4, (error: any, result: any) => {
-                    if (error) {
-                      console.error('Error fetching tag data:', error);
-                      setIsLoading(false);
-                    } else if (result && result.length > 0) {
-                      console.log('Tag data received:', result);
-                      
-                      // Fixed colors for consistency
-                      const colors = ['#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
-                      
-                      // Transform the data for the chart
-                      const newData = {
-                        labels: result.map((item: any) => item.tag),
-                        datasets: [
-                          {
-                            data: result.map((item: any) => item.count),
-                            backgroundColor: result.map((item: any, index: number) => 
-                              item.color || colors[index % colors.length]
-                            ),
-                            borderWidth: 0
-                          }
-                        ]
-                      };
-                      
-                      setChartData(newData);
-                      setIsLoading(false);
-                    } else {
-                      console.log('No tag data received, using default');
-                      setIsLoading(false);
-                    }
-                  });
-                }, []);
-                
-                return (
-                  <>
-                    {isLoading && (
-                      <div style={{ 
-                        position: 'absolute', 
-                        top: '50%', 
-                        left: '50%', 
-                        transform: 'translate(-50%, -50%)',
-                        textAlign: 'center'
-                      }}>
-                        <div style={{ marginBottom: '10px' }}>Loading tag data...</div>
-                        <div className="spinner" style={{ 
-                          width: '30px', 
-                          height: '30px', 
-                          border: '3px solid rgba(0, 0, 0, 0.1)', 
-                          borderRadius: '50%',
-                          borderTop: '3px solid #552a47',
-                          animation: 'spin 1s linear infinite',
-                          margin: '0 auto'
-                        }} />
-                      </div>
-                    )}
-                    <Doughnut
-                      data={chartData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '70%',
-                        plugins: {
-                          legend: {
-                            position: 'right',
-                            labels: {
-                              usePointStyle: true,
-                              padding: 20,
-                              font: {
-                                size: 12
-                              }
-                            }
-                          },
-                          tooltip: {
-                            callbacks: {
-                              label: function(context) {
-                                return `${context.label}: ${context.raw} uses`;
-                              }
-                            }
-                          }
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  cutout: '70%',
+                  plugins: {
+                    legend: {
+                      position: 'right',
+                      labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                          size: 12
                         }
-                      }}
-                    />
-                  </>
-                );
-              })()}
+                      }
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          return `${context.label}: ${context.raw}%`;
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
             </div>
           </ChartCard>
         </ChartContainer>
@@ -1233,8 +1140,90 @@ const AdminDashboardContent: React.FC = () => {
             <div>Anonymity Warning: This filter selection contains fewer than 5 responses. Data has been hidden to protect employee privacy.</div>
           </AnonymityAlert>
         )}
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: gradients[index % gradients.length],
+                  zIndex: 0
+                }} />
+                
+                <KpiCard>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    height: '100%',
+                    width: '100%',
+                    padding: '4px 0'
+                  }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start', 
+                      gap: '14px', 
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        borderRadius: '4px', 
+                        background: 'transparent',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        color: '#552a47',
+                        boxShadow: 'none'
+                      }}>
+                        <stat.icon size={16} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          fontSize: '22px', 
+                          fontWeight: 700, 
+                          color: '#333', 
+                          marginBottom: '1px', 
+                          lineHeight: '1.1' 
+                        }}>
+                          {stat.value}
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          color: '#666',
+                          fontWeight: '500'
+                        }}>
+                          {stat.label}
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      data-view-details
+                      style={{ 
+                        fontSize: '0.7rem', 
+                        color: '#4a5568',
+                        marginTop: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        fontWeight: '500',
+                        background: 'rgba(0, 0, 0, 0.03)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        width: 'fit-content',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span>View details</span>
+                      <FaChevronRight size={8} />
+                    </div>
+                  </div>
+                </KpiCard>
+              </Card>
+            );
+          })}
+        </div>
       
-        <MainGrid style={{ marginTop: '16px' }}>
+      <MainGrid style={{ marginTop: '16px' }}>
         {/* First Row: Engagement Score Trend and Heat Map with Recent Activity */}
           <QuarterWidthCard style={{ gridColumn: '1 / span 3' }}>
             <SectionTitle>
@@ -1824,89 +1813,6 @@ const SurveyTypeValue = styled.div`
 const SurveyTypeLabel = styled.div`
   font-size: 12px;
   color: #777;
-`;
-
-const KPICard = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
-  height: 100%;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, #552a47 0%, #7a4e7a 100%);
-  }
-`;
-
-const KPIIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(85, 42, 71, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  
-  svg {
-    color: #552a47;
-    font-size: 20px;
-  }
-`;
-
-const KPIContent = styled.div`
-  flex: 1;
-`;
-
-const KPIValue = styled.div`
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-`;
-
-const KPILabel = styled.div`
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-`;
-
-const ViewDetails = styled.div`
-  font-size: 12px;
-  color: #4a5568;
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-  background: rgba(0, 0, 0, 0.03);
-  padding: 6px 10px;
-  border-radius: 4px;
-  width: fit-content;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(85, 42, 71, 0.1);
-    color: #552a47;
-  }
 `;
 
 export default AdminDashboard;

@@ -1,6 +1,9 @@
 import { Meteor } from 'meteor/meteor';
 import { SurveyResponses } from './surveyResponses';
 import { IncompleteSurveyResponses } from './incompleteSurveyResponses';
+import { QuestionTags } from '../../question-tags/api/questionTags';
+import { Questions } from '../../questions/api/questions';
+import { Surveys } from './surveys';
 
 interface ResponseTrendDataPoint {
   date: string;
@@ -171,6 +174,131 @@ if (Meteor.isServer) {
         console.error('Error getting response trends data:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error getting response trends data: ${errorMessage}`);
+      }
+    },
+    
+    // Get the most frequently used tags
+    async 'getUniqueParticipantCount'() {
+      console.log('getUniqueParticipantCount method called');
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get participant count');
+      }
+      
+      try {
+        // Get total count of survey responses
+        const totalCount = await SurveyResponses.find({}).countAsync();
+        console.log(`Found ${totalCount} total survey responses`);
+        return totalCount;
+      } catch (error: unknown) {
+        console.error('Error calculating total survey responses count:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating total survey responses count: ${errorMessage}`);
+      }
+    },
+    
+    async 'getMostUsedTags'(limit = 4) {
+      console.log('getMostUsedTags method called with limit:', limit);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get tag data');
+      }
+      
+      try {
+        // Get all questions to calculate tag usage
+        const questions = await Questions.find({}).fetchAsync();
+        
+        // Get all surveys to calculate tag usage
+        const surveys = await Surveys.find({}).fetchAsync();
+        
+        // Count tag usage in questions and surveys
+        const tagUsage = new Map();
+        
+        // Count question usage
+        questions.forEach(question => {
+          const currentVersion = question.versions?.[question.currentVersion - 1] || 
+                               question.versions?.[question.versions?.length - 1];
+          if (currentVersion) {
+            // Check categoryTags
+            if (currentVersion.categoryTags && Array.isArray(currentVersion.categoryTags)) {
+              currentVersion.categoryTags.forEach((tagId: string) => {
+                if (!tagUsage.has(tagId)) {
+                  tagUsage.set(tagId, { questions: 0, surveys: 0 });
+                }
+                tagUsage.get(tagId).questions += 1;
+              });
+            }
+            
+            // Check for custom labels field that might exist in some versions
+            // Note: We're using any here because labels isn't in the type definition
+            // but may exist in the actual data
+            const anyVersion = currentVersion as any;
+            if (anyVersion.labels && Array.isArray(anyVersion.labels)) {
+              anyVersion.labels.forEach((tagId: string) => {
+                if (!tagUsage.has(tagId)) {
+                  tagUsage.set(tagId, { questions: 0, surveys: 0 });
+                }
+                tagUsage.get(tagId).questions += 1;
+              });
+            }
+          }
+        });
+        
+        // Count survey usage
+        surveys.forEach((survey: any) => {
+          // Check selectedTags array
+          if (survey.selectedTags && Array.isArray(survey.selectedTags)) {
+            survey.selectedTags.forEach((tagId: string) => {
+              if (!tagUsage.has(tagId)) {
+                tagUsage.set(tagId, { questions: 0, surveys: 0 });
+              }
+              tagUsage.get(tagId).surveys += 1;
+            });
+          }
+          
+          // Check templateTags if present
+          if (survey.templateTags && Array.isArray(survey.templateTags)) {
+            survey.templateTags.forEach((tagId: string) => {
+              if (!tagUsage.has(tagId)) {
+                tagUsage.set(tagId, { questions: 0, surveys: 0 });
+              }
+              tagUsage.get(tagId).surveys += 1;
+            });
+          }
+        });
+        
+        // Calculate total usage for each tag (questions + surveys)
+        const tagTotalUsage = new Map();
+        tagUsage.forEach((usage, tagId) => {
+          tagTotalUsage.set(tagId, usage.questions + usage.surveys);
+        });
+        
+        // Sort tags by total usage and get the top ones
+        const topTagIds = Array.from(tagTotalUsage.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit)
+          .map(entry => entry[0]);
+        
+        // Get the tag details from Layers collection
+        const layers = await Meteor.callAsync('layers.getByIds', topTagIds);
+        
+        // Format the result with tag name and count
+        const result = topTagIds.map(tagId => {
+          const layer = layers.find((l: any) => l._id === tagId);
+          return {
+            id: tagId,
+            tag: layer?.name || 'Unknown Tag',
+            count: tagTotalUsage.get(tagId) || 0,
+            color: layer?.color || '#552a47'
+          };
+        }).filter(item => item.tag !== 'Unknown Tag');
+        
+        console.log('Most used tags:', result);
+        return result;
+      } catch (error: unknown) {
+        console.error('Error getting most used tags:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error getting most used tags: ${errorMessage}`);
       }
     }
   });
