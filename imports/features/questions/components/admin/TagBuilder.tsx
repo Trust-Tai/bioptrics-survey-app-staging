@@ -144,17 +144,24 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
   return (
     <div className="form-group tag-builder">
       <label className="tag-builder-label">
-        <FaTags /> Tag builder
+        <FaTags size={18} /> Tag builder
       </label>
       <div className="tag-builder-container">
         <select
           ref={tagSelectRef}
           multiple
           className="tag-select"
+          aria-label="Select tags"
         >
           {/* Options will be added by TomSelect */}
         </select>
         {loading && <div className="tag-loading">Loading tags...</div>}
+        {!loading && allTags && allTags.length === 0 && (
+          <div className="tag-empty">No tags available. Please create tags in the Tags & Classifications section.</div>
+        )}
+      </div>
+      <div className="tag-builder-help">
+        Type to search tags or create new ones
       </div>
     </div>
   );

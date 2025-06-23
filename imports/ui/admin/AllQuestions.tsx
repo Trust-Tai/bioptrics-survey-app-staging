@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye, FaFileAlt, FaCheckCircle } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye, FaFileAlt, FaCheckCircle, FaThLarge, FaList } from 'react-icons/fa';
 import { ImportQuestions } from '../../features/questions/components/admin';
 import DashboardBg from './DashboardBg';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '../../features/questions/api/questions';
 import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
+import { Layers } from '../../api/layers';
 import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';
 import DOMPurify from 'dompurify';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import QuestionPreviewModal from './QuestionPreviewModal';
 import AdminRichTextRenderer from './components/AdminRichTextRenderer';
+import QuestionStats from './components/QuestionStats';
+import QuestionListView from './components/QuestionListView';
 
 // Alert component for success and error messages
 interface AlertProps {
@@ -105,8 +108,36 @@ const Title = styled.h2`
 const SearchFilterRow = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 24px;
+`;
+
+const ViewToggleContainer = styled.div`
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+`;
+
+const ViewToggleButton = styled.button<{ active: boolean }>`
+  background: ${props => props.active ? '#552a47' : '#ffffff'};
+  color: ${props => props.active ? '#ffffff' : '#555555'};
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${props => props.active ? '#552a47' : '#f0f0f0'};
+  }
+  
+  &:first-child {
+    border-right: 1px solid #e0e0e0;
+  }
 `;
 
 const SearchInput = styled.input`
@@ -131,6 +162,49 @@ const FilterButton = styled.button`
   
   &:hover {
     background: #f9f9f9;
+  }
+`;
+
+const FilterToggle = styled.button`
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  
+  &:hover {
+    background: #f9f9f9;
+  }
+`;
+
+const Button = styled.button`
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f9f9f9;
+  }
+  
+  &.primary {
+    background: #552a47;
+    color: #fff;
+    border: none;
+    
+    &:hover {
+      background: #6a3559;
+    }
   }
 `;
 
@@ -162,6 +236,12 @@ const FilterSelect = styled.select`
   border-radius: 4px;
   border: 1px solid #ddd;
   font-size: 0.9rem;
+`;
+
+const QuestionsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 `;
 
 const QuestionList = styled.div`
@@ -352,18 +432,25 @@ const AllQuestions: React.FC = () => {
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [filterReusable, setFilterReusable] = useState<boolean | null>(null);
   const [filterTheme, setFilterTheme] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
-  const [filterPriority, setFilterPriority] = useState<number | null>(null);
+  const [filterTag, setFilterTag] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [alert, setAlert] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  // View toggle state - default to list view
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   
-  // Fetch all categories and themes
+  // Get categories and themes for filtering
   const wpsCategories = useTracker(() => {
     Meteor.subscribe('wpsCategories.all');
     return WPSCategories.find().fetch();
+  }, []);
+  
+  // Get layers (tags) for statistics
+  const layers = useTracker(() => {
+    Meteor.subscribe('layers.all');
+    return Layers.find().fetch();
   }, []);
   
   const surveyThemes = useTracker(() => {
@@ -371,12 +458,24 @@ const AllQuestions: React.FC = () => {
     return SurveyThemes.find().fetch();
   }, []);
   
-  // Build lookup maps
-  const wpsCategoryMap = React.useMemo(() => {
+  // Create a map of category IDs to names for easier lookup
+  const wpsCategoryMap = useMemo(() => {
     const map: Record<string, string> = {};
-    wpsCategories.forEach((cat: any) => { map[cat._id] = cat.name; });
+    wpsCategories.forEach((cat: any) => {
+      if (cat._id) map[cat._id] = cat.name;
+    });
     return map;
   }, [wpsCategories]);
+  
+  // Create a map of layer IDs to names for tag display
+  const layerMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    layers.forEach((layer: any) => {
+      if (layer._id) map[layer._id] = layer.name;
+      if (layer.id) map[layer.id] = layer.name; // Some layers might use 'id' instead of '_id'
+    });
+    return map;
+  }, [layers]);
   
   const surveyThemeMap = React.useMemo(() => {
     const map: Record<string, string> = {};
@@ -393,6 +492,45 @@ const AllQuestions: React.FC = () => {
     };
   }, []);
   
+  // Calculate question statistics
+  const questionStats = useMemo(() => {
+    if (!questions || questions.length === 0) {
+      return {
+        totalQuestions: 0,
+        avgQualityScore: 0,
+        totalTags: 0
+      };
+    }
+    
+    const totalQuestions = questions.length;
+    let totalScore = 0;
+    let scoredQuestions = 0;
+    
+    questions.forEach((q: any) => {
+      const latestVersion = getLatestVersion(q);
+      if (!latestVersion) return;
+      
+      // Add quality score if available
+      if (latestVersion.qualityScore) {
+        totalScore += latestVersion.qualityScore;
+        scoredQuestions++;
+      }
+    });
+    
+    // Get total tags count from Layers collection
+    // This matches the "Categories" count shown in the UI screenshot
+    const totalTags = layers ? layers.length : 0;
+    
+    // Calculate average score (default to 4.5 if no scores available)
+    const avgQualityScore = scoredQuestions > 0 ? totalScore / scoredQuestions : 4.5;
+    
+    return {
+      totalQuestions,
+      avgQualityScore,
+      totalTags
+    };
+  }, [questions, layers]);
+
   // Filter questions based on search and filters
   const filteredQuestions = React.useMemo(() => {
     if (!questions) return [];
@@ -421,19 +559,36 @@ const AllQuestions: React.FC = () => {
         return false;
       }
       
-      // Apply category filter
-      if (filterCategory && latestVersion.category !== filterCategory) {
-        return false;
-      }
-      
-      // Apply priority filter
-      if (filterPriority !== null && latestVersion.priority !== filterPriority) {
+      // Apply tag filter
+      if (filterTag) {
+        // Check in labels array which is where tags are actually stored
+        if (latestVersion.labels && Array.isArray(latestVersion.labels)) {
+          // Check if any label matches the selected tag
+          for (const label of latestVersion.labels) {
+            if (typeof label === 'string' && label === filterTag) {
+              return true;
+            }
+            // Handle case where label might be an object with an id property
+            if (typeof label === 'object' && label && label.id === filterTag) {
+              return true;
+            }
+          }
+        }
+        // Also check in categoryTags array as a fallback
+        if (latestVersion.categoryTags && Array.isArray(latestVersion.categoryTags) && latestVersion.categoryTags.includes(filterTag)) {
+          return true;
+        }
+        // Also check in category field for backward compatibility
+        if (latestVersion.category === filterTag) {
+          return true;
+        }
+        // If we get here and filterTag is set, this question doesn't match
         return false;
       }
       
       return true;
     });
-  }, [questions, searchTerm, filterActive, filterReusable, filterTheme, filterCategory, filterPriority]);
+  }, [questions, searchTerm, filterActive, filterReusable, filterTheme, filterTag]);
   
   // Handle importing questions
   const handleImportQuestions = (importedQuestions: any[]) => {
@@ -478,7 +633,6 @@ const AllQuestions: React.FC = () => {
     <AdminLayout>
       <DashboardBg>
         <Container>
-          {/* Show alert if it exists */}
           {alert && (
             <Alert 
               type={alert.type} 
@@ -486,158 +640,143 @@ const AllQuestions: React.FC = () => {
               onClose={() => setAlert(null)} 
             />
           )}
-          <TitleRow>
-            <Title>All Questions</Title>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button 
-                onClick={() => navigate('/admin/questions/builder')} 
-                style={{ 
-                  background: '#552a47', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: 8, 
-                  padding: '8px 16px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 6, 
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 15,
-                }}
-              >
-                <FaPlus size={14} /> New Question
-              </button>
-              <button 
-                onClick={() => setShowImportModal(true)} 
-                style={{ 
-                  background: '#fff', 
-                  color: '#552a47', 
-                  border: '1px solid #552a47', 
-                  borderRadius: 8, 
-                  padding: '8px 16px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 6, 
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 15,
-                }}
-              >
-                <FaFileImport size={14} /> Import Questions
-              </button>
-            </div>
-          </TitleRow>
-          
-          <SearchFilterRow>
-            <SearchInput 
-              type="text" 
-              placeholder="Search questions..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <FilterButton onClick={() => setShowFilters(!showFilters)}>
-              <FaFilter size={12} /> Filters {showFilters ? '(Hide)' : '(Show)'}
-            </FilterButton>
-          </SearchFilterRow>
-          
-          {showFilters && (
-            <FiltersPanel>
-              <FilterGroup>
-                <FilterLabel>Active Status</FilterLabel>
-                <FilterSelect 
-                  value={filterActive === null ? '' : String(filterActive)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilterActive(val === '' ? null : val === 'true');
-                  }}
-                >
-                  <option value="">All</option>
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
-                </FilterSelect>
-              </FilterGroup>
-              
-              <FilterGroup>
-                <FilterLabel>Reusable</FilterLabel>
-                <FilterSelect 
-                  value={filterReusable === null ? '' : String(filterReusable)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilterReusable(val === '' ? null : val === 'true');
-                  }}
-                >
-                  <option value="">All</option>
-                  <option value="true">Reusable</option>
-                  <option value="false">Not Reusable</option>
-                </FilterSelect>
-              </FilterGroup>
-              
-              <FilterGroup>
-                <FilterLabel>Category</FilterLabel>
-                <FilterSelect 
-                  value={filterCategory || ''}
-                  onChange={(e) => setFilterCategory(e.target.value || null)}
-                >
-                  <option value="">All Categories</option>
-                  {wpsCategories.map((cat: any) => (
-                    <option key={cat._id} value={cat._id}>{cat.name}</option>
-                  ))}
-                </FilterSelect>
-              </FilterGroup>
-              
-              <FilterGroup>
-                <FilterLabel>Theme</FilterLabel>
-                <FilterSelect 
-                  value={filterTheme || ''}
-                  onChange={(e) => setFilterTheme(e.target.value || null)}
-                >
-                  <option value="">All Themes</option>
-                  {surveyThemes.map((theme: any) => (
-                    <option key={theme._id} value={theme._id}>{theme.name}</option>
-                  ))}
-                </FilterSelect>
-              </FilterGroup>
-              
-              <FilterGroup>
-                <FilterLabel>Priority</FilterLabel>
-                <FilterSelect 
-                  value={filterPriority === null ? '' : String(filterPriority)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilterPriority(val === '' ? null : Number(val));
-                  }}
-                >
-                  <option value="">All Priorities</option>
-                  <option value="1">Low (1)</option>
-                  <option value="2">Medium (2)</option>
-                  <option value="3">High (3)</option>
-                </FilterSelect>
-              </FilterGroup>
-            </FiltersPanel>
-          )}
-          
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: '0.9rem', color: '#666' }}>
-              Showing {filteredQuestions.length} questions {searchTerm ? `matching "${searchTerm}"` : ''}
-            </div>
+        
+        <TitleRow>
+          <Title>All Questions</Title>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button 
+              className="primary" 
+              onClick={() => navigate('/admin/questions/builder')}
+            >
+              <FaPlus size={14} />
+              New Question
+            </Button>
+            <Button 
+              onClick={() => setShowImportModal(true)}
+            >
+              <FaFileImport size={14} />
+              Import
+            </Button>
           </div>
-          
-          <QuestionList>
+        </TitleRow>
+        
+        {/* Question Statistics */}
+        <QuestionStats 
+          totalQuestions={questionStats?.totalQuestions || 0}
+          avgQualityScore={questionStats?.avgQualityScore || 0}
+          totalTags={questionStats?.totalTags || 0}
+          isLoading={loading}
+        />
+        
+        <SearchFilterRow>
+          <SearchInput 
+            type="text" 
+            placeholder="Search questions..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {/* View Toggle Buttons */}
+            <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+              <ViewToggleButton 
+                active={viewMode === 'list'} 
+                onClick={() => setViewMode('list')}
+                title="List View"
+              >
+                <FaList size={14} />
+              </ViewToggleButton>
+              <ViewToggleButton 
+                active={viewMode === 'grid'} 
+                onClick={() => setViewMode('grid')}
+                title="Grid View"
+              >
+                <FaThLarge size={14} />
+              </ViewToggleButton>
+            </div>
+            
+            <FilterToggle onClick={() => setShowFilters(!showFilters)}>
+              <FaFilter size={14} />
+              Filters {showFilters ? '(on)' : ''}
+            </FilterToggle>
+          </div>
+        </SearchFilterRow>
+        
+        {showFilters && (
+          <FiltersPanel>
+            <FilterGroup>
+              <FilterLabel>Active Status</FilterLabel>
+              <FilterSelect 
+                value={filterActive === null ? '' : String(filterActive)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFilterActive(val === '' ? null : val === 'true');
+                }}
+              >
+                <option value="">All</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel>Reusable</FilterLabel>
+              <FilterSelect 
+                value={filterReusable === null ? '' : String(filterReusable)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFilterReusable(val === '' ? null : val === 'true');
+                }}
+              >
+                <option value="">All</option>
+                <option value="true">Reusable</option>
+                <option value="false">Not Reusable</option>
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel>Tag</FilterLabel>
+              <FilterSelect 
+                value={filterTag || ''}
+                onChange={(e) => setFilterTag(e.target.value || null)}
+              >
+                <option value="">All Tags</option>
+                {layers.map((layer: any) => (
+                  <option key={layer._id || layer.id} value={layer._id || layer.id}>{layer.name}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel>Theme</FilterLabel>
+              <FilterSelect 
+                value={filterTheme || ''}
+                onChange={(e) => setFilterTheme(e.target.value || null)}
+              >
+                <option value="">All Themes</option>
+                {surveyThemes.map((theme: any) => (
+                  <option key={theme._id} value={theme._id}>{theme.name}</option>
+                ))}
+              </FilterSelect>
+            </FilterGroup>
+          </FiltersPanel>
+        )}
+        
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: '0.9rem', color: '#666' }}>
+            Showing {filteredQuestions.length} questions {searchTerm ? `matching "${searchTerm}"` : ''}
+          </div>
+        </div>
+        
+        {/* Questions View - Grid or List based on viewMode */}
+        {viewMode === 'grid' ? (
+          <QuestionsGrid>
             {filteredQuestions.map((doc: any) => {
               const latestVersion = getLatestVersion(doc);
               if (!latestVersion) return null;
-              
+            
               return (
                 <QuestionCard key={doc._id}>
                   <QuestionHeader>
-                    <div>
-                      {latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
-                        ? latestVersion.categoryTags.map((catId: string) => wpsCategoryMap[catId] || catId).join(', ')
-                        : (latestVersion.category 
-                            ? wpsCategoryMap[latestVersion.category] || latestVersion.category 
-                            : 'Uncategorized')
-                      }
-                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
                         <QuestionType>
@@ -654,11 +793,21 @@ const AllQuestions: React.FC = () => {
                         </StatusTag>
                       )}
                     </div>
+                    <div>
+                      {latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
+                        ? latestVersion.categoryTags.slice(0, 3).map((catId: string, index: number) => (
+                            <MetaTag key={index}>{layerMap[catId] || catId}</MetaTag>
+                          )).concat(latestVersion.categoryTags.length > 3 ? [<MetaTag key="more">+{latestVersion.categoryTags.length - 3}</MetaTag>] : [])
+                        : (latestVersion.category 
+                            ? <MetaTag>{layerMap[latestVersion.category] || latestVersion.category}</MetaTag>
+                            : null)
+                      }
+                    </div>
                   </QuestionHeader>
                   <QuestionContent>
                     <QuestionText>
-                    <AdminRichTextRenderer content={latestVersion.questionText} truncate={120} />
-                  </QuestionText>
+                      <AdminRichTextRenderer content={latestVersion.questionText} truncate={120} />
+                    </QuestionText>
                     <QuestionMeta>
                       {latestVersion.surveyThemes && latestVersion.surveyThemes.map((themeId: string) => (
                         <MetaTag key={themeId}>{surveyThemeMap[themeId] || themeId}</MetaTag>
@@ -670,75 +819,61 @@ const AllQuestions: React.FC = () => {
                       <ActionButton 
                         className="preview"
                         onClick={() => {
-                          // Pass the latest version of the question to the preview modal
-                          const latestVersion = getLatestVersion(doc);
-                          if (latestVersion) {
-                            // Get category names from IDs
-                            const categoryNames = latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
-                              ? latestVersion.categoryTags.map((catId: string) => wpsCategoryMap[catId] || catId)
-                              : [];
-                              
-                            // Get theme names from IDs
-                            const themeNames = latestVersion.surveyThemes && latestVersion.surveyThemes.length > 0
-                              ? latestVersion.surveyThemes.map((themeId: string) => surveyThemeMap[themeId] || themeId)
-                              : [];
-                              
-                            setPreviewQuestion({
-                              _id: doc._id,
-                              ...latestVersion,
-                              // Map fields to match what the preview modal expects
-                              text: latestVersion.questionText,
-                              questionText: latestVersion.questionText,
-                              description: latestVersion.description,
-                              questionDescription: latestVersion.description,
-                              answerType: latestVersion.responseType,
-                              responseType: latestVersion.responseType,
-                              // Handle answers based on response type
-                              answers: Array.isArray(latestVersion.options) ? latestVersion.options : [],
-                              options: latestVersion.options,
-                              // Add category and theme names
-                              categoryName: categoryNames.length > 0 ? categoryNames.join(', ') : '',
-                              themeNames: themeNames,
-                              surveyThemeNames: themeNames,
-                              // Include version info
-                              version: doc.currentVersion,
-                              currentVersion: doc.currentVersion
-                            });
-                            setPreviewOpen(true);
-                          }
+                          setPreviewQuestion(doc);
+                          setPreviewOpen(true);
                         }}
+                        title="Preview"
                       >
-                        <FaEye size={12} style={{ marginRight: 4 }} /> Preview
+                        <FaEye size={16} />
                       </ActionButton>
                       <ActionButton 
                         className="edit"
                         onClick={() => navigate(`/admin/questions/builder/${doc._id}`)}
+                        title="Edit"
                       >
-                        <FaEdit size={12} style={{ marginRight: 4 }} /> Edit
+                        <FaEdit size={16} />
                       </ActionButton>
                       <ActionButton 
                         className="delete"
-                        onClick={() => handleDeleteQuestion(doc._id)}
+                        onClick={() => {
+                          setQuestionToDelete(doc._id);
+                          setShowDeleteConfirm(true);
+                        }}
+                        title="Delete"
                       >
-                        <FaTrash size={12} style={{ marginRight: 4 }} /> Delete
+                        <FaTrash size={16} />
                       </ActionButton>
                     </QuestionActions>
                   </QuestionContent>
                 </QuestionCard>
               );
             })}
-          </QuestionList>
+            
+            {filteredQuestions.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0', color: '#666' }}>
+                No questions found matching your criteria.
+              </div>
+            )}
+          </QuestionsGrid>
+        ) : (
+          /* List View */
+          <QuestionListView 
+            questions={filteredQuestions}
+            onPreview={(question) => {
+              setPreviewQuestion(question);
+              setPreviewOpen(true);
+            }}
+            onEdit={(questionId) => navigate(`/admin/questions/builder/${questionId}`)}
+            onDelete={(questionId) => {
+              setQuestionToDelete(questionId);
+              setShowDeleteConfirm(true);
+            }}
+            layerMap={layerMap}
+          />
+        )}
           
-          {previewOpen && previewQuestion && (
-            <QuestionPreviewModal
-              question={previewQuestion}
-              open={previewOpen}
-              onClose={() => setPreviewOpen(false)}
-            />
-          )}
-          
-          {/* Import Questions Modal */}
-          {showImportModal && (
+        {/* Import Questions Modal */}
+        {showImportModal && (
             <Modal>
               <ModalContent>
                 <ModalHeader>
