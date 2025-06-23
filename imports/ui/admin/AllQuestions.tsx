@@ -430,9 +430,9 @@ const AllQuestions: React.FC = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
-  const [filterReusable, setFilterReusable] = useState<boolean | null>(null);
   const [filterTheme, setFilterTheme] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [filterQuestionType, setFilterQuestionType] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -549,8 +549,8 @@ const AllQuestions: React.FC = () => {
         return false;
       }
       
-      // Apply reusable filter
-      if (filterReusable !== null && latestVersion.isReusable !== filterReusable) {
+      // Apply question type filter
+      if (filterQuestionType && latestVersion.responseType !== filterQuestionType) {
         return false;
       }
       
@@ -588,7 +588,7 @@ const AllQuestions: React.FC = () => {
       
       return true;
     });
-  }, [questions, searchTerm, filterActive, filterReusable, filterTheme, filterTag]);
+  }, [questions, searchTerm, filterActive, filterQuestionType, filterTheme, filterTag]);
   
   // Handle importing questions
   const handleImportQuestions = (importedQuestions: any[]) => {
@@ -719,17 +719,15 @@ const AllQuestions: React.FC = () => {
             </FilterGroup>
             
             <FilterGroup>
-              <FilterLabel>Reusable</FilterLabel>
+              <FilterLabel>Question Type</FilterLabel>
               <FilterSelect 
-                value={filterReusable === null ? '' : String(filterReusable)}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFilterReusable(val === '' ? null : val === 'true');
-                }}
+                value={filterQuestionType || ''}
+                onChange={(e) => setFilterQuestionType(e.target.value || null)}
               >
-                <option value="">All</option>
-                <option value="true">Reusable</option>
-                <option value="false">Not Reusable</option>
+                <option value="">All Types</option>
+                {Object.entries(QUE_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </FilterSelect>
             </FilterGroup>
             
