@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiArrowRight, FiClock, FiShield } from 'react-icons/fi';
+import { Meteor } from 'meteor/meteor';
+import { FiArrowRight, FiClock, FiShield, FiClock as FiTimer, FiCheckCircle, FiUsers, FiHeart } from 'react-icons/fi';
+import { FaRegClock, FaRegCheckCircle, FaRegListAlt, FaRegHeart } from 'react-icons/fa';
 import '../components/ModernSurvey.css';
 
 interface Survey {
@@ -11,6 +13,15 @@ interface Survey {
   image?: string;
   featuredImage?: string;
   color?: string;
+  estimatedTime?: string;
+  questionCount?: number;
+  sectionCount?: number;
+  sections?: SurveySection[];
+}
+
+interface SurveySection {
+  title: string;
+  description: string;
 }
 
 interface ModernSurveyWelcomeProps {
@@ -19,7 +30,12 @@ interface ModernSurveyWelcomeProps {
 }
 
 const WelcomeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   animation: fadeIn 0.6s ease-out;
   
   @keyframes fadeIn {
@@ -28,34 +44,193 @@ const WelcomeContainer = styled.div`
   }
 `;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
-
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
-
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
-
-const LogoSmall = styled.img`
-  max-width: 120px;
-  max-height: 60px;
-  margin-bottom: 24px;
-  object-fit: contain;
-  position: relative;
-  z-index: 2;
+const WelcomeHeader = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 2rem;
+  background-color: #f9f7ff;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+  }
 `;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const WelcomeHeaderContent = styled.div`
+  flex: 1;
+  padding-right: 2rem;
+  
+  h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #7c3aed;
+  }
+  
+  p {
+    font-size: 1.25rem;
+    color: #4b5563;
+    line-height: 1.6;
+    max-width: 600px;
+  }
+  
+  @media (max-width: 768px) {
+    padding-right: 0;
+    
+    h1 {
+      font-size: 2.5rem;
+    }
+  }
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const WelcomeHeaderImage = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: 1.5rem;
+    justify-content: center;
+  }
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const ContentContainer = styled.div`
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const SurveyIcon = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8a4baf 0%, #7c3aed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+  color: white;
+  font-size: 24px;
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const SurveyContent = styled.div`
+  flex: 1;
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const SurveyTitle = styled.h1`
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 8px 0;
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const SurveyDescription = styled.p`
+  font-size: 16px;
+  color: #555;
+  margin: 0;
+  line-height: 1.5;
+`;
+
+
+
+const StatsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 32px 0;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const StatCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+`;
+
+const StatIcon = styled.div<{ color: string }>`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: ${props => props.color};
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 20px;
+`;
+
+const StatValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 4px;
+`;
+
+const StatLabel = styled.div`
+  font-size: 14px;
+  color: #666;
+`;
+
+
+
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+`;
+
+const StartButton = styled.button`
+  background-color: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  
+  &:hover {
+    background-color: #6d28d9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+  }
+  
+  svg {
+    margin-left: 8px;
+  }
+`;
 
 // Helper function to adjust color brightness
 const adjustColor = (color: string, amount: number): string => {
@@ -104,87 +279,131 @@ const hexToRgb = (hex: string): string => {
 };
 
 const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onStart }) => {
-  const effectiveColor = survey.color || '#552a47';
-  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '85, 42, 71';
-  const surveyImage = survey.featuredImage || survey.image || 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+  // Add CSS to hide header for this page
+  useEffect(() => {
+    // Add a style tag to hide the header
+    const style = document.createElement('style');
+    style.textContent = `
+      header {
+        display: none !important;
+      }
+      main {
+        padding: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Clean up function to remove the style when component unmounts
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  const effectiveColor = survey.color || '#7c3aed'; // Default to purple if no color provided
+  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '124, 58, 237';
+  const surveyImage = survey.featuredImage || survey.image || 'https://images.unsplash.com/photo-1581092921461-eab10380ed66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
 
+  // State for survey metadata
+  const [loading, setLoading] = useState<boolean>(true);
+  const [metadata, setMetadata] = useState<{
+    estimatedTime: string;
+    questionCount: number;
+    sectionCount: number;
+  }>({ 
+    estimatedTime: '3-5',
+    questionCount: 8,
+    sectionCount: 3
+  });
+
+  // Featured image for the header (would be dynamic in a real implementation)
+  const featuredImage = survey.featuredImage || 'https://images.unsplash.com/photo-1581092921461-eab10380ed66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+
+  // Fetch survey metadata
+  useEffect(() => {
+    if (survey._id) {
+      setLoading(true);
+      console.log('Fetching survey metadata for survey ID:', survey._id);
+      
+      Meteor.call('getSurveyMetadata', survey._id, (error: any, result: any) => {
+        if (error) {
+          console.error('Error fetching survey metadata:', error);
+        } else if (result) {
+          console.log('Received survey metadata:', result);
+          setMetadata({
+            estimatedTime: result.estimatedTime || '3-5',
+            questionCount: result.questionCount || 8,
+            sectionCount: result.sectionCount || 3
+          });
+        } else {
+          console.warn('No result received from getSurveyMetadata');
+        }
+        setLoading(false);
+      });
+    }
+  }, [survey._id]);
+  
+  // Use the metadata
+  const { estimatedTime, questionCount, sectionCount } = metadata;
+  
   return (
     <WelcomeContainer>
-      <div 
-        className="modern-survey-container"
-        style={{
-          '--primary-color': effectiveColor,
-          '--primary-color-rgb': primaryColorRgb,
-          '--primary-dark': adjustColor(effectiveColor, -20)
-        } as React.CSSProperties}
-      >
-        <div className="modern-survey-wrapper">
-          {/* Left side image - same as question screen */}
-          <div 
-            className="modern-survey-sidebar"
-            style={{ 
-              backgroundImage: `url(${surveyImage})`, 
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="modern-survey-sidebar-overlay">
-              <div className="sidebar-text-container">
-                <h2>{survey.title}</h2>
-                {survey.description && (
-                  <p>{survey.description.replace(/<[^>]*>/g, '')}</p>
-                )}
-              </div>
-            </div>
-          </div>
+      <WelcomeHeader>
+        <WelcomeHeaderContent>
+          <h1>{survey.title || 'Customer Experience Survey'}</h1>
+          <p dangerouslySetInnerHTML={{ __html: survey.description || 'Help us understand your experience and improve our services. Your feedback matters and takes just a few minutes to complete.' }} />
+        </WelcomeHeaderContent>
+        <WelcomeHeaderImage>
+          <img src={featuredImage} alt="Survey featured image" />
+        </WelcomeHeaderImage>
+      </WelcomeHeader>
+      <ContentContainer>
+
+
+        {/* Stats Cards */}
+        <StatsContainer>
+          <StatCard>
+            <StatIcon color="#4f46e5">
+              <FaRegClock size={20} />
+            </StatIcon>
+            <StatValue>{loading ? '...' : estimatedTime}</StatValue>
+            <StatLabel>Minutes to complete</StatLabel>
+          </StatCard>
           
-          {/* Right side content */}
-          <div className="modern-survey-content">
-            {survey.logo && (
-              <div style={{ marginBottom: '20px', maxHeight: '60px' }}>
-                <img 
-                  src={survey.logo} 
-                  alt={survey.title} 
-                  style={{ maxHeight: '60px', objectFit: 'contain' }} 
-                />
-              </div>
-            )}
-            
-            <div className="modern-survey-header">
-              <h1 className="modern-survey-question">{survey.title}</h1>
-            </div>
-            
-            {survey.description && (
-              <div className="modern-survey-description" style={{ marginBottom: '30px' }}>
-                <div dangerouslySetInnerHTML={{ __html: survey.description }} />
-              </div>
-            )}
-            
-            <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', fontSize: '14px', color: '#666' }}>
-                <FiClock size={16} /> <span>Estimated time: 5-10 minutes</span>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px', fontSize: '14px', color: '#666' }}>
-                <FiShield size={16} /> <span>Your responses are anonymous and confidential.</span>
-              </div>
-              
-              <div className="modern-survey-actions">
-                <button 
-                  className="modern-survey-button button-primary"
-                  onClick={onStart}
-                  style={{ 
-                    '--primary-color': effectiveColor,
-                    '--primary-dark': adjustColor(effectiveColor, -20)
-                  } as React.CSSProperties}
-                >
-                  Start Survey <FiArrowRight />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          <StatCard>
+            <StatIcon color="#10b981">
+              <FaRegCheckCircle size={20} />
+            </StatIcon>
+            <StatValue>{loading ? '...' : (questionCount || survey.questionCount || 0)}</StatValue>
+            <StatLabel>Total questions</StatLabel>
+          </StatCard>
+          
+          <StatCard>
+            <StatIcon color="#8b5cf6">
+              <FaRegListAlt size={20} />
+            </StatIcon>
+            <StatValue>{loading ? '...' : sectionCount}</StatValue>
+            <StatLabel>Question sections</StatLabel>
+          </StatCard>
+          
+          <StatCard>
+            <StatIcon color="#f43f5e">
+              <FaRegHeart size={20} />
+            </StatIcon>
+            <StatValue>100%</StatValue>
+            <StatLabel>Anonymous</StatLabel>
+          </StatCard>
+        </StatsContainer>
+
+
+
+
+
+        {/* Start Button */}
+        <ButtonContainer>
+          <StartButton onClick={onStart}>
+            Start Survey <FiArrowRight size={18} />
+          </StartButton>
+        </ButtonContainer>
+      </ContentContainer>
     </WelcomeContainer>
   );
 };

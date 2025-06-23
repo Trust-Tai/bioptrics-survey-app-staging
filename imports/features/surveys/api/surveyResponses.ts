@@ -49,6 +49,19 @@ export interface SurveyResponseDoc {
 export const SurveyResponses = new Mongo.Collection<SurveyResponseDoc>('surveyResponses');
 
 if (Meteor.isServer) {
+  // Publish recent survey responses
+  Meteor.publish('surveyResponses.recent', function() {
+    return SurveyResponses.find(
+      { completed: true },
+      { 
+        sort: { updatedAt: -1 },
+        limit: 10 
+      }
+    );
+  });
+}
+
+if (Meteor.isServer) {
   // Publications
   Meteor.publish('surveyResponses.bySurvey', async function(surveyId: string) {
     check(surveyId, String);
