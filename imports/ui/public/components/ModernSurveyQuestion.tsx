@@ -124,15 +124,26 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     // Clear any previous error
     setError(null);
     
-    // Save the current answer
-    onAnswer(answer);
+    // Log whether this is the last question for debugging
+    console.log('CRITICAL - Question button click info:', {
+      isLastQuestion,
+      hasSubmitHandler: !!onSubmit,
+      questionText: question.text?.substring(0, 30),
+      buttonText: isLastQuestion ? 'Submit' : 'Continue'
+    });
     
     // If this is the last question and we have a submit handler
     if (isLastQuestion && onSubmit) {
-      setTimeout(() => {
-        onSubmit();
-      }, 100); // Small delay to ensure the answer is saved first
+      console.log('This is the last question - submitting survey');
+      // Call onSubmit directly without saving the answer again
+      // This will navigate to the thank you page
+      onSubmit();
+      return; // Important: return early to prevent onAnswer from being called
     }
+    
+    // Only save the answer if we're not submitting
+    // This prevents double-saving which might cause navigation issues
+    onAnswer(answer);
   };
   
   // Render numeric scale (1-5)
@@ -352,6 +363,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             onClick={handleContinue}
             disabled={question.required && !isAnswerValid()}
             style={{backgroundColor: color}}
+            data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
           >
             {isLastQuestion ? 'Submit' : 'Continue'}
             <FiArrowRight size={18} />

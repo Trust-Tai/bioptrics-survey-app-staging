@@ -27,6 +27,8 @@ interface SurveySection {
 interface ModernSurveyWelcomeProps {
   survey: Survey;
   onStart: () => void;
+  totalQuestions?: number;
+  totalSections?: number;
 }
 
 const WelcomeContainer = styled.div`
@@ -336,7 +338,7 @@ const hexToRgb = (hex: string): string => {
   }
 };
 
-const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onStart }) => {
+const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onStart, totalQuestions, totalSections }) => {
   // Add CSS to hide header for this page
   useEffect(() => {
     // Add a style tag to hide the header
@@ -430,7 +432,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             <StatIcon color="#10b981">
               <FaRegCheckCircle size={20} />
             </StatIcon>
-            <StatValue>{loading ? '...' : (questionCount || survey.questionCount || 0)}</StatValue>
+            <StatValue>{loading ? '...' : (totalQuestions || questionCount || survey.questionCount || 0)}</StatValue>
             <StatLabel>Total questions</StatLabel>
           </StatCard>
           
@@ -438,7 +440,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             <StatIcon color="#8b5cf6">
               <FaRegListAlt size={20} />
             </StatIcon>
-            <StatValue>{loading ? '...' : sectionCount}</StatValue>
+            <StatValue>{loading ? '...' : (totalSections || sectionCount || 0)}</StatValue>
             <StatLabel>Question sections</StatLabel>
           </StatCard>
           

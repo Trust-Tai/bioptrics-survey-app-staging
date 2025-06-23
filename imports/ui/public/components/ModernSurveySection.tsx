@@ -28,6 +28,7 @@ interface ModernSurveySectionProps {
   surveyDescription?: string;
   surveyId?: string;
   sectionIndex?: number;
+  totalQuestions?: number; // Total questions in this section
 }
 
 const SectionContainer = styled.div`
@@ -366,7 +367,8 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   surveyTitle,
   surveyDescription,
   surveyId,
-  sectionIndex = 1
+  sectionIndex = 1,
+  totalQuestions
 }) => {
   // Add CSS to hide header and remove padding
   useEffect(() => {
@@ -689,7 +691,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
               <StatIcon>
                 <FiCheckCircle size={24} />
               </StatIcon>
-              <StatValue>{metadata.questionCount}</StatValue>
+              <StatValue>{totalQuestions || metadata.questionCount}</StatValue>
               <StatLabel>Total questions</StatLabel>
             </StatCard>
             
