@@ -238,9 +238,6 @@ const QuestionFooter = styled.div`
 const StatusIndicator = styled.span<{ active: boolean }>`
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background-color: ${props => props.active ? '#4caf50' : '#9e9e9e'};
-  margin-right: 6px;
 `;
 
 const QuestionListView: React.FC<QuestionListViewProps> = ({ 
@@ -251,6 +248,12 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
   onDelete,
   layerMap = {}
 }) => {
+  // Helper function to get tag name from ID
+  const getTagName = (tagId: string) => {
+    if (!tagId) return '';
+    return layerMap[tagId] || tagId;
+  };
+  
   // Helper function to strip HTML tags and decode HTML entities
   const stripHtml = (html: string) => {
     if (!html) return '';
@@ -369,9 +372,10 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
             <QuestionMeta>
               {latestVersion.labels && latestVersion.labels.length > 0 && (
                 <>
-                  {latestVersion.labels.slice(0, 3).map((tag: string, index: number) => (
-                    <Tag key={index}>{layerMap[tag] || tag}</Tag>
-                  ))}
+                  {latestVersion.labels.slice(0, 3).map((tag: string, index: number) => {
+                    console.log('Tag:', tag);
+                    return <Tag key={index}>{getTagName(tag)}</Tag>;
+                  })}
                   {latestVersion.labels.length > 3 && (
                     <Tag>+{latestVersion.labels.length - 3}</Tag>
                   )}
@@ -379,9 +383,10 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
               )}
               {(!latestVersion.labels || latestVersion.labels.length === 0) && latestVersion.categoryTags && latestVersion.categoryTags.length > 0 && (
                 <>
-                  {latestVersion.categoryTags.slice(0, 3).map((tag: string, index: number) => (
-                    <Tag key={index}>{layerMap[tag] || tag}</Tag>
-                  ))}
+                  {latestVersion.categoryTags.slice(0, 3).map((tag: string, index: number) => {
+                    console.log('Category Tag:', tag);
+                    return <Tag key={index}>{getTagName(tag)}</Tag>;
+                  })}
                   {latestVersion.categoryTags.length > 3 && (
                     <Tag>+{latestVersion.categoryTags.length - 3}</Tag>
                   )}

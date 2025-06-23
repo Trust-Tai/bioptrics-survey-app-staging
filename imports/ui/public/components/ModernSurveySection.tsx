@@ -658,23 +658,25 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     return <SectionDescription>{section.description}</SectionDescription>;
   };
 
-  const sectionImage = section.image || image || 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
+  const sectionImage = section.image || image || null;
   const effectiveColor = '#7c3aed'; // Using purple from the reference image
 
   return (
     <SectionContainer>
       <SectionCard>
         <SectionHeader>
-          <HeaderContent>
+          <HeaderContent style={{ flex: sectionImage ? 1 : 'auto', maxWidth: sectionImage ? '60%' : '100%' }}>
             <SectionNumberBadge>{section.index || sectionIndex}</SectionNumberBadge>
             <SectionTitle>{section.name}</SectionTitle>
             {renderDescription()}
           </HeaderContent>
           
-          <ImageContainer>
-            <img src={sectionImage} alt={section.name} />
-            <ImageNumberBadge>{section.index || sectionIndex}</ImageNumberBadge>
-          </ImageContainer>
+          {sectionImage && (
+            <ImageContainer>
+              <img src={sectionImage} alt={section.name} />
+              <ImageNumberBadge>{section.index || sectionIndex}</ImageNumberBadge>
+            </ImageContainer>
+          )}
         </SectionHeader>
         
         <ContentContainer>

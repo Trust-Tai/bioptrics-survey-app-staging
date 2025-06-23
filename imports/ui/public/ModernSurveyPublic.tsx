@@ -221,7 +221,7 @@ const ModernSurveyPublic: React.FC = () => {
         />
       </MainContent>
       <Footer>
-        © {new Date().getFullYear()} {surveyData.title || 'Survey Platform'}. All rights reserved.
+        © {new Date().getFullYear()} Powered By Bioptrics. All rights reserved.
       </Footer>
     </PageContainer>
   );
