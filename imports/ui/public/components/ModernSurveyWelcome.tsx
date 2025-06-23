@@ -106,11 +106,69 @@ const WelcomeHeaderImage = styled.div`
 `;
 
 const ContentContainer = styled.div`
+  padding: 2rem;
   max-width: 1200px;
-  width: 100%;
   margin: 0 auto;
-  padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+`;
+
+const ExpectationSection = styled.div`
+  background-color: #f8f9ff;
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+`;
+
+const ExpectationTitle = styled.h2`
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+`;
+
+const ExpectationList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const ExpectationItem = styled.div`
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-width: 250px;
+`;
+
+const ExpectationNumber = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #8b5cf6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+`;
+
+const ExpectationContent = styled.div`
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+  }
+  
+  p {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
+  }
 `;
 
 const SurveyIcon = styled.div`
@@ -393,9 +451,35 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
           </StatCard>
         </StatsContainer>
 
-
-
-
+        {/* What to expect section */}
+        <ExpectationSection>
+          <ExpectationTitle>What to expect</ExpectationTitle>
+          <ExpectationList>
+            <ExpectationItem>
+              <ExpectationNumber>1</ExpectationNumber>
+              <ExpectationContent>
+                <h3>Overall Experience</h3>
+                <p>Share your general satisfaction and likelihood to recommend us</p>
+              </ExpectationContent>
+            </ExpectationItem>
+            
+            <ExpectationItem>
+              <ExpectationNumber>2</ExpectationNumber>
+              <ExpectationContent>
+                <h3>Service Quality</h3>
+                <p>Rate specific aspects like speed, staff helpfulness, and areas for improvement</p>
+              </ExpectationContent>
+            </ExpectationItem>
+            
+            <ExpectationItem>
+              <ExpectationNumber>3</ExpectationNumber>
+              <ExpectationContent>
+                <h3>Additional Feedback</h3>
+                <p>Optional comments and follow-up preferences</p>
+              </ExpectationContent>
+            </ExpectationItem>
+          </ExpectationList>
+        </ExpectationSection>
 
         {/* Start Button */}
         <ButtonContainer>

@@ -27,9 +27,9 @@ import styled from 'styled-components';
 // Function to get sidebar links with customized terminology and dynamic tags
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
-  { to: '/admin/surveys', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
-    { to: '/admin/surveys/builder', label: 'Create Survey' },
+  { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
     { to: '/admin/surveys/all', label: `Manage ${getTerminology('surveyLabel')}s` },
+    { to: '/admin/surveys/builder', label: 'Create Survey' },
     { to: '/admin/surveys/theme', label: 'Theme' },
     // Dynamically add survey tags as submenu items
     // ...(surveyTags.map(tag => ({ 

@@ -106,7 +106,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="survey-section-question-drag-handle">
+                  <div className="survey-section-question-drag-handle" style={{ paddingTop: '3px' }}>
                     <FiMove />
                   </div>
                   <div className="survey-section-question-title">

@@ -457,22 +457,33 @@ body > .ts-dropdown {
 
 .survey-section-question {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 12px;
   background: #f9f9f9;
   border: 1px solid #eee;
   border-radius: 6px;
+  gap: 10px;
 }
 
 .survey-section-question-title {
   font-size: 14px;
   color: #333;
+  flex: 1;
+  margin-left: 5px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.survey-section-question-title p {
+  margin: 0;
+  padding: 0;
 }
 
 .survey-section-question-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
 }
 
 .survey-section-add-question {

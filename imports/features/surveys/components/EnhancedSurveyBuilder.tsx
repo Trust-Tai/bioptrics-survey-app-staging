@@ -64,7 +64,7 @@ const steps = [
   { id: 'welcome', label: 'Welcome Screen', icon: 'FiHome' },
   { id: 'sections', label: 'Sections', icon: 'FiLayers' },
   { id: 'tags', label: 'Tags', icon: 'FiTag' },
-  { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
+  // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'themes', label: 'Themes', icon: 'FiTag' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
@@ -120,7 +120,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // State for the survey builder
   const [activeStep, setActiveStep] = useState('welcome');
-  const [survey, setSurvey] = useState<any>(null);
+  const [survey, setSurvey] = useState<any>({ defaultSettings: { allowRetake: true } });
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [saving, setSaving] = useState(false);
@@ -232,6 +232,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
       }
       
       // Update survey state when data is ready
+      // Ensure defaultSettings exists to prevent null reference errors
+      if (!currentSurvey.defaultSettings) {
+        currentSurvey.defaultSettings = { allowRetake: true };
+      }
       setSurvey(currentSurvey);
       
       // Initialize sections if they exist in the survey
@@ -1521,13 +1525,15 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                           <input 
                             type="checkbox" 
-                            checked={survey.defaultSettings?.allowRetake !== false}
+                            checked={survey?.defaultSettings?.allowRetake !== false}
                             onChange={() => {
-                              const currentValue = survey.defaultSettings?.allowRetake !== false;
+                              // Ensure defaultSettings exists
+                              const defaultSettings = survey.defaultSettings || {};
+                              const currentValue = defaultSettings.allowRetake !== false;
                               const updatedSurvey = {
                                 ...survey,
                                 defaultSettings: {
-                                  ...survey.defaultSettings,
+                                  ...defaultSettings,
                                   allowRetake: !currentValue
                                 }
                               };

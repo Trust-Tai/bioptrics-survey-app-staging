@@ -368,6 +368,15 @@ Meteor.methods({
           siteTextQuestions: survey.siteTextQuestions || [],
           siteTextQForm: survey.siteTextQForm || {},
           selectedDemographics: survey.selectedDemographics || [],
+          // Include survey sections and section questions
+          surveySections: survey.surveySections || [],
+          sectionQuestions: survey.sectionQuestions || [],
+          // Include default settings
+          defaultSettings: survey.defaultSettings || {},
+          // Include themes, categories, and tags
+          selectedTheme: survey.selectedTheme,
+          selectedCategories: survey.selectedCategories || [],
+          selectedTags: survey.selectedTags || [],
           published: false,
           updatedAt: now,
         },
@@ -384,6 +393,15 @@ Meteor.methods({
         siteTextQuestions: survey.siteTextQuestions || [],
         siteTextQForm: survey.siteTextQForm || {},
         selectedDemographics: survey.selectedDemographics || [],
+        // Include survey sections and section questions
+        surveySections: survey.surveySections || [],
+        sectionQuestions: survey.sectionQuestions || [],
+        // Include default settings
+        defaultSettings: survey.defaultSettings || {},
+        // Include themes, categories, and tags
+        selectedTheme: survey.selectedTheme,
+        selectedCategories: survey.selectedCategories || [],
+        selectedTags: survey.selectedTags || [],
         published: false,
         createdAt: now,
         updatedAt: now,
@@ -422,6 +440,15 @@ Meteor.methods({
           siteTextQuestions: survey.siteTextQuestions || (existing ? existing.siteTextQuestions : []),
           siteTextQForm: survey.siteTextQForm || (existing ? existing.siteTextQForm : {}),
           selectedDemographics: survey.selectedDemographics || (existing ? existing.selectedDemographics : []),
+          // Include survey sections and section questions
+          surveySections: survey.surveySections || (existing ? existing.surveySections : []),
+          sectionQuestions: survey.sectionQuestions || (existing ? existing.sectionQuestions : []),
+          // Include default settings
+          defaultSettings: survey.defaultSettings || (existing ? existing.defaultSettings : {}),
+          // Include themes, categories, and tags
+          selectedTheme: survey.selectedTheme ?? (existing ? existing.selectedTheme : undefined),
+          selectedCategories: survey.selectedCategories || (existing ? existing.selectedCategories : []),
+          selectedTags: survey.selectedTags || (existing ? existing.selectedTags : []),
           published: true,
           shareToken,
           updatedAt: now,
@@ -439,6 +466,15 @@ Meteor.methods({
         siteTextQuestions: survey.siteTextQuestions || [],
         siteTextQForm: survey.siteTextQForm || {},
         selectedDemographics: survey.selectedDemographics || [],
+        // Include survey sections and section questions
+        surveySections: survey.surveySections || [],
+        sectionQuestions: survey.sectionQuestions || [],
+        // Include default settings
+        defaultSettings: survey.defaultSettings || {},
+        // Include themes, categories, and tags
+        selectedTheme: survey.selectedTheme,
+        selectedCategories: survey.selectedCategories || [],
+        selectedTags: survey.selectedTags || [],
         published: true,
         shareToken,
         createdAt: now,
@@ -455,35 +491,44 @@ Meteor.methods({
   },
 
   // Update an existing survey with all data including sections and questions
-  async 'surveys.update'(surveyId: string, surveyData: any) {
+  async 'surveys.update'(surveyId: string, survey: Partial<SurveyDoc>) {
+    check(surveyId, String);
+    
     if (!this.userId) throw new Meteor.Error('Not authorized');
     
     // Validate the survey exists and user has permission
-    const survey = await Surveys.findOneAsync(surveyId);
-    if (!survey) throw new Meteor.Error('Survey not found');
-    if (survey.createdBy !== this.userId && !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin')) {
-      throw new Meteor.Error('Not authorized');
+    const existingSurvey = await Surveys.findOneAsync(surveyId);
+    if (!existingSurvey) throw new Meteor.Error('Survey not found');
+    
+    // Check if user is admin or survey creator
+    const user = await Meteor.users.findOneAsync(this.userId);
+    if (!user?.roles?.includes('admin') && existingSurvey.createdBy !== this.userId) {
+      throw new Meteor.Error('Not authorized to update this survey');
     }
     
-    // Update the survey with all provided data
+    const now = new Date();
+    
     await Surveys.updateAsync(surveyId, {
       $set: {
-        title: surveyData.title || '',
-        description: surveyData.description || '',
-        logo: surveyData.logo,
-        featuredImage: surveyData.featuredImage,
-        primaryColor: surveyData.primaryColor,
-        // Save default settings including allowRetake
-        defaultSettings: surveyData.defaultSettings || {},
-        // Save sections and questions
-        surveySections: surveyData.surveySections || [],
-        sectionQuestions: surveyData.sectionQuestions || [],
-        // Save demographics, themes, and categories
-        selectedDemographics: surveyData.selectedDemographics || [],
-        selectedTheme: surveyData.selectedTheme,
-        selectedCategories: surveyData.selectedCategories || [],
-        selectedTags: surveyData.selectedTags || [],
-        updatedAt: new Date(),
+        title: survey.title || existingSurvey.title,
+        description: survey.description || existingSurvey.description,
+        logo: survey.logo !== undefined ? survey.logo : existingSurvey.logo,
+        image: survey.image !== undefined ? survey.image : existingSurvey.image,
+        color: survey.color !== undefined ? survey.color : existingSurvey.color,
+        selectedQuestions: survey.selectedQuestions || existingSurvey.selectedQuestions || {},
+        siteTextQuestions: survey.siteTextQuestions || existingSurvey.siteTextQuestions || [],
+        siteTextQForm: survey.siteTextQForm || existingSurvey.siteTextQForm || {},
+        selectedDemographics: survey.selectedDemographics || existingSurvey.selectedDemographics || [],
+        // Include survey sections and section questions
+        surveySections: survey.surveySections || existingSurvey.surveySections || [],
+        sectionQuestions: survey.sectionQuestions || existingSurvey.sectionQuestions || [],
+        // Include default settings
+        defaultSettings: survey.defaultSettings || existingSurvey.defaultSettings || {},
+        // Include themes, categories, and tags
+        selectedTheme: survey.selectedTheme !== undefined ? survey.selectedTheme : existingSurvey.selectedTheme,
+        selectedCategories: survey.selectedCategories || existingSurvey.selectedCategories || [],
+        selectedTags: survey.selectedTags || existingSurvey.selectedTags || [],
+        updatedAt: now,
       },
     });
     

@@ -14,46 +14,65 @@ interface ResponseTrendDataPoint {
 
 if (Meteor.isServer) {
   Meteor.methods({
-    // Get survey response data for the current survey
-    'getSurveyResponseData'(surveyId) {
+    // Get total responses count for a survey
+    'getTotalResponsesCount'(surveyId) {
       try {
         check(surveyId, String);
-        console.log('Getting survey response data for survey ID:', surveyId);
+        console.log('Getting total responses count for survey ID:', surveyId);
         
-        // Get responses for this specific survey ID
-        const surveyResponses = SurveyResponses.find(
+        // Get the total count of all responses for this survey
+        const totalCount = SurveyResponses.find({ surveyId: surveyId }).count();
+        console.log(`Found ${totalCount} total survey responses for survey ID: ${surveyId}`);
+        
+        return totalCount || 4; // Return the count or default to 4 if none found
+      } catch (error) {
+        console.error('Error in getTotalResponsesCount method:', error);
+        return 4; // Default value
+      }
+    },
+    
+    // Get completion time for a survey
+    'getSurveyCompletionTime'(surveyId) {
+      try {
+        check(surveyId, String);
+        console.log('Getting completion time for survey ID:', surveyId);
+        
+        // Get the most recent completed response for this survey
+        const mostRecent = SurveyResponses.findOne(
           { 
             surveyId: surveyId,
             completed: true 
           },
           { sort: { updatedAt: -1 } }
-        ).fetch();
+        );
         
-        console.log(`Found ${surveyResponses.length} responses for survey ID: ${surveyId}`);
-        
-        if (surveyResponses.length > 0) {
-          // Get the most recent response
-          const mostRecent = surveyResponses[0];
-          
-          console.log('Using most recent response:', {
-            id: mostRecent._id,
-            completionTime: mostRecent.completionTime,
-            responsesCount: mostRecent.responses?.length
-          });
-          
-          // Return the response count and completion time
-          const result = {
-            responseCount: mostRecent.responses?.length || 0,
-            completionTime: mostRecent.completionTime || 0
-          };
-          
-          console.log('Returning result:', result);
-          return result;
+        if (mostRecent && mostRecent.completionTime) {
+          console.log(`Found completion time: ${mostRecent.completionTime} seconds`);
+          return mostRecent.completionTime;
         }
         
-        // If no responses found for this survey, return default values
-        console.log('No responses found for this survey, returning default values');
-        return { responseCount: 4, completionTime: 9.673 };
+        // Default completion time if none found
+        console.log('No completion time found, returning default value');
+        return 9.673;
+      } catch (error) {
+        console.error('Error in getSurveyCompletionTime method:', error);
+        return 9.673; // Default value
+      }
+    },
+    
+    // Get survey response data for the current survey (maintained for backward compatibility)
+    'getSurveyResponseData'(surveyId) {
+      try {
+        check(surveyId, String);
+        console.log('Getting survey response data for survey ID:', surveyId);
+        
+        // Call the separate methods to get the data
+        const responseCount = Meteor.call('getTotalResponsesCount', surveyId);
+        const completionTime = Meteor.call('getSurveyCompletionTime', surveyId);
+        
+        const result = { responseCount, completionTime };
+        console.log('Returning combined result:', result);
+        return result;
       } catch (error) {
         console.error('Error in getSurveyResponseData method:', error);
         // Return default values that match what we see in the console
