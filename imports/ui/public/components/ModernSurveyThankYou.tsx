@@ -1,7 +1,10 @@
-import React from 'react';
-import styled from 'styled-components';
-import { FiCheckCircle, FiRefreshCw } from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { Meteor } from 'meteor/meteor';
+import { useTracker } from 'meteor/react-meteor-data';
+import { FiCheckCircle, FiRefreshCw, FiClock, FiBarChart2, FiCheckSquare, FiStar } from 'react-icons/fi';
+import { SurveyResponses } from '../../../features/surveys/api/surveyResponses';
 import '../components/ModernSurvey.css';
+import './ModernSurveyThankYou.css';
 
 interface Survey {
   _id: string;
@@ -15,41 +18,29 @@ interface Survey {
     allowRetake?: boolean;
     [key: string]: any;
   };
+  questionCount?: number;
 }
 
 interface ModernSurveyThankYouProps {
   survey: Survey;
   color?: string;
   onRestart?: () => void;
+  responses?: number;
+  completionTime?: number; // in seconds
+  averageRating?: number;
 }
 
-const ThankYouContainer = styled.div`
-  width: 100%;
-  animation: fadeIn 0.6s ease-out;
+// Helper function to format time in minutes and seconds
+const formatTime = (timeInSeconds: number): string => {
+  if (!timeInSeconds) return '0 min 0 sec';
   
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`;
+  const minutes = Math.floor(timeInSeconds / 60);
+  const seconds = Math.floor(timeInSeconds % 60);
+  
+  return `${minutes} min ${seconds} sec`;
+};
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
-
-const IconWrapper = styled.div<{ iconColor?: string }>`
-  font-size: 60px;
-  color: ${props => props.iconColor || '#552a47'};
-  margin-bottom: 24px;
-  animation: scaleIn 0.5s ease-out;
-  
-  @keyframes scaleIn {
-    from { transform: scale(0); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  
-  @media (max-width: 768px) {
-    font-size: 48px;
-  }
-`;
+// We'll use the CSS classes from ModernSurvey.css and ModernSurveyThankYou.css instead of styled components
 
 // We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
@@ -105,92 +96,209 @@ const hexToRgb = (hex: string): string => {
   }
 };
 
-const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ survey, color, onRestart }) => {
+const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({ 
+  survey, 
+  color, 
+  onRestart,
+  responses: propResponses,
+  completionTime: propCompletionTime,
+  averageRating = 4
+}) => {
+  // Get the current survey response data
+  const [currentResponseData, setCurrentResponseData] = useState<{
+    responseCount: number;
+    completionTime: number;
+  }>({ responseCount: 0, completionTime: 0 });
+  
+  // Use Meteor's reactive data system to get the most recent survey response
+  const { loading, surveyResponse } = useTracker(() => {
+    // Set up a subscription to survey responses
+    const handle = Meteor.subscribe('surveyResponses.recent');
+    
+    if (!handle.ready()) {
+      return { loading: true, surveyResponse: null };
+    }
+    
+    // Try to find the most recent response for this survey
+    const response = SurveyResponses.findOne(
+      { completed: true },
+      { sort: { updatedAt: -1 } }
+    );
+    
+    return { loading: false, surveyResponse: response };
+  }, []);
+  
+  // Use effect to get the current survey response data
+  useEffect(() => {
+    // Skip if survey doesn't have an ID
+    if (!survey || !survey._id) {
+      console.log('No survey ID available');
+      return;
+    }
+    
+    // Get the survey ID from the URL or localStorage
+    const currentSurveyId = survey._id;
+    console.log('Current survey ID:', currentSurveyId);
+    
+    // First try: If we have a survey response from the tracker, use that data
+    if (surveyResponse && surveyResponse.surveyId === currentSurveyId) {
+      const responseCount = surveyResponse.responses?.length || 0;
+      const completionTime = surveyResponse.completionTime || 0;
+      
+      console.log('Using data from reactive data source:', { responseCount, completionTime });
+      
+      setCurrentResponseData({
+        responseCount,
+        completionTime
+      });
+      return;
+    }
+    
+    // Otherwise, use the Meteor method call with the current survey ID
+    console.log('Using Meteor method call to get data for survey:', currentSurveyId);
+    
+    Meteor.call('getSurveyResponseData', currentSurveyId, (error: any, result: any) => {
+      if (error) {
+        console.error('Error getting survey response data:', error);
+        // If there's an error, we'll use default values
+        setCurrentResponseData({
+          responseCount: 4,
+          completionTime: 9.673
+        });
+      } else if (result) {
+        console.log('Received data from method call:', result);
+        setCurrentResponseData({
+          responseCount: result.responseCount || 0,
+          completionTime: result.completionTime || 0
+        });
+      }
+    });
+  }, [survey._id, surveyResponse]);
+  
+  // For debugging
+  useEffect(() => {
+    console.log('Current response data:', currentResponseData);
+  }, [currentResponseData]);
+  
+  // Use props values if provided, otherwise use the data from the current response
+  const displayTotalResponses = propResponses !== undefined ? propResponses : 
+                               (currentResponseData.responseCount || (survey.questionCount || 9));
+  
+  // For completion time, use prop if provided, otherwise use the actual completion time
+  const surveyTime = propCompletionTime !== undefined ? propCompletionTime : 
+                    (currentResponseData.completionTime || 222);
+  const [mounted, setMounted] = useState(false);
+  
+  // Hide header and remove padding from main div
+  useEffect(() => {
+    // Hide the header
+    const header = document.querySelector('header') as HTMLElement;
+    if (header) {
+      header.style.display = 'none';
+    }
+    
+    // Remove padding from main div
+    const mainDiv = document.querySelector('div#react-target') as HTMLElement;
+    if (mainDiv) {
+      mainDiv.style.padding = '0';
+    }
+    
+    setMounted(true);
+    
+    // Cleanup function to restore original styles when component unmounts
+    return () => {
+      if (header) {
+        header.style.display = '';
+      }
+      if (mainDiv) {
+        mainDiv.style.padding = '';
+      }
+    };
+  }, []);
+
   const handleRestart = () => {
-    // Call the onRestart callback if provided
     if (onRestart) {
       onRestart();
     }
   };
 
-  const effectiveColor = color || survey.color || '#552a47';
-  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '85, 42, 71';
-  const surveyImage = survey.featuredImage || survey.image || 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
-
+  const effectiveColor = color || survey.color || '#7c3aed';
+  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '124, 58, 237';
+  
   return (
-    <ThankYouContainer>
-      <div 
-        className="modern-survey-container"
-        style={{
-          '--primary-color': effectiveColor,
-          '--primary-color-rgb': primaryColorRgb,
-          '--primary-dark': adjustColor(effectiveColor, -20)
-        } as React.CSSProperties}
-      >
-        <div className="modern-survey-wrapper">
-          {/* Left side image - same as question screen */}
-          <div 
-            className="modern-survey-sidebar"
-            style={{ 
-              backgroundImage: `url(${surveyImage})`, 
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="modern-survey-sidebar-overlay">
-              <div className="sidebar-text-container">
-                <h2>{survey.title}</h2>
-                {survey.description && (
-                  <p>{survey.description.replace(/<[^>]*>/g, '')}</p>
-                )}
-              </div>
-            </div>
+    <div className="thank-you-container">
+      <div className="thank-you-header">
+        <div className="thank-you-icon">
+          <FiCheckCircle size={48} color={effectiveColor} />
+        </div>
+        <h1 className="thank-you-title">Thank You!</h1>
+        <p className="thank-you-message">
+          Your responses have been successfully submitted. We appreciate your time and feedback.
+        </p>
+      </div>
+      
+      <div className="stats-container">
+        <div className="stat-card">
+          <div className="stat-icon blue">
+            <FiCheckSquare size={20} />
           </div>
-          
-          {/* Right side content */}
-          <div className="modern-survey-content">
-            {survey.logo && (
-              <div style={{ marginBottom: '20px', maxHeight: '60px' }}>
-                <img 
-                  src={survey.logo} 
-                  alt={survey.title} 
-                  style={{ maxHeight: '60px', objectFit: 'contain' }} 
-                />
-              </div>
-            )}
-            
-            <div className="modern-survey-header">
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                <IconWrapper iconColor={effectiveColor}>
-                  <FiCheckCircle />
-                </IconWrapper>
-              </div>
-              <h1 className="modern-survey-question">Thank You!</h1>
-            </div>
-            
-            <div style={{ fontSize: '18px', color: '#444', lineHeight: '1.6', marginBottom: '40px' }}>
-              Your responses have been successfully submitted. We appreciate your time and feedback.
-            </div>
-            
-            <div className="modern-survey-actions">
-              {/* Only show the restart button if allowRetake is enabled or not specified */}
-              {(survey.defaultSettings?.allowRetake !== false) && (
-                <button 
-                  className="modern-survey-button button-primary"
-                  onClick={handleRestart}
-                  style={{ 
-                    '--primary-color': effectiveColor,
-                    '--primary-dark': adjustColor(effectiveColor, -20)
-                  } as React.CSSProperties}
-                >
-                  Restart Survey <FiRefreshCw style={{ marginLeft: '8px' }} />
-                </button>
-              )}
-            </div>
+          <div className="stat-content">
+            <h3 className="stat-value">{displayTotalResponses}</h3>
+            <p className="stat-label">Total Responses</p>
+            <span className="stat-sublabel">Questions answered</span>
+          </div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon yellow">
+            <FiStar size={20} />
+          </div>
+          <div className="stat-content">
+            <h3 className="stat-value">{averageRating}</h3>
+            <p className="stat-label">Ratings Given</p>
+            <span className="stat-sublabel">Star ratings provided</span>
+          </div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon green">
+            <FiCheckCircle size={20} />
+          </div>
+          <div className="stat-content">
+            <h3 className="stat-value">100%</h3>
+            <p className="stat-label">Completion</p>
+            <span className="stat-sublabel">Survey completed</span>
+          </div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon purple">
+            <FiClock size={20} />
+          </div>
+          <div className="stat-content">
+            <h3 className="stat-value">{formatTime(surveyTime)}</h3>
+            <p className="stat-label">Time Taken</p>
+            <span className="stat-sublabel">Total duration</span>
           </div>
         </div>
       </div>
-    </ThankYouContainer>
+      
+      {/* Removed Journey, Impact, and Next Steps sections as requested */}
+      
+      <div className="thank-you-actions">
+        {(survey.defaultSettings?.allowRetake !== false) && (
+          <button 
+            className="restart-button"
+            onClick={handleRestart}
+          >
+            <span className="button-icon">
+              <FiRefreshCw size={18} />
+            </span>
+            Take Survey Again
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
 

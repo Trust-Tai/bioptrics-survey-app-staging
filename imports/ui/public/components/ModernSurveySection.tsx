@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
+import { FiArrowRight, FiArrowLeft, FiClock, FiCheckCircle, FiStar } from 'react-icons/fi';
+import { Meteor } from 'meteor/meteor';
 import '../components/ModernSurvey.css';
 
 interface Section {
@@ -11,6 +12,10 @@ interface Section {
   priority?: number;
   color?: string;
   image?: string;
+  questionCount?: number;
+  requiredQuestionCount?: number;
+  estimatedTime?: string;
+  index?: number;
 }
 
 interface ModernSurveySectionProps {
@@ -21,15 +26,18 @@ interface ModernSurveySectionProps {
   image?: string;
   surveyTitle?: string;
   surveyDescription?: string;
+  surveyId?: string;
+  sectionIndex?: number;
 }
 
 const SectionContainer = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 120px);
-  padding: 20px;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f9f9ff;
+  padding: 0;
+  margin: 0;
   animation: fadeIn 0.5s ease-out;
   
   @keyframes fadeIn {
@@ -40,86 +48,145 @@ const SectionContainer = styled.div`
 
 const SectionCard = styled.div<{ color?: string }>`
   background: white;
-  border-radius: 24px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  border-radius: 0;
   width: 100%;
-  max-width: 900px;
+  max-width: 100%;
+  margin: 0;
   position: relative;
   overflow: hidden;
-  display: flex;
-  flex-direction: row;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: ${props => props.color || '#552a47'};
-  }
+  // display: flex;
+  // flex-direction: row;
   
   @media (max-width: 768px) {
     flex-direction: column;
-    max-width: 700px;
+  }
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  background-color: white;
+  padding: 0;
+  margin: 0;
+`;
+
+const SectionNumberBadge = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #7c3aed;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 20px;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 10;
+`;
+
+const HeaderContent = styled.div`
+  flex: 1;
+  padding: 3rem 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  
+  @media (max-width: 768px) {
+    padding: 2rem;
   }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  color: #333;
-  margin: 0 0 24px 0;
-  line-height: 1.3;
+  color: #1f2937;
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+  padding-left: 4rem;
   
   @media (max-width: 768px) {
-    font-size: 24px;
-    text-align: center;
+    font-size: 28px;
+    padding-left: 0;
+    margin-top: 3rem;
   }
 `;
 
 const SectionDescription = styled.div`
   font-size: 18px;
-  color: #555;
-  margin-bottom: 40px;
+  color: #4b5563;
+  margin-bottom: 0;
   line-height: 1.6;
+  padding-left: 4rem;
   
   p {
-    margin: 0 0 16px 0;
+    margin: 0;
   }
   
   @media (max-width: 768px) {
     font-size: 16px;
-    margin-bottom: 30px;
-    text-align: center;
+    padding-left: 0;
   }
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
+  align-items: center;
+  margin-top: 2rem;
   width: 100%;
+  flex-wrap: wrap;
+  gap: 1rem;
 `;
 
-const Button = styled.button<{ primary?: boolean; btnColor?: string }>`
-  background: ${props => props.primary ? (props.btnColor || '#552a47') : 'transparent'};
-  color: ${props => props.primary ? 'white' : '#333'};
-  border: ${props => props.primary ? 'none' : '2px solid #ddd'};
+const BackButton = styled.button`
+  background: transparent;
+  color: #4b5563;
+  border: 2px solid #e5e7eb;
   border-radius: 50px;
-  padding: ${props => props.primary ? '14px 28px' : '12px 24px'};
+  padding: 0.75rem 1.5rem;
   font-size: 16px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 160px;
+  justify-content: center;
   
   &:hover {
-    background: ${props => props.primary ? (props.btnColor ? `${props.btnColor}dd` : '#6d3a5e') : '#f5f5f5'};
-    transform: ${props => props.primary ? 'translateY(-2px)' : 'none'};
-    box-shadow: ${props => props.primary ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none'};
+    background: #f9fafb;
+  }
+`;
+
+const StartSectionButton = styled.button`
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 0.75rem 1.5rem;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 160px;
+  justify-content: center;
+  
+  &:hover {
+    background: #6d28d9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
   }
   
   &:active {
@@ -132,14 +199,107 @@ const Button = styled.button<{ primary?: boolean; btnColor?: string }>`
 // We'll use the CSS classes from ModernSurvey.css instead of this styled component
 
 const ContentContainer = styled.div`
-  flex: 1;
-  padding: 40px;
+  // width: 100%;
+  padding: 2rem 3rem 3rem;
   display: flex;
   flex-direction: column;
+  background-color: #f9f9ff;
   
   @media (max-width: 768px) {
-    padding: 30px;
+    padding: 1.5rem;
   }
+`;
+
+const StatsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const StatCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  height: 100%;
+  display: block;
+`;
+
+const StatIcon = styled.div<{ color?: string }>`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: ${props => props.color ? `${props.color}15` : '#7c3aed15'};
+  color: ${props => props.color || '#7c3aed'};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem auto;
+`;
+
+const StatValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0.5rem 0;
+  width: 100%;
+  text-align: center;
+`;
+
+const StatLabel = styled.div`
+  font-size: 14px;
+  color: #6b7280;
+  width: 100%;
+  text-align: center;
+`;
+
+const ImageContainer = styled.div`
+  flex: 1;
+  max-width: 45%;
+  position: relative;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    height: 240px;
+  }
+`;
+
+const ImageNumberBadge = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #7c3aed;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 20px;
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 10;
 `;
 
 const DefaultImage = () => (
@@ -204,8 +364,285 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   color,
   image,
   surveyTitle,
-  surveyDescription
+  surveyDescription,
+  surveyId,
+  sectionIndex = 1
 }) => {
+  // Add CSS to hide header and remove padding
+  useEffect(() => {
+    // Add a style tag to hide the header
+    const style = document.createElement('style');
+    style.textContent = `
+      header {
+        display: none !important;
+      }
+      main {
+        padding: 0 !important;
+      }
+      .content-container {
+        padding: 0 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Clean up function to remove the style when component unmounts
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [metadata, setMetadata] = useState<{
+    questionCount: number;
+    requiredQuestionCount: number;
+    estimatedTime: string;
+  }>({ questionCount: 0, requiredQuestionCount: 0, estimatedTime: '~2' });
+
+  // Initialize with section data immediately to avoid showing '...'
+  useEffect(() => {
+    // Set initial values from section props to avoid showing '...'
+    setMetadata({
+      questionCount: section.questionCount || 0,
+      requiredQuestionCount: section.requiredQuestionCount || 0,
+      estimatedTime: section.estimatedTime || '~2'
+    });
+    
+    // Then fetch the actual data
+    if (surveyId && section.id) {
+      console.log(`Fetching metadata for section ${section.id} of survey ${surveyId}`);
+      
+      // First try to get sectionQuestions directly from client-side cache if available
+      try {
+        // Access the client-side cache for sectionQuestions
+        const trackerData = localStorage.getItem('DeviceTracker');
+        if (trackerData) {
+          const parsedData = JSON.parse(trackerData);
+          if (parsedData && parsedData.sectionQuestions && 
+              parsedData.sectionQuestions.length > 0 && 
+              parsedData.sectionQuestions[0].sectionId === section.id) {
+            
+            console.log('Found section questions in client cache:', parsedData.sectionQuestions);
+            const questionCount = parsedData.sectionQuestions[0].questions.length;
+            const requiredQuestions = parsedData.sectionQuestions[0].questions.filter(
+              (q: any) => q.status === 'published'
+            ).length;
+            
+            setMetadata(prev => ({
+              ...prev,
+              questionCount: questionCount,
+              requiredQuestionCount: requiredQuestions
+            }));
+            
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error accessing client-side cache:', e);
+      }
+      
+      // If client-side cache doesn't have the data, fall back to Meteor method
+      Meteor.call('getSectionMetadata', surveyId, section.id, (error: any, result: any) => {
+        if (error) {
+          console.error('Error fetching section metadata:', error);
+          // Even on error, we should set loading to false
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Section metadata received:', result);
+        if (result) {
+          setMetadata({
+            questionCount: result.questionCount || section.questionCount || 0,
+            requiredQuestionCount: result.requiredQuestionCount || section.requiredQuestionCount || 0,
+            estimatedTime: result.estimatedTime || '~2'
+          });
+        }
+        
+        // Always set loading to false
+        setLoading(false);
+      });
+    } else {
+      // If no surveyId or section.id, set loading to false immediately
+      setLoading(false);
+    }
+  }, [surveyId, section.id, section.questionCount, section.requiredQuestionCount, section.estimatedTime]);
+  
+  // Add a direct script to access the Processing sectionQuestions array from the console
+  useEffect(() => {
+    // Function to directly inject a script to access console variables
+    const injectScript = (code: string) => {
+      const script = document.createElement('script');
+      script.textContent = code;
+      document.body.appendChild(script);
+      document.body.removeChild(script);
+    };
+
+    // Inject a script that will directly update our metadata from console data
+    const updateFromConsole = () => {
+      injectScript(`
+        (function() {
+          try {
+            // Look for the section questions in the console scope
+            if (typeof sectionQuestions !== 'undefined' && Array.isArray(sectionQuestions)) {
+              console.log('Found sectionQuestions in console:', sectionQuestions);
+              window.__sectionQuestionsCount = sectionQuestions.length;
+              window.__requiredQuestionsCount = sectionQuestions.filter(q => q.status === 'published').length;
+            }
+            // Also check for Processing sectionQuestions which is visible in your screenshot
+            else if (typeof array !== 'undefined' && Array.isArray(array) && array.length > 0) {
+              console.log('Found array in console:', array);
+              if (array[0] && array[0].questions && Array.isArray(array[0].questions)) {
+                window.__sectionQuestionsCount = array[0].questions.length;
+                window.__requiredQuestionsCount = array[0].questions.filter(q => q.status === 'published').length;
+              }
+            }
+          } catch (e) {
+            console.error('Error in console data access script:', e);
+          }
+        })();
+      `);
+
+      // Now check if our injected script set the global variables
+      const questionCount = (window as any).__sectionQuestionsCount;
+      const requiredCount = (window as any).__requiredQuestionsCount;
+      
+      if (typeof questionCount === 'number') {
+        console.log(`Found ${questionCount} questions (${requiredCount || 0} required) from console`);
+        
+        // Update the metadata with the values from console
+        setMetadata(prev => ({
+          ...prev,
+          questionCount: questionCount,
+          requiredQuestionCount: requiredCount || 0
+        }));
+        
+        return true; // Successfully found questions
+      }
+      
+      return false; // No questions found
+    };
+    
+    // Try to directly access the DeviceTracker data from localStorage
+    const tryLocalStorage = () => {
+      try {
+        const trackerData = localStorage.getItem('DeviceTracker');
+        if (trackerData) {
+          const data = JSON.parse(trackerData);
+          if (data && data.sectionQuestions && data.sectionQuestions.length > 0) {
+            const questions = data.sectionQuestions[0].questions;
+            if (Array.isArray(questions)) {
+              const questionCount = questions.length;
+              const requiredCount = questions.filter((q: any) => q.status === 'published').length;
+              
+              console.log(`Found ${questionCount} questions in localStorage`);
+              
+              setMetadata(prev => ({
+                ...prev,
+                questionCount: questionCount,
+                requiredQuestionCount: requiredCount
+              }));
+              
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error accessing localStorage:', e);
+      }
+      return false;
+    };
+    
+    // Try all methods to get the question count
+    let found = tryLocalStorage() || updateFromConsole();
+    
+    // If not found, set up an interval to keep trying
+    let intervalId: number | null = null;
+    if (!found) {
+      intervalId = window.setInterval(() => {
+        found = tryLocalStorage() || updateFromConsole();
+        if (found && intervalId) {
+          clearInterval(intervalId);
+        }
+      }, 500) as unknown as number;
+    }
+    
+    // Clean up
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      // Clean up global variables
+      delete (window as any).__sectionQuestionsCount;
+      delete (window as any).__requiredQuestionsCount;
+    };
+  }, []);
+  
+  // Add a simpler direct approach to access the array data from the console
+  useEffect(() => {
+    // Create a global function that can be called from the console
+    (window as any).updateSectionQuestionCount = (count: number) => {
+      console.log(`Manual update: Setting question count to ${count}`);
+      setMetadata(prev => ({
+        ...prev,
+        questionCount: count
+      }));
+    };
+    
+    // Add a script to the page that will run in the global context
+    const script = document.createElement('script');
+    script.textContent = `
+      // This script runs in the global context and can access console variables
+      (function() {
+        // Function to check for the array variable and update the count
+        function checkAndUpdateCount() {
+          try {
+            // Check for the array variable we see in the screenshot
+            if (typeof array !== 'undefined' && Array.isArray(array) && 
+                array.length > 0 && array[0] && array[0].questions) {
+              const count = array[0].questions.length;
+              console.log('Found questions in array:', count);
+              if (typeof window.updateSectionQuestionCount === 'function') {
+                window.updateSectionQuestionCount(count);
+              }
+              return true;
+            }
+            // Also check for sectionQuestions
+            if (typeof sectionQuestions !== 'undefined' && Array.isArray(sectionQuestions)) {
+              const count = sectionQuestions.length;
+              console.log('Found sectionQuestions:', count);
+              if (typeof window.updateSectionQuestionCount === 'function') {
+                window.updateSectionQuestionCount(count);
+              }
+              return true;
+            }
+          } catch (e) {
+            console.error('Error checking for question count:', e);
+          }
+          return false;
+        }
+        
+        // Try immediately
+        const found = checkAndUpdateCount();
+        
+        // If not found, set up an interval to keep checking
+        if (!found) {
+          const intervalId = setInterval(() => {
+            if (checkAndUpdateCount()) {
+              clearInterval(intervalId);
+            }
+          }, 500);
+        }
+      })();
+    `;
+    document.body.appendChild(script);
+    
+    // Clean up
+    return () => {
+      delete (window as any).updateSectionQuestionCount;
+      // We can't remove the script since it's already executed
+    };
+  }, []);
+
   // Safely parse HTML description if available
   const renderDescription = () => {
     if (!section.description) return null;
@@ -220,73 +657,62 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   };
 
   const sectionImage = section.image || image || 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1567&q=80';
-  const effectiveColor = section.color || color || '#552a47';
-  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '85, 42, 71';
+  const effectiveColor = '#7c3aed'; // Using purple from the reference image
 
   return (
     <SectionContainer>
-      <div 
-        className="modern-survey-container"
-        style={{
-          '--primary-color': effectiveColor,
-          '--primary-color-rgb': primaryColorRgb,
-          '--primary-dark': adjustColor(effectiveColor, -20)
-        } as React.CSSProperties}
-      >
-        <div className="modern-survey-wrapper">
-          {/* Left side image - same as question screen */}
-          <div 
-            className="modern-survey-sidebar"
-            style={{ 
-              backgroundImage: `url(${sectionImage})`, 
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="modern-survey-sidebar-overlay">
-              <div className="sidebar-text-container">
-              <h2>{surveyTitle}</h2>
-                {surveyDescription && (
-                  <p>{surveyDescription.replace(/<[^>]*>/g, '')}</p>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Right side content */}
-          <div className="modern-survey-content">
-            {/* Survey Title removed as requested */}
-            
-            <div className="modern-survey-header">
-              <h1 className="modern-survey-question">{section.name}</h1>
-            </div>
-            
+      <SectionCard>
+        <SectionHeader>
+          <HeaderContent>
+            <SectionNumberBadge>{section.index || sectionIndex}</SectionNumberBadge>
+            <SectionTitle>{section.name}</SectionTitle>
             {renderDescription()}
+          </HeaderContent>
+          
+          <ImageContainer>
+            <img src={sectionImage} alt={section.name} />
+            <ImageNumberBadge>{section.index || sectionIndex}</ImageNumberBadge>
+          </ImageContainer>
+        </SectionHeader>
+        
+        <ContentContainer>
+          <StatsContainer>
+            <StatCard>
+              <StatIcon>
+                <FiClock size={24} />
+              </StatIcon>
+              <StatValue>{metadata.estimatedTime}</StatValue>
+              <StatLabel>Minutes to complete</StatLabel>
+            </StatCard>
             
-            {/* Survey Description removed as requested */}
+            <StatCard>
+              <StatIcon>
+                <FiCheckCircle size={24} />
+              </StatIcon>
+              <StatValue>{metadata.questionCount}</StatValue>
+              <StatLabel>Total questions</StatLabel>
+            </StatCard>
             
-            <div className="modern-survey-actions">
-              <button 
-                className="modern-survey-button button-secondary"
-                onClick={onBack}
-              >
-                <FiArrowLeft /> Back
-              </button>
-              
-              <button 
-                className="modern-survey-button button-primary"
-                onClick={onContinue}
-                style={{ 
-                  '--primary-color': effectiveColor,
-                  '--primary-dark': adjustColor(effectiveColor, -20)
-                } as React.CSSProperties}
-              >
-                Continue <FiArrowRight />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+            <StatCard>
+              <StatIcon>
+                <FiStar size={24} />
+              </StatIcon>
+              <StatValue>{metadata.requiredQuestionCount}</StatValue>
+              <StatLabel>Required questions</StatLabel>
+            </StatCard>
+          </StatsContainer>
+          
+          <ButtonContainer>
+            <BackButton onClick={onBack}>
+              <FiArrowLeft /> Back
+            </BackButton>
+            
+            <StartSectionButton onClick={onContinue}>
+              Start Section <FiArrowRight />
+            </StartSectionButton>
+          </ButtonContainer>
+        </ContentContainer>
+      </SectionCard>
     </SectionContainer>
   );
 };
