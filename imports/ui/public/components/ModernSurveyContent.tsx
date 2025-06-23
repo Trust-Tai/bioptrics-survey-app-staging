@@ -553,9 +553,21 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     return sortedQuestions;
   };
   
-  const getCurrentSection = (): Section | null => {
+  // Get the current section
+  const getCurrentSection = () => {
     if (currentStep.type !== 'section') return null;
     return sections.find(s => s.id === currentStep.sectionId) || null;
+  };
+  
+  // Count questions for a specific section
+  const getQuestionsCountForSection = (sectionId: string) => {
+    return questions.filter(q => q.sectionId === sectionId).length;
+  };
+  
+  // Get the current section index (1-based)
+  const getCurrentSectionIndex = (sectionId: string) => {
+    const index = sections.findIndex(s => s.id === sectionId);
+    return index >= 0 ? index + 1 : 1; // 1-based index, default to 1 if not found
   };
   
   // Custom function to update current step and save progress
@@ -752,13 +764,25 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     const isLastSection = currentSectionIndex === sections.length - 1;
     const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
     
-    // If this is the last question in the survey, we'll let the user submit manually via the button
-    // The submission will be handled by the onSubmit prop passed to ModernSurveyQuestion
+    console.log('CRITICAL - Last question detection in handleQuestionAnswer:', {
+      questionId,
+      currentQuestionIndex,
+      sectionQuestionsLength: sectionQuestions.length,
+      isLastQuestionInSection,
+      currentSectionIndex,
+      totalSections: sections.length,
+      isLastSection,
+      isLastQuestionInSurvey
+    });
+    
+    // If this is the last question in the survey, go to thank you page
     if (isLastQuestionInSurvey) {
-      console.log('Last question in survey detected - waiting for user to submit manually');
+      console.log('Last question in survey detected - moving to thank you page');
       // Store the last question ID to ensure it gets included in submission
       window.localStorage.setItem('lastAnsweredQuestionId', questionId);
-      // Not automatically submitting to avoid duplicate submissions
+      
+      // Submit the survey and go to thank you page
+      handleSubmit();
       return;
     }
     
@@ -1549,16 +1573,40 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   const renderContent = () => {
     switch (currentStep.type) {
       case 'welcome':
+        // Get the total questions and sections count from the survey data
+        const totalQuestions = questions.length;
+        const totalSections = sections.length;
+        
+        console.log('Welcome screen data:', {
+          totalQuestions,
+          totalSections
+        });
+        
         return (
           <ModernSurveyWelcome
             survey={survey}
             onStart={handleStart}
+            totalQuestions={totalQuestions}
+            totalSections={totalSections}
           />
         );
         
       case 'section':
         const currentSection = getCurrentSection();
         if (!currentSection) return null;
+        
+        // Calculate total questions for this section
+        const sectionQuestionsCount = getQuestionsCountForSection(currentSection.id);
+        
+        // Get the current section index (1-based)
+        const dynamicSectionIndex = getCurrentSectionIndex(currentSection.id);
+        
+        console.log('Section screen data:', {
+          sectionId: currentSection.id,
+          sectionName: currentSection.name,
+          sectionIndex: dynamicSectionIndex,
+          questionsCount: sectionQuestionsCount
+        });
         
         return (
           <ModernSurveySection
@@ -1569,6 +1617,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
             surveyTitle={survey.title}
             surveyDescription={survey.description}
             image={currentSection.image || survey.image}
+            totalQuestions={sectionQuestionsCount}
+            sectionIndex={dynamicSectionIndex}
           />
         );
         
@@ -1597,11 +1647,55 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
           options: processQuestionOptions(currentQuestion)
         };
         
-        // Debug information for last question detection
+        // Determine if this is the last question in its section
         const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
+        
+        // Determine if this is the last section in the survey
         const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
         const isLastSection = currentSectionIndex === sections.length - 1;
+        
+        // Determine if this is the last question in the entire survey
+        // This is critical for showing the Submit button
+        // Force isLastQuestionInSurvey to true for the last question in the last section
+        // This ensures the Submit button is displayed
         const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
+        
+        // Log detailed information about the last question detection
+        console.log('Last question detection in renderContent:', {
+          questionId: currentQuestion._id || currentQuestion.id,
+          currentQuestionIndex,
+          totalQuestionsInSection: sectionQuestions.length,
+          isLastQuestionInSection,
+          currentSectionIndex,
+          totalSections: sections.length,
+          isLastSection,
+          isLastQuestionInSurvey
+        });
+        
+        // Force the isLastQuestionInSurvey flag to true for the last question in the last section
+        // This ensures the Submit button is displayed
+        console.log('IMPORTANT - Last question detection:', {
+          questionId: currentQuestion._id || currentQuestion.id,
+          questionText: currentQuestion.text?.substring(0, 30),
+          currentQuestionIndex,
+          totalQuestionsInSection: sectionQuestions.length,
+          isLastQuestionInSection,
+          currentSectionIndex,
+          totalSections: sections.length,
+          isLastSection,
+          isLastQuestionInSurvey
+        });
+        
+        // Log detailed information about section and question detection
+        console.log('Last question detection details:', {
+          currentQuestionIndex,
+          sectionQuestionsLength: sectionQuestions.length,
+          isLastQuestionInSection,
+          currentSectionIndex,
+          totalSections: sections.length,
+          isLastSection,
+          isLastQuestionInSurvey
+        });
         
         // Enhanced logging for question rendering
         console.log('Rendering question with context:', {
