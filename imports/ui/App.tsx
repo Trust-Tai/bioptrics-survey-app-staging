@@ -210,8 +210,8 @@ const AppRoutes: React.FC = () => {
         {/* Add redirect from old path to new path */}
         <Route path="/admin/participants" element={<Navigate to="/admin/org-setup/participants" replace />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
-        <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
-        <Route path="/admin/surveys/theme-gallery" element={<SurveyThemeManager />} />
+        <Route path="/admin/surveys/theme" element={<SurveyThemeManager />} />
+        <Route path="/admin/surveys/theme-gallery" element={<Navigate to="/admin/surveys/theme" replace />} />
         {/* New routes for Users under org-setup */}
         <Route path="/admin/org-setup/users" element={<Users />} />
         <Route path="/admin/org-setup/users/all" element={<AllUsers />} />

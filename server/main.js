@@ -18,6 +18,7 @@ import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
 import '../imports/features/wps-framework/api/wpsCategories.publications';
 import '../imports/api/surveyThemes';
 import { seedDefaultThemes } from '../imports/features/survey-themes/api/seedThemes';
+import { seedAdditionalThemes } from '../imports/features/survey-themes/api/seedAdditionalThemes';
 import '../imports/features/surveys/api/surveys';
 import '../imports/api/users.methods';
 import '../imports/features/organization/api/organizationSettings';
@@ -50,6 +51,11 @@ Meteor.startup(async () => {
   // Seed default survey themes
   seedDefaultThemes().catch(err => {
     console.error('Survey Themes seed error:', err);
+  });
+  
+  // Seed additional survey themes (50 more themes)
+  seedAdditionalThemes().catch(err => {
+    console.error('Additional Survey Themes seed error:', err);
   });
   
   // Initialize IncompleteSurveyResponses collection if empty
