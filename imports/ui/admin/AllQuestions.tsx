@@ -1200,7 +1200,7 @@ const AllQuestions: React.FC = () => {
                 >
                   Previous
                 </PaginationButton>
-                {Array.from({ length: Math.min(5, Math.ceil(filteredQuestions.length / itemsPerPage)) }, (_, i) => {
+                {(() => {
                   // Show current page and 2 pages before and after
                   const pageNumbers = [];
                   const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
@@ -1228,7 +1228,7 @@ const AllQuestions: React.FC = () => {
                   }
                   
                   return pageNumbers;
-                })}
+                })()}
                 <PaginationButton 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredQuestions.length / itemsPerPage)))} 
                   disabled={currentPage === Math.ceil(filteredQuestions.length / itemsPerPage)}
