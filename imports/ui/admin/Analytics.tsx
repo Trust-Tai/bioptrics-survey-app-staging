@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import { Layers } from '/imports/api/layers';
+import { Surveys } from '/imports/features/surveys/api/surveys';
+import { Questions } from '/imports/features/questions/api/questions';
+import TomSelect from 'tom-select';
+import 'tom-select/dist/css/tom-select.bootstrap4.css';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
 import {
   FiFilter,
@@ -99,6 +106,77 @@ const FilterBar = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
   }
+  
+  /* Tom Select Styling */
+  .tom-select-container .ts-wrapper {
+    width: 100%;
+    border-radius: 6px;
+  }
+  
+  .tom-select-container .ts-control {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+    min-height: 38px;
+    background-color: white;
+  }
+  
+  .tom-select-container .ts-control:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 1px #552a47;
+  }
+  
+  .tom-select-container .ts-dropdown {
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tom-select-container .ts-dropdown .option {
+    padding: 8px 10px;
+  }
+  
+  .tom-select-container .ts-dropdown .active {
+    background-color: #f7f2f5;
+    color: #552a47;
+  }
+  
+  .tom-select-container .ts-control input {
+    color: #333;
+  }
+  
+  .tom-select-container .item {
+    background-color: #f7f2f5;
+    color: #552a47;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 2px;
+  }
+  
+  /* Date Picker Styling */
+  .date-picker {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+    background-color: white;
+  }
+  
+  .date-picker:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 1px #552a47;
+  }
+  
+  .react-datepicker-wrapper {
+    width: 100%;
+  }
+  
+  .react-datepicker__input-container {
+    width: 100%;
+  }
 `;
 
 const FilterGroup = styled.div`
@@ -135,12 +213,22 @@ const Select = styled.select`
 
 const FilterButtons = styled.div`
   display: flex;
-  align-items: flex-end;
   gap: 8px;
+  margin-left: auto;
+  align-items: flex-end;
+`;
 
-  @media (max-width: 768px) {
-    margin-top: 8px;
-  }
+const DateRangeContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+`;
+
+const DateRangeText = styled.span`
+  font-size: 14px;
+  color: #666;
+  margin: 0 4px;
 `;
 
 const DashboardGrid = styled.div`
@@ -393,10 +481,146 @@ const Analytics: React.FC = () => {
 
   // Sample data
   const sites = ['All Sites', 'Site A', 'Site B', 'Site C'];
-  const departments = ['All Departments', 'HR', 'Operations', 'IT', 'Finance'];
-  const roles = ['All Roles', 'Manager', 'Individual Contributor', 'Director'];
-  const tenures = ['All Tenure', '< 1 year', '1-3 years', '3-5 years', '5+ years'];
-  const demographics = ['All Demographics', 'Age Group', 'Gender', 'Location'];
+  
+  // State for filters
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([undefined, undefined]);
+  const [startDate, endDate] = dateRange;
+  
+  // References for tom-select instances
+  const tagSelectRef = useRef<HTMLSelectElement>(null);
+  const surveySelectRef = useRef<HTMLSelectElement>(null);
+  const questionSelectRef = useRef<HTMLSelectElement>(null);
+  const tomSelectInstance = useRef<{[key: string]: any}>({});
+  
+  // Fetch tags from the Layers collection
+  const { tags, tagsLoading } = useTracker(() => {
+    const subscription = Meteor.subscribe('layers.all');
+    const allTags = Layers.find({ active: true }, { sort: { name: 1 } }).fetch();
+    
+    return {
+      tags: allTags,
+      tagsLoading: !subscription.ready()
+    };
+  }, []);
+  
+  // Fetch surveys data
+  const { surveys, surveysLoading } = useTracker(() => {
+    const subscription = Meteor.subscribe('surveys.all');
+    const allSurveys = Surveys.find({}, { sort: { title: 1 } }).fetch();
+    
+    return {
+      surveys: allSurveys,
+      surveysLoading: !subscription.ready()
+    };
+  }, []);
+  
+  // Fetch questions data
+  const { questions, questionsLoading } = useTracker(() => {
+    const subscription = Meteor.subscribe('questions.all');
+    const allQuestions = Questions.find({}, { sort: { title: 1 } }).fetch();
+    
+    return {
+      questions: allQuestions,
+      questionsLoading: !subscription.ready()
+    };
+  }, []);
+  
+  // Initialize tom-select instances when data is loaded
+  useEffect(() => {
+    // Skip if any of the required refs are missing or instances already initialized
+    if (!tagSelectRef.current || 
+        !surveySelectRef.current || 
+        !questionSelectRef.current || 
+        Object.keys(tomSelectInstance.current).length > 0 || 
+        tagsLoading || 
+        surveysLoading || 
+        questionsLoading) {
+      return;
+    }
+    
+    try {
+      // Common configuration for all tom-select instances
+      const createTomSelect = (ref: HTMLSelectElement, placeholder: string, data: any[], valueField: string, textField: string, onChangeHandler: (values: string[]) => void) => {
+        const config: any = {
+          plugins: ['remove_button'],
+          placeholder: placeholder,
+          create: false,
+          maxItems: null, // Allow multiple selections
+          sortField: { field: 'text', direction: 'asc' },
+          onChange: function(values: string[]) {
+            onChangeHandler(values);
+          }
+        };
+        
+        // Initialize tom-select
+        const ts = new TomSelect(ref, config);
+        
+        // Add options
+        if (data && data.length > 0) {
+          data.forEach(item => {
+            if (item && item[valueField]) {
+              ts.addOption({
+                value: item[valueField],
+                text: item[textField]
+              });
+            }
+          });
+        }
+        
+        return ts;
+      };
+      
+      // Initialize Tags tom-select
+      tomSelectInstance.current.tags = createTomSelect(
+        tagSelectRef.current,
+        'Select tags...',
+        tags,
+        '_id',
+        'name',
+        setSelectedTags
+      );
+      
+      // Initialize Surveys tom-select
+      tomSelectInstance.current.surveys = createTomSelect(
+        surveySelectRef.current,
+        'Select surveys...',
+        surveys,
+        '_id',
+        'title',
+        setSelectedSurveys
+      );
+      
+      // Initialize Questions tom-select
+      tomSelectInstance.current.questions = createTomSelect(
+        questionSelectRef.current,
+        'Select questions...',
+        questions,
+        '_id',
+        'title',
+        setSelectedQuestions
+      );
+      
+    } catch (error) {
+      console.error('Error initializing TomSelect instances:', error);
+    }
+    
+    // Clean up tom-select instances when component unmounts
+    return () => {
+      Object.values(tomSelectInstance.current).forEach((instance: any) => {
+        if (instance) {
+          try {
+            instance.destroy();
+          } catch (error) {
+            console.error('Error destroying TomSelect instance:', error);
+          }
+        }
+      });
+      tomSelectInstance.current = {};
+    };
+  }, [tags, tagsLoading, surveys, surveysLoading, questions, questionsLoading, setSelectedTags, setSelectedSurveys, setSelectedQuestions]);
 
   return (
     <AdminLayout>
@@ -428,48 +652,81 @@ const Analytics: React.FC = () => {
               </Select>
             </FilterGroup>
             <FilterGroup>
-              <FilterLabel>Department</FilterLabel>
-              <Select>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </Select>
+              <FilterLabel>Tags</FilterLabel>
+              <div className="tom-select-container">
+                <select 
+                  ref={tagSelectRef} 
+                  multiple 
+                  style={{ width: '100%' }}
+                  data-placeholder="Select tags..."
+                />
+              </div>
             </FilterGroup>
             <FilterGroup>
-              <FilterLabel>Role Level</FilterLabel>
-              <Select>
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </Select>
+              <FilterLabel>Surveys</FilterLabel>
+              <div className="tom-select-container">
+                <select 
+                  ref={surveySelectRef} 
+                  multiple 
+                  style={{ width: '100%' }}
+                  data-placeholder="Select surveys..."
+                />
+              </div>
             </FilterGroup>
             <FilterGroup>
-              <FilterLabel>Tenure</FilterLabel>
-              <Select>
-                {tenures.map((tenure) => (
-                  <option key={tenure} value={tenure}>
-                    {tenure}
-                  </option>
-                ))}
-              </Select>
+              <FilterLabel>Questions</FilterLabel>
+              <div className="tom-select-container">
+                <select 
+                  ref={questionSelectRef} 
+                  multiple 
+                  style={{ width: '100%' }}
+                  data-placeholder="Select questions..."
+                />
+              </div>
             </FilterGroup>
             <FilterGroup>
-              <FilterLabel>Demographics</FilterLabel>
-              <Select>
-                {demographics.map((demo) => (
-                  <option key={demo} value={demo}>
-                    {demo}
-                  </option>
-                ))}
-              </Select>
+              <FilterLabel>Date Range</FilterLabel>
+              <DateRangeContainer>
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date: Date | undefined) => setDateRange([date, endDate])}
+                  startDate={startDate}
+                  endDate={endDate}
+                  selectsStart
+                  placeholderText="Start Date"
+                  className="date-picker"
+                  dateFormat="MMM d, yyyy"
+                />
+                <DateRangeText>to</DateRangeText>
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date: Date | undefined) => setDateRange([startDate, date])}
+                  startDate={startDate}
+                  endDate={endDate}
+                  selectsEnd
+                  minDate={startDate}
+                  placeholderText="End Date"
+                  className="date-picker"
+                  dateFormat="MMM d, yyyy"
+                />
+              </DateRangeContainer>
             </FilterGroup>
             <FilterButtons>
               <Button primary>Apply Filters</Button>
-              <Button>Reset</Button>
+              <Button onClick={() => {
+                // Reset all filters
+                setSelectedTags([]);
+                setSelectedSurveys([]);
+                setSelectedQuestions([]);
+                setDateRange([undefined, undefined]);
+                
+                // Reset tom-select instances
+                Object.values(tomSelectInstance.current).forEach((instance: any) => {
+                  if (instance && instance.clear) {
+                    instance.clear();
+                  }
+                });
+              }}>Reset</Button>
             </FilterButtons>
           </FilterBar>
         )}
