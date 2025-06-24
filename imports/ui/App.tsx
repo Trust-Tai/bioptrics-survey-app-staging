@@ -10,6 +10,7 @@ import AnalyticsCompareCohorts from './admin/AnalyticsCompareCohorts';
 import AnalyticsExportReports from './admin/AnalyticsExportReports';
 import WPSFramework from './admin/WPSFramework';
 import SurveyTheme from './admin/SurveyTheme';
+import SurveyThemeManager from '../features/survey-themes/components/SurveyThemeManager';
 import OrgSetup from './admin/OrgSetup';
 import OrgSetupDashboard from './admin/OrgSetupDashboard';
 import { OrganizationProvider } from '/imports/features/organization/contexts/OrganizationContext';
@@ -210,6 +211,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/participants" element={<Navigate to="/admin/org-setup/participants" replace />} />
         <Route path="/admin/surveys/wps-framework" element={<WPSFramework />} />
         <Route path="/admin/surveys/theme" element={<SurveyTheme />} />
+        <Route path="/admin/surveys/theme-gallery" element={<SurveyThemeManager />} />
         {/* New routes for Users under org-setup */}
         <Route path="/admin/org-setup/users" element={<Users />} />
         <Route path="/admin/org-setup/users/all" element={<AllUsers />} />

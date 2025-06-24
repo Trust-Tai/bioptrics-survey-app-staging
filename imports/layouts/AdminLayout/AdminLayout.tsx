@@ -31,6 +31,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     { to: '/admin/surveys/all', label: `Manage ${getTerminology('surveyLabel')}s` },
     { to: '/admin/surveys/builder', label: 'Create Survey' },
     { to: '/admin/surveys/theme', label: 'Theme' },
+    { to: '/admin/surveys/theme-gallery', label: 'Theme Gallery' },
     // Dynamically add survey tags as submenu items
     // ...(surveyTags.map(tag => ({ 
     //   to: `/admin/surveys/tag/${tag._id}`, 

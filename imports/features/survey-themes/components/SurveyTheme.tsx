@@ -12,12 +12,27 @@ interface Theme {
   name: string;
   color: string;
   description: string;
-  createdAt?: string;
+  createdAt?: Date | string;
   wpsCategoryId?: string;
-  assignableTo?: string[]; // Can be 'questions', 'surveys', or both
+  assignableTo?: string[];
   keywords?: string[];
   priority?: number;
   isActive?: boolean;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  headingFont?: string;
+  bodyFont?: string;
+  layout?: string;
+  buttonStyle?: string;
+  questionStyle?: string;
+  headerStyle?: string;
+  backgroundImage?: string;
+  customCSS?: string;
+  previewImageUrl?: string;
+  templateType?: string;
 }
 
 function toTheme(theme: any): Theme {
@@ -70,32 +85,74 @@ const SurveyTheme: React.FC = () => {
   const [editIsActive, setEditIsActive] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [viewingTheme, setViewingTheme] = useState<Theme | null>(null);
+  
+  // New theme property states
+  const [primaryColor, setPrimaryColor] = useState('#552a47');
+  const [secondaryColor, setSecondaryColor] = useState('#3b82f6');
+  const [accentColor, setAccentColor] = useState('#10b981');
+  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [textColor, setTextColor] = useState('#2c3e50');
+  const [headingFont, setHeadingFont] = useState('Inter, sans-serif');
+  const [bodyFont, setBodyFont] = useState('Inter, sans-serif');
+  const [layout, setLayout] = useState('default');
+  const [buttonStyle, setButtonStyle] = useState('rounded');
+  const [questionStyle, setQuestionStyle] = useState('card');
+  const [headerStyle, setHeaderStyle] = useState('gradient');
+  const [backgroundImage, setBackgroundImage] = useState('');
+  const [templateType, setTemplateType] = useState('standard');
+  const [customCSS, setCustomCSS] = useState('');
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
 
   // Handler to add a new theme
   const handleAdd = () => {
-    if (!name.trim() || !wpsCategoryId) {
-      showError('Please fill in all required fields.');
-      return;
-    }
-    Meteor.call('surveyThemes.insert', { 
-      name, 
-      color, 
-      description, 
+    Meteor.call('surveyThemes.insert', {
+      name,
+      color,
+      description,
       wpsCategoryId,
       assignableTo,
       keywords,
       priority,
-      isActive
+      isActive,
+      primaryColor,
+      secondaryColor,
+      accentColor,
+      backgroundColor,
+      textColor,
+      headingFont,
+      bodyFont,
+      layout,
+      buttonStyle,
+      questionStyle,
+      headerStyle,
+      backgroundImage,
+      templateType,
+      customCSS,
+      previewImageUrl
     }, (err: any) => {
       if (!err) {
         setName('');
         setColor('#552a47');
         setDescription('');
-        setWpsCategoryId('');
-        setAssignableTo(['questions', 'surveys']);
+        setAssignableTo([]);
         setKeywords([]);
         setPriority(0);
         setIsActive(true);
+        setPrimaryColor('#552a47');
+        setSecondaryColor('#3b82f6');
+        setAccentColor('#10b981');
+        setBackgroundColor('#ffffff');
+        setTextColor('#2c3e50');
+        setHeadingFont('Inter, sans-serif');
+        setBodyFont('Inter, sans-serif');
+        setLayout('default');
+        setButtonStyle('rounded');
+        setQuestionStyle('card');
+        setHeaderStyle('gradient');
+        setBackgroundImage('');
+        setTemplateType('standard');
+        setCustomCSS('');
+        setPreviewImageUrl('');
         showSuccess('Theme added successfully!');
         setShowModal(false);
       } else {
@@ -106,29 +163,61 @@ const SurveyTheme: React.FC = () => {
 
   // Handler to start editing a theme
   const startEdit = (theme: Theme) => {
-    setEditId(theme._id!);
+    setEditId(theme._id || null);
     setEditName(theme.name);
-    setEditColor(theme.color || '#552a47');
-    setEditDescription(theme.description || '');
+    setEditColor(theme.color);
+    setEditDescription(theme.description);
     setEditWpsCategoryId(theme.wpsCategoryId || '');
-    setEditAssignableTo(theme.assignableTo || ['questions', 'surveys']);
+    setEditAssignableTo(theme.assignableTo || []);
     setEditKeywords(theme.keywords || []);
     setEditPriority(theme.priority || 0);
     setEditIsActive(theme.isActive !== false); // Default to true if not specified
+    
+    // Set new theme property states
+    setPrimaryColor(theme.primaryColor || '#552a47');
+    setSecondaryColor(theme.secondaryColor || '#3b82f6');
+    setAccentColor(theme.accentColor || '#10b981');
+    setBackgroundColor(theme.backgroundColor || '#ffffff');
+    setTextColor(theme.textColor || '#2c3e50');
+    setHeadingFont(theme.headingFont || 'Inter, sans-serif');
+    setBodyFont(theme.bodyFont || 'Inter, sans-serif');
+    setLayout(theme.layout || 'default');
+    setButtonStyle(theme.buttonStyle || 'rounded');
+    setQuestionStyle(theme.questionStyle || 'card');
+    setHeaderStyle(theme.headerStyle || 'gradient');
+    setBackgroundImage(theme.backgroundImage || '');
+    setTemplateType(theme.templateType || 'standard');
+    setCustomCSS(theme.customCSS || '');
+    setPreviewImageUrl(theme.previewImageUrl || '');
   };
 
   // Handler to update a theme
   const handleUpdate = () => {
     if (!editId || !editName.trim() || !editDescription.trim() || !editWpsCategoryId) return;
-    Meteor.call('surveyThemes.update', editId, { 
-      name: editName, 
-      color: editColor, 
-      description: editDescription, 
+    Meteor.call('surveyThemes.update', editId, {
+      name: editName,
+      color: editColor,
+      description: editDescription,
       wpsCategoryId: editWpsCategoryId,
       assignableTo: editAssignableTo,
       keywords: editKeywords,
       priority: editPriority,
-      isActive: editIsActive
+      isActive: editIsActive,
+      primaryColor,
+      secondaryColor,
+      accentColor,
+      backgroundColor,
+      textColor,
+      headingFont,
+      bodyFont,
+      layout,
+      buttonStyle,
+      questionStyle,
+      headerStyle,
+      backgroundImage,
+      templateType,
+      customCSS,
+      previewImageUrl
     }, (err: any) => {
       if (!err) {
         setEditId(null);
@@ -136,10 +225,25 @@ const SurveyTheme: React.FC = () => {
         setEditColor('#552a47');
         setEditDescription('');
         setEditWpsCategoryId('');
-        setEditAssignableTo(['questions', 'surveys']);
+        setEditAssignableTo([]);
         setEditKeywords([]);
         setEditPriority(0);
         setEditIsActive(true);
+        setPrimaryColor('#552a47');
+        setSecondaryColor('#3b82f6');
+        setAccentColor('#10b981');
+        setBackgroundColor('#ffffff');
+        setTextColor('#2c3e50');
+        setHeadingFont('Inter, sans-serif');
+        setBodyFont('Inter, sans-serif');
+        setLayout('default');
+        setButtonStyle('rounded');
+        setQuestionStyle('card');
+        setHeaderStyle('gradient');
+        setBackgroundImage('');
+        setTemplateType('standard');
+        setCustomCSS('');
+        setPreviewImageUrl('');
         showSuccess('Theme updated successfully!');
       } else {
         showError('Failed to update theme: ' + err.reason);
@@ -301,6 +405,250 @@ const SurveyTheme: React.FC = () => {
                       style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
                       placeholder="#552a47"
                       required
+                    />
+                  </label>
+                </div>
+                
+                {/* Theme Customization Section */}
+                <div style={{ gridColumn: '1 / 3', marginTop: 10 }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#552a47', fontSize: 18 }}>Theme Customization</h4>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Primary Color
+                    <input
+                      type="color"
+                      value={primaryColor}
+                      onChange={e => setPrimaryColor(e.target.value)}
+                      style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
+                    />
+                    <input
+                      type="text"
+                      value={primaryColor}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setPrimaryColor(val);
+                      }}
+                      maxLength={7}
+                      style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Secondary Color
+                    <input
+                      type="color"
+                      value={secondaryColor}
+                      onChange={e => setSecondaryColor(e.target.value)}
+                      style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
+                    />
+                    <input
+                      type="text"
+                      value={secondaryColor}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setSecondaryColor(val);
+                      }}
+                      maxLength={7}
+                      style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Accent Color
+                    <input
+                      type="color"
+                      value={accentColor}
+                      onChange={e => setAccentColor(e.target.value)}
+                      style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
+                    />
+                    <input
+                      type="text"
+                      value={accentColor}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setAccentColor(val);
+                      }}
+                      maxLength={7}
+                      style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Background Color
+                    <input
+                      type="color"
+                      value={backgroundColor}
+                      onChange={e => setBackgroundColor(e.target.value)}
+                      style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
+                    />
+                    <input
+                      type="text"
+                      value={backgroundColor}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setBackgroundColor(val);
+                      }}
+                      maxLength={7}
+                      style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', display: 'flex', alignItems: 'center', gap: 10 }}>Text Color
+                    <input
+                      type="color"
+                      value={textColor}
+                      onChange={e => setTextColor(e.target.value)}
+                      style={{ width: 48, height: 32, border: 'none', background: 'none', verticalAlign: 'middle' }}
+                    />
+                    <input
+                      type="text"
+                      value={textColor}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (/^#([0-9A-Fa-f]{3}){1,2}$/.test(val)) setTextColor(val);
+                      }}
+                      maxLength={7}
+                      style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
+                    />
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Heading Font
+                    <select
+                      value={headingFont}
+                      onChange={e => setHeadingFont(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="Inter, sans-serif">Inter</option>
+                      <option value="Roboto, sans-serif">Roboto</option>
+                      <option value="Poppins, sans-serif">Poppins</option>
+                      <option value="Montserrat, sans-serif">Montserrat</option>
+                      <option value="Open Sans, sans-serif">Open Sans</option>
+                      <option value="Playfair Display, serif">Playfair Display</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Body Font
+                    <select
+                      value={bodyFont}
+                      onChange={e => setBodyFont(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="Inter, sans-serif">Inter</option>
+                      <option value="Roboto, sans-serif">Roboto</option>
+                      <option value="Poppins, sans-serif">Poppins</option>
+                      <option value="Open Sans, sans-serif">Open Sans</option>
+                      <option value="Lato, sans-serif">Lato</option>
+                      <option value="Source Sans Pro, sans-serif">Source Sans Pro</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Layout Style
+                    <select
+                      value={layout}
+                      onChange={e => setLayout(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="default">Default</option>
+                      <option value="compact">Compact</option>
+                      <option value="spacious">Spacious</option>
+                      <option value="minimal">Minimal</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Button Style
+                    <select
+                      value={buttonStyle}
+                      onChange={e => setButtonStyle(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="rounded">Rounded</option>
+                      <option value="pill">Pill</option>
+                      <option value="square">Square</option>
+                      <option value="minimal">Minimal</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Question Style
+                    <select
+                      value={questionStyle}
+                      onChange={e => setQuestionStyle(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="card">Card</option>
+                      <option value="flat">Flat</option>
+                      <option value="bordered">Bordered</option>
+                      <option value="minimal">Minimal</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Header Style
+                    <select
+                      value={headerStyle}
+                      onChange={e => setHeaderStyle(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="gradient">Gradient</option>
+                      <option value="solid">Solid</option>
+                      <option value="accent">Accent</option>
+                      <option value="minimal">Minimal</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Background Image URL
+                    <input
+                      type="text"
+                      value={backgroundImage}
+                      onChange={e => setBackgroundImage(e.target.value)}
+                      placeholder="URL to background image (optional)"
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    />
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Template Type
+                    <select
+                      value={templateType}
+                      onChange={e => setTemplateType(e.target.value)}
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }}
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="corporate">Corporate</option>
+                      <option value="modern">Modern</option>
+                      <option value="playful">Playful</option>
+                      <option value="minimal">Minimal</option>
+                      <option value="elegant">Elegant</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div style={{ gridColumn: '1 / 3' }}>
+                  <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Custom CSS
+                    <textarea
+                      value={customCSS}
+                      onChange={e => setCustomCSS(e.target.value)}
+                      placeholder="Custom CSS rules (optional)"
+                      style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 15, fontWeight: 500, color: '#28211e', minHeight: 80, fontFamily: 'monospace', boxSizing: 'border-box' }}
                     />
                   </label>
                 </div>
