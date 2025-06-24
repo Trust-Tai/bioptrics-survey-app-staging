@@ -94,6 +94,7 @@
   margin-right: 16px;
   color: white;
   flex-shrink: 0;
+  background-color: #4b5563;
 }
 
 .stat-icon.blue {

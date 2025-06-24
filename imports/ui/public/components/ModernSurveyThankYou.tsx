@@ -233,7 +233,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     }
   };
 
-  const effectiveColor = color || survey.color || '#7c3aed';
+  const effectiveColor = color || survey.color || '#1f2937';
   const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '124, 58, 237';
   
   return (
@@ -250,7 +250,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       
       <div className="stats-container">
         <div className="stat-card">
-          <div className="stat-icon blue">
+          <div className="stat-icon">
             <FiCheckSquare size={20} />
           </div>
           <div className="stat-content">
@@ -261,7 +261,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
         </div>
         
         <div className="stat-card">
-          <div className="stat-icon yellow">
+          <div className="stat-icon">
             <FiStar size={20} />
           </div>
           <div className="stat-content">
@@ -272,7 +272,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
         </div>
         
         <div className="stat-card">
-          <div className="stat-icon green">
+          <div className="stat-icon">
             <FiCheckCircle size={20} />
           </div>
           <div className="stat-content">
@@ -283,7 +283,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
         </div>
         
         <div className="stat-card">
-          <div className="stat-icon purple">
+          <div className="stat-icon">
             <FiClock size={20} />
           </div>
           <div className="stat-content">
