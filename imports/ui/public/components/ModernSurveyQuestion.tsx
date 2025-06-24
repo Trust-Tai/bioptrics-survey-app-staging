@@ -322,55 +322,59 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   }, []);
 
   return (
-    <div className="question-container modern-survey-container">
-      <div className="progress-container">
-        <div className="progress-info">
-          <div className="question-count">Question {currentQuestion} of {totalQuestions}</div>
-          <div className="remaining-count">{remainingQuestions} remaining</div>
+    <>
+      <div className="survey-header">
+        <div className="progress-container">
+          <div className="progress-info">
+            <div className="question-count">Question {currentQuestion} of {totalQuestions}</div>
+            <div className="remaining-count">{remainingQuestions} remaining</div>
+          </div>
+          <div className="progress-bar-wrapper">
+            <div 
+              className="progress-bar-fill" 
+              style={{ width: `${progressPercentage}%`, backgroundColor: color }}
+            ></div>
+          </div>
+          <div className="completion-percentage">{progressPercentage}% Complete</div>
         </div>
-        <div className="progress-bar-wrapper">
-          <div 
-            className="progress-bar-fill" 
-            style={{ width: `${progressPercentage}%`, backgroundColor: color }}
-          ></div>
-        </div>
-        <div className="completion-percentage">{progressPercentage}% Complete</div>
       </div>
       
-      <div className="question-card">
-        <div className="question-type-indicator">
-          {questionTypeInfo.icon}
-          <span>{questionTypeInfo.label}</span>
-          {question.required && <span className="required-tag">Required</span>}
-        </div>
-        
-        <h2 className="question-text" dangerouslySetInnerHTML={createMarkup(question.text)}></h2>
-        
-        <div className="answer-options">
-          {renderQuestionInput()}
-        </div>
-        
-        {error && <div className="error-message">{error}</div>}
-        
-        <div className="button-container">
-          <button className="button button-back" onClick={onBack}>
-            <FiArrowLeft size={18} />
-            Back
-          </button>
+      <div className="question-container modern-survey-container">
+        <div className="question-card">
+          <div className="question-type-indicator">
+            {questionTypeInfo.icon}
+            <span>{questionTypeInfo.label}</span>
+            {question.required && <span className="required-tag">Required</span>}
+          </div>
           
-          <button 
-            className="button button-continue"
-            onClick={handleContinue}
-            disabled={question.required && !isAnswerValid()}
-            style={{backgroundColor: color}}
-            data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
-          >
-            {isLastQuestion ? 'Submit' : 'Continue'}
-            <FiArrowRight size={18} />
-          </button>
+          <h2 className="question-text" dangerouslySetInnerHTML={createMarkup(question.text)}></h2>
+          
+          <div className="answer-options">
+            {renderQuestionInput()}
+          </div>
+          
+          {error && <div className="error-message">{error}</div>}
+          
+          <div className="button-container">
+            <button className="button button-back" onClick={onBack}>
+              <FiArrowLeft size={18} />
+              Back
+            </button>
+            
+            <button 
+              className="button button-continue"
+              onClick={handleContinue}
+              disabled={question.required && !isAnswerValid()}
+              style={{backgroundColor: color}}
+              data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
+            >
+              {isLastQuestion ? 'Submit' : 'Continue'}
+              <FiArrowRight size={18} />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
