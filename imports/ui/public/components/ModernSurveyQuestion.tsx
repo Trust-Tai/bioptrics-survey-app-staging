@@ -340,14 +340,17 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       </div>
       
       <div className="question-container modern-survey-container">
+        <h2 className="question-title">
+          <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
+          {question.required && <span className="question-required-indicator"> (Required)</span>}
+        </h2>
+        
         <div className="question-card">
           <div className="question-type-indicator">
             {questionTypeInfo.icon}
             <span>{questionTypeInfo.label}</span>
             {question.required && <span className="required-tag">Required</span>}
           </div>
-          
-          <h2 className="question-text" dangerouslySetInnerHTML={createMarkup(question.text)}></h2>
           
           <div className="answer-options">
             {renderQuestionInput()}
