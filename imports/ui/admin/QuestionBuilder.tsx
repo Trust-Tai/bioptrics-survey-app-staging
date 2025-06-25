@@ -599,67 +599,6 @@ return (
               }}
             />
           </div>
-
-          {/* WPS Categories Multi-Select */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10, display: 'block', marginBottom: 6 }}>WPS Categories</label>
-            <Select
-              isMulti
-              isLoading={!wpsCategoriesSub.ready()}
-              options={wpsCategories.map((cat: any) => ({ value: cat._id, label: cat.name, color: cat.color }))}
-              value={(q.wpsCategoryIds || []).map(id => {
-                const cat = wpsCategories.find((c: any) => c._id === id);
-                return cat ? { value: cat._id, label: cat.name, color: cat.color } : null;
-              }).filter(Boolean)}
-              onChange={selected => handleWpsCategoryChange(qIdx, selected)}
-              styles={colorMultiStyles}
-              placeholder="Select WPS Categories..."
-              closeMenuOnSelect={false}
-              noOptionsMessage={() => wpsCategoriesSub.ready() ? 'No categories found' : 'Loading...'}
-              classNamePrefix="react-select"
-            />
-          </div>
-
-          {/* Survey Themes Multi-Select */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10, display: 'block', marginBottom: 6 }}>Survey Themes</label>
-            <Select
-              isMulti
-              isLoading={!surveyThemesSub.ready()}
-              options={surveyThemes.map((theme: any) => ({ value: theme._id, label: theme.name, color: theme.color }))}
-              value={(q.surveyThemeIds || []).map(id => {
-                const theme = surveyThemes.find((t: any) => t._id === id);
-                return theme ? { value: theme._id, label: theme.name, color: theme.color } : null;
-              }).filter(Boolean)}
-              onChange={selected => handleSurveyThemeChange(qIdx, selected)}
-              styles={colorMultiStyles}
-              placeholder="Select Survey Themes..."
-              closeMenuOnSelect={false}
-              noOptionsMessage={() => surveyThemesSub.ready() ? 'No themes found' : 'Loading...'}
-              classNamePrefix="react-select"
-            />
-          </div>
-          
-          {/* Question Tag Single-Select */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e', marginRight: 10, display: 'block', marginBottom: 6 }}>Question Tag</label>
-            <Select
-              isLoading={!questionTagsSub.ready()}
-              options={questionTags.map((tag: any) => ({ value: tag._id, label: tag.name, color: tag.color }))}
-              value={q.questionTagId ? (() => {
-                const tag = questionTags.find((t: any) => t._id === q.questionTagId);
-                return tag ? { value: tag._id, label: tag.name, color: tag.color } : null;
-              })() : null}
-              onChange={(selected: any) => handleQuestionTagChange(qIdx, selected)}
-              styles={colorMultiStyles}
-              placeholder="Select Question Tag..."
-              isClearable
-              noOptionsMessage={() => questionTagsSub.ready() ? 'No tags found' : 'Loading...'}
-              classNamePrefix="react-select"
-            />
-          </div>
-          
-
           
           {/* Reusability Settings */}
           <div style={{ marginBottom: 18, padding: 16, background: '#f9f4f7', borderRadius: 8 }}>

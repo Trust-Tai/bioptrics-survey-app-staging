@@ -26,7 +26,7 @@ const QuestionRow = styled.div`
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  padding: 20px;
+  padding: 10px;
   transition: all 0.3s ease;
   border: 1px solid #f0f0f0;
   position: relative;
@@ -83,10 +83,10 @@ const AnswerTypeDisplay = styled.div`
   align-items: center;
   gap: 8px;
   color: #ffffff;
-  font-size: 13px;
-  background: linear-gradient(135deg, #2c6ecb, #4c8deb);
-  padding: 6px 12px;
-  border-radius: 20px;
+  font-size: 10px;
+  background: linear-gradient(135deg, #a0cf4e,rgb(164, 229, 51));
+  padding: 6px;
+  border-radius: 5px;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(44, 110, 203, 0.2);
   letter-spacing: 0.3px;
@@ -106,16 +106,6 @@ const QuestionTitle = styled.div`
   letter-spacing: -0.2px;
   position: relative;
   padding-left: 8px;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    width: 40px;
-    height: 2px;
-    background-color: #f0f0f0;
-  }
 `;
 
 const QuestionMeta = styled.div`
@@ -125,7 +115,7 @@ const QuestionMeta = styled.div`
   gap: 8px;
   font-size: 13px;
   color: #666;
-  margin-top: 16px;
+  margin-top: 5px;
 `;
 
 const MetaItem = styled.div`
@@ -172,8 +162,8 @@ const ActionButtons = styled.div`
 const ActionButton = styled.button`
   background: #f9f9f9;
   border: 1px solid #eeeeee;
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -230,8 +220,8 @@ const QuestionFooter = styled.div`
   flex-direction: row-reverse;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid #f0f0f0;
 `;
 
@@ -323,11 +313,35 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
         return (
           <QuestionRow key={question._id}>
             <QuestionHeader>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <AnswerTypeDisplay>
                   {getAnswerTypeIcon(latestVersion.responseType || 'text')}
                   {getAnswerTypeLabel(latestVersion.responseType || 'text')}
                 </AnswerTypeDisplay>
+                
+                {/* Tags moved here from below */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {latestVersion.labels && latestVersion.labels.length > 0 && (
+                    <>
+                      {latestVersion.labels.slice(0, 3).map((tag: string, index: number) => (
+                        <Tag key={index}>{getTagName(tag)}</Tag>
+                      ))}
+                      {latestVersion.labels.length > 3 && (
+                        <Tag>+{latestVersion.labels.length - 3}</Tag>
+                      )}
+                    </>
+                  )}
+                  {(!latestVersion.labels || latestVersion.labels.length === 0) && latestVersion.categoryTags && latestVersion.categoryTags.length > 0 && (
+                    <>
+                      {latestVersion.categoryTags.slice(0, 3).map((tag: string, index: number) => (
+                        <Tag key={index}>{getTagName(tag)}</Tag>
+                      ))}
+                      {latestVersion.categoryTags.length > 3 && (
+                        <Tag>+{latestVersion.categoryTags.length - 3}</Tag>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
               
               <ActionButtons>
@@ -369,30 +383,7 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
               {questionText}
             </QuestionTitle>
             
-            <QuestionMeta>
-              {latestVersion.labels && latestVersion.labels.length > 0 && (
-                <>
-                  {latestVersion.labels.slice(0, 3).map((tag: string, index: number) => {
-                    console.log('Tag:', tag);
-                    return <Tag key={index}>{getTagName(tag)}</Tag>;
-                  })}
-                  {latestVersion.labels.length > 3 && (
-                    <Tag>+{latestVersion.labels.length - 3}</Tag>
-                  )}
-                </>
-              )}
-              {(!latestVersion.labels || latestVersion.labels.length === 0) && latestVersion.categoryTags && latestVersion.categoryTags.length > 0 && (
-                <>
-                  {latestVersion.categoryTags.slice(0, 3).map((tag: string, index: number) => {
-                    console.log('Category Tag:', tag);
-                    return <Tag key={index}>{getTagName(tag)}</Tag>;
-                  })}
-                  {latestVersion.categoryTags.length > 3 && (
-                    <Tag>+{latestVersion.categoryTags.length - 3}</Tag>
-                  )}
-                </>
-              )}
-            </QuestionMeta>
+            {/* QuestionMeta removed from here as tags were moved to the header */}
             
             <QuestionFooter>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

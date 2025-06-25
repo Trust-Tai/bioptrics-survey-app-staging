@@ -507,8 +507,8 @@ const PaginationButton = styled.button<{ active?: boolean }>`
   padding: 8px 12px;
   margin: 0 4px;
   border-radius: 4px;
-  border: 1px solid ${props => props.active ? '#7c3aed' : '#e0e0e0'};
-  background-color: ${props => props.active ? '#7c3aed' : 'white'};
+  border: 1px solid ${props => props.active ? '#552a47' : '#e0e0e0'};
+  background-color: ${props => props.active ? '#552a47' : 'white'};
   color: ${props => props.active ? 'white' : '#333'};
   cursor: pointer;
   font-size: 14px;
