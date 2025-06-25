@@ -32,7 +32,7 @@ Meteor.methods({
    * @param organizationId Optional organization ID to filter by
    * @returns Object containing survey statistics
    */
-  'surveys.getStats'(organizationId) {
+  async 'surveys.getStats'(organizationId) {
     console.log('surveys.getStats method called with organizationId:', organizationId);
     
     if (!this.userId) {
@@ -40,46 +40,71 @@ Meteor.methods({
     }
     
     try {
-      // Get total surveys count
-      const totalSurveys = Surveys.find({}).count();
+      // First, let's check what surveys exist in the database
+      const allSurveysInDb = await Surveys.find({}).fetchAsync();
+      console.log(`DEBUG: Total surveys in database: ${allSurveysInDb.length}`);
+      if (allSurveysInDb.length > 0) {
+        // Log the first survey to see its structure
+        console.log('DEBUG: First survey structure:', JSON.stringify(allSurveysInDb[0], null, 2));
+      }
+      
+      // Build a more inclusive query - start with empty query to see all surveys
+      const query: any = {};
+      
+      // Only apply organization filter if explicitly provided
+      if (organizationId) {
+        query.organizationId = organizationId;
+      }
+      
+      // Don't filter by user for now to see all surveys
+      // We'll add user filtering back once we confirm surveys are visible
+      
+      console.log('Survey query:', JSON.stringify(query));
+      
+      // Get all matching surveys
+      const allSurveys = await Surveys.find(query).fetchAsync();
+      const totalSurveys = allSurveys.length;
       console.log(`Total surveys: ${totalSurveys}`);
       
-      // Get active surveys count (published and not expired)
+      // Count active surveys (published and not expired)
       const now = new Date();
-      const activeSurveys = Surveys.find({
-        published: true,
-        $or: [
-          { expiresAt: { $exists: false } },
-          { expiresAt: { $gt: now } }
-        ]
-      }).count();
+      let activeSurveys = 0;
+      
+      // Use a simple loop to count active surveys
+      for (const survey of allSurveys) {
+        if (survey.published) {
+          // Check if survey is not expired - use any to bypass type checking
+          const surveyAny = survey as any;
+          const expiresAt = surveyAny.expiresAt ? new Date(surveyAny.expiresAt) : null;
+          if (!expiresAt || expiresAt > now) {
+            activeSurveys++;
+          }
+        }
+      }
       console.log(`Active surveys: ${activeSurveys}`);
       
-      // Get the date for 7 days ago - matching Analytics Dashboard calculation
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // Get all survey IDs - filter out any undefined values
+      const surveyIds = allSurveys.map(s => s._id).filter(id => id !== undefined) as string[];
       
-      // Count completed responses in the last 7 days - matching Analytics Dashboard
-      const completedResponses = SurveyResponses.find({
-        createdAt: { $gte: sevenDaysAgo },
-        completed: true
-      }).count();
+      // Get responses for these surveys
+      let totalResponses = 0;
+      let completedResponses = 0;
       
-      // Count incomplete responses in the last 7 days - matching Analytics Dashboard
-      const incompleteResponses = IncompleteSurveyResponses.find({
-        startedAt: { $gte: sevenDaysAgo },
-        isCompleted: false,
-        isAbandoned: { $ne: true }
-      }).count();
+      if (surveyIds.length > 0) {
+        const responses = await SurveyResponses.find({
+          surveyId: { $in: surveyIds }
+        }).fetchAsync();
+        
+        totalResponses = responses.length;
+        completedResponses = responses.filter(r => r.completed).length;
+      }
       
-      // Calculate total responses - matching Analytics Dashboard
-      const totalResponses = completedResponses + incompleteResponses;
-      console.log(`Total responses (last 7 days): ${totalResponses} (${completedResponses} completed, ${incompleteResponses} incomplete)`);
+      console.log(`Total responses: ${totalResponses} (${completedResponses} completed)`);
       
-      // Calculate response rate - matching Analytics Dashboard
+      // Calculate completion rate
       let avgCompletion = 0;
-      if (completedResponses > 0 || incompleteResponses > 0) {
-        avgCompletion = Math.round((completedResponses / (completedResponses + incompleteResponses)) * 100);
+      if (totalResponses > 0) {
+        avgCompletion = Math.round((completedResponses / totalResponses) * 100);
       }
       console.log(`Average completion rate: ${avgCompletion}%`);
       
@@ -92,16 +117,13 @@ Meteor.methods({
     } catch (error) {
       console.error('Error calculating survey statistics:', error);
       
-      // Use data from Analytics Dashboard as fallback
-      const fallbackStats: SurveyStats = {
-        totalSurveys: 34,
-        activeSurveys: 24,
-        totalResponses: 114, // From Analytics Dashboard screenshot
-        avgCompletion: 96    // From Analytics Dashboard screenshot (Response Rate)
+      // Return zeros if there's an error
+      return {
+        totalSurveys: 0,
+        activeSurveys: 0,
+        totalResponses: 0,
+        avgCompletion: 0
       };
-      
-      console.log('Using fallback stats:', fallbackStats);
-      return fallbackStats;
     }
   }
 });

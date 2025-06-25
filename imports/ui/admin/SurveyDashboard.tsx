@@ -499,20 +499,48 @@ const SurveyDashboard: React.FC = () => {
   // Fetch surveys
   const { surveys, loading } = useTracker(() => {
     const handle = Meteor.subscribe('surveys.all');
+    
+    // Get current user's organization ID
+    const user = Meteor.user();
+    const organizationId = user?.profile?.organization;
+    
+    // Filter query to only include relevant surveys
+    // This helps exclude test data and surveys from other organizations
+    const query = {
+      $or: [
+        { organizationId: organizationId },
+        { 'createdBy.userId': Meteor.userId() }
+      ],
+      // Exclude surveys marked as test data
+      isTestData: { $ne: true }
+    };
+    
     return {
       loading: !handle.ready(),
-      surveys: Surveys.find({}).fetch()
+      surveys: Surveys.find(query).fetch()
     };
   }, []);
   
   // Fetch survey responses
   const { responses, responsesLoading } = useTracker(() => {
     const handle = Meteor.subscribe('survey_responses.all');
+    
     return {
       responsesLoading: !handle.ready(),
       responses: SurveyResponses.find({}).fetch()
     };
   }, []);
+  
+  // Filter responses to only include those for the current surveys
+  const validResponses = React.useMemo(() => {
+    if (!responses || !surveys) return [];
+    
+    // Get the IDs of all valid surveys
+    const validSurveyIds = surveys.map((s: any) => s._id);
+    
+    // Filter responses to only include those for valid surveys
+    return responses.filter((r: any) => validSurveyIds.includes(r.surveyId));
+  }, [responses, surveys]);
   
   // Calculate KPI metrics
   const totalSurveys = surveys ? surveys.length : 0;
@@ -527,12 +555,12 @@ const SurveyDashboard: React.FC = () => {
     return surveys.filter((s: any) => s.isTemplate).length;
   }, [surveys]);
   
-  const totalResponses = responses ? responses.length : 0;
+  const totalResponses = validResponses ? validResponses.length : 0;
   
   const completedResponses = React.useMemo(() => {
-    if (!responses) return 0;
-    return responses.filter((r: any) => r.completed).length;
-  }, [responses]);
+    if (!validResponses) return 0;
+    return validResponses.filter((r: any) => r.completed).length;
+  }, [validResponses]);
   
   const completionRate = totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0;
   
@@ -897,31 +925,38 @@ const SurveyDashboard: React.FC = () => {
                   {/* Total Surveys Card */}
                   <AnalyticsCard bgColor="#f9f4f7">
                     <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Surveys</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: '#552a47' }}>{surveys.length}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#552a47' }}>{totalSurveys}</div>
                     <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                      {surveys.filter(s => s.published).length} published
+                      Created and managed in system
+                    </div>
+                  </AnalyticsCard>
+                  
+                  {/* Active Surveys Card */}
+                  <AnalyticsCard bgColor="#f0f9f0">
+                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Active Surveys</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#2e7d32' }}>{publishedSurveys}</div>
+                    <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
+                      {totalSurveys > 0 ? Math.round((publishedSurveys / totalSurveys) * 100) + '% of total' : '0% of total'}
                     </div>
                   </AnalyticsCard>
                   
                   {/* Total Responses Card */}
                   <AnalyticsCard bgColor="#f0f7fa">
                     <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Responses</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: '#3776a8' }}>{responses.length}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: '#3776a8' }}>{totalResponses}</div>
                     <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                      {surveys.length > 0 ? (responses.length / surveys.length).toFixed(1) : 0} avg per survey
+                      {publishedSurveys > 0 ? (totalResponses / publishedSurveys).toFixed(1) + ' avg per survey' : '0 avg per survey'}
                     </div>
                   </AnalyticsCard>
                   
-                  {/* Response Rate Card */}
+                  {/* Completion Rate Card */}
                   <AnalyticsCard bgColor="#f7f9f0">
-                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Response Rate</div>
+                    <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Avg Completion</div>
                     <div style={{ fontSize: 28, fontWeight: 700, color: '#6a994e' }}>
-                      {surveys.some(s => s.published) ? 
-                        Math.round((responses.length / surveys.filter(s => s.published).length) * 100) + '%' : 
-                        'N/A'}
+                      {completionRate}%
                     </div>
                     <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
-                      Based on published surveys
+                      {completedResponses} of {totalResponses} responses completed
                     </div>
                   </AnalyticsCard>
                   
@@ -929,7 +964,7 @@ const SurveyDashboard: React.FC = () => {
                   <AnalyticsCard bgColor="#fff5f0">
                     <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Recent Activity</div>
                     <div style={{ fontSize: 28, fontWeight: 700, color: '#e67e22' }}>
-                      {responses.filter(r => {
+                      {validResponses.filter(r => {
                         const today = new Date();
                         const responseDate = new Date(r.createdAt || r.startTime);
                         const diffTime = Math.abs(today.getTime() - responseDate.getTime());
