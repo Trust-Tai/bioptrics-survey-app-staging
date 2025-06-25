@@ -237,7 +237,7 @@ const StatCard = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  border: 1px solid var(--secondary-color, #f0f0f0);
+  border: 1px solid #f0f0f0;
   color: var(--text-color, #333);
 `;
 

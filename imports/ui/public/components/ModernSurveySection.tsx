@@ -134,7 +134,7 @@ const ButtonContainer = styled.div`
 const BackButton = styled.button`
   background: transparent;
   color: var(--text-color, #4b5563);
-  border: 2px solid var(--secondary-color, #e5e7eb);
+  border: 2px solid var(--primary-color, #e5e7eb);
   border-radius: var(--button-radius, 50px);
   padding: 0.75rem 1.5rem;
   font-size: 16px;
@@ -150,7 +150,9 @@ const BackButton = styled.button`
   font-family: var(--body-font, 'Inter, sans-serif');
   
   &:hover {
-    background: var(--secondary-color, #f9fafb);
+    background: var(--primary-color, #f9fafb);
+    color: var(--button-text, #ffffff);
+    border-color: var(--primary-color, #9ca3af);
   }
 `;
 
