@@ -118,9 +118,112 @@ if (Meteor.isServer) {
       } catch (error: unknown) {
         console.error('Error calculating enhanced response rate:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new Meteor.Error('db-error', `Error calculating enhanced response rate: ${errorMessage}`);
+        throw new Meteor.Error('calculation-failed', `Failed to calculate response rate: ${errorMessage}`);
       }
     },
+    
+    // Get completion time data by date for the chart
+    
+    async 'getCompletionTimeByDate'() {
+      console.log('getCompletionTimeByDate method called');
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get completion time data');
+      }
+      
+      try {
+        // Get the date 30 days ago
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        thirtyDaysAgo.setHours(0, 0, 0, 0);
+        
+        // Get completed surveys in the last 30 days with both startTime and endTime timestamps
+        const completedSurveys = await SurveyResponses.find({
+          completed: true,
+          endTime: { $gte: thirtyDaysAgo },
+          startTime: { $exists: true }
+        }).fetchAsync();
+        
+        console.log(`Found ${completedSurveys.length} completed surveys with timing data in the last 30 days`);
+        
+        // Group by date and calculate average completion time in minutes
+        const completionTimeByDate: Record<string, { totalMinutes: number; count: number }> = {};
+        
+        // Process completed surveys
+        completedSurveys.forEach(survey => {
+          if (survey.startTime && survey.endTime) {
+            // Get the date string from the start time
+            const dateStr = new Date(survey.startTime).toISOString().split('T')[0];
+            
+            // Calculate completion time in minutes
+            const startTime = new Date(survey.startTime).getTime();
+            const endTime = new Date(survey.endTime).getTime();
+            const completionTimeMinutes = (endTime - startTime) / (1000 * 60);
+            
+            // Filter out unreasonable completion times (negative or > 2 hours)
+            if (completionTimeMinutes > 0 && completionTimeMinutes < 120) {
+              if (!completionTimeByDate[dateStr]) {
+                completionTimeByDate[dateStr] = { totalMinutes: 0, count: 0 };
+              }
+              completionTimeByDate[dateStr].totalMinutes += completionTimeMinutes;
+              completionTimeByDate[dateStr].count += 1;
+            }
+          }
+        });
+        
+        // Also check incomplete responses that have been marked as completed
+        const completedIncompleteResponses = await IncompleteSurveyResponses.find({
+          isCompleted: true,
+          lastUpdatedAt: { $gte: thirtyDaysAgo },
+          startedAt: { $exists: true }
+        }).fetchAsync();
+        
+        console.log(`Found ${completedIncompleteResponses.length} completed incomplete responses with timing data`);
+        
+        // Process completed incomplete responses
+        completedIncompleteResponses.forEach(survey => {
+          if (survey.startedAt && survey.lastUpdatedAt) {
+            // Get the date string from the start time
+            const dateStr = survey.startedAt.toISOString().split('T')[0];
+            
+            // Calculate completion time in minutes
+            const completionTimeMinutes = (survey.lastUpdatedAt.getTime() - survey.startedAt.getTime()) / (1000 * 60);
+            
+            // Filter out unreasonable completion times (negative or > 2 hours)
+            if (completionTimeMinutes > 0 && completionTimeMinutes < 120) {
+              if (!completionTimeByDate[dateStr]) {
+                completionTimeByDate[dateStr] = { totalMinutes: 0, count: 0 };
+              }
+              completionTimeByDate[dateStr].totalMinutes += completionTimeMinutes;
+              completionTimeByDate[dateStr].count += 1;
+            }
+          }
+        });
+        
+        // Convert to array and calculate average completion time
+        const result = Object.keys(completionTimeByDate).map(date => {
+          const { totalMinutes, count } = completionTimeByDate[date];
+          const averageMinutes = count > 0 ? totalMinutes / count : 0;
+          
+          return {
+            date,
+            minutes: parseFloat(averageMinutes.toFixed(1)) // Round to 1 decimal place
+          };
+        });
+        
+        // Sort by date
+        result.sort((a, b) => a.date.localeCompare(b.date));
+        
+        console.log('Completion time data:', result);
+        return result;
+      } catch (error: unknown) {
+        console.error('Error calculating completion time data:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating completion time data: ${errorMessage}`);
+      }
+    },
+    
+    // Note: getCompletedSurveysCount and getAverageEngagementScore methods are already defined in surveyResponses.ts
     
     // Get daily response and completion data for the last 7 days
     async 'getResponseTrendsData'() {
