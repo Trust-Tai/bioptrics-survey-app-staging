@@ -37,7 +37,8 @@ const WelcomeContainer = styled.div`
   width: 100%;
   margin: 0 auto;
   padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--body-font, 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif');
+  color: var(--text-color, #333333);
   animation: fadeIn 0.6s ease-out;
   
   @keyframes fadeIn {
@@ -53,7 +54,6 @@ const WelcomeHeader = styled.div`
   justify-content: space-between;
   margin: 0;
   padding: 2rem;
-  background-color: #f9f7ff;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -69,14 +69,16 @@ const WelcomeHeaderContent = styled.div`
     font-size: 3.5rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    color: #2c3e50;
+    color: var(--primary-color, #2c3e50);
+    font-family: var(--heading-font, 'Inter, sans-serif');
   }
   
   p {
     font-size: 1.25rem;
-    color: #4b5563;
+    color: var(--text-color, #4b5563);
     line-height: 1.6;
     max-width: 600px;
+    font-family: var(--body-font, 'Inter, sans-serif');
   }
   
   @media (max-width: 768px) {
@@ -115,8 +117,8 @@ const ContentContainer = styled.div`
 `;
 
 const ExpectationSection = styled.div`
-  background-color: #f8f9ff;
-  border-radius: 16px;
+  background-color: var(--secondary-color, #f8f9ff);
+  border-radius: var(--card-radius, 16px);
   padding: 2rem;
   margin: 2rem 0;
 `;
@@ -125,7 +127,8 @@ const ExpectationTitle = styled.h2`
   font-size: 1.75rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: #1f2937;
+  color: var(--primary-color, #1f2937);
+  font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
 const ExpectationList = styled.div`
@@ -149,7 +152,7 @@ const ExpectationNumber = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #2c3e50;
+  background-color: var(--primary-color, #2c3e50);
   color: white;
   display: flex;
   align-items: center;
@@ -163,13 +166,15 @@ const ExpectationContent = styled.div`
     font-size: 1.125rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #1f2937;
+    color: var(--primary-color, #1f2937);
+    font-family: var(--heading-font, 'Inter, sans-serif');
   }
   
   p {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--text-color, #6b7280);
     line-height: 1.5;
+    font-family: var(--body-font, 'Inter, sans-serif');
   }
 `;
 
@@ -177,7 +182,7 @@ const SurveyIcon = styled.div`
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #2c3e50;
+  background: var(--primary-color, #2c3e50);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,15 +198,17 @@ const SurveyContent = styled.div`
 const SurveyTitle = styled.h1`
   font-size: 32px;
   font-weight: 700;
-  color: #333;
+  color: var(--primary-color, #333);
   margin: 0 0 8px 0;
+  font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
 const SurveyDescription = styled.p`
   font-size: 16px;
-  color: #555;
+  color: var(--text-color, #555);
   margin: 0;
   line-height: 1.5;
+  font-family: var(--body-font, 'Inter, sans-serif');
 `;
 
 
@@ -222,22 +229,23 @@ const StatsContainer = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: white;
-  border-radius: 12px;
+  background: var(--card-background, white);
+  border-radius: var(--card-radius, 12px);
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--secondary-color, #f0f0f0);
+  color: var(--text-color, #333);
 `;
 
-const StatIcon = styled.div<{ color: string }>`
+const StatIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: ${props => props.color};
+  background-color: var(--primary-color, #2c3e50);
   color: white;
   display: flex;
   align-items: center;
@@ -316,10 +324,10 @@ const ButtonContainer = styled.div`
 `;
 
 const StartButton = styled.button`
-  background-color: #2c3e50;
+  background-color: var(--primary-color, #2c3e50);
   color: white;
   border: none;
-  border-radius: 50px;
+  border-radius: var(--button-radius, 50px);
   padding: 12px 32px;
   font-size: 16px;
   font-weight: 600;
@@ -328,12 +336,13 @@ const StartButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb, 44, 62, 80), 0.3);
+  font-family: var(--body-font, 'Inter, sans-serif');
   
   &:hover {
-    background-color: #1a252f;
+    background-color: var(--button-hover, #1a252f);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.4);
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 44, 62, 80), 0.4);
   }
   
   svg {
@@ -472,7 +481,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
         {/* Stats Cards */}
         <StatsContainer>
           <StatCard>
-            <StatIcon color="#2c3e50">
+            <StatIcon>
               <FaRegClock size={20} />
             </StatIcon>
             <StatValue>{loading ? '...' : estimatedTime}</StatValue>
@@ -480,7 +489,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
           </StatCard>
           
           <StatCard>
-            <StatIcon color="#2c3e50">
+            <StatIcon>
               <FaRegCheckCircle size={20} />
             </StatIcon>
             <StatValue>{loading ? '...' : (totalQuestions || questionCount || survey.questionCount || 0)}</StatValue>

@@ -168,7 +168,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             >
               {value}
               {answer === value.toString() && (
-                <div className="scale-selected-indicator" style={{backgroundColor: color}}>
+                <div className="scale-selected-indicator" style={{backgroundColor: 'var(--secondary-color)'}}>
                   <FiCheck size={12} color="white" />
                 </div>
               )}

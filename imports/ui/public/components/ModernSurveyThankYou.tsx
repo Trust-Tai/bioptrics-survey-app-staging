@@ -5,6 +5,7 @@ import { FiCheckCircle, FiRefreshCw, FiClock, FiBarChart2, FiCheckSquare, FiStar
 import { SurveyResponses } from '../../../features/surveys/api/surveyResponses';
 import '../components/ModernSurvey.css';
 import './ModernSurveyThankYou.css';
+import styled from 'styled-components';
 
 interface Survey {
   _id: string;
@@ -40,15 +41,151 @@ const formatTime = (timeInSeconds: number): string => {
   return `${minutes} min ${seconds} sec`;
 };
 
-// We'll use the CSS classes from ModernSurvey.css and ModernSurveyThankYou.css instead of styled components
+// Styled components for ThankYou page
+const ThankYouContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  font-family: var(--body-font, 'Inter, sans-serif');
+  color: var(--text-color, #333);
+  animation: fadeIn 0.6s ease-out;
+  background-color: var(--background-color, #ffffff);
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const ThankYouHeader = styled.div`
+  text-align: center;
+  margin-bottom: 40px;
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const ThankYouIcon = styled.div`
+  margin: 0 auto 20px;
+  width: 80px;
+  height: 80px;
+  background-color: rgba(var(--primary-color-rgb, 44, 62, 80), 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: scaleIn 0.5s ease-out;
+  
+  svg {
+    color: var(--primary-color, #552a47);
+  }
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const ThankYouTitle = styled.h1`
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--primary-color, #1f2937);
+  font-family: var(--heading-font, 'Inter, sans-serif');
+`;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
+const ThankYouMessage = styled.p`
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-color, #4b5563);
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: var(--body-font, 'Inter, sans-serif');
+`;
+
+const StatsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 60px;
+`;
+
+const StatCard = styled.div`
+  background-color: var(--card-background, white);
+  border-radius: var(--card-radius, 12px);
+  padding: 24px;
+  box-shadow: var(--card-shadow, 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1));
+  display: flex;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const StatIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  color: white;
+  flex-shrink: 0;
+  background-color: var(--primary-color, #4b5563);
+  
+  svg {
+    color: white;
+  }
+`;
+
+const StatContent = styled.div`
+  flex: 1;
+`;
+
+const StatValue = styled.h3`
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--primary-color, #1f2937);
+  font-family: var(--heading-font, 'Inter, sans-serif');
+`;
+
+const StatLabel = styled.p`
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text-color, #4b5563);
+  font-family: var(--body-font, 'Inter, sans-serif');
+`;
+
+const StatSublabel = styled.span`
+  font-size: 14px;
+  color: var(--secondary-text-color, #6b7280);
+  font-family: var(--body-font, 'Inter, sans-serif');
+`;
+
+const ThankYouActions = styled.div`
+  text-align: center;
+`;
+
+const RestartButton = styled.button`
+  background-color: var(--button-background, var(--primary-color, #4b5563));
+  color: var(--button-text, white);
+  border: 1px solid var(--primary-color, #4b5563);
+  border-radius: var(--button-radius, 30px);
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: var(--card-shadow, 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1));
+  font-family: var(--body-font, 'Inter, sans-serif');
+  
+  &:hover {
+    background-color: var(--button-hover, #3a4451);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const ButtonIcon = styled.span`
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+`;
 
 // Helper function to adjust color brightness
 const adjustColor = (color: string, amount: number): string => {
@@ -233,83 +370,80 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     }
   };
 
-  const effectiveColor = color || survey.color || '#1f2937';
-  const primaryColorRgb = effectiveColor.startsWith('#') ? hexToRgb(effectiveColor) : '124, 58, 237';
+  // We don't need to manually set the color as it's now handled by CSS variables
+  // from SurveyThemeProvider
   
   return (
-    <div className="thank-you-container">
-      <div className="thank-you-header">
-        <div className="thank-you-icon">
-          <FiCheckCircle size={48} color={effectiveColor} />
-        </div>
-        <h1 className="thank-you-title">Thank You!</h1>
-        <p className="thank-you-message">
+    <ThankYouContainer>
+      <ThankYouHeader>
+        <ThankYouIcon>
+          <FiCheckCircle size={48} color="var(--primary-color, #552a47)" />
+        </ThankYouIcon>
+        <ThankYouTitle>Thank You!</ThankYouTitle>
+        <ThankYouMessage>
           Your responses have been successfully submitted. We appreciate your time and feedback.
-        </p>
-      </div>
+        </ThankYouMessage>
+      </ThankYouHeader>
       
-      <div className="stats-container">
-        <div className="stat-card">
-          <div className="stat-icon">
+      <StatsContainer>
+        <StatCard>
+          <StatIcon>
             <FiCheckSquare size={20} />
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-value">{displayTotalResponses}</h3>
-            <p className="stat-label">Total Responses</p>
-            <span className="stat-sublabel">Questions answered</span>
-          </div>
-        </div>
+          </StatIcon>
+          <StatContent>
+            <StatValue>{displayTotalResponses}</StatValue>
+            <StatLabel>Total Responses</StatLabel>
+            <StatSublabel>Questions answered</StatSublabel>
+          </StatContent>
+        </StatCard>
         
-        <div className="stat-card">
-          <div className="stat-icon">
+        <StatCard>
+          <StatIcon>
             <FiStar size={20} />
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-value">{averageRating}</h3>
-            <p className="stat-label">Ratings Given</p>
-            <span className="stat-sublabel">Star ratings provided</span>
-          </div>
-        </div>
+          </StatIcon>
+          <StatContent>
+            <StatValue>{averageRating}</StatValue>
+            <StatLabel>Ratings Given</StatLabel>
+            <StatSublabel>Star ratings provided</StatSublabel>
+          </StatContent>
+        </StatCard>
         
-        <div className="stat-card">
-          <div className="stat-icon">
+        <StatCard>
+          <StatIcon>
             <FiCheckCircle size={20} />
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-value">100%</h3>
-            <p className="stat-label">Completion</p>
-            <span className="stat-sublabel">Survey completed</span>
-          </div>
-        </div>
+          </StatIcon>
+          <StatContent>
+            <StatValue>100%</StatValue>
+            <StatLabel>Completion</StatLabel>
+            <StatSublabel>Survey completed</StatSublabel>
+          </StatContent>
+        </StatCard>
         
-        <div className="stat-card">
-          <div className="stat-icon">
+        <StatCard>
+          <StatIcon>
             <FiClock size={20} />
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-value">{formatTime(surveyTime)}</h3>
-            <p className="stat-label">Time Taken</p>
-            <span className="stat-sublabel">Total duration</span>
-          </div>
-        </div>
-      </div>
+          </StatIcon>
+          <StatContent>
+            <StatValue>{formatTime(surveyTime)}</StatValue>
+            <StatLabel>Time Taken</StatLabel>
+            <StatSublabel>Total duration</StatSublabel>
+          </StatContent>
+        </StatCard>
+      </StatsContainer>
       
       {/* Removed Journey, Impact, and Next Steps sections as requested */}
       
-      <div className="thank-you-actions">
+      <ThankYouActions>
         {(survey.defaultSettings?.allowRetake !== false) && (
-          <button 
-            className="restart-button"
-            onClick={handleRestart}
-          >
-            <span className="button-icon">
+          <RestartButton onClick={handleRestart}>
+            <ButtonIcon>
               <FiRefreshCw size={18} />
-            </span>
+            </ButtonIcon>
             Take Survey Again
-          </button>
+          </RestartButton>
         )}
-      </div>
-    </div>
+      </ThankYouActions>
+    </ThankYouContainer>
   );
 };
 

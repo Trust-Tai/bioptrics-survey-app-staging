@@ -35,10 +35,11 @@ const SectionContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #f9f9ff;
+  background-color: var(--background-color, #f9f9ff);
   padding: 0;
   margin: 0;
   animation: fadeIn 0.5s ease-out;
+  font-family: var(--body-font, 'Inter, sans-serif');
   
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -47,7 +48,7 @@ const SectionContainer = styled.div`
 `;
 
 const SectionCard = styled.div<{ color?: string }>`
-  background: white;
+  background: var(--card-background, white);
   border-radius: 0;
   width: 100%;
   max-width: 100%;
@@ -75,8 +76,8 @@ const SectionNumberBadge = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: #2c3e50;
-  color: white;
+  background-color: var(--primary-color, #2c3e50);
+  color: var(--button-text, white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,35 +104,21 @@ const HeaderContent = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 32px;
+  font-size: 2.5rem;
   font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 1rem 0;
+  margin: 0 0 1rem 1.5rem;
+  color: var(--primary-color, #1f2937);
   line-height: 1.2;
-  padding-left: 4rem;
-  
-  @media (max-width: 768px) {
-    font-size: 28px;
-    padding-left: 0;
-    margin-top: 3rem;
-  }
+  font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
-const SectionDescription = styled.div`
-  font-size: 18px;
-  color: #4b5563;
-  margin-bottom: 0;
+const SectionDescription = styled.p`
+  font-size: 1.125rem;
   line-height: 1.6;
-  padding-left: 4rem;
-  
-  p {
-    margin: 0;
-  }
-  
-  @media (max-width: 768px) {
-    font-size: 16px;
-    padding-left: 0;
-  }
+  color: var(--text-color, #4b5563);
+  margin: 0 0 1.5rem;
+  max-width: 600px;
+  font-family: var(--body-font, 'Inter, sans-serif');
 `;
 
 const ButtonContainer = styled.div`
@@ -146,9 +133,9 @@ const ButtonContainer = styled.div`
 
 const BackButton = styled.button`
   background: transparent;
-  color: #4b5563;
-  border: 2px solid #e5e7eb;
-  border-radius: 50px;
+  color: var(--text-color, #4b5563);
+  border: 2px solid var(--secondary-color, #e5e7eb);
+  border-radius: var(--button-radius, 50px);
   padding: 0.75rem 1.5rem;
   font-size: 16px;
   font-weight: 600;
@@ -160,17 +147,43 @@ const BackButton = styled.button`
   white-space: nowrap;
   min-width: 160px;
   justify-content: center;
+  font-family: var(--body-font, 'Inter, sans-serif');
   
   &:hover {
-    background: #f9fafb;
+    background: var(--secondary-color, #f9fafb);
+  }
+`;
+
+const ContinueButton = styled.button`
+  background-color: var(--button-background, var(--primary-color, #2c3e50));
+  color: var(--button-text, white);
+  border: none;
+  border-radius: var(--button-radius, 30px);
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  margin-right: 12px;
+  font-family: var(--body-font, 'Inter, sans-serif');
+  
+  &:hover {
+    background-color: var(--button-hover, #1a2533);
+    transform: translateY(-2px);
+  }
+  
+  svg {
+    margin-left: 8px;
   }
 `;
 
 const StartSectionButton = styled.button`
-  background: #2c3e50;
-  color: white;
+  background: var(--button-background, var(--primary-color, #2c3e50));
+  color: var(--button-text, white);
   border: none;
-  border-radius: 50px;
+  border-radius: var(--button-radius, 50px);
   padding: 0.75rem 1.5rem;
   font-size: 16px;
   font-weight: 600;
@@ -182,11 +195,12 @@ const StartSectionButton = styled.button`
   white-space: nowrap;
   min-width: 160px;
   justify-content: center;
+  font-family: var(--body-font, 'Inter, sans-serif');
   
   &:hover {
-    background: #2c3e50;
+    background: var(--button-hover, #1e2a36);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
   
   &:active {
@@ -194,13 +208,9 @@ const StartSectionButton = styled.button`
   }
 `;
 
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
-
-// We'll use the CSS classes from ModernSurvey.css instead of this styled component
-
 const ContentContainer = styled.div`
   // width: 100%;
-  padding: 2rem 3rem 3rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   background-color: #f9f9ff;
@@ -239,12 +249,12 @@ const StatCard = styled.div`
   display: block;
 `;
 
-const StatIcon = styled.div<{ color?: string }>`
+const StatIcon = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: ${props => props.color ? `${props.color}15` : '#7c3aed15'};
-  color: ${props => props.color || '#2c3e50'};
+  background-color: var(--primary-color, rgba(124, 58, 237, 0.1));
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -254,17 +264,19 @@ const StatIcon = styled.div<{ color?: string }>`
 const StatValue = styled.div`
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--heading-color, #111827);
   margin: 0.5rem 0;
   width: 100%;
   text-align: center;
+  font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-color, #6b7280);
   width: 100%;
   text-align: center;
+  font-family: var(--body-font, 'Inter, sans-serif');
 `;
 
 const ImageContainer = styled.div`
@@ -289,13 +301,14 @@ const ImageNumberBadge = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: #7c3aed;
-  color: white;
+  background-color: var(--primary-color, #7c3aed);
+  color: var(--button-text, white);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 20px;
+  font-family: var(--heading-font, 'Inter, sans-serif');
   position: absolute;
   bottom: 1.5rem;
   right: 1.5rem;

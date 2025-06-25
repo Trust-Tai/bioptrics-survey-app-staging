@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -130,6 +131,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
     !surveyId ? demographicOptions.map(opt => opt.value) : []
   );
   const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const [previewTheme, setPreviewTheme] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [themeSearchQuery, setThemeSearchQuery] = useState<string>('');
+  const [currentThemePage, setCurrentThemePage] = useState<number>(1);
+  const themesPerPage = 10; // Number of themes to display per page
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Layer[]>([]);
@@ -556,6 +562,177 @@ const EnhancedSurveyBuilder: React.FC = () => {
     }
   };
   
+  // Theme filtering and pagination
+  const getFilteredAndPaginatedThemes = () => {
+    // Filter themes based on search query
+    const filteredThemes = surveyThemes.filter((theme: any) => {
+      if (!themeSearchQuery) return true;
+      
+      const searchLower = themeSearchQuery.toLowerCase();
+      return (
+        (theme.name && theme.name.toLowerCase().includes(searchLower)) ||
+        (theme.description && theme.description.toLowerCase().includes(searchLower))
+      );
+    });
+    
+    // Calculate pagination
+    const indexOfLastTheme = currentThemePage * themesPerPage;
+    const indexOfFirstTheme = indexOfLastTheme - themesPerPage;
+    const paginatedThemes = filteredThemes.slice(indexOfFirstTheme, indexOfLastTheme);
+    
+    return {
+      filteredThemes,
+      paginatedThemes,
+      totalPages: Math.ceil(filteredThemes.length / themesPerPage)
+    };
+  };
+  
+  // Handle theme page change
+  const handleThemePageChange = (pageNumber: number) => {
+    setCurrentThemePage(pageNumber);
+  };
+  
+  // Theme preview functions
+  const handlePreview = (theme: any) => {
+    setPreviewTheme(theme);
+    setShowPreview(true);
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setPreviewTheme(null);
+  };
+
+  // Theme preview component
+  const ThemePreview = ({ theme }: { theme: any }) => {
+    if (!theme) return null;
+    
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        zIndex: 1000,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <div style={{
+          backgroundColor: theme.backgroundColor || '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          width: '80%',
+          maxWidth: 800,
+          maxHeight: '80vh',
+          overflow: 'auto',
+          position: 'relative'
+        }}>
+          <button 
+            onClick={closePreview}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              background: 'rgba(255, 255, 255, 0.8)',
+              border: '1px solid #d1d5db',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              fontSize: 20,
+              cursor: 'pointer',
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            ×
+          </button>
+          
+          <div style={{
+            backgroundColor: theme.primaryColor || theme.color || '#552a47',
+            padding: '20px',
+            borderRadius: '8px 8px 0 0',
+            marginBottom: '20px'
+          }}>
+            <h2 style={{
+              color: '#fff',
+              margin: 0,
+              fontFamily: theme.headingFont || 'Inter, sans-serif'
+            }}>
+              {theme.name} Theme Preview
+            </h2>
+          </div>
+          
+          <div style={{
+            fontFamily: theme.bodyFont || 'Inter, sans-serif',
+            color: theme.textColor || '#333'
+          }}>
+            <h3 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Sample Heading</h3>
+            <p>This is how text will appear in your survey. The body font is {theme.bodyFont || 'default'} and the heading font is {theme.headingFont || 'default'}.</p>
+            
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Sample Question</h4>
+              <div style={{
+                backgroundColor: '#f9f9f9',
+                border: `1px solid ${theme.secondaryColor || '#ddd'}`,
+                padding: 15,
+                borderRadius: 8,
+                marginBottom: 15
+              }}>
+                <p>How would you rate your experience?</p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {[1, 2, 3, 4, 5].map(num => (
+                    <button key={num} style={{
+                      backgroundColor: num === 3 ? theme.secondaryColor || '#f0e6ff' : 'transparent',
+                      color: num === 3 ? theme.primaryColor || '#552a47' : theme.textColor || '#333',
+                      border: `1px solid ${theme.secondaryColor || '#ddd'}`,
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      cursor: 'pointer'
+                    }}>
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30 }}>
+              <button style={{
+                backgroundColor: 'transparent',
+                color: theme.secondaryColor || '#552a47',
+                border: `1px solid ${theme.secondaryColor || '#552a47'}`,
+                borderRadius: '8px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                fontFamily: theme.bodyFont || 'Inter, sans-serif'
+              }}>
+                Previous
+              </button>
+              
+              <button style={{
+                backgroundColor: theme.primaryColor || theme.color || '#552a47',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                fontFamily: theme.bodyFont || 'Inter, sans-serif'
+              }}>
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Handle saving the survey
   const handleSaveSurvey = async () => {
     try {
@@ -849,6 +1026,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
         <DashboardBg>
           <Spinner />
         </DashboardBg>
+        {/* Theme preview modal */}
+        {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
       </AdminLayout>
     );
   }
@@ -1379,8 +1558,74 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       Select a theme for your survey. The theme will affect the appearance and feel of your survey.
                     </p>
                     
+                    {/* Theme search input */}
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 8,
+                        background: '#f9f9f9'
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Search themes..."
+                          value={themeSearchQuery}
+                          onChange={(e) => {
+                            setThemeSearchQuery(e.target.value);
+                            setCurrentThemePage(1); // Reset to first page when searching
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            outline: 'none',
+                            width: '100%',
+                            fontSize: 14
+                          }}
+                        />
+                        {themeSearchQuery && (
+                          <button
+                            onClick={() => {
+                              setThemeSearchQuery('');
+                              setCurrentThemePage(1);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#666',
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M18 6L6 18M6 6L18 18" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Filtered themes count */}
+                    {getFilteredAndPaginatedThemes().filteredThemes.length > 0 ? (
+                      <div style={{ marginBottom: 12, fontSize: 14, color: '#666' }}>
+                        Showing {getFilteredAndPaginatedThemes().paginatedThemes.length} of {getFilteredAndPaginatedThemes().filteredThemes.length} themes
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: 12, fontSize: 14, color: '#666' }}>
+                        No themes match your search
+                      </div>
+                    )}
+                    
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                      {surveyThemes.map((theme: any) => {
+                      {getFilteredAndPaginatedThemes().paginatedThemes.map((theme: any) => {
                         const isSelected = selectedTheme === theme._id;
                         return (
                           <div 
@@ -1419,7 +1664,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             <div style={{ 
                               display: 'flex', 
                               alignItems: 'center', 
-                              justifyContent: 'space-between'
+                              justifyContent: 'space-between',
+                              marginTop: 8
                             }}>
                               <div style={{ 
                                 fontSize: 14, 
@@ -1431,30 +1677,123 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               }}>
                                 {theme.description || 'No description'}
                               </div>
-                              <div style={{ 
-                                width: 20, 
-                                height: 20, 
-                                borderRadius: '50%', 
-                                border: `2px solid ${isSelected ? theme.color || '#552a47' : '#ddd'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: '#fff'
-                              }}>
-                                {isSelected && (
-                                  <div style={{ 
-                                    width: 12, 
-                                    height: 12, 
-                                    borderRadius: '50%', 
-                                    background: theme.color || '#552a47' 
-                                  }} />
-                                )}
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePreview(theme);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 4,
+                                    padding: '4px 8px',
+                                    fontSize: 12,
+                                    color: theme.color || '#552a47',
+                                    background: 'transparent',
+                                    border: `1px solid ${theme.color || '#552a47'}`,
+                                    borderRadius: 4,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <FaEye size={12} /> Preview
+                                </button>
                               </div>
                             </div>
                           </div>
                         );
                       })}
                     </div>
+
+                    {/* Pagination controls */}
+                    {getFilteredAndPaginatedThemes().totalPages > 1 && (
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        marginTop: 24,
+                        gap: 8
+                      }}>
+                        {/* Previous page button */}
+                        <button
+                          onClick={() => handleThemePageChange(currentThemePage - 1)}
+                          disabled={currentThemePage === 1}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            border: '1px solid #e5d6c7',
+                            backgroundColor: currentThemePage === 1 ? '#f5f5f4' : '#fff',
+                            color: currentThemePage === 1 ? '#a8a29e' : '#28211e',
+                            cursor: currentThemePage === 1 ? 'not-allowed' : 'pointer',
+                            fontSize: 14
+                          }}
+                        >
+                          Previous
+                        </button>
+                        
+                        {/* Page numbers with ellipsis */}
+                        {Array.from({ length: getFilteredAndPaginatedThemes().totalPages }, (_, i) => i + 1)
+                          .filter(pageNum => {
+                            // Show current page, first and last pages, and pages around current page
+                            return pageNum === 1 || 
+                                  pageNum === getFilteredAndPaginatedThemes().totalPages || 
+                                  (pageNum >= currentThemePage - 1 && pageNum <= currentThemePage + 1);
+                          })
+                          .map((pageNum, index, array) => {
+                            // Add ellipsis if there are gaps
+                            const showEllipsisBefore = index > 0 && pageNum > array[index - 1] + 1;
+                            const showEllipsisAfter = index < array.length - 1 && pageNum < array[index + 1] - 1;
+                            
+                            return (
+                              <React.Fragment key={pageNum}>
+                                {showEllipsisBefore && (
+                                  <span style={{ margin: '0 4px', color: '#a8a29e' }}>...</span>
+                                )}
+                                
+                                <button
+                                  onClick={() => handleThemePageChange(pageNum)}
+                                  style={{
+                                    padding: '8px 16px',
+                                    borderRadius: 8,
+                                    border: '1px solid #e5d6c7',
+                                    backgroundColor: currentThemePage === pageNum ? '#552a47' : '#fff',
+                                    color: currentThemePage === pageNum ? '#fff' : '#28211e',
+                                    cursor: 'pointer',
+                                    fontSize: 14,
+                                    fontWeight: currentThemePage === pageNum ? 600 : 400
+                                  }}
+                                >
+                                  {pageNum}
+                                </button>
+                                
+                                {showEllipsisAfter && (
+                                  <span style={{ margin: '0 4px', color: '#a8a29e' }}>...</span>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        
+                        {/* Next page button */}
+                        <button
+                          onClick={() => handleThemePageChange(currentThemePage + 1)}
+                          disabled={currentThemePage === getFilteredAndPaginatedThemes().totalPages}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                            border: '1px solid #e5d6c7',
+                            backgroundColor: currentThemePage === getFilteredAndPaginatedThemes().totalPages ? '#f5f5f4' : '#fff',
+                            color: currentThemePage === getFilteredAndPaginatedThemes().totalPages ? '#a8a29e' : '#28211e',
+                            cursor: currentThemePage === getFilteredAndPaginatedThemes().totalPages ? 'not-allowed' : 'pointer',
+                            fontSize: 14
+                          }}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : activeStep === 'tags' ? (
@@ -1585,6 +1924,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
           section={currentSection}
           onSave={handleSaveSection}
         />
+        
+        {/* Theme preview modal */}
+        {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
       </DashboardBg>
     </AdminLayout>
   );

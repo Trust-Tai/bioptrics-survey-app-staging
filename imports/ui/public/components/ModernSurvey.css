@@ -1,9 +1,13 @@
 /* Modern Survey Styles */
-/* Default color variables */
-:root {
-  --primary-color: #2c3e50;
-  --primary-color-rgb: 44, 62, 80;
-  --primary-dark: #1a252f;
+
+body.survey-public, html.survey-public {
+  padding: 0;
+  margin: 0;
+}
+
+.survey-public * {
+  box-sizing: border-box;
+  font-family: var(--body-font, 'Outfit, sans-serif');
 }
 
 /* Hide duplicate progress indicator */
@@ -13,12 +17,12 @@
 
 .modern-survey-container {
   background-color: #fff;
-  border: 2px solid var(--primary-color);
+  border: none;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin: 20px auto;
-  max-width: 1100px;
+  box-shadow: none;
+  margin: 40px auto;
+  max-width: 800px;
   width: calc(100% - 40px);
   box-sizing: border-box;
 }

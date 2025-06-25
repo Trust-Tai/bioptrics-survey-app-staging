@@ -1,11 +1,5 @@
 /* Modern Survey Question Styles */
-:root {
-  --primary-color: #2c3e50;
-  --primary-light: #34495e;
-  --primary-dark: #1a252f;
-  --error-color: #e53e3e;
-  --error-bg: #fff5f5;
-}
+/* We'll use the variables from SurveyThemeProvider instead of defining them here */
 
 /* Survey Header Styles */
 .survey-header {
@@ -13,7 +7,7 @@
   top: 0;
   left: 0;
   width: 100%;
-  background-color: #ffffff;
+  background-color: var(--background-color, #ffffff);
   padding: 16px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   z-index: 100;
@@ -40,23 +34,26 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  font-family: var(--body-font, 'Inter, sans-serif');
 }
 
 .question-count {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--heading-color, #333);
+  font-family: var(--body-font, 'Inter, sans-serif');
 }
 
 .remaining-count {
   font-size: 14px;
-  color: #666;
+  color: var(--text-color, #666);
+  font-family: var(--body-font, 'Inter, sans-serif');
 }
 
 .progress-bar-wrapper {
   width: 100%;
   height: 6px;
-  background-color: #e5e7eb;
+  background-color: var(--secondary-color, #e5e7eb);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -65,7 +62,7 @@
 
 .progress-bar-fill {
   height: 100%;
-  background-color: var(--primary-color);
+  background-color: var(--button-background, var(--primary-color, #2c3e50)) !important;
   border-radius: 4px;
   transition: width 0.5s ease;
   background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
@@ -80,7 +77,7 @@
 
 .completion-percentage {
   font-size: 12px;
-  color: #666;
+  color: var(--text-color, #666);
   text-align: right;
   margin-top: 4px;
   font-weight: 500;
@@ -94,7 +91,8 @@
   animation: fadeIn 0.3s ease-out;
   box-shadow: none;
   border: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--body-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif);
+  color: var(--text-color, #333);
 }
 
 @media (max-width: 1200px) {
@@ -140,7 +138,7 @@
   gap: 8px;
   margin-bottom: 16px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-color, #666);
 }
 
 .required-tag {
@@ -164,18 +162,20 @@
 .question-title {
   font-size: 2rem;
   line-height: 1.5;
-  color: #2c3e50;
+  color: var(--heading-color, #2c3e50);
   margin-bottom: 16px;
   font-weight: 600;
   padding: 0 10px;
+  font-family: var(--heading-font, inherit);
 }
 
 .question-text {
   font-size: 1.25rem;
   line-height: 1.5;
-  color: #2c3e50;
+  color: var(--text-color, #2c3e50);
   margin-bottom: 24px;
   font-weight: 600;
+  font-family: var(--body-font, inherit);
 }
 
 /* Answer Options Styles */
@@ -188,7 +188,7 @@
 
 .option-item {
   padding: 16px 20px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--secondary-color, #e5e7eb);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -211,7 +211,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--secondary-color, #d1d5db);
   margin-right: 14px;
   display: flex;
   align-items: center;
@@ -228,7 +228,7 @@
 
 .option-text {
   font-size: 16px;
-  color: #4b5563;
+  color: var(--text-color, #4b5563);
   font-weight: 500;
 }
 
@@ -241,11 +241,11 @@
   text-align: center;
   margin-top: 20px;
   padding: 8px 16px;
-  background-color: rgba(44, 62, 80, 0.1);
+  background-color: var(--secondary-color);
   border-radius: 20px;
   display: inline-block;
   font-weight: 500;
-  color: var(--primary-color);
+  color: var(--text-color);
   border: 1px solid rgba(44, 62, 80, 0.2);
 }
 
@@ -255,7 +255,7 @@
 
 .selected-answer-display strong {
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--text-color);
 }
 
 .scale-selected-indicator {
@@ -279,7 +279,7 @@
 
 .scale-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-color, #6b7280);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -295,36 +295,37 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--primary-color, #e5e7eb);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
-  color: #4b5563;
+  color: var(--text-color, #4b5563);
   position: relative;
 }
 
 .scale-option:hover {
-  border-color: var(--primary-color);
-  background-color: rgba(44, 62, 80, 0.05);
+  border-color: var(--primary-color) !important;
+  background-color: rgba(var(--primary-color-rgb, 44, 62, 80), 0.05) !important;
 }
 
 .scale-option.selected {
-  border-color: var(--primary-color);
-  background-color: var(--primary-color);
-  color: white;
+  border-color: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+  color: white !important;
 }
 
 /* Text Input Styles */
 .text-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--secondary-color, #d1d5db);
   border-radius: 8px;
   font-size: 16px;
   margin-bottom: 32px;
+  color: var(--text-color, #333333);
   transition: border-color 0.2s ease;
 }
 
@@ -347,7 +348,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  border-radius: 50px;
+  border-radius: var(--button-radius, 30px);
   font-weight: 600;
   font-size: 16px;
   cursor: pointer;
@@ -358,26 +359,28 @@
 
 .button-back {
   background-color: transparent;
-  border: 2px solid #d1d5db;
-  color: #4b5563;
+  color: var(--text-color, #4b5563);
+  border: 1px solid var(--secondary-color, #d1d5db) !important;
+  border-radius: var(--button-radius, 30px);
 }
 
 .button-back:hover {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
+  background-color: var(--secondary-color, #f9fafb);
+  color: var(--text-color, #4b5563);
+  border-color: var(--primary-color, #9ca3af) !important;
 }
 
 .button-continue {
-  background-color: var(--primary-color);
+  background-color: var(--button-background, var(--primary-color, #2c3e50)) !important;
+  color: var(--button-text, white) !important;
   border: none;
-  color: white;
-  box-shadow: 0 2px 6px rgba(44, 62, 80, 0.2);
+  margin-left: 10px;
+  border-radius: var(--button-radius, 30px);
 }
 
 .button-continue:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(44, 62, 80, 0.25);
+  background-color: var(--button-hover, #1a252f) !important;
+  opacity: 0.9;
 }
 
 .button-continue:active {

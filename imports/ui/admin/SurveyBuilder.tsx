@@ -204,7 +204,9 @@ const SurveyBuilder: React.FC<SurveyBuilderProps> = ({ editId }) => {
   // Use editId prop if present, otherwise use params
   const surveyIdFromUrl = editId || params.id || params.surveyId;
   const surveysSub = useTracker(() => surveyIdFromUrl ? Meteor.subscribe('surveys.all') : null, [surveyIdFromUrl]);
+  const themesSub = useTracker(() => Meteor.subscribe('surveyThemes.all'), []);
   const surveysReady = surveysSub ? surveysSub.ready() : true;
+  const themesReady = themesSub.ready();
   const [loadingSurvey, setLoadingSurvey] = useState(false);
   // --- NEW STATE FOR SAVE/PUBLISH ---
   const [saving, setSaving] = useState(false);
@@ -953,7 +955,7 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                           <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Survey Themes</h3>
                           <p style={{ marginBottom: 16, fontSize: 15 }}>Select a theme for your survey. The theme will affect the appearance and feel of your survey.</p>
                           
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
                             {surveyThemes.map((theme: any) => {
                               const isSelected = defaultSettings.themes?.includes(theme._id);
                               return (
@@ -962,149 +964,139 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                                   onClick={() => setDefaultSettings({...defaultSettings, themes: [theme._id]})}
                                   style={{ 
                                     cursor: 'pointer',
-                                    borderRadius: 8,
-                                    border: `2px solid ${isSelected ? theme.color || '#552a47' : '#e0e0e0'}`,
+                                    borderRadius: 12,
+                                    border: `2px solid ${isSelected ? theme.primaryColor || theme.color || '#552a47' : '#e0e0e0'}`,
                                     background: isSelected ? '#f5edf3' : '#fff',
-                                    padding: '16px',
+                                    padding: '0',
                                     transition: 'all 0.2s',
-                                    boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
+                                    boxShadow: isSelected ? '0 4px 12px rgba(85, 42, 71, 0.15)' : '0 1px 3px rgba(0,0,0,0.05)',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: 12
+                                    overflow: 'hidden'
                                   }}
                                 >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <div style={{ 
-                                      width: 24, 
-                                      height: 24, 
-                                      borderRadius: '50%', 
-                                      background: theme.color || '#552a47',
-                                      border: '1px solid #e0e0e0'
-                                    }} />
-                                    <div style={{ 
-                                      fontWeight: isSelected ? 600 : 500, 
-                                      fontSize: 16,
-                                      color: isSelected ? '#552a47' : '#333'
+                                  {/* Theme Preview */}
+                                  <div style={{
+                                    height: '140px',
+                                    background: theme.backgroundColor || '#f9f6f2',
+                                    backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : 'none',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    borderBottom: '1px solid #eee',
+                                    position: 'relative',
+                                    padding: '12px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between'
+                                  }}>
+                                    {/* Theme header preview */}
+                                    <div style={{
+                                      fontFamily: theme.headingFont || 'Inter, sans-serif',
+                                      fontSize: '16px',
+                                      fontWeight: 600,
+                                      color: theme.textColor || '#333',
+                                      marginBottom: '8px'
                                     }}>
-                                      {theme.name}
+                                      Survey Header
+                                    </div>
+                                    
+                                    {/* Theme button preview */}
+                                    <div style={{
+                                      alignSelf: 'flex-start',
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      backgroundColor: theme.primaryColor || theme.color || '#552a47',
+                                      color: '#fff',
+                                      fontSize: '12px',
+                                      fontFamily: theme.bodyFont || 'Inter, sans-serif'
+                                    }}>
+                                      Next
                                     </div>
                                   </div>
                                   
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'space-between'
-                                  }}>
+                                  {/* Theme Info */}
+                                  <div style={{ padding: '16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '12px' }}>
+                                      <div style={{ 
+                                        display: 'flex',
+                                        gap: '4px'
+                                      }}>
+                                        <div style={{ 
+                                          width: 20, 
+                                          height: 20, 
+                                          borderRadius: '50%', 
+                                          background: theme.primaryColor || theme.color || '#552a47',
+                                          border: '1px solid #e0e0e0'
+                                        }} />
+                                        {theme.secondaryColor && (
+                                          <div style={{ 
+                                            width: 20, 
+                                            height: 20, 
+                                            borderRadius: '50%', 
+                                            background: theme.secondaryColor,
+                                            border: '1px solid #e0e0e0'
+                                          }} />
+                                        )}
+                                        {theme.accentColor && (
+                                          <div style={{ 
+                                            width: 20, 
+                                            height: 20, 
+                                            borderRadius: '50%', 
+                                            background: theme.accentColor,
+                                            border: '1px solid #e0e0e0'
+                                          }} />
+                                        )}
+                                      </div>
+                                      <div style={{ 
+                                        fontWeight: isSelected ? 600 : 500, 
+                                        fontSize: 16,
+                                        color: isSelected ? '#552a47' : '#333'
+                                      }}>
+                                        {theme.name}
+                                      </div>
+                                    </div>
+                                    
                                     <div style={{ 
                                       fontSize: 14, 
                                       color: '#666',
-                                      flex: 1,
+                                      marginBottom: '12px',
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap'
+                                      lineHeight: '1.4'
                                     }}>
                                       {theme.description || 'No description'}
                                     </div>
+                                    
                                     <div style={{ 
-                                      width: 20, 
-                                      height: 20, 
-                                      borderRadius: '50%', 
-                                      border: `2px solid ${isSelected ? theme.color || '#552a47' : '#ddd'}`,
                                       display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      background: '#fff'
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center'
                                     }}>
-                                      {isSelected && (
-                                        <div style={{ 
-                                          width: 12, 
-                                          height: 12, 
-                                          borderRadius: '50%', 
-                                          background: theme.color || '#552a47' 
-                                        }} />
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : i === 4 ? (
-                        <div style={{ marginBottom: 18 }}>
-                          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Survey Themes</h3>
-                          <p style={{ marginBottom: 16, fontSize: 15 }}>Select a theme for your survey. The theme will affect the appearance and feel of your survey.</p>
-                          
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                            {surveyThemes.map((theme: any) => {
-                              const isSelected = defaultSettings.themes?.includes(theme._id);
-                              return (
-                                <div 
-                                  key={theme._id} 
-                                  onClick={() => setDefaultSettings({...defaultSettings, themes: [theme._id]})}
-                                  style={{ 
-                                    cursor: 'pointer',
-                                    borderRadius: 8,
-                                    border: `2px solid ${isSelected ? theme.color || '#552a47' : '#e0e0e0'}`,
-                                    background: isSelected ? '#f5edf3' : '#fff',
-                                    padding: '16px',
-                                    transition: 'all 0.2s',
-                                    boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 12
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <div style={{ 
-                                      width: 24, 
-                                      height: 24, 
-                                      borderRadius: '50%', 
-                                      background: theme.color || '#552a47',
-                                      border: '1px solid #e0e0e0'
-                                    }} />
-                                    <div style={{ 
-                                      fontWeight: isSelected ? 600 : 500, 
-                                      fontSize: 16,
-                                      color: isSelected ? '#552a47' : '#333'
-                                    }}>
-                                      {theme.name}
-                                    </div>
-                                  </div>
-                                  
-                                  <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'space-between'
-                                  }}>
-                                    <div style={{ 
-                                      fontSize: 14, 
-                                      color: '#666',
-                                      flex: 1,
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      {theme.description || 'No description'}
-                                    </div>
-                                    <div style={{ 
-                                      width: 20, 
-                                      height: 20, 
-                                      borderRadius: '50%', 
-                                      border: `2px solid ${isSelected ? theme.color || '#552a47' : '#ddd'}`,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      background: '#fff'
-                                    }}>
-                                      {isSelected && (
-                                        <div style={{ 
-                                          width: 12, 
-                                          height: 12, 
-                                          borderRadius: '50%', 
-                                          background: theme.color || '#552a47' 
-                                        }} />
-                                      )}
+                                      <div style={{ 
+                                        fontSize: 13,
+                                        color: '#888',
+                                        fontStyle: 'italic'
+                                      }}>
+                                        {theme.templateType || 'Custom'}
+                                      </div>
+                                      
+                                      <div style={{ 
+                                        width: 24, 
+                                        height: 24, 
+                                        borderRadius: '50%', 
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: isSelected ? theme.primaryColor || theme.color || '#552a47' : 'transparent',
+                                        border: `1px solid ${isSelected ? 'transparent' : '#e0e0e0'}`
+                                      }}>
+                                        {isSelected && (
+                                          <div style={{ color: '#fff', fontSize: 12 }}>✓</div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>

@@ -336,6 +336,7 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
             key={i}
             selected={selectedOption === i.toString()}
             onClick={() => handleOptionSelect(i.toString())}
+            className={`survey-option ${selectedOption === i.toString() ? 'selected' : ''}`}
           >
             <EmojiContainer>{emojis[i] || '⭐'}</EmojiContainer>
             <ResponseText>
@@ -354,6 +355,7 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
         placeholder="Type your answer here..."
         value={textAnswer}
         onChange={handleTextChange}
+        className="survey-text-input"
       />
     );
   };
@@ -365,12 +367,13 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
     }
     
     return (
-      <ChoiceList>
+      <ChoiceList className="survey-options-list">
         {question.options.map((option, index) => (
           <ChoiceButton
             key={index}
             selected={selectedOption === index.toString()}
             onClick={() => handleOptionSelect(index.toString())}
+            className={`survey-option ${selectedOption === index.toString() ? 'selected' : ''}`}
           >
             {option}
           </ChoiceButton>
@@ -388,13 +391,14 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
     const selectedOptions = selectedOption ? selectedOption.split(',') : [];
     
     return (
-      <ChoiceList>
+      <ChoiceList className="survey-options-list">
         {question.options.map((option, index) => {
           const optionId = index.toString();
           return (
             <ChoiceButton
               key={index}
               selected={selectedOptions.includes(optionId)}
+              className={`survey-option ${selectedOptions.includes(optionId) ? 'selected' : ''}`}
               onClick={() => {
                 let newSelected;
                 if (selectedOptions.includes(optionId)) {
@@ -415,20 +419,20 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
   };
   
   return (
-    <Wrapper>
-      <Card>
-        <ProgressBar>
-          <ProgressFill width={progressPercentage} />
+    <Wrapper className="survey-wrapper">
+      <Card className="survey-card">
+        <ProgressBar className="survey-progress">
+          <ProgressFill width={progressPercentage} className="survey-progress-bar" />
         </ProgressBar>
         <ProgressText>{progress}</ProgressText>
         
-        <QuestionText>{question.text}</QuestionText>
+        <QuestionText className="survey-question">{question.text}</QuestionText>
         
         {renderQuestionContent()}
         
         <ButtonGroup>
           {onBack && (
-            <BackButton onClick={handleBack}>
+            <BackButton onClick={handleBack} className="survey-button survey-button-secondary">
               Back
             </BackButton>
           )}
@@ -436,12 +440,13 @@ const SurveyQuestion: React.FC<SurveyQuestionProps> = ({ question, progress, onN
           <NextButton 
             onClick={handleNext}
             disabled={!isNextEnabled}
+            className="survey-button"
           >
             Next
           </NextButton>
           
           {onSkip && (
-            <SkipButton onClick={handleSkip}>
+            <SkipButton onClick={handleSkip} className="survey-button survey-button-text">
               Skip
             </SkipButton>
           )}

@@ -17,8 +17,10 @@ import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
 import '../imports/features/wps-framework/api/wpsCategories.publications';
 import '../imports/api/surveyThemes';
+// Import survey themes seed data and publications
 import { seedDefaultThemes } from '../imports/features/survey-themes/api/seedThemes';
 import { seedAdditionalThemes } from '../imports/features/survey-themes/api/seedAdditionalThemes';
+import '../imports/features/survey-themes/api/publications';
 import '../imports/features/surveys/api/surveys';
 import '../imports/api/users.methods';
 import '../imports/features/organization/api/organizationSettings';

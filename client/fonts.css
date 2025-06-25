@@ -1,6 +1,7 @@
 /* Import Outfit font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
 
-body, html, * {
-  font-family: 'Outfit', sans-serif !important;
+/* Apply Outfit font only to non-survey pages */
+body:not(.survey-public) *, html:not(.survey-public) * {
+  font-family: 'Outfit', sans-serif;
 }

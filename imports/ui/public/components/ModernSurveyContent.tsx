@@ -30,6 +30,11 @@ interface Section {
   isActive?: boolean;
   priority?: number;
   color?: string;
+  image?: string;
+  questionCount?: number;
+  requiredQuestionCount?: number;
+  estimatedTime?: string;
+  index?: number;
 }
 
 interface Survey {
@@ -62,6 +67,8 @@ const ContentContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  font-family: var(--body-font, 'Inter, sans-serif');
+  color: var(--text-color, #333333);
   
   @media (min-width: 768px) {
     padding: 40px;
@@ -1202,10 +1209,15 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
           }
         } else {
           // For other question types
-          answer = document.querySelector(`input[name="${questionId}"]:checked`)?.value || 
-                  document.querySelector(`input[name="${questionId}"]`)?.value || 
-                  document.querySelector(`textarea[name="${questionId}"]`)?.value ||
-                  document.querySelector(`.option-button.selected`)?.textContent?.trim();
+          const checkedInput = document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement;
+          const regularInput = document.querySelector(`input[name="${questionId}"]`) as HTMLInputElement;
+          const textArea = document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement;
+          const optionButton = document.querySelector(`.option-button.selected`);
+          
+          answer = checkedInput?.value || 
+                  regularInput?.value || 
+                  textArea?.value ||
+                  optionButton?.textContent?.trim();
         }
         
         // If we found an answer in the DOM but it's not in our responses state
@@ -1219,8 +1231,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
           
           formattedResponses.push({
             questionId,
-            answer,
-            sectionId: currentQuestion.sectionId
+            answer: answer || '',
+            sectionId: currentQuestion.sectionId || ''
           });
         }
       }
@@ -1263,7 +1275,7 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
               formattedResponses.push({
                 questionId,
                 answer: savedData.responses[questionId],
-                sectionId: q.sectionId
+                sectionId: q.sectionId || ''
               });
             }
           }

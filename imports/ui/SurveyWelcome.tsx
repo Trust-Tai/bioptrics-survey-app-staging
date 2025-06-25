@@ -256,16 +256,16 @@ const SurveyWelcome: React.FC<SurveyWelcomeProps> = (props) => {
   };
 
   return (
-    <Wrapper>
-      <Card>
+    <Wrapper className="survey-wrapper">
+      <Card className="survey-card">
         {logo && <Logo src={logo} alt="Company Logo" />}
         
         {illustration && (
           <Illustration src={illustration} alt="Survey Illustration" />
         )}
         
-        <Title>{title}</Title>
-        <Description>
+        <Title className="survey-heading">{title}</Title>
+        <Description className="survey-description">
           {previewData?.description ? (
             <span dangerouslySetInnerHTML={{ __html: description }} />
           ) : (
@@ -278,6 +278,7 @@ const SurveyWelcome: React.FC<SurveyWelcomeProps> = (props) => {
           btncolor={color} 
           disabled={loading || disabled}
           type="button"
+          className="survey-button"
         >
           {loading ? 'Loading...' : 'START SURVEY'}
         </StartButton>

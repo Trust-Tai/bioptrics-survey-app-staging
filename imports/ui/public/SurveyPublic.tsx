@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
+import { decryptToken } from '../../utils/tokenUtils';
+import SurveyThemeProvider from './SurveyThemeProvider';
+import './SurveyPublicStyles.css';
 import SurveyWelcome from '../SurveyWelcome';
 import SurveyQuestion from '../SurveyQuestion';
 import SectionTransition from '../SectionTransition';
@@ -721,6 +723,16 @@ const SurveyPublic: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [surveyData, setSurveyData] = useState<Survey | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [themeId, setThemeId] = useState<string | undefined>(undefined);
+  
+  // Apply survey-public class to body for theme styling
+  useEffect(() => {
+    document.body.classList.add('survey-public');
+    
+    return () => {
+      document.body.classList.remove('survey-public');
+    };
+  }, []);
   
   // For preview mode, get survey from localStorage
   useEffect(() => {
@@ -730,6 +742,11 @@ const SurveyPublic: React.FC = () => {
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           setSurveyData(parsedData);
+          
+          // Extract theme ID from preview survey data
+          if (parsedData.defaultSettings?.themes?.length) {
+            setThemeId(parsedData.defaultSettings.themes[0]);
+          }
         } else {
           setLoadError('Preview data not found');
         }
@@ -781,6 +798,11 @@ const SurveyPublic: React.FC = () => {
       if (dbSurvey) {
         // Type assertion to handle the SurveyDoc vs Survey type mismatch
         setSurveyData(dbSurvey as unknown as Survey);
+        
+        // Extract theme ID from survey data
+        if (dbSurvey.defaultSettings?.themes?.length) {
+          setThemeId(dbSurvey.defaultSettings.themes[0]);
+        }
       } else if (!dbLoading) {
         setLoadError('Survey not found');
       }
@@ -829,8 +851,16 @@ const SurveyPublic: React.FC = () => {
     );
   }
   
-  // If we have survey data, render the survey content component
-  return <SurveyContent survey={surveyData} isPreviewMode={isPreviewMode} token={token || ''} />;
+  // If we have survey data, render the survey content component with theme
+  return (
+    <SurveyThemeProvider themeId={themeId}>
+      <div className="survey-wrapper">
+        <div className="survey-card">
+          <SurveyContent survey={surveyData} isPreviewMode={isPreviewMode} token={token || ''} />
+        </div>
+      </div>
+    </SurveyThemeProvider>
+  );
 };
 
 export default SurveyPublic;

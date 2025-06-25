@@ -8,6 +8,7 @@ import { Surveys } from '../../features/surveys/api/surveys';
 import ModernSurveyContent from './components/ModernSurveyContent';
 import ModernSurveyLoader from './components/ModernSurveyLoader';
 import ModernSurveyError from './components/ModernSurveyError';
+import SurveyThemeProvider from './SurveyThemeProvider';
 
 // Types
 interface Survey {
@@ -27,10 +28,11 @@ interface Survey {
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--background-color, #ffffff);
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--body-font, 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif');
+  color: var(--text-color, #333333);
 `;
 
 const Header = styled.header`
@@ -70,11 +72,12 @@ const MainContent = styled.main`
 
 const Footer = styled.footer`
   padding: 20px 40px;
-  background: #fafafa;
+  background: var(--secondary-color, #fafafa);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   text-align: center;
   font-size: 14px;
-  color: #666;
+  color: var(--text-color, #666);
+  font-family: var(--body-font, 'Inter, sans-serif');
   
   @media (max-width: 768px) {
     padding: 16px;
@@ -90,10 +93,22 @@ const ModernSurveyPublic: React.FC = () => {
   const location = useLocation();
   const isPreviewMode = new URLSearchParams(location.search).get('status') === 'preview';
   
-  // State for loading, survey data, and errors
+  // State for loading, survey data, errors, and theme
   const [isLoading, setIsLoading] = useState(true);
   const [surveyData, setSurveyData] = useState<Survey | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [themeId, setThemeId] = useState<string | undefined>(undefined);
+  
+  // Add survey-public class to body for theme styling
+  useEffect(() => {
+    document.body.classList.add('survey-public');
+    document.documentElement.classList.add('survey-public');
+    
+    return () => {
+      document.body.classList.remove('survey-public');
+      document.documentElement.classList.remove('survey-public');
+    };
+  }, []);
   
   // For preview mode, get survey from localStorage
   useEffect(() => {
@@ -103,6 +118,12 @@ const ModernSurveyPublic: React.FC = () => {
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           setSurveyData(parsedData);
+          
+          // Extract theme ID from preview survey data
+          if (parsedData.defaultSettings?.themes?.length) {
+            console.log('[ModernSurveyPublic] Found theme in preview data:', parsedData.defaultSettings.themes[0]);
+            setThemeId(parsedData.defaultSettings.themes[0]);
+          }
         } else {
           setLoadError('Preview data not found');
         }
@@ -172,6 +193,46 @@ const ModernSurveyPublic: React.FC = () => {
       setIsLoading(dbLoading);
       if (dbSurvey) {
         setSurveyData(dbSurvey as unknown as Survey);
+        
+        // Extract theme ID from database survey data
+        console.log('[ModernSurveyPublic] Survey ID:', dbSurvey._id);
+        console.log('[ModernSurveyPublic] Full defaultSettings:', dbSurvey.defaultSettings);
+        
+        // Try to find theme ID in various locations
+        let foundThemeId = null;
+        
+        // First check in defaultSettings.themes array
+        if (dbSurvey.defaultSettings?.themes?.length) {
+          foundThemeId = dbSurvey.defaultSettings.themes[0];
+          console.log('[ModernSurveyPublic] Found theme in defaultSettings.themes:', foundThemeId);
+        }
+        
+        // Check other possible locations using type assertion
+        if (!foundThemeId) {
+          const surveyAny = dbSurvey as any;
+          
+          if (surveyAny.theme) {
+            foundThemeId = surveyAny.theme;
+            console.log('[ModernSurveyPublic] Found theme in survey.theme:', foundThemeId);
+          } else if (surveyAny.themeId) {
+            foundThemeId = surveyAny.themeId;
+            console.log('[ModernSurveyPublic] Found theme in survey.themeId:', foundThemeId);
+          } else if (surveyAny.defaultSettings?.themeId) {
+            foundThemeId = surveyAny.defaultSettings.themeId;
+            console.log('[ModernSurveyPublic] Found theme in defaultSettings.themeId:', foundThemeId);
+          } else if (surveyAny.settings?.theme) {
+            foundThemeId = surveyAny.settings.theme;
+            console.log('[ModernSurveyPublic] Found theme in settings.theme:', foundThemeId);
+          }
+        }
+        
+        if (foundThemeId) {
+          setThemeId(foundThemeId);
+        } else {
+          console.warn('[ModernSurveyPublic] No theme found in survey data, using default');
+          // Set a default theme ID if none is found
+          setThemeId('default');
+        }
       } else if (!dbLoading) {
         setLoadError('Survey not found');
       }
@@ -181,49 +242,55 @@ const ModernSurveyPublic: React.FC = () => {
   // Render appropriate content based on state
   if (isLoading) {
     return (
-      <PageContainer>
-        {/* Remove header completely during loading */}
-        <MainContent>
-          <ModernSurveyLoader />
-        </MainContent>
-        <Footer>
-          © {new Date().getFullYear()} Bioptrics Platform. All rights reserved.
-        </Footer>
-      </PageContainer>
+      <SurveyThemeProvider themeId={themeId}>
+        <PageContainer>
+          {/* Remove header completely during loading */}
+          <MainContent>
+            <ModernSurveyLoader />
+          </MainContent>
+          <Footer>
+            © {new Date().getFullYear()} Bioptrics Platform. All rights reserved.
+          </Footer>
+        </PageContainer>
+      </SurveyThemeProvider>
     );
   }
   
   if (loadError || !surveyData) {
     return (
-      <PageContainer>
-        <Header>
-          <HeaderContent>
-            {/* No logo in this state */}
-          </HeaderContent>
-        </Header>
-        <MainContent>
-          <ModernSurveyError message={loadError || "Survey not found"} />
-        </MainContent>
-        <Footer>
-          © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.
-        </Footer>
-      </PageContainer>
+      <SurveyThemeProvider themeId={themeId}>
+        <PageContainer>
+          <Header>
+            <HeaderContent>
+              {/* No logo in this state */}
+            </HeaderContent>
+          </Header>
+          <MainContent>
+            <ModernSurveyError message={loadError || "Survey not found"} />
+          </MainContent>
+          <Footer>
+            © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.
+          </Footer>
+        </PageContainer>
+      </SurveyThemeProvider>
     );
   }
   
   return (
-    <PageContainer>
-      <MainContent>
-        <ModernSurveyContent 
-          survey={surveyData} 
-          isPreviewMode={isPreviewMode} 
-          token={token || ''} 
-        />
-      </MainContent>
-      <Footer>
-        © {new Date().getFullYear()} Powered By Bioptrics. All rights reserved.
-      </Footer>
-    </PageContainer>
+    <SurveyThemeProvider themeId={themeId}>
+      <PageContainer>
+        <MainContent>
+          <ModernSurveyContent 
+            survey={surveyData} 
+            isPreviewMode={isPreviewMode} 
+            token={token || ''} 
+          />
+        </MainContent>
+        <Footer>
+          © {new Date().getFullYear()} Powered By Bioptrics. All rights reserved.
+        </Footer>
+      </PageContainer>
+    </SurveyThemeProvider>
   );
 };
 

@@ -1,11 +1,22 @@
 /* ModernSurveyThankYou.css */
 :root {
+  /* These are fallback values that will be overridden by SurveyThemeProvider */
   --primary-color: #2c3e50;
-  --blue-color: #3498db;
-  --green-color: #2ecc71;
-  --yellow-color: #f39c12;
-  --purple-color: #2c3e50;
+  --primary-color-rgb: 44, 62, 80;
+  --secondary-color: #e5e7eb;
+  --accent-color: #3498db;
+  --background-color: #ffffff;
+  --text-color: #4b5563;
+  --heading-color: #1f2937;
+  --secondary-text-color: #6b7280;
+  --border-color: #d1d5db;
+  --button-hover-bg: #f9fafb;
+  --card-background: white;
   --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --card-radius: 12px;
+  --button-radius: 30px;
+  --heading-font: 'Inter', sans-serif;
+  --body-font: 'Inter', sans-serif;
   --transition: all 0.3s ease;
 }
 
