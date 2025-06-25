@@ -1583,6 +1583,30 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       Select a theme for your survey. The theme will affect the appearance and feel of your survey.
                     </p>
                     
+                    {/* Display currently selected theme */}
+                    {selectedTheme && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginBottom: 16,
+                        padding: '8px 12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px'
+                      }}>
+                        <span style={{ fontWeight: 600, marginRight: '8px' }}>Currently Selected:</span>
+                        <span style={{
+                          backgroundColor: '#edf2f7',
+                          color: '#4a5568',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}>
+                          {surveyThemes.find((theme: any) => theme._id === selectedTheme)?.name || 'Unknown Theme'}
+                        </span>
+                      </div>
+                    )}
+                    
                     {/* Theme search input */}
                     <div style={{ marginBottom: 20 }}>
                       <div style={{

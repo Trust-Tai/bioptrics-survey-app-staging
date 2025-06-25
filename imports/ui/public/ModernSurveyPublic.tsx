@@ -76,7 +76,7 @@ const Footer = styled.footer`
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   text-align: center;
   font-size: 14px;
-  color: var(--text-color, #666);
+  color: var(--button-text, #666);
   font-family: var(--body-font, 'Inter, sans-serif');
   
   @media (max-width: 768px) {

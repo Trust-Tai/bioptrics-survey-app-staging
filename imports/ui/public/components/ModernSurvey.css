@@ -16,7 +16,7 @@ body.survey-public, html.survey-public {
 }
 
 .modern-survey-container {
-  background-color: #fff;
+  background-color: transparent;
   border: none;
   border-radius: 8px;
   overflow: hidden;

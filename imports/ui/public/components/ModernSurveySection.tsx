@@ -48,7 +48,7 @@ const SectionContainer = styled.div`
 `;
 
 const SectionCard = styled.div<{ color?: string }>`
-  background: var(--card-background, white);
+  background: var(--card-background, transparent);
   border-radius: 0;
   width: 100%;
   max-width: 100%;
@@ -67,7 +67,7 @@ const SectionHeader = styled.div`
   display: flex;
   flex-direction: row;
   width: 100%;
-  background-color: white;
+  background-color: transparent;
   padding: 0;
   margin: 0;
 `;

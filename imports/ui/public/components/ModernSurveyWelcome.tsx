@@ -127,7 +127,7 @@ const ExpectationTitle = styled.h2`
   font-size: 1.75rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: var(--primary-color, #1f2937);
+  color: var(--button-text, #1f2937);
   font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
@@ -166,13 +166,13 @@ const ExpectationContent = styled.div`
     font-size: 1.125rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: var(--primary-color, #1f2937);
+    color: var(--button-text, #1f2937);
     font-family: var(--heading-font, 'Inter, sans-serif');
   }
   
   p {
     font-size: 0.875rem;
-    color: var(--text-color, #6b7280);
+    color: var(--button-text, #6b7280);
     line-height: 1.5;
     font-family: var(--body-font, 'Inter, sans-serif');
   }
@@ -229,7 +229,7 @@ const StatsContainer = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: var(--card-background, white);
+  background: var(--card-background, transparent);
   border-radius: var(--card-radius, 12px);
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
