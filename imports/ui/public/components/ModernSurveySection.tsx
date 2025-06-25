@@ -424,7 +424,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     
     // Then fetch the actual data
     if (surveyId && section.id) {
-      console.log(`Fetching metadata for section ${section.id} of survey ${surveyId}`);
+
       
       // First try to get sectionQuestions directly from client-side cache if available
       try {
@@ -436,7 +436,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
               parsedData.sectionQuestions.length > 0 && 
               parsedData.sectionQuestions[0].sectionId === section.id) {
             
-            console.log('Found section questions in client cache:', parsedData.sectionQuestions);
+
             const questionCount = parsedData.sectionQuestions[0].questions.length;
             const requiredQuestions = parsedData.sectionQuestions[0].questions.filter(
               (q: any) => q.status === 'published'
@@ -465,7 +465,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
           return;
         }
         
-        console.log('Section metadata received:', result);
+
         if (result) {
           setMetadata({
             questionCount: result.questionCount || section.questionCount || 0,
@@ -500,13 +500,13 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
           try {
             // Look for the section questions in the console scope
             if (typeof sectionQuestions !== 'undefined' && Array.isArray(sectionQuestions)) {
-              console.log('Found sectionQuestions in console:', sectionQuestions);
+
               window.__sectionQuestionsCount = sectionQuestions.length;
               window.__requiredQuestionsCount = sectionQuestions.filter(q => q.status === 'published').length;
             }
             // Also check for Processing sectionQuestions which is visible in your screenshot
             else if (typeof array !== 'undefined' && Array.isArray(array) && array.length > 0) {
-              console.log('Found array in console:', array);
+
               if (array[0] && array[0].questions && Array.isArray(array[0].questions)) {
                 window.__sectionQuestionsCount = array[0].questions.length;
                 window.__requiredQuestionsCount = array[0].questions.filter(q => q.status === 'published').length;
@@ -523,7 +523,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
       const requiredCount = (window as any).__requiredQuestionsCount;
       
       if (typeof questionCount === 'number') {
-        console.log(`Found ${questionCount} questions (${requiredCount || 0} required) from console`);
+
         
         // Update the metadata with the values from console
         setMetadata(prev => ({
@@ -550,7 +550,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
               const questionCount = questions.length;
               const requiredCount = questions.filter((q: any) => q.status === 'published').length;
               
-              console.log(`Found ${questionCount} questions in localStorage`);
+
               
               setMetadata(prev => ({
                 ...prev,
@@ -597,7 +597,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   useEffect(() => {
     // Create a global function that can be called from the console
     (window as any).updateSectionQuestionCount = (count: number) => {
-      console.log(`Manual update: Setting question count to ${count}`);
+
       setMetadata(prev => ({
         ...prev,
         questionCount: count
@@ -616,7 +616,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
             if (typeof array !== 'undefined' && Array.isArray(array) && 
                 array.length > 0 && array[0] && array[0].questions) {
               const count = array[0].questions.length;
-              console.log('Found questions in array:', count);
+
               if (typeof window.updateSectionQuestionCount === 'function') {
                 window.updateSectionQuestionCount(count);
               }
@@ -625,7 +625,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
             // Also check for sectionQuestions
             if (typeof sectionQuestions !== 'undefined' && Array.isArray(sectionQuestions)) {
               const count = sectionQuestions.length;
-              console.log('Found sectionQuestions:', count);
+
               if (typeof window.updateSectionQuestionCount === 'function') {
                 window.updateSectionQuestionCount(count);
               }

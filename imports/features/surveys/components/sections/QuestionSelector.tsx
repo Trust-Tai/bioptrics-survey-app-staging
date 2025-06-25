@@ -54,7 +54,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     
     // Wait for subscription to be ready
     if (!subscription.ready()) {
-      console.log('Layers subscription not ready yet');
+
       return { 
         questionsWithTags: new Map(), 
         allTags: [], 
@@ -67,11 +67,11 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     
     // Fetch all questions to get their tags
     const questionDocs = Questions.find({}).fetch();
-    console.log(`Found ${questionDocs.length} questions in the database`);
+
     
     // Fetch all available tags from the Layers collection without filtering
     const tags = Layers.find({}).fetch();
-    console.log(`Found ${tags.length} tags in the database`);
+
     
     // Create a map of tag IDs to names for quick lookup
     tags.forEach((tag: any) => {
@@ -83,10 +83,10 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     });
     
     // Debug: Log all tag names and IDs
-    console.log('All available tags:');
+
     tags.forEach((tag: any) => {
       if (tag && tag.name && tag._id) {
-        console.log(`- ${tag.name} (${tag._id})`);
+
       }
     });
     
@@ -121,15 +121,15 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
             
             // Special case for question ixSJScySQEAHEwdDG and WPS tag
             if (question._id === 'ixSJScySQEAHEwdDG') {
-              console.log(`Special case: Question ${question._id} has tag ${tagId}`);
-              console.log(`Tag name: ${tagNameMap.get(tagId) || 'Unknown'}`);
+
+
               
               // If this is the WPS tag or has a name containing 'WPS', add it to the WPS tag's questions
               const tagName = tagNameMap.get(tagId) || '';
               const wpsTag = tags.find((t: any) => t.name === 'WPS');
               
               if (wpsTag && wpsTag._id && (tagName.includes('WPS') || tagId === wpsTag._id)) {
-                console.log(`Adding question ${question._id} to WPS tag ${wpsTag._id}`);
+
                 const wpsQuestions = tagToQuestionsMap.get(wpsTag._id) || [];
                 if (!wpsQuestions.includes(question._id)) {
                   wpsQuestions.push(question._id);
@@ -142,7 +142,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           // Debug output for questions with tags
           if (versionData.categoryTags.length > 0) {
             const tagNames = versionData.categoryTags.map((tagId: string) => tagNameMap.get(tagId) || tagId).join(', ');
-            console.log(`Question ${question._id}: has tags: ${tagNames}`);
+
           }
         } else {
           questionMap.set(question._id, []);
@@ -153,37 +153,37 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     // Log specific questions we're looking for
     const wpsTag = tags.find((tag: any) => tag.name === 'WPS');
     if (wpsTag && wpsTag._id) {
-      console.log(`WPS tag ID: ${wpsTag._id}`);
+
       const questionsWithWpsTag = tagToQuestionsMap.get(wpsTag._id) || [];
-      console.log(`Questions with WPS tag (${questionsWithWpsTag.length}): ${questionsWithWpsTag.join(', ')}`);
+
       
       // Check specific question ID ixSJScySQEAHEwdDG
       const specificQuestion = questionDocs.find((q: any) => q._id === 'ixSJScySQEAHEwdDG');
       if (specificQuestion) {
-        console.log('FOUND SPECIFIC QUESTION:', specificQuestion._id);
+
         const currentVersion = specificQuestion.currentVersion;
         const versionData = specificQuestion.versions.find((v: any) => v.version === currentVersion) || 
                            (specificQuestion.versions.length > 0 ? specificQuestion.versions[specificQuestion.versions.length - 1] : null);
         
         if (versionData) {
-          console.log('Question text:', (versionData as any).text);
-          console.log('Question tags:', versionData.categoryTags || []);
+
+
           
           // Check if this question has the WPS tag
           const hasWpsTag = (versionData.categoryTags || []).includes(wpsTag._id);
-          console.log('Has WPS tag?', hasWpsTag);
+
           
           // Check what tag names this question has
           const tagNames = (versionData.categoryTags || []).map((tagId: string) => {
             const name = tagNameMap.get(tagId);
             return `${name || 'Unknown'} (${tagId})`;
           });
-          console.log('Tag names:', tagNames);
+
         } else {
-          console.log('No version data found for question');
+
         }
       } else {
-        console.log('Could not find question with ID ixSJScySQEAHEwdDG');
+
       }
     }
     
@@ -216,7 +216,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       // Check if WPS tag is selected
       const wpsTag = allTags.find((tag) => tag && tag.name === 'WPS');
       if (wpsTag && wpsTag._id && filters.tags.includes(wpsTag._id)) {
-        console.log('Special case: Showing question ixSJScySQEAHEwdDG for WPS tag');
+
         return matchesSearch && matchesType;
       }
     }
@@ -255,7 +255,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     }
     
     // Debug info for this question
-    console.log(`Question "${question.text.substring(0, 30)}..." (ID: ${questionId}, DB ID: ${dbQuestionId})`);
+
     
     // Check if this question matches any of the selected tags
     let hasMatchingTag = false;
@@ -266,7 +266,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         const questionsWithTag = tagToQuestionsMap.get(tagId) || [];
         if (questionsWithTag.includes(dbQuestionId)) {
           hasMatchingTag = true;
-          console.log(`- Question matches tag: ${tagNameMap.get(tagId) || tagId}`);
+
           break;
         }
       }
@@ -276,17 +276,17 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     const questionTags = questionsWithTags.get(dbQuestionId) || [];
     if (questionTags.length > 0) {
       const questionTagNames = questionTags.map((tagId: string) => tagNameMap.get(tagId) || tagId).join(', ');
-      console.log(`- Question has tags: ${questionTagNames}`);
+
       
       // Check for intersection between question tags and selected tags
       const tagMatch = questionTags.some((tagId: string) => filters.tags.includes(tagId));
       if (tagMatch) {
         hasMatchingTag = true;
-        console.log(`- Found matching tag via direct comparison`);
+
       }
     }
     
-    console.log(`- Final match result: ${hasMatchingTag}`);
+
     return matchesSearch && matchesType && hasMatchingTag;
   });
   
@@ -325,7 +325,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Handle filter changes
   const handleFilterChange = (filterType: 'type' | 'tags', value: string | string[]) => {
-    console.log(`Filter change: ${filterType} = ${JSON.stringify(value)}`);
+
     setFilters(prev => ({
       ...prev,
       [filterType]: value
@@ -347,12 +347,12 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     
     // Wait for tags to be loaded before initializing
     if (!allTags || allTags.length === 0) {
-      console.log('No tags available for Tom Select');
+
       return;
     }
     
-    console.log('Initializing Tom Select with tags, count:', allTags.length);
-    console.log('Available tag names:', allTags.map((tag: any) => tag.name).join(', '));
+
+
     
     try {
       // Configure Tom Select
@@ -363,21 +363,21 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         maxItems: null, // Allow multiple selections
         sortField: { field: 'text', direction: 'asc' },
         onChange: function(values: string[]) {
-          console.log('Tom Select onChange - selected tag IDs:', values);
+
           
           // Log the selected tag names for better debugging
           if (values && values.length > 0) {
             const selectedTagNames = values.map((id: string) => tagNameMap.get(id) || id).join(', ');
-            console.log('Selected tag names:', selectedTagNames);
+
             
             // Log which questions have these tags
-            console.log('Questions with selected tags:');
+
             
             // For each selected tag, show which questions have it
             values.forEach((tagId: string) => {
               const tagName = tagNameMap.get(tagId) || tagId;
               const questionsWithTag = tagToQuestionsMap?.get(tagId) || [];
-              console.log(`- Tag "${tagName}" is on ${questionsWithTag.length} questions: ${questionsWithTag.join(', ')}`);
+
             });
           }
           
@@ -394,7 +394,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       
       // Add all tags from Layers collection
       if (allTags && allTags.length > 0) {
-        console.log('Adding tag options to TomSelect:', allTags.length);
+
         
         // Sort tags alphabetically by name for better UX
         const sortedTags = [...allTags].sort((a, b) => {
