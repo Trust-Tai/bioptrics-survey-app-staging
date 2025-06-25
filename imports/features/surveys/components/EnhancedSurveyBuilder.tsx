@@ -743,7 +743,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
       console.log('Saving survey with questions:', surveyQuestions);
       
       // Find the complete theme object based on selectedTheme ID
-      const selectedThemeObject = surveyThemes.find((theme: any) => theme._id === selectedTheme);
+      const selectedThemeObject = selectedTheme ? surveyThemes.find((theme: any) => theme._id === selectedTheme) : null;
       console.log('[EnhancedSurveyBuilder] Selected theme object:', selectedThemeObject);
       
       // Prepare default settings with theme information
@@ -764,7 +764,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
           bodyFont: selectedThemeObject.bodyFont || 'Inter, sans-serif'
         } : null,
         // Also store themeId directly for easier access
-        themeId: selectedTheme || 'default'
+        themeId: selectedTheme || ''
+        // Empty string for themeId will make the app use the default theme
       };
       
       const surveyData = {
@@ -1583,27 +1584,66 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       Select a theme for your survey. The theme will affect the appearance and feel of your survey.
                     </p>
                     
-                    {/* Display currently selected theme */}
-                    {selectedTheme && (
+                    {/* Display currently selected theme or default indicator */}
+                    {(
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'space-between',
                         marginBottom: 16,
                         padding: '8px 12px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e2e8f0',
                         borderRadius: '6px'
                       }}>
-                        <span style={{ fontWeight: 600, marginRight: '8px' }}>Currently Selected:</span>
-                        <span style={{
-                          backgroundColor: '#edf2f7',
-                          color: '#4a5568',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}>
-                          {surveyThemes.find((theme: any) => theme._id === selectedTheme)?.name || 'Unknown Theme'}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 600, marginRight: '8px' }}>Currently Selected:</span>
+                          <span style={{
+                            backgroundColor: selectedTheme ? '#edf2f7' : '#f0fff4',
+                            color: selectedTheme ? '#4a5568' : '#276749',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            border: selectedTheme ? 'none' : '1px dashed #68d391'
+                          }}>
+                            {selectedTheme 
+                              ? (surveyThemes.find((theme: any) => theme._id === selectedTheme)?.name || 'Unknown Theme')
+                              : 'Default Theme (System)'
+                            }
+                          </span>
+                        </div>
+                        {selectedTheme ? (
+                          <button 
+                            onClick={() => setSelectedTheme('')}
+                            style={{
+                              backgroundColor: '#fff',
+                              border: '1px solid #e53e3e',
+                              color: '#e53e3e',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            title="Unselect theme and revert to default"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M6 18L18 6M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Unselect Theme
+                          </button>
+                        ) : (
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#718096',
+                            fontStyle: 'italic'
+                          }}>
+                            Using system default colors and fonts
+                          </span>
+                        )}
                       </div>
                     )}
                     
