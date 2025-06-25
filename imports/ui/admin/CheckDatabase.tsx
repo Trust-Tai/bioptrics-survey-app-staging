@@ -33,7 +33,7 @@ const StatCard = styled.div`
 const StatValue = styled.div`
   font-size: 24px;
   font-weight: bold;
-  color: #2c3e50;
+  color: var(--secondary-color, #2c3e50);
   margin-bottom: 5px;
 `;
 

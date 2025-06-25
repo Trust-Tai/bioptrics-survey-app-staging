@@ -62,7 +62,7 @@
 
 .progress-bar-fill {
   height: 100%;
-  background-color: var(--button-background, var(--primary-color, #2c3e50)) !important;
+  background-color: var(--button-background, var(--heading-color, #2c3e50)) !important;
   border-radius: 4px;
   transition: width 0.5s ease;
   background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
@@ -371,7 +371,7 @@
 }
 
 .button-continue {
-  background-color: var(--button-background, var(--primary-color, #2c3e50)) !important;
+  background-color: var(--button-background, var(--heading-color, #2c3e50)) !important;
   color: var(--button-text, white) !important;
   border: none;
   margin-left: 10px;
