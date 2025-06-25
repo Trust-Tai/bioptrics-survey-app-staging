@@ -5,6 +5,7 @@ import { SurveyThemes, SurveyThemeType } from '../../features/survey-themes/api/
 
 interface SurveyThemeProviderProps {
   themeId?: string;
+  themeObject?: any;
   children: React.ReactNode;
 }
 
@@ -53,7 +54,7 @@ const adjustColor = (color: string, amount: number): string => {
 const generateCssRules = (theme: SurveyThemeType): string => {
   // Extract theme properties with fallbacks
   const primaryColor = theme.primaryColor || theme.color || '#552a47';
-  const secondaryColor = theme.secondaryColor || '#f9f6f2';
+  const secondaryColor = theme.secondaryColor || '#97C646';
   const accentColor = theme.accentColor || '#b69d57';
   const backgroundColor = theme.backgroundColor || '#ffffff';
   const textColor = theme.textColor || '#333333';
@@ -113,21 +114,33 @@ const generateCssRules = (theme: SurveyThemeType): string => {
   `;
 };
 
-const SurveyThemeProvider: React.FC<SurveyThemeProviderProps> = ({ themeId, children }) => {
+const SurveyThemeProvider: React.FC<SurveyThemeProviderProps> = ({ themeId, themeObject, children }) => {
   const [cssRules, setCssRules] = useState<string>('');
   
   // Load theme data from database
   const { loading, theme } = useTracker(() => {
+    // If a complete theme object is provided directly, use it without database lookup
+    if (themeObject) {
+      console.log('[SurveyThemeProvider] Using provided theme object:', {
+        id: themeObject._id,
+        name: themeObject.name
+      });
+      
+      return {
+        loading: false,
+        theme: themeObject as SurveyThemeType
+      };
+    }
+    
     if (!themeId) {
-      console.log('[SurveyThemeProvider] No themeId provided, using default theme');
-      // Return a default theme object instead of null
-      return { 
-        loading: false, 
+      console.warn('[SurveyThemeProvider] No theme ID provided, using default');
+      return {
+        loading: false,
         theme: {
           _id: 'default',
           name: 'Default Theme',
           primaryColor: '#552a47',
-          secondaryColor: '#f9f6f2',
+          secondaryColor: '#97C646',
           accentColor: '#b69d57',
           backgroundColor: '#ffffff',
           textColor: '#333333',
@@ -191,7 +204,7 @@ const SurveyThemeProvider: React.FC<SurveyThemeProviderProps> = ({ themeId, chil
         _id: 'default',
         name: 'Default Theme',
         primaryColor: '#552a47',
-        secondaryColor: '#f9f6f2',
+        secondaryColor: '#97C646',
         accentColor: '#b69d57',
         backgroundColor: '#ffffff',
         textColor: '#333333',
@@ -199,7 +212,7 @@ const SurveyThemeProvider: React.FC<SurveyThemeProviderProps> = ({ themeId, chil
         bodyFont: 'Inter, sans-serif'
       } as SurveyThemeType
     };
-  }, [themeId]);
+  }, [themeId, themeObject]);
   
   // Generate CSS rules based on theme properties
   useEffect(() => {
@@ -210,7 +223,7 @@ const SurveyThemeProvider: React.FC<SurveyThemeProviderProps> = ({ themeId, chil
         _id: 'default',
         name: 'Default Theme',
         primaryColor: '#552a47',
-        secondaryColor: '#f9f6f2',
+        secondaryColor: '#97C646',
         accentColor: '#b69d57',
         backgroundColor: '#ffffff',
         textColor: '#333333',

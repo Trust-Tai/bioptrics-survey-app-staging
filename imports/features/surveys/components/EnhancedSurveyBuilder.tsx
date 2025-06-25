@@ -742,18 +742,43 @@ const EnhancedSurveyBuilder: React.FC = () => {
       // Log the current state of survey questions before saving
       console.log('Saving survey with questions:', surveyQuestions);
       
+      // Find the complete theme object based on selectedTheme ID
+      const selectedThemeObject = surveyThemes.find((theme: any) => theme._id === selectedTheme);
+      console.log('[EnhancedSurveyBuilder] Selected theme object:', selectedThemeObject);
+      
+      // Prepare default settings with theme information
+      const defaultSettings = {
+        ...(survey?.defaultSettings || {}),
+        // Store theme ID in themes array for backward compatibility
+        themes: selectedTheme ? [selectedTheme] : [],
+        // Store the complete theme object for direct access to attributes
+        themeObject: selectedThemeObject ? {
+          _id: selectedThemeObject._id,
+          name: selectedThemeObject.name,
+          primaryColor: selectedThemeObject.primaryColor || selectedThemeObject.color,
+          secondaryColor: selectedThemeObject.secondaryColor,
+          accentColor: selectedThemeObject.accentColor,
+          backgroundColor: selectedThemeObject.backgroundColor || '#ffffff',
+          textColor: selectedThemeObject.textColor || '#333333',
+          headingFont: selectedThemeObject.headingFont || 'Inter, sans-serif',
+          bodyFont: selectedThemeObject.bodyFont || 'Inter, sans-serif'
+        } : null,
+        // Also store themeId directly for easier access
+        themeId: selectedTheme || 'default'
+      };
+      
       const surveyData = {
         ...survey,
         title: survey?.title || 'Untitled Survey',
         description: survey?.description || '',
         logo: survey?.logo || '',
         featuredImage: survey?.featuredImage || '',
-        primaryColor: survey?.primaryColor || '#552a47',
+        primaryColor: selectedThemeObject?.primaryColor || selectedThemeObject?.color || survey?.primaryColor || '#552a47',
         welcomeTitle: survey?.welcomeTitle || '',
         welcomeMessage: survey?.welcomeMessage || '',
         completionMessage: survey?.completionMessage || '',
-        // Explicitly include defaultSettings to ensure they're saved
-        defaultSettings: survey?.defaultSettings || {},
+        // Include the updated defaultSettings
+        defaultSettings,
         // Use surveySections instead of sections to match the server-side property name
         surveySections: sections,
         sectionQuestions: surveyQuestions,

@@ -97,7 +97,8 @@ const ModernSurveyPublic: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [surveyData, setSurveyData] = useState<Survey | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [themeId, setThemeId] = useState<string | undefined>(undefined);
+  const [themeId, setThemeId] = useState<string>('default');
+  const [themeObject, setThemeObject] = useState<any>(null);
   
   // Add survey-public class to body for theme styling
   useEffect(() => {
@@ -198,16 +199,24 @@ const ModernSurveyPublic: React.FC = () => {
         console.log('[ModernSurveyPublic] Survey ID:', dbSurvey._id);
         console.log('[ModernSurveyPublic] Full defaultSettings:', dbSurvey.defaultSettings);
         
-        // Try to find theme ID in various locations
+        // Try to find theme ID and theme object in various locations
         let foundThemeId = null;
+        let foundThemeObject = null;
         
-        // First check in defaultSettings.themes array
-        if (dbSurvey.defaultSettings?.themes?.length) {
+        // First check for theme object in defaultSettings
+        const defaultSettingsAny = dbSurvey.defaultSettings as any;
+        if (defaultSettingsAny?.themeObject) {
+          foundThemeObject = defaultSettingsAny.themeObject;
+          foundThemeId = foundThemeObject._id;
+          console.log('[ModernSurveyPublic] Found theme object in defaultSettings.themeObject:', foundThemeObject);
+        }
+        // Then check in defaultSettings.themes array
+        else if (dbSurvey.defaultSettings?.themes?.length) {
           foundThemeId = dbSurvey.defaultSettings.themes[0];
           console.log('[ModernSurveyPublic] Found theme in defaultSettings.themes:', foundThemeId);
         }
         
-        // Check other possible locations using type assertion
+        // Check other possible locations using type assertion if no theme object found
         if (!foundThemeId) {
           const surveyAny = dbSurvey as any;
           
@@ -226,12 +235,18 @@ const ModernSurveyPublic: React.FC = () => {
           }
         }
         
-        if (foundThemeId) {
+        // Set theme ID and theme object
+        if (foundThemeObject) {
+          setThemeObject(foundThemeObject);
+          setThemeId(foundThemeId || 'default');
+        } else if (foundThemeId) {
           setThemeId(foundThemeId);
+          setThemeObject(null);
         } else {
           console.warn('[ModernSurveyPublic] No theme found in survey data, using default');
           // Set a default theme ID if none is found
           setThemeId('default');
+          setThemeObject(null);
         }
       } else if (!dbLoading) {
         setLoadError('Survey not found');
@@ -242,7 +257,7 @@ const ModernSurveyPublic: React.FC = () => {
   // Render appropriate content based on state
   if (isLoading) {
     return (
-      <SurveyThemeProvider themeId={themeId}>
+      <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
         <PageContainer>
           {/* Remove header completely during loading */}
           <MainContent>
@@ -258,7 +273,7 @@ const ModernSurveyPublic: React.FC = () => {
   
   if (loadError || !surveyData) {
     return (
-      <SurveyThemeProvider themeId={themeId}>
+      <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
         <PageContainer>
           <Header>
             <HeaderContent>
@@ -277,7 +292,7 @@ const ModernSurveyPublic: React.FC = () => {
   }
   
   return (
-    <SurveyThemeProvider themeId={themeId}>
+    <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
       <PageContainer>
         <MainContent>
           <ModernSurveyContent 
