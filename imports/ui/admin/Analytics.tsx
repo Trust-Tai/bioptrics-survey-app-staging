@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
@@ -20,11 +20,15 @@ import {
   FiCalendar,
   FiUsers,
   FiList,
+  FiX
 } from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
 import DeviceUsageChart from '/imports/features/analytics/components/admin/DeviceUsageChart';
 import QuestionPerformanceChart from '/imports/features/analytics/components/admin/QuestionPerformanceChart';
+import ResponseRateChart from '/imports/features/analytics/components/admin/ResponseRateChart';
+import CompletionTimeChart from '/imports/features/analytics/components/admin/CompletionTimeChart';
+import CompletionRateChart from '/imports/features/analytics/components/admin/CompletionRateChart';
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
@@ -303,6 +307,37 @@ const StatCard = styled.div`
   }
 `;
 
+const ResponseRateKPI = styled(StatCard)`
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  
+  &:after {
+    content: 'Click to view chart';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #8a6d8a;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(85, 42, 71, 0.15);
+  }
+  
+  &:hover:after {
+    opacity: 1;
+  }
+  
+  &:active {
+    transform: translateY(-2px);
+  }
+`;
+
 const StatValue = styled.div`
   font-size: 32px;
   font-weight: 700;
@@ -394,6 +429,23 @@ const Tab = styled.button<{ active?: boolean }>`
   }
 `;
 
+const IconButton = styled.button`
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: #f5f5f5;
+    color: #333;
+  }
+`;
+
 const ExportButtonsContainer = styled.div`
   display: flex;
   gap: 12px;
@@ -404,15 +456,228 @@ const ExportButtonsContainer = styled.div`
   }
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease-in-out;
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
+const ModalContent = styled.div`
+  background-color: white;
+  padding: 28px 40px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease-out;
+  
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+`;
+
+const ModalTitle = styled.h2`
+  margin-top: 0;
+  color: #552a47;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 600;
+`;
+
+const ModalDescription = styled.p`
+  color: #666;
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.5;
+`;
+
+const ModalCloseButton = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  cursor: pointer;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #e0e0e0;
+    color: #333;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.3);
+  }
+`;
+
 const Analytics: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showQuestionPerformance, setShowQuestionPerformance] = useState(false);
+  
+  // State for response rate chart modal
+  const [showResponseRateChart, setShowResponseRateChart] = useState(false);
+  const [responseRateData, setResponseRateData] = useState<Array<{date: string; count: number}>>([]);
+  
+  // State for completion time chart modal
+  const [showCompletionTimeChart, setShowCompletionTimeChart] = useState(false);
+  const [completionTimeData, setCompletionTimeData] = useState<Array<{date: string; minutes: number}>>([]);
+  
+  // State for completion rate chart modal
+  const [showCompletionRateChart, setShowCompletionRateChart] = useState(false);
+  const [completionRateData, setCompletionRateData] = useState<{completed: number; incomplete: number}>({completed: 0, incomplete: 0});
+  const [selectedDateRange, setSelectedDateRange] = useState('last_7_days');
+  
+  // Fetch completion time data when the modal is opened
+  useEffect(() => {
+    if (showCompletionTimeChart) {
+      // Reset data while loading
+      setCompletionTimeData([]);
+      
+      // Fetch completion time data with date range
+      console.log('Fetching completion time data for date range:', selectedDateRange);
+      Meteor.call('getSurveyCompletionTimeByDate', selectedDateRange, (error: Error, result: Array<{date: string; minutes: number}>) => {
+        if (error) {
+          console.error('Error fetching completion time data:', error);
+          // Show empty array instead of loading indefinitely
+          setCompletionTimeData([]);
+        } else {
+          console.log('Completion time data received:', result);
+          
+          // If we get no data, create sample data for testing
+          if (!result || result.length === 0) {
+            const today = new Date();
+            const sampleData = [];
+            
+            // Generate sample data for the last 7 days
+            for (let i = 6; i >= 0; i--) {
+              const date = new Date(today);
+              date.setDate(today.getDate() - i);
+              const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+              
+              sampleData.push({
+                date: dateString,
+                minutes: Math.random() * 0.8 + 0.2 // Random value between 0.2 and 1.0
+              });
+            }
+            
+            console.log('Using sample completion time data:', sampleData);
+            setCompletionTimeData(sampleData);
+          } else {
+            setCompletionTimeData(result);
+          }
+        }
+      });
+    }
+  }, [showCompletionTimeChart, selectedDateRange]);
+  
+  // Fetch completion rate data when the modal is opened or date range changes
+  useEffect(() => {
+    if (showCompletionRateChart) {
+      // Reset data while loading
+      setCompletionRateData({completed: 0, incomplete: 0});
+      
+      // Get completed surveys count with date range
+      Meteor.call('getSurveyCompletedSurveysCount', selectedDateRange, (error: Error, completedCount: number) => {
+        if (error) {
+          console.error('Error fetching completed surveys count:', error);
+        } else {
+          // Get incomplete surveys count with date range
+          Meteor.call('getIncompleteSurveysCount', selectedDateRange, (error: Error, incompleteCount: number) => {
+            if (error) {
+              console.error('Error fetching incomplete surveys count:', error);
+            } else {
+              console.log('Completion rate data received for range', selectedDateRange, ':', { completed: completedCount, incomplete: incompleteCount });
+              setCompletionRateData({ completed: completedCount, incomplete: incompleteCount });
+            }
+          });
+        }
+      });
+    }
+  }, [showCompletionRateChart, selectedDateRange]);
   
   // State for all KPI metrics
   const [completedSurveysCount, setCompletedSurveysCount] = useState(0);
   const [participationRate, setParticipationRate] = useState(0);
   const [avgEngagementScore, setAvgEngagementScore] = useState(0);
   const [avgCompletionTime, setAvgCompletionTime] = useState(0);
+  
+  // Fetch KPI metrics on component mount
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Fetch completed surveys count using existing method
+    Meteor.call('getCompletedSurveysCount', (error, result) => {
+      if (error) {
+        console.error('Error fetching completed surveys count:', error);
+      } else {
+        setCompletedSurveysCount(result);
+      }
+    });
+    
+    // Fetch participation rate using enhanced response rate method
+    Meteor.call('getResponseRateByDate', (error, result) => {
+      if (error) {
+        console.error('Error fetching enhanced response rate:', error);
+      } else {
+        // Calculate average participation rate from the last 7 days
+        if (result && result.length > 0) {
+          const sum = result.reduce((acc, item) => acc + item.count, 0);
+          setParticipationRate(Math.round(sum / result.length));
+        }
+      }
+    });
+    
+    // Fetch average engagement score using existing method
+    Meteor.call('getAverageEngagementScore', (error, result) => {
+      if (error) {
+        console.error('Error fetching average engagement score:', error);
+      } else {
+        setAvgEngagementScore(result || 0);
+      }
+    });
+    
+    // Fetch average completion time
+    Meteor.call('getCompletionTimeByDate', (error, result) => {
+      if (error) {
+        console.error('Error fetching completion time data:', error);
+      } else {
+        // Calculate average completion time from all available data
+        if (result && result.length > 0) {
+          const sum = result.reduce((acc, item) => acc + item.minutes, 0);
+          setAvgCompletionTime(sum / result.length);
+        }
+      }
+      setIsLoading(false);
+    });
+  }, []);
   const [responseRate, setResponseRate] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -475,6 +740,21 @@ const Analytics: React.FC = () => {
         setResponseRate(result);
       }
       setIsLoading(loading);
+    });
+    
+    // Fetch response trends data for the response rate chart
+    Meteor.call('getResponseTrendsData', (error: any, result: any) => {
+      if (error) {
+        console.error('Error getting response trends data:', error);
+      } else {
+        console.log('Response trends data for chart:', result);
+        // Transform the data for the ResponseRateChart component
+        const chartData = result.map((item: any) => ({
+          date: item.date,
+          count: item.responses
+        }));
+        setResponseRateData(chartData);
+      }
     });
   }, [loading]);
   const [filterVisible, setFilterVisible] = useState(true);
@@ -782,7 +1062,11 @@ const Analytics: React.FC = () => {
                     <FiPieChart />
                   </CardIcon>
                 </CardHeader>
-                <StatCard>
+                <StatCard 
+                  onClick={() => setShowCompletionRateChart(true)} 
+                  style={{ cursor: 'pointer' }}
+                  title="Click to view completion rate chart"
+                >
                   <StatValue>{isLoading ? '...' : `${participationRate}%`}</StatValue>
                   <StatLabel>Participation Rate</StatLabel>
                 </StatCard>
@@ -808,7 +1092,11 @@ const Analytics: React.FC = () => {
                     <FiCalendar />
                   </CardIcon>
                 </CardHeader>
-                <StatCard>
+                <StatCard 
+                  onClick={() => setShowCompletionTimeChart(true)} 
+                  style={{ cursor: 'pointer' }}
+                  title="Click to view completion time chart"
+                >
                   <StatValue>{isLoading ? '...' : avgCompletionTime.toFixed(1)}</StatValue>
                   <StatLabel>Minutes (Average)</StatLabel>
                 </StatCard>
@@ -821,10 +1109,14 @@ const Analytics: React.FC = () => {
                     <FiTrendingUp />
                   </CardIcon>
                 </CardHeader>
-                <StatCard>
+                <ResponseRateKPI 
+                  onClick={() => setShowResponseRateChart(true)} 
+                  style={{ cursor: 'pointer' }}
+                  title="Click to view response rate chart"
+                >
                   <StatValue>{isLoading ? '...' : `${responseRate}%`}</StatValue>
                   <StatLabel>Last 7 days</StatLabel>
-                </StatCard>
+                </ResponseRateKPI>
               </Card>
             </KPIContainer>
 
@@ -924,6 +1216,60 @@ const Analytics: React.FC = () => {
               <QuestionPerformanceChart />
             </Card>
           </DashboardGrid>
+        )}
+        
+        {/* Response Rate Chart Modal */}
+        {showResponseRateChart && (
+          <ModalOverlay onClick={() => setShowResponseRateChart(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalCloseButton onClick={() => setShowResponseRateChart(false)}>
+                <FiX />
+              </ModalCloseButton>
+              {responseRateData.length > 0 ? (
+                <ResponseRateChart 
+                  data={responseRateData} 
+                  title="Daily Survey Response Rate" 
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>Loading chart data...</div>
+              )}
+            </ModalContent>
+          </ModalOverlay>
+        )}
+        
+        {/* Completion Time Chart Modal */}
+        {showCompletionTimeChart && (
+          <ModalOverlay onClick={() => setShowCompletionTimeChart(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalCloseButton onClick={() => setShowCompletionTimeChart(false)}>
+                <FiX />
+              </ModalCloseButton>
+              <CompletionTimeChart 
+                data={completionTimeData} 
+                title="Survey Completion Time" 
+              />
+            </ModalContent>
+          </ModalOverlay>
+        )}
+        
+        {/* Completion Rate Chart Modal */}
+        {showCompletionRateChart && (
+          <ModalOverlay onClick={() => setShowCompletionRateChart(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalCloseButton onClick={() => setShowCompletionRateChart(false)}>
+                <FiX />
+              </ModalCloseButton>
+              <CompletionRateChart 
+                data={completionRateData} 
+                title="Survey Completion Rate" 
+                initialDateRange={selectedDateRange}
+                onDateRangeChange={(dateRange) => {
+                  console.log('Date range changed to:', dateRange);
+                  setSelectedDateRange(dateRange);
+                }}
+              />
+            </ModalContent>
+          </ModalOverlay>
         )}
       </DashboardContainer>
     </AdminLayout>

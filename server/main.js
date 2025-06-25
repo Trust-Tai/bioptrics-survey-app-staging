@@ -8,7 +8,10 @@ import '../imports/api/goals';
 import '../imports/api/goals.methods';
 import '../imports/features/surveys/api/surveyResponses';
 import '../imports/features/surveys/api/incompleteSurveyResponses';
+// Import survey methods from both locations
+// The new enhanced methods are in imports/api/surveyMethods
 import '../imports/features/surveys/api/surveyMethods';
+import '../imports/api/surveyMethods';
 import '../imports/features/surveys/api/deviceUsageMethods';
 import '../imports/features/surveys/api/analyticsMetrics';
 import '../imports/features/surveys/api/surveyStats';
