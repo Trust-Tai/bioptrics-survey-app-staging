@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
-import { Layers } from '/imports/api/layers';
+import { Layers, Layer } from '/imports/api/layers';
 import { Surveys } from '/imports/features/surveys/api/surveys';
 import { Questions } from '/imports/features/questions/api/questions';
 import TomSelect from 'tom-select';
@@ -10,6 +10,7 @@ import 'tom-select/dist/css/tom-select.bootstrap4.css';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
+import ReactSelect, { components } from 'react-select';
 import {
   FiFilter,
   FiDownload,
@@ -200,7 +201,7 @@ const FilterLabel = styled.label`
   font-weight: 500;
 `;
 
-const Select = styled.select`
+const StyledSelect = styled.select`
   width: 100%;
   padding: 10px;
   border: 1px solid #e2e8f0;
@@ -678,7 +679,27 @@ const Analytics: React.FC = () => {
     });
   }, []);
   const [responseRate, setResponseRate] = useState(0);
+  const [filterVisible, setFilterVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Default organization data
+  const organizations = ['All Organizations', 'Bioptrics'];
+  
+  // State for selected filters
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const startDate = dateRange[0];
+  const endDate = dateRange[1];
+  
+  // Ensure selectedTags is always an array
+  useEffect(() => {
+    if (!Array.isArray(selectedTags)) {
+      console.warn('selectedTags is not an array, resetting to empty array');
+      setSelectedTags([]);
+    }
+  }, [selectedTags]);
   
   // Use useTracker for subscription
   const { loading } = useTracker(() => {
@@ -756,34 +777,72 @@ const Analytics: React.FC = () => {
       }
     });
   }, [loading]);
-  const [filterVisible, setFilterVisible] = useState(true);
-
-  // Default organization data
-  const organizations = ['All Organizations', 'Bioptrics'];
-  
-  // State for filters
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([undefined, undefined]);
-  const [startDate, endDate] = dateRange;
-  
-  // References for tom-select instances
-  const tagSelectRef = useRef<HTMLSelectElement>(null);
   const surveySelectRef = useRef<HTMLSelectElement>(null);
   const questionSelectRef = useRef<HTMLSelectElement>(null);
   const tomSelectInstance = useRef<{[key: string]: any}>({});
   
+  // We're using the Layer interface imported from '/imports/api/layers'
+  
+  // Interface for hierarchical layer structure
+  interface LayerWithChildren extends Layer {
+    children?: LayerWithChildren[];
+    depth?: number;
+  }
+
   // Fetch tags from the Layers collection
   const { tags, tagsLoading } = useTracker(() => {
     const subscription = Meteor.subscribe('layers.all');
     const allTags = Layers.find({ active: true }, { sort: { name: 1 } }).fetch();
     
+    // Process tags into hierarchical structure
+    const tagsWithChildren: LayerWithChildren[] = [];
+    const tagMap: Record<string, LayerWithChildren> = {};
+    
+    // First pass: create a map of all tags
+    allTags.forEach(tag => {
+      tagMap[tag._id] = { ...tag, children: [] };
+    });
+    
+    // Second pass: build the hierarchy
+    allTags.forEach(tag => {
+      if (tag.parentId && tagMap[tag.parentId]) {
+        // This tag has a parent, add it to the parent's children
+        tagMap[tag.parentId].children = tagMap[tag.parentId].children || [];
+        tagMap[tag.parentId].children?.push(tagMap[tag._id]);
+      } else {
+        // This is a root tag
+        tagsWithChildren.push(tagMap[tag._id]);
+      }
+    });
+    
     return {
-      tags: allTags,
+      tags: tagsWithChildren,
       tagsLoading: !subscription.ready()
     };
   }, []);
+  
+  // Function to build a flat list of tags with depth information
+  const buildFlatTagList = (tags: LayerWithChildren[], depth = 0): LayerWithChildren[] => {
+    if (!tags || !Array.isArray(tags)) {
+      return [];
+    }
+    
+    let result: LayerWithChildren[] = [];
+    
+    tags.forEach(tag => {
+      if (!tag) return; // Skip undefined/null tags
+      
+      // Add the current tag with its depth
+      result.push({ ...tag, depth });
+      
+      // Recursively add children if any
+      if (tag.children && Array.isArray(tag.children) && tag.children.length > 0) {
+        result = result.concat(buildFlatTagList(tag.children, depth + 1));
+      }
+    });
+    
+    return result;
+  };
   
   // Fetch surveys data
   const { surveys, surveysLoading } = useTracker(() => {
@@ -807,21 +866,19 @@ const Analytics: React.FC = () => {
     };
   }, []);
   
-  // Initialize tom-select instances when data is loaded
+  // Initialize tom-select instances for surveys and questions when data is loaded
   useEffect(() => {
     // Skip if any of the required refs are missing or instances already initialized
-    if (!tagSelectRef.current || 
-        !surveySelectRef.current || 
+    if (!surveySelectRef.current || 
         !questionSelectRef.current || 
-        Object.keys(tomSelectInstance.current).length > 0 || 
-        tagsLoading || 
+        (tomSelectInstance.current.surveys && tomSelectInstance.current.questions) || 
         surveysLoading || 
         questionsLoading) {
       return;
     }
     
     try {
-      // Common configuration for all tom-select instances
+      // Common configuration for tom-select instances
       const createTomSelect = (ref: HTMLSelectElement, placeholder: string, data: any[], valueField: string, textField: string, onChangeHandler: (values: string[]) => void) => {
         const config: any = {
           plugins: ['remove_button'],
@@ -851,16 +908,6 @@ const Analytics: React.FC = () => {
         
         return ts;
       };
-      
-      // Initialize Tags tom-select
-      tomSelectInstance.current.tags = createTomSelect(
-        tagSelectRef.current,
-        'Select tags...',
-        tags,
-        '_id',
-        'name',
-        setSelectedTags
-      );
       
       // Initialize Surveys tom-select
       tomSelectInstance.current.surveys = createTomSelect(
@@ -899,7 +946,112 @@ const Analytics: React.FC = () => {
       });
       tomSelectInstance.current = {};
     };
-  }, [tags, tagsLoading, surveys, surveysLoading, questions, questionsLoading, setSelectedTags, setSelectedSurveys, setSelectedQuestions]);
+  }, [surveys, surveysLoading, questions, questionsLoading, setSelectedSurveys, setSelectedQuestions]);
+  
+  // React Select component for hierarchical tag selection
+  interface SelectOption {
+    value: string;
+    label: string;
+    depth?: number;
+    isDisabled?: boolean;
+  }
+  
+  // Custom Option component to display hierarchical structure
+  const CustomOption = (props: any) => {
+    const { data } = props;
+    const depth = data.depth || 0;
+    const indent = '\u00A0\u00A0'.repeat(depth);
+    const prefix = depth > 0 ? '└── ' : '';
+
+    return (
+      <components.Option {...props}>
+        <div style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+          {indent}{prefix}{data.label}
+        </div>
+      </components.Option>
+    );
+  };
+  
+  // TagSelect component for hierarchical tag selection
+  interface TagSelectProps {
+    tags: LayerWithChildren[];
+    selectedTagIds: string[];
+    onChange: (selectedIds: string[]) => void;
+    isLoading: boolean;
+  }
+  
+  const TagSelect: React.FC<TagSelectProps> = ({ tags, selectedTagIds, onChange, isLoading }) => {
+    // Prepare options for React Select
+    const options = useMemo(() => {
+      // Get flat list of tags with depth information
+      const flatTagList = buildFlatTagList(tags);
+      console.log('Flat tag list:', flatTagList);
+      
+      // Map to React Select options format
+      return flatTagList.map(tag => ({
+        value: tag._id,
+        label: tag.name,
+        depth: tag.depth || 0,
+        isDisabled: false
+      }));
+    }, [tags]);
+    
+    // Find selected options
+    const selectedOptions = useMemo(() => {
+      if (!Array.isArray(selectedTagIds)) {
+        console.warn('selectedTagIds is not an array:', selectedTagIds);
+        return [];
+      }
+      return options.filter(option => selectedTagIds.includes(option.value));
+    }, [options, selectedTagIds]);
+    
+    // Handle selection change
+    const handleChange = (selectedOptions: any) => {
+      const selectedIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : [];
+      onChange(selectedIds);
+    };
+    
+    return (
+      <ReactSelect
+        isMulti
+        options={options}
+        value={selectedOptions}
+        onChange={handleChange}
+        placeholder="Select tags..."
+        isLoading={isLoading}
+        hideSelectedOptions={false}
+        components={{ Option: CustomOption }}
+        className="react-select-container"
+        classNamePrefix="react-select"
+        styles={{
+          option: (provided) => ({
+            ...provided,
+            padding: '8px 12px',
+          }),
+          control: (provided) => ({
+            ...provided,
+            minHeight: '38px',
+          }),
+          multiValue: (provided) => ({
+            ...provided,
+            backgroundColor: '#f0e6ee',
+          }),
+          multiValueLabel: (provided) => ({
+            ...provided,
+            color: '#552a47',
+          }),
+          multiValueRemove: (provided) => ({
+            ...provided,
+            color: '#552a47',
+            ':hover': {
+              backgroundColor: '#552a47',
+              color: 'white',
+            },
+          }),
+        }}
+      />
+    );
+  };
 
   return (
     <AdminLayout>
@@ -922,22 +1074,22 @@ const Analytics: React.FC = () => {
           <FilterBar>
             <FilterGroup>
               <FilterLabel>Organization</FilterLabel>
-              <Select>
+              <StyledSelect className="form-control">
                 {organizations.map((organization) => (
                   <option key={organization} value={organization}>
                     {organization}
                   </option>
                 ))}
-              </Select>
+              </StyledSelect>
             </FilterGroup>
             <FilterGroup>
               <FilterLabel>Tags</FilterLabel>
-              <div className="tom-select-container">
-                <select 
-                  ref={tagSelectRef} 
-                  multiple 
-                  style={{ width: '100%' }}
-                  data-placeholder="Select tags..."
+              <div className="react-select-container">
+                <TagSelect 
+                  tags={tags} 
+                  selectedTagIds={selectedTags}
+                  onChange={setSelectedTags}
+                  isLoading={tagsLoading}
                 />
               </div>
             </FilterGroup>
