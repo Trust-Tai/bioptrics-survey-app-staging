@@ -17,6 +17,7 @@ interface AnswerData {
   value: string;
   count: number;
   percentage: number;
+  optionIndex?: number; // Optional index of the option in the standard options array
 }
 
 interface QuestionData {
@@ -389,6 +390,7 @@ import { FiClock, FiSkipForward } from 'react-icons/fi';
 import { IoCheckmarkDone } from 'react-icons/io5';
 import { RiPulseLine } from 'react-icons/ri';
 import { MdOutlineRateReview } from 'react-icons/md';
+import { LinksCollection } from '/imports/api/links';
 
 const AnswersContainer = styled.div`
   display: flex;
@@ -439,8 +441,8 @@ const BarRow = styled.div`
 
 const Bar = styled.div<{ percentage: number; index: number }>`
   width: 100%;
-  height: ${props => props.percentage}%;
-  background-color: #4285F4;
+  height: ${props => props.percentage > 0 ? `${Math.max(props.percentage, 5)}%` : '1px'};
+  background-color: ${props => props.percentage > 0 ? '#4285F4' : '#E0E0E0'};
   border-radius: 4px;
   position: relative;
 `;
@@ -739,6 +741,120 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
     return [...filteredData].sort((a, b) => b.responseCount - a.responseCount);
   }, [filteredData]);
   
+  // Helper function to map numeric Likert values to text labels
+  const getLikertLabel = (value: string, question: QuestionData): string => {
+    // Check if the value is numeric
+    if (!isNaN(Number(value))) {
+      // Get the numeric value as an index (0-based)
+      const numericValue = parseInt(value, 10);
+      const index = numericValue - 1; // Convert to 0-based index
+      
+      // Try to find the corresponding label in the question's answers
+      // This assumes that the answers array contains the Likert scale options in order
+      const likertOptions = [
+        'Strongly Disagree',
+        'Disagree',
+        'Neither Agree nor Disagree', // or 'Neutral'
+        'Agree',
+        'Strongly Agree'
+      ];
+      
+      // Use the index to get the corresponding label, if available
+      if (index >= 0 && index < likertOptions.length) {
+        return likertOptions[index];
+      }
+    }
+    
+    return value; // Return original value if not numeric or no matching label found
+  };
+
+  // Function to get all possible answer options for a question type
+  const getAllPossibleAnswers = (question: QuestionData): AnswerData[] => {
+    // If no answers are available, return an empty array
+    if (!question.answers || question.answers.length === 0) {
+      return [];
+    }
+
+    console.log('Questions Answers: ', question.answers);
+    
+    // For Likert scale questions, use the actual values from the answers
+    if (question.questionType === 'likert') {
+      console.log('Processing Likert question:', question);
+      console.log('Likert answers:', question.answers);
+      
+      // Get all unique values from the answers
+      const uniqueValues = Array.from(new Set(question.answers.map(a => a.value)));
+      console.log('Unique values in Likert answers:', uniqueValues);
+      
+      // If we have numeric values (1-5), we need to map them to text labels
+      const hasNumericValues = uniqueValues.some(value => !isNaN(Number(value)));
+      console.log('Has numeric values:', hasNumericValues);
+      
+      if (hasNumericValues) {
+        // Define the standard Likert scale options
+        const standardLikertOptions = [
+          'Strongly Disagree',
+          'Disagree',
+          'Neutral', // or 'Neither Agree nor Disagree'
+          'Agree',
+          'Strongly Agree'
+        ];
+        
+        console.log('Using standard Likert options:', standardLikertOptions);
+        
+        // Create a result array with all standard options
+        const result: AnswerData[] = [];
+        
+        // For each standard option
+        standardLikertOptions.forEach((option, index) => {
+          console.log('Index Value: ', index);
+          // Try to find a matching answer by numeric value
+          const existingAnswer = question.answers.find(a => 
+            a.value === String(index + 1) || // Match numeric values (1-5)
+            a.value.toLowerCase() === option.toLowerCase() || ( a.value === ''  && index === 0) // Match text values
+          );
+
+          console.log('Existing Answers: ', existingAnswer, question.answers);
+          
+          if (existingAnswer) {
+            console.log(`Found match for ${option}:`, existingAnswer);
+            // If found, use the existing data with the standard label
+            result.push({
+              ...existingAnswer,
+              value: option, // Use the standard label
+              optionIndex: index // Store the index for reference
+            });
+          } else {
+            console.log(`No match found for ${option}, creating empty entry`);
+            // If not found, create an empty entry
+            result.push({
+              value: option,
+              count: 0,
+              percentage: 0,
+              optionIndex: index // Store the index for reference
+            });
+          }
+        });
+        
+        console.log('Final Likert result:', result);
+        return result;
+      } else {
+        // If we have text values, use them directly
+        console.log('Using text values directly');
+        return question.answers.map((answer, index) => ({
+          ...answer,
+          optionIndex: index // Use the original order as the index
+        }));
+      }
+    }
+    
+    // For all other question types, use the existing answers as is
+    return question.answers.map((answer, index) => ({
+      ...answer,
+      optionIndex: index // Use the original order as the index
+    }));
+  };
+  
   // Update backend to include question types
   useEffect(() => {
     if (data.length > 0 && questionTypes.length === 0) {
@@ -933,27 +1049,37 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
               </MetricsGrid>
               
               <AnswersContainer>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  {question.answers.map((answer, index) => (
-                    <div key={`${question.questionId}-${answer.value}`} style={{ flex: 1, textAlign: 'center' }}>
-                      <AnswerLabel title={answer.value}>
-                        {answer.value}
-                      </AnswerLabel>
-                    </div>
-                  ))}
-                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                  {question.answers.map((answer, index) => (
-                    <div key={`${question.questionId}-${answer.value}-bar`} style={{ flex: 1 }}>
-                      <BarRow>
-                        <Bar percentage={answer.percentage} index={index} />
-                      </BarRow>
-                      <AnswerCount>
-                        <span>{answer.count}</span>
-                        <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>({answer.percentage}%)</span>
-                      </AnswerCount>
-                    </div>
-                  ))}
+                  {getAllPossibleAnswers(question)
+                    // Sort by optionIndex if available (for Likert scale questions)
+                    .sort((a, b) => {
+                      if (a.optionIndex !== undefined && b.optionIndex !== undefined) {
+                        return a.optionIndex - b.optionIndex;
+                      }
+                      return 0;
+                    })
+                    .map((answer, index) => {
+                    // Use the original percentage from the answer object
+                    // This preserves the percentages calculated on the backend
+                    const displayPercentage = answer.percentage || 0;
+                    
+                    return (
+                      <div key={`${question.questionId}-${answer.value}-bar`} style={{ flex: 1 }}>
+                        <div style={{ textAlign: 'center', marginBottom: '8px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <AnswerLabel title={answer.value}>
+                            {answer.value}
+                          </AnswerLabel>
+                        </div>
+                        <BarRow>
+                          <Bar percentage={displayPercentage} index={index} />
+                        </BarRow>
+                        <AnswerCount>
+                          <span>{answer.count}</span>
+                          <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>({displayPercentage}%)</span>
+                        </AnswerCount>
+                      </div>
+                    );
+                  })}
                 </div>
               </AnswersContainer>
             </QuestionCard>
