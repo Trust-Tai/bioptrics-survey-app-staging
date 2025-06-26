@@ -27,27 +27,29 @@ import styled from 'styled-components';
 // Function to get sidebar links with customized terminology and dynamic tags
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
-  { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
-    { to: '/admin/surveys/all', label: `Manage ${getTerminology('surveyLabel')}s` },
-    { to: '/admin/surveys/builder', label: 'Create Survey' },
-    { to: '/admin/surveys/theme', label: 'Theme' },
+  { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard}, 
+  // submenu: [
+    // { to: '/admin/surveys/all', label: `Manage ${getTerminology('surveyLabel')}s` },
+    // { to: '/admin/surveys/builder', label: 'Create Survey' },
+    // { to: '/admin/surveys/theme', label: 'Theme' },
     // Dynamically add survey tags as submenu items
     // ...(surveyTags.map(tag => ({ 
     //   to: `/admin/surveys/tag/${tag._id}`, 
     //   label: `${tag.name}`,
     //   isTag: true
     // })))
-  ] },
-  { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase, submenu: [
-    { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
-    { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
+  // ] },
+  { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase},
+  // , submenu: [
+    // { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
+    // { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
     // Dynamically add question tags as submenu items
     // ...(questionTags.map(tag => ({ 
     //   to: `/admin/questions/tag/${tag._id}`, 
     //   label: `${tag.name}`,
     //   isTag: true
     // })))
-  ] },
+  // ] },
   { to: '/admin/tags/manage', label: 'Tags & Classifications', icon: FaTag },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie, submenu: [
     { to: '/admin/analytics/dashboard', label: 'Dashboard' },

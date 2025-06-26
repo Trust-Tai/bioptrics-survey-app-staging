@@ -889,73 +889,6 @@ const AdminDashboardContent: React.FC = () => {
             </MetricItem> */}
           </MetricsRow>
         </WelcomeBackSection>
-
-                {/* Marvin AI Coming Soon Section */}
-                <MarvinAICard>
-                  <BackgroundDecoration />
-                  <BackgroundDecoration2 />
-                  
-                  <MarvinAIContainer>
-                    {/* Left Side - Header */}
-                    <MarvinAILeft>
-                      <MarvinAIHeader>
-                        <ComingSoonBadge>
-                          <FaRobot size={14} /> Coming Soon
-                        </ComingSoonBadge>
-                        <MarvinAITitle>Meet Marvin AI</MarvinAITitle>
-                        <MarvinAIDescription>
-                          Your intelligent assistant for creating better surveys. Marvin helps admins design effective questions, 
-                          optimize survey flow, and generate insights from responses.
-                        </MarvinAIDescription>
-                      </MarvinAIHeader>
-                    </MarvinAILeft>
-                    
-                    {/* Right Side - Features */}
-                    <MarvinAIRight>
-                      <FeaturesGrid>
-                        <FeatureCard>
-                          <FeatureIcon>
-                            <FaLightbulb size={18} />
-                          </FeatureIcon>
-                          <FeatureTitle>Smart Question Generation</FeatureTitle>
-                          <FeatureDescription>
-                            Marvin helps you craft clear, unbiased questions that get you the insights you need.
-                          </FeatureDescription>
-                        </FeatureCard>
-                        
-                        <FeatureCard>
-                          <FeatureIcon>
-                            <FaBrain size={18} />
-                          </FeatureIcon>
-                          <FeatureTitle>Survey Flow Optimization</FeatureTitle>
-                          <FeatureDescription>
-                            Create logical, engaging survey flows that keep respondents interested.
-                          </FeatureDescription>
-                        </FeatureCard>
-                        
-                        <FeatureCard>
-                          <FeatureIcon>
-                            <FaMagic size={18} />
-                          </FeatureIcon>
-                          <FeatureTitle>Best Practice Recommendations</FeatureTitle>
-                          <FeatureDescription>
-                            Get expert advice on survey design based on industry best practices.
-                          </FeatureDescription>
-                        </FeatureCard>
-                        
-                        <FeatureCard>
-                          <FeatureIcon>
-                            <FaChartLine size={18} />
-                          </FeatureIcon>
-                          <FeatureTitle>Instant Response Analysis</FeatureTitle>
-                          <FeatureDescription>
-                            Turn raw survey data into actionable insights and understand what your data means.
-                          </FeatureDescription>
-                        </FeatureCard>
-                      </FeaturesGrid>
-                    </MarvinAIRight>
-                  </MarvinAIContainer>
-                </MarvinAICard>
         
         {/* KPI Cards */}
         <div style={{ 
@@ -1650,6 +1583,75 @@ const AdminDashboardContent: React.FC = () => {
               </SurveyTypesContainer>
             </TrendContainer>
           </HalfWidthCard>
+          
+          {/* Marvin AI Coming Soon Section - Moved to bottom of page */}
+          <Card style={{ gridColumn: '1 / span 12', marginTop: '150px' }}>
+            <MarvinAICard>
+              <BackgroundDecoration />
+              <BackgroundDecoration2 />
+              
+              <MarvinAIContainer>
+                {/* Left Side - Header */}
+                <MarvinAILeft>
+                  <MarvinAIHeader>
+                    <ComingSoonBadge>
+                      <FaRobot size={14} /> Coming Soon
+                    </ComingSoonBadge>
+                    <MarvinAITitle>Meet Marvin AI</MarvinAITitle>
+                    <MarvinAIDescription>
+                      Your intelligent assistant for creating better surveys. Marvin helps admins design effective questions, 
+                      optimize survey flow, and generate insights from responses.
+                    </MarvinAIDescription>
+                  </MarvinAIHeader>
+                </MarvinAILeft>
+                
+                {/* Right Side - Features */}
+                <MarvinAIRight>
+                  <FeaturesGrid>
+                    <FeatureCard>
+                      <FeatureIcon>
+                        <FaLightbulb size={18} />
+                      </FeatureIcon>
+                      <FeatureTitle>Smart Question Generation</FeatureTitle>
+                      <FeatureDescription>
+                        Marvin helps you craft clear, unbiased questions that get you the insights you need.
+                      </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
+                      <FeatureIcon>
+                        <FaBrain size={18} />
+                      </FeatureIcon>
+                      <FeatureTitle>Survey Flow Optimization</FeatureTitle>
+                      <FeatureDescription>
+                        Create logical, engaging survey flows that keep respondents interested.
+                      </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
+                      <FeatureIcon>
+                        <FaMagic size={18} />
+                      </FeatureIcon>
+                      <FeatureTitle>Best Practice Recommendations</FeatureTitle>
+                      <FeatureDescription>
+                        Get expert advice on survey design based on industry best practices.
+                      </FeatureDescription>
+                    </FeatureCard>
+                    
+                    <FeatureCard>
+                      <FeatureIcon>
+                        <FaChartLine size={18} />
+                      </FeatureIcon>
+                      <FeatureTitle>Instant Response Analysis</FeatureTitle>
+                      <FeatureDescription>
+                        Turn raw survey data into actionable insights and understand what your data means.
+                      </FeatureDescription>
+                    </FeatureCard>
+                  </FeaturesGrid>
+                </MarvinAIRight>
+              </MarvinAIContainer>
+            </MarvinAICard>
+          </Card>
         </MainGrid>
       </div>
     </AdminLayout>
