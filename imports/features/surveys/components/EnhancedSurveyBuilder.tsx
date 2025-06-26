@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Select from 'react-select';
+import { components } from 'react-select';
 import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
@@ -6,8 +8,6 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight, FiTrash2, FiMessageSquare, FiCalendar, FiUser } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
-import TomSelect from 'tom-select';
-import 'tom-select/dist/css/tom-select.css';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 import { Layers, Layer } from '../../../api/layers';
@@ -145,9 +145,118 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Layer[]>([]);
   
-  // Refs for Tom Select
-  const tagSelectRef = useRef<HTMLSelectElement>(null);
-  const tomSelectInstance = useRef<any>(null);
+  // JSX namespace declaration for TypeScript
+  declare namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
+  
+  // Function to build hierarchical tag structure
+  const buildTagHierarchy = (layers: Layer[]) => {
+    const tagMap = new Map();
+    const rootTags: any[] = [];
+    
+    // First pass: create tag objects and store in map
+    layers.forEach(tag => {
+      if (tag && tag._id) {
+        tagMap.set(tag._id, { ...tag, children: [] });
+      }
+    });
+    
+    // Second pass: build parent-child relationships
+    layers.forEach(tag => {
+      if (tag.parentId && tagMap.has(tag.parentId)) {
+        const parent = tagMap.get(tag.parentId);
+        if (parent && parent.children) {
+          parent.children.push(tagMap.get(tag._id));
+        }
+      } else {
+        if (tag._id && tagMap.has(tag._id)) {
+          rootTags.push(tagMap.get(tag._id));
+        }
+      }
+    });
+    
+    // Sort tags alphabetically at each level
+    const sortTags = (tags: any[]) => {
+      tags.sort((a, b) => a.name.localeCompare(b.name));
+      tags.forEach(tag => {
+        if (tag.children && tag.children.length > 0) {
+          sortTags(tag.children);
+        }
+      });
+      return tags;
+    };
+    
+    return sortTags(rootTags);
+  };
+  
+  // Function to flatten hierarchical tags into a list with depth information
+  const buildFlatTagList = (layers: Layer[]): any[] => {
+    const sortedRootTags = buildTagHierarchy(layers);
+    const flatList: any[] = [];
+    
+    // Function to flatten the hierarchical structure with depth information
+    const flattenWithDepth = (tags: any[], depth = 0) => {
+      tags.forEach(tag => {
+        flatList.push({
+          _id: tag._id,
+          name: tag.name,
+          depth: depth
+        });
+
+        if (tag.children && tag.children.length > 0) {
+          flattenWithDepth(tag.children, depth + 1);
+        }
+      });
+    };
+    
+    // Flatten the hierarchical tags
+    flattenWithDepth(sortedRootTags);
+    
+    return flatList;
+  };
+  
+  // Function to render nested tag options with proper indentation
+  const renderNestedTagOptions = (layers: Layer[], selectedTagIds: string[] = []): JSX.Element[] => {
+    const sortedRootTags = buildTagHierarchy(layers);
+    
+    // Function to render options recursively with proper indentation
+    const renderOptions = (tags: any[], depth = 0): JSX.Element[] => {
+      return tags.flatMap(tag => {
+        // Create indentation based on depth
+        const indent = '\u00A0\u00A0'.repeat(depth); // Non-breaking spaces for indentation
+        const prefix = depth > 0 ? '└── ' : ''; // Box drawing characters with extra space for better visibility
+        
+        // Create the option for this tag
+        const option = (
+          <option 
+            key={tag._id} 
+            value={tag._id}
+            className={`depth-${depth}`}
+          >
+            {indent}{prefix}{tag.name}
+          </option>
+        );
+        
+        // Recursively render children options
+        if (tag.children && tag.children.length > 0) {
+          return [option, ...renderOptions(tag.children, depth + 1)];
+        }
+        
+        return option;
+      });
+    };
+    
+    // Start rendering from root tags
+    return renderOptions(sortedRootTags);
+  };
+  
+  // This function is no longer needed as we've moved the initialization to the useEffect
+  const initializeTomSelect = () => {
+    // Implementation moved to useEffect
+  };
   
   // Subscribe to layers (tags) with location containing "Surveys"
   useTracker(() => {
@@ -166,6 +275,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
     
     return subscription.ready();
   }, []);
+  
+  // We're not using TomSelect for tags anymore, using standard HTML select with proper hierarchical display
   
   // State for modals
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
@@ -431,15 +542,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
         console.log('Loading saved tags from survey:', currentSurvey.selectedTags);
         setSelectedTags(currentSurvey.selectedTags);
         
-        // If Tom Select is already initialized, update its value
-        if (activeStep === 'tags' && tomSelectInstance.current) {
-          setTimeout(() => {
-            if (tomSelectInstance.current) {
-              tomSelectInstance.current.setValue(currentSurvey.selectedTags);
-              console.log('Set saved tags in Tom Select');
-            }
-          }, 100);
-        }
+        // No need to manually update React Select as it's controlled by state
+        console.log('Tags will be displayed in React Select via state');
       }
     }
     
@@ -478,9 +582,48 @@ const EnhancedSurveyBuilder: React.FC = () => {
     setTimeout(() => setAlert(null), 5000);
   };
   
+  // React Select option type
+  interface SelectOption {
+    value: string;
+    label: string;
+    depth?: number;
+    isDisabled?: boolean;
+  }
+  
+  // Function to prepare hierarchical options for React Select
+  const prepareSelectOptions = (tags: Layer[]): SelectOption[] => {
+    return buildFlatTagList(tags.filter(tag => tag.active)).map(tag => ({
+      value: tag._id,
+      label: tag.name,
+      depth: tag.depth || 0,
+      isDisabled: false
+    }));
+  };
+  
+  // Custom Option component to display hierarchical structure
+  const CustomOption = (props: any) => {
+    const { data } = props;
+    const depth = data.depth || 0;
+    const indent = '\u00A0\u00A0'.repeat(depth); // Non-breaking spaces for indentation
+    const prefix = depth > 0 ? '└── ' : ''; // Box drawing characters for hierarchy
+    
+    return (
+      <components.Option {...props}>
+        <div style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+          {indent}{prefix}{data.label}
+        </div>
+      </components.Option>
+    );
+  };
+  
+  // Memoized select options
+  const selectOptions = React.useMemo(() => {
+    return prepareSelectOptions(availableTags);
+  }, [availableTags]);
+  
   // Effect to handle changes in availableTags (when tags are activated/deactivated)
   useEffect(() => {
-    if (tomSelectInstance.current && activeStep === 'tags') {
+    if (activeStep === 'tags') {
       // Get currently active tag IDs
       const activeTagIds = availableTags.filter(tag => tag.active).map(tag => tag._id);
       
@@ -491,107 +634,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
       if (updatedSelectedTags.length !== selectedTags.length) {
         setSelectedTags(updatedSelectedTags);
       }
-      
-      // Refresh the options in Tom Select
-      tomSelectInstance.current.clear();
-      tomSelectInstance.current.clearOptions();
-      
-      // Add only active tags
-      availableTags.forEach(tag => {
-        if (tag.active) {
-          tomSelectInstance.current.addOption({
-            value: tag._id,
-            text: tag.name
-          });
-        }
-      });
-      
-      // Set the filtered values
-      tomSelectInstance.current.setValue(updatedSelectedTags, true);
     }
-  }, [availableTags]);
-  
-  // Initialize Tom Select when Tags tab is active
-  useEffect(() => {
-    // Only initialize when the Tags tab is active and we have a valid reference
-    if (activeStep === 'tags' && tagSelectRef.current && availableTags.length > 0) {
-      // Skip initialization if Tom Select is already initialized with the same tags
-      if (tomSelectInstance.current) {
-        // Only update the values if they've changed
-        const currentValues = tomSelectInstance.current.getValue();
-        const currentValuesStr = currentValues.sort().join(',');
-        const newValuesStr = [...selectedTags].sort().join(',');
-        
-        if (currentValuesStr !== newValuesStr) {
-          console.log('Updating tag values without reinitializing');
-          tomSelectInstance.current.setValue(selectedTags, true);
-        }
-        return;
-      }
-      
-      console.log('Initializing Tom Select');
-      
-      // Create a configuration that allows multiple selection with proper remove button
-      const config: any = {
-        plugins: ['remove_button'],
-        placeholder: 'Select tags...',
-        create: false,
-        maxItems: null, // Allow multiple selections
-        sortField: { field: 'text', direction: 'asc' },
-        // Remove dropdownParent to fix the insertBefore Node error
-        // The dropdown will be appended to the select element's parent by default
-        onChange: function(values: string[]) {
-          // Only update state if values actually changed
-          const currentValuesStr = values.sort().join(',');
-          const existingValuesStr = [...selectedTags].sort().join(',');
-          
-          if (currentValuesStr !== existingValuesStr) {
-            console.log('Tags changed:', values);
-            setSelectedTags(values);
-          }
-        }
-      };
-      
-      // Initialize Tom Select with options
-      const ts = new TomSelect(tagSelectRef.current, config);
-      tomSelectInstance.current = ts;
-      
-      // Clear any existing options and add the available tags
-      ts.clearOptions();
-      availableTags.forEach(tag => {
-        // Only add active tags as selectable options
-        if (tag.active) {
-          ts.addOption({
-            value: tag._id,
-            text: tag.name
-          });
-        }
-      });
-      
-      // Set initial values if any, but filter out any tags that might be inactive
-      if (selectedTags.length > 0) {
-        console.log('Setting initial tag values:', selectedTags);
-        // Filter selectedTags to only include those that are active
-        const activeTagIds = availableTags.filter(tag => tag.active).map(tag => tag._id);
-        const activeSelectedTags = selectedTags.filter(tagId => activeTagIds.includes(tagId));
-        
-        // Update the selectedTags state if any inactive tags were removed
-        if (activeSelectedTags.length !== selectedTags.length) {
-          setSelectedTags(activeSelectedTags);
-        }
-        
-        ts.setValue(activeSelectedTags, true); // Silent update
-      }
-      
-      // Clean up Tom Select instance when component unmounts
-      return () => {
-        if (tomSelectInstance.current) {
-          tomSelectInstance.current.destroy();
-          tomSelectInstance.current = null;
-        }
-      };
-    }
-  }, [activeStep, availableTags]);
+  }, [availableTags, activeStep, selectedTags]);
+
+  // No initialization needed for React Select as it's handled declaratively in the JSX
   
   // Show error alert
   const showErrorAlert = (message: string) => {
@@ -845,7 +891,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
           secondaryColor: selectedThemeObject.secondaryColor,
           accentColor: selectedThemeObject.accentColor,
           backgroundColor: selectedThemeObject.backgroundColor || '#ffffff',
-          textColor: selectedThemeObject.textColor || '#333333',
+          textColor: selectedThemeObject.textColor || '#333',
           headingFont: selectedThemeObject.headingFont || 'Inter, sans-serif',
           bodyFont: selectedThemeObject.bodyFont || 'Inter, sans-serif'
         } : null,
@@ -1564,7 +1610,103 @@ const EnhancedSurveyBuilder: React.FC = () => {
               )}
               
               {/* Other steps would be implemented here */}
-              {activeStep === 'demographics' ? (
+              {activeStep === 'tags' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Survey Tags</h2>
+                    <p className="survey-builder-panel-subtitle">
+                      Add tags to categorize and organize your survey
+                    </p>
+                  </div>
+                  
+                  <div style={{ padding: 20 }}>
+                    <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
+                      Select tags to associate with this survey. Tags help with filtering and organizing surveys.
+                    </p>
+                    
+                    <div className="form-group">
+                      <label htmlFor="surveyTags">Select Tags</label>
+                      <div style={{ position: 'relative', zIndex: 1000 }}>
+                        <Select
+                          id="surveyTags"
+                          name="surveyTags"
+                          isMulti
+                          closeMenuOnSelect={false}
+                          hideSelectedOptions={false}
+                          options={selectOptions}
+                          value={selectOptions.filter(option => selectedTags.includes(option.value))}
+                          onChange={(selected) => {
+                            if (Array.isArray(selected)) {
+                              setSelectedTags(selected.map(option => option.value));
+                            } else {
+                              setSelectedTags([]);
+                            }
+                          }}
+                          components={{
+                            Option: CustomOption
+                          }}
+                          styles={{
+                            option: (base, state) => ({
+                              ...base,
+                              fontFamily: 'monospace',
+                              whiteSpace: 'pre'
+                            }),
+                            menu: (base) => ({
+                              ...base,
+                              zIndex: 9999
+                            })
+                          }}
+                          classNamePrefix="react-select"
+                        />
+                      </div>
+                      <style dangerouslySetInnerHTML={{ __html: `
+                        .survey-builder-panel, .survey-builder-panel-header, .survey-builder-container {
+                          overflow: visible !important;
+                        }
+                        .tag-select option {
+                          white-space: pre !important;
+                          font-family: monospace !important;
+                        }
+                        .ts-dropdown { 
+                          z-index: 1050 !important; 
+                          max-height: 400px !important;
+                          overflow-y: auto !important;
+                        }
+                        .ts-wrapper { 
+                          z-index: 1001 !important; 
+                          width: 100% !important;
+                        }
+                        .ts-dropdown .option { 
+                          font-family: monospace !important;
+                          white-space: pre !important;
+                        }
+                        .ts-wrapper.multi .ts-control > div {
+                          margin: 0 3px 3px 0;
+                          padding: 2px 6px;
+                        }
+                        .ts-wrapper.plugin-remove_button .item .remove {
+                          border-left: 1px solid #d0d0d0;
+                          padding: 0 6px;
+                        }
+                        .ts-wrapper.multi .ts-control {
+                          padding: 8px 8px 3px 8px;
+                        }
+                      `}} />
+                    </div>
+                    
+                    <div style={{ marginTop: 20 }}>
+                      <p style={{ fontSize: 14, color: '#666' }}>
+                        <strong>Selected Tags:</strong> {selectedTags.length > 0 
+                          ? selectedTags.map(tagId => {
+                              const tag = availableTags.find(t => t._id === tagId);
+                              return tag ? tag.name : '';
+                            }).join(', ')
+                          : 'No tags selected'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : activeStep === 'demographics' ? (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">Demographics Metrics</h2>
