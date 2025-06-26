@@ -740,36 +740,53 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a, b) => b.responseCount - a.responseCount);
   }, [filteredData]);
-  
-  // Helper function to map numeric Likert values to text labels
-  const getLikertLabel = (value: string, question: QuestionData): string => {
-    // Check if the value is numeric
-    if (!isNaN(Number(value))) {
-      // Get the numeric value as an index (0-based)
-      const numericValue = parseInt(value, 10);
-      const index = numericValue - 1; // Convert to 0-based index
+
+  // State to store original question data with answer options
+  const [questionOptionsMap, setQuestionOptionsMap] = useState<Record<string, string[]>>({});
+
+  // Function to fetch original question data to get answer options
+  const fetchQuestionOptions = async (questionId: string) => {
+    try {
+      // Create a promise-based wrapper for questions.getOne
+      const getQuestionById = (id: string) => {
+        return new Promise<any>((resolve, reject) => {
+          Meteor.call('questions.getOne', id, (error: Error, result: any) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          });
+        });
+      };
+
+      const questionData = await getQuestionById(questionId);
+      console.log('Fetched original question data:', questionData);
       
-      // Try to find the corresponding label in the question's answers
-      // This assumes that the answers array contains the Likert scale options in order
-      const likertOptions = [
-        'Strongly Disagree',
-        'Disagree',
-        'Neither Agree nor Disagree', // or 'Neutral'
-        'Agree',
-        'Strongly Agree'
-      ];
-      
-      // Use the index to get the corresponding label, if available
-      if (index >= 0 && index < likertOptions.length) {
-        return likertOptions[index];
+      // Extract answer options if available
+      if (questionData && questionData.answers && Array.isArray(questionData.answers)) {
+        // Get the text values from the answers array
+        const options = questionData.answers.map((answer: any) => answer.text || answer.value || '');
+        console.log('Extracted options for question:', options);
+        
+        // Update the options map
+        setQuestionOptionsMap(prev => ({
+          ...prev,
+          [questionId]: options
+        }));
+        
+        return options;
       }
+      
+      return [];
+    } catch (error) {
+      console.error('Error fetching question options:', error);
+      return [];
     }
-    
-    return value; // Return original value if not numeric or no matching label found
   };
 
   // Function to get all possible answer options for a question type
-  const getAllPossibleAnswers = (question: QuestionData): AnswerData[] => {
+  const getAllPossibleAnswers = async (question: QuestionData): Promise<AnswerData[]> => {
     // If no answers are available, return an empty array
     if (!question.answers || question.answers.length === 0) {
       return [];
@@ -786,72 +803,162 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
       const uniqueValues = Array.from(new Set(question.answers.map(a => a.value)));
       console.log('Unique values in Likert answers:', uniqueValues);
       
-      // If we have numeric values (1-5), we need to map them to text labels
+      // Check if we have numeric values (1-5)
       const hasNumericValues = uniqueValues.some(value => !isNaN(Number(value)));
       console.log('Has numeric values:', hasNumericValues);
       
-      if (hasNumericValues) {
-        // Define the standard Likert scale options
-        const standardLikertOptions = [
+      // Try to get the original question options
+      let likertOptions = questionOptionsMap[question.questionId];
+      
+      // If we don't have the options yet, try to fetch them
+      if (!likertOptions || likertOptions.length === 0) {
+        likertOptions = await fetchQuestionOptions(question.questionId);
+      }
+      
+      // If we still don't have options, use standard ones
+      if (!likertOptions || likertOptions.length === 0) {
+        likertOptions = [
           'Strongly Disagree',
           'Disagree',
-          'Neutral', // or 'Neither Agree nor Disagree'
+          'Neutral',
           'Agree',
           'Strongly Agree'
         ];
-        
-        console.log('Using standard Likert options:', standardLikertOptions);
-        
-        // Create a result array with all standard options
-        const result: AnswerData[] = [];
-        
-        // For each standard option
-        standardLikertOptions.forEach((option, index) => {
-          console.log('Index Value: ', index);
-          // Try to find a matching answer by numeric value
-          const existingAnswer = question.answers.find(a => 
-            a.value === String(index + 1) || // Match numeric values (1-5)
-            a.value.toLowerCase() === option.toLowerCase() || ( a.value === ''  && index === 0) // Match text values
-          );
-
-          console.log('Existing Answers: ', existingAnswer, question.answers);
-          
-          if (existingAnswer) {
-            console.log(`Found match for ${option}:`, existingAnswer);
-            // If found, use the existing data with the standard label
-            result.push({
-              ...existingAnswer,
-              value: option, // Use the standard label
-              optionIndex: index // Store the index for reference
-            });
-          } else {
-            console.log(`No match found for ${option}, creating empty entry`);
-            // If not found, create an empty entry
-            result.push({
-              value: option,
-              count: 0,
-              percentage: 0,
-              optionIndex: index // Store the index for reference
-            });
-          }
-        });
-        
-        console.log('Final Likert result:', result);
-        return result;
-      } else {
-        // If we have text values, use them directly
-        console.log('Using text values directly');
-        return question.answers.map((answer, index) => ({
-          ...answer,
-          optionIndex: index // Use the original order as the index
-        }));
       }
+      
+      console.log('Using Likert options:', likertOptions);
+      
+      // Create a result array with all options
+      const result: AnswerData[] = [];
+      
+      // For each option
+      likertOptions.forEach((option, index) => {
+        console.log('Processing option:', option, 'at index:', index);
+        
+        // Try to find a matching answer
+        const existingAnswer = question.answers.find(a => {
+          // If we have numeric values, match by index+1
+          if (hasNumericValues && a.value === String(index + 1)) {
+            return true;
+          }
+          
+          // Otherwise try to match by text (case-insensitive)
+          return a.value.toLowerCase() === option.toLowerCase() || 
+                 (a.value === '' && index === 0);
+        });
+
+        console.log('Existing Answer found:', existingAnswer);
+        
+        if (existingAnswer) {
+          // If found, use the existing data with the correct label
+          result.push({
+            ...existingAnswer,
+            value: option, // Use the actual option label
+            optionIndex: index // Store the index for reference
+          });
+        } else {
+          // If not found, create an empty entry
+          result.push({
+            value: option,
+            count: 0,
+            percentage: 0,
+            optionIndex: index // Store the index for reference
+          });
+        }
+      });
+      
+      console.log('Final Likert result:', result);
+      return result;
     }
     
     // For all other question types, use the existing answers as is
     return question.answers.map((answer, index) => ({
       ...answer,
       optionIndex: index // Use the original order as the index
+    }));
+  };
+  
+  // Non-async wrapper for getAllPossibleAnswers to use in render
+  const getAnswersForDisplay = (question: QuestionData): AnswerData[] => {
+    // Return cached answers if we have them
+    if (questionOptionsMap[question.questionId]) {
+      // Create a result array with all options
+      const result: AnswerData[] = [];
+
+      console.log('Available Options: ', result);
+      const options = questionOptionsMap[question.questionId];
+      
+      options.forEach((option, index) => {
+        // Try to find a matching answer
+        const existingAnswer = question.answers.find(a => 
+          a.value === String(index + 1) || // Match numeric values (1-5)
+          a.value.toLowerCase() === option.toLowerCase() || 
+          (a.value === '' && index === 0)
+        );
+        
+        if (existingAnswer) {
+          // If found, use the existing data with the correct label
+          result.push({
+            ...existingAnswer,
+            value: option, // Use the actual option label
+            optionIndex: index // Store the index for reference
+          });
+        } else {
+          // If not found, create an empty entry
+          result.push({
+            value: option,
+            count: 0,
+            percentage: 0,
+            optionIndex: index // Store the index for reference
+          });
+        }
+      });
+      
+      return result;
+    }
+    
+    // If we don't have cached options yet, trigger the fetch and return the current answers
+    // This will be updated on the next render after the fetch completes
+    if (question.questionType === 'likert') {
+      // Fetch options in the background
+      fetchQuestionOptions(question.questionId).catch(console.error);
+      
+      // Return standard options for now
+      const standardOptions = [
+        'Strongly Disagree',
+        'Disagree',
+        'Neutral',
+        'Agree',
+        'Strongly Agree'
+      ];
+      
+      return standardOptions.map((option, index) => {
+        const existingAnswer = question.answers.find(a => 
+          a.value === String(index + 1) || 
+          a.value.toLowerCase() === option.toLowerCase() || (a.value === '' && index === 0)
+        );
+        
+        if (existingAnswer) {
+          return {
+            ...existingAnswer,
+            value: option,
+            optionIndex: index
+          };
+        } else {
+          return {
+            value: option,
+            count: 0,
+            percentage: 0,
+            optionIndex: index
+          };
+        }
+      });
+    }
+    
+    // For other question types, just return the answers with optionIndex
+    return question.answers.map((answer, index) => ({
+      ...answer,
+      optionIndex: index
     }));
   };
   
@@ -1050,15 +1157,15 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
               
               <AnswersContainer>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                  {getAllPossibleAnswers(question)
+                  {getAnswersForDisplay(question)
                     // Sort by optionIndex if available (for Likert scale questions)
-                    .sort((a, b) => {
+                    .sort((a: AnswerData, b: AnswerData) => {
                       if (a.optionIndex !== undefined && b.optionIndex !== undefined) {
                         return a.optionIndex - b.optionIndex;
                       }
                       return 0;
                     })
-                    .map((answer, index) => {
+                    .map((answer: AnswerData, index: number) => {
                     // Use the original percentage from the answer object
                     // This preserves the percentages calculated on the backend
                     const displayPercentage = answer.percentage || 0;
