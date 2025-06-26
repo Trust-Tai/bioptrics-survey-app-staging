@@ -20,10 +20,17 @@ interface AnswerData {
 interface QuestionData {
   questionId: string;
   questionText: string;
+  questionType: string; // Added question type field
   responseCount: number;
   averageScore: number;
-  sentiment: 'positive' | 'neutral' | 'negative';
+  sentiment: string;
   answers: AnswerData[];
+  // Enhanced metrics
+  avgTimeSpent: number; // Average time spent on question in seconds
+  skipRate: number; // Percentage of users who skipped this question
+  completionRate: number; // Percentage of users who completed this question
+  engagementScore: number; // Score from 0-100 indicating user engagement
+  responseQuality: string; // Quality of responses based on analysis
 }
 
 // Styled components
@@ -101,6 +108,23 @@ const FilterSelect = styled.div`
   position: relative;
 `;
 
+// Create a styled component for the color indicator
+const ColorIndicator = styled.span<{ questionType: string }>`
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background-color: ${props => {
+    switch (props.questionType) {
+      case 'likert': return '#a0cf4e'; // Green for Likert scales
+      case 'multiple_choice': return '#4e9dcf'; // Blue for multiple choice
+      case 'open_text': return '#cf9e4e'; // Orange for open text
+      default: return '#adadad'; // Gray for unknown
+    }
+  }};
+`;
+
 const Select = styled.select`
   width: 100%;
   padding: 8px 12px;
@@ -171,14 +195,16 @@ const QuestionHeader = styled.div`
   margin-bottom: 16px;
 `;
 
-const QuestionText = styled.h4`
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin: 0;
+const QuestionTextContainer = styled.div`
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  line-height: 1.4;
-  margin-right: 16px;
+`;
+
+const QuestionText = styled.h4`
+  font-weight: 500;
+  font-size: 16px;
+  margin-bottom: 4px;
 `;
 
 const QuestionMeta = styled.div`
@@ -256,13 +282,110 @@ const SentimentTag = styled.span<{ sentiment: string }>`
   margin-left: 8px;
 `;
 
+const QualityTag = styled.span<{ quality: string }>`
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: ${props => {
+    switch (props.quality) {
+      case 'high': return '#e6f7ed';
+      case 'medium': return '#fff8e6';
+      case 'low': return '#ffebeb';
+      default: return '#f0f0f0';
+    }
+  }};
+  color: ${props => {
+    switch (props.quality) {
+      case 'high': return '#1e8e3e';
+      case 'medium': return '#f9a825';
+      case 'low': return '#d93025';
+      default: return '#5f6368';
+    }
+  }};
+  margin-left: 8px;
+`;
+
+const TypeTag = styled.span<{ questionType: string }>`
+  font-size: 10px;
+  padding: 8px;
+  background-color: #a0cf4e;
+  width: max-content;
+  border-radius: 12px;
+  color: #fff;
+  display: inline-block;
+`;
+
 const ChartActions = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
 `;
 
-// Chart action icons
+const MetricsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+`;
+
+const MetricCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+`;
+
+const MetricLabel = styled.div`
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+`;
+
+const MetricValue = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+`;
+
+const MetricIcon = styled.div`
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  color: #4285F4;
+`;
+
+const EngagementGauge = styled.div`
+  position: relative;
+  height: 8px;
+  background-color: #f1f3f4;
+  border-radius: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+`;
+
+const EngagementLevel = styled.div<{ score: number }>`
+  position: absolute;
+  height: 100%;
+  width: ${props => props.score}%;
+  background-color: ${props => {
+    if (props.score >= 80) return '#34A853';
+    if (props.score >= 50) return '#FBBC05';
+    return '#EA4335';
+  }};
+  border-radius: 4px;
+`;
+
+// Icons for metrics
+import { FiClock, FiSkipForward } from 'react-icons/fi';
+import { IoCheckmarkDone } from 'react-icons/io5';
+import { RiPulseLine } from 'react-icons/ri';
+import { MdOutlineRateReview } from 'react-icons/md';
 
 const AnswersContainer = styled.div`
   display: flex;
@@ -302,9 +425,9 @@ const BarContainer = styled.div`
 
 const BarRow = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   width: 100%;
-  height: 40px;
+  height: 100px;
   background-color: #f1f3f4;
   border-radius: 4px;
   overflow: hidden;
@@ -312,8 +435,8 @@ const BarRow = styled.div`
 `;
 
 const Bar = styled.div<{ percentage: number; index: number }>`
-  height: 40px;
-  width: ${props => props.percentage}%;
+  width: 100%;
+  height: ${props => props.percentage}%;
   background-color: #4285F4;
   border-radius: 4px;
   position: relative;
@@ -322,9 +445,13 @@ const Bar = styled.div<{ percentage: number; index: number }>`
 const AnswerCount = styled.div`
   text-align: center;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #333;
   margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
 `;
 
 const BarsContainer = styled.div`
@@ -355,74 +482,184 @@ const NoDataMessage = styled.div`
 `;
 
 /**
- * Generate dummy data for question performance when real data is not available
- */
-const generateDummyData = (): QuestionData[] => {
-  return [
-    {
-      questionId: 'q1',
-      questionText: 'How satisfied are you with your work-life balance?',
-      responseCount: 1247,
-      averageScore: 4.2,
-      sentiment: 'positive',
-      answers: [
-        { value: 'Very Satisfied', count: 387, percentage: 31 },
-        { value: 'Satisfied', count: 456, percentage: 37 },
-        { value: 'Neutral', count: 234, percentage: 19 },
-        { value: 'Dissatisfied', count: 123, percentage: 10 },
-        { value: 'Very Dissatisfied', count: 47, percentage: 3 }
-      ]
-    },
-    {
-      questionId: 'q2',
-      questionText: 'Rate the effectiveness of communication within your team',
-      responseCount: 1189,
-      averageScore: 3.8,
-      sentiment: 'neutral',
-      answers: [
-        { value: 'Excellent', count: 298, percentage: 25 },
-        { value: 'Good', count: 423, percentage: 36 },
-        { value: 'Average', count: 312, percentage: 26 },
-        { value: 'Poor', count: 134, percentage: 11 },
-        { value: 'Very Poor', count: 22, percentage: 2 }
-      ]
-    }
-  ];
-};
-
-/**
  * QuestionPerformanceChart component displays question performance analytics
  */
 const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({ 
   title = 'Question Performance',
   subtitle = 'Average scores and response patterns'
 }) => {
+  // State for chart data
   const [data, setData] = useState<QuestionData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedQuestion, setSelectedQuestion] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
+  // State for selected question type filter
+  const [selectedQuestionType, setSelectedQuestionType] = useState<string>('all');
+  
+  // Track available question types
+  const [questionTypes, setQuestionTypes] = useState<string[]>([]);
+  
   // Fetch question performance data from the server
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
+    setError(null);
     console.log('Fetching question performance data...');
     
-    Meteor.call('getQuestionPerformanceData', (error: Error, result: QuestionData[]) => {
-      if (error) {
-        console.error('Error fetching question performance data:', error);
-        // Use dummy data as fallback
-        setData(generateDummyData());
-      } else {
-        console.log('Received question performance data:', result);
-        // Use real data if available, otherwise fallback to dummy data
-        if (result && Array.isArray(result) && result.length > 0) {
-          setData(result);
-        } else {
-          console.log('No question performance data available, using dummy data');
-          setData(generateDummyData());
+    // Create a promise-based wrapper for Meteor.call
+    const getQuestionPerformanceData = () => {
+      return new Promise<QuestionData[]>((resolve, reject) => {
+        Meteor.call('getQuestionPerformanceData', (error: Error, result: QuestionData[]) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      });
+    };
+    
+    // Create a promise-based wrapper for questions.getOne
+    const getQuestionById = (questionId: string) => {
+      return new Promise<any>((resolve, reject) => {
+        Meteor.call('questions.getOne', questionId, (error: Error, result: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      });
+    };
+    
+    try {
+      // Get initial question performance data
+      const result = await getQuestionPerformanceData();
+      console.log('Received question performance data:', result);
+      
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        setError('No question data available');
+        setData([]);
+        setQuestionTypes([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Process the data to ensure question titles are displayed correctly
+      let processedData = [...result];
+      
+      // First, determine question types for questions without types
+      processedData = processedData.map(question => {
+        // If question type is not provided, try to determine it from the data
+        if (!question.questionType) {
+          // Determine question type based on answers and structure
+          let questionType = 'unknown';
+          
+          // Check for common question types based on answer patterns
+          if (question.answers && question.answers.length > 0) {
+            const answerValues = question.answers.map(a => a.value);
+            
+            // Likert scale typically has numeric values 1-5 or 1-7
+            if (answerValues.every(v => !isNaN(Number(v))) && 
+                answerValues.length <= 7 && 
+                Math.max(...answerValues.map(v => Number(v))) <= 7) {
+              questionType = 'likert';
+            }
+            // Multiple choice / checkbox typically has text answers
+            else if (answerValues.some(v => isNaN(Number(v)))) {
+              questionType = 'multiple_choice';
+            }
+            // Open text questions typically have many unique answers
+            else if (answerValues.length > 10) {
+              questionType = 'open_text';
+            }
+          }
+          
+          // Add the determined type to the question
+          return { ...question, questionType };
+        }
+        return question;
+      });
+      
+      // Identify questions with placeholder titles that need to be fetched
+      const questionsToFetch = processedData
+        .filter(q => q.questionText.startsWith('Question '))
+        .map(q => q.questionId);
+      
+      console.log(`Found ${questionsToFetch.length} questions with placeholder titles`);
+      
+      // If there are questions with placeholder titles, fetch their real data
+      if (questionsToFetch.length > 0) {
+        try {
+          // Fetch all question documents in parallel
+          const questionPromises = questionsToFetch.map(questionId => getQuestionById(questionId));
+          const questionDocs = await Promise.all(questionPromises);
+          
+          // Process each question document to extract real titles and types
+          questionDocs.forEach((doc, index) => {
+            if (!doc) return;
+            
+            const questionId = questionsToFetch[index];
+            console.log(`Processing question document for ${questionId}:`, doc);
+            
+            // Extract the real question text and type if available
+            let realText = null;
+            let questionType = null;
+            
+            if (doc.versions && doc.versions.length > 0) {
+              const currentVersionIndex = doc.currentVersion || 0;
+              const currentVersion = doc.versions[currentVersionIndex];
+              
+              if (currentVersion) {
+                // Get question text
+                if (currentVersion.questionText) {
+                  realText = currentVersion.questionText;
+                  console.log(`Found real question text for ${questionId}: ${realText}`);
+                }
+                
+                // Get question type
+                if (currentVersion.type) {
+                  questionType = currentVersion.type;
+                } else if (currentVersion.questionType) {
+                  questionType = currentVersion.questionType;
+                } else if (currentVersion.inputType) {
+                  questionType = currentVersion.inputType;
+                }
+              }
+            }
+            
+            // Update the processed data with real question text and type
+            if (realText || questionType) {
+              processedData = processedData.map(q => {
+                if (q.questionId === questionId) {
+                  return { 
+                    ...q, 
+                    questionText: realText || q.questionText,
+                    questionType: questionType || q.questionType
+                  };
+                }
+                return q;
+              });
+            }
+          });
+        } catch (fetchError) {
+          console.error('Error fetching question details:', fetchError);
         }
       }
+      
+      // Extract unique question types for the filter dropdown
+      const types = Array.from(new Set(processedData.map(q => q.questionType)));
+      setQuestionTypes(types);
+      
+      // Set the processed data with real question titles and types
+      setData(processedData);
+      
+    } catch (error) {
+      console.error('Error fetching question performance data:', error);
+      setError(`Failed to load data: ${error.message}`);
+      setData([]);
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   // Fetch data on component mount
@@ -474,59 +711,53 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
     }
   };
 
-  // Filter data based on selected question and sort by response count (highest first)
+  // Filter data based on selected question type
   const filteredData = useMemo(() => {
-    let result;
-    if (selectedQuestion === 'all') {
-      result = data;
-    } else {
-      result = data.filter(q => q.questionId === selectedQuestion);
+    if (selectedQuestionType === 'all') {
+      return data;
     }
-    // Sort by response count (highest first)
-    return result.sort((a, b) => b.responseCount - a.responseCount);
-  }, [data, selectedQuestion]);
+    return data.filter(item => item.questionType === selectedQuestionType);
+  }, [data, selectedQuestionType]);
+
+  // Sort data by response count (highest first)
+  const sortedData = useMemo(() => {
+    return [...filteredData].sort((a, b) => b.responseCount - a.responseCount);
+  }, [filteredData]);
+  
+  // Update backend to include question types
+  useEffect(() => {
+    if (data.length > 0 && questionTypes.length === 0) {
+      // Extract question types from data if not already done
+      const types = Array.from(new Set(data.map(q => q.questionType || 'unknown')));
+      setQuestionTypes(types);
+    }
+  }, [data, questionTypes.length]);
 
   // Handle export button click
   const handleExport = () => {
-    // Convert data to CSV format
-    const headers = ['Question', 'Response Count', 'Average Score', 'Sentiment', 'Answer', 'Count', 'Percentage'];
-    const csvRows = [headers];
-    
-    data.forEach(question => {
-      question.answers.forEach((answer, index) => {
-        if (index === 0) {
-          csvRows.push([
-            question.questionText,
-            question.responseCount.toString(),
-            question.averageScore.toString(),
-            question.sentiment,
-            answer.value,
-            answer.count.toString(),
-            `${answer.percentage}%`
-          ]);
-        } else {
-          csvRows.push([
-            '',
-            '',
-            '',
-            '',
-            answer.value,
-            answer.count.toString(),
-            `${answer.percentage}%`
-          ]);
-        }
-      });
-    });
-    
-    // Convert to CSV string
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csvData = filteredData.map(item => ({
+      'Question ID': item.questionId,
+      'Question Text': item.questionText,
+      'Question Type': item.questionType,
+      'Response Count': item.responseCount,
+      'Average Score': item.averageScore.toFixed(2),
+      'Sentiment': item.sentiment,
+      'Avg Time Spent (sec)': item.avgTimeSpent.toFixed(1),
+      'Skip Rate (%)': (item.skipRate * 100).toFixed(1),
+      'Completion Rate (%)': (item.completionRate * 100).toFixed(1),
+      'Engagement Score': item.engagementScore.toFixed(1),
+      'Response Quality': item.responseQuality
+    }));
+
+    const csvContent = csvData.map(row => Object.values(row).join(',')).join('\n');
+    const csvHeader = Object.keys(csvData[0]).join(',');
+    const csv = `${csvHeader}\n${csvContent}`;
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'question_performance.csv');
+    link.setAttribute('download', 'question_performance_detailed.csv');
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -542,13 +773,34 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
         </div>
         <ChartControls>
           <SelectContainer>
-            <Select value={selectedQuestion} onChange={(e) => setSelectedQuestion(e.target.value)}>
-              <option value="all">All Questions</option>
-              {data.map(question => (
-                <option key={question.questionId} value={question.questionId}>
-                  {question.questionText.length > 50 
-                    ? `${question.questionText.substring(0, 50)}...` 
-                    : question.questionText}
+            <Select
+              value={selectedQuestionType}
+              onChange={(e) => setSelectedQuestionType(e.target.value)}
+            >
+              <option value="all">All Question Types</option>
+              {questionTypes.map((type) => (
+                <option key={type} value={type}>
+                  {(() => {
+                    // Map question types to their display names as used in the Question builder
+                    const questionTypeDisplayMap: Record<string, string> = {
+                      'radio': 'Single Choice (Radio)',
+                      'checkbox': 'Multiple Choice (Checkbox)',
+                      'dropdown': 'Dropdown',
+                      'text': 'Short Text',
+                      'textarea': 'Long Text',
+                      'rating': 'Rating Scale',
+                      'likert': 'Likert Scale',
+                      'ranking': 'Ranking',
+                      'date': 'Date',
+                      'file': 'File Upload',
+                      'multiple_choice': 'Multiple Choice',
+                      'open_text': 'Text Input',
+                      'unknown': 'Unknown Type'
+                    };
+                    
+                    // Use the display name from the map if available, otherwise format the type name
+                    return questionTypeDisplayMap[type] || type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+                  })() }
                 </option>
               ))}
             </Select>
@@ -575,14 +827,34 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
             <QuestionCard key={question.questionId}>
               <ChartDetailIcon />
               <QuestionHeader>
-                <QuestionText>
-                  {question.questionText.startsWith('Question ') ? 
-                    // Extract meaningful text from the question ID
-                    extractQuestionTextFromId(question.questionId)
-                    : 
-                    question.questionText
-                  }
-                </QuestionText>
+                <QuestionTextContainer>
+                  <QuestionText>{question.questionText}</QuestionText>
+                  <TypeTag questionType={question.questionType || 'unknown'}>
+                    {(() => {
+                      // Map question types to their display names as used in the Question builder
+                      const questionTypeDisplayMap: Record<string, string> = {
+                        'radio': 'Single Choice (Radio)',
+                        'checkbox': 'Multiple Choice (Checkbox)',
+                        'dropdown': 'Dropdown',
+                        'text': 'Short Text',
+                        'textarea': 'Long Text',
+                        'rating': 'Rating Scale',
+                        'likert': 'Likert Scale',
+                        'ranking': 'Ranking',
+                        'date': 'Date',
+                        'file': 'File Upload',
+                        'multiple_choice': 'Multiple Choice',
+                        'open_text': 'Text Input',
+                        'unknown': 'Unknown Type'
+                      };
+                      
+                      // Use the display name from the map if available, otherwise format the type name
+                      return questionTypeDisplayMap[question.questionType || 'unknown'] || 
+                             (question.questionType ? question.questionType.charAt(0).toUpperCase() + 
+                             question.questionType.slice(1).replace(/_/g, ' ') : 'Unknown Type');
+                    })()}
+                  </TypeTag>
+                </QuestionTextContainer>
                 <QuestionMeta>
                   {question.averageScore > 0 && (
                     <ScoreContainer>
@@ -600,13 +872,54 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                     <SentimentTag sentiment={question.sentiment}>
                       {question.sentiment}
                     </SentimentTag>
+                    <QualityTag quality={question.responseQuality}>
+                      {question.responseQuality} quality
+                    </QualityTag>
                   </ResponseCount>
                   {/* Chart icon is now positioned absolutely in the top right */}
                 </QuestionMeta>
               </QuestionHeader>
               
+              {/* Enhanced Metrics Grid */}
+              <MetricsGrid>
+                <MetricCard>
+                  <MetricLabel>Avg Time Spent</MetricLabel>
+                  <MetricValue>
+                    <MetricIcon><FiClock size={14} /></MetricIcon>
+                    {question.avgTimeSpent} sec
+                  </MetricValue>
+                </MetricCard>
+                
+                <MetricCard>
+                  <MetricLabel>Skip Rate</MetricLabel>
+                  <MetricValue>
+                    <MetricIcon><FiSkipForward size={14} /></MetricIcon>
+                    {question.skipRate}%
+                  </MetricValue>
+                </MetricCard>
+                
+                <MetricCard>
+                  <MetricLabel>Completion Rate</MetricLabel>
+                  <MetricValue>
+                    <MetricIcon><IoCheckmarkDone size={14} /></MetricIcon>
+                    {question.completionRate}%
+                  </MetricValue>
+                </MetricCard>
+                
+                <MetricCard>
+                  <MetricLabel>Engagement Score</MetricLabel>
+                  <MetricValue>
+                    <MetricIcon><RiPulseLine size={14} /></MetricIcon>
+                    {question.engagementScore}/100
+                  </MetricValue>
+                  <EngagementGauge>
+                    <EngagementLevel score={question.engagementScore} />
+                  </EngagementGauge>
+                </MetricCard>
+              </MetricsGrid>
+              
               <AnswersContainer>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   {question.answers.map((answer, index) => (
                     <div key={`${question.questionId}-${answer.value}`} style={{ flex: 1, textAlign: 'center' }}>
                       <AnswerLabel title={answer.value}>
@@ -621,7 +934,10 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                       <BarRow>
                         <Bar percentage={answer.percentage} index={index} />
                       </BarRow>
-                      <AnswerCount>{answer.count}</AnswerCount>
+                      <AnswerCount>
+                        <span>{answer.count}</span>
+                        <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>({answer.percentage}%)</span>
+                      </AnswerCount>
                     </div>
                   ))}
                 </div>

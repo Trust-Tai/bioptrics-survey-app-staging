@@ -28,6 +28,7 @@ export interface SurveyResponseDoc {
     deviceType?: 'desktop' | 'tablet' | 'mobile';
     userAgent?: string;
   };
+  engagementScore?: number; // User engagement score for analytics
   demographics?: {
     age?: string;
     gender?: string;
@@ -338,7 +339,7 @@ if (Meteor.isServer) {
         // Get all completed responses that have completion time
         const responses = await SurveyResponses.find({ 
           completed: true,
-          completionTime: { $exists: true, $ne: null }
+          completionTime: { $exists: true, $gt: 0 }
         }).fetchAsync();
         
         // If no responses with completion time, return 0

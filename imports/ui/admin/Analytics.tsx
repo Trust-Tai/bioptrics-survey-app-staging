@@ -400,7 +400,6 @@ const ThemeLabel = styled.div`
 
 const ChartContainer = styled.div`
   width: 100%;
-  height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -759,8 +758,8 @@ const Analytics: React.FC = () => {
   }, [loading]);
   const [filterVisible, setFilterVisible] = useState(true);
 
-  // Sample data
-  const sites = ['All Sites', 'Site A', 'Site B', 'Site C'];
+  // Default organization data
+  const organizations = ['All Organizations', 'Bioptrics'];
   
   // State for filters
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -922,11 +921,11 @@ const Analytics: React.FC = () => {
         {filterVisible && (
           <FilterBar>
             <FilterGroup>
-              <FilterLabel>Site</FilterLabel>
+              <FilterLabel>Organization</FilterLabel>
               <Select>
-                {sites.map((site) => (
-                  <option key={site} value={site}>
-                    {site}
+                {organizations.map((organization) => (
+                  <option key={organization} value={organization}>
+                    {organization}
                   </option>
                 ))}
               </Select>
@@ -1154,18 +1153,6 @@ const Analytics: React.FC = () => {
               <ChartContainer>
                 <QuestionPerformanceChart />
               </ChartContainer>
-            </Card>
-
-            {/* Export Options */}
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Export Options</CardTitle>
-              </CardHeader>
-              <ExportButtonsContainer>
-                <Button>Export CSV</Button>
-                <Button>Export PDF</Button>
-                <Button>Power BI</Button>
-              </ExportButtonsContainer>
             </Card>
           </DashboardGrid>
         )}

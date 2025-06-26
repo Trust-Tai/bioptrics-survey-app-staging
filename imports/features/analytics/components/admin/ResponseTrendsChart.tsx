@@ -19,9 +19,6 @@ import { FiRefreshCw, FiSettings } from 'react-icons/fi';
 // Styled components
 const ChartContainer = styled.div`
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 24px;
   height: 100%;
   min-height: 380px;
 `;

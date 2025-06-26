@@ -17,6 +17,8 @@ export interface IncompleteSurveyResponse {
   isCompleted: boolean; // Will be set to true when moved to surveyResponses
   isAbandoned?: boolean; // Will be set to true if the user abandons the survey
   deviceType?: 'desktop' | 'tablet' | 'mobile'; // Track which device type was used
+  engagementScore?: number; // User engagement score for analytics
+  completionTime?: number; // Time taken to complete the survey in seconds
 }
 
 // Create the collection
