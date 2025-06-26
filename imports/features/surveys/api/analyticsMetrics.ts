@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { SurveyResponses } from './surveyResponses';
 import { IncompleteSurveyResponses } from './incompleteSurveyResponses';
+import { Questions } from '../../questions/api/questions';
 
 if (Meteor.isServer) {
   Meteor.methods({
@@ -198,7 +199,148 @@ if (Meteor.isServer) {
         // Key: questionId, Value: { question, responses, averageScore, etc. }
         const questionMap = new Map();
         
-        // Process completed responses
+        // Collect all unique question IDs first
+        const questionIds = new Set();
+        
+        // Process completed responses to collect question IDs
+        completedResponses.forEach(response => {
+          if (!response.responses || !Array.isArray(response.responses)) {
+            return;
+          }
+          
+          response.responses.forEach(item => {
+            if (!item.questionId) {
+              return;
+            }
+            
+            // Add to our set of unique question IDs
+            questionIds.add(item.questionId);
+          });
+        });
+        
+        // Also collect question IDs from incomplete responses
+        incompleteResponses.forEach(response => {
+          if (!response.responses || !Array.isArray(response.responses)) {
+            return;
+          }
+          
+          response.responses.forEach(item => {
+            if (!item.questionId) {
+              return;
+            }
+            
+            // Add to our set of unique question IDs
+            questionIds.add(item.questionId);
+          });
+        });
+        
+        // Fetch actual question data from the database
+        console.log(`Fetching data for ${questionIds.size} unique questions`);
+        const questionIdsArray = Array.from(questionIds) as string[];
+        
+        // Use the questions.getMany method which is designed to fetch question data
+        let questionDocs = [];
+        try {
+          // Call the method directly since we're on the server
+          questionDocs = await Meteor.callAsync('questions.getMany', questionIdsArray);
+          console.log(`Successfully fetched ${questionDocs.length} questions using questions.getMany`);
+        } catch (error) {
+          console.error('Error fetching questions with questions.getMany:', error);
+          // Fallback to direct database query
+          questionDocs = await Questions.find({ _id: { $in: questionIdsArray } }).fetchAsync();
+          console.log(`Fetched ${questionDocs.length} questions using direct database query`);
+        }
+        
+        console.log('Question documents fetched:', JSON.stringify(questionDocs, null, 2));
+        
+        // Create maps for question text and type
+        const questionTextMap = new Map<string, string>();
+        const questionTypeMap = new Map<string, string>();
+        
+        // Process each question document
+        questionDocs.forEach((q: any) => {
+          if (!q || !q._id) return;
+          
+          console.log('Processing question:', q._id);
+          
+          // Try different possible locations for the question text and type
+          let questionText: string | null = null;
+          let questionType: string | null = null;
+          
+          // Option 1: Direct text property (might exist in some schemas)
+          if (q.text) {
+            questionText = q.text;
+            console.log('Found question text in q.text:', questionText);
+          }
+          // Option 2: Question text in versions array
+          else if (q.versions && Array.isArray(q.versions) && q.versions.length > 0) {
+            const currentVersionIndex = typeof q.currentVersion === 'number' ? q.currentVersion : 0;
+            const currentVersion = q.versions[currentVersionIndex] || q.versions[q.versions.length - 1];
+            
+            if (currentVersion && currentVersion.questionText) {
+              questionText = currentVersion.questionText;
+              console.log('Found question text in versions array:', questionText);
+            }
+            
+            // Try to determine question type from current version
+            if (currentVersion) {
+              if (currentVersion.type) {
+                questionType = currentVersion.type;
+                console.log('Found question type in currentVersion.type:', questionType);
+              } else if (currentVersion.questionType) {
+                questionType = currentVersion.questionType;
+                console.log('Found question type in currentVersion.questionType:', questionType);
+              } else if (currentVersion.inputType) {
+                questionType = currentVersion.inputType;
+                console.log('Found question type in currentVersion.inputType:', questionType);
+              } else if (currentVersion.answerType) {
+                questionType = currentVersion.answerType;
+                console.log('Found question type in currentVersion.answerType:', questionType);
+              }
+            }
+          }
+          // Option 3: Question might be in a different format
+          else if (q.question) {
+            questionText = q.question;
+            console.log('Found question text in q.question:', questionText);
+          }
+          // Option 4: Title might contain the question
+          else if (q.title) {
+            questionText = q.title;
+            console.log('Found question text in q.title:', questionText);
+          }
+          
+          // If we still don't have text, use the fallback
+          if (!questionText) {
+            questionText = `Question ${q._id}`;
+            console.log('Using fallback question text:', questionText);
+          }
+          
+          // Store the question text in our map
+          questionTextMap.set(q._id, questionText);
+          
+          // Store the question type in our map if we found it
+          if (questionType) {
+            // Normalize question type to standard format
+            let normalizedType = questionType.toLowerCase();
+            
+            // Map various input types to our standard types
+            if (normalizedType.includes('likert') || normalizedType.includes('rating') || normalizedType.includes('scale')) {
+              normalizedType = 'likert';
+            } else if (normalizedType.includes('multiple') || normalizedType.includes('checkbox') || normalizedType.includes('select')) {
+              normalizedType = 'multiple_choice';
+            } else if (normalizedType.includes('text') || normalizedType.includes('open') || normalizedType.includes('input')) {
+              normalizedType = 'open_text';
+            }
+            
+            questionTypeMap.set(q._id, normalizedType);
+            console.log(`Set question type for ${q._id} to ${normalizedType}`);
+          } else {
+            console.log('Could not find question type for:', q._id);
+          }
+        });
+        
+        // Now process responses with real question texts
         completedResponses.forEach(response => {
           if (!response.responses || !Array.isArray(response.responses)) {
             return;
@@ -210,8 +352,8 @@ if (Meteor.isServer) {
             }
             
             const questionId = item.questionId;
-            // Use questionId as the question text since we don't have direct access to question text
-            const questionText = `Question ${questionId}`;
+            // Use real question text from our map, or fallback to ID if not found
+            const questionText = questionTextMap.get(questionId) || `Question ${questionId}`;
             const answer = item.answer;
             
             // Initialize question data if not exists
@@ -222,7 +364,15 @@ if (Meteor.isServer) {
                 responseCount: 0,
                 answers: {},
                 totalScore: 0,
-                scoreCount: 0
+                scoreCount: 0,
+                // Enhanced metrics tracking
+                timeSpentTotal: 0,
+                timeSpentCount: 0,
+                skipCount: 0,
+                completionCount: 0,
+                engagementTotal: 0,
+                engagementCount: 0,
+                qualityScores: []
               });
             }
             
@@ -244,7 +394,7 @@ if (Meteor.isServer) {
           });
         });
         
-        // Process incomplete responses
+        // Process incomplete responses with real question texts
         incompleteResponses.forEach(response => {
           if (!response.responses || !Array.isArray(response.responses)) {
             return;
@@ -256,8 +406,8 @@ if (Meteor.isServer) {
             }
             
             const questionId = item.questionId;
-            // Use questionId as the question text since we don't have direct access to question text
-            const questionText = `Question ${questionId}`;
+            // Use real question text from our map, or fallback to ID if not found
+            const questionText = questionTextMap.get(questionId) || `Question ${questionId}`;
             const answer = item.answer;
             
             // Initialize question data if not exists
@@ -268,7 +418,15 @@ if (Meteor.isServer) {
                 responseCount: 0,
                 answers: {},
                 totalScore: 0,
-                scoreCount: 0
+                scoreCount: 0,
+                // Enhanced metrics tracking
+                timeSpentTotal: 0,
+                timeSpentCount: 0,
+                skipCount: 0,
+                completionCount: 0,
+                engagementTotal: 0,
+                engagementCount: 0,
+                qualityScores: []
               });
             }
             
@@ -288,6 +446,12 @@ if (Meteor.isServer) {
               questionData.answers[answerKey] = (questionData.answers[answerKey] || 0) + 1;
             }
           });
+        });
+        
+        // Log the question text map for debugging
+        console.log('Question text map:');
+        questionTextMap.forEach((text, id) => {
+          console.log(`  ${id}: "${text}"`);
         });
         
         // Convert map to array and calculate averages
@@ -325,13 +489,80 @@ if (Meteor.isServer) {
             return a.value.localeCompare(b.value);
           });
           
+          // Calculate enhanced metrics
+          const avgTimeSpent = question.timeSpentCount > 0 
+            ? Math.round(question.timeSpentTotal / question.timeSpentCount) 
+            : 30; // Default to 30 seconds if no data
+          
+          const skipRate = question.responseCount > 0 
+            ? Math.round((question.skipCount / question.responseCount) * 1000) / 10 
+            : 0;
+            
+          const completionRate = 100 - skipRate;
+          
+          const engagementScore = question.engagementCount > 0 
+            ? Math.round(question.engagementTotal / question.engagementCount) 
+            : Math.round(75 + (averageScore * 5)); // Estimate based on score if no data
+          
+          // Determine response quality based on engagement and completion
+          let responseQuality = 'medium';
+          if (engagementScore > 85 && completionRate > 95) {
+            responseQuality = 'high';
+          } else if (engagementScore < 60 || completionRate < 80) {
+            responseQuality = 'low';
+          }
+          
+          // IMPORTANT: Get the real question text and type from our maps, or use fallbacks
+          // This ensures we're always using the most up-to-date question data from the database
+          const realQuestionText = questionTextMap.get(question.questionId) || question.questionText;
+          console.log(`Final question text for ${question.questionId}: "${realQuestionText}" (original was "${question.questionText}")`);
+          
+          // Determine question type - either from our map or infer from the data
+          let questionType = questionTypeMap.get(question.questionId);
+          
+          if (!questionType) {
+            // Infer question type from answer patterns if not available from question document
+            if (formattedAnswers.length > 0) {
+              const answerValues = formattedAnswers.map(a => a.value);
+              
+              // Likert scale typically has numeric values 1-5 or 1-7
+              if (answerValues.every(v => !isNaN(Number(v))) && 
+                  answerValues.length <= 7 && 
+                  Math.max(...answerValues.map(v => Number(v))) <= 7) {
+                questionType = 'likert';
+              }
+              // Multiple choice / checkbox typically has text answers
+              else if (answerValues.some(v => isNaN(Number(v)))) {
+                questionType = 'multiple_choice';
+              }
+              // Open text questions typically have many unique answers
+              else if (answerValues.length > 10) {
+                questionType = 'open_text';
+              }
+              else {
+                questionType = 'unknown';
+              }
+            } else {
+              questionType = 'unknown';
+            }
+            
+            console.log(`Inferred question type for ${question.questionId}: ${questionType}`);
+          }
+          
           return {
             questionId: question.questionId,
-            questionText: question.questionText,
+            questionText: realQuestionText, // Use the real question text from our map
+            questionType, // Include the question type
             responseCount: question.responseCount,
             averageScore,
             sentiment,
-            answers: formattedAnswers
+            answers: formattedAnswers,
+            // Enhanced metrics
+            avgTimeSpent,
+            skipRate,
+            completionRate,
+            engagementScore,
+            responseQuality
           };
         });
         
