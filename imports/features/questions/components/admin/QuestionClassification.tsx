@@ -547,7 +547,7 @@ const QuestionClassification = ({
 
   return (
     <div className="question-classification">
-      <div className="classification-section">
+      {/* <div className="classification-section">
         <h3>Tag builder</h3>
         <div className="helper-text">
           <FaTags /> Select tags for your question. Tags help categorize and filter your question content.
@@ -567,7 +567,7 @@ const QuestionClassification = ({
             )}
           </select>
         </div>
-      </div>
+      </div> */}
 
       <div className="classification-section">
         <h3>Question Category *</h3>
