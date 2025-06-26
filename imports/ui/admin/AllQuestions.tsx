@@ -31,7 +31,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '../../features/questions/api/questions';
 import { WPSCategories } from '../../features/wps-framework/api/wpsCategories';
-import { Layers } from '../../api/layers';
+import { Layers, Layer } from '../../api/layers';
 import { SurveyThemes } from '../../features/survey-themes/api/surveyThemes';
 import DOMPurify from 'dompurify';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
@@ -734,10 +734,66 @@ const AllQuestions: React.FC = () => {
     return WPSCategories.find().fetch();
   }, []);
   
-  // Get layers (tags) for statistics
-  const layers = useTracker(() => {
+  // Extend Layer interface to include children for hierarchy
+  interface LayerWithChildren extends Layer {
+    children?: LayerWithChildren[];
+    depth?: number;
+  }
+
+  // Helper function to build a flat list of tags with depth information
+  const buildFlatTagList = (tags: LayerWithChildren[], depth = 0, result: LayerWithChildren[] = []) => {
+    if (!tags || !Array.isArray(tags)) return result;
+    
+    tags.forEach(tag => {
+      if (tag) {
+        // Add the current tag with its depth
+        result.push({ ...tag, depth });
+        
+        // Recursively process children if they exist
+        if (tag.children && Array.isArray(tag.children) && tag.children.length > 0) {
+          buildFlatTagList(tag.children, depth + 1, result);
+        }
+      }
+    });
+    
+    return result;
+  };
+
+  // Get layers (tags) for statistics and filtering
+  const { layers, hierarchicalLayers } = useTracker(() => {
     Meteor.subscribe('layers.all');
-    return Layers.find().fetch();
+    const rawLayers = Layers.find({}).fetch() as LayerWithChildren[];
+    
+    // Process tags to create proper parent-child relationships
+    const processedLayers: LayerWithChildren[] = [];
+    const layerMap: Record<string, LayerWithChildren> = {};
+    
+    // First, create a map of all tags by ID
+    rawLayers.forEach(layer => {
+      if (layer && layer._id) {
+        // Initialize children array
+        layer.children = [];
+        layerMap[layer._id] = layer;
+      }
+    });
+    
+    // Then, build the hierarchy
+    rawLayers.forEach(layer => {
+      if (layer && layer._id) {
+        if (layer.parentId && layerMap[layer.parentId]) {
+          // This tag has a parent, add it to parent's children
+          layerMap[layer.parentId].children?.push(layer);
+        } else {
+          // This is a root tag
+          processedLayers.push(layer);
+        }
+      }
+    });
+    
+    return {
+      layers: rawLayers, // Original flat list for backward compatibility
+      hierarchicalLayers: processedLayers // Hierarchical structure
+    };
   }, []);
   
   const surveyThemes = useTracker(() => {
@@ -1025,9 +1081,22 @@ const AllQuestions: React.FC = () => {
                 onChange={(e) => setFilterTag(e.target.value || null)}
               >
                 <option value="">All Tags</option>
-                {layers.map((layer: any) => (
-                  <option key={layer._id || layer.id} value={layer._id || layer.id}>{layer.name}</option>
-                ))}
+                {/* Render hierarchical tags with proper indentation */}
+                {buildFlatTagList(hierarchicalLayers).map((layer: LayerWithChildren) => {
+                  if (!layer._id) return null;
+                  const depth = layer.depth || 0;
+                  const indent = '\u00A0\u00A0'.repeat(depth);
+                  const prefix = depth > 0 ? '└── ' : '';
+                  return (
+                    <option 
+                      key={layer._id} 
+                      value={layer._id}
+                      style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}
+                    >
+                      {indent}{prefix}{layer.name}
+                    </option>
+                  );
+                })}
               </FilterSelect>
             </FilterGroup>
             
