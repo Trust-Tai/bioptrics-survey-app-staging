@@ -447,14 +447,14 @@ const Input = styled.input`
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
+  padding: 0.5rem;
   border-radius: 4px;
-  font-size: 1rem;
-  background-color: white;
+  border: 1px solid #ccc;
+  margin-top: 0.25rem;
   
-  &:focus {
-    outline: none;
+  &.nested-tag-select option {
+    font-family: monospace;
+    padding: 4px;
     border-color: #7a4e7a;
     box-shadow: 0 0 0 2px rgba(122, 78, 122, 0.2);
   }
@@ -669,6 +669,66 @@ const AllLayers = () => {
     }
   }, [layers]);
 
+  // Render nested tag options for the parent tag dropdown
+  const renderNestedTagOptions = (allLayers: any[], currentLayerId: string) => {
+    // Build a hierarchical structure of tags
+    const tagMap = new Map();
+    const rootTags: any[] = [];
+    
+    // First pass: create a map of all tags with empty children arrays
+    allLayers.forEach(tag => {
+      if (tag && tag._id && tag._id !== currentLayerId) {
+        tagMap.set(tag._id, { ...tag, children: [] });
+      }
+    });
+    
+    // Second pass: build the hierarchy
+    allLayers.forEach(tag => {
+      if (tag._id !== currentLayerId) { // Skip the current layer to avoid self-reference
+        if (tag.parentId && tagMap.has(tag.parentId)) {
+          // This tag has a parent, add it to the parent's children
+          const parent = tagMap.get(tag.parentId);
+          if (parent && parent.children) {
+            parent.children.push(tagMap.get(tag._id));
+          }
+        } else {
+          // This is a root tag (no parent)
+          if (tag._id && tagMap.has(tag._id)) {
+            rootTags.push(tagMap.get(tag._id));
+          }
+        }
+      }
+    });
+    
+    // Function to render options recursively with proper indentation
+    const renderOptions = (tags: any[], depth = 0) => {
+      return tags.flatMap(tag => {
+        if (!tag || tag._id === currentLayerId) return [];
+        
+        // Create indentation based on depth
+        const indent = '\u00A0\u00A0'.repeat(depth); // Non-breaking spaces for indentation
+        const prefix = depth > 0 ? '\u2514\u2500 ' : ''; // Box drawing characters: └─
+        
+        // Create the option for this tag
+        const option = (
+          <option key={tag._id} value={tag._id}>
+            {indent}{prefix}{tag.name}
+          </option>
+        );
+        
+        // Recursively render children options
+        if (tag.children && tag.children.length > 0) {
+          return [option, ...renderOptions(tag.children, depth + 1)];
+        }
+        
+        return option;
+      });
+    };
+    
+    // Start rendering from root tags
+    return renderOptions(rootTags);
+  };
+  
   // Delete a tag
   const deleteTag = (layerId: string, layerName: string) => {
     if (window.confirm(`Are you sure you want to delete the tag "${layerName}"?`)) {
@@ -688,29 +748,6 @@ const AllLayers = () => {
           }, 3000);
         }
       });
-    }
-  };
-
-  // Edit a tag
-  const editTag = (layerId: string) => {
-    // Find the layer by ID
-    const layerToEdit = Layers.findOne(layerId);
-    
-    if (layerToEdit) {
-      // Set the layer data in the form
-      setLayer({
-        _id: layerToEdit._id,
-        id: layerToEdit.id,
-        name: layerToEdit.name || '',
-        location: layerToEdit.location || 'surveys',
-        fields: layerToEdit.fields || [],
-        active: layerToEdit.active !== undefined ? layerToEdit.active : true,
-        parentId: layerToEdit.parentId || '',
-        color: layerToEdit.color || '#552a47',
-      });
-      
-      // Open the modal
-      setIsModalOpen(true);
     } else {
       console.error('Layer not found:', layerId);
       setStatus({ loading: false, message: 'Error: Tag not found', type: 'error' });
@@ -1198,13 +1235,10 @@ const AllLayers = () => {
                   name="parentId"
                   value={layer.parentId || ''}
                   onChange={handleInputChange}
+                  className="nested-tag-select"
                 >
                   <option value="">None (Top Level Tag)</option>
-                  {layers.filter(l => l._id !== layer._id).map(parentLayer => (
-                    <option key={parentLayer._id} value={parentLayer._id}>
-                      {parentLayer.name}
-                    </option>
-                  ))}
+                  {renderNestedTagOptions(layers, layer._id)}
                 </Select>
               </FormGroup>
               

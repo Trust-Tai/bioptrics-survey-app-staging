@@ -3,7 +3,7 @@ import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight, FiTrash2 } from 'react-icons/fi';
+import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight, FiTrash2, FiMessageSquare, FiCalendar, FiUser } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
 import TomSelect from 'tom-select';
@@ -27,6 +27,8 @@ import { Questions } from '../../../features/questions/api/questions';
 import { SurveyThemes } from '../../../features/survey-themes/api/surveyThemes';
 import { WPSCategories } from '../../../features/wps-framework/api/wpsCategories';
 import { Surveys } from '../../../features/surveys/api/surveys';
+import { SurveyResponses } from '../../../features/surveys/api/surveyResponses';
+import { IncompleteSurveyResponses } from '../../../features/surveys/api/incompleteSurveyResponses';
 
 // Import types
 import { SurveySectionItem } from '../types';
@@ -67,6 +69,7 @@ const steps = [
   { id: 'tags', label: 'Tags', icon: 'FiTag' },
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'themes', label: 'Themes', icon: 'FiTag' },
+  { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   { id: 'preview', label: 'Preview', icon: 'FiEye' },
@@ -121,6 +124,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // State for the survey builder
   const [activeStep, setActiveStep] = useState('welcome');
+  const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
+  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
   const [survey, setSurvey] = useState<any>({ defaultSettings: { allowRetake: true } });
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
@@ -174,6 +179,87 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [isPublished, setIsPublished] = useState(false);
   // Removed showPublicUrl state as we no longer need the popup
   
+  // Load survey responses when the responses tab is active
+  useEffect(() => {
+    if (activeStep === 'responses' && surveyId) {
+      setIsLoadingResponses(true);
+      
+      // Subscribe to survey responses for this specific survey
+      const subscription = Meteor.subscribe('surveyResponses.bySurvey', surveyId);
+      
+      // Check subscription status periodically
+      const checkSubscription = setInterval(() => {
+        if (subscription.ready()) {
+          clearInterval(checkSubscription);
+          
+          try {
+            // Fetch completed survey responses
+            const completedResponses = SurveyResponses.find({ surveyId }).fetch();
+            console.log(`Found ${completedResponses.length} completed responses for survey ${surveyId}`);
+            
+            // Also fetch incomplete responses for this survey
+            const incompleteSubscription = Meteor.subscribe('incompleteSurveyResponses.all');
+            
+            if (incompleteSubscription.ready()) {
+              const incompleteResponses = IncompleteSurveyResponses.find({ 
+                surveyId,
+                isCompleted: false
+              }).fetch();
+              
+              console.log(`Found ${incompleteResponses.length} incomplete responses for survey ${surveyId}`);
+              
+              // Format the responses for display
+              const formattedResponses = [
+                // Format completed responses
+                ...completedResponses.map(response => ({
+                  _id: response._id,
+                  respondentName: response.demographics?.name || 
+                                 (response.userId ? 'User ' + response.userId.substring(0, 5) : 'Anonymous'),
+                  email: response.demographics?.email || 'No email provided',
+                  submittedAt: response.endTime || response.updatedAt,
+                  isComplete: true,
+                  progress: 100,
+                  responses: response.responses || []
+                })),
+                
+                // Format incomplete responses
+                ...incompleteResponses.map(response => ({
+                  _id: response._id,
+                  respondentName: 'Anonymous',
+                  email: 'No email provided',
+                  submittedAt: response.lastUpdatedAt,
+                  isComplete: false,
+                  progress: response.responses ? 
+                    Math.round((response.responses.length / (surveyQuestions.length || 1)) * 100) : 0,
+                  responses: response.responses || []
+                }))
+              ];
+              
+              // Sort by date (newest first)
+              formattedResponses.sort((a, b) => {
+                const dateA = new Date(a.submittedAt).getTime();
+                const dateB = new Date(b.submittedAt).getTime();
+                return dateB - dateA;
+              });
+              
+              setSurveyResponses(formattedResponses);
+            }
+            
+            setIsLoadingResponses(false);
+          } catch (error) {
+            console.error('Error loading survey responses:', error);
+            setIsLoadingResponses(false);
+          }
+        }
+      }, 300);
+      
+      // Clean up the interval when component unmounts or step changes
+      return () => {
+        clearInterval(checkSubscription);
+      };
+    }
+  }, [activeStep, surveyId]);
+
   // Use Meteor's reactive data system to load questions and survey data
   const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
     // Subscribe to all questions
@@ -1569,6 +1655,112 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         Clear All
                       </button>
                     </div>
+                  </div>
+                </div>
+              ) : activeStep === 'responses' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Survey Responses</h2>
+                    <p className="survey-builder-panel-subtitle">
+                      View all responses received for this survey
+                    </p>
+                  </div>
+                  
+                  <div className="survey-responses-container" style={{ padding: '20px' }}>
+                    {isLoadingResponses ? (
+                      <Spinner />
+                    ) : surveyResponses.length > 0 ? (
+                      <div>
+                        <div className="survey-responses-header" style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr 150px 120px',
+                          gap: '16px',
+                          padding: '12px 16px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '8px 8px 0 0',
+                          fontWeight: 600,
+                          borderBottom: '2px solid #e2e8f0'
+                        }}>
+                          <div>Respondent</div>
+                          <div>Email</div>
+                          <div>Date Submitted</div>
+                          <div>Status</div>
+                        </div>
+                        
+                        <div className="survey-responses-list">
+                          {surveyResponses.map((response, index) => (
+                            <div 
+                              key={response._id || index}
+                              className="survey-response-item"
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr 150px 120px',
+                                gap: '16px',
+                                padding: '16px',
+                                borderBottom: '1px solid #e2e8f0',
+                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                // Handle viewing response details
+                                console.log('View response details:', response);
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#e2e8f0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  <FiUser style={{ color: '#64748b' }} />
+                                </div>
+                                <div>
+                                  {response.respondentName || 'Anonymous'}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                {response.email || 'No email provided'}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <FiCalendar size={14} style={{ color: '#64748b' }} />
+                                {response.submittedAt ? new Date(response.submittedAt).toLocaleDateString() + ' ' + 
+                                  new Date(response.submittedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
+                              </div>
+                              <div>
+                                <span style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '12px',
+                                  fontWeight: 500,
+                                  backgroundColor: response.isComplete ? '#e6f4ea' : '#fef3c7',
+                                  color: response.isComplete ? '#137333' : '#92400e'
+                                }}>
+                                  {response.isComplete ? 'Complete' : `${response.progress || 0}% Complete`}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        padding: '40px 20px', 
+                        textAlign: 'center', 
+                        color: '#64748b',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '8px',
+                        border: '1px dashed #cbd5e1'
+                      }}>
+                        <FiMessageSquare size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
+                        <h3 style={{ marginBottom: '8px', color: '#475569' }}>No Responses Yet</h3>
+                        <p>Once people start responding to your survey, their responses will appear here.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : activeStep === 'themes' ? (
