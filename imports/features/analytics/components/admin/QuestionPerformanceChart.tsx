@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
-import { FiRefreshCw, FiSettings, FiDownload, FiBarChart2 } from 'react-icons/fi';
+import { FiRefreshCw, FiSettings, FiDownload, FiBarChart2, FiArrowRight } from 'react-icons/fi';
 import { FaStar } from 'react-icons/fa';
 import { BiLineChart } from 'react-icons/bi';
+import ViewAllButton from './ViewAllButton';
 
 // Define interfaces for the component
 interface QuestionPerformanceProps {
   title?: string;
   subtitle?: string;
+  isOverview?: boolean; // Flag to indicate if this is shown on the Overview page
 }
 
 interface AnswerData {
@@ -487,7 +489,8 @@ const NoDataMessage = styled.div`
  */
 const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({ 
   title = 'Question Performance',
-  subtitle = 'Average scores and response patterns'
+  subtitle = 'Average scores and response patterns',
+  isOverview = false
 }) => {
   // State for chart data
   const [data, setData] = useState<QuestionData[]>([]);
@@ -656,7 +659,7 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
       
     } catch (error) {
       console.error('Error fetching question performance data:', error);
-      setError(`Failed to load data: ${error.message}`);
+      setError(`Failed to load data: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setData([]);
     } finally {
       setLoading(false);
@@ -712,13 +715,24 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
     }
   };
 
-  // Filter data based on selected question type
+  // Filter data by selected question type
   const filteredData = useMemo(() => {
     if (selectedQuestionType === 'all') {
       return data;
     }
     return data.filter(item => item.questionType === selectedQuestionType);
   }, [data, selectedQuestionType]);
+  
+  // For Overview page, only show top 2 questions based on response count
+  const displayData = useMemo(() => {
+    if (isOverview) {
+      // Sort by response count (highest first) and take only top 2
+      return [...filteredData]
+        .sort((a, b) => b.responseCount - a.responseCount)
+        .slice(0, 2);
+    }
+    return filteredData;
+  }, [filteredData, isOverview]);
 
   // Sort data by response count (highest first)
   const sortedData = useMemo(() => {
@@ -823,9 +837,10 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
           <p>Once surveys are completed, question performance metrics will appear here.</p>
         </NoDataMessage>
       ) : (
-        <QuestionsContainer>
-          {filteredData.map((question: QuestionData) => (
-            <QuestionCard key={question.questionId}>
+        <>
+          <QuestionsContainer>
+            {displayData.map((question: QuestionData) => (
+              <QuestionCard key={question.questionId}>
               <QuestionHeader>
                 <QuestionTextContainer>
                   <QuestionText>{question.questionText}</QuestionText>
@@ -942,8 +957,20 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                 </div>
               </AnswersContainer>
             </QuestionCard>
-          ))}
-        </QuestionsContainer>
+            ))}
+          </QuestionsContainer>
+          
+          {/* Show View All button only on Overview page when there are more than 2 questions */}
+          {isOverview && filteredData.length > 2 && (
+            <ViewAllButton onClick={() => {
+              // Navigate to the Questions tab
+              const questionsTab = document.querySelector('[data-tab="questions"]');
+              if (questionsTab) {
+                (questionsTab as HTMLElement).click();
+              }
+            }} />
+          )}
+        </>
       )}
     </ChartContainer>
   );

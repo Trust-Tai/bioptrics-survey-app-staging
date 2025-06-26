@@ -1032,6 +1032,7 @@ const Analytics: React.FC = () => {
           <Tab
             active={activeTab === 'questions'}
             onClick={() => setActiveTab('questions')}
+            data-tab="questions"
           >
             Questions
           </Tab>
@@ -1151,7 +1152,7 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <ChartContainer>
-                <QuestionPerformanceChart />
+                <QuestionPerformanceChart isOverview={true} />
               </ChartContainer>
             </Card>
           </DashboardGrid>
