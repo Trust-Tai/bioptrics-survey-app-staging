@@ -1018,10 +1018,29 @@ const Analytics: React.FC = () => {
             Overview
           </Tab>
           <Tab
-            active={activeTab === 'themes'}
-            onClick={() => setActiveTab('themes')}
+            active={activeTab === 'realtime'}
+            onClick={() => setActiveTab('realtime')}
           >
-            Themes
+            Real Time
+          </Tab>
+          <Tab
+            active={activeTab === 'surveys'}
+            onClick={() => setActiveTab('surveys')}
+          >
+            Surveys
+          </Tab>
+          <Tab
+            active={activeTab === 'questions'}
+            onClick={() => setActiveTab('questions')}
+            data-tab="questions"
+          >
+            Questions
+          </Tab>
+          <Tab
+            active={activeTab === 'responses'}
+            onClick={() => setActiveTab('responses')}
+          >
+            Responses
           </Tab>
           <Tab
             active={activeTab === 'insights'}
@@ -1030,11 +1049,10 @@ const Analytics: React.FC = () => {
             Insights
           </Tab>
           <Tab
-            active={activeTab === 'questions'}
-            onClick={() => setActiveTab('questions')}
-            data-tab="questions"
+            active={activeTab === 'mavinai'}
+            onClick={() => setActiveTab('mavinai')}
           >
-            Questions
+            Mavin AI
           </Tab>
         </TabsContainer>
 

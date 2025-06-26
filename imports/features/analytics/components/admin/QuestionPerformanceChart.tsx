@@ -40,13 +40,41 @@ interface QuestionData {
 const ChartContainer = styled.div`
   background: #fff;
   border-radius: 8px;
-  box-shadow: none;
-  padding: 0;
-  height: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 24px;
   width: 100%;
+`;
+
+const PaginationContainer = styled.div`
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+`;
+
+const PaginationButton = styled.button<{ active?: boolean }>`
+  padding: 8px 12px;
+  margin: 0 4px;
+  border-radius: 4px;
+  border: 1px solid ${props => props.active ? '#552a47' : '#e0e0e0'};
+  background-color: ${props => props.active ? '#552a47' : 'white'};
+  color: ${props => props.active ? 'white' : '#333'};
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${props => props.active ? '#6025c0' : '#f5f5f5'};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+  }
 `;
 
 const ChartHeader = styled.div`
@@ -505,6 +533,10 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
   // Track available question types
   const [questionTypes, setQuestionTypes] = useState<string[]>([]);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20); // Show 20 questions per page
+  
   // Fetch question performance data from the server
   const fetchData = async () => {
     setLoading(true);
@@ -725,21 +757,49 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
     return data.filter(item => item.questionType === selectedQuestionType);
   }, [data, selectedQuestionType]);
   
-  // For Overview page, only show top 2 questions based on response count
+  // Sort the data by response count (highest first)
+  const sortedData = useMemo(() => {
+    return [...filteredData].sort((a, b) => b.responseCount - a.responseCount);
+  }, [filteredData]);
+  
+  // Final data to display after all filtering and pagination
   const displayData = useMemo(() => {
+    // For Overview page, only show top 2 questions based on response count
     if (isOverview) {
       // Sort by response count (highest first) and take only top 2
       return [...filteredData]
         .sort((a, b) => b.responseCount - a.responseCount)
         .slice(0, 2);
     }
-    return filteredData;
-  }, [filteredData, isOverview]);
+    
+    // Apply pagination for non-overview mode
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, currentPage, itemsPerPage]);
 
-  // Sort data by response count (highest first)
-  const sortedData = useMemo(() => {
-    return [...filteredData].sort((a, b) => b.responseCount - a.responseCount);
-  }, [filteredData]);
+  // Helper function to strip HTML tags and special characters from text
+  const stripHtmlAndSpecialChars = (html: string): string => {
+    if (!html) return '';
+
+    
+    // First, replace common HTML entities
+    let text = html
+      .replace(/&nbsp;/g, '') // Remove &nbsp; completely
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    
+    // Then strip HTML tags
+    text = text.replace(/<[^>]*>/g, '');
+    
+    // Trim extra whitespace
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
+  };
 
   // State to store original question data with answer options
   const [questionOptionsMap, setQuestionOptionsMap] = useState<Record<string, string[]>>({});
@@ -922,6 +982,9 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
     if (question.questionType === 'likert') {
       // Fetch options in the background
       fetchQuestionOptions(question.questionId).catch(console.error);
+
+      const options = questionOptionsMap[question.questionId];
+      console.log('Available Options: ', options, question);
       
       // Return standard options for now
       const standardOptions = [
@@ -1066,7 +1129,7 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
               <QuestionCard key={question.questionId}>
               <QuestionHeader>
                 <QuestionTextContainer>
-                  <QuestionText>{question.questionText}</QuestionText>
+                  <QuestionText>{stripHtmlAndSpecialChars(question.questionText)}</QuestionText>
                   <TypeTag questionType={question.questionType || 'unknown'}>
                     {(() => {
                       // Map question types to their display names as used in the Question builder
@@ -1202,6 +1265,90 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                 (questionsTab as HTMLElement).click();
               }
             }} />
+          )}
+          
+          {/* Only show pagination if not in overview mode and we have enough questions */}
+          {!isOverview && filteredData.length > itemsPerPage && (
+            <PaginationContainer>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ marginRight: '10px' }}>Items per page:</span>
+                <select 
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing items per page
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    border: '1px solid #e0e0e0',
+                    backgroundColor: 'white',
+                    marginRight: '20px'
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)} - {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length}</span>
+              </div>
+              
+              <div>
+                <PaginationButton 
+                  onClick={() => setCurrentPage(1)} 
+                  disabled={currentPage === 1}
+                >
+                  First
+                </PaginationButton>
+                <PaginationButton 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </PaginationButton>
+                {(() => {
+                  // Show current page and 2 pages before and after
+                  const pageNumbers = [];
+                  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                  
+                  let startPage = Math.max(1, currentPage - 2);
+                  let endPage = Math.min(totalPages, currentPage + 2);
+                  
+                  // Adjust if we're near the start or end
+                  if (currentPage <= 3) {
+                    endPage = Math.min(5, totalPages);
+                  } else if (currentPage >= totalPages - 2) {
+                    startPage = Math.max(1, totalPages - 4);
+                  }
+                  
+                  for (let i = startPage; i <= endPage; i++) {
+                    pageNumbers.push(
+                      <PaginationButton 
+                        key={i} 
+                        onClick={() => setCurrentPage(i)}
+                        active={i === currentPage}
+                      >
+                        {i}
+                      </PaginationButton>
+                    );
+                  }
+                  
+                  return pageNumbers;
+                })()}
+                <PaginationButton 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / itemsPerPage)))} 
+                  disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)}
+                >
+                  Next
+                </PaginationButton>
+                <PaginationButton 
+                  onClick={() => setCurrentPage(Math.ceil(filteredData.length / itemsPerPage))} 
+                  disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage)}
+                >
+                  Last
+                </PaginationButton>
+              </div>
+            </PaginationContainer>
           )}
         </>
       )}
