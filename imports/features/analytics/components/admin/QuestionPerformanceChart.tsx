@@ -205,6 +205,7 @@ const QuestionText = styled.h4`
   font-weight: 500;
   font-size: 16px;
   margin-bottom: 4px;
+  margin-top: 0;
 `;
 
 const QuestionMeta = styled.div`
@@ -825,7 +826,6 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
         <QuestionsContainer>
           {filteredData.map((question: QuestionData) => (
             <QuestionCard key={question.questionId}>
-              <ChartDetailIcon />
               <QuestionHeader>
                 <QuestionTextContainer>
                   <QuestionText>{question.questionText}</QuestionText>
@@ -876,7 +876,6 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                       {question.responseQuality} quality
                     </QualityTag>
                   </ResponseCount>
-                  {/* Chart icon is now positioned absolutely in the top right */}
                 </QuestionMeta>
               </QuestionHeader>
               
