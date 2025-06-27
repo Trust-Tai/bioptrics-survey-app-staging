@@ -11,6 +11,8 @@ import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 import { Layers, Layer } from '../../../api/layers';
+import styled from 'styled-components';
+import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage } from 'react-icons/fa';
 
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
@@ -126,6 +128,14 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [activeStep, setActiveStep] = useState('welcome');
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
   const [isLoadingResponses, setIsLoadingResponses] = useState(false);
+  const [responseStats, setResponseStats] = useState({
+    totalResponses: 0,
+    totalTags: 0,
+    completionRate: 0,
+    avgEngagement: 0,
+    timeToComplete: 0,
+    responseRate: 0
+  });
   const [survey, setSurvey] = useState<any>({ defaultSettings: { allowRetake: true } });
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
@@ -174,14 +184,80 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [newThemeAssignableTo, setNewThemeAssignableTo] = useState<string[]>(['questions', 'surveys']);
   const [newThemeKeywords, setNewThemeKeywords] = useState<string[]>([]);
   const [newThemePriority, setNewThemePriority] = useState<number>(0);
-  const [newThemeIsActive, setNewThemeIsActive] = useState<boolean>(true);
+  // Active checkbox removed, but we'll keep the state as true by default
+  const [newThemeIsActive] = useState<boolean>(true);
+  const [newThemeButtonStyle, setNewThemeButtonStyle] = useState<string>('rounded');
+  const [newThemeQuestionStyle, setNewThemeQuestionStyle] = useState<string>('card');
   const [newThemeTemplateType, setNewThemeTemplateType] = useState<string>('Custom');
   const [newThemeHeadingFont, setNewThemeHeadingFont] = useState<string>('Inter');
   const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
-  const [newThemeButtonStyle, setNewThemeButtonStyle] = useState<string>('Rounded');
-  const [newThemeQuestionStyle, setNewThemeQuestionStyle] = useState<string>('Card');
   const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
   
+  // Styled components for response stats
+  const StatsContainer = styled.div`
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+  `;
+
+  const StatCard = styled.div`
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #eee;
+  `;
+
+  const IconContainer = styled.div<{ color: string }>`
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background-color: ${props => props.color + '15'};
+    color: ${props => props.color};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-right: 16px;
+  `;
+
+  const StatContent = styled.div`
+    display: flex;
+    flex-direction: column;
+  `;
+
+  const StatValue = styled.div`
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+  `;
+
+  const StatLabel = styled.div`
+    font-size: 14px;
+    color: #666;
+    margin-top: 4px;
+  `;
+
+  // Function to calculate engagement score based on response data
+  const calculateEngagementScore = (response: any): number => {
+    // Default engagement score if no responses
+    if (!response.responses || !Array.isArray(response.responses) || response.responses.length === 0) {
+      return 0;
+    }
+    
+    // Calculate engagement based on response completeness and time spent
+    // For completed responses, we'll use a base score of 50
+    // For each answer provided, add 5 points (up to a maximum of 100)
+    const baseScore = response.isCompleted ? 50 : 25;
+    const answerScore = Math.min(50, response.responses.length * 5);
+    
+    return baseScore + answerScore;
+  };
+
   // JSX namespace declaration for TypeScript
   declare namespace JSX {
     interface IntrinsicElements {
@@ -331,13 +407,16 @@ const EnhancedSurveyBuilder: React.FC = () => {
   useEffect(() => {
     if (activeStep === 'responses' && surveyId) {
       setIsLoadingResponses(true);
+      console.log('Loading responses for survey:', surveyId);
       
-      // Subscribe to survey responses for this specific survey
-      const subscription = Meteor.subscribe('surveyResponses.bySurvey', surveyId);
+      // Create a combined subscription for both completed and incomplete responses
+      const completedSubscription = Meteor.subscribe('surveyResponses.bySurvey', surveyId);
+      const incompleteSubscription = Meteor.subscribe('incompleteSurveyResponses.all');
       
       // Check subscription status periodically
       const checkSubscription = setInterval(() => {
-        if (subscription.ready()) {
+        // Only proceed when both subscriptions are ready
+        if (completedSubscription.ready() && incompleteSubscription.ready()) {
           clearInterval(checkSubscription);
           
           try {
@@ -345,53 +424,87 @@ const EnhancedSurveyBuilder: React.FC = () => {
             const completedResponses = SurveyResponses.find({ surveyId }).fetch();
             console.log(`Found ${completedResponses.length} completed responses for survey ${surveyId}`);
             
-            // Also fetch incomplete responses for this survey
-            const incompleteSubscription = Meteor.subscribe('incompleteSurveyResponses.all');
+            // Fetch incomplete responses for this survey
+            const incompleteResponses = IncompleteSurveyResponses.find({ 
+              surveyId,
+              isCompleted: false
+            }).fetch();
+            console.log(`Found ${incompleteResponses.length} incomplete responses for survey ${surveyId}`);
             
-            if (incompleteSubscription.ready()) {
-              const incompleteResponses = IncompleteSurveyResponses.find({ 
-                surveyId,
-                isCompleted: false
-              }).fetch();
+            // Format the responses for display
+            const formattedResponses = [
+              // Format completed responses
+              ...completedResponses.map(response => ({
+                _id: response._id,
+                respondentName: response.demographics?.name || 
+                               (response.userId ? 'User ' + response.userId.substring(0, 5) : 'Anonymous'),
+                email: response.demographics?.email || 'No email provided',
+                submittedAt: response.endTime || response.updatedAt,
+                isComplete: true,
+                progress: 100,
+                responses: response.responses || [],
+                timeToComplete: response.completionTime || 0,
+                engagementScore: response.engagementScore || calculateEngagementScore({...response, isCompleted: true, responses: response.responses || []})
+              })),
               
-              console.log(`Found ${incompleteResponses.length} incomplete responses for survey ${surveyId}`);
-              
-              // Format the responses for display
-              const formattedResponses = [
-                // Format completed responses
-                ...completedResponses.map(response => ({
-                  _id: response._id,
-                  respondentName: response.demographics?.name || 
-                                 (response.userId ? 'User ' + response.userId.substring(0, 5) : 'Anonymous'),
-                  email: response.demographics?.email || 'No email provided',
-                  submittedAt: response.endTime || response.updatedAt,
-                  isComplete: true,
-                  progress: 100,
-                  responses: response.responses || []
-                })),
-                
-                // Format incomplete responses
-                ...incompleteResponses.map(response => ({
-                  _id: response._id,
-                  respondentName: 'Anonymous',
-                  email: 'No email provided',
-                  submittedAt: response.lastUpdatedAt,
-                  isComplete: false,
-                  progress: response.responses ? 
-                    Math.round((response.responses.length / (surveyQuestions.length || 1)) * 100) : 0,
-                  responses: response.responses || []
-                }))
-              ];
-              
-              // Sort by date (newest first)
-              formattedResponses.sort((a, b) => {
-                const dateA = new Date(a.submittedAt).getTime();
-                const dateB = new Date(b.submittedAt).getTime();
-                return dateB - dateA;
-              });
-              
-              setSurveyResponses(formattedResponses);
-            }
+              // Format incomplete responses
+              ...incompleteResponses.map(response => ({
+                _id: response._id,
+                respondentName: 'Anonymous',
+                email: 'No email provided',
+                submittedAt: response.lastUpdatedAt,
+                isComplete: false,
+                progress: response.responses ? 
+                  Math.round((response.responses.length / (surveyQuestions.length || 1)) * 100) : 0,
+                responses: response.responses || [],
+                timeToComplete: 0,
+                engagementScore: response.engagementScore || calculateEngagementScore({...response, isCompleted: false, responses: response.responses || []})
+              }))
+            ];
+            
+            // Sort by date (newest first)
+            formattedResponses.sort((a, b) => {
+              const dateA = new Date(a.submittedAt).getTime();
+              const dateB = new Date(b.submittedAt).getTime();
+              return dateB - dateA;
+            });
+            
+            // Calculate response stats
+            const totalResponses = formattedResponses.length;
+            
+            // Use the selectedTags from the Tags tab for the Total Tags count
+            const totalTags = selectedTags.length;
+            
+            // Calculate completion rate
+            const completedCount = formattedResponses.filter(r => r.isComplete).length;
+            const completionRate = totalResponses > 0 ? Math.round((completedCount / totalResponses) * 100) : 0;
+            
+            // Calculate average engagement
+            const totalEngagement = formattedResponses.reduce((sum, r) => sum + (r.engagementScore || 0), 0);
+            const avgEngagement = totalResponses > 0 ? Math.round(totalEngagement / totalResponses) : 0;
+            
+            // Calculate average time to complete (in seconds)
+            const completedResponsesForStats = formattedResponses.filter(r => r.isComplete && r.timeToComplete > 0);
+            const totalTime = completedResponsesForStats.reduce((sum, r) => sum + (r.timeToComplete || 0), 0);
+            const avgTimeToComplete = completedResponsesForStats.length > 0 ? Math.round(totalTime / completedResponsesForStats.length) : 0;
+            
+            // Calculate response rate based on completed vs total responses
+            // This aligns with the enhanced response rate calculation logic
+            const totalInvited = survey.invitedCount || totalResponses;
+            const responseRate = totalInvited > 0 ? Math.round((totalResponses / totalInvited) * 100) : 0;
+            
+            // Update response stats
+            setResponseStats({
+              totalResponses,
+              totalTags,
+              completionRate,
+              avgEngagement,
+              timeToComplete: avgTimeToComplete,
+              responseRate
+            });
+            
+            setSurveyResponses(formattedResponses);
+            console.log('Set formatted responses:', formattedResponses.length);
             
             setIsLoadingResponses(false);
           } catch (error) {
@@ -2316,6 +2429,73 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       <Spinner />
                     ) : surveyResponses.length > 0 ? (
                       <div>
+                        {/* Stats Summary Bar */}
+                        <StatsContainer>
+                          <StatCard>
+                            <IconContainer color="#4285F4">
+                              <FaUsers />
+                            </IconContainer>
+                            <StatContent>
+                              <StatValue>{responseStats.totalResponses}</StatValue>
+                              <StatLabel>Total Responses</StatLabel>
+                            </StatContent>
+                          </StatCard>
+                          
+                          <StatCard>
+                            <IconContainer color="#0F9D58">
+                              <FaTags />
+                            </IconContainer>
+                            <StatContent>
+                              <StatValue>{responseStats.totalTags}</StatValue>
+                              <StatLabel>Total Tags</StatLabel>
+                            </StatContent>
+                          </StatCard>
+                          
+                          <StatCard>
+                            <IconContainer color="#AA47BC">
+                              <FaChartPie />
+                            </IconContainer>
+                            <StatContent>
+                              <StatValue>{responseStats.completionRate}%</StatValue>
+                              <StatLabel>Completion Rate</StatLabel>
+                            </StatContent>
+                          </StatCard>
+                          
+                          <StatCard>
+                            <IconContainer color="#F4B400">
+                              <FaHeart />
+                            </IconContainer>
+                            <StatContent>
+                              <StatValue>{responseStats.avgEngagement}%</StatValue>
+                              <StatLabel>Avg. Engagement</StatLabel>
+                            </StatContent>
+                          </StatCard>
+                          
+                          <StatCard>
+                            <IconContainer color="#DB4437">
+                              <FaClock />
+                            </IconContainer>
+                            <StatContent>
+                              <StatValue>
+                                {responseStats.timeToComplete > 60 
+                                  ? `${Math.floor(responseStats.timeToComplete / 60)}m ${responseStats.timeToComplete % 60}s` 
+                                  : `${responseStats.timeToComplete}s`}
+                              </StatValue>
+                              <StatLabel>Time to Complete</StatLabel>
+                            </StatContent>
+                          </StatCard>
+                          
+                          <StatCard>
+                            <IconContainer color="#34A853">
+                              <FaPercentage />
+                            </IconContainer>
+                            <StatContent>
+                              <StatValue>{responseStats.responseRate}%</StatValue>
+                              <StatLabel>Response Rate</StatLabel>
+                            </StatContent>
+                          </StatCard>
+                        </StatsContainer>
+                        
                         <div className="survey-responses-header" style={{
                           display: 'grid',
                           gridTemplateColumns: '1fr 1fr 150px 120px',
@@ -2966,6 +3146,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               };
                               setSurvey(updatedSurvey);
                             }}
+                            style={{ 
+                              width: 18, 
+                              height: 18,
+                              accentColor: '#552a47'
+                            }}
                           />
                           Allow Survey Retake
                         </label>
@@ -3048,6 +3233,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     setNewThemeSecondaryColor('#8e44ad');
                     setNewThemeAccentColor('#9b59b6');
                     setNewThemeDescription('');
+                    setNewThemeWpsCategoryId('');
+                    setNewThemeAssignableTo(['questions', 'surveys']);
+                    setNewThemeKeywords([]);
+                    setNewThemePriority(0);
                     setNewThemeIsActive(true);
                     setNewThemeTemplateType('Custom');
                     setNewThemeHeadingFont('Inter');
@@ -3068,7 +3257,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#28211e', opacity: 0.5, padding: 8 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 4L4 12M4 4L12 12" stroke="#28211e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
               <div>
@@ -3246,16 +3435,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   </select>
                 </div>
                 
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={newThemeIsActive}
-                      onChange={(e) => setNewThemeIsActive(e.target.checked)}
-                    />
-                    Active
-                  </label>
-                </div>
+                {/* Active checkbox removed as requested */}
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
@@ -3324,5 +3504,53 @@ const EnhancedSurveyBuilder: React.FC = () => {
     </AdminLayout>
   );
 }
+
+// Styled components for stats bar
+const StatsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+`;
+
+const StatCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+`;
+
+const IconContainer = styled.div<{ color: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: ${props => props.color}15;
+  color: ${props => props.color};
+  font-size: 18px;
+`;
+
+const StatContent = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const StatValue = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+`;
+
+const StatLabel = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+`;
 
 export default EnhancedSurveyBuilder;
