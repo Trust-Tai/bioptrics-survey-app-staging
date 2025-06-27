@@ -139,6 +139,7 @@
   margin-bottom: 16px;
   font-size: 14px;
   color: var(--text-color, #666);
+  display: none;
 }
 
 .required-tag {

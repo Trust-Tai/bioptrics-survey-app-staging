@@ -13,6 +13,15 @@ export interface LayerField {
   enabled?: boolean;
 }
 
+// Define the CustomField interface
+export interface CustomField {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'dropdown' | 'boolean' | 'date';
+  required: boolean;
+  options?: string[];
+}
+
 export interface Layer {
   _id?: string;
   id?: string;
@@ -27,6 +36,7 @@ export interface Layer {
   createdBy?: string;
   updatedAt?: Date;
   updatedBy?: string;
+  customFields?: CustomField[]; // Custom fields for the tag
 }
 
 // Create the Layers collection
@@ -84,6 +94,16 @@ if (Meteor.isServer) {
             required: !!field.required,
             options: Array.isArray(field.options) ? field.options : [],
             enabled: field.enabled !== undefined ? !!field.enabled : true
+          };
+        }) : [],
+        // Handle custom fields
+        customFields: Array.isArray(layerData.customFields) ? layerData.customFields.map((field: any) => {
+          return {
+            id: field.id || `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: field.name || '',
+            type: field.type || 'text',
+            required: !!field.required,
+            options: Array.isArray(field.options) ? field.options : undefined
           };
         }) : [],
         active: layerData.active !== undefined ? layerData.active : true,
