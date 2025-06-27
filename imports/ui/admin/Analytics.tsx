@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
@@ -86,11 +87,13 @@ const Button = styled.button<{ primary?: boolean }>`
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  text-decoration: none;
 
   &:hover {
     background: ${(props) => (props.primary ? '#693658' : '#efe7ed')};
     transform: translateY(-2px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
   }
 
   svg {
@@ -1059,13 +1062,15 @@ const Analytics: React.FC = () => {
         <PageHeader>
           <PageTitle>Analytics Dashboard</PageTitle>
           <ActionButtons>
+              <Button primary as={Link} to="/admin/analytics/compare-cohorts">
+                Compare Cohorts
+              </Button>
+              <Button primary as={Link} to="/admin/analytics/export-reports">
+              Export Reports
+            </Button>
             <Button onClick={() => setFilterVisible(!filterVisible)}>
               <FiFilter />
               {filterVisible ? 'Hide Filters' : 'Show Filters'}
-            </Button>
-            <Button primary>
-              <FiDownload />
-              Export
             </Button>
           </ActionButtons>
         </PageHeader>

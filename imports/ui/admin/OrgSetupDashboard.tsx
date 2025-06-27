@@ -15,6 +15,30 @@ const Container = styled.div`
   padding: 30px;
   max-width: 1200px;
   margin: 0 auto;
+`;  
+
+const PageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
 `;
 
 const Title = styled.h1`
@@ -82,6 +106,32 @@ const CardDescription = styled.p`
   line-height: 1.5;
   flex-grow: 1;
 `;
+const Button = styled.button<{ primary?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: ${(props) => (props.primary ? '#552a47' : '#f7f2f5')};
+  color: ${(props) => (props.primary ? '#fff' : '#552a47')};
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+
+  &:hover {
+    background: ${(props) => (props.primary ? '#693658' : '#efe7ed')};
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+  }
+
+  svg {
+    font-size: 16px;
+  }
+`;
 
 const OrgSetupDashboard: React.FC = () => {
   const { getTerminology } = useOrganization();
@@ -122,7 +172,26 @@ const OrgSetupDashboard: React.FC = () => {
   return (
     <AdminLayout>
       <Container>
-        <Title>Branding / Custom Fields</Title>
+        <PageHeader>
+          <Title>Branding / Custom Fields</Title>
+          <ActionButtons>
+            <Button as={Link} to="/admin/org-setup/participants">
+              Participants
+            </Button>
+            <Button as={Link} to="/admin/org-setup/users">
+              Users
+            </Button>
+            <Button as={Link} to="/admin/org-setup/settings">
+              Settings
+            </Button>
+            <Button as={Link} to="/admin/org-setup/roles">
+              Roles
+            </Button>
+            <Button as={Link} to="/admin/org-setup/branding">
+              Branding
+            </Button>
+          </ActionButtons>
+        </PageHeader>
         <CardGrid>
           {menuItems.map((item, index) => (
             <Card to={item.path} key={index}>
