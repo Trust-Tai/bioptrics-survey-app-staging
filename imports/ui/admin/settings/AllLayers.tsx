@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes, FaFolder, FaArrowDown, FaChartBar } from 'react-icons/fa';
+import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes, FaFolder, FaArrowDown, FaChartBar, FaFont, FaHashtag, FaCheck, FaCalendar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -10,6 +10,14 @@ import { Questions } from '../../../features/questions/api/questions';
 import { Surveys } from '../../../features/surveys/api/surveys';
 
 // Define local Layer interface that extends the imported one
+interface CustomField {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'dropdown' | 'boolean' | 'date';
+  required: boolean;
+  options?: string[];
+}
+
 interface LayerDisplay {
   _id?: string;
   name: string;
@@ -23,6 +31,7 @@ interface LayerDisplay {
   color?: string;
   questionCount?: number;
   surveyCount?: number;
+  customFields?: CustomField[];
 }
 
 // Styled Components
@@ -447,14 +456,14 @@ const Input = styled.input`
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
+  padding: 0.5rem;
   border-radius: 4px;
-  font-size: 1rem;
-  background-color: white;
+  border: 1px solid #ccc;
+  margin-top: 0.25rem;
   
-  &:focus {
-    outline: none;
+  &.nested-tag-select option {
+    font-family: monospace;
+    padding: 4px;
     border-color: #7a4e7a;
     box-shadow: 0 0 0 2px rgba(122, 78, 122, 0.2);
   }
@@ -505,6 +514,7 @@ const AllLayers = () => {
       active: true,
       color: '#552a47',
       location: 'surveys',
+      customFields: [] // Initialize custom fields array
     });
     setErrors({});
   };
@@ -517,6 +527,24 @@ const AllLayers = () => {
     active: true,
     color: '#552a47',
     location: 'surveys', // Default location - surveys only
+    customFields: [] // Initialize custom fields array
+  });
+  
+  // Custom field state
+  const [customFields, setCustomFields] = useState<Array<{
+    id: string;
+    name: string;
+    type: 'text' | 'number' | 'dropdown' | 'boolean' | 'date';
+    required: boolean;
+    options?: string[];
+  }>>([]);
+  
+  // New custom field state
+  const [newCustomField, setNewCustomField] = useState({
+    name: '',
+    type: 'text' as 'text' | 'number' | 'dropdown' | 'boolean' | 'date',
+    required: false,
+    options: ''
   });
   
   // Validation errors state
@@ -669,6 +697,66 @@ const AllLayers = () => {
     }
   }, [layers]);
 
+  // Render nested tag options for the parent tag dropdown
+  const renderNestedTagOptions = (allLayers: any[], currentLayerId: string) => {
+    // Build a hierarchical structure of tags
+    const tagMap = new Map();
+    const rootTags: any[] = [];
+    
+    // First pass: create a map of all tags with empty children arrays
+    allLayers.forEach(tag => {
+      if (tag && tag._id && tag._id !== currentLayerId) {
+        tagMap.set(tag._id, { ...tag, children: [] });
+      }
+    });
+    
+    // Second pass: build the hierarchy
+    allLayers.forEach(tag => {
+      if (tag._id !== currentLayerId) { // Skip the current layer to avoid self-reference
+        if (tag.parentId && tagMap.has(tag.parentId)) {
+          // This tag has a parent, add it to the parent's children
+          const parent = tagMap.get(tag.parentId);
+          if (parent && parent.children) {
+            parent.children.push(tagMap.get(tag._id));
+          }
+        } else {
+          // This is a root tag (no parent)
+          if (tag._id && tagMap.has(tag._id)) {
+            rootTags.push(tagMap.get(tag._id));
+          }
+        }
+      }
+    });
+    
+    // Function to render options recursively with proper indentation
+    const renderOptions = (tags: any[], depth = 0) => {
+      return tags.flatMap(tag => {
+        if (!tag || tag._id === currentLayerId) return [];
+        
+        // Create indentation based on depth
+        const indent = '\u00A0\u00A0'.repeat(depth); // Non-breaking spaces for indentation
+        const prefix = depth > 0 ? '\u2514\u2500 ' : ''; // Box drawing characters: └─
+        
+        // Create the option for this tag
+        const option = (
+          <option key={tag._id} value={tag._id}>
+            {indent}{prefix}{tag.name}
+          </option>
+        );
+        
+        // Recursively render children options
+        if (tag.children && tag.children.length > 0) {
+          return [option, ...renderOptions(tag.children, depth + 1)];
+        }
+        
+        return option;
+      });
+    };
+    
+    // Start rendering from root tags
+    return renderOptions(rootTags);
+  };
+  
   // Delete a tag
   const deleteTag = (layerId: string, layerName: string) => {
     if (window.confirm(`Are you sure you want to delete the tag "${layerName}"?`)) {
@@ -688,29 +776,6 @@ const AllLayers = () => {
           }, 3000);
         }
       });
-    }
-  };
-
-  // Edit a tag
-  const editTag = (layerId: string) => {
-    // Find the layer by ID
-    const layerToEdit = Layers.findOne(layerId);
-    
-    if (layerToEdit) {
-      // Set the layer data in the form
-      setLayer({
-        _id: layerToEdit._id,
-        id: layerToEdit.id,
-        name: layerToEdit.name || '',
-        location: layerToEdit.location || 'surveys',
-        fields: layerToEdit.fields || [],
-        active: layerToEdit.active !== undefined ? layerToEdit.active : true,
-        parentId: layerToEdit.parentId || '',
-        color: layerToEdit.color || '#552a47',
-      });
-      
-      // Open the modal
-      setIsModalOpen(true);
     } else {
       console.error('Layer not found:', layerId);
       setStatus({ loading: false, message: 'Error: Tag not found', type: 'error' });
@@ -752,15 +817,98 @@ const AllLayers = () => {
       active: true,
       color: '#552a47',
       location: 'surveys', // Default location - surveys only
+      customFields: [] // Reset custom fields
     });
+    
+    // Reset custom fields state
+    setCustomFields([]);
     setErrors({});
     setIsModalOpen(true);
   };
   
-  // Close the modal
-  // const closeModal = () => {
-  //   setIsModalOpen(false);
-  // };
+  // Edit existing tag
+  const editTag = (tagId: string) => {
+    // Find the tag to edit
+    const tagToEdit = layers.find(l => l._id === tagId);
+    
+    if (tagToEdit) {
+      // Set the layer state with the tag data
+      setLayer({
+        ...tagToEdit,
+        id: tagToEdit.id || `tag-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        parentId: tagToEdit.parentId || '',
+        fields: tagToEdit.fields || [],
+        active: tagToEdit.active !== undefined ? tagToEdit.active : true,
+        color: tagToEdit.color || '#552a47',
+        location: tagToEdit.location || 'surveys',
+        customFields: tagToEdit.customFields || []
+      });
+      
+      // Set custom fields state
+      setCustomFields(tagToEdit.customFields || []);
+      
+      // Clear errors
+      setErrors({});
+      
+      // Open the modal
+      setIsModalOpen(true);
+    }
+  };
+  
+  // Close the modal function is already defined above
+  
+  // Handle adding a new custom field
+  const handleAddCustomField = () => {
+    if (!newCustomField.name) return;
+    
+    const newField = {
+      id: `field-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name: newCustomField.name,
+      type: newCustomField.type,
+      required: newCustomField.required,
+      options: newCustomField.type === 'dropdown' ? newCustomField.options.split(',').map(opt => opt.trim()) : undefined
+    };
+    
+    setCustomFields([...customFields, newField]);
+    
+    // Update layer state with the new custom field
+    setLayer(prev => ({
+      ...prev,
+      customFields: [...(prev.customFields || []), newField]
+    }));
+    
+    // Reset new custom field form
+    setNewCustomField({
+      name: '',
+      type: 'text',
+      required: false,
+      options: ''
+    });
+  };
+  
+  // Handle removing a custom field
+  const handleRemoveCustomField = (id: string) => {
+    const updatedFields = customFields.filter(field => field.id !== id);
+    setCustomFields(updatedFields);
+    
+    // Update layer state
+    setLayer(prev => ({
+      ...prev,
+      customFields: updatedFields
+    }));
+  };
+  
+  // Handle custom field input changes
+  const handleCustomFieldInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setNewCustomField(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setNewCustomField(prev => ({ ...prev, [name]: value }));
+    }
+  };
   
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -813,7 +961,8 @@ const AllLayers = () => {
         active: layer.active !== undefined ? layer.active : true,
         parentId: layer.parentId || undefined,
         color: layer.color || '#552a47',
-        fields: layer.fields || []
+        fields: layer.fields || [],
+        customFields: layer.customFields || []
       };
       
       Meteor.call('layers.update', layer._id, updatedLayer, (error: Meteor.Error) => {
@@ -835,7 +984,15 @@ const AllLayers = () => {
       // Create new tag
       setStatus({ loading: true, message: 'Creating tag...', type: 'info' });
       
-      Meteor.call('layers.create', layer, (error: Meteor.Error) => {
+      // Ensure custom fields are included in the new tag
+      const newLayer = {
+        ...layer,
+        customFields: customFields // Explicitly include the custom fields from state
+      };
+      
+      console.log('Creating new tag with data:', newLayer);
+      
+      Meteor.call('layers.create', newLayer, (error: Meteor.Error) => {
         if (error) {
           console.error('Error creating tag:', error);
           setStatus({ loading: false, message: `Error: ${error.message}`, type: 'error' });
@@ -1198,13 +1355,10 @@ const AllLayers = () => {
                   name="parentId"
                   value={layer.parentId || ''}
                   onChange={handleInputChange}
+                  className="nested-tag-select"
                 >
                   <option value="">None (Top Level Tag)</option>
-                  {layers.filter(l => l._id !== layer._id).map(parentLayer => (
-                    <option key={parentLayer._id} value={parentLayer._id}>
-                      {parentLayer.name}
-                    </option>
-                  ))}
+                  {renderNestedTagOptions(layers, layer._id)}
                 </Select>
               </FormGroup>
               
@@ -1254,6 +1408,363 @@ const AllLayers = () => {
                     <span>{layer.active ? 'Active' : 'Inactive'}</span>
                   </div>
                 </div>
+              </FormGroup>
+              
+              {/* Custom Fields Section */}
+              <FormGroup>
+                <Label style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  marginTop: '30px', 
+                  marginBottom: '20px',
+                  color: '#333'
+                }}>Custom Fields</Label>
+                
+                {/* Add new custom field form */}
+                <div style={{ 
+                  background: '#f9f9f9', 
+                  padding: '24px', 
+                  borderRadius: '8px', 
+                  marginBottom: '20px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                  border: '1px solid #eaeaea'
+                }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+                    gap: '20px', 
+                    marginBottom: '20px' 
+                  }}>
+                    <div>
+                      <Label htmlFor="customFieldName" style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        display: 'block',
+                        color: '#444'
+                      }}>Field Name</Label>
+                      <div style={{
+                        position: 'relative',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}>
+                        <Input
+                          id="customFieldName"
+                          name="name"
+                          type="text"
+                          value={newCustomField.name}
+                          onChange={handleCustomFieldInputChange}
+                          placeholder="Enter field name"
+                          style={{
+                            width: '100%',
+                            height: '42px',
+                            fontSize: '14px',
+                            borderColor: '#d0d0d0',
+                            borderRadius: '6px',
+                            paddingLeft: '12px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="customFieldType" style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        display: 'block',
+                        color: '#444'
+                      }}>Field Type</Label>
+                      <div style={{
+                        position: 'relative',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}>
+                        <Select
+                          id="customFieldType"
+                          name="type"
+                          value={newCustomField.type}
+                          onChange={handleCustomFieldInputChange}
+                          style={{
+                            width: '100%',
+                            height: '42px',
+                            fontSize: '14px',
+                            borderColor: '#d0d0d0',
+                            backgroundColor: '#fff',
+                            borderRadius: '6px',
+                            paddingLeft: '10px',
+                            appearance: 'none',
+                            backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 12px top 50%',
+                            backgroundSize: '10px auto',
+                            paddingRight: '30px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <option value="text">Text</option>
+                          <option value="number">Number</option>
+                          <option value="dropdown">Dropdown</option>
+                          <option value="boolean">Yes/No</option>
+                          <option value="date">Date</option>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {newCustomField.type === 'dropdown' && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <Label htmlFor="customFieldOptions" style={{ 
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        display: 'block',
+                        color: '#444'
+                      }}>Options (comma separated)</Label>
+                      <div style={{
+                        position: 'relative',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}>
+                        <Input
+                          id="customFieldOptions"
+                          name="options"
+                          type="text"
+                          value={newCustomField.options}
+                          onChange={handleCustomFieldInputChange}
+                          placeholder="Option 1, Option 2, Option 3"
+                          style={{
+                            width: '100%',
+                            height: '42px',
+                            fontSize: '14px',
+                            borderColor: '#d0d0d0',
+                            borderRadius: '6px',
+                            paddingLeft: '12px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '6px', fontStyle: 'italic' }}>
+                        Enter options separated by commas
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    marginBottom: '20px', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    background: '#f0f0f0',
+                    padding: '10px 15px',
+                    borderRadius: '6px',
+                    border: '1px solid #e0e0e0'
+                  }}>
+                    <div style={{
+                      position: 'relative',
+                      width: '20px',
+                      height: '20px',
+                      marginRight: '10px'
+                    }}>
+                      <input
+                        id="customFieldRequired"
+                        name="required"
+                        type="checkbox"
+                        checked={newCustomField.required}
+                        onChange={handleCustomFieldInputChange}
+                        style={{ 
+                          width: '18px', 
+                          height: '18px',
+                          cursor: 'pointer',
+                          accentColor: '#552a47'
+                        }}
+                      />
+                    </div>
+                    <Label htmlFor="customFieldRequired" style={{ 
+                      margin: 0, 
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      marginLeft: '8px',
+                      cursor: 'pointer',
+                      color: '#444'
+                    }}>Required Field</Label>
+                    
+                    <div style={{ marginLeft: 'auto' }}>
+                      <Button 
+                        onClick={handleAddCustomField} 
+                        style={{ 
+                          padding: '8px 16px',
+                          background: '#552a47',
+                          color: 'white',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          border: 'none',
+                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.2)',
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <FaPlus size={12} /> Add Field
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* List of added custom fields */}
+                {customFields.length > 0 && (
+                  <div style={{ 
+                    marginTop: '20px',
+                    background: '#f9f9f9',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    border: '1px solid #eaeaea',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}>
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '15px'
+                    }}>
+                      <Label style={{ 
+                        fontSize: '15px', 
+                        fontWeight: '600',
+                        margin: 0,
+                        color: '#444'
+                      }}>Custom Fields</Label>
+                      <div style={{ 
+                        background: '#e8f4fd', 
+                        padding: '4px 10px', 
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#0277bd'
+                      }}>{customFields.length} {customFields.length === 1 ? 'field' : 'fields'}</div>
+                    </div>
+                    
+                    <div style={{ 
+                      maxHeight: '250px', 
+                      overflowY: 'auto', 
+                      borderRadius: '6px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      {customFields.length > 0 ? (
+                        customFields.map((field, index) => (
+                          <div key={field.id} style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            padding: '12px 16px',
+                            borderBottom: index < customFields.length - 1 ? '1px solid #eee' : 'none',
+                            background: '#fff',
+                            transition: 'background-color 0.2s ease'
+                          }}>
+                            <div>
+                              <div style={{ 
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}>
+                                <div style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '4px',
+                                  background: '#f0f0f0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#555'
+                                }}>
+                                  {field.type === 'text' && <FaFont size={12} />}
+                                  {field.type === 'number' && <FaHashtag size={12} />}
+                                  {field.type === 'dropdown' && <FaList size={12} />}
+                                  {field.type === 'boolean' && <FaCheck size={12} />}
+                                  {field.type === 'date' && <FaCalendar size={12} />}
+                                </div>
+                                <span style={{ 
+                                  fontWeight: '600', 
+                                  fontSize: '14px',
+                                  color: '#333'
+                                }}>{field.name}</span>
+                                {field.required && (
+                                  <span style={{ 
+                                    color: '#e74c3c',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    background: '#ffebee',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px'
+                                  }}>Required</span>
+                                )}
+                              </div>
+                              <div style={{ 
+                                color: '#666', 
+                                fontSize: '13px',
+                                marginTop: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}>
+                                <span style={{ 
+                                  background: '#f5f5f5',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  textTransform: 'capitalize',
+                                  fontSize: '12px',
+                                  fontWeight: '500'
+                                }}>{field.type}</span>
+                                {field.type === 'dropdown' && field.options && (
+                                  <span style={{ fontSize: '12px' }}>
+                                    Options: {field.options.join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Button 
+                              onClick={() => handleRemoveCustomField(field.id)}
+                              style={{ 
+                                padding: '6px 10px', 
+                                background: '#fff', 
+                                color: '#c62828',
+                                border: '1px solid #ffcdd2',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                              }}
+                              title="Remove field"
+                            >
+                              <FaTrash size={12} />
+                            </Button>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ 
+                          padding: '20px', 
+                          textAlign: 'center', 
+                          color: '#666',
+                          fontStyle: 'italic'
+                        }}>
+                          No custom fields added yet
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </FormGroup>
             </ModalBody>
             

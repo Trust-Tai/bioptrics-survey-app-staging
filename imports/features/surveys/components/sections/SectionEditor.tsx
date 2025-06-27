@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiTrash2, FiImage, FiInfo, FiAlertCircle } from 'react-icons/fi';
+import { FiX, FiTrash2, FiImage, FiInfo, FiAlertCircle, FiHelpCircle } from 'react-icons/fi';
 import { SurveySectionItem } from '../../types';
 import styled from 'styled-components';
 
@@ -187,6 +187,59 @@ const CheckboxLabel = styled.label`
   }
 `;
 
+const TooltipContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+`;
+
+const TooltipIcon = styled.div`
+  color: #666;
+  cursor: help;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const TooltipText = styled.div`
+  visibility: hidden;
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: 220px;
+  font-size: 12px;
+  line-height: 1.4;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  white-space: normal;
+  
+  &:after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+  }
+  
+  ${TooltipContainer}:hover & {
+    visibility: visible;
+    opacity: 1;
+  }
+`;
+
 const ImageUploadContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -205,81 +258,67 @@ const ImageUploadInput = styled.label`
   transition: all 0.2s;
   background: #f9f9f9;
   
-  &:hover {
-    border-color: #552a47;
-    background: #f5f0f4;
-  }
-  
-  input {
-    display: none;
-  }
-  
-  svg {
-    font-size: 32px;
-    color: #552a47;
-    margin-bottom: 8px;
-  }
 `;
 
 const ImagePreviewContainer = styled.div`
-  position: relative;
-  margin-top: 8px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+position: relative;
+margin-top: 8px;
+border-radius: 8px;
+overflow: hidden;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 `;
 
 const ImagePreview = styled.img`
-  width: 100%;
-  max-height: 200px;
-  object-fit: contain;
-  background: #f0f0f0;
-  display: block;
+width: 100%;
+max-height: 200px;
+object-fit: contain;
+background: #f0f0f0;
+display: block;
 `;
 
 const DeleteImageButton = styled.button`
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s;
-  
-  &:hover {
-    background: white;
-    transform: scale(1.1);
-  }
-  
-  svg {
-    color: #d9534f;
-  }
+position: absolute;
+top: 8px;
+right: 8px;
+background: rgba(255, 255, 255, 0.9);
+border: none;
+border-radius: 50%;
+width: 32px;
+height: 32px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+transition: all 0.2s;
+
+&:hover {
+background: white;
+transform: scale(1.1);
+}
+
+svg {
+color: #d9534f;
+}
 `;
 
 const HelpText = styled.div`
-  font-size: 12px;
-  color: #666;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  
-  svg {
-    font-size: 14px;
-    color: #888;
-  }
+display: flex;
+align-items: center;
+gap: 6px;
+font-size: 12px;
+color: #666;
+margin-top: 6px;
 `;
 
 const ModalFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
+display: flex;
+justify-content: flex-end;
+gap: 12px;
+padding: 16px 24px 24px;
+border-top: 1px solid #eaeaea;
+background: #f9f9f9;
+border-radius: 0 0 12px 12px;
   gap: 12px;
   padding: 16px 24px 24px;
   border-top: 1px solid #eaeaea;
@@ -544,6 +583,14 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
                   onChange={handleInputChange}
                 />
                 Active
+                <TooltipContainer>
+                  <TooltipIcon>
+                    <FiHelpCircle size={14} />
+                  </TooltipIcon>
+                  <TooltipText>
+                    When active, this section will be visible to survey respondents. Inactive sections are hidden from the survey.
+                  </TooltipText>
+                </TooltipContainer>
               </CheckboxLabel>
               
               <CheckboxLabel htmlFor="isRequired">
@@ -555,6 +602,14 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
                   onChange={handleInputChange}
                 />
                 Required
+                <TooltipContainer>
+                  <TooltipIcon>
+                    <FiHelpCircle size={14} />
+                  </TooltipIcon>
+                  <TooltipText>
+                    When required, respondents must complete all questions in this section before proceeding to the next section.
+                  </TooltipText>
+                </TooltipContainer>
               </CheckboxLabel>
             </CheckboxGroup>
           </FormGroup>

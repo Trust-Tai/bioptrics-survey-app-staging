@@ -51,27 +51,29 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     // })))
   // ] },
   { to: '/admin/tags/manage', label: 'Tags & Classifications', icon: FaTag },
-  { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie, submenu: [
-    { to: '/admin/analytics/dashboard', label: 'Dashboard' },
-    { to: '/admin/analytics/compare-cohorts', label: 'Compare Cohorts' },
-    { to: '/admin/analytics/export-reports', label: 'Export Reports' },
-  ] },
+  { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie},
+  //  submenu: [
+    // { to: '/admin/analytics/dashboard', label: 'Dashboard' },
+    // { to: '/admin/analytics/compare-cohorts', label: 'Compare Cohorts' },
+    // { to: '/admin/analytics/export-reports', label: 'Export Reports' },
+  // ] },
   // Participants moved to be a submenu under Org Setup
   // Users and Settings moved to be submenus under Org Setup
-  { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding, submenu: [
-    { to: '/admin/org-setup/participants', label: `${getTerminology('participantLabel')}s` },
-    { to: '/admin/org-setup/users', label: 'Users', submenu: [
-      { to: '/admin/org-setup/users/all', label: 'All Users' },
-      { to: '/admin/org-setup/users/add', label: 'Add New' },
-    ] },
-    { to: '/admin/org-setup/settings', label: 'Settings', submenu: [
-      { to: '/admin/org-setup/settings/password', label: 'Change Password' },
-      { to: '/admin/org-setup/settings/timezone', label: 'Choose Time Zone' },
-      { to: '/admin/org-setup/settings/ui-preferences', label: 'UI Preferences' },
-    ] },
-    { to: '/admin/org-setup/roles', label: 'Permissions / Roles' },
-    { to: '/admin/org-setup/branding', label: 'Branding / Custom Fields' },
-  ] },
+  { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding},
+  //  submenu: [
+  //   { to: '/admin/org-setup/participants', label: `${getTerminology('participantLabel')}s` },
+  //   { to: '/admin/org-setup/users', label: 'Users', submenu: [
+  //     { to: '/admin/org-setup/users/all', label: 'All Users' },
+  //     { to: '/admin/org-setup/users/add', label: 'Add New' },
+  //   ] },
+  //   { to: '/admin/org-setup/settings', label: 'Settings', submenu: [
+  //     { to: '/admin/org-setup/settings/password', label: 'Change Password' },
+  //     { to: '/admin/org-setup/settings/timezone', label: 'Choose Time Zone' },
+  //     { to: '/admin/org-setup/settings/ui-preferences', label: 'UI Preferences' },
+  //   ] },
+  //   { to: '/admin/org-setup/roles', label: 'Permissions / Roles' },
+  //   { to: '/admin/org-setup/branding', label: 'Branding / Custom Fields' },
+  // ] },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
