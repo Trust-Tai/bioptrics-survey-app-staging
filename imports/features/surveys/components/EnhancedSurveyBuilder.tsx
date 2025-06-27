@@ -129,6 +129,24 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [survey, setSurvey] = useState<any>({ defaultSettings: { allowRetake: true } });
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
+  
+  // Create a default Welcome section for new surveys
+  useEffect(() => {
+    // Only create default section if this is a new survey (no surveyId) and no sections exist yet
+    if (!surveyId && sections.length === 0) {
+      const defaultSection: SurveySectionItem = {
+        id: `section-${Date.now()}`,
+        name: 'Welcome',
+        description: 'Default section for your survey questions',
+        priority: 0,  // Changed from order to priority to match the interface
+        isActive: true  // Required property in the SurveySectionItem interface
+      };
+      setSections([defaultSection]);
+      
+      // Automatically navigate to the sections tab for new surveys
+      setActiveStep('sections');
+    }
+  }, [surveyId, sections.length]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // Initialize all demographic options as selected by default for new surveys
@@ -144,6 +162,25 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Layer[]>([]);
+  
+  // Theme modal state
+  const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
+  const [newThemeName, setNewThemeName] = useState<string>('');
+  const [newThemeColor, setNewThemeColor] = useState<string>('#552a47');
+  const [newThemeSecondaryColor, setNewThemeSecondaryColor] = useState<string>('#8e44ad');
+  const [newThemeAccentColor, setNewThemeAccentColor] = useState<string>('#9b59b6');
+  const [newThemeDescription, setNewThemeDescription] = useState<string>('');
+  const [newThemeWpsCategoryId, setNewThemeWpsCategoryId] = useState<string>('');
+  const [newThemeAssignableTo, setNewThemeAssignableTo] = useState<string[]>(['questions', 'surveys']);
+  const [newThemeKeywords, setNewThemeKeywords] = useState<string[]>([]);
+  const [newThemePriority, setNewThemePriority] = useState<number>(0);
+  const [newThemeIsActive, setNewThemeIsActive] = useState<boolean>(true);
+  const [newThemeTemplateType, setNewThemeTemplateType] = useState<string>('Custom');
+  const [newThemeHeadingFont, setNewThemeHeadingFont] = useState<string>('Inter');
+  const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
+  const [newThemeButtonStyle, setNewThemeButtonStyle] = useState<string>('Rounded');
+  const [newThemeQuestionStyle, setNewThemeQuestionStyle] = useState<string>('Card');
+  const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
   
   // JSX namespace declaration for TypeScript
   declare namespace JSX {
@@ -805,13 +842,13 @@ const EnhancedSurveyBuilder: React.FC = () => {
             color: theme.textColor || '#333'
           }}>
             <h3 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Sample Heading</h3>
-            <p>This is how text will appear in your survey. The body font is {theme.bodyFont || 'default'} and the heading font is {theme.headingFont || 'default'}.</p>
+            <p>This is how text will appear in your survey. The body font is {theme.bodyFont || 'Inter, sans-serif'} and the heading font is {theme.headingFont || 'Inter, sans-serif'}.</p>
             
             <div style={{ marginBottom: 20 }}>
               <h4 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Sample Question</h4>
               <div style={{
-                backgroundColor: '#f9f9f9',
-                border: `1px solid ${theme.secondaryColor || '#ddd'}`,
+                backgroundColor: theme.questionStyle === 'card' ? '#f9f9f9' : 'transparent',
+                border: theme.questionStyle === 'bordered' ? `1px solid ${theme.accentColor || '#ddd'}` : 'none',
                 padding: 15,
                 borderRadius: 8,
                 marginBottom: 15
@@ -820,10 +857,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 <div style={{ display: 'flex', gap: 10 }}>
                   {[1, 2, 3, 4, 5].map(num => (
                     <button key={num} style={{
-                      backgroundColor: num === 3 ? theme.secondaryColor || '#f0e6ff' : 'transparent',
-                      color: num === 3 ? theme.primaryColor || '#552a47' : theme.textColor || '#333',
-                      border: `1px solid ${theme.secondaryColor || '#ddd'}`,
-                      borderRadius: '8px',
+                      backgroundColor: num === 3 ? theme.accentColor || theme.secondaryColor || '#f0e6ff' : 'transparent',
+                      color: num === 3 ? '#fff' : theme.textColor || '#333',
+                      border: `1px solid ${theme.accentColor || theme.secondaryColor || '#ddd'}`,
+                      borderRadius: theme.buttonStyle === 'pill' ? '50px' : theme.buttonStyle === 'rounded' ? '8px' : '0',
                       padding: '8px 16px',
                       cursor: 'pointer'
                     }}>
@@ -837,9 +874,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30 }}>
               <button style={{
                 backgroundColor: 'transparent',
-                color: theme.secondaryColor || '#552a47',
-                border: `1px solid ${theme.secondaryColor || '#552a47'}`,
-                borderRadius: '8px',
+                color: theme.primaryColor || theme.color || '#552a47',
+                border: `1px solid ${theme.primaryColor || theme.color || '#552a47'}`,
+                borderRadius: theme.buttonStyle === 'pill' ? '50px' : theme.buttonStyle === 'rounded' ? '8px' : '0',
                 padding: '10px 20px',
                 cursor: 'pointer',
                 fontFamily: theme.bodyFont || 'Inter, sans-serif'
@@ -851,13 +888,97 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 backgroundColor: theme.primaryColor || theme.color || '#552a47',
                 color: '#fff',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: theme.buttonStyle === 'pill' ? '50px' : theme.buttonStyle === 'rounded' ? '8px' : '0',
                 padding: '10px 20px',
                 cursor: 'pointer',
                 fontFamily: theme.bodyFont || 'Inter, sans-serif'
               }}>
                 Next
               </button>
+            </div>
+            
+            <div style={{ marginTop: 30, borderTop: `1px solid ${theme.accentColor || theme.secondaryColor || '#ddd'}`, paddingTop: 20 }}>
+              <h4 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Theme Properties</h4>
+              <ul style={{ 
+                listStyle: 'none', 
+                padding: 0,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 10
+              }}>
+                <li>
+                  <strong>Primary Color:</strong> 
+                  <div style={{ 
+                    display: 'inline-block', 
+                    width: '20px', 
+                    height: '20px', 
+                    backgroundColor: theme.primaryColor || theme.color || '#552a47', 
+                    borderRadius: '4px', 
+                    marginLeft: '8px',
+                    verticalAlign: 'middle',
+                    border: '1px solid #ddd'
+                  }}></div>
+                </li>
+                <li>
+                  <strong>Secondary Color:</strong> 
+                  <div style={{ 
+                    display: 'inline-block', 
+                    width: '20px', 
+                    height: '20px', 
+                    backgroundColor: theme.secondaryColor || '#8e44ad', 
+                    borderRadius: '4px', 
+                    marginLeft: '8px',
+                    verticalAlign: 'middle',
+                    border: '1px solid #ddd'
+                  }}></div>
+                </li>
+                <li>
+                  <strong>Accent Color:</strong> 
+                  <div style={{ 
+                    display: 'inline-block', 
+                    width: '20px', 
+                    height: '20px', 
+                    backgroundColor: theme.accentColor || '#9b59b6', 
+                    borderRadius: '4px', 
+                    marginLeft: '8px',
+                    verticalAlign: 'middle',
+                    border: '1px solid #ddd'
+                  }}></div>
+                </li>
+                <li>
+                  <strong>Background Color:</strong> 
+                  <div style={{ 
+                    display: 'inline-block', 
+                    width: '20px', 
+                    height: '20px', 
+                    backgroundColor: theme.backgroundColor || '#ffffff', 
+                    borderRadius: '4px', 
+                    marginLeft: '8px',
+                    verticalAlign: 'middle',
+                    border: '1px solid #ddd'
+                  }}></div>
+                </li>
+                <li>
+                  <strong>Text Color:</strong> 
+                  <div style={{ 
+                    display: 'inline-block', 
+                    width: '20px', 
+                    height: '20px', 
+                    backgroundColor: theme.textColor || '#2c3e50', 
+                    borderRadius: '4px', 
+                    marginLeft: '8px',
+                    verticalAlign: 'middle',
+                    border: '1px solid #ddd'
+                  }}></div>
+                </li>
+                <li><strong>Heading Font:</strong> {theme.headingFont || 'Inter'}</li>
+                <li><strong>Body Font:</strong> {theme.bodyFont || 'Inter'}</li>
+                <li><strong>Layout:</strong> {theme.layout || 'default'}</li>
+                <li><strong>Button Style:</strong> {theme.buttonStyle || 'Rounded'}</li>
+                <li><strong>Question Style:</strong> {theme.questionStyle || 'Card'}</li>
+                <li><strong>Header Style:</strong> {theme.headerStyle || 'Solid'}</li>
+                <li><strong>Template Type:</strong> {theme.templateType || 'Custom'}</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -1184,6 +1305,388 @@ const EnhancedSurveyBuilder: React.FC = () => {
         <DashboardBg>
           <Spinner />
         </DashboardBg>
+
+        
+        {/* Alert message for success/error */}
+        {alert && (
+          <div style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            padding: '12px 20px',
+            borderRadius: 8,
+            backgroundColor: alert.type === 'success' ? '#48bb78' : '#e53e3e',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            animation: 'slideUp 0.3s ease-out'
+          }}>
+            {alert.type === 'success' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            {alert.message}
+          </div>
+        )}
+        
+        {/* Theme Creation Modal */}
+        {showThemeModal && (
+          <div style={{ 
+            position: 'fixed', 
+            left: 0, 
+            top: 0, 
+            width: '100vw', 
+            height: '100vh', 
+            background: 'rgba(40,33,30,0.35)', 
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newThemeName.trim() || !newThemeWpsCategoryId) {
+                  setAlert({ type: 'error', message: 'Please fill in all required fields.' });
+                  setTimeout(() => setAlert(null), 4000);
+                  return;
+                }
+                
+                // Call the Meteor method to add a new theme
+                Meteor.call('surveyThemes.insert', { 
+                  name: newThemeName, 
+                  color: newThemeColor, 
+                  description: newThemeDescription, 
+                  wpsCategoryId: newThemeWpsCategoryId,
+                  assignableTo: newThemeAssignableTo,
+                  keywords: newThemeKeywords,
+                  priority: newThemePriority,
+                  isActive: newThemeIsActive
+                }, (err: any) => {
+                  if (!err) {
+                    // Reset form fields
+                    setNewThemeName('');
+                    setNewThemeColor('#552a47');
+                    setNewThemeDescription('');
+                    setNewThemeWpsCategoryId('');
+                    setNewThemeAssignableTo(['questions', 'surveys']);
+                    setNewThemeKeywords([]);
+                    setNewThemePriority(0);
+                    setNewThemeIsActive(true);
+                    
+                    // Show success message and close modal
+                    setAlert({ type: 'success', message: 'Theme added successfully!' });
+                    setTimeout(() => setAlert(null), 3000);
+                    setShowThemeModal(false);
+                  } else {
+                    setAlert({ type: 'error', message: `Error adding theme: ${err.message}` });
+                    setTimeout(() => setAlert(null), 4000);
+                  }
+                });
+              }} 
+              style={{ 
+                background: '#ffffff',
+                borderRadius: 24,
+                padding: '32px',
+                width: 520,
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 20px 50px rgba(85,42,71,0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 24,
+                position: 'relative',
+                border: '1px solid rgba(85,42,71,0.08)',
+                animation: 'slideUp 0.3s ease-out'
+              }}>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  marginBottom: 8
+                }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    background: newThemeColor || '#552a47',
+                    boxShadow: `0 4px 12px ${newThemeColor || '#552a47'}40`,
+                    transition: 'all 0.3s ease'
+                  }} />
+                  <div>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontWeight: 700, 
+                      color: '#28211e', 
+                      fontSize: 24,
+                      letterSpacing: '-0.02em'
+                    }}>Add Theme</h3>
+                    <p style={{ 
+                      margin: '4px 0 0 0',
+                      color: '#666',
+                      fontSize: 14
+                    }}>Create a new theme for surveys and questions</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 24,
+                backgroundColor: '#fff'
+              }}>
+                {/* Theme Name */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: 16 }}>
+                    <span style={{ 
+                      display: 'block',
+                      fontWeight: 600, 
+                      fontSize: 15, 
+                      color: '#28211e',
+                      marginBottom: 8
+                    }}>Theme Name</span>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        value={newThemeName}
+                        onChange={e => setNewThemeName(e.target.value)}
+                        placeholder="Enter theme name"
+                        style={{ 
+                          width: '100%',
+                          height: 48,
+                          padding: '0 16px',
+                          fontSize: 15,
+                          border: '1.5px solid #e5d6c7',
+                          borderRadius: 10,
+                          backgroundColor: '#fff',
+                          color: '#28211e',
+                          fontWeight: 500,
+                          boxSizing: 'border-box',
+                          transition: 'all 0.2s ease',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  </label>
+                </div>
+                
+                {/* Theme Color */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: 16 }}>
+                    <span style={{ 
+                      display: 'block',
+                      fontWeight: 600, 
+                      fontSize: 15, 
+                      color: '#28211e',
+                      marginBottom: 8
+                    }}>Theme Color</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <input
+                        type="color"
+                        value={newThemeColor}
+                        onChange={e => setNewThemeColor(e.target.value)}
+                        style={{ 
+                          width: 48,
+                          height: 48,
+                          padding: 0,
+                          border: '1.5px solid #e5d6c7',
+                          borderRadius: 10,
+                          backgroundColor: '#fff',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={newThemeColor}
+                        onChange={e => setNewThemeColor(e.target.value)}
+                        placeholder="#552a47"
+                        style={{ 
+                          width: '100%',
+                          height: 48,
+                          padding: '0 16px',
+                          fontSize: 15,
+                          border: '1.5px solid #e5d6c7',
+                          borderRadius: 10,
+                          backgroundColor: '#fff',
+                          color: '#28211e',
+                          fontWeight: 500,
+                          boxSizing: 'border-box',
+                          transition: 'all 0.2s ease',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  </label>
+                </div>
+                
+                {/* Theme Description */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: 16 }}>
+                    <span style={{ 
+                      display: 'block',
+                      fontWeight: 600, 
+                      fontSize: 15, 
+                      color: '#28211e',
+                      marginBottom: 8
+                    }}>Description</span>
+                    <textarea
+                      value={newThemeDescription}
+                      onChange={e => setNewThemeDescription(e.target.value)}
+                      placeholder="Enter theme description"
+                      style={{ 
+                        width: '100%',
+                        height: 100,
+                        padding: '12px 16px',
+                        fontSize: 15,
+                        border: '1.5px solid #e5d6c7',
+                        borderRadius: 10,
+                        backgroundColor: '#fff',
+                        color: '#28211e',
+                        fontWeight: 500,
+                        boxSizing: 'border-box',
+                        transition: 'all 0.2s ease',
+                        outline: 'none',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </label>
+                </div>
+                
+                {/* WPS Category */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: 16 }}>
+                    <span style={{ 
+                      display: 'block',
+                      fontWeight: 600, 
+                      fontSize: 15, 
+                      color: '#28211e',
+                      marginBottom: 8
+                    }}>WPS Category</span>
+                    <select
+                      value={newThemeWpsCategoryId}
+                      onChange={e => setNewThemeWpsCategoryId(e.target.value)}
+                      style={{ 
+                        width: '100%',
+                        height: 48,
+                        padding: '0 16px',
+                        fontSize: 15,
+                        border: '1.5px solid #e5d6c7',
+                        borderRadius: 10,
+                        backgroundColor: '#fff',
+                        color: '#28211e',
+                        fontWeight: 500,
+                        boxSizing: 'border-box',
+                        transition: 'all 0.2s ease',
+                        outline: 'none',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23552a47' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 16px center',
+                        backgroundSize: '16px'
+                      }}
+                    >
+                      <option value="">Select a WPS Category</option>
+                      {wpsCategories.map((category: any) => (
+                        <option key={category._id} value={category._id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+              
+              {/* Form Actions */}
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: 16
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowThemeModal(false)}
+                  style={{ 
+                    height: 48,
+                    padding: '0 24px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    border: '1.5px solid #e5d6c7',
+                    borderRadius: 10,
+                    backgroundColor: '#fff',
+                    color: '#28211e',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ 
+                    height: 48,
+                    padding: '0 32px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    border: 'none',
+                    borderRadius: 10,
+                    backgroundColor: '#552a47',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 12px rgba(85,42,71,0.2)'
+                  }}
+                >
+                  Create Theme
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+        
+        {/* Alert message for success/error */}
+        {alert && (
+          <div style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            padding: '12px 20px',
+            borderRadius: 8,
+            backgroundColor: alert.type === 'success' ? '#48bb78' : '#e53e3e',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            animation: 'slideUp 0.3s ease-out'
+          }}>
+            {alert.type === 'success' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            {alert.message}
+          </div>
+        )}
+        
         {/* Theme preview modal */}
         {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
       </AdminLayout>
@@ -1441,7 +1944,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       ))
                     ) : (
                       <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>
-                        No sections created yet. Click "Add Section" to create your first section.
+                        Loading sections...
                       </div>
                     )}
                   </div>
@@ -1911,12 +2414,34 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     <h2 className="survey-builder-panel-title">
                       {steps.find(step => step.id === activeStep)?.label}
                     </h2>
+                    <button 
+                        onClick={() => setShowThemeModal(true)}
+                        style={{
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 8, 
+                          background: '#552a47', 
+                          color: '#fff', 
+                          border: 'none', 
+                          borderRadius: 8, 
+                          fontWeight: 700, 
+                          padding: '0 22px', 
+                          fontSize: 14, 
+                          height: 38, 
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <span style={{ fontSize: 18, marginRight: 2 }}>+</span>
+                        Add Theme
+                      </button>
                   </div>
                   
                   <div style={{ padding: 20 }}>
-                    <p style={{ marginBottom: 16, fontSize: 15 }}>
-                      Select a theme for your survey. The theme will affect the appearance and feel of your survey.
-                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <p style={{ fontSize: 15, margin: 0 }}>
+                        Select a theme for your survey. The theme will affect the appearance and feel of your survey.
+                      </p>
+                    </div>
                     
                     {/* Display currently selected theme or default indicator */}
                     {(
@@ -2047,84 +2572,224 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       </div>
                     )}
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
                       {getFilteredAndPaginatedThemes().paginatedThemes.map((theme: any) => {
                         const isSelected = selectedTheme === theme._id;
+                        
                         return (
                           <div 
                             key={theme._id} 
                             onClick={() => setSelectedTheme(theme._id)}
                             style={{ 
                               cursor: 'pointer',
-                              borderRadius: 8,
-                              border: `2px solid ${isSelected ? theme.color || '#552a47' : '#e0e0e0'}`,
-                              background: isSelected ? '#f5edf3' : '#fff',
-                              padding: '16px',
+                              borderRadius: 12,
+                              border: `1px solid ${isSelected ? theme.color || '#552a47' : '#e2e8f0'}`,
+                              background: '#fff',
+                              overflow: 'hidden',
                               transition: 'all 0.2s',
-                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.15)' : 'none',
+                              boxShadow: isSelected ? '0 4px 12px rgba(0, 0, 0, 0.1)' : '0 2px 6px rgba(0, 0, 0, 0.05)',
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: 12
+                              height: '100%'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{ 
-                                width: 24, 
-                                height: 24, 
-                                borderRadius: '50%', 
-                                background: theme.color || '#552a47',
-                                border: '1px solid #e0e0e0'
-                              }} />
-                              <div style={{ 
-                                fontWeight: isSelected ? 600 : 500, 
-                                fontSize: 16,
-                                color: isSelected ? '#552a47' : '#333'
-                              }}>
-                                {theme.name}
+                            {/* Theme color header */}
+                            <div style={{
+                              height: 120,
+                              background: theme.primaryColor || theme.color
+                                ? (theme.headerStyle === 'gradient' && theme.secondaryColor)
+                                  ? `linear-gradient(135deg, ${theme.primaryColor || theme.color}, ${theme.secondaryColor})`
+                                  : theme.primaryColor || theme.color
+                                : '#552a47',
+                              position: 'relative'
+                            }}>
+                              {isSelected && (
+                                <div style={{
+                                  position: 'absolute',
+                                  top: 10,
+                                  right: 10,
+                                  background: 'rgba(85, 42, 71, 0.9)',
+                                  color: 'white',
+                                  padding: '4px 8px',
+                                  borderRadius: 4,
+                                  fontSize: 12,
+                                  fontWeight: 500
+                                }}>
+                                  Selected
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Theme content */}
+                            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, flexGrow: 1 }}>
+                              {/* Theme name and description */}
+                              <div>
+                                <h3 style={{ 
+                                  margin: 0,
+                                  fontWeight: 600, 
+                                  fontSize: 18,
+                                  color: '#1a202c',
+                                  marginBottom: 4
+                                }}>
+                                  {theme.name}
+                                </h3>
+                                <p style={{ 
+                                  margin: 0,
+                                  fontSize: 14, 
+                                  color: '#718096',
+                                  lineHeight: 1.5
+                                }}>
+                                  {theme.description || 'No description'}
+                                </p>
+                              </div>
+                              
+                              {/* Theme color dots */}
+                              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                                {theme.primaryColor && (
+                                  <div style={{ 
+                                    width: 24, 
+                                    height: 24, 
+                                    borderRadius: '50%', 
+                                    backgroundColor: theme.primaryColor,
+                                    border: '1px solid #e5e7eb'
+                                  }} title="Primary Color" />
+                                )}
+                                {!theme.primaryColor && theme.color && (
+                                  <div style={{ 
+                                    width: 24, 
+                                    height: 24, 
+                                    borderRadius: '50%', 
+                                    backgroundColor: theme.color,
+                                    border: '1px solid #e5e7eb'
+                                  }} title="Primary Color" />
+                                )}
+                                {theme.secondaryColor && (
+                                  <div style={{ 
+                                    width: 24, 
+                                    height: 24, 
+                                    borderRadius: '50%', 
+                                    backgroundColor: theme.secondaryColor,
+                                    border: '1px solid #e5e7eb'
+                                  }} title="Secondary Color" />
+                                )}
+                                {theme.accentColor && (
+                                  <div style={{ 
+                                    width: 24, 
+                                    height: 24, 
+                                    borderRadius: '50%', 
+                                    backgroundColor: theme.accentColor,
+                                    border: '1px solid #e5e7eb'
+                                  }} title="Accent Color" />
+                                )}
+                              </div>
+                              
+                              {/* Theme tags */}
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                                {theme.templateType && (
+                                  <span style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 12,
+                                    background: '#f7fafc',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: 12,
+                                    color: '#4a5568'
+                                  }}>
+                                    {theme.templateType}
+                                  </span>
+                                )}
+                                {theme.buttonStyle && (
+                                  <span style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 12,
+                                    background: '#f7fafc',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: 12,
+                                    color: '#4a5568'
+                                  }}>
+                                    {theme.buttonStyle}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             
+                            {/* Theme actions */}
                             <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
+                              padding: '12px 16px',
+                              borderTop: '1px solid #e2e8f0',
+                              display: 'flex',
                               justifyContent: 'space-between',
-                              marginTop: 8
+                              alignItems: 'center'
                             }}>
-                              <div style={{ 
-                                fontSize: 14, 
-                                color: '#666',
-                                flex: 1,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {theme.description || 'No description'}
-                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreview(theme);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 6,
+                                  padding: '6px 12px',
+                                  fontSize: 14,
+                                  color: '#4a5568',
+                                  background: 'transparent',
+                                  border: '1px solid #cbd5e0',
+                                  borderRadius: 6,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <FaEye size={14} /> Preview
+                              </button>
                               
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {isSelected ? (
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handlePreview(theme);
+                                    setSelectedTheme('');
                                   }}
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: 4,
-                                    padding: '4px 8px',
-                                    fontSize: 12,
-                                    color: theme.color || '#552a47',
-                                    background: 'transparent',
-                                    border: `1px solid ${theme.color || '#552a47'}`,
-                                    borderRadius: 4,
+                                    gap: 6,
+                                    padding: '6px 12px',
+                                    fontSize: 14,
+                                    color: '#fff',
+                                    background: theme.color || '#552a47',
+                                    border: 'none',
+                                    borderRadius: 6,
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  <FaEye size={12} /> Preview
+                                  Unselect
                                 </button>
-                              </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTheme(theme._id);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                    padding: '6px 12px',
+                                    fontSize: 14,
+                                    color: '#fff',
+                                    background: theme.color || '#552a47',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Use Theme
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
@@ -2348,11 +3013,316 @@ const EnhancedSurveyBuilder: React.FC = () => {
           onSave={handleSaveSection}
         />
         
+        {/* Theme creation modal */}
+        {showThemeModal && (
+          <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.35)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease-out' }}>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newThemeName) {
+                  setAlert({ type: 'error', message: 'Theme name is required' });
+                  return;
+                }
+                
+                Meteor.call('surveyThemes.insert', {
+                  name: newThemeName,
+                  color: newThemeColor,
+                  secondaryColor: newThemeSecondaryColor,
+                  accentColor: newThemeAccentColor,
+                  description: newThemeDescription,
+                  isActive: newThemeIsActive,
+                  templateType: newThemeTemplateType,
+                  headingFont: newThemeHeadingFont,
+                  bodyFont: newThemeBodyFont,
+                  buttonStyle: newThemeButtonStyle,
+                  questionStyle: newThemeQuestionStyle,
+                  headerStyle: newThemeHeaderStyle
+                }, (error: Error | null, result: string) => {
+                  if (error) {
+                    setAlert({ type: 'error', message: error.message });
+                  } else {
+                    setAlert({ type: 'success', message: 'Theme created successfully' });
+                    // Reset form fields
+                    setNewThemeName('');
+                    setNewThemeColor('#552a47');
+                    setNewThemeSecondaryColor('#8e44ad');
+                    setNewThemeAccentColor('#9b59b6');
+                    setNewThemeDescription('');
+                    setNewThemeIsActive(true);
+                    setNewThemeTemplateType('Custom');
+                    setNewThemeHeadingFont('Inter');
+                    setNewThemeBodyFont('Inter');
+                    setNewThemeButtonStyle('Rounded');
+                    setNewThemeQuestionStyle('Card');
+                    setNewThemeHeaderStyle('Solid');
+                    // Close modal
+                    setShowThemeModal(false);
+                  }
+                });
+              }}
+              style={{ background: '#fff', borderRadius: 24, padding: 32, width: 800, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(85,42,71,0.2)', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', border: '1px solid rgba(85,42,71,0.08)', animation: 'slideUp 0.3s ease-out' }}
+            >
+              <button 
+                type="button" 
+                onClick={() => setShowThemeModal(false)}
+                style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#28211e', opacity: 0.5, padding: 8 }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <div>
+                <h2 style={{ fontSize: 24, fontWeight: 600, color: '#28211e', margin: 0, marginBottom: 8 }}>Create New Theme</h2>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 24, rowGap: 20 }}>
+                <div>
+                  <label htmlFor="themeName" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Theme Name*</label>
+                  <input
+                    id="themeName"
+                    type="text"
+                    value={newThemeName}
+                    onChange={(e) => setNewThemeName(e.target.value)}
+                    placeholder="Enter theme name"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="themeColor" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Primary Color</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <input
+                      id="themeColor"
+                      type="color"
+                      value={newThemeColor}
+                      onChange={(e) => setNewThemeColor(e.target.value)}
+                      style={{ width: 42, height: 42, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                    />
+                    <input
+                      type="text"
+                      value={newThemeColor}
+                      onChange={(e) => setNewThemeColor(e.target.value)}
+                      placeholder="#552a47"
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="themeSecondaryColor" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Secondary Color</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <input
+                      id="themeSecondaryColor"
+                      type="color"
+                      value={newThemeSecondaryColor}
+                      onChange={(e) => setNewThemeSecondaryColor(e.target.value)}
+                      style={{ width: 42, height: 42, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                    />
+                    <input
+                      type="text"
+                      value={newThemeSecondaryColor}
+                      onChange={(e) => setNewThemeSecondaryColor(e.target.value)}
+                      placeholder="#8e44ad"
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="themeAccentColor" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Accent Color</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <input
+                      id="themeAccentColor"
+                      type="color"
+                      value={newThemeAccentColor}
+                      onChange={(e) => setNewThemeAccentColor(e.target.value)}
+                      style={{ width: 42, height: 42, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                    />
+                    <input
+                      type="text"
+                      value={newThemeAccentColor}
+                      onChange={(e) => setNewThemeAccentColor(e.target.value)}
+                      placeholder="#9b59b6"
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="themeDescription" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Description</label>
+                  <textarea
+                    id="themeDescription"
+                    value={newThemeDescription}
+                    onChange={(e) => setNewThemeDescription(e.target.value)}
+                    placeholder="Enter theme description"
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, minHeight: 80, resize: 'vertical' }}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="themeTemplateType" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Template Type</label>
+                  <select
+                    id="themeTemplateType"
+                    value={newThemeTemplateType}
+                    onChange={(e) => setNewThemeTemplateType(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
+                  >
+                    <option value="Custom">Custom</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Modern">Modern</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="themeHeadingFont" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Heading Font</label>
+                  <select
+                    id="themeHeadingFont"
+                    value={newThemeHeadingFont}
+                    onChange={(e) => setNewThemeHeadingFont(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
+                  >
+                    <option value="Inter">Inter</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Open Sans">Open Sans</option>
+                    <option value="Montserrat">Montserrat</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="themeBodyFont" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Body Font</label>
+                  <select
+                    id="themeBodyFont"
+                    value={newThemeBodyFont}
+                    onChange={(e) => setNewThemeBodyFont(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
+                  >
+                    <option value="Inter">Inter</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Open Sans">Open Sans</option>
+                    <option value="Lato">Lato</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="themeButtonStyle" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Button Style</label>
+                  <select
+                    id="themeButtonStyle"
+                    value={newThemeButtonStyle}
+                    onChange={(e) => setNewThemeButtonStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
+                  >
+                    <option value="Rounded">Rounded</option>
+                    <option value="Square">Square</option>
+                    <option value="Pill">Pill</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="themeQuestionStyle" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Question Style</label>
+                  <select
+                    id="themeQuestionStyle"
+                    value={newThemeQuestionStyle}
+                    onChange={(e) => setNewThemeQuestionStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
+                  >
+                    <option value="Card">Card</option>
+                    <option value="Minimal">Minimal</option>
+                    <option value="Outlined">Outlined</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="themeHeaderStyle" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 14, color: '#475569' }}>Header Style</label>
+                  <select
+                    id="themeHeaderStyle"
+                    value={newThemeHeaderStyle}
+                    onChange={(e) => setNewThemeHeaderStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
+                  >
+                    <option value="Solid">Solid</option>
+                    <option value="Gradient">Gradient</option>
+                    <option value="Transparent">Transparent</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newThemeIsActive}
+                      onChange={(e) => setNewThemeIsActive(e.target.checked)}
+                    />
+                    Active
+                  </label>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowThemeModal(false)}
+                  style={{ padding: '10px 24px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#552a47', color: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}
+                >
+                  Create Theme
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+        
+        {/* Alert message */}
+        {alert && (
+          <div 
+            style={{
+              position: 'fixed',
+              bottom: 20,
+              right: 20,
+              padding: '12px 20px',
+              borderRadius: 8,
+              backgroundColor: alert.type === 'success' ? '#10b981' : '#ef4444',
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              zIndex: 1001,
+              animation: 'fadeIn 0.3s ease-out',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}
+          >
+            {alert.type === 'success' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            )}
+            {alert.message}
+            <button 
+              onClick={() => setAlert(null)} 
+              style={{ background: 'none', border: 'none', color: 'white', marginLeft: 10, cursor: 'pointer', fontSize: 18, padding: 0 }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+        
         {/* Theme preview modal */}
         {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
       </DashboardBg>
     </AdminLayout>
   );
-};
+}
 
 export default EnhancedSurveyBuilder;
