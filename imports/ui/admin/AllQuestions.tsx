@@ -49,12 +49,15 @@ interface AlertProps {
 
 const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
   useEffect(() => {
-    // Auto-close the alert after 5 seconds
-    const timer = setTimeout(() => {
-      onClose();
-    }, 5000);
-    
-    return () => clearTimeout(timer);
+    // Only set timers if we're not in a Meteor simulation
+    if (Meteor.isClient && !Meteor.isSimulation) {
+      // Auto-close the alert after 5 seconds
+      const timer = setTimeout(() => {
+        onClose();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
   }, [onClose]);
   
   return (
@@ -950,23 +953,22 @@ const AllQuestions: React.FC = () => {
     setShowDeleteConfirm(true);
   };
   
-  const confirmDeleteQuestion = () => {
+  const confirmDeleteQuestion = async () => {
     if (questionToDelete) {
-      Meteor.call('questions.delete', questionToDelete, (error: any) => {
-        if (error) {
-          console.error('Error deleting question:', error);
-          setAlert({
-            type: 'error',
-            message: `Error deleting question: ${error.reason || error.message || 'Unknown error'}`
-          });
-        } else {
-          // Show success message
-          setAlert({
-            type: 'success',
-            message: 'Question deleted successfully!'
-          });
-        }
-      });
+      try {
+        await Meteor.callAsync('questions.delete', questionToDelete);
+        // Show success message
+        setAlert({
+          type: 'success',
+          message: 'Question deleted successfully!'
+        });
+      } catch (error: any) {
+        console.error('Error deleting question:', error);
+        setAlert({
+          type: 'error',
+          message: `Error deleting question: ${error.reason || error.message || 'Unknown error'}`
+        });
+      }
       setShowDeleteConfirm(false);
       setQuestionToDelete(null);
     }
@@ -1189,11 +1191,13 @@ const AllQuestions: React.FC = () => {
                       </ActionButton>
                       <ActionButton 
                         className="delete"
-                        onClick={() => {
-                          setQuestionToDelete(doc._id);
-                          setShowDeleteConfirm(true);
-                        }}
+                        onClick={() => handleDeleteQuestion(doc._id)}
                         title="Delete"
+                        style={{
+                          color: '#e53935',
+                          border: '1px solid #ffcdd2',
+                          background: '#ffebee'
+                        }}
                       >
                         <FaTrash size={16} />
                       </ActionButton>

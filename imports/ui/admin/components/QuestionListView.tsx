@@ -376,6 +376,7 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
                 >
                   <FaTrash size={16} />
                 </ActionButton>
+
               </ActionButtons>
             </QuestionHeader>
             
