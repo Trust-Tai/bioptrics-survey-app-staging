@@ -5,7 +5,7 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
-import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
@@ -13,6 +13,7 @@ import TermLabel from '../components/TermLabel';
 import SurveyStatsSummary from './components/SurveyStatsSummary';
 import SurveyListView from './components/SurveyListView';
 import ViewToggle from './components/ViewToggle';
+import SurveyResponsesModal from './components/SurveyResponsesModal';
 
 // Import the survey stats method
 import '../../features/surveys/api/surveyStats';
@@ -81,6 +82,13 @@ const AllSurveys: React.FC = () => {
   
   // Add view state (grid or list) - default to list view as requested
   const [view, setView] = useState<'grid' | 'list'>('list');
+
+  // State for responses modal
+  const [responsesModal, setResponsesModal] = useState<{ isOpen: boolean; surveyId: string; surveyTitle: string }>({ 
+    isOpen: false, 
+    surveyId: '', 
+    surveyTitle: '' 
+  });
 
   const surveys = useTracker(() => {
     Meteor.subscribe('surveys.all');
@@ -575,6 +583,7 @@ const AllSurveys: React.FC = () => {
                 surveys={paginated} 
                 onEdit={(id) => navigate(`/admin/surveys/builder/${id}`)}
                 onDelete={(id, title) => setConfirmDelete({ _id: id, title })}
+                onViewResponses={(id, title) => setResponsesModal({ isOpen: true, surveyId: id, surveyTitle: title })}
                 onPreview={(id, isPublic) => {
                   Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
                     if (!err && token) {
@@ -614,6 +623,14 @@ const AllSurveys: React.FC = () => {
           </div>
         </div>
       </DashboardBg>
+      
+      {/* Survey Responses Modal */}
+      <SurveyResponsesModal
+        isOpen={responsesModal.isOpen}
+        onClose={() => setResponsesModal({ ...responsesModal, isOpen: false })}
+        surveyId={responsesModal.surveyId}
+        surveyTitle={responsesModal.surveyTitle}
+      />
     </AdminLayout>
   );
 };

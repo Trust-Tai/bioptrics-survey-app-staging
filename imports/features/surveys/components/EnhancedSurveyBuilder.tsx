@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
+import styled from 'styled-components';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { components } from 'react-select';
 import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { FiSave, FiPlus, FiSettings, FiEye, FiChevronRight, FiTrash2, FiMessageSquare, FiCalendar, FiUser } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiChevronRight, FiChevronDown, FiChevronUp, FiSave } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 import { Layers, Layer } from '../../../api/layers';
-import styled from 'styled-components';
 import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage } from 'react-icons/fa';
 
 // Import our new components
@@ -66,11 +67,11 @@ import './EnhancedSurveyBuilder.css';
 
 // Define the steps for the survey builder
 const steps = [
-  { id: 'welcome', label: 'Welcome Screen', icon: 'FiHome' },
-  { id: 'sections', label: 'Sections', icon: 'FiLayers' },
+  { id: 'welcome', label: 'Survey Basics', icon: 'FiHome' },
+  { id: 'sections', label: 'Questions', icon: 'FiLayers' },
   { id: 'tags', label: 'Tags', icon: 'FiTag' },
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
-  { id: 'themes', label: 'Themes', icon: 'FiTag' },
+  { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
@@ -120,15 +121,189 @@ const demographicOptions = [
 ];
 
 // Main EnhancedSurveyBuilder component
+// Helper function to calculate total questions in a survey
+const getTotalQuestionCount = (survey: any): number => {
+  if (!survey) return 1; // Default to 1 to avoid division by zero
+  
+  // If survey has sections, count questions across all sections
+  if (survey.sections && Array.isArray(survey.sections)) {
+    return survey.sections.reduce((total: number, section: any) => {
+      return total + (section.questions?.length || 0);
+    }, 0) || 1; // Default to 1 if no questions found
+  }
+  
+  // If survey has questions directly (not in sections)
+  if (survey.questions && Array.isArray(survey.questions)) {
+    return survey.questions.length || 1;
+  }
+  
+  return 1; // Default fallback
+};
+
+// Helper function to calculate progress percentage
+const calculateProgress = (responses: any[], survey: any): number => {
+  if (!responses || !Array.isArray(responses) || responses.length === 0) return 0;
+  
+  const totalQuestions = getTotalQuestionCount(survey);
+  // For incomplete responses, we count the number of answered questions
+  const answeredQuestions = responses.filter(response => 
+    response && (response.answer !== undefined || response.answers !== undefined)
+  ).length;
+  
+  return Math.min(Math.round((answeredQuestions / totalQuestions) * 100), 100);
+};
+
+// Helper function to find question details from survey data
+const getQuestionDetails = (questionId: string, sectionId: string | undefined, surveyData: any) => {
+  if (!surveyData) return { questionText: "Unknown Question", sectionName: "" };
+  
+  let questionText = "Unknown Question";
+  let sectionName = "";
+  
+  // Approach 1: Check direct questions array
+  if (surveyData.questions && Array.isArray(surveyData.questions)) {
+    const question = surveyData.questions.find((q: any) => q._id === questionId);
+    if (question) {
+      questionText = question.text || question.title || "Unknown Question";
+      return { questionText, sectionName };
+    }
+  }
+  
+  // Approach 2: Check sections with questions
+  if (surveyData.sections && Array.isArray(surveyData.sections)) {
+    for (const section of surveyData.sections) {
+      if (sectionId && section._id === sectionId) {
+        sectionName = section.title || section.name || "";
+      }
+      
+      if (section.questions && Array.isArray(section.questions)) {
+        const question = section.questions.find((q: any) => q._id === questionId);
+        if (question) {
+          questionText = question.text || question.title || "Unknown Question";
+          if (!sectionName && section.title) {
+            sectionName = section.title || section.name || "";
+          }
+          return { questionText, sectionName };
+        }
+      }
+    }
+  }
+  
+  // Approach 3: Check selectedQuestions object
+  if (surveyData.selectedQuestions && typeof surveyData.selectedQuestions === 'object') {
+    if (surveyData.selectedQuestions[questionId]) {
+      const question = surveyData.selectedQuestions[questionId];
+      questionText = question.text || question.title || "Unknown Question";
+      return { questionText, sectionName };
+    }
+  }
+  
+  // Approach 4: Deep recursive search as last resort
+  const findQuestionRecursive = (obj: any): any => {
+    if (!obj || typeof obj !== 'object') return null;
+    
+    // Check if current object is the question we're looking for
+    if (obj._id === questionId) {
+      return obj;
+    }
+    
+    // Search in arrays
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        const result = findQuestionRecursive(item);
+        if (result) return result;
+      }
+    } else {
+      // Search in object properties
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const result = findQuestionRecursive(obj[key]);
+          if (result) return result;
+        }
+      }
+    }
+    
+    return null;
+  };
+  
+  const foundQuestion = findQuestionRecursive(surveyData);
+  if (foundQuestion) {
+    questionText = foundQuestion.text || foundQuestion.title || "Unknown Question";
+  }
+  
+  return { questionText, sectionName };
+};
+
+// Styled components for response details
+const ResponseDetailsContainer = styled.div`
+  padding: 16px;
+  background-color: #f9fafb;
+  border-top: 1px solid #e2e8f0;
+  margin-top: -1px;
+`;
+
+const QuestionItem = styled.div`
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #e2e8f0;
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+`;
+
+const SectionName = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+`;
+
+const QuestionTitle = styled.div`
+  font-size: 14px;
+  color: #1e293b;
+  margin-bottom: 8px;
+  font-weight: 500;
+`;
+
+const AnswerText = styled.div`
+  font-size: 14px;
+  color: #334155;
+  background-color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+`;
+
+const ExpandButton = styled.button`
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  &:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+`;
+
 const EnhancedSurveyBuilder: React.FC = () => {
   const navigate = useNavigate();
   const { surveyId } = useParams<{ surveyId: string }>();
   
   // State for the survey builder
+  const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
+  const [surveyData, setSurveyData] = useState<any>(null);
   const [activeStep, setActiveStep] = useState('welcome');
+  const [isLoadingResponses, setIsLoadingResponses] = useState<boolean>(false);
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
-  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
-  const [responseStats, setResponseStats] = useState({
+  const [responseStats, setResponseStats] = useState<any>({
     totalResponses: 0,
     totalTags: 0,
     completionRate: 0,
@@ -185,7 +360,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [newThemeKeywords, setNewThemeKeywords] = useState<string[]>([]);
   const [newThemePriority, setNewThemePriority] = useState<number>(0);
   // Active checkbox removed, but we'll keep the state as true by default
-  const [newThemeIsActive] = useState<boolean>(true);
+  const [newThemeIsActive, setNewThemeIsActive] = useState<boolean>(true);
   const [newThemeButtonStyle, setNewThemeButtonStyle] = useState<string>('rounded');
   const [newThemeQuestionStyle, setNewThemeQuestionStyle] = useState<string>('card');
   const [newThemeTemplateType, setNewThemeTemplateType] = useState<string>('Custom');
@@ -202,6 +377,173 @@ const EnhancedSurveyBuilder: React.FC = () => {
     width: 100%;
   `;
 
+  // Styled components for response details
+  const ResponseDetailsContainer = styled.div`
+    padding: 16px 24px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    border-top: 1px solid #e2e8f0;
+    margin-bottom: 8px;
+    width: 100%;
+    grid-column: 1 / -1; /* Make it span all columns */
+  `;
+
+  const QuestionItem = styled.div`
+    padding: 12px 16px;
+    border-radius: 6px;
+    background-color: white;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #edf2f7;
+  `;
+
+  const SectionName = styled.div`
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  `;
+
+  const QuestionTitle = styled.div`
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+  `;
+
+  const AnswerText = styled.div`
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.5;
+  `;
+
+  const ExpandButton = styled.button`
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #f1f5f9;
+      color: #334155;
+    }
+  `;
+  
+  // Helper function to get total question count in a survey
+  const getTotalQuestionCount = (survey: any) => {
+    if (!survey) return 0;
+    
+    let count = 0;
+    
+    // Count questions in sections
+    if (survey.sections && Array.isArray(survey.sections)) {
+      survey.sections.forEach((section: any) => {
+        if (section.questions && Array.isArray(section.questions)) {
+          count += section.questions.length;
+        }
+      });
+    }
+    
+    // Count direct questions (non-sectioned surveys)
+    if (survey.questions && Array.isArray(survey.questions)) {
+      count += survey.questions.length;
+    }
+    
+    return count;
+  };
+  
+  // Calculate progress percentage
+  const calculateProgress = (responses: any[], survey: any) => {
+    if (!responses || !responses.length || !survey) return 0;
+    
+    const totalQuestions = getTotalQuestionCount(survey);
+    if (totalQuestions === 0) return 0;
+    
+    const answeredQuestions = responses.length;
+    return Math.round((answeredQuestions / totalQuestions) * 100);
+  };
+  
+  // Helper function to get question details
+  const getQuestionDetails = (questionId: string, sectionId: string | undefined, surveyData: any) => {
+    if (!surveyData) return { questionText: "Unknown Question", sectionName: "" };
+    
+    let questionText = "Unknown Question";
+    let sectionName = "";
+    
+    // Try to find question in direct questions array
+    if (surveyData.questions && Array.isArray(surveyData.questions)) {
+      const question = surveyData.questions.find((q: any) => q._id === questionId);
+      if (question) {
+        questionText = question.text || question.title || "Unknown Question";
+        return { questionText, sectionName };
+      }
+    }
+    
+    // Try to find question in sections
+    if (surveyData.sections && Array.isArray(surveyData.sections)) {
+      for (const section of surveyData.sections) {
+        if (sectionId && section._id !== sectionId) continue;
+        
+        if (section.questions && Array.isArray(section.questions)) {
+          const question = section.questions.find((q: any) => q._id === questionId);
+          if (question) {
+            questionText = question.text || question.title || "Unknown Question";
+            sectionName = section.title || section.name || "";
+            return { questionText, sectionName };
+          }
+        }
+      }
+    }
+    
+    // Try to find in selectedQuestions object
+    if (surveyData.selectedQuestions && typeof surveyData.selectedQuestions === 'object') {
+      for (const key in surveyData.selectedQuestions) {
+        if (key === questionId) {
+          const question = surveyData.selectedQuestions[key];
+          questionText = question.text || question.title || "Unknown Question";
+          return { questionText, sectionName };
+        }
+      }
+    }
+    
+    // Deep search as a last resort
+    const deepSearch = (obj: any, targetId: string): any => {
+      if (!obj || typeof obj !== 'object') return null;
+      
+      if (obj._id === targetId) return obj;
+      
+      for (const key in obj) {
+        if (Array.isArray(obj[key])) {
+          for (const item of obj[key]) {
+            const result = deepSearch(item, targetId);
+            if (result) return result;
+          }
+        } else if (typeof obj[key] === 'object') {
+          const result = deepSearch(obj[key], targetId);
+          if (result) return result;
+        }
+      }
+      
+      return null;
+    };
+    
+    const foundQuestion = deepSearch(surveyData, questionId);
+    if (foundQuestion) {
+      questionText = foundQuestion.text || foundQuestion.title || "Unknown Question";
+    }
+    
+    return { questionText, sectionName };
+  };
+  
   const StatCard = styled.div`
     background: #fff;
     border-radius: 8px;
@@ -241,6 +583,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
     color: #666;
     margin-top: 4px;
   `;
+
+  // Function to calculate engagement score based on response data
 
   // Function to calculate engagement score based on response data
   const calculateEngagementScore = (response: any): number => {
@@ -370,6 +714,52 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const initializeTomSelect = () => {
     // Implementation moved to useEffect
   };
+  
+  // Toggle response details expansion
+  const toggleResponseDetails = (responseId: string) => {
+    setExpandedResponseIds(prev => 
+      prev.includes(responseId) 
+        ? prev.filter(id => id !== responseId)
+        : [...prev, responseId]
+    );
+    
+    // Fetch survey data for question lookup if not already loaded
+    if (!surveyData && surveyId) {
+      Meteor.call('getSurveyById', surveyId, (err: Meteor.Error, survey: any) => {
+        if (err) {
+          console.error('Error fetching survey data:', err);
+          return;
+        }
+        setSurveyData(survey);
+      });
+    }
+  };
+  
+  // Load survey responses and survey data when the responses tab is selected
+  useEffect(() => {
+    if (activeStep === 'responses' && surveyId) {
+      setIsLoadingResponses(true);
+      
+      // Fetch survey responses
+      Meteor.call('getSurveyResponses', surveyId, (error: Meteor.Error, result: any[]) => {
+        setIsLoadingResponses(false);
+        if (error) {
+          console.error('Error fetching survey responses:', error);
+          return;
+        }
+        setSurveyResponses(result || []);
+        
+        // Fetch survey data for question lookup
+        Meteor.call('getSurveyById', surveyId, (err: Meteor.Error, survey: any) => {
+          if (err) {
+            console.error('Error fetching survey data:', err);
+            return;
+          }
+          setSurveyData(survey);
+        });
+      });
+    }
+  }, [activeStep, surveyId]);
   
   // Subscribe to layers (tags) with location containing "Surveys"
   useTracker(() => {
@@ -756,6 +1146,17 @@ const EnhancedSurveyBuilder: React.FC = () => {
     const depth = data.depth || 0;
     const indent = '\u00A0\u00A0'.repeat(depth); // Non-breaking spaces for indentation
     const prefix = depth > 0 ? '└── ' : ''; // Box drawing characters for hierarchy
+    
+    // Special styling for the create option
+    if (data.__isNew__) {
+      return (
+        <components.Option {...props}>
+          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: '#552a47', fontWeight: 'bold' }}>
+            ✨ Create this tag: "{data.label}"
+          </div>
+        </components.Option>
+      );
+    }
     
     return (
       <components.Option {...props}>
@@ -2243,7 +2644,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     <div className="form-group">
                       <label htmlFor="surveyTags">Select Tags</label>
                       <div style={{ position: 'relative', zIndex: 1000 }}>
-                        <Select
+                        <CreatableSelect
                           id="surveyTags"
                           name="surveyTags"
                           isMulti
@@ -2257,6 +2658,28 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             } else {
                               setSelectedTags([]);
                             }
+                          }}
+                          onCreateOption={(inputValue) => {
+                            // Call Meteor method to create a new tag
+                            Meteor.call('layers.create', {
+                              name: inputValue,
+                              color: 'rgb(85, 42, 71)',
+                              active: true,
+                              location: 'Surveys',
+                              fields: [], // Required empty array for fields
+                              id: `tag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate a unique ID
+                            }, (error: Meteor.Error, newTagId: string) => {
+                              if (error) {
+                                setAlert({ type: 'error', message: `Error creating tag: ${error.message}` });
+                                setTimeout(() => setAlert(null), 5000);
+                                return;
+                              }
+                              
+                              // Add the new tag to selected tags
+                              setSelectedTags([...selectedTags, newTagId]);
+                              setAlert({ type: 'success', message: `Tag "${inputValue}" created successfully!` });
+                              setTimeout(() => setAlert(null), 3000);
+                            });
                           }}
                           components={{
                             Option: CustomOption
@@ -2272,6 +2695,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               zIndex: 9999
                             })
                           }}
+                          formatCreateLabel={(inputValue) => `Create this tag: "${inputValue}"`}
                           classNamePrefix="react-select"
                         />
                       </div>
@@ -2514,24 +2938,19 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         
                         <div className="survey-responses-list">
                           {surveyResponses.map((response, index) => (
-                            <div 
-                              key={response._id || index}
-                              className="survey-response-item"
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr 150px 120px',
-                                gap: '16px',
-                                padding: '16px',
-                                borderBottom: '1px solid #e2e8f0',
-                                backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
-                                transition: 'all 0.2s ease',
-                                cursor: 'pointer'
-                              }}
-                              onClick={() => {
-                                // Handle viewing response details
-                                console.log('View response details:', response);
-                              }}
-                            >
+                            <div key={response._id || index}>
+                              <div 
+                                className="survey-response-item"
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: '1fr 1fr 150px 120px',
+                                  gap: '16px',
+                                  padding: '16px',
+                                  borderBottom: expandedResponseIds.includes(response._id) ? 'none' : '1px solid #e2e8f0',
+                                  backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <div style={{
                                   width: '32px',
@@ -2556,7 +2975,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                 {response.submittedAt ? new Date(response.submittedAt).toLocaleDateString() + ' ' + 
                                   new Date(response.submittedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
                               </div>
-                              <div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <span style={{
                                   padding: '4px 8px',
                                   borderRadius: '4px',
@@ -2567,9 +2986,76 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                 }}>
                                   {response.isComplete ? 'Complete' : `${response.progress || 0}% Complete`}
                                 </span>
+                                <ExpandButton 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleResponseDetails(response._id);
+                                  }}
+                                >
+                                  {expandedResponseIds.includes(response._id) ? (
+                                    <>
+                                      <span style={{ marginRight: '4px' }}>Hide Details</span>
+                                      <FiChevronUp size={16} />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span style={{ marginRight: '4px' }}>Show Details</span>
+                                      <FiChevronDown size={16} />
+                                    </>
+                                  )}
+                                </ExpandButton>
                               </div>
+                              
+                              {/* Expandable Response Details */}
+                              {expandedResponseIds.includes(response._id) && (
+                                <ResponseDetailsContainer>
+                                  {response.responses && Array.isArray(response.responses) && response.responses.length > 0 ? (
+                                    <>
+                                      <div style={{ marginBottom: '12px', fontSize: '14px', color: '#64748b' }}>
+                                        Showing {response.responses.length} answered questions
+                                      </div>
+                                      {response.responses.map((item: any, idx: number) => {
+                                        const { questionText, sectionName } = getQuestionDetails(
+                                          item.questionId,
+                                          item.sectionId,
+                                          surveyData
+                                        );
+                                        
+                                        return (
+                                          <QuestionItem key={`${item.questionId}-${idx}`}>
+                                            {sectionName && <SectionName>{sectionName}</SectionName>}
+                                            <QuestionTitle>{questionText}</QuestionTitle>
+                                            <AnswerText>
+                                              {item.answer !== undefined ? (
+                                                item.answer
+                                              ) : item.answers ? (
+                                                Array.isArray(item.answers) ? (
+                                                  <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                                                    {item.answers.map((ans: string, i: number) => (
+                                                      <li key={i}>{ans}</li>
+                                                    ))}
+                                                  </ul>
+                                                ) : (
+                                                  JSON.stringify(item.answers)
+                                                )
+                                              ) : (
+                                                'No answer provided'
+                                              )}
+                                            </AnswerText>
+                                          </QuestionItem>
+                                        );
+                                      })}
+                                    </>
+                                  ) : (
+                                    <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                                      No detailed response data available
+                                    </div>
+                                  )}
+                                </ResponseDetailsContainer>
+                              )}
                             </div>
-                          ))}
+                          </div>
+                         ))}
                         </div>
                       </div>
                     ) : (
@@ -2588,7 +3074,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : activeStep === 'themes' ? (
+              ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">
@@ -3161,7 +3647,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ) : activeStep !== 'sections' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'welcome' && (
+              ) : activeStep !== 'sections' && activeStep !== 'appearance' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">

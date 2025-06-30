@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import Select, { components } from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { Layers, Layer } from '/imports/api/layers';
 import { FaTags } from 'react-icons/fa';
 import './TagBuilder.css';
@@ -45,6 +46,8 @@ interface SelectOption {
 }
 
 const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChange }) => {
+  // State for alerts
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // Subscribe to and fetch tags from Layers collection
   const { allTags, loading } = useTracker(() => {
     const subscription = Meteor.subscribe('layers.all');
@@ -104,6 +107,17 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
     const indent = '\u00A0\u00A0'.repeat(depth);
     const prefix = depth > 0 ? '└── ' : '';
 
+    // Special styling for the create option
+    if (data.__isNew__) {
+      return (
+        <components.Option {...props}>
+          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: '#552a47', fontWeight: 'bold' }}>
+            ✨ Create this tag: "{data.label}"
+          </div>
+        </components.Option>
+      );
+    }
+
     return (
       <components.Option {...props}>
         <div style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
@@ -145,7 +159,19 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
         <FaTags size={18} /> Tag builder
       </label>
       <div className="tag-builder-container">
-        <Select
+        {alert && (
+          <div className={`alert alert-${alert.type}`} style={{
+            padding: '8px 12px',
+            marginBottom: '10px',
+            borderRadius: '4px',
+            backgroundColor: alert.type === 'success' ? '#d4edda' : '#f8d7da',
+            color: alert.type === 'success' ? '#155724' : '#721c24',
+            border: `1px solid ${alert.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`
+          }}>
+            {alert.message}
+          </div>
+        )}
+        <CreatableSelect
           id="questionTags"
           name="questionTags"
           isMulti
@@ -159,6 +185,28 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
             } else {
               onTagChange([]);
             }
+          }}
+          onCreateOption={(inputValue) => {
+            // Call Meteor method to create a new tag
+            Meteor.call('layers.create', {
+              name: inputValue,
+              color: 'rgb(85, 42, 71)',
+              active: true,
+              location: 'Questions',
+              fields: [], // Required empty array for fields
+              id: `tag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate a unique ID
+            }, (error: Meteor.Error, newTagId: string) => {
+              if (error) {
+                setAlert({ type: 'error', message: `Error creating tag: ${error.message}` });
+                setTimeout(() => setAlert(null), 5000);
+                return;
+              }
+              
+              // Add the new tag to selected tags
+              onTagChange([...selectedTagIds, newTagId]);
+              setAlert({ type: 'success', message: `Tag "${inputValue}" created successfully!` });
+              setTimeout(() => setAlert(null), 3000);
+            });
           }}
           components={{
             Option: CustomOption
@@ -178,6 +226,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
               maxHeight: '300px'
             })
           }}
+          formatCreateLabel={(inputValue) => `Create this tag: "${inputValue}"`}
           classNamePrefix="react-select"
           placeholder="Select tags..."
         />

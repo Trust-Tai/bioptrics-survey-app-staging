@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -133,13 +133,15 @@ interface SurveyListViewProps {
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onPreview: (id: string, isPublic?: boolean) => void;
+  onViewResponses: (id: string, title: string) => void;
 }
 
 const SurveyListView: React.FC<SurveyListViewProps> = ({ 
   surveys, 
   onEdit, 
   onDelete, 
-  onPreview
+  onPreview,
+  onViewResponses
 }) => {
   return (
     <Table>
@@ -193,6 +195,9 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 <ActionContainer>
                   <ActionButton onClick={() => onEdit(survey._id)} title="Edit">
                     <FaEdit />
+                  </ActionButton>
+                  <ActionButton onClick={() => onViewResponses(survey._id, survey.title)} title="Responses">
+                    <FaChartBar />
                   </ActionButton>
                   <ActionButton onClick={() => onPreview(survey._id)} title="Preview">
                     <FaEye />
