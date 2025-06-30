@@ -76,7 +76,7 @@ const steps = [
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   { id: 'preview', label: 'Preview', icon: 'FiEye' },
-  { id: 'publish', label: 'Publish', icon: 'FiSend' },
+  // { id: 'publish', label: 'Publish', icon: 'FiSend' },
   { id: 'settings', label: 'Settings', icon: 'FiSettings' },
   { id: 'notifications', label: 'Notifications', icon: 'FiBell' },
 ];
@@ -2235,7 +2235,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
               justifyContent: 'flex-end'
             }}>
               {/* Cancel Button */}
-              <button 
+              {/* <button 
                 onClick={() => navigate('/admin/surveys')}
                 className="action-button cancel-button"
                 style={{
@@ -2263,7 +2263,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 }}
               >
                 Cancel
-              </button>
+              </button> */}
               
               {/* Save Survey Button */}
               <button 
