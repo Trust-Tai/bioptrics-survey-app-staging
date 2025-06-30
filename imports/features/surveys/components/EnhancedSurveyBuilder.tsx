@@ -69,7 +69,7 @@ import './EnhancedSurveyBuilder.css';
 const steps = [
   { id: 'welcome', label: 'Survey Basics', icon: 'FiHome' },
   { id: 'sections', label: 'Questions', icon: 'FiLayers' },
-  { id: 'tags', label: 'Tags', icon: 'FiTag' },
+  // { id: 'tags', label: 'Tags', icon: 'FiTag' },
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
@@ -1540,7 +1540,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
         title: survey?.title || 'Untitled Survey',
         description: survey?.description || '',
         logo: survey?.logo || '',
-        featuredImage: survey?.featuredImage || '',
+        image: survey?.image || '',
         primaryColor: selectedThemeObject?.primaryColor || selectedThemeObject?.color || survey?.primaryColor || '#552a47',
         welcomeTitle: survey?.welcomeTitle || '',
         welcomeMessage: survey?.welcomeMessage || '',
@@ -2471,7 +2471,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
               {activeStep === 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Welcome Screen</h2>
+                    <h2 className="survey-builder-panel-title">Survey Basics</h2>
                   </div>
                   
                   <div className="survey-builder-panel-content">
@@ -2517,126 +2517,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         />
                       </div>
                     </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="surveyLogo">Logo</label>
-                      <div className="file-upload-container">
-                        <input
-                          type="file"
-                          id="surveyLogo"
-                          className="file-input"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setSurvey({...survey, logo: event.target?.result as string});
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                          accept="image/*"
-                        />
-                        <label htmlFor="surveyLogo" className="file-upload-button" style={{ color: '#ffffff' }}>
-                          Choose Logo
-                        </label>
-                        <span className="file-name" style={{ color: '#ffffff' }}>
-                          {survey?.logo ? 'Logo selected' : 'No file selected'}
-                        </span>
-                      </div>
-                      {survey?.logo && (
-                        <div className="image-preview">
-                          <img 
-                            src={survey.logo} 
-                            alt="Logo Preview" 
-                            style={{ maxWidth: '200px', maxHeight: '100px', marginTop: '10px' }} 
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="surveyFeaturedImage">Featured Image</label>
-                      <div className="file-upload-container">
-                        <input
-                          type="file"
-                          id="surveyFeaturedImage"
-                          className="file-input"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setSurvey({...survey, featuredImage: event.target?.result as string});
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                          accept="image/*"
-                        />
-                        <label htmlFor="surveyFeaturedImage" className="file-upload-button" style={{ color: '#ffffff' }}>
-                          Choose Featured Image
-                        </label>
-                        <span className="file-name" style={{ color: '#ffffff' }}>
-                          {survey?.featuredImage ? 'Featured image selected' : 'No file selected'}
-                        </span>
-                      </div>
-                      {survey?.featuredImage && (
-                        <div className="image-preview">
-                          <img 
-                            src={survey.featuredImage} 
-                            alt="Featured Image Preview" 
-                            style={{ maxWidth: '300px', maxHeight: '200px', marginTop: '10px' }} 
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="surveyPrimaryColor">Primary Color</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input
-                          type="color"
-                          id="surveyPrimaryColor"
-                          className="form-control color-picker"
-                          value={survey?.color || '#552a47'}
-                          onChange={(e) => setSurvey({...survey, color: e.target.value})}
-                          style={{ width: '50px', height: '40px', padding: '0' }}
-                        />
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={survey?.color || '#552a47'}
-                          onChange={(e) => setSurvey({...survey, color: e.target.value})}
-                          placeholder="#552a47"
-                          style={{ width: '120px' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="form-actions">
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => setActiveStep('sections')}
-                      >
-                        Save and Continue
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Other steps would be implemented here */}
-              {activeStep === 'tags' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Survey Tags</h2>
-                    <p className="survey-builder-panel-subtitle">
-                      Add tags to categorize and organize your survey
-                    </p>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
+                    <div style={{ padding: 20 }}>
                     <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
                       Select tags to associate with this survey. Tags help with filtering and organizing surveys.
                     </p>
@@ -2745,6 +2626,32 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                    
+
+                    
+                    <div className="form-actions">
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => setActiveStep('sections')}
+                      >
+                        Save and Continue
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Other steps would be implemented here */}
+              {activeStep === 'tags' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Survey Tags</h2>
+                    <p className="survey-builder-panel-subtitle">
+                      Add tags to categorize and organize your survey
+                    </p>
+                  </div>
+                  
+                  
                 </div>
               ) : activeStep === 'demographics' ? (
                 <div className="survey-builder-panel">
@@ -3103,6 +3010,248 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   </div>
                   
                   <div style={{ padding: 20 }}>
+                  {/* Survey Appearance Settings Section */}
+                  <div style={{ 
+                    marginBottom: '24px', 
+                    padding: '16px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      marginBottom: '16px', 
+                      color: '#343a40',
+                      borderBottom: '1px solid #dee2e6',
+                      paddingBottom: '8px'
+                    }}>
+                      Survey Branding
+                    </h3>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                      {/* Logo Upload */}
+                      <div className="appearance-item">
+                        <label htmlFor="surveyLogo" style={{ 
+                          display: 'block', 
+                          marginBottom: '8px', 
+                          fontWeight: 500,
+                          fontSize: '14px',
+                          color: '#495057'
+                        }}>
+                          Logo
+                        </label>
+                        <div style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '10px'
+                        }}>
+                          <div className="file-upload-container" style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '10px'
+                          }}>
+                            <input
+                              type="file"
+                              id="surveyLogo"
+                              className="file-input"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    setSurvey({...survey, logo: event.target?.result as string});
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              accept="image/*"
+                            />
+                            <label htmlFor="surveyLogo" className="file-upload-button" style={{ 
+                              backgroundColor: '#552a47', 
+                              color: '#ffffff',
+                              padding: '8px 16px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              display: 'inline-block',
+                              margin: 0
+                            }}>
+                              Choose Logo
+                            </label>
+                            <span style={{ 
+                              fontSize: '13px', 
+                              color: '#6c757d',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {survey?.logo ? 'Logo selected' : 'No file selected'}
+                            </span>
+                          </div>
+                          {survey?.logo && (
+                            <div className="image-preview" style={{ 
+                              padding: '8px', 
+                              border: '1px solid #dee2e6', 
+                              borderRadius: '4px',
+                              backgroundColor: '#ffffff',
+                              display: 'inline-block'
+                            }}>
+                              <img 
+                                src={survey.logo} 
+                                alt="Logo Preview" 
+                                style={{ maxWidth: '180px', maxHeight: '80px' }} 
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Featured Image Upload */}
+                      <div className="appearance-item">
+                        <label htmlFor="surveyFeaturedImage" style={{ 
+                          display: 'block', 
+                          marginBottom: '8px', 
+                          fontWeight: 500,
+                          fontSize: '14px',
+                          color: '#495057'
+                        }}>
+                          Featured Image
+                        </label>
+                        <div style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '10px'
+                        }}>
+                          <div className="file-upload-container" style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '10px'
+                          }}>
+                            <input
+                              type="file"
+                              id="surveyFeaturedImage"
+                              className="file-input"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const result = event.target?.result as string;
+                                    console.log('Featured image loaded:', result ? 'Image data available' : 'No image data');
+                                    setSurvey((prevSurvey) => ({
+                                      ...prevSurvey,
+                                      image: result
+                                    }));
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              accept="image/*"
+                            />
+                            <label htmlFor="surveyFeaturedImage" className="file-upload-button" style={{ 
+                              backgroundColor: '#552a47', 
+                              color: '#ffffff',
+                              padding: '8px 16px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              display: 'inline-block',
+                              margin: 0
+                            }}>
+                              Choose Image
+                            </label>
+                            <span style={{ 
+                              fontSize: '13px', 
+                              color: '#6c757d',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {survey?.image ? 'Image selected' : 'No file selected'}
+                            </span>
+                          </div>
+                          {survey?.image && (
+                            <div className="image-preview" style={{ 
+                              padding: '8px', 
+                              border: '1px solid #dee2e6', 
+                              borderRadius: '4px',
+                              backgroundColor: '#ffffff',
+                              display: 'inline-block'
+                            }}>
+                              <img 
+                                src={survey.image} 
+                                alt="Featured Image Preview" 
+                                style={{ maxWidth: '180px', maxHeight: '120px' }} 
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Primary Color Picker */}
+                      <div className="appearance-item">
+                        <label htmlFor="surveyPrimaryColor" style={{ 
+                          display: 'block', 
+                          marginBottom: '8px', 
+                          fontWeight: 500,
+                          fontSize: '14px',
+                          color: '#495057'
+                        }}>
+                          Primary Color
+                        </label>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '12px',
+                          backgroundColor: '#ffffff',
+                          padding: '8px 12px',
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6'
+                        }}>
+                          <input
+                            type="color"
+                            id="surveyPrimaryColor"
+                            className="form-control color-picker"
+                            value={survey?.color || '#552a47'}
+                            onChange={(e) => setSurvey({...survey, color: e.target.value})}
+                            style={{ 
+                              width: '40px', 
+                              height: '40px', 
+                              padding: '0',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          />
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={survey?.color || '#552a47'}
+                            onChange={(e) => setSurvey({...survey, color: e.target.value})}
+                            placeholder="#552a47"
+                            style={{ 
+                              width: '100px',
+                              height: '38px',
+                              border: '1px solid #ced4da',
+                              borderRadius: '4px',
+                              padding: '0 8px',
+                              fontSize: '14px'
+                            }}
+                          />
+                          <div style={{ 
+                            fontSize: '13px', 
+                            color: '#6c757d',
+                            marginLeft: '8px'
+                          }}>
+                            This color will be used for buttons, headers, and accents
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                       <p style={{ fontSize: 15, margin: 0 }}>
                         Select a theme for your survey. The theme will affect the appearance and feel of your survey.
