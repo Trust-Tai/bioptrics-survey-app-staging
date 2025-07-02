@@ -75,7 +75,7 @@ const steps = [
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
-  { id: 'preview', label: 'Preview', icon: 'FiEye' },
+  // { id: 'preview', label: 'Preview', icon: 'FiEye' },
   // { id: 'publish', label: 'Publish', icon: 'FiSend' },
   { id: 'settings', label: 'Settings', icon: 'FiSettings' },
   { id: 'notifications', label: 'Notifications', icon: 'FiBell' },
@@ -3823,6 +3823,29 @@ const EnhancedSurveyBuilder: React.FC = () => {
           selectedQuestionIds={currentSectionId ? getSelectedQuestionIds(currentSectionId) : []}
           sectionId={currentSectionId || ''}
           onSelectQuestions={handleSelectQuestions}
+          onQuestionsRefresh={() => {
+            // Refresh question data when a new question is created
+            const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+              // Get the latest version to extract the response type and text
+              const currentVersion = q.currentVersion;
+              const latestVersion = q.versions && Array.isArray(q.versions) ?
+                (q.versions.find((v: any) => v.version === currentVersion) || 
+                (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+              
+              // Create a properly typed QuestionItem
+              const questionItem: QuestionItem = {
+                id: q._id || '',
+                text: extractQuestionText(q), // Use our helper function to get clean question text
+                type: latestVersion?.responseType || 'text',
+                status: 'published'
+              };
+              
+              return questionItem;
+            });
+            
+            // Update the question selector items
+            setQuestionSelectorItems(refreshedQuestions);
+          }}
         />
         
         {/* Section Editor Modal */}

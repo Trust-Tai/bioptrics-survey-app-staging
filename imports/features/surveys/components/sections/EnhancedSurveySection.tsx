@@ -58,7 +58,9 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="survey-section-title">
-          {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+          <span className="icon-wrapper" style={{ display: 'inline-flex', marginRight: '8px', verticalAlign: 'middle' }}>
+            {isExpanded ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
+          </span>
           {section.name}
           {section.isRequired && (
             <span style={{ color: '#e74c3c', marginLeft: '4px' }}>*</span>
@@ -71,8 +73,9 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
               e.stopPropagation();
               onEditSection(section);
             }}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <FiEdit2 />
+            <FiEdit2 size={16} />
           </button>
           <button 
             className="btn btn-icon btn-secondary"
@@ -80,8 +83,9 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
               e.stopPropagation();
               onDeleteSection(section.id);
             }}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <FiTrash2 />
+            <FiTrash2 size={16} />
           </button>
         </div>
       </div>
@@ -106,8 +110,8 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="survey-section-question-drag-handle" style={{ paddingTop: '3px' }}>
-                    <FiMove />
+                  <div className="survey-section-question-drag-handle" style={{ paddingTop: '3px', display: 'inline-flex', alignItems: 'center' }}>
+                    <FiMove size={16} />
                   </div>
                   <div className="survey-section-question-title">
                     <RichTextRenderer content={question.text} />
@@ -116,8 +120,9 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                     <button 
                       className="btn btn-icon btn-secondary"
                       onClick={() => onRemoveQuestion(question.id, section.id)}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      <FiTrash2 />
+                      <FiTrash2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -131,8 +136,9 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
             <div 
               className="survey-section-add-question"
               onClick={() => onAddQuestion(section.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <FiPlus /> Add Question
+              <FiPlus size={16} /> Add Question
             </div>
           </div>
         </div>
