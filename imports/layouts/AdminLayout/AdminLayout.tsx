@@ -1,10 +1,11 @@
 import '../../../client/fonts.css';
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Meteor } from 'meteor/meteor';
+import { Layers } from '/imports/api/layers';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import { TermLabel } from '/imports/shared/components';
-import { useTracker } from 'meteor/react-meteor-data';
-import { Layers } from '/imports/api/layers';
 import { 
   FaChartPie, 
   FaDatabase, 
@@ -23,9 +24,19 @@ import {
   FiLogOut
 } from 'react-icons/fi';
 import styled from 'styled-components';
+import { useTheme } from '/imports/contexts/ThemeContext';
+
+// Define interface for sidebar link items
+interface SidebarLink {
+  to: string;
+  label: string;
+  icon: any;
+  submenu?: SidebarLink[];
+  isTag?: boolean;
+}
 
 // Function to get sidebar links with customized terminology and dynamic tags
-const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []) => [
+const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []): SidebarLink[] => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard}, 
   // submenu: [
@@ -77,15 +88,26 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
+// Define a constant for theme debugging
+const DEBUG_THEME = process.env.NODE_ENV === 'development';
+
+// Show theme colors in console during development
+const logThemeColors = (theme: any) => {
+  if (DEBUG_THEME && theme) {
+    console.log('Current theme colors in sidebar:', theme);
+  }
+};
+
 interface SidebarProps {
   collapsed: boolean;
+  theme?: any;
 }
 
-const SubmenuFlyout = styled.ul`
+const SubmenuFlyout = styled.ul<{theme?: any}>`
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--color-sidebar, linear-gradient(180deg, #552a47 0%, #3d1f33 100%));
+  background: #3d1f33;
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.13);
   position: absolute;
@@ -94,7 +116,7 @@ const SubmenuFlyout = styled.ul`
   min-width: 180px;
   z-index: 9999;
   overflow: visible;
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1px solid #552a4733;
   pointer-events: auto;
 `;
 
@@ -108,27 +130,26 @@ const SubmenuInline = styled.ul`
   overflow: hidden;
   color: var(--color-sidebar-text, #fff);
 `;
-const SubmenuItem = styled(Link)<{active?: boolean}>`
+const SubmenuItem = styled(Link)<{active?: boolean, theme?: any}>`
   display: block;
-  color: var(--color-sidebar-text, #fff);
+  color: #fff;
   text-decoration: none;
   font-size: 15px;
   padding: 10px 24px;
   background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
-  border-left: ${({active}) => active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
+  border-left: ${({active}) => active ? '4px solid #7a3e68' : '4px solid transparent'};
   font-weight: ${({active}) => active ? 700 : 500};
-  transition: background 0.15s, border-left 0.15s, color 0.15s;
+  transition: background 0.15s, border-left 0.15s;
   &:hover {
     background: rgba(255,255,255,0.18);
-    color: var(--color-sidebar-text, #fff);
   }
 `;
 
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
-  background: var(--color-sidebar, linear-gradient(180deg, #552a47 0%, #3d1f33 100%));
-  color: var(--color-sidebar-text, #ffffff);
+  background: linear-gradient(180deg, #552a47 0%, #3d1f33 100%);
+  color: #fff;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
@@ -140,7 +161,7 @@ const Sidebar = styled.aside<SidebarProps>`
   top: 0;
   height: max-content;
   z-index: 120;
-  transition: width 0.3s ease, box-shadow 0.3s, border-radius 0.3s, margin 0.3s;
+  transition: all 0.3s ease;
   overflow-x: visible;
   overflow-y: visible;
   background-clip: padding-box;
@@ -157,10 +178,11 @@ const Sidebar = styled.aside<SidebarProps>`
 
 
 
-const Logo = styled.div`
+const Logo = styled.div<{theme?: any}>`
   text-align: center;
   margin-bottom: 2rem;
   padding: 0 1rem;
+  color: ${props => props.theme?.colors?.primary || '#007bff'};
 `;
 
 interface NavItemProps {
@@ -168,42 +190,41 @@ interface NavItemProps {
   collapsed: boolean;
 }
 
-const NavItem = styled(Link)<NavItemProps>`
+const NavItem = styled(Link)<NavItemProps & {theme?: any}>`
   display: flex;
   align-items: center;
-  color: var(--color-sidebar-text, #fff);
+  color: #fff;
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   font-weight: ${props => props.active ? '700' : '500'};
   margin-bottom: 0.25rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border-left 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   
   &:hover {
     background: rgba(255,255,255,0.08);
-    color: var(--color-sidebar-text, #fff);
   }
 `;
 
-const NavButton = styled.button<NavItemProps>`
+const NavButton = styled.button<NavItemProps & {theme?: any}>`
   display: flex;
   align-items: center;
-  color: var(--color-sidebar-text, #fff);
+  color: #fff;
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
   font-family: 'Inter', sans-serif;
   font-weight: ${props => props.active ? '700' : '500'};
   margin-bottom: 0.25rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border-left 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid var(--color-secondary)' : '4px solid transparent'};
+  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
   background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
   width: 100%;
   border: none;
@@ -212,7 +233,6 @@ const NavButton = styled.button<NavItemProps>`
   
   &:hover {
     background: rgba(255,255,255,0.08);
-    color: var(--color-sidebar-text, #fff);
   }
 `;
 
@@ -220,11 +240,12 @@ interface IconProps {
   collapsed: boolean;
 }
 
-const NavIcon = styled.div<IconProps>`
+const NavIcon = styled.div<IconProps & {theme?: any}>`
   font-size: 24px;
   margin-right: ${props => props.collapsed ? '0' : '16px'};
   display: flex;
   align-items: center;
+  color: ${props => props.theme?.colors?.primary || '#007bff'};
   justify-content: center;
 `;
 
@@ -302,6 +323,20 @@ const MainContent = styled.main<MainContentProps>`
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Get organization settings for customized terminology
   const { getTerminology } = useOrganization();
+  const theme = useTheme();
+  const colors = theme.colors || {};
+  
+  // Log theme colors in development mode
+  React.useEffect(() => {
+    logThemeColors(colors);
+  }, [colors]);
+
+  // Debug: Log theme colors every render
+  console.log('AdminLayout theme colors:', {
+    primary: colors.primary,
+    sidebar: colors.sidebar,
+    sidebarText: colors.sidebarText
+  });
   
   // Subscribe to layers collection and filter active tags by location
   const { surveyTags, questionTags, isLoading } = useTracker(() => {
@@ -359,8 +394,8 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar collapsed={collapsed}>
-        <Logo>
+      <Sidebar collapsed={collapsed} theme={colors}>
+        <Logo theme={colors}>
           <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>Admin</span>
         </Logo>
         <nav>
@@ -382,6 +417,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   to={link.to}
                   active={isActive}
                   collapsed={collapsed}
+                  theme={colors}
                   tabIndex={0}
                   aria-haspopup={hasSubmenu ? 'true' : undefined}
                   aria-expanded={hasSubmenu ? hovered === idx : undefined}
@@ -398,7 +434,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     }
                   }}
                 >
-                  <NavIcon collapsed={collapsed}>{React.createElement(link.icon)}</NavIcon>
+                  <NavIcon collapsed={collapsed} theme={colors}>{React.createElement(link.icon)}</NavIcon>
                   <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
                   {hasSubmenu && !collapsed && (
                     <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7, transform: hovered === idx ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -412,15 +448,16 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   )}
                 </NavItem>
                 {/* Submenu inline if active, flyout if hovered */}
-                {hasSubmenu && !collapsed && (
+                {hasSubmenu && !collapsed && link.submenu && (
                   // Only show flyout on hover if not showing inline
                   (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx)
                   ? (
-                    <SubmenuFlyout>
+                    <SubmenuFlyout theme={colors}>
                       {link.submenu.map((sublink: any) => (
                         <SubmenuItem
                           key={sublink.to}
                           to={sublink.to}
+                          theme={colors}
                           active={location.pathname.startsWith(sublink.to)}
                         >
                           {sublink.isTag ? '🏷️ ' : ''}{sublink.label}
@@ -434,6 +471,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                           <SubmenuItem
                             key={sublink.to}
                             to={sublink.to}
+                            theme={colors}
                             active={location.pathname.startsWith(sublink.to)}
                           >
                             {sublink.isTag ? '🏷️ ' : ''}{sublink.label}
@@ -457,5 +495,14 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </div>
   );
 };
+declare module 'styled-components' {
+  export interface DefaultTheme {
+    colors?: {
+      primary?: string;
+      sidebar?: string;
+      sidebarText?: string;
+    };
+  }
+}
 
 export default AdminLayout;

@@ -29,8 +29,7 @@ const themePresets = [
       accent: '#A9A59D',
       background: '#ffffff',
       text: '#333333',
-      sidebar: '#800080', // Matches primary for vibrancy
-      sidebarText: '#ffffff',
+      sidebar: '#f5f0e8',
       error: '#ff3333'
     }
   },

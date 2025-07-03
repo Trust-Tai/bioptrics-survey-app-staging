@@ -14,6 +14,7 @@ import SurveyThemeManager from '../features/survey-themes/components/SurveyTheme
 import OrgSetup from './admin/OrgSetup';
 import OrgSetupDashboard from './admin/OrgSetupDashboard';
 import { OrganizationProvider } from '/imports/features/organization/contexts/OrganizationContext';
+import { ThemeProvider } from '/imports/contexts/ThemeContext';
 import Setting from './admin/Setting';
 import Participants from './admin/Participants';
 import Users from './admin/Users';
@@ -133,7 +134,7 @@ const SurveyQuestionWrapper: React.FC = () => {
   const questionsLength = 4;
   return (
     <SurveyQuestion
-      question="How often does your manager provide clear direction for your work?"
+      question={{ _id: "1", type: "text", text: "How often does your manager provide clear direction for your work?" }}
       progress={`${qIdx + 1}/${questionsLength}`}
       onNext={() => {}}
       onBack={qIdx > 0 ? () => navigate(`/survey/section/${sIdx}/question/${qIdx - 1}`) : () => navigate(`/survey/section/${sIdx}`)}
@@ -235,9 +236,11 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => (
   <Router>
-    <OrganizationProvider>
-      <AppRoutes />
-    </OrganizationProvider>
+    <ThemeProvider>
+      <OrganizationProvider>
+        <AppRoutes />
+      </OrganizationProvider>
+    </ThemeProvider>
   </Router>
 );
 

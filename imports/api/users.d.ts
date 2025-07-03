@@ -4,6 +4,9 @@ declare module 'meteor/meteor' {
   namespace Meteor {
     interface UserProfile {
       name?: string;
+      firstName?: string;
+      lastName?: string;
+      company?: string;
       role?: string;
       organization?: string;
       admin?: boolean;
