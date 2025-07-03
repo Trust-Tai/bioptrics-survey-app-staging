@@ -21,13 +21,13 @@ if (Meteor.isServer) {
         console.log('Getting total responses count for survey ID:', surveyId);
         
         // Get the total count of all responses for this survey
-        const totalCount = SurveyResponses.find({ surveyId: surveyId }).count();
+        const totalCount = SurveyResponses.find({ surveyId: surveyId }).countAsync();
         console.log(`Found ${totalCount} total survey responses for survey ID: ${surveyId}`);
         
-        return totalCount || 4; // Return the count or default to 4 if none found
+        return totalCount; // Return the actual count (0 if none found)
       } catch (error) {
         console.error('Error in getTotalResponsesCount method:', error);
-        return 4; // Default value
+        throw new Meteor.Error('count-error', 'Failed to get response count');
       }
     },
     

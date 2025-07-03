@@ -298,8 +298,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     Meteor.call('getTotalResponsesCount', currentSurveyId, (error: any, responseCount: number) => {
       if (error) {
         console.error('Error getting total responses count:', error);
-        // Use default value for response count
-        responseCount = 4;
+        // Set response count to 0 if there's an error
+        responseCount = 0;
       }
       
       console.log('Received total responses count:', responseCount);
