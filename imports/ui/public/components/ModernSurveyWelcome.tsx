@@ -582,7 +582,32 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
 
         {/* Start Button */}
         <ButtonContainer>
-          <StartButton onClick={onStart}>
+          <StartButton onClick={() => {
+            // Reset timer data in localStorage to ensure a fresh start time
+            const userId = Meteor.userId();
+            const localStorageKey = `survey_progress_${survey._id}${userId ? `_${userId}` : ''}`;
+            
+            try {
+              // Get existing progress data (if any)
+              const existingProgress = JSON.parse(localStorage.getItem(localStorageKey) || '{}');
+              
+              // Reset timer data with a fresh start time and no end time
+              const updatedProgress = {
+                ...existingProgress,
+                startTime: new Date(), // Fresh start time
+                endTime: null          // Clear any existing end time
+              };
+              
+              // Save updated progress back to localStorage
+              localStorage.setItem(localStorageKey, JSON.stringify(updatedProgress));
+              console.log('Reset survey timer for new attempt');
+            } catch (error) {
+              console.error('Error resetting survey timer:', error);
+            }
+            
+            // Continue with original onStart function
+            onStart();
+          }}>
             Start Survey <FiArrowRight size={18} />
           </StartButton>
         </ButtonContainer>

@@ -32,13 +32,13 @@ if (Meteor.isServer) {
     },
     
     // Get completion time for a survey
-    'getSurveyCompletionTime'(surveyId) {
+    async 'getSurveyCompletionTime'(surveyId) {
       try {
         check(surveyId, String);
         console.log('Getting completion time for survey ID:', surveyId);
         
         // Get the most recent completed response for this survey
-        const mostRecent = SurveyResponses.findOne(
+        const mostRecent = await SurveyResponses.findOneAsync(
           { 
             surveyId: surveyId,
             completed: true 
@@ -51,12 +51,12 @@ if (Meteor.isServer) {
           return mostRecent.completionTime;
         }
         
-        // Default completion time if none found
-        console.log('No completion time found, returning default value');
-        return 9.673;
+        // No completion time found
+        console.log('No completion time found, returning 0');
+        return 0;
       } catch (error) {
         console.error('Error in getSurveyCompletionTime method:', error);
-        return 9.673; // Default value
+        throw new Meteor.Error('completion-time-error', 'Failed to get completion time');
       }
     },
     

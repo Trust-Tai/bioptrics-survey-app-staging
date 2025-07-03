@@ -308,8 +308,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       Meteor.call('getSurveyCompletionTime', currentSurveyId, (error2: any, completionTime: number) => {
         if (error2) {
           console.error('Error getting completion time:', error2);
-          // Use default value for completion time
-          completionTime = 9.673;
+          // Set completion time to 0 if there's an error
+          completionTime = 0;
         }
         
         console.log('Received completion time:', completionTime);
