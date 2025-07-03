@@ -4068,7 +4068,35 @@ const EnhancedSurveyBuilder: React.FC = () => {
         <QuestionSelector
           isOpen={showQuestionSelector}
           onClose={() => setShowQuestionSelector(false)}
-          questions={questionSelectorItems.length > 0 ? questionSelectorItems : allQuestions}
+          questions={(() => {
+            // If we have refreshed questions, use those
+            if (questionSelectorItems.length > 0) {
+              return questionSelectorItems;
+            }
+            
+            // Otherwise, fetch questions directly from the database
+            const dbQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+              // Get the latest version to extract the response type and text
+              const currentVersion = q.currentVersion;
+              const latestVersion = q.versions && Array.isArray(q.versions) ?
+                (q.versions.find((v: any) => v.version === currentVersion) || 
+                (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+              
+              // Create a properly typed QuestionItem
+              const questionItem: QuestionItem = {
+                id: q._id || '',
+                text: extractQuestionText(q), // Use our helper function to get clean question text
+                type: latestVersion?.responseType || 'text',
+                status: 'published'
+              };
+              
+              return questionItem;
+            });
+            
+            // Update the question selector items for future use
+            setQuestionSelectorItems(dbQuestions);
+            return dbQuestions;
+          })()}
           selectedQuestionIds={currentSectionId ? getSelectedQuestionIds(currentSectionId) : []}
           sectionId={currentSectionId || ''}
           onSelectQuestions={handleSelectQuestions}
