@@ -4,7 +4,7 @@ import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { components } from 'react-select';
 import { FaEye } from 'react-icons/fa';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, UNSAFE_NavigationContext } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiChevronRight, FiChevronDown, FiChevronUp, FiSave } from 'react-icons/fi';
@@ -1500,8 +1500,135 @@ const EnhancedSurveyBuilder: React.FC = () => {
     );
   };
 
+  // Auto-save timer reference
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track if there are unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  
+  // Handle auto-save functionality
+  useEffect(() => {
+    // Clear any existing timer when component unmounts
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+  
+  // Set up beforeunload event to warn when leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        // Standard way to show confirmation dialog when leaving page
+        const message = 'You have unsaved changes. Are you sure you want to leave?';
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+  
+  // Get React Router location and navigation context
+  const location = useLocation();
+  const navigationContext = React.useContext(UNSAFE_NavigationContext);
+  
+  // Function to trigger auto-save
+  const triggerAutoSave = () => {
+    // Clear any existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    // Set unsaved changes flag
+    setHasUnsavedChanges(true);
+    
+    // Set a new timer for 3 seconds
+    autoSaveTimerRef.current = setTimeout(() => {
+      // Silent auto-save without UI updates
+      silentSave();
+    }, 3000);
+  };
+  
+  // Silent save function that doesn't update UI or show notifications
+  const silentSave = async () => {
+    try {
+      // Don't set saving state to avoid UI spinner
+      // setSaving(true);
+      
+      // Ensure we have valid data before proceeding
+      if (!survey || !survey._id) {
+        console.log('Skipping auto-save: Survey not fully loaded');
+        return false;
+      }
+      
+      // Prepare survey data - ensure all fields have proper types
+      // Format data according to the server's expected structure
+      const surveyData = {
+        title: String(survey.title || ''),
+        description: String(survey.description || ''),
+        status: String(survey.status || 'draft'),
+        // Map our sections and questions to the expected server format
+        surveySections: sections.map(section => ({
+          id: String(section.id),
+          name: String(section.title || ''), // Changed from title to name to match SurveySectionItem interface
+          priority: Number(section.order || 0) // Changed from order to priority to match SurveySectionItem interface
+        })),
+        sectionQuestions: surveyQuestions.map(q => ({
+          id: String(q.id),
+          text: String(q.text || ''),
+          type: String(q.type || ''),
+          status: String(q.status || 'draft'),
+          sectionId: String(q.sectionId || ''),
+          order: Number(q.order || 0)
+        })),
+        selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
+        selectedTheme: survey.selectedTheme || '',
+        selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
+        selectedTags: Array.isArray(survey.tags) ? 
+          survey.tags.map((tag: any) => typeof tag === 'string' ? tag : String(tag?.value || '')) : 
+          [],
+        defaultSettings: survey.defaultSettings || { allowRetake: true }
+      };
+      
+      // Call Meteor method to save
+      if (surveyId) {
+        await Meteor.callAsync('surveys.update', surveyId, surveyData);
+      } else {
+        await Meteor.callAsync('surveys.saveDraft', surveyData);
+      }
+      
+      // Reset unsaved changes flag without UI updates
+      setHasUnsavedChanges(false);
+      
+      // Don't show success notification
+      // Don't reset saving state to avoid UI changes
+      // setSaving(false);
+      return true;
+    } catch (error) {
+      console.log('Silent save error:', error);
+      // Don't show error notification
+      // Don't reset saving state to avoid UI changes
+      // setSaving(false);
+      return false;
+    }
+  };
+  
+  // Update triggerAutoSave on any state change that should trigger auto-save
+  useEffect(() => {
+    if (survey?.title || sections.length > 0 || surveyQuestions.length > 0) {
+      triggerAutoSave();
+    }
+  }, [survey, sections, surveyQuestions, selectedTheme, selectedDemographics, selectedCategories, selectedTags]);
+  
   // Handle saving the survey
-  const handleSaveSurvey = async () => {
+  const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
     try {
       setSaving(true);
       
@@ -1586,12 +1713,73 @@ const EnhancedSurveyBuilder: React.FC = () => {
       }
       
       setSaving(false);
+      setHasUnsavedChanges(false);
+      
+      // Only show success message for manual saves, not auto-saves
+      if (!isAutoSave) {
+        showSuccessAlert('Survey saved successfully!');
+      }
+      
+      return true; // Return success
     } catch (error) {
       console.error('Error saving survey:', error);
-      showErrorAlert(`Error saving survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Only show error for manual saves, not auto-saves
+      if (!isAutoSave) {
+        showErrorAlert(`Error saving survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      
       setSaving(false);
+      // Keep unsaved changes flag true since save failed
+      setHasUnsavedChanges(true);
+      
+      return false; // Return failure
     }
   };
+  
+  // Set up navigation blocker for React Router
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    
+    // Get the navigator object from context
+    const navigator = navigationContext.navigator as any;
+    
+    // Save the original push method
+    const originalPush = navigator.push;
+    
+    // Override the push method
+    navigator.push = (to: any, state: any) => {
+      const currentPath = location.pathname;
+      const targetPath = typeof to === 'string' ? to : to.pathname;
+      
+      // Check if we're navigating away from the survey builder completely
+      // This checks if we're leaving the /admin/surveys/builder route
+      const isSurveyBuilderPath = currentPath.includes('/admin/surveys/builder');
+      const isTargetSurveyBuilderPath = targetPath.includes('/admin/surveys/builder');
+      
+      // Only prompt if navigating away from survey builder to a different section
+      if (isSurveyBuilderPath && !isTargetSurveyBuilderPath) {
+        const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+        if (confirmed) {
+          // Auto-save before navigating
+          handleSaveSurvey(true).then(() => {
+            // Restore original push and navigate
+            navigator.push = originalPush;
+            originalPush.call(navigator, to, state);
+          });
+        }
+        return;
+      }
+      
+      // If staying on survey builder or confirmed, proceed with navigation
+      originalPush.call(navigator, to, state);
+    };
+    
+    // Cleanup function to restore original push method
+    return () => {
+      navigator.push = originalPush;
+    };
+  }, [hasUnsavedChanges, location.pathname, navigationContext, navigate, handleSaveSurvey]);
   
   // Handle adding a new section
   const handleAddSection = () => {
@@ -2267,7 +2455,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
               
               {/* Save Survey Button */}
               <button 
-                onClick={handleSaveSurvey}
+                onClick={() => handleSaveSurvey(false)}
                 disabled={saving}
                 className="action-button save-button"
                 style={{
@@ -3776,7 +3964,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                 ...survey,
                                 defaultSettings: {
                                   ...defaultSettings,
-                                  allowRetake: !currentValue
+                                  allowRetake: !currentValue,
+                                  // Keep retakeMode if it exists, otherwise default to 'replace'
+                                  retakeMode: defaultSettings.retakeMode || 'replace'
                                 }
                               };
                               setSurvey(updatedSurvey);
@@ -3792,6 +3982,55 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         <div style={{ marginLeft: 24, fontSize: 14, color: '#666', marginTop: 4 }}>
                           When enabled, users can restart the survey after completion
                         </div>
+                        
+                        {/* Retake mode options - only show when Allow Survey Retake is enabled */}
+                        {survey?.defaultSettings?.allowRetake !== false && (
+                          <div style={{ marginLeft: 24, marginTop: 12, padding: 12, backgroundColor: '#f9f9f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, color: '#4a5568' }}>
+                              How should retakes be handled?
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                <input 
+                                  type="radio" 
+                                  name="retakeMode"
+                                  checked={survey?.defaultSettings?.retakeMode !== 'new'}
+                                  onChange={() => {
+                                    const defaultSettings = survey.defaultSettings || {};
+                                    setSurvey({
+                                      ...survey,
+                                      defaultSettings: {
+                                        ...defaultSettings,
+                                        retakeMode: 'replace'
+                                      }
+                                    });
+                                  }}
+                                  style={{ accentColor: '#552a47' }}
+                                />
+                                <span>Replace original response</span>
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                <input 
+                                  type="radio" 
+                                  name="retakeMode"
+                                  checked={survey?.defaultSettings?.retakeMode === 'new'}
+                                  onChange={() => {
+                                    const defaultSettings = survey.defaultSettings || {};
+                                    setSurvey({
+                                      ...survey,
+                                      defaultSettings: {
+                                        ...defaultSettings,
+                                        retakeMode: 'new'
+                                      }
+                                    });
+                                  }}
+                                  style={{ accentColor: '#552a47' }}
+                                />
+                                <span>Add as new response</span>
+                              </label>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

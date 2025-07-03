@@ -85,7 +85,20 @@ type SurveyStep =
 /**
  * ModernSurveyContent - Manages the survey flow and content
  */
-const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPreviewMode, token }) => {
+// Update Survey interface to include defaultSettings
+interface ExtendedSurvey extends Survey {
+  defaultSettings?: {
+    allowRetake?: boolean;
+    retakeMode?: 'replace' | 'new';
+    [key: string]: any;
+  };
+}
+
+const ModernSurveyContent: React.FC<{
+  survey: ExtendedSurvey;
+  isPreviewMode: boolean;
+  token: string;
+}> = ({ survey, isPreviewMode, token }) => {
   // State for questions, sections, and navigation
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
@@ -101,10 +114,16 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   // Flag to track if survey has been submitted
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   
+  // Store the current response ID for potential replacement on retake
+  const [currentResponseId, setCurrentResponseId] = useState<string | null>(null);
+  
   // Generate a unique key for storing this survey's progress in localStorage
   const getProgressStorageKey = () => {
     return `survey-progress-${survey._id}-${token}`;
   };
+  
+  // The handleRestart function implementation is now at line ~1010
+  // This declaration was removed to fix the duplicate function error
   
   // Save current progress to localStorage and server
   const saveProgress = () => {
@@ -263,16 +282,35 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         
-        // Verify the data structure
+        // Check if we have a valid saved state
         if (parsedData.currentStep && parsedData.responses) {
+          // Restore the current step and responses
           setCurrentStep(parsedData.currentStep);
           setResponses(parsedData.responses);
-          console.log('Survey progress loaded successfully');
+          
+          // IMPORTANT: Also restore the responseId if available
+          if (parsedData.responseId) {
+            console.log('Restoring saved responseId from localStorage:', parsedData.responseId);
+            setCurrentResponseId(parsedData.responseId);
+            
+            // If we have a responseId and the survey is configured for replace mode,
+            // make sure we set the metadata accordingly
+            const retakeMode = survey.defaultSettings?.retakeMode || 'new';
+            if (retakeMode === 'replace') {
+              console.log('Setting metadata.retakeMode to "replace" for existing responseId');
+              // Update the metadata in the saved data to include retake mode
+              parsedData.metadata = parsedData.metadata || {};
+              parsedData.metadata.retakeMode = 'replace';
+              localStorage.setItem(getProgressStorageKey(), JSON.stringify(parsedData));
+            }
+          }
+          
+          console.log('Loaded saved progress from localStorage');
           return true;
         }
       }
     } catch (error) {
-      console.error('Error loading survey progress:', error);
+      console.error('Error loading progress from localStorage:', error);
     }
     return false;
   };
@@ -927,22 +965,76 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     }
   };
   
-  // Handle restart button click
+  // Handle restart button click based on retake mode setting
   const handleRestart = () => {
-    console.log('handleRestart called - resetting survey to welcome screen');
+    console.log('handleRestart called - preparing to restart survey');
     
-    // Clear responses
-    setResponses({});
+    // Get the retake mode from survey settings
+    const retakeMode = survey.defaultSettings?.retakeMode || 'new';
+    console.log(`Survey retake mode: ${retakeMode}`);
     
-    // Clear saved progress
-    try {
-      localStorage.removeItem(getProgressStorageKey());
-      console.log('Cleared saved progress for restart');
-    } catch (e) {
-      console.error('Error clearing saved progress:', e);
+    if (retakeMode === 'replace' && currentResponseId) {
+      console.log(`Replace mode: Will update existing response ID: ${currentResponseId}`);
+      // In replace mode, we'll keep the same responseId but clear responses
+      
+      // Clear responses in state
+      setResponses({});
+      
+      // Reset progress in localStorage but keep the responseId
+      try {
+        const progressKey = getProgressStorageKey();
+        const savedData = localStorage.getItem(progressKey);
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          const responseId = parsedData.responseId;
+          
+          // Save empty responses but keep the same responseId
+          localStorage.setItem(progressKey, JSON.stringify({
+            currentStep: { type: 'welcome' },
+            responses: {},
+            timestamp: new Date().toISOString(),
+            responseId
+          }));
+          console.log(`Cleared responses but kept responseId: ${responseId}`);
+        }
+      } catch (error) {
+        console.error('Error resetting progress while keeping responseId:', error);
+      }
+      
+      // Reset the server-side incomplete response data
+      if (currentResponseId) {
+        Meteor.call('incompleteSurveyResponses.reset', currentResponseId, (error: any) => {
+          if (error) {
+            console.error('Error resetting incomplete survey response:', error);
+          } else {
+            console.log(`Successfully reset incomplete survey response: ${currentResponseId}`);
+          }
+        });
+      }
+    } else {
+      console.log('New response mode: Will create a new response');
+      // In 'new' mode (or if no currentResponseId), create a completely new response
+      
+      // Clear responses in state
+      setResponses({});
+      
+      // Clear progress in localStorage completely
+      try {
+        localStorage.removeItem(getProgressStorageKey());
+        console.log('Cleared saved progress for restart');
+      } catch (error) {
+        console.error('Error clearing progress from localStorage:', error);
+      }
+      
+      // Reset the currentResponseId
+      setCurrentResponseId(null);
     }
     
-    // Reset to welcome screen
+    // Reset submission state
+    setIsSubmitted(false);
+    
+    // Navigate back to welcome screen
     updateCurrentStep({ type: 'welcome' });
   };
   
@@ -1053,6 +1145,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
   // Session start time is used for completion time calculation
   const [sessionStartTime] = useState<Date>(new Date());
   
+  // This duplicate handleRestart function has been merged with the one above
+
   const handleSubmit = async () => {
     console.log('handleSubmit called - preparing to submit survey');
     
@@ -1304,16 +1398,13 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
     try {
       // Get the stored survey progress data
       const savedData = localStorage.getItem(progressKey);
-      console.log('Retrieved saved progress data:', savedData);
       
       if (savedData) {
         // Parse the saved data to extract the response ID
         const parsedData = JSON.parse(savedData);
-        console.log('Parsed saved data:', parsedData);
         
         if (parsedData.responseId) {
           incompleteResponseId = parsedData.responseId;
-          console.log('Found incomplete response ID:', incompleteResponseId);
         } else {
           console.warn('No responseId found in saved progress data');
         }
@@ -1324,8 +1415,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
       console.error('Error retrieving incomplete response ID:', error);
     }
     
-    // Call the surveyResponses.submit method
-    Meteor.call('surveyResponses.submit', {
+    // Prepare submission data
+    const submissionData = {
       surveyId: survey._id,
       responses: formattedResponses,
       completed: true,
@@ -1340,16 +1431,51 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
       // Add optional fields that might be required by the server validation
       demographics: {}, // Empty demographics object
       sectionTimes: {} // Empty section times object
-    }, (error: Meteor.Error | null) => {
+    };
+    
+    // Check if we're in replace mode and have a responseId to use
+    const retakeMode = survey.defaultSettings?.retakeMode || 'new';
+    
+    // Always include the retakeMode in metadata
+    (submissionData.metadata as any).retakeMode = retakeMode;
+    console.log(`Setting metadata.retakeMode to "${retakeMode}" in submission data`);
+    
+    if (retakeMode === 'replace' && currentResponseId) {
+      // Add the responseId to the submission data for replacement
+      (submissionData as any).responseId = currentResponseId;
+      console.log(`Using replace mode with existing responseId: ${currentResponseId}`);
+    }
+    
+    // Call the surveyResponses.submit method with the updated data
+    Meteor.call('surveyResponses.submit', submissionData, (error: Meteor.Error | null, responseId: string) => {
       if (error) {
         console.error('Error submitting survey:', error);
         setSubmitError(error.message);
       } else {
         // The submitted flag was already set at the beginning of handleSubmit
-        console.log('Survey submitted successfully, already marked as submitted to prevent new incomplete responses');
+        console.log('Survey submitted successfully with responseId:', responseId);
+        
+        // Store the returned responseId for future retakes
+        if (responseId) {
+          setCurrentResponseId(responseId);
+          console.log(`Updated currentResponseId with server-returned value: ${responseId}`);
+          
+          // Also update the responseId in localStorage
+          try {
+            const savedData = localStorage.getItem(getProgressStorageKey());
+            if (savedData) {
+              const parsedData = JSON.parse(savedData);
+              parsedData.responseId = responseId;
+              localStorage.setItem(getProgressStorageKey(), JSON.stringify(parsedData));
+              console.log('Updated responseId in localStorage with server-returned value');
+            }
+          } catch (e) {
+            console.error('Error updating responseId in localStorage:', e);
+          }
+        }
         
         // First mark the incomplete survey response as completed, then remove it after a delay
-        if (!isPreviewMode) {
+        if (!isPreviewMode && token) {
           const surveyId = survey._id;
           const respondentId = token || `anonymous-${new Date().getTime()}`;
           
@@ -1357,20 +1483,23 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps> = ({ survey, isPre
           
           // IMPORTANT: Get the CURRENT incomplete response ID from localStorage
           // This ensures we're using the most up-to-date ID
-          let currentIncompleteResponseId = null;
+          let responseIdToProcess = null;
           try {
             const savedData = localStorage.getItem(getProgressStorageKey());
             if (savedData) {
               const parsedData = JSON.parse(savedData);
-              currentIncompleteResponseId = parsedData.responseId;
-              console.log('Found current incomplete response ID in localStorage:', currentIncompleteResponseId);
+              responseIdToProcess = parsedData.responseId;
+              console.log('Found current incomplete response ID in localStorage:', responseIdToProcess);
+              
+              // Store the response ID for potential replacement on retake
+              if (responseIdToProcess) {
+                setCurrentResponseId(responseIdToProcess);
+                console.log(`Stored response ID for potential replacement on retake: ${responseIdToProcess}`);
+              }
             }
           } catch (e) {
             console.error('Error retrieving current response ID:', e);
           }
-          
-          // Use the most current ID (from localStorage) or fall back to the one passed to handleSubmit
-          const responseIdToProcess = currentIncompleteResponseId || incompleteResponseId;
           
           // First mark as completed to prevent new responses from being created
           if (responseIdToProcess) {

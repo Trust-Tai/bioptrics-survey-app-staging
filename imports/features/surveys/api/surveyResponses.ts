@@ -113,25 +113,19 @@ if (Meteor.isServer) {
   
   // Alias for backward compatibility
   Meteor.publish('survey_responses.all', async function() {
-    console.log('survey_responses.all publication called');
     
     // Check if user is an admin
     const currentUserId = this.userId;
     if (!currentUserId) {
-      console.log('No user ID found, not publishing responses');
       return this.ready();
     }
     
-    console.log('Checking if user is admin:', currentUserId);
     const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
     if (!user) {
-      console.log('User is not an admin, not publishing responses');
       return this.ready();
     }
     
-    console.log('User is admin, publishing all survey responses');
     const responseCount = SurveyResponses.find({}).count();
-    console.log(`Found ${responseCount} survey responses to publish`);
     
     // Return all survey responses
     return SurveyResponses.find({});
@@ -163,7 +157,6 @@ if (Meteor.isServer) {
   Meteor.methods({
     // Method to get the count of completed surveys directly from the database
     async 'getCompletedSurveysCount'() {
-      console.log('getCompletedSurveysCount method called');
       
       // Check if user is an admin (optional security check)
       if (!this.userId) {
@@ -173,10 +166,8 @@ if (Meteor.isServer) {
       try {
         // Direct database query to count completed surveys
         const count = await SurveyResponses.find({ completed: true }).countAsync();
-        console.log('Direct DB query found completed surveys:', count);
         return count;
       } catch (error: unknown) {
-        console.error('Error counting completed surveys:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error counting completed surveys: ${errorMessage}`);
       }
@@ -184,7 +175,6 @@ if (Meteor.isServer) {
     
     // Method to calculate participation rate
     async 'getParticipationRate'() {
-      console.log('getParticipationRate method called');
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get participation rate');
@@ -203,10 +193,8 @@ if (Meteor.isServer) {
         
         // Calculate participation rate as a percentage
         const rate = Math.round((completed / totalInvited) * 100);
-        console.log(`Participation rate: ${rate}% (${completed}/${totalInvited})`);
         return rate;
       } catch (error: unknown) {
-        console.error('Error calculating participation rate:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error calculating participation rate: ${errorMessage}`);
       }
@@ -214,7 +202,6 @@ if (Meteor.isServer) {
     
     // Method to calculate average engagement score
     async 'getAverageEngagementScore'() {
-      console.log('getAverageEngagementScore method called');
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get average engagement score');
@@ -224,11 +211,9 @@ if (Meteor.isServer) {
         // Get all completed responses
         const responses = await SurveyResponses.find({ completed: true }).fetchAsync();
         
-        console.log(`Found ${responses.length} completed survey responses`);
         
         // If no responses, return 0
         if (responses.length === 0) {
-          console.log('No completed responses found, returning 0');
           return 0;
         }
         
@@ -237,17 +222,13 @@ if (Meteor.isServer) {
         
         // Calculate average of all numeric answers as a proxy for engagement
         responses.forEach((response, index) => {
-          console.log(`Examining response ${index + 1}/${responses.length} (ID: ${response._id})`);
           
           if (!response.responses || !Array.isArray(response.responses)) {
-            console.log(`Response ${index + 1} has no valid responses array`);
             return;
           }
           
-          console.log(`Response ${index + 1} has ${response.responses.length} answers`);
           
           response.responses.forEach((answer, answerIndex) => {
-            console.log(`Answer ${answerIndex + 1}: ${JSON.stringify(answer)}`);
             
             // Try to convert the answer to a number if it's a string
             let numericAnswer: number | null = null;
@@ -266,25 +247,20 @@ if (Meteor.isServer) {
             if (numericAnswer !== null && numericAnswer >= 1 && numericAnswer <= 5) {
               totalScore += numericAnswer;
               scoreCount++;
-              console.log(`Valid numeric answer: ${numericAnswer}, totalScore: ${totalScore}, scoreCount: ${scoreCount}`);
             } else {
-              console.log(`Skipping non-numeric or out-of-range answer: ${answer.answer} (type: ${typeof answer.answer})`);
             }
           });
         });
         
         // If no valid scores found, return 0
         if (scoreCount === 0) {
-          console.log('No valid numeric answers found in the 1-5 range, returning 0');
           return 0;
         }
         
         // Calculate average and round to 1 decimal place
         const avgScore = Math.round((totalScore / scoreCount) * 10) / 10;
-        console.log(`Average engagement score: ${avgScore} (from ${scoreCount} answers out of ${responses.length} responses)`);
         return avgScore;
       } catch (error: unknown) {
-        console.error('Error calculating average engagement score:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error calculating average engagement score: ${errorMessage}`);
       }
@@ -292,7 +268,6 @@ if (Meteor.isServer) {
     
     // Method to calculate response rate
     async 'getResponseRate'() {
-      console.log('getResponseRate method called');
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get response rate');
@@ -318,10 +293,8 @@ if (Meteor.isServer) {
         // In a real system, this would be calculated based on actual metrics
         const rate = Math.min(Math.round((recentResponses / (totalResponses * 0.3)) * 100), 100);
         
-        console.log(`Response rate: ${rate}% (${recentResponses} recent / ${totalResponses} total)`);
         return rate;
       } catch (error: unknown) {
-        console.error('Error calculating response rate:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error calculating response rate: ${errorMessage}`);
       }
@@ -329,7 +302,6 @@ if (Meteor.isServer) {
     
     // Method to calculate average completion time
     async 'getAverageCompletionTime'() {
-      console.log('getAverageCompletionTime method called');
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get average completion time');
@@ -352,10 +324,8 @@ if (Meteor.isServer) {
         
         // Convert to minutes and round to 1 decimal place
         const avgMinutes = Math.round((totalCompletionTimeSeconds / responses.length / 60) * 10) / 10;
-        console.log(`Average completion time: ${avgMinutes} minutes (from ${responses.length} responses)`);
         return avgMinutes;
       } catch (error: unknown) {
-        console.error('Error calculating average completion time:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error calculating average completion time: ${errorMessage}`);
       }
@@ -363,7 +333,6 @@ if (Meteor.isServer) {
     
     // Method to get database statistics
     async 'getDatabaseStats'() {
-      console.log('getDatabaseStats method called');
       
       try {
         // Get counts from different collections
@@ -390,14 +359,12 @@ if (Meteor.isServer) {
           }))
         };
       } catch (error: unknown) {
-        console.error('Error getting database stats:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error getting database stats: ${errorMessage}`);
       }
     },
     
-    async 'surveyResponses.submit'(responseData: SurveyResponseInput) {
-      console.log('surveyResponses.submit called with data:', JSON.stringify(responseData, null, 2));
+    async 'surveyResponses.submit'(responseData: SurveyResponseInput & { responseId?: string }) {
       
       try {
         // Validate input data
@@ -422,45 +389,171 @@ if (Meteor.isServer) {
               return valid;
             });
           }),
-          completed: Boolean,
-          startTime: Date,
-          endTime: Date,
-          progress: Number,
-          metadata: Object,
-          demographics: Match.Maybe(Object),
-          sectionTimes: Match.Maybe(Object)
+          completed: Match.Optional(Boolean),
+          startTime: Match.Optional(Date),
+          endTime: Match.Optional(Date),
+          progress: Match.Optional(Number),
+          metadata: Match.Optional(Object),
+          demographics: Match.Optional(Object),
+          sectionTimes: Match.Optional(Object),
+          respondentId: Match.Optional(String),
+          responseId: Match.Optional(String),
+          completionTime: Match.Optional(Number)
         });
         
-        console.log('Input validation passed');
-        
-        // Add timestamps
+        // Get current timestamp
         const now = new Date();
-        responseData.createdAt = now;
+        
+        // Add timestamps if not provided
+        if (!responseData.startTime) {
+          responseData.startTime = now;
+        }
+        
+        if (!responseData.endTime) {
+          responseData.endTime = now;
+        }
+        
+        // Add timestamps for record keeping
         responseData.updatedAt = now;
         
-        // Add user ID if logged in
-        if (this.userId) {
-          responseData.userId = this.userId;
-          console.log('Using logged in user ID:', this.userId);
-        } else if (!responseData.respondentId) {
-          // Generate anonymous respondent ID if not provided
-          responseData.respondentId = Random.id();
-          console.log('Generated anonymous respondent ID:', responseData.respondentId);
+        // Check if this is a replacement mode
+        const isReplaceMode = responseData.responseId || 
+                            (responseData.metadata && responseData.metadata.retakeMode === 'replace');
+        
+        console.log('Is replace mode:', isReplaceMode);
+        console.log('ResponseId:', responseData.responseId);
+        console.log('SurveyId:', responseData.surveyId);
+        console.log('UserId:', this.userId);
+        
+        // First, check if we have an existing response for this user and survey
+        let existingResponse = null;
+        
+        // If we have a specific responseId, use that first
+        if (responseData.responseId) {
+          console.log(`Looking for existing response with ID: ${responseData.responseId}`);
+          existingResponse = await SurveyResponses.findOneAsync({ _id: responseData.responseId });
+          console.log('Found by ID:', existingResponse ? 'Yes' : 'No');
         }
         
-        // Calculate completion time
-        if (responseData.startTime && responseData.endTime) {
-          responseData.completionTime = (responseData.endTime.getTime() - responseData.startTime.getTime()) / 1000;
-          console.log('Calculated completion time:', responseData.completionTime);
+        // If we're in replace mode but don't have a specific response yet, try to find by userId and surveyId
+        if (isReplaceMode && !existingResponse && this.userId) {
+          console.log(`Looking for existing response with userId: ${this.userId} and surveyId: ${responseData.surveyId}`);
+          existingResponse = await SurveyResponses.findOneAsync({ 
+            userId: this.userId,
+            surveyId: responseData.surveyId
+          });
+          console.log('Found by userId and surveyId:', existingResponse ? 'Yes' : 'No');
         }
         
-        console.log('Attempting to insert survey response using insertAsync');
-        
-        // Use insertAsync instead of insert as required by newer Meteor versions
-        // Use type assertion to satisfy TypeScript
-        const responseId = await SurveyResponses.insertAsync(responseData as unknown as SurveyResponseDoc);
-        console.log('Survey response inserted successfully with ID:', responseId);
-        return responseId;
+        // If we found an existing response and we're in replace mode, update it
+        if (existingResponse && isReplaceMode) {
+          console.log(`Replace mode: Updating existing response with ID: ${existingResponse._id}`);
+          
+          // Extract the responseId from the data (if it exists)
+          const { responseId, ...updateData } = responseData;
+          
+          // Use the existing response's _id for the update operation
+          const targetId = existingResponse._id;
+          
+          // Log what we're about to update
+          console.log('Existing responses before update:', existingResponse.responses?.length || 0, 'items');
+          console.log('New responses to apply:', updateData.responses?.length || 0, 'items');
+          
+          // Log the first response for debugging
+          if (updateData.responses && updateData.responses.length > 0) {
+            console.log('First new response to apply:', JSON.stringify(updateData.responses[0], null, 2));
+          }
+          
+          try {
+            // Use replaceOne to completely replace the document while preserving its _id
+            // This is more reliable than updateAsync for ensuring all fields are properly updated
+            // Use as any to bypass TypeScript's type checking for the _id field
+            // This is necessary because rawCollection().replaceOne() has different typing than the Meteor collection
+            const replaceResult = await SurveyResponses.rawCollection().replaceOne(
+              { _id: targetId },
+              {
+                // Include all fields from the existing document and update with new data
+                ...existingResponse,
+                surveyId: updateData.surveyId,
+                responses: updateData.responses,
+                completed: updateData.completed,
+                startTime: updateData.startTime,
+                endTime: updateData.endTime,
+                progress: updateData.progress,
+                metadata: updateData.metadata,
+                demographics: updateData.demographics || {},
+                sectionTimes: updateData.sectionTimes || {},
+                createdAt: existingResponse.createdAt || now, // Preserve original creation date
+                updatedAt: now,
+                userId: existingResponse.userId || this.userId || undefined,
+                respondentId: existingResponse.respondentId || undefined,
+                completionTime: updateData.completionTime || (updateData.startTime && updateData.endTime ? 
+                  (updateData.endTime.getTime() - updateData.startTime.getTime()) / 1000 : undefined)
+              } as any
+            );
+            
+            console.log(`Survey response replaced successfully:`, replaceResult);
+          } catch (error) {
+            console.error('Error replacing survey response:', error);
+            
+            // Fallback to traditional update if replace fails
+            console.log('Falling back to traditional update method');
+            const result = await SurveyResponses.updateAsync(
+              { _id: targetId },
+              { $set: {
+                  responses: updateData.responses,
+                  completed: updateData.completed,
+                  endTime: updateData.endTime,
+                  progress: updateData.progress,
+                  metadata: updateData.metadata,
+                  demographics: updateData.demographics || {},
+                  sectionTimes: updateData.sectionTimes || {},
+                  updatedAt: now
+                }
+              }
+            );
+            console.log(`Fallback update completed, affected documents:`, result);
+          }
+          
+          // Verify the update was successful by retrieving the updated document
+          const updatedResponse = await SurveyResponses.findOneAsync({ _id: targetId });
+          console.log('Updated responses after update:', updatedResponse?.responses?.length || 0, 'items');
+          
+          // Log the first response after update for verification
+          if (updatedResponse?.responses && updatedResponse.responses.length > 0) {
+            console.log('First response after update:', JSON.stringify(updatedResponse.responses[0], null, 2));
+          }
+          
+          console.log(`Survey response updated successfully`);
+          return targetId;
+        } else {
+          // This is a new submission
+          responseData.createdAt = now;
+          
+          // Add user ID if logged in
+          if (this.userId) {
+            responseData.userId = this.userId;
+            console.log('Using logged in user ID:', this.userId);
+          } else if (!responseData.respondentId) {
+            // Generate anonymous respondent ID if not provided
+            responseData.respondentId = Random.id();
+            console.log('Generated anonymous respondent ID:', responseData.respondentId);
+          }
+          
+          // Calculate completion time
+          if (responseData.startTime && responseData.endTime) {
+            responseData.completionTime = (responseData.endTime.getTime() - responseData.startTime.getTime()) / 1000;
+            console.log('Calculated completion time:', responseData.completionTime);
+          }
+          
+          console.log('Attempting to insert new survey response using insertAsync');
+          
+          // Use insertAsync instead of insert as required by newer Meteor versions
+          // Use type assertion to satisfy TypeScript
+          const responseId = await SurveyResponses.insertAsync(responseData as unknown as SurveyResponseDoc);
+          console.log('New survey response inserted successfully with ID:', responseId);
+          return responseId;
+        }
       } catch (error: unknown) {
         console.error('Error in surveyResponses.submit method:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
