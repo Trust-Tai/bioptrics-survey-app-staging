@@ -245,7 +245,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   const [currentResponseData, setCurrentResponseData] = useState<{
     responseCount: number;
     completionTime: number;
-  }>({ responseCount: 0, completionTime: 0 });
+    unansweredQuestions: number;
+  }>({ responseCount: 0, completionTime: 0, unansweredQuestions: 0 });
   
   // Use Meteor's reactive data system to get the most recent survey response
   const { loading, surveyResponse } = useTracker(() => {
@@ -286,7 +287,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       
       setCurrentResponseData({
         responseCount,
-        completionTime
+        completionTime,
+        unansweredQuestions: surveyResponse.unansweredQuestions || 0
       });
       return;
     }
@@ -294,30 +296,38 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     // Otherwise, use the separate Meteor method calls with the current survey ID
     console.log('Using separate Meteor method calls to get data for survey:', currentSurveyId);
     
+    // Use individual method calls as a fallback
+    console.log('Using individual method calls for survey:', currentSurveyId);
+    
     // Get total responses count
-    Meteor.call('getTotalResponsesCount', currentSurveyId, (error: any, responseCount: number) => {
-      if (error) {
-        console.error('Error getting total responses count:', error);
-        // Set response count to 0 if there's an error
+    Meteor.call('getTotalResponsesCount', currentSurveyId, (error1: any, responseCount: number) => {
+      if (error1) {
+        console.error('Error getting total responses count:', error1);
         responseCount = 0;
       }
-      
-      console.log('Received total responses count:', responseCount);
       
       // Get completion time
       Meteor.call('getSurveyCompletionTime', currentSurveyId, (error2: any, completionTime: number) => {
         if (error2) {
           console.error('Error getting completion time:', error2);
-          // Set completion time to 0 if there's an error
           completionTime = 0;
         }
         
-        console.log('Received completion time:', completionTime);
-        
-        // Update state with both values
-        setCurrentResponseData({
-          responseCount: responseCount || 0,
-          completionTime: completionTime || 0
+        // Get unanswered questions count
+        Meteor.call('getUnansweredQuestionsCount', currentSurveyId, (error3: any, unansweredQuestions: number) => {
+          if (error3) {
+            console.error('Error getting unanswered questions count:', error3);
+            unansweredQuestions = 0;
+          }
+          
+          console.log('All data collected:', { responseCount, completionTime, unansweredQuestions });
+          
+          // Update state with all values
+          setCurrentResponseData({
+            responseCount: responseCount || 0,
+            completionTime: completionTime || 0,
+            unansweredQuestions: unansweredQuestions || 0
+          });
         });
       });
     });
@@ -399,12 +409,12 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
         
         <StatCard>
           <StatIcon>
-            <FiStar size={20} />
+            <FiBarChart2 size={20} />
           </StatIcon>
           <StatContent>
-            <StatValue>{averageRating}</StatValue>
-            <StatLabel>Ratings Given</StatLabel>
-            <StatSublabel>Star ratings provided</StatSublabel>
+            <StatValue>{currentResponseData.unansweredQuestions || 0}</StatValue>
+            <StatLabel>Unanswered Questions</StatLabel>
+            <StatSublabel>Empty answer fields</StatSublabel>
           </StatContent>
         </StatCard>
         

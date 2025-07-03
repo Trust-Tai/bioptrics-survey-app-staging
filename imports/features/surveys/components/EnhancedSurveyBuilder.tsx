@@ -1620,12 +1620,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
     }
   };
   
-  // Update triggerAutoSave on any state change that should trigger auto-save
+  // Update triggerAutoSave only when title or description changes
+  // This prevents auto-save for other survey elements like themes, questions, etc.
+  const surveyTitleRef = useRef(survey?.title);
+  const surveyDescriptionRef = useRef(survey?.description);
+  
   useEffect(() => {
-    if (survey?.title || sections.length > 0 || surveyQuestions.length > 0) {
+    // Only trigger auto-save if title or description has changed
+    if (survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current) {
+      console.log('Auto-saving due to title or description change');
       triggerAutoSave();
+      
+      // Update refs with current values
+      surveyTitleRef.current = survey?.title;
+      surveyDescriptionRef.current = survey?.description;
     }
-  }, [survey, sections, surveyQuestions, selectedTheme, selectedDemographics, selectedCategories, selectedTags]);
+  }, [survey?.title, survey?.description]);
   
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {

@@ -126,7 +126,7 @@ const ModernSurveyContent: React.FC<{
   // This declaration was removed to fix the duplicate function error
   
   // Save current progress to localStorage and server
-  const saveProgress = () => {
+  const saveProgress = async () => {
     // Don't save progress if the survey has been submitted
     if (isSubmitted) {
       console.log('Survey already submitted, skipping progress save');
@@ -134,16 +134,52 @@ const ModernSurveyContent: React.FC<{
     }
     
     try {
+      // Collect all questions and responses
+      let allResponses = {...responses};
+      
+      // If we're on a question step, make sure to capture the current answer
+      // This ensures we save the answer immediately even if it hasn't been added to the responses state yet
+      if (currentStep.type === 'question' && currentStep.questionId) {
+        const currentQuestionId = currentStep.questionId;
+        console.log('Checking for current question answer:', currentQuestionId);
+        
+        // If this question doesn't have an answer in state yet, try to get it from the DOM
+        if (!allResponses[currentQuestionId]) {
+          // Look for text inputs
+          const textInput = document.querySelector('.text-input') as HTMLTextAreaElement;
+          if (textInput && textInput.value) {
+            console.log('Found text input value in DOM:', textInput.value);
+            allResponses[currentQuestionId] = textInput.value;
+          }
+          
+          // Look for selected radio options
+          const selectedOption = document.querySelector('.option-item.selected .option-text');
+          if (selectedOption) {
+            const optionText = selectedOption.textContent || '';
+            console.log('Found selected option in DOM:', optionText);
+            allResponses[currentQuestionId] = optionText;
+          }
+          
+          // Look for selected scale values
+          const selectedScale = document.querySelector('.scale-option.selected');
+          if (selectedScale) {
+            const scaleValue = selectedScale.textContent?.trim() || '';
+            console.log('Found selected scale value in DOM:', scaleValue);
+            allResponses[currentQuestionId] = scaleValue;
+          }
+        }
+      }
+      
       // Save to localStorage for client-side persistence
       const progressData = {
         currentStep,
-        responses,
+        responses: allResponses,
         timestamp: new Date().toISOString(),
       };
       localStorage.setItem(getProgressStorageKey(), JSON.stringify(progressData));
       
       // Calculate progress percentage based on answered questions vs total questions
-      const answeredCount = Object.keys(responses).length;
+      const answeredCount = Object.keys(allResponses).length;
       const totalQuestions = questions.length;
       const progressPercentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
       
@@ -753,8 +789,12 @@ const ModernSurveyContent: React.FC<{
     }
   };
   
-  const handleQuestionAnswer = (questionId: string, answer: any) => {
-    console.log('handleQuestionAnswer called with:', { questionId, answer });
+  const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {
+    console.log('handleQuestionAnswer called with:', { questionId, answer, saveOnly });
+    
+    // Check if this is a text input by looking at the DOM
+    const isTextInput = document.querySelector('.text-input') !== null;
+    const isTyping = isTextInput && document.activeElement && document.activeElement.classList.contains('text-input');
     
     // Save the answer to responses
     setResponses(prevResponses => {
@@ -773,6 +813,13 @@ const ModernSurveyContent: React.FC<{
       
       return updatedResponses;
     });
+    
+    // If saveOnly flag is true or user is typing, don't proceed with navigation
+    // This prevents auto-navigation while the user is still entering text or just selecting options
+    if (saveOnly || isTyping) {
+      console.log('SaveOnly flag is set or user is typing, skipping navigation and submission');
+      return;
+    }
     
     // Find the current question
     const currentQuestion = questions.find(q => q._id === questionId || q.id === questionId);
@@ -821,7 +868,8 @@ const ModernSurveyContent: React.FC<{
     });
     
     // If this is the last question in the survey, go to thank you page
-    if (isLastQuestionInSurvey) {
+    // But only if saveOnly is false - this prevents auto-submission when just saving an answer
+    if (isLastQuestionInSurvey && !saveOnly) {
       console.log('Last question in survey detected - moving to thank you page');
       // Store the last question ID to ensure it gets included in submission
       window.localStorage.setItem('lastAnsweredQuestionId', questionId);
@@ -1268,7 +1316,23 @@ const ModernSurveyContent: React.FC<{
       if (!questionId) return; // Skip questions without ID
       
       // Get the answer for this question from our responses state
-      const answer = responses[questionId];
+      let answer = responses[questionId];
+      
+      // If no answer in state, check localStorage as a backup
+      if (answer === undefined) {
+        try {
+          const savedResponsesStr = localStorage.getItem('survey_progress_' + survey._id);
+          if (savedResponsesStr) {
+            const savedData = JSON.parse(savedResponsesStr);
+            if (savedData && savedData.responses && savedData.responses[questionId]) {
+              answer = savedData.responses[questionId];
+              console.log(`Found answer in localStorage for question: ${questionId}`);
+            }
+          }
+        } catch (e) {
+          console.error('Error checking localStorage for response:', e);
+        }
+      }
       
       // If we have an answer for this question, add it to our formatted responses
       if (answer !== undefined) {
@@ -1284,6 +1348,7 @@ const ModernSurveyContent: React.FC<{
     });
     
     // SPECIAL HANDLING: If we're currently on a question page, make sure that question's response is included
+    // This is critical for the last question which might not be in state yet
     if (currentStep.type === 'question') {
       const currentQuestion = getCurrentQuestion();
       if (currentQuestion) {
@@ -1293,6 +1358,8 @@ const ModernSurveyContent: React.FC<{
         // Special handling for different question types
         const questionType = currentQuestion.type?.toLowerCase() || '';
         
+        console.log(`Checking DOM for current question answer: ${questionId}, type: ${questionType}`);
+        
         // Check for Likert/scale questions specifically
         if (questionType.includes('scale') || questionType.includes('likert')) {
           // For scale questions, look for buttons with 'selected' class
@@ -1301,6 +1368,18 @@ const ModernSurveyContent: React.FC<{
             answer = selectedButton.textContent?.trim();
             console.log('Found Likert/scale answer from selected button:', answer);
           }
+          
+          // If no selected button found, try to find any button that might have been clicked
+          if (!answer) {
+            const allButtons = document.querySelectorAll('.scale-button');
+            allButtons.forEach((btn: Element) => {
+              const btnElement = btn as HTMLElement;
+              if (btnElement.style.backgroundColor || btnElement.classList.contains('clicked')) {
+                answer = btnElement.textContent?.trim();
+                console.log('Found Likert/scale answer from button with style/class:', answer);
+              }
+            });
+          }
         } else {
           // For other question types
           const checkedInput = document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement;
@@ -1308,10 +1387,23 @@ const ModernSurveyContent: React.FC<{
           const textArea = document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement;
           const optionButton = document.querySelector(`.option-button.selected`);
           
+          // Try to find any option button that might have been clicked
+          let selectedOptionButton: HTMLElement | null = null;
+          if (!optionButton) {
+            const allOptionButtons = document.querySelectorAll('.option-button');
+            allOptionButtons.forEach((btn: Element) => {
+              const btnElement = btn as HTMLElement;
+              if (btnElement.style.backgroundColor || btnElement.classList.contains('clicked')) {
+                selectedOptionButton = btnElement;
+              }
+            });
+          }
+          
           answer = checkedInput?.value || 
                   regularInput?.value || 
                   textArea?.value ||
-                  optionButton?.textContent?.trim();
+                  optionButton?.textContent?.trim() ||
+                  selectedOptionButton?.textContent?.trim();
         }
         
         // If we found an answer in the DOM but it's not in our responses state
@@ -1331,6 +1423,38 @@ const ModernSurveyContent: React.FC<{
         }
       }
     }
+    
+    // ADDITIONAL CHECK: Make sure we have responses for all questions that have been answered
+    // This is especially important for the last question
+    allQuestions.forEach((question: any) => {
+      const questionId = question._id || question.id || '';
+      if (!questionId) return;
+      
+      // Skip if we already have a response for this question
+      if (formattedResponses.some((r: {questionId: string}) => r.questionId === questionId)) {
+        return;
+      }
+      
+      // Try to find any answer in the DOM for this question
+      const questionType = question.type?.toLowerCase() || '';
+      let answer;
+      
+      // Check for different input types based on question type
+      const checkedInput = document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement;
+      const regularInput = document.querySelector(`input[name="${questionId}"]`) as HTMLInputElement;
+      const textArea = document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement;
+      
+      if (checkedInput || regularInput || textArea) {
+        answer = checkedInput?.value || regularInput?.value || textArea?.value;
+        console.log(`Found answer in DOM for question ${questionId}:`, answer);
+        
+        formattedResponses.push({
+          questionId,
+          answer: answer || '',
+          sectionId: question.sectionId || ''
+        });
+      }
+    });
     
     // FINAL CHECK: Make sure we have all 4 questions
     // This is a direct fix for the specific issue where only 3 out of 4 questions are being saved
@@ -1415,6 +1539,89 @@ const ModernSurveyContent: React.FC<{
       console.error('Error retrieving incomplete response ID:', error);
     }
     
+    // CRITICAL FIX: Capture the current question's answer if we're on a question page
+    // This is especially important for the last question
+    if (currentStep.type === 'question') {
+      const currentQuestion = getCurrentQuestion();
+      if (currentQuestion) {
+        const questionId = currentQuestion._id || currentQuestion.id || '';
+        
+        // Check if this question's answer is already in our formatted responses
+        const hasResponse = formattedResponses.some(r => r.questionId === questionId);
+        
+        if (!hasResponse && questionId) {
+          // Try to get the answer from the DOM
+          const answer = getCurrentQuestionAnswer();
+          
+          if (answer) {
+            console.log(`CRITICAL: Adding last-minute answer for current question ${questionId}:`, answer);
+            formattedResponses.push({
+              questionId,
+              answer,
+              sectionId: currentQuestion.sectionId || ''
+            });
+          }
+        }
+      }
+    }
+    
+    // Create a record of all answers for the last question in case we need it on the server
+    const lastQuestionAnswers: Record<string, any> = {};
+    
+    // Collect all answers from both state and DOM
+    allQuestions.forEach((q: any) => {
+      const qId = q._id || q.id || '';
+      if (!qId) return;
+      
+      // Check state first
+      if (responses[qId] !== undefined) {
+        lastQuestionAnswers[qId] = responses[qId];
+      } else {
+        // Try to find in DOM
+        const domAnswer = getAnswerFromDOM(qId, q.type);
+        if (domAnswer) {
+          lastQuestionAnswers[qId] = domAnswer;
+        }
+      }
+    });
+    
+    // Helper function to get answer from DOM for a specific question
+    function getAnswerFromDOM(questionId: string, questionType?: string): any {
+      // Check for different input types based on question type
+      const checkedInput = document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement;
+      const regularInput = document.querySelector(`input[name="${questionId}"]`) as HTMLInputElement;
+      const textArea = document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement;
+      const selectedButton = document.querySelector(`.scale-button.selected, .option-button.selected`) as HTMLElement;
+      
+      return checkedInput?.value || regularInput?.value || textArea?.value || selectedButton?.textContent?.trim();
+    }
+    
+    // Helper function to get the current question's answer
+    function getCurrentQuestionAnswer(): any {
+      const currentQuestion = getCurrentQuestion();
+      if (!currentQuestion) return null;
+      
+      const questionId = currentQuestion._id || currentQuestion.id || '';
+      const questionType = currentQuestion.type?.toLowerCase() || '';
+      
+      // Check for different question types
+      if (questionType.includes('scale') || questionType.includes('likert')) {
+        const selectedButton = document.querySelector('.scale-button.selected');
+        return selectedButton?.textContent?.trim();
+      } else if (questionType.includes('option') || questionType.includes('choice')) {
+        const selectedButton = document.querySelector('.option-button.selected');
+        return selectedButton?.textContent?.trim();
+      } else {
+        return getAnswerFromDOM(questionId, questionType);
+      }
+    }
+    
+    // Log the final responses before submission
+    console.log('FINAL SUBMISSION: Responses:', formattedResponses.map(r => ({
+      questionId: r.questionId,
+      answer: typeof r.answer === 'object' ? '[Object]' : r.answer
+    })));
+    
     // Prepare submission data
     const submissionData = {
       surveyId: survey._id,
@@ -1426,7 +1633,8 @@ const ModernSurveyContent: React.FC<{
       metadata: {
         userAgent: navigator.userAgent,
         token: token || undefined,
-        isPublic: true
+        isPublic: true,
+        lastQuestionAnswers // Add the last question answers to metadata for backup
       },
       // Add optional fields that might be required by the server validation
       demographics: {}, // Empty demographics object
@@ -1868,7 +2076,7 @@ const ModernSurveyContent: React.FC<{
           <ModernSurveyQuestion
             question={mappedQuestion}
             progress={questionProgress}
-            onAnswer={(answer) => handleQuestionAnswer(currentQuestion._id || currentQuestion.id || '', answer)}
+            onAnswer={(answer, saveOnly) => handleQuestionAnswer(currentQuestion._id || currentQuestion.id || '', answer, saveOnly)}
             onBack={handleBack}
             value={responses[currentQuestion._id || currentQuestion.id || '']}
             color={survey.color}

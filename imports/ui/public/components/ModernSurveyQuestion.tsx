@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiArrowRight, FiArrowLeft, FiCheck, FiInfo, FiEdit, FiList, FiBarChart2 } from 'react-icons/fi';
 import './ModernSurveyQuestion.css';
 import '../components/ModernSurvey.css';
@@ -20,7 +20,7 @@ interface Question {
 interface ModernSurveyQuestionProps {
   question: Question;
   progress: string;
-  onAnswer: (answer: any) => void;
+  onAnswer: (answer: any, saveOnly?: boolean) => void;
   onBack: () => void;
   value?: any;
   color?: string;
@@ -115,35 +115,47 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   
   // Handle continue/submit button click
   const handleContinue = () => {
-    // If the question is required and the answer is not valid, show error
-    if (question.required && !isAnswerValid()) {
-      setError('Please provide an answer before continuing');
+    // Validate the answer if needed
+    if (question.required && !answer) {
+      setError('This question requires an answer');
       return;
     }
     
-    // Clear any previous error
-    setError(null);
+    // Clear any error
+    setError('');
+    
+    // If we're currently typing, make sure to clear the timeout and save immediately
+    if (isTyping && debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = null;
+      setIsTyping(false);
+    }
+    
+    // Call the onAnswer callback with the current answer
+    onAnswer(answer);
     
     // Log whether this is the last question for debugging
     console.log('CRITICAL - Question button click info:', {
       isLastQuestion,
       hasSubmitHandler: !!onSubmit,
       questionText: question.text?.substring(0, 30),
-      buttonText: isLastQuestion ? 'Submit' : 'Continue'
+      buttonText: isLastQuestion ? 'Submit' : 'Continue',
+      currentAnswer: answer
     });
     
-    // If this is the last question and we have a submit handler
-    if (isLastQuestion && onSubmit) {
-      console.log('This is the last question - submitting survey');
-      // Call onSubmit directly without saving the answer again
-      // This will navigate to the thank you page
-      onSubmit();
-      return; // Important: return early to prevent onAnswer from being called
-    }
-    
-    // Only save the answer if we're not submitting
-    // This prevents double-saving which might cause navigation issues
+    // CRITICAL FIX: Always save the answer first, regardless of whether this is the last question
+    console.log('Saving answer before continuing:', answer);
     onAnswer(answer);
+    
+    // Add a small delay to ensure the answer is saved before submitting
+    setTimeout(() => {
+      // If this is the last question and we have a submit handler
+      if (isLastQuestion && onSubmit) {
+        console.log('This is the last question - submitting survey');
+        // Now call onSubmit after saving the answer
+        onSubmit();
+      }
+    }, 100); // 100ms delay to ensure state updates complete
   };
   
   // Render numeric scale (1-5)
@@ -163,7 +175,15 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <div
               key={value}
               className={`scale-option ${answer === value.toString() ? 'selected' : ''}`}
-              onClick={() => setAnswer(value.toString())}
+              onClick={() => {
+                // Set answer in state
+                setAnswer(value.toString());
+                // Save answer immediately but don't navigate
+                console.log('Scale value selected, saving immediately:', value.toString());
+                // Use a flag to indicate this is just a save, not a navigation trigger
+                const saveOnly = true;
+                onAnswer(value.toString(), saveOnly);
+              }}
               style={answer === value.toString() ? {backgroundColor: color} : {}}
             >
               {value}
@@ -194,7 +214,15 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
           <div
             key={option}
             className={`option-item ${answer === option ? 'selected' : ''}`}
-            onClick={() => setAnswer(option)}
+            onClick={() => {
+              // Set answer in state
+              setAnswer(option);
+              // Save answer immediately but don't navigate
+              console.log('Option selected, saving immediately:', option);
+              // Use a flag to indicate this is just a save, not a navigation trigger
+              const saveOnly = true;
+              onAnswer(option, saveOnly);
+            }}
           >
             <div 
               className={`option-checkmark ${answer === option ? 'selected' : ''}`} 
@@ -209,13 +237,38 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     );
   };
   
-  // Render text input
+  // State to track if we're currently typing in a text input
+  const [isTyping, setIsTyping] = useState(false);
+  // Reference for debounce timeout
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Render text input with debouncing to prevent auto-submission
   const renderTextInput = () => {
     return (
       <textarea
         className="text-input"
         value={answer}
-        onChange={(e) => setAnswer(e.target.value)}
+        onChange={(e) => {
+          // Set answer in state immediately
+          setAnswer(e.target.value);
+          
+          // Mark that we're typing
+          setIsTyping(true);
+          
+          // Clear any existing timeout
+          if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+          }
+          
+          // Set a new timeout to save the answer after typing stops
+          debounceTimeout.current = setTimeout(() => {
+            console.log('Text input changed (debounced), saving:', e.target.value);
+            // Save answer after typing pause with saveOnly flag
+            const saveOnly = true;
+            onAnswer(e.target.value, saveOnly);
+            setIsTyping(false);
+          }, 1000); // 1 second debounce
+        }}
         placeholder="Type your answer here..."
         style={{borderColor: answer ? color : '#d1d5db'}}
       />
@@ -359,7 +412,21 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
           {error && <div className="error-message">{error}</div>}
           
           <div className="button-container">
-            <button className="button button-back" onClick={onBack}>
+            <button 
+              className="button button-back" 
+              onClick={() => {
+                // Save the answer before going back but don't trigger navigation or submission
+                console.log('Saving answer before going back:', answer);
+                // Use saveOnly=true to prevent navigation or submission logic
+                const saveOnly = true;
+                // Only call onAnswer if there's an answer to save
+                if (answer) {
+                  onAnswer(answer, saveOnly);
+                }
+                // Then go back
+                onBack();
+              }}
+            >
               <FiArrowLeft size={18} />
               Back
             </button>
