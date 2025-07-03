@@ -1620,12 +1620,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
     }
   };
   
-  // Update triggerAutoSave on any state change that should trigger auto-save
+  // Update triggerAutoSave only when title or description changes
+  // This prevents auto-save for other survey elements like themes, questions, etc.
+  const surveyTitleRef = useRef(survey?.title);
+  const surveyDescriptionRef = useRef(survey?.description);
+  
   useEffect(() => {
-    if (survey?.title || sections.length > 0 || surveyQuestions.length > 0) {
+    // Only trigger auto-save if title or description has changed
+    if (survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current) {
+      console.log('Auto-saving due to title or description change');
       triggerAutoSave();
+      
+      // Update refs with current values
+      surveyTitleRef.current = survey?.title;
+      surveyDescriptionRef.current = survey?.description;
     }
-  }, [survey, sections, surveyQuestions, selectedTheme, selectedDemographics, selectedCategories, selectedTags]);
+  }, [survey?.title, survey?.description]);
   
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
@@ -4058,7 +4068,35 @@ const EnhancedSurveyBuilder: React.FC = () => {
         <QuestionSelector
           isOpen={showQuestionSelector}
           onClose={() => setShowQuestionSelector(false)}
-          questions={questionSelectorItems.length > 0 ? questionSelectorItems : allQuestions}
+          questions={(() => {
+            // If we have refreshed questions, use those
+            if (questionSelectorItems.length > 0) {
+              return questionSelectorItems;
+            }
+            
+            // Otherwise, fetch questions directly from the database
+            const dbQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+              // Get the latest version to extract the response type and text
+              const currentVersion = q.currentVersion;
+              const latestVersion = q.versions && Array.isArray(q.versions) ?
+                (q.versions.find((v: any) => v.version === currentVersion) || 
+                (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+              
+              // Create a properly typed QuestionItem
+              const questionItem: QuestionItem = {
+                id: q._id || '',
+                text: extractQuestionText(q), // Use our helper function to get clean question text
+                type: latestVersion?.responseType || 'text',
+                status: 'published'
+              };
+              
+              return questionItem;
+            });
+            
+            // Update the question selector items for future use
+            setQuestionSelectorItems(dbQuestions);
+            return dbQuestions;
+          })()}
           selectedQuestionIds={currentSectionId ? getSelectedQuestionIds(currentSectionId) : []}
           sectionId={currentSectionId || ''}
           onSelectQuestions={handleSelectQuestions}

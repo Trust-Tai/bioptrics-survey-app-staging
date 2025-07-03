@@ -745,12 +745,33 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           questionIdMap.set(questionText, question._id);
         }
         
-        // Store tags for this question
+        // Store tags for this question - check both categoryTags and labels arrays
+        const tagsList = [];
+        
+        // Check for categoryTags
         if (versionData.categoryTags && Array.isArray(versionData.categoryTags)) {
-          questionMap.set(question._id, versionData.categoryTags);
+          tagsList.push(...versionData.categoryTags);
+        }
+        
+        // Check for labels
+        if (versionData.labels && Array.isArray(versionData.labels)) {
+          tagsList.push(...versionData.labels);
+        } else if (question.labels && Array.isArray(question.labels)) {
+          // Some questions might have labels at the root level
+          tagsList.push(...question.labels);
+        }
+        
+        // Log for debugging
+        if (tagsList.length > 0) {
+          console.log(`Question ${question._id} has tags:`, tagsList);
+        }
+        
+        // Store the combined tags list
+        if (tagsList.length > 0) {
+          questionMap.set(question._id, tagsList);
           
           // Add this question to each of its tags in the tagToQuestionsMap
-          versionData.categoryTags.forEach((tagId: string) => {
+          tagsList.forEach((tagId: string) => {
             const questionsWithTag = tagToQuestionsMap.get(tagId) || [];
             questionsWithTag.push(question._id);
             tagToQuestionsMap.set(tagId, questionsWithTag);
@@ -776,8 +797,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           });
           
           // Debug output for questions with tags
-          if (versionData.categoryTags.length > 0) {
-            const tagNames = versionData.categoryTags.map((tagId: string) => tagNameMap.get(tagId) || tagId).join(', ');
+          if (tagsList.length > 0) {
+            const tagNames = tagsList.map((tagId: string) => tagNameMap.get(tagId) || tagId).join(', ');
 
           }
         } else {
@@ -1670,20 +1691,28 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     }}>{question.type}</span>
                     
                     {/* Display tags if available */}
-                    {questionsWithTags.get(question.id || '')?.map((tag: string) => (
-                      <span key={tag} style={{
-                        backgroundColor: filters.tags.includes(tag) ? '#552a4720' : '#f8f8f8',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        border: filters.tags.includes(tag) ? '1px solid #552a47' : '1px solid #eee'
-                      }}>
-                        <FiTag size={10} style={{ marginRight: '4px' }} /> {tag}
-                      </span>
-                    ))}
+                    {questionsWithTags.get(question.id || '')?.map((tagId: string) => {
+                      // Find the actual tag/label from the Layers collection
+                      const tagObj = allTags.find((tag: Layer) => tag && tag._id === tagId);
+                      const tagName = tagObj ? tagObj.name : 'Unknown';
+                      const tagColor = tagObj?.color || '#f8f8f8';
+                      
+                      return (
+                        <span key={tagId} style={{
+                          backgroundColor: filters.tags.includes(tagId) ? '#552a4720' : (tagColor + '20' || '#f8f8f8'),
+                          color: filters.tags.includes(tagId) ? '#552a47' : '#333',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          border: filters.tags.includes(tagId) ? '1px solid #552a47' : '1px solid #eee'
+                        }}>
+                          <FiTag size={10} style={{ marginRight: '4px' }} /> {tagName} 
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

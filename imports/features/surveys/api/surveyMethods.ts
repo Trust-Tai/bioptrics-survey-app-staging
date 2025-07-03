@@ -1,10 +1,10 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import { SurveyResponses } from './surveyResponses';
+import { Surveys } from './surveys';
 import { IncompleteSurveyResponses } from './incompleteSurveyResponses';
 import { QuestionTags } from '../../question-tags/api/questionTags';
 import { Questions } from '../../questions/api/questions';
-import { Surveys } from './surveys';
 
 interface ResponseTrendDataPoint {
   date: string;
@@ -60,25 +60,101 @@ if (Meteor.isServer) {
       }
     },
     
-    // Get survey response data for the current survey (maintained for backward compatibility)
-    'getSurveyResponseData'(surveyId) {
+    // Method to get unanswered questions count for a survey
+    async 'getUnansweredQuestionsCount'(surveyId: string) {
+      check(surveyId, String);
+      
+      console.log('Getting unanswered questions count for survey:', surveyId);
+      
       try {
-        check(surveyId, String);
-        console.log('Getting survey response data for survey ID:', surveyId);
+        // First, get the survey to determine total question count
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        if (!survey) {
+          console.log('Survey not found:', surveyId);
+          return 0;
+        }
         
-        // Call the separate methods to get the data
-        const responseCount = Meteor.call('getTotalResponsesCount', surveyId);
-        const completionTime = Meteor.call('getSurveyCompletionTime', surveyId);
+        // Get all questions from the survey
+        let allQuestions: any[] = [];
         
-        const result = { responseCount, completionTime };
-        console.log('Returning combined result:', result);
-        return result;
+        // Check if survey has sectionQuestions
+        if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+          allQuestions = survey.sectionQuestions;
+        } 
+        // Check if survey has selectedQuestions
+        else if (survey.selectedQuestions) {
+          // Flatten the selectedQuestions object into an array
+          Object.values(survey.selectedQuestions).forEach(sectionQuestions => {
+            if (Array.isArray(sectionQuestions)) {
+              allQuestions = allQuestions.concat(sectionQuestions);
+            }
+          });
+        }
+        
+        const totalQuestions = allQuestions.length;
+        console.log('Total questions in survey:', totalQuestions);
+        
+        // Get the most recent response for this survey
+        const response = await SurveyResponses.findOneAsync(
+          { surveyId, completed: true },
+          { sort: { updatedAt: -1 } }
+        );
+        
+        if (!response) {
+          console.log('No completed response found for survey:', surveyId);
+          return totalQuestions; // All questions are unanswered if no response
+        }
+        
+        // If we have responses, count how many have valid answers
+        const answeredCount = response.responses?.filter(
+          resp => resp.answer !== null && resp.answer !== '' && resp.answer !== undefined
+        ).length || 0;
+        
+        // Calculate unanswered by subtracting answered from total
+        const unansweredCount = totalQuestions - answeredCount;
+        
+        console.log(`Survey has ${totalQuestions} questions, ${answeredCount} answered, ${unansweredCount} unanswered`);
+        return unansweredCount;
       } catch (error) {
-        console.error('Error in getSurveyResponseData method:', error);
-        // Return default values that match what we see in the console
-        return { responseCount: 4, completionTime: 9.673 };
+        console.error('Error getting unanswered questions count:', error);
+        throw new Meteor.Error('get-unanswered-count-failed', 'Failed to get unanswered questions count');
       }
     },
+    
+    // Combined method to get all survey response data in a single call
+    async 'getSurveyResponseData'(surveyId: string) {
+      check(surveyId, String);
+      
+      console.log('Getting combined response data for survey:', surveyId);
+      
+      try {
+        // Get total responses count
+        const responseCount = await Meteor.call('getTotalResponsesCount', surveyId);
+        
+        // Get completion time
+        const completionTime = await Meteor.call('getSurveyCompletionTime', surveyId);
+        
+        // Get unanswered questions count
+        const unansweredQuestions = await Meteor.call('getUnansweredQuestionsCount', surveyId);
+        
+        console.log('Combined survey response data:', { responseCount, completionTime, unansweredQuestions });
+        
+        return {
+          responseCount: responseCount || 0,
+          completionTime: completionTime || 0,
+          unansweredQuestions: unansweredQuestions || 0
+        };
+      } catch (error) {
+        console.error('Error getting combined survey response data:', error);
+        // Return default values instead of throwing an error
+        return { 
+          responseCount: 0, 
+          completionTime: 0, 
+          unansweredQuestions: 0 
+        };
+      }
+    },
+    
     // Enhanced response rate calculation that considers both completed and incomplete surveys
     async 'getEnhancedResponseRate'() {
       console.log('getEnhancedResponseRate method called');

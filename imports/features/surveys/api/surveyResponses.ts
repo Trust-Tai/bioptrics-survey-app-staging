@@ -18,6 +18,7 @@ export interface SurveyResponseDoc {
   startTime: Date;
   endTime?: Date;
   completionTime?: number; // in seconds
+  unansweredQuestions?: number; // count of questions without answers
   progress: number; // percentage of completion
   metadata?: {
     browser?: string;
@@ -150,6 +151,7 @@ if (Meteor.isServer) {
     userId?: string;
     respondentId?: string;
     completionTime?: number;
+    unansweredQuestions?: number;
     createdAt?: Date;
     updatedAt?: Date;
   }
@@ -544,6 +546,104 @@ if (Meteor.isServer) {
           if (responseData.startTime && responseData.endTime) {
             responseData.completionTime = (responseData.endTime.getTime() - responseData.startTime.getTime()) / 1000;
             console.log('Calculated completion time:', responseData.completionTime);
+          }
+          
+          // Get the survey to determine total question count
+          const survey = await Surveys.findOneAsync({ _id: responseData.surveyId });
+          
+          if (!survey) {
+            console.log('Survey not found for calculating unanswered questions');
+            responseData.unansweredQuestions = 0;
+          } else {
+            // Get all questions from the survey
+            let allQuestions: any[] = [];
+            
+            // Check if survey has sectionQuestions
+            if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+              allQuestions = survey.sectionQuestions;
+            } 
+            // Check if survey has selectedQuestions
+            else if (survey.selectedQuestions) {
+              // Flatten the selectedQuestions object into an array
+              Object.values(survey.selectedQuestions).forEach(sectionQuestions => {
+                if (Array.isArray(sectionQuestions)) {
+                  allQuestions = allQuestions.concat(sectionQuestions);
+                }
+              });
+            }
+            
+            const totalQuestions = allQuestions.length;
+            console.log(`SERVER: Total questions in survey: ${totalQuestions}`);
+            console.log(`SERVER: Responses received: ${responseData.responses.length}`);
+            
+            // Log all question IDs from the survey
+            const questionIds = allQuestions.map(q => q._id || q.id).filter(Boolean);
+            console.log('SERVER: All question IDs in survey:', questionIds);
+            
+            // Log all response question IDs received
+            const responseQuestionIds = responseData.responses.map((r: {questionId: string}) => r.questionId).filter(Boolean);
+            console.log('SERVER: All response question IDs received:', responseQuestionIds);
+            
+            // Find missing question IDs
+            const missingQuestionIds = questionIds.filter(id => !responseQuestionIds.includes(id));
+            console.log('SERVER: Missing question IDs:', missingQuestionIds);
+            
+            // Check for empty answers in the responses
+            const emptyAnswers = responseData.responses.filter(r => r.answer === '' || r.answer === null || r.answer === undefined);
+            console.log(`SERVER: Found ${emptyAnswers.length} empty answers in the responses`);
+            
+            // Log all responses for debugging
+            console.log('SERVER: All responses received:', responseData.responses.map(r => ({
+              questionId: r.questionId,
+              answer: typeof r.answer === 'object' ? '[Object]' : r.answer
+            })));
+            
+            // If we have missing questions but the client thinks all questions are answered,
+            // we need to create empty responses for those questions
+            if (missingQuestionIds.length > 0) {
+              console.log(`SERVER: Adding ${missingQuestionIds.length} empty responses for missing questions`);
+              
+              missingQuestionIds.forEach(questionId => {
+                const question = allQuestions.find(q => (q._id === questionId || q.id === questionId));
+                if (question) {
+                  responseData.responses.push({
+                    questionId,
+                    answer: '', // Empty answer
+                    sectionId: question.sectionId || ''
+                  });
+                }
+              });
+            }
+            
+            // CRITICAL FIX: Check for any empty answers in the responses and try to find values for them
+            // This is especially important for the last question
+            for (let i = 0; i < responseData.responses.length; i++) {
+              const response = responseData.responses[i];
+              if (response.answer === '' || response.answer === null || response.answer === undefined) {
+                console.log(`SERVER: Attempting to fix empty answer for question: ${response.questionId}`);
+                
+                // Try to find a non-empty value in the metadata if available
+                if (responseData.metadata && responseData.metadata.lastQuestionAnswers) {
+                  const lastAnswers = responseData.metadata.lastQuestionAnswers;
+                  if (lastAnswers[response.questionId]) {
+                    response.answer = lastAnswers[response.questionId];
+                    console.log(`SERVER: Found answer in metadata for question: ${response.questionId}`);
+                  }
+                }
+              }
+            }
+            
+            // Count answered questions (those with non-empty answers)
+            const answeredCount = responseData.responses.filter(
+              (response: {questionId: string; answer: any; sectionId?: string}) => 
+                response.answer !== null && response.answer !== '' && response.answer !== undefined
+            ).length;
+            
+            // Calculate unanswered by subtracting answered from total
+            const unansweredQuestions = totalQuestions - answeredCount;
+            responseData.unansweredQuestions = unansweredQuestions;
+            
+            console.log(`SERVER: Survey has ${totalQuestions} questions, ${answeredCount} answered, ${unansweredQuestions} unanswered`);
           }
           
           console.log('Attempting to insert new survey response using insertAsync');
