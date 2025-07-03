@@ -409,6 +409,14 @@ body > .ts-dropdown {
   gap: 20px;
 }
 
+/* Icon styles */
+.survey-section svg {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .survey-section {
   background: #fff;
   border: 1px solid #e5d6c7;
@@ -435,9 +443,38 @@ body > .ts-dropdown {
   gap: 8px;
 }
 
+.survey-section-title svg {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
 .survey-section-actions {
   display: flex;
   gap: 8px;
+}
+
+.survey-section-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.survey-section-actions button:hover {
+  background-color: #e0e0e0;
+}
+
+.survey-section-actions button svg {
+  width: 16px;
+  height: 16px;
+  color: #555;
 }
 
 .survey-section-content {
@@ -465,6 +502,14 @@ body > .ts-dropdown {
   gap: 10px;
 }
 
+.survey-section-question-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  cursor: move;
+}
+
 .survey-section-question-title {
   font-size: 14px;
   color: #333;
@@ -486,6 +531,20 @@ body > .ts-dropdown {
   margin-left: auto;
 }
 
+.survey-section-question-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.survey-section-question-actions button svg {
+  width: 16px;
+  height: 16px;
+}
+
 .survey-section-add-question {
   display: flex;
   align-items: center;
@@ -497,6 +556,14 @@ body > .ts-dropdown {
   color: #666;
   cursor: pointer;
   margin-top: 12px;
+  gap: 6px;
+}
+
+.survey-section-add-question svg {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  vertical-align: middle;
 }
 
 .survey-section-add-question:hover {

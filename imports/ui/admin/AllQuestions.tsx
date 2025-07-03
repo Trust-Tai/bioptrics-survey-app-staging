@@ -1101,19 +1101,6 @@ const AllQuestions: React.FC = () => {
                 })}
               </FilterSelect>
             </FilterGroup>
-            
-            <FilterGroup>
-              <FilterLabel>Theme</FilterLabel>
-              <FilterSelect 
-                value={filterTheme || ''}
-                onChange={(e) => setFilterTheme(e.target.value || null)}
-              >
-                <option value="">All Themes</option>
-                {surveyThemes.map((theme: any) => (
-                  <option key={theme._id} value={theme._id}>{theme.name}</option>
-                ))}
-              </FilterSelect>
-            </FilterGroup>
           </FiltersPanel>
         )}
         

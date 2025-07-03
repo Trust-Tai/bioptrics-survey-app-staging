@@ -220,9 +220,6 @@ const QuestionFooter = styled.div`
   flex-direction: row-reverse;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
 `;
 
 const StatusIndicator = styled.span<{ active: boolean }>`
@@ -380,9 +377,7 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
               </ActionButtons>
             </QuestionHeader>
             
-            <QuestionTitle>
-              {questionText}
-            </QuestionTitle>
+            
             
             {/* QuestionMeta removed from here as tags were moved to the header */}
             
@@ -413,6 +408,9 @@ const QuestionListView: React.FC<QuestionListViewProps> = ({
                   Used {usageCount} {usageCount === 1 ? 'time' : 'times'}
                 </UsageCount>
               </div>
+                <QuestionTitle>
+                {questionText}
+              </QuestionTitle>
             </QuestionFooter>
           </QuestionRow>
         );

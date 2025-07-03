@@ -1,13 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FiSearch, FiX, FiCheck, FiTag } from 'react-icons/fi';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { FiSearch, FiX, FiCheck, FiTag, FiPlus, FiUpload } from 'react-icons/fi';
+import CreatableSelect from 'react-select/creatable';
+import { components } from 'react-select';
 import { QuestionItem } from '../../types';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Layers, Layer } from '/imports/api/layers';
 import RichTextRenderer from './RichTextRenderer';
 import { Meteor } from 'meteor/meteor';
-import { useTracker } from 'meteor/react-meteor-data';
 import { Questions } from '../../../questions/api/questions';
+import { Sections } from '../../../sections/api/sections';
+import { Surveys } from '../../../surveys/api/surveys';
+import { Layer, Layers } from '/imports/api/layers';
+import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
+import EnhancedQuestionBuilder from '../../../questions/components/admin/EnhancedQuestionBuilder';
+import QuestionBuilderStateManager from '../../../questions/components/admin/QuestionBuilderStateManager';
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
-import { Layers } from '/imports/api/layers';
+import './QuestionSelector.css';
+
+// Interface for the callback when a new question is created
+interface QuestionCreatedCallback {
+  (questionId: string): void;
+}
 
 interface QuestionSelectorProps {
   isOpen: boolean;
@@ -16,12 +31,290 @@ interface QuestionSelectorProps {
   selectedQuestionIds: string[];
   sectionId: string;
   onSelectQuestions: (questionIds: string[], sectionId: string) => void;
+  onQuestionsRefresh?: () => void; // Optional callback to refresh questions list
 }
 
 // Extended QuestionItem interface with tags
 interface ExtendedQuestionItem extends QuestionItem {
   categoryTags?: string[];
 }
+
+// TagBuilder component to manage tag selection and creation with nested hierarchy
+interface TagBuilderProps {
+  selectedTags: string[];
+  onTagsChange: (tags: string[]) => void;
+}
+
+const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTags, onTagsChange }) => {
+  const [selectedTagValues, setSelectedTagValues] = useState<string[]>(selectedTags || []);
+  const [tagAlert, setTagAlert] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  // Update parent component when tags change
+  useEffect(() => {
+    onTagsChange(selectedTagValues);
+  }, [selectedTagValues, onTagsChange]);
+  
+  // Fetch available tags from Layers collection using useTracker for reactivity
+  const availableTags = useTracker<Layer[]>(() => Layers.find({}).fetch() || [], []);
+  
+  // We're not using timers to clear alerts to avoid Meteor simulation errors
+  // Instead, we'll just display the alert and let the user dismiss it manually
+  // or it will be replaced when a new alert is shown
+  
+  // Add a function to clear alerts manually
+  const clearAlert = () => {
+    setTagAlert(null);
+  };
+
+  
+  // Process tags for hierarchy
+  const processTagsForHierarchy = () => {
+    // Find root categories
+    const rootCategories = availableTags.filter((tag: Layer) => 
+      tag.name && tag.name.indexOf('/') === -1
+    );
+    
+    // Create a hierarchy of tags
+    const hierarchyMap = new Map<string, { tag: Layer, children: Layer[] }>();
+    
+    // Initialize with root categories
+    rootCategories.forEach((rootTag: Layer) => {
+      if (rootTag._id && rootTag.name) {
+        hierarchyMap.set(rootTag.name, { tag: rootTag, children: [] });
+      }
+    });
+    
+    // Organize child tags
+    availableTags.forEach((tag: Layer) => {
+      if (!tag.name || !tag._id || tag.name.indexOf('/') === -1) return;
+      
+      const parts = tag.name.split('/');
+      const parentPath = parts.slice(0, -1).join('/');
+      const parentEntry = hierarchyMap.get(parentPath);
+      
+      if (parentEntry) {
+        parentEntry.children.push(tag);
+      }
+    });
+    
+    return hierarchyMap;
+  };
+  
+  // Build flat list of options with depth information
+  const buildFlatTagList = (hierarchyMap: Map<string, { tag: Layer, children: Layer[] }>) => {
+    const options: any[] = [];
+    
+    const addTagsWithDepth = (tags: Layer[], depth: number = 0) => {
+      // Sort tags alphabetically
+      const sortedTags = [...tags].sort((a, b) => {
+        const aName = a.name?.split('/').pop() || '';
+        const bName = b.name?.split('/').pop() || '';
+        return aName.localeCompare(bName);
+      });
+      
+      sortedTags.forEach(tag => {
+        if (tag._id && tag.name) {
+          const displayName = tag.name.split('/').pop() || '';
+          const indent = '\u00A0\u00A0'.repeat(depth);
+          const prefix = depth > 0 ? '└── ' : '';
+          
+          options.push({
+            value: tag._id,
+            label: `${indent}${prefix}${displayName}`,
+            depth: depth
+          });
+          
+          // Get children from hierarchy map
+          const entry = hierarchyMap.get(tag.name);
+          if (entry && entry.children && entry.children.length > 0) {
+            addTagsWithDepth(entry.children, depth + 1);
+          }
+        }
+      });
+    };
+    
+    // Start with root categories
+    const rootTags = Array.from(hierarchyMap.values()).map(entry => entry.tag);
+    addTagsWithDepth(rootTags);
+    
+    return options;
+  };
+  
+  // Custom Option component to display hierarchical structure
+  const CustomOption = (props: any) => {
+    const { data, innerProps, innerRef } = props;
+    
+    // Special styling for the create option
+    if (data.__isNew__) {
+      return (
+        <div 
+          ref={innerRef} 
+          {...innerProps} 
+          style={{ 
+            padding: '8px 12px', 
+            cursor: 'pointer',
+            backgroundColor: props.isFocused ? '#f0f0f0' : 'white',
+            color: '#552a47', 
+            fontWeight: 'bold' 
+          }}
+        >
+          ✨ Create tag: "{data.label}"
+        </div>
+      );
+    }
+    
+    return (
+      <div 
+        ref={innerRef} 
+        {...innerProps} 
+        style={{ 
+          padding: '8px 12px', 
+          cursor: 'pointer',
+          backgroundColor: props.isFocused ? '#f0f0f0' : 'white',
+          fontFamily: 'monospace', 
+          whiteSpace: 'pre' 
+        }}
+      >
+        {data.label}
+      </div>
+    );
+  };
+  
+  // Generate options for the select component
+  const selectOptions = useMemo(() => {
+    const hierarchyMap = processTagsForHierarchy();
+    return buildFlatTagList(hierarchyMap);
+  }, [availableTags]);
+  
+  // Handle tag creation
+  const handleCreateTag = async (inputValue: string) => {
+    try {
+      // Use callAsync instead of apply for proper async handling
+      const newTagId = await Meteor.callAsync('layers.insert', { name: inputValue });
+      
+      // Update selected tags
+      const updatedTags = [...selectedTagValues, newTagId];
+      setSelectedTagValues(updatedTags);
+      
+      // Update hidden input with selected tag values for form submission
+      const hiddenInput = document.getElementById('hiddenTagsInput') as HTMLInputElement;
+      if (hiddenInput) {
+        hiddenInput.value = JSON.stringify(updatedTags);
+      }
+      
+      setTagAlert({
+        type: 'success',
+        message: `Tag "${inputValue}" created successfully!`
+      });
+      
+      return newTagId;
+    } catch (error: any) {
+      console.error('Error creating tag:', error);
+      setTagAlert({
+        type: 'error',
+        message: `Failed to create tag: ${error.message || 'Unknown error'}`
+      });
+      return null;
+    }
+  };
+  
+  // Handle selection change
+  const handleTagChange = (selected: any) => {
+    const values = selected ? selected.map((option: any) => option.value) : [];
+    setSelectedTagValues(values);
+    
+    // Update hidden input with selected tag values for form submission
+    const hiddenInput = document.getElementById('hiddenTagsInput') as HTMLInputElement;
+    if (hiddenInput) {
+      hiddenInput.value = JSON.stringify(values);
+    }
+  };
+  
+  return (
+    <div className="form-group">
+      <label htmlFor="tags" style={{ marginBottom: '8px', display: 'block', fontWeight: 600 }}>
+        <FiTag style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+        Question Tags
+      </label>
+      
+      {tagAlert && (
+        <div className={`tag-alert ${tagAlert.type}`} style={{
+          padding: '8px 12px',
+          borderRadius: '4px',
+          marginBottom: '10px',
+          backgroundColor: tagAlert.type === 'success' ? '#d1fae5' : '#fee2e2',
+          color: tagAlert.type === 'success' ? '#065f46' : '#b91c1c',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <span>{tagAlert.message}</span>
+          <button 
+            onClick={clearAlert}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '16px',
+              marginLeft: '8px',
+              color: tagAlert.type === 'success' ? '#065f46' : '#b91c1c',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      <CreatableSelect
+        id="tags"
+        isMulti
+        options={selectOptions}
+        value={selectOptions.filter(option => selectedTagValues.includes(option.value))}
+        onChange={handleTagChange}
+        onCreateOption={handleCreateTag}
+        components={{ Option: CustomOption }}
+        styles={{
+          control: (base) => ({
+            ...base,
+            minHeight: '38px',
+            borderColor: '#ced4da',
+            '&:hover': {
+              borderColor: '#80bdff'
+            }
+          }),
+          menu: (base) => ({
+            ...base,
+            zIndex: 9999
+          }),
+          option: (base) => ({
+            ...base,
+            padding: 0
+          }),
+          // Fix z-index issues with dropdowns
+          menuPortal: (base) => ({
+            ...base,
+            zIndex: 9999
+          })
+        }}
+        menuPortalTarget={document.body} // Render menu in a portal to avoid z-index issues
+        placeholder="Select or create tags..."
+        classNamePrefix="react-select"
+      />
+      
+      <input
+        type="hidden"
+        id="hiddenTagsInput"
+        name="tags"
+        value={JSON.stringify(selectedTagValues)}
+      />
+      
+      <small style={{ display: 'block', marginTop: '8px', color: '#6c757d' }}>
+        Select tags to categorize this question. You can create new tags by typing and pressing Enter.
+      </small>
+    </div>
+  );
+};
 
 const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   isOpen,
@@ -30,25 +323,368 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   selectedQuestionIds,
   sectionId,
   onSelectQuestions,
+  onQuestionsRefresh,
 }) => {
+  // State for managing the active tab index
+  const [tabIndex, setTabIndex] = useState(0);
+  
+  // State for new custom field form
+  const [newFieldName, setNewFieldName] = useState('');
+  const [newFieldValue, setNewFieldValue] = useState('');
+  
+  // Initialize Tom Select on dropdowns
+  useEffect(() => {
+    // Initialize Tom Select on all dropdowns with the tom-select class
+    const dropdowns = document.querySelectorAll('select.tom-select');
+    
+    // Destroy existing instances first
+    dropdowns.forEach(dropdown => {
+      const tomSelectInstance = (dropdown as any).tomselect;
+      if (tomSelectInstance) {
+        tomSelectInstance.destroy();
+      }
+    });
+    
+    // Create new instances
+    dropdowns.forEach(dropdown => {
+      new TomSelect(dropdown, {
+        plugins: ['remove_button'],
+        create: false,
+        sortField: { field: 'text', direction: 'asc' },
+        render: {
+          dropdown: function() {
+            return '<div class="ts-dropdown-content" style="z-index: 1500;"></div>';
+          }
+        },
+        dropdownParent: 'body' // This helps with z-index issues
+      });
+    });
+    
+    // Cleanup function to destroy instances when component unmounts
+    return () => {
+      dropdowns.forEach(dropdown => {
+        const tomSelectInstance = (dropdown as any).tomselect;
+        if (tomSelectInstance) {
+          tomSelectInstance.destroy();
+        }
+      });
+    };
+  }, [tabIndex]); // Re-initialize when tab changes
+  
+  // State for form fields to preserve data when switching tabs
+  interface FormDataState {
+    questionText: string;
+    questionDescription: string;
+    branchingEnabled: boolean;
+    questionType: string;
+    questionImage: File | null;
+    questionImagePreview: string;
+    questionTags: string[];
+    isRequired: boolean;
+    answerOptions: { text: string; value: string }[];
+    primaryCategory: string[];
+    categories: string[];
+    surveyThemes: string[];
+    customFields: { name: string; value: string }[];
+    // Settings tab fields
+    feedbackCollection: string;
+    isReusable: boolean;
+    isActive: boolean;
+    collectDemographics: boolean;
+    demographicsMetrics: {
+      ageGroup: boolean;
+      gender: boolean;
+      location: boolean;
+      education: boolean;
+      income: boolean;
+      ethnicity: boolean;
+      employment: boolean;
+      household: boolean;
+      language: boolean;
+      device: boolean;
+      industry: boolean;
+      marital: boolean;
+    };
+    [key: string]: any; // Allow for dynamic keys
+  }
+
+  const [formData, setFormData] = useState<FormDataState>({
+    questionText: '',
+    questionDescription: '',
+    branchingEnabled: false,
+    questionType: 'text', // Default question type
+    questionImage: null,
+    questionImagePreview: '',
+    questionTags: [],
+    isRequired: false,
+    answerOptions: [],
+    primaryCategory: [],
+    categories: [],
+    surveyThemes: [],
+    customFields: [],
+    // Settings tab fields
+    feedbackCollection: 'none',
+    isReusable: false,
+    isActive: true,
+    collectDemographics: true,
+    demographicsMetrics: {
+      ageGroup: false,
+      gender: false,
+      location: false,
+      education: false,
+      income: false,
+      ethnicity: false,
+      employment: false,
+      household: false,
+      language: false,
+      device: false,
+      industry: false,
+      marital: false,
+    },
+  });
+  
+  // Handle form field changes
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Functions to navigate between tabs
+  const goToNextTab = () => {
+    // There are 6 tabs (0-5), so max index is 5
+    if (tabIndex < 5) {
+      setTabIndex(tabIndex + 1);
+    }
+  };
+  
+  const goToPrevTab = () => {
+    if (tabIndex > 0) {
+      setTabIndex(tabIndex - 1);
+    }
+  };
+  // Function to handle image preview
+  const handleImagePreview = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        // Update state with the file and preview
+        setFormData(prev => ({
+          ...prev,
+          questionImage: file,
+          questionImagePreview: e.target.result as string
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Function to add a tag
+  const addTag = (tagText: string) => {
+    const tagDisplay = document.getElementById('tagDisplay');
+    if (!tagDisplay) return;
+
+    // Check if tag already exists
+    const existingTags = Array.from(tagDisplay.children)
+      .map(tag => (tag as HTMLElement).dataset.tagValue)
+      .filter(Boolean);
+
+    if (existingTags.includes(tagText)) return;
+
+    // Create tag element
+    const tagElement = document.createElement('div');
+    tagElement.className = 'tag';
+    tagElement.dataset.tagValue = tagText;
+    tagElement.style.backgroundColor = '#552a47';
+    tagElement.style.color = 'white';
+    tagElement.style.padding = '4px 10px';
+    tagElement.style.borderRadius = '16px';
+    tagElement.style.fontSize = '12px';
+    tagElement.style.display = 'flex';
+    tagElement.style.alignItems = 'center';
+    tagElement.style.gap = '5px';
+
+    // Tag text
+    const tagTextSpan = document.createElement('span');
+    tagTextSpan.textContent = tagText;
+
+    // Remove button
+    const removeButton = document.createElement('span');
+    removeButton.innerHTML = '×';
+    removeButton.style.cursor = 'pointer';
+    removeButton.style.fontSize = '14px';
+    removeButton.style.fontWeight = 'bold';
+    removeButton.onclick = (e) => {
+      e.stopPropagation();
+      tagDisplay.removeChild(tagElement);
+
+      // Update the hidden input value
+      updateTagInputValue();
+    };
+
+    // Add elements to tag
+    tagElement.appendChild(tagTextSpan);
+    tagElement.appendChild(removeButton);
+
+    // Add tag to display
+    tagDisplay.appendChild(tagElement);
+
+    // Update the hidden input value
+    updateTagInputValue();
+  };
+
+  // Function to update tag input value
+  const updateTagInputValue = () => {
+    const tagDisplay = document.getElementById('tagDisplay');
+    const tagInput = document.getElementById('tagInput') as HTMLInputElement;
+    if (!tagDisplay || !tagInput) return;
+
+    const tags = Array.from(tagDisplay.children)
+      .map(tag => (tag as HTMLElement).dataset.tagValue)
+      .filter(Boolean);
+
+    tagInput.value = tags.join(', ');
+  };
+
+  // Function to update the hidden tag input with current tags
+  const updateTagInput = () => {
+    const tagDisplay = document.getElementById('tagDisplay');
+    const tagInput = document.getElementById('tagInput') as HTMLInputElement;
+    
+    if (tagDisplay && tagInput) {
+      const tags = Array.from(tagDisplay.querySelectorAll('.tag')).map(
+        tag => tag.querySelector('span')?.textContent || ''
+      ).filter(Boolean);
+      
+      // Update the hidden input value with comma-separated tags
+      tagInput.dataset.tags = tags.join(',');
+    }
+  };
+
+  // Function to add a custom field to the list
+  const addCustomField = (name: string, value: string) => {
+    // Add the new custom field to the formData state
+    setFormData(prev => {
+      // Make sure demographicsMetrics is properly initialized if it doesn't exist
+      const demographicsMetrics = prev.demographicsMetrics || {
+        ageGroup: false,
+        gender: false,
+        location: false,
+        education: false,
+        income: false,
+        ethnicity: false,
+        employment: false,
+        household: false,
+        language: false,
+        device: false,
+        industry: false,
+        marital: false,
+      };
+      
+      return {
+        ...prev,
+        demographicsMetrics, // Ensure demographicsMetrics is included
+        customFields: [...prev.customFields, { name, value }]
+      };
+    });
+  };
+
+  // Function to remove a custom field
+  const removeCustomField = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      customFields: prev.customFields.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Function to format text in the textarea using React state
+  const formatText = (fieldName: string, format: 'bold' | 'italic' | 'underline') => {
+    // Get the textarea element to access selection
+    const textArea = document.getElementById(fieldName) as HTMLTextAreaElement;
+    if (!textArea) return;
+    
+    const start = textArea.selectionStart;
+    const end = textArea.selectionEnd;
+    const currentValue = formData[fieldName as keyof typeof formData] as string || '';
+    const selectedText = currentValue.substring(start, end) || '';
+
+    let formattedText = '';
+    let cursorPosition = 0;
+
+    // Apply the appropriate formatting
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        cursorPosition = start + 2;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        cursorPosition = start + 1;
+        break;
+      case 'underline':
+        formattedText = `__${selectedText}__`;
+        cursorPosition = start + 2;
+        break;
+    }
+
+    // Create the new value with formatting
+    const newValue = currentValue.substring(0, start) + formattedText + currentValue.substring(end);
+    
+    // Update the state
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: newValue
+    }));
+    
+    // After state update, we need to restore cursor position
+    // This needs to happen after React has updated the DOM
+    setTimeout(() => {
+      if (textArea) {
+        textArea.focus();
+        if (start === end) {
+          // If no text was selected, place cursor between formatting markers
+          textArea.selectionStart = cursorPosition;
+          textArea.selectionEnd = cursorPosition;
+        } else {
+          // If text was selected, select the newly formatted text
+          textArea.selectionStart = start;
+          textArea.selectionEnd = start + formattedText.length;
+        }
+      }
+    }, 0);
+  };
+
+  // Function to apply text formatting (bold, italic, underline)
+  const applyFormatting = (elementId: string, format: 'bold' | 'italic' | 'underline') => {
+    formatText(elementId, format);
+  };
+
+  // Define question types array
+  const questionTypes = ['text', 'textarea', 'radio', 'checkbox', 'select', 'scale', 'date', 'time', 'file', 'matrix', 'likert'];
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedQuestionIds);
   const [filters, setFilters] = useState({ type: 'all', tags: [] as string[] });
+  const [activeTab, setActiveTab] = useState(0);
+  const [newQuestionId, setNewQuestionId] = useState<string | null>(null);
+  const [questionSaved, setQuestionSaved] = useState(false);
   
-  // State for available tags/layers
-  const [availableTags, setAvailableTags] = useState<{_id: string, name: string, active: boolean}[]>([]);
-  
-  // Refs for Tom Select
+  // Refs for tag select
   const tagSelectRef = useRef<HTMLSelectElement>(null);
   const tomSelectTagInstance = useRef<any>(null);
-  
+
+  // State for available tags/layers
+  const [availableTags, setAvailableTags] = useState<{_id: string, name: string, active: boolean}[]>([]);
+
   // Get extended question data with tags and available layers
   const { questionsWithTags, allTags, tagNameMap, questionIdMap, tagToQuestionsMap, loading } = useTracker(() => {
     const questionMap = new Map<string, string[]>();
     const tagNameMap = new Map<string, string>();
     const questionIdMap = new Map<string, string>(); // Map to connect prop IDs to database IDs
     const tagToQuestionsMap = new Map<string, string[]>(); // Map of tag IDs to question IDs
-    
+
     // Subscribe to layers - make sure this is ready before proceeding
     const subscription = Meteor.subscribe('layers.all');
     
@@ -74,9 +710,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
 
     
     // Create a map of tag IDs to names for quick lookup
-    tags.forEach((tag: any) => {
+    tags.forEach((tag: Layer) => {
       if (tag && tag._id) {
-        tagNameMap.set(tag._id, tag.name);
+        tagNameMap.set(tag._id, tag.name || '');
         // Initialize the tag-to-questions map for each tag
         tagToQuestionsMap.set(tag._id, []);
       }
@@ -84,9 +720,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     
     // Debug: Log all tag names and IDs
 
-    tags.forEach((tag: any) => {
+    tags.forEach((tag: Layer) => {
       if (tag && tag.name && tag._id) {
-
+        // Debug code can go here if needed
       }
     });
     
@@ -126,7 +762,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
               
               // If this is the WPS tag or has a name containing 'WPS', add it to the WPS tag's questions
               const tagName = tagNameMap.get(tagId) || '';
-              const wpsTag = tags.find((t: any) => t.name === 'WPS');
+              const wpsTag = tags.find((t: Layer) => t && t.name === 'WPS');
               
               if (wpsTag && wpsTag._id && (tagName.includes('WPS') || tagId === wpsTag._id)) {
 
@@ -151,18 +787,18 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     });
     
     // Log specific questions we're looking for
-    const wpsTag = tags.find((tag: any) => tag.name === 'WPS');
+    const wpsTag = tags.find((tag: Layer) => tag && tag.name === 'WPS');
     if (wpsTag && wpsTag._id) {
 
       const questionsWithWpsTag = tagToQuestionsMap.get(wpsTag._id) || [];
 
       
       // Check specific question ID ixSJScySQEAHEwdDG
-      const specificQuestion = questionDocs.find((q: any) => q._id === 'ixSJScySQEAHEwdDG');
+      const specificQuestion = questionDocs.find((q) => q && q._id === 'ixSJScySQEAHEwdDG');
       if (specificQuestion) {
 
         const currentVersion = specificQuestion.currentVersion;
-        const versionData = specificQuestion.versions.find((v: any) => v.version === currentVersion) || 
+        const versionData = specificQuestion.versions.find((v) => v && v.version === currentVersion) || 
                            (specificQuestion.versions.length > 0 ? specificQuestion.versions[specificQuestion.versions.length - 1] : null);
         
         if (versionData) {
@@ -202,6 +838,19 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     setSelectedIds(selectedQuestionIds);
   }, [selectedQuestionIds, isOpen]);
   
+  // Handle newly created question selection when tab changes
+  useEffect(() => {
+    // If we have a new question ID and we're on the first tab (Select Existing Questions)
+    if (newQuestionId && activeTab === 0) {
+      // Make sure the new question is selected
+      if (!selectedIds.includes(newQuestionId)) {
+        setSelectedIds(prev => [...prev, newQuestionId]);
+      }
+      // Clear the new question ID after handling it
+      setNewQuestionId(null);
+    }
+  }, [activeTab, newQuestionId, selectedIds]);
+  
   // Filter questions based on search query, type, and tags
   const filteredQuestions = questions.filter(question => {
     // Filter by search query
@@ -214,7 +863,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     // Special case for question with ID ixSJScySQEAHEwdDG
     if (question.id === 'ixSJScySQEAHEwdDG' && filters.tags.length > 0) {
       // Check if WPS tag is selected
-      const wpsTag = allTags.find((tag) => tag && tag.name === 'WPS');
+      const wpsTag = allTags.find((tag: Layer) => tag && tag.name === 'WPS');
       if (wpsTag && wpsTag._id && filters.tags.includes(wpsTag._id)) {
 
         return matchesSearch && matchesType;
@@ -401,10 +1050,12 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           return a.name.localeCompare(b.name);
         });
         
-        sortedTags.forEach((tag: any) => {
-          if (tag && tag._id) {
+        sortedTags.forEach((tag: Layer) => {
+          // Handle optional _id property in Layer interface
+          const tagId = tag._id || tag.id || '';
+          if (tag && tagId) {
             ts.addOption({
-              value: tag._id,
+              value: tagId,
               text: tag.name
             });
           }
@@ -430,80 +1081,312 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Handle saving selected questions
   const handleSave = () => {
+    // Always update the parent component with the current selection
     onSelectQuestions(selectedIds, sectionId);
-    onClose();
+    
+    // Only close if we're not in the middle of creating a question
+    if (!questionSaved) {
+      onClose();
+    } else {
+      // If a question was just created, reset the state but keep the modal open
+      setQuestionSaved(false);
+    }
   };
   
-  if (!isOpen) return null;
-  
-  // Get unique question types for filter options
-  const questionTypes = Array.from(new Set(questions.map(q => q.type)));
-  
+  // Handle when a new question is created
+  const handleQuestionCreated = (questionId: string) => {
+    // Add the new question to the selected IDs
+    setNewQuestionId(questionId);
+    setSelectedIds(prev => [...prev, questionId]);
+    setQuestionSaved(true);
+    
+    // Refresh the questions list to include the new question
+    if (onQuestionsRefresh) {
+      onQuestionsRefresh();
+    }
+  };
+
   return (
-    <div className="question-selector-modal" style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    }}>
-      <div className="question-selector-content" style={{
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-        width: '90%',
-        maxWidth: '600px',
-        maxHeight: '85vh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: isOpen ? 'flex' : 'none',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'auto',
+        padding: '20px'
+      }}
+      onClick={(e) => {
+        // Only close if the backdrop itself is clicked, not its children
+        if (e.target === e.currentTarget) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Only close the modal if we're not in the middle of creating a question
+          if (!questionSaved) {
+            onClose();
+          }
+        }
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+          width: '95%',
+          maxWidth: '1000px',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          position: 'relative'
+        }}
+      >
+        <style>{`
+          .react-tabs__tab-panel {
+            padding: 25px 30px;
+          }
+          .form-group {
+            margin-bottom: 24px;
+          }
+          .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            outline: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          }
+          .form-control:focus {
+            border-color: #4a2d4e;
+            box-shadow: 0 0 0 3px rgba(74, 45, 78, 0.1);
+          }
+          .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #334155;
+          }
+          .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+          }
+          .btn-primary {
+            background-color: #4a2d4e;
+            color: white;
+            border: none;
+          }
+          .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+          }
+          
+          .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+          }
+          
+          .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .3s;
+          }
+          
+          .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          
+          input:checked + .slider {
+            background-color: #4a2d4e;
+          }
+          
+          input:focus + .slider {
+            box-shadow: 0 0 1px #4a2d4e;
+          }
+          
+          input:checked + .slider:before {
+            transform: translateX(26px);
+          }
+          
+          .slider.round {
+            border-radius: 34px;
+          }
+          
+          .slider.round:before {
+            border-radius: 50%;
+          }
+          .format-btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+          .format-btn:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+          }
+          .tag-builder {
+            position: relative;
+            z-index: 1000;
+          }
+          .image-dropzone {
+            border: 2px dashed #e2e8f0;
+            border-radius: 10px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+            cursor: pointer;
+            min-height: 180px;
+            transition: all 0.2s ease;
+          }
+          .image-dropzone:hover {
+            border-color: #4a2d4e;
+            background-color: #f1f5f9;
+          }
+          .react-tabs__tab--selected {
+            color: #4a2d4e !important;
+            border-bottom: 3px solid #4a2d4e !important;
+            font-weight: 600 !important;
+          }
+          @keyframes pulse {
+            0% {
+              box-shadow: 0 0 0 0 rgba(85, 42, 71, 0.4);
+            }
+            70% {
+              box-shadow: 0 0 0 10px rgba(85, 42, 71, 0);
+            }
+            100% {
+              box-shadow: 0 0 0 0 rgba(85, 42, 71, 0);
+            }
+          }
+          `
+        }</style>
         {/* Header */}
         <div className="question-selector-header" style={{
-          padding: '16px 24px',
+          padding: '20px 30px',
           borderBottom: '1px solid #eaeaea',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: '#552a47',
-          color: 'white',
-          borderRadius: '8px 8px 8px 8px'
+          backgroundColor: '#f8fafc',
+          borderTopLeftRadius: '12px',
+          borderTopRightRadius: '12px'
         }}>
-          <h3 className="question-selector-title" style={{
-            margin: 0,
-            fontSize: '18px',
-            fontWeight: 600,
-            color: 'white'
-          }}>Select Questions</h3>
-          <button 
-            onClick={onClose}
+          <h2 style={{ 
+            margin: 0, 
+            color: '#4a2d4e', 
+            fontSize: '22px', 
+            fontWeight: 700,
+            letterSpacing: '-0.01em'
+          }}>{activeTab === 0 ? 'Select Questions' : 'Create New Question'}</h2>
+          <button
+            onClick={(e) => {
+              // Only close if we're not in the middle of creating a question
+              if (!questionSaved) {
+                onClose();
+              } else {
+                // If a question was just created, reset the state but keep the modal open
+                setQuestionSaved(false);
+              }
+            }}
             style={{
               background: 'none',
               border: 'none',
-              color: 'white',
-              fontSize: '20px',
+              fontSize: '24px',
               cursor: 'pointer',
+              color: '#64748b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px',
+              padding: '8px',
               borderRadius: '50%',
-              transition: 'background-color 0.2s ease'
+              transition: 'all 0.2s ease'
             }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
             onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <FiX />
           </button>
         </div>
         
-        {/* Filters and Search in one row */}
-        <div className="question-selector-filters-search" style={{
+        {/* Tabs */}
+        <Tabs 
+          selectedIndex={activeTab} 
+          onSelect={index => setActiveTab(index)} 
+          className="question-selector-tabs"
+          selectedTabClassName="active-tab"
+          style={{
+            padding: '0 20px'
+          }}
+        >
+          <TabList style={{
+            display: 'flex',
+            borderBottom: '1px solid #e2e8f0',
+            margin: '0',
+            padding: '0 10px',
+            listStyle: 'none'
+          }}>
+            <Tab style={{
+              padding: '16px 24px',
+              border: 'none',
+              background: 'none',
+              fontSize: '16px',
+              fontWeight: 500,
+              color: activeTab === 0 ? '#4a2d4e' : '#64748b',
+              cursor: 'pointer',
+              borderBottom: activeTab === 0 ? '3px solid #4a2d4e' : '3px solid transparent',
+              transition: 'all 0.2s ease',
+              marginRight: '10px'
+            }}>Select Existing Questions</Tab>
+            <Tab style={{
+              padding: '16px 24px',
+              border: 'none',
+              background: 'none',
+              fontSize: '16px',
+              fontWeight: 500,
+              color: activeTab === 1 ? '#4a2d4e' : '#64748b',
+              cursor: 'pointer',
+              borderBottom: activeTab === 1 ? '3px solid #4a2d4e' : '3px solid transparent',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center'
+            }}><FiPlus size={16} style={{ marginRight: '8px' }} /> Create New Question</Tab>
+          </TabList>
+          
+          {/* Tab Panel 1: Select Existing Questions */}
+          <TabPanel>
+            {/* Filters and Search in one row */}
+            <div className="question-selector-filters-search" style={{
           padding: '12px 24px',
           borderBottom: '1px solid #eaeaea',
           display: 'flex',
@@ -742,14 +1625,33 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     }} />
                   )}
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  {question.id === newQuestionId && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-5px',
+                      right: '-5px',
+                      bottom: '-5px',
+                      left: '-5px',
+                      border: '2px solid #552a47',
+                      borderRadius: '8px',
+                      animation: 'pulse 2s infinite',
+                      pointerEvents: 'none',
+                      zIndex: 1
+                    }} />
+                  )}
                   <div style={{
                     fontSize: '15px',
-                    fontWeight: 500,
-                    color: '#333',
+                    fontWeight: question.id === newQuestionId ? 700 : 500,
+                    color: question.id === newQuestionId ? '#552a47' : '#333',
                     marginBottom: '4px',
-                    lineHeight: 1.4
+                    lineHeight: 1.4,
+                    position: 'relative',
+                    zIndex: 2
                   }}>
+                    {question.id === newQuestionId && (
+                      <span style={{ color: '#552a47', marginRight: '5px' }}>★ </span>
+                    )}
                     <RichTextRenderer content={question.text} />
                   </div>
                   <div style={{
@@ -768,7 +1670,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     }}>{question.type}</span>
                     
                     {/* Display tags if available */}
-                    {questionsWithTags.get(question.id || '')?.map(tag => (
+                    {questionsWithTags.get(question.id || '')?.map((tag: string) => (
                       <span key={tag} style={{
                         backgroundColor: filters.tags.includes(tag) ? '#552a4720' : '#f8f8f8',
                         padding: '2px 8px',
@@ -815,7 +1717,15 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           boxSizing: 'border-box'
         }}>
           <button 
-            onClick={onClose}
+            onClick={(e) => {
+              // Only close if we're not in the middle of creating a question
+              if (!questionSaved) {
+                onClose();
+              } else {
+                // If a question was just created, reset the state but keep the modal open
+                setQuestionSaved(false);
+              }
+            }}
             style={{
               padding: '10px 16px',
               borderRadius: '8px',
@@ -866,6 +1776,2218 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
             Add Selected ({selectedIds.length})
           </button>
         </div>
+          </TabPanel>
+          
+          {/* Tab Panel 2: Create New Question */}
+          <TabPanel>
+            <div className="question-builder-container">
+              {/* Enhanced Question Builder Form */}
+              <div className="embedded-question-builder" style={{ padding: '20px' }}>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  // Use React state values instead of DOM elements
+                  const questionText = formData.questionText;
+                  const questionDescription = formData.questionDescription;
+                  const questionType = formData.questionType;
+                  const isRequired = formData.isRequired;
+                  
+                  // Get options from state
+                  let options: string[] = [];
+                  if (['radio', 'checkbox', 'dropdown', 'likert'].includes(questionType)) {
+                    options = formData.answerOptions.map(option => option.text).filter(Boolean);
+                  }
+                  
+                  // Get tags from state
+                  const tags = formData.questionTags;
+                  
+                  // Get image from state
+                  const imageFile = formData.questionImage;
+                  let imageUrl = '';
+                  
+                  // Create question version object
+                  const questionVersion = {
+                    questionText,
+                    description: questionDescription,
+                    responseType: questionType,
+                    options,
+                    required: isRequired,
+                    categoryTags: tags,
+                    surveyThemes: [],
+                    adminNotes: '',
+                    language: 'en',
+                    published: false,
+                    updatedBy: Meteor.userId() || '',
+                    imageUrl: imageUrl // Will be updated if image is uploaded
+                  };
+                  
+                  // Show saving indicator
+                  const saveButton = document.getElementById('saveQuestionButton');
+                  if (saveButton) {
+                    saveButton.textContent = 'Saving...';
+                    saveButton.setAttribute('disabled', 'true');
+                  }
+                  
+                  // Function to save the question
+                  const saveQuestion = () => {
+                    Meteor.call('questions.insert', questionVersion, (error: Error | null, result: string) => {
+                    // Hide saving indicator
+                    if (saveButton) {
+                      saveButton.textContent = 'Save Question';
+                      saveButton.removeAttribute('disabled');
+                    }
+                    
+                    if (error) {
+                      alert(`Error creating question: ${error.message}`);
+                    } else {
+                      // Call the handleQuestionCreated function with the new question ID
+                      handleQuestionCreated(result);
+                      
+                      // Reset the form state
+                      setFormData({
+                        questionText: '',
+                        questionDescription: '',
+                        questionType: 'text',
+                        questionImage: null,
+                        questionImagePreview: '',
+                        questionTags: [],
+                        isRequired: false,
+                        branchingEnabled: false,
+                        answerOptions: [],
+                        customFields: []
+                      });
+                    }
+                  });
+                  };
+                  
+                  // If there's an image file, upload it first, then save the question
+                  if (imageFile) {
+                    // Create a FileReader to read the image file
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      // Use the base64 string as the image URL (for demo purposes)
+                      // In a real app, you would upload this to a server or storage service
+                      if (e.target?.result) {
+                        questionVersion.imageUrl = e.target.result as string;
+                      }
+                      saveQuestion();
+                    };
+                    reader.readAsDataURL(imageFile);
+                    // No image, just save the question
+                    saveQuestion();
+                  }
+                }}>
+                  {/* Question Builder Tabs */ }
+                  <Tabs 
+                    className="question-builder-tabs" 
+                    style={{ marginBottom: '20px' }}
+                    selectedIndex={tabIndex}
+                    onSelect={(index) => setTabIndex(index)}
+                  >
+                    <TabList style={{ 
+                      display: 'flex', 
+                      borderBottom: '1px solid #e2e8f0', 
+                      marginBottom: '20px',
+                      gap: '8px',
+                      paddingBottom: '2px'
+                    }}>
+                      <Tab style={{ 
+                        padding: '12px 20px', 
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '3px solid transparent',
+                        fontWeight: 500,
+                        fontSize: '15px',
+                        color: '#64748b',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}>Basic Information</Tab>
+                      <Tab style={{ 
+                        padding: '12px 20px', 
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '3px solid transparent',
+                        fontWeight: 500,
+                        fontSize: '15px',
+                        color: '#64748b',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}>Answer Options</Tab>
+                      <Tab style={{ 
+                        padding: '12px 20px', 
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '3px solid transparent',
+                        fontWeight: 500,
+                        fontSize: '15px',
+                        color: '#64748b',
+                        outline: 'none',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <FiTag size={16} />
+                        Classification
+                      </Tab>
+                      <Tab style={{ 
+                        padding: '12px 20px', 
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '3px solid transparent',
+                        fontWeight: 500,
+                        fontSize: '15px',
+                        color: '#64748b',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}>Custom Fields</Tab>
+                      <Tab style={{ 
+                        padding: '12px 20px', 
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '3px solid transparent',
+                        fontWeight: 500,
+                        fontSize: '15px',
+                        color: '#64748b',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}>Branching Logic</Tab>
+                      <Tab style={{ 
+                        padding: '12px 20px', 
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderBottom: '3px solid transparent',
+                        fontWeight: 500,
+                        fontSize: '15px',
+                        color: '#64748b',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}>Settings</Tab>
+
+                    </TabList>
+                    
+                    {/* Tab Panel 1: Basic Information */}
+                    <TabPanel>
+                      {/* Question Text */}
+                      <div className="form-group">
+                        <label htmlFor="questionText" className="form-label">Question Text <span style={{ color: '#e11d48' }}>*</span></label>
+                        <div style={{ marginBottom: '10px', display: 'flex', gap: '8px' }}>
+                          <button 
+                            type="button" 
+                            className="format-btn"
+                            onClick={() => applyFormatting('questionText', 'bold')}
+                            title="Bold"
+                          >
+                            <span style={{ fontSize: '15px', fontWeight: 'bold' }}>B</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            className="format-btn"
+                            onClick={() => applyFormatting('questionText', 'italic')}
+                            title="Italic"
+                          >
+                            <span style={{ fontSize: '15px', fontStyle: 'italic' }}>I</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            className="format-btn"
+                            onClick={() => applyFormatting('questionText', 'underline')}
+                            title="Underline"
+                          >
+                            <span style={{ fontSize: '15px', textDecoration: 'underline' }}>U</span>
+                          </button>
+                        </div>
+                        <textarea
+                          id="questionText"
+                          name="questionText"
+                          className="form-control"
+                          placeholder="Enter your question here"
+                          required
+                          value={formData.questionText}
+                          onChange={handleFormChange}
+                          style={{
+                            minHeight: '120px',
+                            resize: 'vertical',
+                            fontFamily: 'inherit',
+                            lineHeight: '1.5'
+                          }}
+                          />
+                        </div>
+                        
+                        {/* Description */}
+                        <div className="form-group">
+                          <label htmlFor="questionDescription" className="form-label">Description</label>
+                          <div style={{ marginBottom: '10px', display: 'flex', gap: '8px' }}>
+                            <button 
+                              type="button" 
+                              className="format-btn"
+                              onClick={() => applyFormatting('questionDescription', 'bold')}
+                              title="Bold"
+                            >
+                              <span style={{ fontSize: '15px', fontWeight: 'bold' }}>B</span>
+                            </button>
+                            <button 
+                              type="button" 
+                              className="format-btn"
+                              onClick={() => applyFormatting('questionDescription', 'italic')}
+                              title="Italic"
+                            >
+                              <span style={{ fontSize: '15px', fontStyle: 'italic' }}>I</span>
+                            </button>
+                            <button 
+                              type="button" 
+                              className="format-btn"
+                              onClick={() => applyFormatting('questionDescription', 'underline')}
+                              title="Underline"
+                            >
+                              <span style={{ fontSize: '15px', textDecoration: 'underline' }}>U</span>
+                            </button>
+                          </div>
+                          <textarea
+                            id="questionDescription"
+                            name="questionDescription"
+                            className="form-control"
+                            placeholder="Enter a description or additional information about this question"
+                            value={formData.questionDescription}
+                            onChange={handleFormChange}
+                            style={{
+                              minHeight: '100px',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          ></textarea>
+                        </div>
+                        
+                        {/* Question Image */}
+                        <div className="form-group">
+                          <label htmlFor="questionImageLabel" className="form-label">Question Image</label>
+                          <div 
+                            id="imageDropzone"
+                            className="image-dropzone"
+                            onClick={() => {
+                              // Trigger the file input when the dropzone is clicked
+                              const fileInput = document.getElementById('questionImage');
+                              if (fileInput) fileInput.click();
+                            }}
+                            onDragOver={(e: React.DragEvent) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const dropzone = document.getElementById('imageDropzone');
+                              if (dropzone) dropzone.classList.add('drag-over');
+                            }}
+                            onDragLeave={(e: React.DragEvent) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const dropzone = document.getElementById('imageDropzone');
+                              if (dropzone) dropzone.classList.remove('drag-over');
+                            }}
+                            onDrop={(e: React.DragEvent) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              const dropzone = document.getElementById('imageDropzone');
+                              if (dropzone) dropzone.classList.remove('drag-over');
+                              
+                              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                const file = e.dataTransfer.files[0];
+                                if (file.type.startsWith('image/')) {
+                                  const fileInput = document.getElementById('questionImage') as HTMLInputElement;
+                                  if (fileInput) {
+                                    // Create a new FileList containing the dropped file
+                                    const dataTransfer = new DataTransfer();
+                                    dataTransfer.items.add(file);
+                                    fileInput.files = dataTransfer.files;
+                                    
+                                    // Update state with the file and preview URL
+                                    const reader = new FileReader();
+                                    reader.onload = (e) => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        questionImage: file,
+                                        questionImagePreview: e.target?.result as string
+                                      }));
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }
+                              }
+                            }}
+                          >
+                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                              {formData.questionImagePreview ? (
+                                <img 
+                                  src={formData.questionImagePreview} 
+                                  alt="Question image preview" 
+                                  style={{ 
+                                    maxWidth: '100%', 
+                                    maxHeight: '200px',
+                                    borderRadius: '4px'
+                                  }} 
+                                />
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                  <FiUpload style={{ fontSize: '28px', color: '#64748b', marginBottom: '12px' }} />
+                                  <div style={{ fontSize: '16px', color: '#475569', fontWeight: 500 }}>Click to upload an image</div>
+                                  <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '8px' }}>or drag and drop</div>
+                                  <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>Supports: JPG, PNG, GIF</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <input 
+                            type="file" 
+                            id="questionImage" 
+                            accept="image/*" 
+                            style={{ display: 'none' }} 
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const files = e.target.files;
+                              if (files && files.length > 0) {
+                                const file = files[0];
+                                // Update state with the file and preview URL
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    questionImage: file,
+                                    questionImagePreview: e.target?.result as string
+                                  }));
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </div>
+                      {/* </div> */}
+                    {/* </div> */}
+                    
+                    {/* Tag Builder */}
+                    <div className="form-group">
+                      <label className="form-label">Tag builder</label>
+                      <div className="tag-builder" style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '12px',
+                        padding: '16px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        backgroundColor: '#f8fafc'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FiTag size={18} color="#64748b" />
+                          <span style={{ fontSize: '15px', fontWeight: 500, color: '#334155' }}>Add tags to categorize this question</span>
+                        </div>
+                        {/* Use the TagBuilder component for tag selection */}
+                        <div>
+                          <TagBuilder 
+                            selectedTags={formData.questionTags} 
+                            onTagsChange={(tags) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                questionTags: tags
+                              }));
+                              
+                              // Update hidden input for form submission
+                              const hiddenInput = document.getElementById('hiddenTagsInput') as HTMLInputElement;
+                              if (hiddenInput) {
+                                hiddenInput.value = JSON.stringify(tags);
+                              }
+                            }}
+                          />
+                          <input 
+                            type="hidden" 
+                            id="hiddenTagsInput" 
+                            name="questionTags" 
+                            value={JSON.stringify(formData.questionTags)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Question Type */}
+                    <div className="form-group">
+                      <label htmlFor="questionType" style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontWeight: 600,
+                        fontSize: '14px',
+                        color: '#475569'
+                      }}>Question Type <span style={{ color: 'red' }}>*</span></label>
+                      <select
+                        id="questionType"
+                        name="questionType"
+                        required
+                        value={formData.questionType}
+                        onChange={(e) => {
+                          // Update the question type in state
+                          setFormData(prev => ({
+                            ...prev,
+                            questionType: e.target.value
+                          }));
+                          
+                          // If it's a Likert scale, add default options
+                          if (e.target.value === 'likert') {
+                            const defaultOptions = [
+                              'Strongly Disagree',
+                              'Disagree',
+                              'Neither Agree nor Disagree',
+                              'Agree',
+                              'Strongly Agree'
+                            ];
+                            
+                            // Create answer options in state
+                            const newOptions = defaultOptions.map((text, index) => ({
+                              text,
+                              value: `option_${index + 1}`
+                            }));
+                            
+                            setFormData(prev => ({
+                              ...prev,
+                              answerOptions: newOptions
+                            }));
+                          }
+                        }}
+                        className="form-control"
+                        style={{
+                          backgroundColor: 'white',
+                          appearance: 'none',
+                          backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23131313%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 16px top 50%',
+                          backgroundSize: '12px auto',
+                          paddingRight: '40px'
+                        }}
+                      >
+                        <option value="text">Text Input</option>
+                        <option value="textarea">Long Text</option>
+                        <option value="radio">Single Choice (Radio)</option>
+                        <option value="checkbox">Multiple Choice (Checkbox)</option>
+                        <option value="select">Dropdown</option>
+                        <option value="scale">Scale (1-10)</option>
+                        <option value="date">Date</option>
+                        <option value="time">Time</option>
+                        <option value="file">File Upload</option>
+                        <option value="matrix">Matrix</option>
+                      </select>
+                    </div>
+                    
+                    {/* Required Toggle */}
+                    <div className="form-group">
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        padding: '16px',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <div>
+                          <label htmlFor="isRequired" className="form-label" style={{ margin: 0 }}>Required Question</label>
+                          <div style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>Toggle on if this question must be answered</div>
+                        </div>
+                        <div className="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            id="isRequired" 
+                            checked={formData.isRequired}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                isRequired: e.target.checked
+                              }));
+                            }}
+                          />
+                          <span 
+                            className="slider round"
+                            style={{
+                              backgroundColor: formData.isRequired ? '#4a2d4e' : '#ccc'
+                            }}
+                          ></span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Tab Navigation Buttons */}
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      marginTop: '20px' 
+                    }}>
+                      <button 
+                        type="button"
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#f1f5f9',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          opacity: tabIndex === 0 ? '0.5' : '1',
+                          pointerEvents: tabIndex === 0 ? 'none' : 'auto'
+                        }}
+                        onClick={goToPrevTab}
+                        disabled={tabIndex === 0}
+                      >
+                        ← Previous
+                      </button>
+                      <button 
+                        type="button"
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#4a2d4e',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          fontWeight: 500
+                        }}
+                        onClick={goToNextTab}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                    
+                    </TabPanel>
+                    
+                    {/* Tab Panel 2: Answer Options */}
+                    <TabPanel>
+                      {/* Options Section (for multiple choice, checkbox, dropdown, likert) */}
+                      <div className="form-group" style={{ marginTop: '20px' }}>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '12px',
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          color: '#475569'
+                        }}>Answer Options <span style={{ color: 'red' }}>*</span></label>
+                        
+                        {/* Display different option inputs based on question type */}
+                        {['multiple_choice', 'checkbox', 'dropdown', 'likert', 'rating'].includes(formData.questionType) ? (
+                          <div style={{ marginBottom: '15px' }}>
+                            {/* Map through answer options from state */}
+                            {formData.answerOptions.map((option, index) => (
+                              <div key={index} className="option-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                                <input 
+                                  type="text" 
+                                  value={option.text}
+                                  placeholder="Enter option"
+                                  onChange={(e) => {
+                                    // Update this specific option
+                                    const updatedOptions = [...formData.answerOptions];
+                                    updatedOptions[index].text = e.target.value;
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      answerOptions: updatedOptions
+                                    }));
+                                  }}
+                                  style={{
+                                    flex: '1',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #ddd'
+                                  }}
+                                />
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    // Remove this option
+                                    const updatedOptions = formData.answerOptions.filter((_, i) => i !== index);
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      answerOptions: updatedOptions
+                                    }));
+                                  }}
+                                  style={{
+                                    marginLeft: '10px',
+                                    padding: '6px 12px',
+                                    backgroundColor: '#f3f4f6',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                            
+                            {/* If no options exist yet, show at least two empty ones */}
+                            {formData.answerOptions.length === 0 && (
+                              <>
+                                <div className="option-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Enter option"
+                                    onChange={(e) => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        answerOptions: [{ text: e.target.value, value: 'option_1' }]
+                                      }));
+                                    }}
+                                    style={{
+                                      flex: '1',
+                                      padding: '8px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #ddd'
+                                    }}
+                                  />
+                                </div>
+                                <div className="option-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Enter option"
+                                    onChange={(e) => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        answerOptions: [...(prev.answerOptions || []), { text: e.target.value, value: 'option_2' }]
+                                      }));
+                                    }}
+                                    style={{
+                                      flex: '1',
+                                      padding: '8px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #ddd'
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            )}
+                            
+                            {/* Add option button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newOption = {
+                                  text: '',
+                                  value: `option_${formData.answerOptions.length + 1}`
+                                };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  answerOptions: [...prev.answerOptions, newOption]
+                                }));
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '8px 12px',
+                                backgroundColor: '#f8fafc',
+                                border: '1px dashed #cbd5e1',
+                                borderRadius: '4px',
+                                color: '#64748b',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                width: '100%',
+                                justifyContent: 'center',
+                                marginTop: '10px'
+                              }}
+                            >
+                              <span style={{ fontSize: '18px' }}>+</span> Add Option
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ 
+                            backgroundColor: '#f8f9fa', 
+                            padding: '15px', 
+                            borderRadius: '8px', 
+                            textAlign: 'center',
+                            color: '#64748b',
+                            border: '1px solid #e2e8f0'
+                          }}>
+                            <p style={{ fontSize: '14px', margin: 0 }}>
+                              {formData.questionType === 'text' && 'Text input field will be shown to respondents.'}
+                              {formData.questionType === 'textarea' && 'Multi-line text area will be shown to respondents.'}
+                              {formData.questionType === 'number' && 'Numeric input field will be shown to respondents.'}
+                              {formData.questionType === 'date' && 'Date picker will be shown to respondents.'}
+                              {formData.questionType === 'time' && 'Time picker will be shown to respondents.'}
+                              {formData.questionType === 'email' && 'Email input field will be shown to respondents.'}
+                              {formData.questionType === 'file' && 'File upload field will be shown to respondents.'}
+                            </p>
+                          </div>
+                         )}
+                          
+                        
+                      </div>
+                      
+                      {/* Tab Navigation Buttons */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginTop: '20px' 
+                      }}>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}
+                          onClick={goToPrevTab}
+                        >
+                          ← Previous
+                        </button>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#4a2d4e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            fontWeight: 500
+                          }}
+                          onClick={goToNextTab}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </TabPanel>
+                    
+                    {/* Tab Panel 3: Classification */}
+                    <TabPanel>
+                      {/* Question Category */}
+                      <div className="form-group">
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '8px',
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          color: '#475569'
+                        }}>Question Category <span style={{ color: 'red' }}>*</span></label>
+                        <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#e2e8f0' }}></span>
+                            Select a primary category for this question
+                          </span>
+                        </div>
+                        <select
+                          id="questionCategory"
+                          multiple
+                          value={formData.primaryCategory || []}
+                          onChange={(e) => {
+                            const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                            setFormData(prev => ({
+                              ...prev,
+                              primaryCategory: selectedOptions
+                            }));
+                          }}
+                          className="tom-select"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            fontSize: '15px',
+                            marginBottom: '20px'
+                          }}
+                        >
+                          <option value="demographic">Demographic</option>
+                          <option value="clinical">Clinical</option>
+                          <option value="lifestyle">Lifestyle</option>
+                          <option value="medical_history">Medical History</option>
+                          <option value="satisfaction">Satisfaction</option>
+                        </select>
+                        
+                        {/* WPS Categories */}
+                        <div className="form-group" style={{ marginBottom: '20px' }}>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#475569'
+                          }}>WPS Categories</label>
+                          <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
+                            Align workplace safety framework categories to organize questions
+                          </div>
+                          <select
+                            id="wpsCategories"
+                            multiple
+                            value={formData.categories}
+                            onChange={(e) => {
+                              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                              setFormData(prev => ({
+                                ...prev,
+                                categories: selectedOptions
+                              }));
+                            }}
+                            className="tom-select"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1px solid #ddd',
+                              fontSize: '15px',
+                              marginBottom: '20px'
+                            }}
+                          >
+                            <option value="safety_culture">Safety Culture</option>
+                            <option value="risk_assessment">Risk Assessment</option>
+                            <option value="incident_reporting">Incident Reporting</option>
+                            <option value="training">Training & Education</option>
+                            <option value="leadership">Leadership Commitment</option>
+                          </select>
+                        </div>
+                        
+                        {/* Survey Themes */}
+                        <div className="form-group" style={{ marginBottom: '20px' }}>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#475569'
+                          }}>Survey Themes</label>
+                          <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#e2e8f0' }}></span>
+                              Group related questions by assigning survey themes
+                            </span>
+                          </div>
+                          <select
+                            id="surveyThemes"
+                            multiple
+                            value={formData.surveyThemes}
+                            onChange={(e) => {
+                              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                              setFormData(prev => ({
+                                ...prev,
+                                surveyThemes: selectedOptions
+                              }));
+                            }}
+                            className="tom-select"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1px solid #ddd',
+                              fontSize: '15px',
+                              marginBottom: '20px'
+                            }}
+                          >
+                            <option value="health">Health</option>
+                            <option value="education">Education</option>
+                            <option value="finance">Finance</option>
+                            <option value="technology">Technology</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="demographics">Demographics</option>
+                          </select>
+                        </div>
+                        
+                        {/* Question Tags */}
+                        <div className="form-group" style={{ marginBottom: '20px' }}>
+                          <label htmlFor="surveyTags" style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#475569'
+                          }}>Question Tags</label>
+                          <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
+                            Add specific tags to help with question organization and filtering
+                          </div>
+                          <div style={{ position: 'relative', zIndex: 1000 }}>
+                            {/* Tag Builder with React hooks at component level */}
+                            <TagBuilder 
+                              selectedTags={formData.questionTags} 
+                              onTagsChange={(tags) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  questionTags: tags
+                                }));
+                              }}
+                            />
+                            {/* Hidden input is now managed by the TagBuilder component */}
+                          </div>
+                        </div>
+                        
+                        {/* Keywords */}
+                        <div className="form-group">
+                          <label htmlFor="keywordsInput" style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#475569'
+                          }}>Keywords</label>
+                          <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#e2e8f0' }}></span>
+                              Add keywords to make this question easier to find in searches
+                            </span>
+                          </div>
+                          <input
+                            type="text"
+                            id="keywordsInput"
+                            placeholder="Type keywords and press enter..."
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1px solid #ddd',
+                              fontSize: '15px'
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {/* Tab Navigation Buttons */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginTop: '20px' 
+                      }}>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            opacity: tabIndex === 0 ? '0.5' : '1',
+                            pointerEvents: tabIndex === 0 ? 'none' : 'auto'
+                          }}
+                          onClick={goToPrevTab}
+                          disabled={tabIndex === 0}
+                        >
+                          ← Previous
+                        </button>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#4a2d4e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            fontWeight: 500
+                          }}
+                          onClick={goToNextTab}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </TabPanel>
+                    
+                    {/* Tab Panel 4: Custom Fields */}
+                    <TabPanel>
+                      <div className="form-group">
+                        <h3 style={{
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          color: '#4a2d4e',
+                          marginBottom: '10px'
+                        }}>Question Custom Fields</h3>
+                        
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#64748b',
+                          marginBottom: '20px'
+                        }}>Add custom fields to store additional information about this question.</p>
+                        
+                        <div style={{
+                          backgroundColor: '#f8f9fa',
+                          padding: '15px',
+                          borderRadius: '8px',
+                          marginBottom: '20px',
+                          minHeight: '100px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          {formData.customFields.length === 0 ? (
+                            <div style={{
+                              color: '#94a3b8',
+                              fontStyle: 'italic',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              height: '100px'
+                            }}>
+                              No custom fields added yet.
+                            </div>
+                          ) : (
+                            <div style={{ width: '100%' }}>
+                              {formData.customFields.map((field, index) => (
+                                <div key={index} style={{
+                                  padding: '10px',
+                                  marginBottom: '10px',
+                                  backgroundColor: 'white',
+                                  borderRadius: '6px',
+                                  border: '1px solid #e2e8f0',
+                                  position: 'relative'
+                                }}>
+                                  <div style={{
+                                    fontWeight: '600',
+                                    fontSize: '14px',
+                                    marginBottom: '5px'
+                                  }}>
+                                    {field.name}
+                                  </div>
+                                  <div style={{
+                                    fontSize: '14px',
+                                    color: '#64748b'
+                                  }}>
+                                    {field.value}
+                                  </div>
+                                  <button
+                                    onClick={() => removeCustomField(index)}
+                                    style={{
+                                      position: 'absolute',
+                                      right: '10px',
+                                      top: '10px',
+                                      background: 'none',
+                                      border: 'none',
+                                      fontSize: '16px',
+                                      color: '#ef4444',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Custom Field Form */}
+                        <div style={{ marginBottom: '20px' }}>
+                          {/* New Custom Field Form */}
+                          <div style={{ 
+                            backgroundColor: '#f8fafc', 
+                            padding: '15px', 
+                            borderRadius: '8px', 
+                            marginBottom: '20px',
+                            border: '1px solid #e2e8f0'
+                          }}>
+                            <div style={{ position: 'relative', marginBottom: '15px' }}>
+                              <input
+                                type="text"
+                                placeholder="Field Name"
+                                value={newFieldName || ''}
+                                onChange={(e) => setNewFieldName(e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '12px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #ddd',
+                                  fontSize: '15px',
+                                  marginBottom: '10px'
+                                }}
+                              />
+                            </div>
+                            
+                            <textarea
+                              placeholder="Field Value"
+                              value={newFieldValue || ''}
+                              onChange={(e) => setNewFieldValue(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                fontSize: '15px',
+                                minHeight: '100px',
+                                resize: 'vertical',
+                                marginBottom: '10px'
+                              }}
+                            ></textarea>
+                            
+                            <button
+                              style={{
+                                backgroundColor: '#4a2d4e',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '8px 16px',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                fontWeight: 600
+                              }}
+                              onClick={() => {
+                                if (newFieldName && newFieldValue) {
+                                  // Add the custom field to the list
+                                  addCustomField(newFieldName, newFieldValue);
+                                  
+                                  // Clear the form
+                                  setNewFieldName('');
+                                  setNewFieldValue('');
+                                }
+                              }}
+                            >Add Field</button>
+                          </div>
+                        </div>
+                      </div>
+                          {/* Tab Navigation Buttons */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginTop: '20px' 
+                      }}>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            opacity: tabIndex === 0 ? '0.5' : '1',
+                            pointerEvents: tabIndex === 0 ? 'none' : 'auto'
+                          }}
+                          onClick={goToPrevTab}
+                          disabled={tabIndex === 0}
+                        >
+                          ← Previous
+                        </button>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#4a2d4e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            fontWeight: 500
+                          }}
+                          onClick={goToNextTab}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </TabPanel>
+                    
+                    {/* Tab Panel 5: Branching Logic */}
+                    <TabPanel>
+                      <div className="form-group">
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                          <input 
+                            type="checkbox" 
+                            id="branchingToggle"
+                            checked={formData.branchingEnabled}
+                            style={{
+                              width: '20px',
+                              height: '20px',
+                              marginRight: '10px',
+                              cursor: 'pointer'
+                            }}
+                            onChange={(e) => {
+                              // Update state with the new checkbox value
+                              setFormData(prev => ({
+                                ...prev,
+                                branchingEnabled: e.target.checked
+                              }));
+                            }}
+                          />
+                          <span style={{ fontWeight: 600, fontSize: '15px', color: '#4a2d4e' }}>Enable Branching Logic</span>
+                        </div>
+                        
+                        <div style={{ 
+                          backgroundColor: '#e6f2ff', 
+                          padding: '15px', 
+                          borderRadius: '8px', 
+                          marginBottom: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                         }}>
+                          <span style={{ 
+                            color: '#0066cc', 
+                            fontSize: '16px', 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: '#cce5ff',
+                            fontWeight: 'bold'
+                          }}>i</span>
+                          <p style={{ margin: 0, color: '#0066cc', fontSize: '14px' }}>Branching logic allows you to direct respondents to different questions based on their answers.</p>
+                        </div>
+                        
+                        {formData.branchingEnabled ? (
+                          <div style={{ 
+                            marginBottom: '20px'
+                          }}>
+                            {/* Branching options will be shown here when enabled */}
+                            <div style={{ padding: '15px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                              <h4 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#4a2d4e' }}>Branching Rules</h4>
+                              <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 15px 0' }}>Define conditions that determine which question to show next.</p>
+                              {/* Placeholder for branching rule builder interface */}
+                              <div style={{ padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '6px', textAlign: 'center' }}>
+                                <p style={{ margin: '0', color: '#64748b' }}>Branching rule builder will be implemented here</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ 
+                            backgroundColor: '#f8f9fa', 
+                            padding: '30px', 
+                            borderRadius: '8px', 
+                            textAlign: 'center',
+                            color: '#64748b',
+                            border: '1px solid #e2e8f0'
+                            }}>
+                            <p style={{ fontSize: '15px', margin: '0 0 5px 0' }}>Branching logic is currently disabled. Enable it to create conditional paths</p>
+                            <p style={{ fontSize: '15px', margin: 0 }}>based on answers to this question.</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Tab Navigation Buttons */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginTop: '20px' 
+                      }}>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            opacity: tabIndex === 0 ? '0.5' : '1',
+                            pointerEvents: tabIndex === 0 ? 'none' : 'auto'
+                          }}
+                          onClick={goToPrevTab}
+                          disabled={tabIndex === 0}
+                        >
+                          ← Previous
+                        </button>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#4a2d4e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            fontWeight: 500
+                          }}
+                          onClick={goToNextTab}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    </TabPanel>
+                    
+                    {/* Tab Panel 6: Settings */}
+                    <TabPanel>
+                      <div className="form-group">
+                        {/* Feedback Collection */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#475569'
+                          }}>Feedback Collection</label>
+                          <select
+                            id="feedbackCollection"
+                            value={formData.feedbackCollection}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              feedbackCollection: e.target.value
+                            }))}
+                            className="tom-select"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1px solid #ddd',
+                              fontSize: '15px',
+                              marginBottom: '20px'
+                            }}
+                          >
+                            <option value="none">No Feedback</option>
+                            <option value="optional">Optional Feedback</option>
+                            <option value="required">Required Feedback</option>
+                            <option value="rating">Rating Feedback</option>
+                            <option value="ratingWithComment">Rating with Comment</option>
+                          </select>
+                        </div>
+                        
+                        {/* Toggle Switches */}
+                        <div style={{ marginBottom: '15px' }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            marginBottom: '15px',
+                            padding: '10px 0'
+                          }}>
+                            <label className="switch" style={{ 
+                              position: 'relative', 
+                              display: 'inline-block', 
+                              width: '36px', 
+                              height: '20px', 
+                              marginRight: '15px' 
+                            }}>
+                              <input 
+                                type="checkbox" 
+                                id="reusableToggle"
+                                checked={formData.isReusable}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  isReusable: e.target.checked
+                                }))}
+                                style={{ 
+                                  opacity: 0, 
+                                  width: 0, 
+                                  height: 0 
+                                }}
+                              />
+                              <span className="slider" style={{
+                                position: 'absolute',
+                                cursor: 'pointer',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: formData.isReusable ? '#4a2d4e' : '#ccc',
+                                borderRadius: '34px',
+                                transition: '.4s'
+                              }}></span>
+                            </label>
+                            <span style={{ fontSize: '14px' }}>Reusable Question (can be used in multiple surveys)</span>
+                          </div>
+                          
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            marginBottom: '15px',
+                            padding: '10px 0',
+                            borderTop: '1px solid #eee',
+                            borderBottom: '1px solid #eee'
+                          }}>
+                            <label className="switch" style={{ 
+                              position: 'relative', 
+                              display: 'inline-block', 
+                              width: '36px', 
+                              height: '20px', 
+                              marginRight: '15px' 
+                            }}>
+                              <input 
+                                type="checkbox" 
+                                id="activeToggle"
+                                checked={formData.isActive}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  isActive: e.target.checked
+                                }))}
+                                style={{ 
+                                  opacity: 0, 
+                                  width: 0, 
+                                  height: 0 
+                                }}
+                              />
+                              <span 
+                                className="slider round" 
+                                style={{
+                                  position: 'absolute',
+                                  cursor: 'pointer',
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  backgroundColor: formData.isActive ? '#4a2d4e' : '#ccc',
+                                  borderRadius: '34px',
+                                  transition: '.4s'
+                                }}
+                              ></span>
+                            </label>
+                            <span style={{ fontSize: '14px' }}>Active Question</span>
+                          </div>
+                          
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            marginBottom: '15px',
+                            padding: '10px 0'
+                          }}>
+                            <label className="switch" style={{ 
+                              position: 'relative', 
+                              display: 'inline-block', 
+                              width: '36px', 
+                              height: '20px', 
+                              marginRight: '15px' 
+                            }}>
+                              <input 
+                                type="checkbox" 
+                                id="demographicsToggle"
+                                checked={formData.collectDemographics}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  collectDemographics: e.target.checked
+                                }))}
+                                style={{ 
+                                  opacity: 0, 
+                                  width: 0, 
+                                  height: 0 
+                                }}
+                              />
+                              <span 
+                                className="slider round" 
+                                style={{
+                                  position: 'absolute',
+                                  cursor: 'pointer',
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  backgroundColor: formData.collectDemographics ? '#4a2d4e' : '#ccc',
+                                  borderRadius: '34px',
+                                  transition: '.4s'
+                                }}
+                              ></span>
+                            </label>
+                            <span style={{ fontSize: '14px' }}>Collect Demographics</span>
+                          </div>
+                        </div>
+                        
+                        {/* Demographics Metrics */}
+                        <div id="demographicsMetrics" style={{ 
+                          marginBottom: '20px', 
+                          padding: '20px', 
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '8px',
+                          display: formData.collectDemographics ? 'block' : 'none'
+                        }}>
+                          <h4 style={{ 
+                            fontSize: '15px', 
+                            fontWeight: 600, 
+                            marginTop: 0,
+                            marginBottom: '15px'
+                          }}>Demographics Metrics</h4>
+                          <p style={{ 
+                            fontSize: '13px', 
+                            color: '#64748b', 
+                            marginBottom: '20px'
+                          }}>Select which demographic data to collect when users answer this question:</p>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="ageGroup" 
+                                checked={formData.demographicsMetrics.ageGroup}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    ageGroup: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="ageGroup" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>👤</span> Age Group
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="gender" 
+                                checked={formData.demographicsMetrics.gender}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    gender: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="gender" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>⚧️</span> Gender
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="location" 
+                                checked={formData.demographicsMetrics.location}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    location: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="location" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>📍</span> Geographic Location
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="education" 
+                                checked={formData.demographicsMetrics.education}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    education: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="education" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>🎓</span> Education Level
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="employment" 
+                                checked={formData.demographicsMetrics.employment}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    employment: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="employment" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>💼</span> Employment Status
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="household" 
+                                checked={formData.demographicsMetrics.household}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    household: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="household" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>🏠</span> Household Size
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="income" 
+                                checked={formData.demographicsMetrics.income}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    income: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="income" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>💰</span> Income Range
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="ethnicity" 
+                                checked={formData.demographicsMetrics.ethnicity}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    ethnicity: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="ethnicity" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>🌍</span> Ethnicity
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="language" 
+                                checked={formData.demographicsMetrics.language || false}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    language: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="language" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>🗣️</span> Primary Language
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="device" 
+                                checked={formData.demographicsMetrics.device || false}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    device: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="device" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>📱</span> Device Type
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="industry" 
+                                checked={formData.demographicsMetrics.industry || false}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    industry: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="industry" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>🏭</span> Industry
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                id="marital" 
+                                checked={formData.demographicsMetrics.marital || false}
+                                onChange={(e) => setFormData(prev => ({
+                                  ...prev,
+                                  demographicsMetrics: {
+                                    ...prev.demographicsMetrics,
+                                    marital: e.target.checked
+                                  }
+                                }))}
+                              />
+                              <label htmlFor="marital" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>💍</span> Marital Status
+                              </label>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input type="checkbox" id="role" />
+                              <label htmlFor="role" style={{ fontSize: '14px' }}>
+                                <span style={{ marginRight: '5px' }}>👔</span> Role
+                              </label>
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button 
+                              type="button"
+                              style={{
+                                padding: '8px 12px',
+                                fontSize: '13px',
+                                backgroundColor: '#f1f5f9',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                // Select all checkboxes
+                                const checkboxes = document.querySelectorAll('#demographicsMetrics input[type="checkbox"]');
+                                checkboxes.forEach((checkbox: any) => {
+                                  checkbox.checked = true;
+                                });
+                              }}
+                            >Select All</button>
+                            
+                            <button 
+                              type="button"
+                              style={{
+                                padding: '8px 12px',
+                                fontSize: '13px',
+                                backgroundColor: '#f1f5f9',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                // Clear all checkboxes
+                                const checkboxes = document.querySelectorAll('#demographicsMetrics input[type="checkbox"]');
+                                checkboxes.forEach((checkbox: any) => {
+                                  checkbox.checked = false;
+                                });
+                              }}
+                            >Clear All</button>
+                          </div>
+                        </div>
+                        
+                        {/* Priority */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: '#475569'
+                          }}>Priority</label>
+                          <select
+                            id="priority"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1px solid #ddd',
+                              fontSize: '15px'
+                            }}
+                          >
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                          </select>
+                        </div>
+                        
+                        {/* Question Metadata - Hidden as requested */}
+                        <div style={{ display: 'none', marginTop: '30px' }}>
+                          <h4 style={{ 
+                            fontSize: '15px', 
+                            fontWeight: 600, 
+                            marginTop: 0,
+                            marginBottom: '15px',
+                            color: '#4a2d4e'
+                          }}>Question Metadata</h4>
+                          
+                          <div style={{ marginBottom: '20px' }}>
+                            <label style={{
+                              display: 'block',
+                              marginBottom: '8px',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              color: '#475569'
+                            }}>Question ID</label>
+                            <input
+                              type="text"
+                              id="questionId"
+                              placeholder="Auto-generated"
+                              disabled
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                fontSize: '15px',
+                                backgroundColor: '#f8f9fa'
+                              }}
+                            />
+                          </div>
+                          
+                          <div style={{ marginBottom: '20px' }}>
+                            <label style={{
+                              display: 'block',
+                              marginBottom: '8px',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              color: '#475569'
+                            }}>Created By</label>
+                            <input
+                              type="text"
+                              id="createdBy"
+                              placeholder="Current User"
+                              disabled
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                fontSize: '15px',
+                                backgroundColor: '#f8f9fa'
+                              }}
+                            />
+                          </div>
+                          
+                          <div style={{ marginBottom: '20px' }}>
+                            <label style={{
+                              display: 'block',
+                              marginBottom: '8px',
+                              fontWeight: 600,
+                              fontSize: '14px',
+                              color: '#475569'
+                            }}>Created Date</label>
+                            <input
+                              type="text"
+                              id="createdDate"
+                              placeholder="Auto-generated"
+                              disabled
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                fontSize: '15px',
+                                backgroundColor: '#f8f9fa'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Tab Navigation Buttons */}
+                      <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginTop: '10px'
+                    }}>
+                      <input
+                        type="checkbox"
+                        id="isRequired"
+                        checked={formData.isRequired}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          isRequired: e.target.checked
+                        }))}
+                        style={{
+                          width: '18px',
+                          height: '18px'
+                        }}
+                      />
+                      <label htmlFor="isRequired" style={{
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        color: '#475569'
+                      }}>Required Question</label>
+                    </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginTop: '20px' 
+                      }}>
+                        <button 
+                          type="button"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            opacity: tabIndex === 0 ? '0.5' : '1',
+                            pointerEvents: tabIndex === 0 ? 'none' : 'auto'
+                          }}
+                          onClick={goToPrevTab}
+                          disabled={tabIndex === 0}
+                        >
+                          ← Previous
+                        </button>
+                        {/* Submit Button */}
+                          <div style={{
+                            marginTop: '30px',
+                            display: 'flex',
+                            justifyContent: 'flex-end'
+                          }}>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              
+                            
+                              <button
+                                type="button"
+                                id="saveQuestionButton"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  
+                                  // Prevent any parent handlers from being triggered
+                                  if (e.nativeEvent) {
+                                    e.nativeEvent.stopImmediatePropagation();
+                                  }
+                                  
+                                  // Get the save button and show saving state
+                                  const saveButton = e.currentTarget;
+                                  saveButton.innerHTML = 'Saving...';
+                                  saveButton.disabled = true;
+                                  
+                                  // Use React state instead of DOM elements
+                                  const questionText = formData.questionText;
+                                  const questionDescription = formData.questionDescription;
+                                  const questionType = formData.questionType;
+                                  const isRequired = formData.isRequired;
+                                  
+                                  // Validate required fields
+                                  if (!questionText || questionText.trim() === '') {
+                                    // Show error using state or alert
+                                    alert('Question Text is required');
+                                    
+                                    // Reset save button
+                                    saveButton.innerHTML = '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Question';
+                                    saveButton.disabled = false;
+                                    return;
+                                  }
+                                  
+                                  // Get tags from React state
+                                  const tags = formData.questionTags || [];
+                                  
+                                  // Get options for multiple choice questions from React state
+                                  let options: string[] = [];
+                                  if (['radio', 'checkbox', 'dropdown', 'likert'].includes(questionType)) {
+                                    options = formData.answerOptions.map(option => option.text);
+                                  }
+                                  
+                                  // Create question object with all required fields
+                                  const questionData = {
+                                    questionText: questionText,
+                                    description: questionDescription,
+                                    responseType: questionType,
+                                    category: formData.primaryCategory?.[0] || '',
+                                    options: ['multiple_choice', 'checkbox', 'dropdown', 'likert', 'rating'].includes(questionType) 
+                                      ? formData.answerOptions.map(option => ({ 
+                                          text: option.text, 
+                                          value: option.value || option.text 
+                                        })) 
+                                      : [],
+                                    required: isRequired,
+                                    image: formData.questionImagePreview || '',
+                                    labels: [],
+                                    feedbackType: formData.feedbackCollection || 'none',
+                                    categoryTags: tags,
+                                    categoryId: formData.primaryCategory?.[0] || '',
+                                    categoryDetails: formData.primaryCategory?.[0] ? formData.primaryCategory[0] : '',
+                                    surveyThemes: formData.surveyThemes || [],
+                                    isReusable: formData.isReusable || false,
+                                    priority: 1,
+                                    isActive: formData.isActive || true,
+                                    keywords: [],
+                                    status: 'draft',
+                                    branchingLogic: {},
+                                    customFields: formData.customFields.map(field => ({
+                                      id: field.id || `field-${Date.now()}`,
+                                      name: field.name,
+                                      value: field.value
+                                    }))
+                                  };
+                                  
+                                  // Call Meteor method to save the question using applyAsync instead of apply
+                                  // This handles the async method properly
+                                    (async () => {
+                                      try {
+                                        // Prevent default behavior and stop propagation again to ensure modal stays open
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (e.nativeEvent) {
+                                          e.nativeEvent.stopImmediatePropagation();
+                                        }
+                                        
+                                        // Use callAsync to properly handle the async method
+                                        const newId = await Meteor.callAsync('questions.insert', questionData);
+                                        console.log('Result:', newId);
+                                        const questionId = newId; // The method returns the ID directly
+                                        console.log('Question created successfully:', questionId);
+                                        
+                                        // If onQuestionsRefresh callback is provided, call it to refresh the questions list
+                                        if (onQuestionsRefresh) {
+                                          onQuestionsRefresh();
+                                        }
+                                        
+                                        // Store the updated selection for later use when the modal is explicitly closed
+                                        // but don't call onSelectQuestions yet as it might close the modal
+                                        
+                                        // Only proceed if we have a valid questionId
+                                        if (questionId) {
+                                          // Mark that a question was successfully saved
+                                          setQuestionSaved(true);
+                                          
+                                          // Store the new question ID to ensure it's selected after tab switch
+                                          setNewQuestionId(questionId);
+                                          
+                                          // Update the internal selection state only
+                                          // Don't call onSelectQuestions as it might close the modal
+                                          setSelectedIds(prev => {
+                                            if (!prev.includes(questionId)) {
+                                              return [...prev, questionId];
+                                            }
+                                            return prev;
+                                          });
+                                          
+                                          // Then switch to the Select Existing Questions tab
+                                          setActiveTab(0);
+                                          console.log('Switched to Select Existing Questions tab---');
+                                          
+                                          // Show success message with a styled toast notification
+                                          const successElement = document.createElement('div');
+                                          successElement.id = 'questionSuccessMessage';
+                                          successElement.style.position = 'fixed';
+                                          successElement.style.top = '20px';
+                                          successElement.style.left = '50%';
+                                          successElement.style.transform = 'translateX(-50%)';
+                                          successElement.style.backgroundColor = '#10b981';
+                                          successElement.style.color = 'white';
+                                          successElement.style.padding = '12px 24px';
+                                          successElement.style.borderRadius = '8px';
+                                          successElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                                          successElement.style.zIndex = '9999';
+                                          successElement.style.display = 'flex';
+                                          successElement.style.alignItems = 'center';
+                                          successElement.style.gap = '10px';
+                                          successElement.style.fontSize = '16px';
+                                          successElement.style.fontWeight = '500';
+                                          successElement.style.opacity = '0';
+                                          successElement.style.transition = 'all 0.3s ease';
+                                          
+                                          // Add check icon
+                                          const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                                          
+                                          successElement.innerHTML = iconSvg + ' Question created successfully!';
+                                          
+                                          // Add the success message to the body
+                                          document.body.appendChild(successElement);
+                                          
+                                          // Animate in
+                                          setTimeout(() => {
+                                            successElement.style.opacity = '1';
+                                          }, 10);
+                                          
+                                          // Remove the message after 3 seconds
+                                          setTimeout(() => {
+                                            successElement.style.opacity = '0';
+                                            successElement.style.transform = 'translateX(-50%) translateY(-20px)';
+                                            
+                                            setTimeout(() => {
+                                              if (successElement.parentNode) {
+                                                successElement.parentNode.removeChild(successElement);
+                                              }
+                                            }, 300);
+                                          }, 3000);
+                                          
+                                        
+                                        } else {
+                                          console.error('Question created but no ID was returned');
+                                          // alert('Error: Question created but no ID was returned');
+                                        }
+                                        
+                                        // Reset save button
+                                        saveButton.innerHTML = '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Question';
+                                        saveButton.disabled = false;
+                                        
+                                        // No need to close the modal - we're switching to the other tab
+                                        // onClose();
+                                      } catch (error: unknown) {
+                                        console.error('Error creating question:', error);
+                                        
+                                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                                        
+                                        // Show error using alert instead of DOM manipulation
+                                        alert(`Error creating question: ${errorMessage}`);
+                                        
+                                        // Reset save button
+                                        saveButton.innerHTML = '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg> Save Question';
+                                        saveButton.disabled = false;
+                                      }
+                                    })(); // Immediately invoke the async function
+                                  }
+                                }
+                                style={{
+                                  padding: '12px 28px',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  backgroundColor: '#552a47',
+                                  color: 'white',
+                                  fontSize: '15px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px'
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#6a3459';
+                                  e.currentTarget.style.transform = 'translateY(-1px)';
+                                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#552a47';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
+                              >
+                                <FiCheck size={18} />
+                                Create Question
+                              </button>
+                            </div>
+                          </div>
+                      </div>
+                    </TabPanel>
+                    
+                  </Tabs>
+                </form>
+              </div>
+            </div>
+          </TabPanel>
+        </Tabs>
       </div>
     </div>
   );

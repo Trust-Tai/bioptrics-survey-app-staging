@@ -298,8 +298,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     Meteor.call('getTotalResponsesCount', currentSurveyId, (error: any, responseCount: number) => {
       if (error) {
         console.error('Error getting total responses count:', error);
-        // Use default value for response count
-        responseCount = 4;
+        // Set response count to 0 if there's an error
+        responseCount = 0;
       }
       
       console.log('Received total responses count:', responseCount);
@@ -308,8 +308,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       Meteor.call('getSurveyCompletionTime', currentSurveyId, (error2: any, completionTime: number) => {
         if (error2) {
           console.error('Error getting completion time:', error2);
-          // Use default value for completion time
-          completionTime = 9.673;
+          // Set completion time to 0 if there's an error
+          completionTime = 0;
         }
         
         console.log('Received completion time:', completionTime);
