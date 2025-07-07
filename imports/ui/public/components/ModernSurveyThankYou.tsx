@@ -285,11 +285,11 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       
       console.log('Using data from reactive data source:', { responseCount, completionTime });
       
-      setCurrentResponseData({
-        responseCount,
-        completionTime,
-        unansweredQuestions: surveyResponse.unansweredQuestions || 0
-      });
+      // setCurrentResponseData({
+      //   responseCount,
+      //   completionTime,
+      //   unansweredQuestions: surveyResponse.unansweredQuestions || 0
+      // });
       return;
     }
     
@@ -319,7 +319,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
             console.error('Error getting unanswered questions count:', error3);
             unansweredQuestions = 0;
           }
-          
+          responseCount = responseCount+1;
           console.log('All data collected:', { responseCount, completionTime, unansweredQuestions });
           
           // Update state with all values

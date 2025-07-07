@@ -613,7 +613,7 @@ const ModernSurveyContent: React.FC<{
     }
     
     // Filter questions that belong to this section
-    const filteredQuestions = questions.filter(question => questionBelongsToSection(question, sectionId));
+    const filteredQuestions = questions.filter(question => question.sectionId === sectionId);
     
     // Sort questions by their order property
     const sortedQuestions = [...filteredQuestions].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -630,7 +630,7 @@ const ModernSurveyContent: React.FC<{
         sectionId: q.sectionId
       }))
     });
-    
+  
     return sortedQuestions;
   };
   
@@ -639,451 +639,128 @@ const ModernSurveyContent: React.FC<{
     if (currentStep.type !== 'section') return null;
     return sections.find(s => s.id === currentStep.sectionId) || null;
   };
+
+// Helper function to check if a question belongs to a section
+const questionBelongsToSection = (question: Question, sectionId: string): boolean => {
+  return question.sectionId === sectionId;
+};
+
+// Helper function to get the count of questions for a specific section
+const getQuestionsCountForSection = (sectionId: string): number => {
+  return getQuestionsForSection(sectionId).length;
+};
+
+// Get the current section index (1-based)
+const getCurrentSectionIndex = (sectionId: string) => {
+  const index = sections.findIndex(s => s.id === sectionId);
+  return index >= 0 ? index + 1 : 1; // 1-based index, default to 1 if not found
+};
+
+// Custom function to update current step and save progress
+const updateCurrentStep = (newStep: {
+  type: 'welcome' | 'section' | 'question' | 'thank-you';
+  sectionId?: string;
+  questionId?: string;
+}) => {
+  setCurrentStep(newStep);
   
-  // Count questions for a specific section
-  const getQuestionsCountForSection = (sectionId: string) => {
-    return questions.filter(q => q.sectionId === sectionId).length;
-  };
+  // Don't save welcome screen progress or if survey has been submitted
+  if (newStep.type !== 'welcome' && !isSubmitted) {
+    console.log('Saving progress after step update (isSubmitted:', isSubmitted, ')');
+    setTimeout(() => saveProgress(), 0);
+  }
+};
+
+// Handle restarting the survey from the thank you screen
+const handleRestart = () => {
+  console.log('Restarting survey - resetting session start time');
   
-  // Get the current section index (1-based)
-  const getCurrentSectionIndex = (sectionId: string) => {
-    const index = sections.findIndex(s => s.id === sectionId);
-    return index >= 0 ? index + 1 : 1; // 1-based index, default to 1 if not found
-  };
+  // Reset the session start time to now
+  setSessionStartTime(new Date());
+  console.log('Session start time reset to:', new Date().toISOString());
   
-  // Custom function to update current step and save progress
-  const updateCurrentStep = (newStep: {
-    type: 'welcome' | 'section' | 'question' | 'thank-you';
-    sectionId?: string;
-    questionId?: string;
-  }) => {
-    setCurrentStep(newStep);
-    
-    // Don't save welcome screen progress or if survey has been submitted
-    if (newStep.type !== 'welcome' && !isSubmitted) {
-      console.log('Saving progress after step update (isSubmitted:', isSubmitted, ')');
-      setTimeout(() => saveProgress(), 0);
-    } else if (isSubmitted) {
-      console.log('Skipping progress save after step update because survey is already submitted');
-    }
-  };
+  // Get the retake mode from survey settings
+  const retakeMode = survey.defaultSettings?.retakeMode || 'new';
+  console.log(`Survey retake mode: ${retakeMode}`);
   
-  // Navigation functions
-  const handleStart = () => {
-    console.log('handleStart called with:', {
-      sectionsAvailable: sections.length,
-      questionsAvailable: questions.length,
-      firstSection: sections.length > 0 ? sections[0] : null
-    });
+  if (retakeMode === 'replace' && currentResponseId) {
+    console.log(`Replace mode: Will update existing response ID: ${currentResponseId}`);
+    // In replace mode, we'll keep the same responseId but clear responses
     
-    // Debug information about sections and questions
-    console.log('Available sections:', sections.map(s => ({ id: s.id, name: s.name })));
-    console.log('Questions by section:', sections.map(section => ({
-      sectionId: section.id,
-      sectionName: section.name,
-      questions: questions.filter(q => q.sectionId === section.id).map(q => ({ id: q._id, text: q.text }))
-    })));
+    // Clear responses in state
+    setResponses({});
     
-    // Always go to the first section if available
-    if (sections.length > 0) {
-      console.log('Navigating to first section:', sections[0]);
-      updateCurrentStep({ type: 'section', sectionId: sections[0].id });
-    } 
-    // If no sections available, go to the first question (fallback)
-    else if (questions.length > 0) {
-      console.log('No sections available, going to first question');
-      updateCurrentStep({ type: 'question', questionId: questions[0]._id || questions[0].id || '' });
-    }
-    // If no questions or sections, go to thank you
-    else {
-      console.log('No sections or questions available, going to thank-you screen');
-      updateCurrentStep({ type: 'thank-you' });
-    }
-  };
-  
-  // Helper function to check if a question belongs to a section
-  const questionBelongsToSection = (question: Question, sectionId: string) => {
-    // If either is missing, they can't match
-    if (!question.sectionId || !sectionId) return false;
-    
-    // Normalize both IDs for comparison (trim whitespace, lowercase)
-    const normalizedQuestionSectionId = question.sectionId.trim().toLowerCase();
-    const normalizedSectionId = sectionId.trim().toLowerCase();
-    
-    // Check for direct match
-    if (normalizedQuestionSectionId === normalizedSectionId) return true;
-    
-    // Check if one ID is a substring of the other
-    // This handles cases where IDs might have different formats but refer to the same section
-    if (normalizedQuestionSectionId.includes(normalizedSectionId) || 
-        normalizedSectionId.includes(normalizedQuestionSectionId)) {
-      return true;
-    }
-    
-    // Check if the question has a sectionName that matches the section's name
-    const section = sections.find(s => s.id === sectionId);
-    if (section && question.sectionName && 
-        section.name.trim().toLowerCase() === question.sectionName.trim().toLowerCase()) {
-      return true;
-    }
-    
-    return false;
-  };
-  
-  const handleSectionContinue = (sectionId: string) => {
-    console.log('handleSectionContinue called with sectionId:', sectionId);
-    
-    // Ensure we're working with the correct section ID format
-    const currentSection = sections.find(s => s.id === sectionId);
-    if (!currentSection) {
-      console.error(`Section with ID ${sectionId} not found`);
-      return;
-    }
-    
-    // Get all questions for this specific section using our helper function
-    const sectionQuestions = getQuestionsForSection(sectionId);
-    console.log(`Found ${sectionQuestions.length} questions for section ${sectionId}`);
-    
-    // Log all questions for this section to help with debugging
-    console.log('Questions for this section:', sectionQuestions.map(q => ({
-      id: q._id || q.id,
-      text: q.text?.substring(0, 30),
-      sectionId: q.sectionId
-    })));
-    
-    if (sectionQuestions.length > 0) {
-      // Go to the first question in this section
-      const firstQuestion = sectionQuestions[0];
-      const questionId = firstQuestion._id || firstQuestion.id || '';
+    // Reset progress in localStorage but keep the responseId
+    try {
+      const progressKey = getProgressStorageKey();
+      const savedData = localStorage.getItem(progressKey);
       
-      console.log('Navigating to first question of section:', {
-        sectionId,
-        questionId,
-        questionText: firstQuestion.text?.substring(0, 30)
-      });
-      
-      updateCurrentStep({ 
-        type: 'question', 
-        questionId: questionId
-      });
-    } else {
-      console.warn(`No questions found for section ${sectionId}`);
-      
-      // Find the next section
-      const currentSectionIndex = sections.findIndex(s => s.id === sectionId);
-      
-      if (currentSectionIndex < sections.length - 1) {
-        // Go to the next section
-        const nextSectionId = sections[currentSectionIndex + 1].id;
-        console.log('No questions in current section, navigating to next section:', nextSectionId);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        const responseId = parsedData.responseId;
         
-        updateCurrentStep({ 
-          type: 'section', 
-          sectionId: nextSectionId
-        });
-      } else {
-        // No more sections, go to thank you
-        console.log('No more sections, going to thank-you screen');
-        updateCurrentStep({ type: 'thank-you' });
+        // Save empty responses but keep the same responseId
+        localStorage.setItem(progressKey, JSON.stringify({
+          currentStep: { type: 'welcome' },
+          responses: {},
+          timestamp: new Date().toISOString(),
+          responseId,
+          // Also reset timer data
+          startTime: new Date(),
+          endTime: null
+        }));
+        console.log(`Cleared responses but kept responseId: ${responseId}`);
       }
-    }
-  };
-  
-  const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {
-    console.log('handleQuestionAnswer called with:', { questionId, answer, saveOnly });
-    
-    // Check if this is a text input by looking at the DOM
-    const isTextInput = document.querySelector('.text-input') !== null;
-    const isTyping = isTextInput && document.activeElement && document.activeElement.classList.contains('text-input');
-    
-    // Save the answer to responses
-    setResponses(prevResponses => {
-      const updatedResponses = {
-        ...prevResponses,
-        [questionId]: answer
-      };
-      
-      // Save progress to localStorage only if survey hasn't been submitted
-      if (!isSubmitted) {
-        console.log('Saving progress after question answer (isSubmitted:', isSubmitted, ')');
-        saveProgress();
-      } else {
-        console.log('Skipping progress save after question answer because survey is already submitted');
-      }
-      
-      return updatedResponses;
-    });
-    
-    // If saveOnly flag is true or user is typing, don't proceed with navigation
-    // This prevents auto-navigation while the user is still entering text or just selecting options
-    if (saveOnly || isTyping) {
-      console.log('SaveOnly flag is set or user is typing, skipping navigation and submission');
-      return;
+    } catch (error) {
+      console.error('Error resetting progress while keeping responseId:', error);
     }
     
-    // Find the current question
-    const currentQuestion = questions.find(q => q._id === questionId || q.id === questionId);
-    if (!currentQuestion) {
-      console.error(`Question with ID ${questionId} not found`);
-      return;
-    }
-    
-    // Find the current section
-    const currentSectionId = currentQuestion.sectionId || '';
-    const currentSection = sections.find(s => s.id === currentSectionId);
-    if (!currentSection) {
-      console.warn(`Section with ID ${currentSectionId} not found for question ${questionId}`);
-    }
-    
-    // Find the current question index in its section
-    const sectionQuestions = getQuestionsForSection(currentSectionId);
-    const currentQuestionIndex = sectionQuestions.findIndex(
-      q => q._id === questionId || q.id === questionId
-    );
-    
-    console.log('Question navigation info:', {
-      questionId,
-      sectionId: currentSectionId,
-      sectionName: currentSection?.name,
-      questionIndex: currentQuestionIndex,
-      totalQuestionsInSection: sectionQuestions.length,
-      isLastInSection: currentQuestionIndex === sectionQuestions.length - 1
-    });
-    
-    // Check if this is the last question in the survey
-    const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
-    const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
-    const isLastSection = currentSectionIndex === sections.length - 1;
-    const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
-    
-    console.log('CRITICAL - Last question detection in handleQuestionAnswer:', {
-      questionId,
-      currentQuestionIndex,
-      sectionQuestionsLength: sectionQuestions.length,
-      isLastQuestionInSection,
-      currentSectionIndex,
-      totalSections: sections.length,
-      isLastSection,
-      isLastQuestionInSurvey
-    });
-    
-    // If this is the last question in the survey, go to thank you page
-    // But only if saveOnly is false - this prevents auto-submission when just saving an answer
-    if (isLastQuestionInSurvey && !saveOnly) {
-      console.log('Last question in survey detected - moving to thank you page');
-      // Store the last question ID to ensure it gets included in submission
-      window.localStorage.setItem('lastAnsweredQuestionId', questionId);
-      
-      // Submit the survey and go to thank you page
-      handleSubmit();
-      return;
-    }
-    
-    // If there are more questions in this section
-    if (currentQuestionIndex < sectionQuestions.length - 1) {
-      // Go to the next question in this section
-      const nextQuestion = sectionQuestions[currentQuestionIndex + 1];
-      const nextQuestionId = nextQuestion._id || nextQuestion.id || '';
-      
-      console.log('Moving to next question in section:', {
-        currentQuestionIndex,
-        nextQuestionIndex: currentQuestionIndex + 1,
-        nextQuestionId,
-        nextQuestionText: nextQuestion.text?.substring(0, 30)
-      });
-      
-      updateCurrentStep({ 
-        type: 'question', 
-        questionId: nextQuestionId
-      });
-    } else {
-      // We've completed all questions in this section, go to the next section
-      if (currentSectionIndex < sections.length - 1) {
-        const nextSection = sections[currentSectionIndex + 1];
-        
-        console.log('Moving to next section:', {
-          currentSectionIndex,
-          nextSectionIndex: currentSectionIndex + 1,
-          nextSectionId: nextSection.id,
-          nextSectionName: nextSection.name
-        });
-        
-        // Go to the next section
-        updateCurrentStep({ 
-          type: 'section', 
-          sectionId: nextSection.id 
-        });
-      } else {
-        // No more sections, go to thank you
-        console.log('All sections completed, moving to thank-you screen');
-        updateCurrentStep({ type: 'thank-you' });
-      }
-    }
-  };
-  
-  const handleBack = () => {
-    console.log('handleBack called from step:', currentStep);
-    
-    // Handle back navigation based on current step
-    if (currentStep.type === 'question') {
-      const currentQuestion = getCurrentQuestion();
-      if (!currentQuestion) {
-        console.error('Current question not found');
-        return;
-      }
-      
-      const currentSectionId = currentQuestion.sectionId || '';
-      
-      // Find the current question index in its section
-      const sectionQuestions = getQuestionsForSection(currentSectionId);
-      const currentQuestionIndex = sectionQuestions.findIndex(
-        q => q._id === currentQuestion._id || q.id === currentQuestion.id
-      );
-      
-      console.log('Back navigation from question:', {
-        questionId: currentQuestion._id || currentQuestion.id,
-        questionIndex: currentQuestionIndex,
-        sectionId: currentSectionId,
-        totalQuestionsInSection: sectionQuestions.length
-      });
-      
-      // If this is the first question in the section
-      if (currentQuestionIndex === 0) {
-        console.log('Going back to section intro:', currentSectionId);
-        // Go back to the section
-        updateCurrentStep({ type: 'section', sectionId: currentSectionId });
-      } else {
-        // Go to the previous question
-        const prevQuestion = sectionQuestions[currentQuestionIndex - 1];
-        const prevQuestionId = prevQuestion._id || prevQuestion.id || '';
-        
-        console.log('Going back to previous question:', {
-          prevQuestionId,
-          prevQuestionIndex: currentQuestionIndex - 1,
-          prevQuestionText: prevQuestion.text?.substring(0, 30)
-        });
-        
-        updateCurrentStep({ 
-          type: 'question', 
-          questionId: prevQuestionId
-        });
-      }
-    } else if (currentStep.type === 'section') {
-      const currentSectionIndex = sections.findIndex(s => s.id === currentStep.sectionId);
-      
-      console.log('Back navigation from section:', {
-        sectionId: currentStep.sectionId,
-        sectionIndex: currentSectionIndex,
-        totalSections: sections.length
-      });
-      
-      // If this is the first section
-      if (currentSectionIndex === 0) {
-        console.log('Going back to welcome screen');
-        // Go back to welcome
-        updateCurrentStep({ type: 'welcome' });
-      } else {
-        // Go to the previous section
-        const prevSection = sections[currentSectionIndex - 1];
-        
-        console.log('Going back to previous section:', {
-          prevSectionId: prevSection.id,
-          prevSectionName: prevSection.name,
-          prevSectionIndex: currentSectionIndex - 1
-        });
-        
-        updateCurrentStep({ 
-          type: 'section', 
-          sectionId: prevSection.id 
-        });
-      }
-    } else if (currentStep.type === 'thank-you') {
-      console.log('Back navigation from thank-you screen');
-      
-      // If we have sections, go back to the last section
-      if (sections.length > 0) {
-        const lastSection = sections[sections.length - 1];
-        console.log('Going back to last section:', lastSection.name);
-        updateCurrentStep({ type: 'section', sectionId: lastSection.id });
-      } else {
-        // Otherwise go back to welcome
-        console.log('No sections available, going back to welcome screen');
-        updateCurrentStep({ type: 'welcome' });
-      }
-    }
-  };
-  
-  // Handle restart button click based on retake mode setting
-  const handleRestart = () => {
-    console.log('handleRestart called - preparing to restart survey');
-    
-    // Get the retake mode from survey settings
-    const retakeMode = survey.defaultSettings?.retakeMode || 'new';
-    console.log(`Survey retake mode: ${retakeMode}`);
-    
-    if (retakeMode === 'replace' && currentResponseId) {
-      console.log(`Replace mode: Will update existing response ID: ${currentResponseId}`);
-      // In replace mode, we'll keep the same responseId but clear responses
-      
-      // Clear responses in state
-      setResponses({});
-      
-      // Reset progress in localStorage but keep the responseId
-      try {
-        const progressKey = getProgressStorageKey();
-        const savedData = localStorage.getItem(progressKey);
-        
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          const responseId = parsedData.responseId;
-          
-          // Save empty responses but keep the same responseId
-          localStorage.setItem(progressKey, JSON.stringify({
-            currentStep: { type: 'welcome' },
-            responses: {},
-            timestamp: new Date().toISOString(),
-            responseId
-          }));
-          console.log(`Cleared responses but kept responseId: ${responseId}`);
+    // Reset the server-side incomplete response data
+    if (currentResponseId) {
+      Meteor.call('incompleteSurveyResponses.reset', currentResponseId, (error: any) => {
+        if (error) {
+          console.error('Error resetting incomplete survey response:', error);
+        } else {
+          console.log(`Successfully reset incomplete survey response: ${currentResponseId}`);
         }
-      } catch (error) {
-        console.error('Error resetting progress while keeping responseId:', error);
-      }
+      });
+    }
+  } else {
+    console.log('New response mode: Will create a new response');
+    // In 'new' mode (or if no currentResponseId), create a completely new response
+    
+    // Clear responses in state
+    setResponses({});
+    
+    // Clear progress in localStorage completely
+    try {
+      // Remove the old progress data
+      localStorage.removeItem(getProgressStorageKey());
       
-      // Reset the server-side incomplete response data
-      if (currentResponseId) {
-        Meteor.call('incompleteSurveyResponses.reset', currentResponseId, (error: any) => {
-          if (error) {
-            console.error('Error resetting incomplete survey response:', error);
-          } else {
-            console.log(`Successfully reset incomplete survey response: ${currentResponseId}`);
-          }
-        });
-      }
-    } else {
-      console.log('New response mode: Will create a new response');
-      // In 'new' mode (or if no currentResponseId), create a completely new response
+      // Create new progress data with fresh timer
+      localStorage.setItem(getProgressStorageKey(), JSON.stringify({
+        currentStep: { type: 'welcome' },
+        responses: {},
+        timestamp: new Date().toISOString(),
+        // Reset timer data
+        startTime: new Date(),
+        endTime: null
+      }));
       
-      // Clear responses in state
-      setResponses({});
-      
-      // Clear progress in localStorage completely
-      try {
-        localStorage.removeItem(getProgressStorageKey());
-        console.log('Cleared saved progress for restart');
-      } catch (error) {
-        console.error('Error clearing progress from localStorage:', error);
-      }
-      
-      // Reset the currentResponseId
-      setCurrentResponseId(null);
+      console.log('Cleared saved progress and reset timer for restart');
+    } catch (error) {
+      console.error('Error clearing progress from localStorage:', error);
     }
     
-    // Reset submission state
-    setIsSubmitted(false);
-    
-    // Navigate back to welcome screen
-    updateCurrentStep({ type: 'welcome' });
+    // Reset the currentResponseId
+    setCurrentResponseId(null);
+  }
+  
+  // Reset submission state
+  setIsSubmitted(false);
+  
+  // Navigate back to welcome screen
+  updateCurrentStep({ type: 'welcome' });
   };
   
   // Load saved progress when the component initializes
@@ -1191,12 +868,206 @@ const ModernSurveyContent: React.FC<{
   };
   
   // Session start time is used for completion time calculation
-  const [sessionStartTime] = useState<Date>(new Date());
+  const [sessionStartTime, setSessionStartTime] = useState<Date>(new Date());
   
-  // This duplicate handleRestart function has been merged with the one above
+  // Handle starting the survey from the welcome screen
+  const handleStart = () => {
+    console.log('Survey started - resetting session start time');
+    // Reset the session start time to now
+    setSessionStartTime(new Date());
+    
+    // Reset timer data in localStorage
+    try {
+      const progressKey = getProgressStorageKey();
+      const savedData = localStorage.getItem(progressKey);
+      
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        // Update with fresh timer data
+        localStorage.setItem(progressKey, JSON.stringify({
+          ...parsedData,
+          startTime: new Date(),
+          endTime: null
+        }));
+      } else {
+        // Create new progress data with fresh timer
+        localStorage.setItem(progressKey, JSON.stringify({
+          currentStep: { type: 'section', sectionId: sections.length > 0 ? sections[0].id : '' },
+          responses: {},
+          timestamp: new Date().toISOString(),
+          startTime: new Date(),
+          endTime: null
+        }));
+      }
+      console.log('Timer reset for survey start');
+    } catch (error) {
+      console.error('Error resetting timer data:', error);
+    }
+    
+    // Navigate to the first section or question
+    if (sections.length > 0) {
+      updateCurrentStep({ type: 'section', sectionId: sections[0].id });
+    } else if (questions.length > 0) {
+      updateCurrentStep({ type: 'question', questionId: questions[0]._id || questions[0].id || '' });
+    }
+  };
+  
+  // Handle going back to the previous step
+  const handleBack = () => {
+    console.log('Going back to previous step');
+    
+    // Determine the previous step based on the current step
+    if (currentStep.type === 'question' && currentStep.questionId) {
+      const currentQuestion = getCurrentQuestion();
+      if (!currentQuestion) return;
+      
+      // Get all questions for the current section
+      const sectionQuestions = getQuestionsForSection(currentQuestion.sectionId || '');
+      
+      // Find the current question index
+      const currentQuestionIndex = sectionQuestions.findIndex(
+        q => q._id === currentQuestion._id || q.id === currentQuestion.id
+      );
+      
+      // If this is the first question in the section, go back to the section screen
+      if (currentQuestionIndex === 0) {
+        // Go back to the section screen
+        updateCurrentStep({ type: 'section', sectionId: currentQuestion.sectionId });
+      } else if (currentQuestionIndex > 0) {
+        // Go to the previous question in the section
+        const previousQuestion = sectionQuestions[currentQuestionIndex - 1];
+        updateCurrentStep({ 
+          type: 'question', 
+          questionId: previousQuestion._id || previousQuestion.id || '' 
+        });
+      }
+    } else if (currentStep.type === 'section' && currentStep.sectionId) {
+      // If we're on a section screen, go back to the welcome screen
+      updateCurrentStep({ type: 'welcome' });
+    }
+  };
+  
+  // Handle continuing from a section to its first question
+  const handleSectionContinue = (sectionId: string) => {
+    console.log(`Continuing from section ${sectionId} to its first question`);
+    
+    // Get all questions for this section
+    const sectionQuestions = getQuestionsForSection(sectionId);
+    
+    // If there are questions in this section, navigate to the first one
+    if (sectionQuestions.length > 0) {
+      const firstQuestion = sectionQuestions[0];
+      updateCurrentStep({ 
+        type: 'question', 
+        questionId: firstQuestion._id || firstQuestion.id || '' 
+      });
+    } else {
+      // If no questions in this section, find the next section
+      const currentSectionIndex = sections.findIndex(s => s.id === sectionId);
+      if (currentSectionIndex < sections.length - 1) {
+        // Go to the next section
+        const nextSection = sections[currentSectionIndex + 1];
+        updateCurrentStep({ type: 'section', sectionId: nextSection.id });
+      } else {
+        // If this was the last section and it has no questions, go to thank you screen
+        updateCurrentStep({ type: 'thank-you' });
+      }
+    }
+  };
+  
+  // Handle answering a question and potentially navigating to the next question
+  const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {
+    console.log(`Question ${questionId} answered:`, answer, 'saveOnly:', saveOnly);
+    
+    // Save the answer
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+    
+    // If saveOnly is true, don't navigate to the next question
+    if (saveOnly) {
+      console.log('Save only mode - not navigating to next question');
+      return;
+    }
+    
+    // Find the current question
+    const currentQuestion = questions.find(q => q._id === questionId || q.id === questionId);
+    if (!currentQuestion) return;
+    
+    // Get all questions for the current section
+    const sectionQuestions = getQuestionsForSection(currentQuestion.sectionId || '');
+    
+    // Find the current question index
+    const currentQuestionIndex = sectionQuestions.findIndex(
+      q => q._id === questionId || q.id === questionId
+    );
+    
+    // Check if this is the last question in the section
+    const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
+    
+    // Find the current section index
+    const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
+    
+    // Check if this is the last section
+    const isLastSection = currentSectionIndex === sections.length - 1;
+    
+    // Determine if this is the last question in the survey
+    const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
+    
+    console.log('Question navigation logic:', {
+      questionId,
+      currentQuestionIndex,
+      totalQuestionsInSection: sectionQuestions.length,
+      isLastQuestionInSection,
+      currentSectionIndex,
+      totalSections: sections.length,
+      isLastSection,
+      isLastQuestionInSurvey
+    });
+    
+    if (isLastQuestionInSurvey) {
+      // If this is the last question in the survey, navigate to the thank you screen
+      updateCurrentStep({ type: 'thank-you' });
+    } else if (isLastQuestionInSection) {
+      // If this is the last question in the section but not the last section,
+      // navigate to the next section
+      const nextSection = sections[currentSectionIndex + 1];
+      updateCurrentStep({ type: 'section', sectionId: nextSection.id });
+    } else {
+      // Otherwise, navigate to the next question in the current section
+      const nextQuestion = sectionQuestions[currentQuestionIndex + 1];
+      updateCurrentStep({ 
+        type: 'question', 
+        questionId: nextQuestion._id || nextQuestion.id || '' 
+      });
+    }
+  };
 
   const handleSubmit = async () => {
     console.log('handleSubmit called - preparing to submit survey');
+    
+    // Record the end time for the survey session
+    const endTime = new Date();
+    const elapsedTime = Math.round((endTime.getTime() - sessionStartTime.getTime()) / 1000);
+    console.log(`Survey completed in ${elapsedTime} seconds (${Math.floor(elapsedTime / 60)} minutes and ${elapsedTime % 60} seconds)`);
+    
+    // Save the end time to localStorage for the thank you page to access
+    try {
+      const progressKey = getProgressStorageKey();
+      const savedData = localStorage.getItem(progressKey);
+      
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        localStorage.setItem(progressKey, JSON.stringify({
+          ...parsedData,
+          endTime: endTime
+        }));
+        console.log('Saved survey end time to localStorage');
+      }
+    } catch (error) {
+      console.error('Error saving end time to localStorage:', error);
+    }
     
     // Set the submitted flag early to prevent any new incomplete responses
     // This will prevent any auto-saves from creating new incomplete responses
