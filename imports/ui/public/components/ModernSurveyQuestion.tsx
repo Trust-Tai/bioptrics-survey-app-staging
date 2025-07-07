@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiArrowRight, FiArrowLeft, FiCheck, FiInfo, FiEdit, FiList, FiBarChart2 } from 'react-icons/fi';
+import { FiArrowRight, FiArrowLeft, FiCheck, FiInfo, FiEdit, FiList, FiBarChart2, FiCalendar, FiUpload, FiAlignLeft, FiChevronDown } from 'react-icons/fi';
 import './ModernSurveyQuestion.css';
 import '../components/ModernSurvey.css';
 
@@ -7,14 +7,22 @@ interface Question {
   _id: string;
   id?: string;
   text: string;
-  type: string;
+  responseType?: string;
+  type?: string; // Added type field which is used in some questions
   sectionId?: string;
   sectionName?: string;
-  options?: string[];
+  options?: string[] | { label: string; value: string }[];
   scale?: number;
   labels?: string[];
   required?: boolean;
   order?: number;
+  currentVersion?: number;
+  versions?: {
+    responseType?: string;
+    options?: string[] | { label: string; value: string }[];
+    questionText?: string;
+    [key: string]: any;
+  }[];
 }
 
 interface ModernSurveyQuestionProps {
@@ -56,7 +64,17 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   // Update local state when value prop changes or when question changes
   useEffect(() => {
     console.log('Question:', question);
-    console.log('Actual question type:', getActualQuestionType());
+    console.log('Question responseType:', question.responseType);
+    
+    // Special handling for dropdown questions - ensure they're properly detected
+    if (question.responseType === 'dropdown' || 
+        (question.responseType && question.responseType.toLowerCase().includes('dropdown'))) {
+      console.log('DROPDOWN QUESTION DETECTED - This should render as a dropdown select');
+    }
+    
+    const actualType = getActualQuestionType();
+    console.log('Actual question type:', actualType);
+    console.log('Will render:', actualType === 'dropdown' ? 'dropdown select' : 'other component');
     setAnswer(value || '');
   }, [value, question._id]);
   
@@ -93,21 +111,27 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   // Calculate progress percentage
   const progressPercentage = Math.round((currentQuestion / totalQuestions) * 100);
   
-  // Check if the current answer is valid
+  // Check if the current answer is valid based on question type
   const isAnswerValid = (): boolean => {
     if (answer === null || answer === undefined) return false;
     
-    switch (question.type) {
+    // Ensure we have a responseType to work with
+    const responseType = question.responseType || '';
+    
+    switch (responseType) {
       case 'text':
       case 'textarea':
+      case 'long_text':
+      case 'short_text':
         return answer.trim() !== '';
-      case 'multiple-choice':
-      case 'single-choice':
+      case 'dropdown':
         return answer !== '';
-      case 'scale':
-      case 'likert':
-      case 'likert_scale':
-        return answer !== null && answer !== undefined;
+      case 'date':
+        return answer !== '';
+      case 'file':
+        return answer !== '';
+      case 'rating':
+        return answer !== '';
       default:
         return true;
     }
@@ -208,31 +232,183 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   const renderRadioOptions = () => {
     if (!question.options || question.options.length === 0) return null;
     
+    // Determine if options are strings or objects
+    const isObjectOptions = question.options.length > 0 && 
+      typeof question.options[0] === 'object' && 
+      question.options[0] !== null;
+    
     return (
       <div className="options-list">
-        {question.options.map((option) => (
-          <div
-            key={option}
-            className={`option-item ${answer === option ? 'selected' : ''}`}
-            onClick={() => {
+        {question.options.map((option, index) => {
+          // Handle both string options and object options
+          const value = isObjectOptions ? (option as any).value || (option as any).label : option as string;
+          const label = isObjectOptions ? (option as any).label : option as string;
+          
+          return (
+            <div
+              key={index}
+              className={`option-item ${answer === value ? 'selected' : ''}`}
+              onClick={() => {
+                // Set answer in state
+                setAnswer(value);
+                // Save answer immediately but don't navigate
+                console.log('Option selected, saving immediately:', value);
+                // Use a flag to indicate this is just a save, not a navigation trigger
+                const saveOnly = true;
+                onAnswer(value, saveOnly);
+              }}
+            >
+              <div 
+                className={`option-checkmark ${answer === value ? 'selected' : ''}`} 
+                style={answer === value ? {borderColor: color, backgroundColor: color} : {}}
+              >
+                {answer === value && <FiCheck size={14} color="white" />}
+              </div>
+              <div className="option-text" dangerouslySetInnerHTML={createMarkup(label)}></div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+  
+  // Render date input
+  const renderDateInput = () => {
+    return (
+      <div className="date-input-container">
+        <input
+          type="date"
+          className="date-input"
+          value={answer || ''}
+          onChange={(e) => {
+            // Set answer in state
+            setAnswer(e.target.value);
+            // Save answer immediately but don't navigate
+            console.log('Date selected, saving immediately:', e.target.value);
+            // Use a flag to indicate this is just a save, not a navigation trigger
+            const saveOnly = true;
+            onAnswer(e.target.value, saveOnly);
+          }}
+          style={{borderColor: answer ? color : '#d1d5db'}}
+        />
+      </div>
+    );
+  };
+
+  // Render dropdown select
+  const renderDropdown = () => {
+    console.log('Rendering dropdown with options:', question.options);
+    
+    // If no options are available, fallback to text input
+    if (!question.options || question.options.length === 0) {
+      console.log('No options available for dropdown, falling back to text input');
+      return renderTextInput();
+    }
+    
+    // Determine if options are strings or objects
+    const isObjectOptions = question.options.length > 0 && 
+      typeof question.options[0] === 'object' && 
+      question.options[0] !== null;
+    
+    return (
+      <div className="dropdown-container">
+        <div className="select-wrapper">
+          <select
+            className="dropdown-select"
+            value={answer || ''}
+            onChange={(e) => {
               // Set answer in state
-              setAnswer(option);
+              setAnswer(e.target.value);
               // Save answer immediately but don't navigate
-              console.log('Option selected, saving immediately:', option);
+              console.log('Dropdown option selected, saving immediately:', e.target.value);
               // Use a flag to indicate this is just a save, not a navigation trigger
               const saveOnly = true;
-              onAnswer(option, saveOnly);
+              onAnswer(e.target.value, saveOnly);
             }}
+            style={{borderColor: answer ? color : '#d1d5db'}}
           >
-            <div 
-              className={`option-checkmark ${answer === option ? 'selected' : ''}`} 
-              style={answer === option ? {borderColor: color, backgroundColor: color} : {}}
-            >
-              {answer === option && <FiCheck size={14} color="white" />}
-            </div>
-            <div className="option-text" dangerouslySetInnerHTML={createMarkup(option)}></div>
+            <option value="" disabled>Select an option</option>
+            {question.options.map((option, index) => {
+              // Handle both string options and object options
+              const value = isObjectOptions ? (option as any).value || (option as any).label : option;
+              const label = isObjectOptions ? (option as any).label : option;
+              
+              return (
+                <option key={index} value={value}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
+          <div className="dropdown-arrow">
+            <FiChevronDown size={16} />
           </div>
-        ))}
+        </div>
+        {answer && (
+          <div className="selected-answer-display">
+            <span>Your answer: <strong>{answer}</strong></span>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Render file upload input
+  const renderFileUpload = () => {
+    return (
+      <div className="file-upload-container">
+        <label className="file-upload-label">
+          <input
+            type="file"
+            className="file-input"
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                // Set file name as answer in state
+                setAnswer(file.name);
+                // In a real implementation, you would upload the file here
+                console.log('File selected:', file.name);
+                // Use a flag to indicate this is just a save, not a navigation trigger
+                const saveOnly = true;
+                onAnswer(file.name, saveOnly);
+              }
+            }}
+          />
+          <div className="file-upload-button" style={{borderColor: color}}>
+            <span>Choose File</span>
+          </div>
+          <span className="file-name">{answer || 'No file chosen'}</span>
+        </label>
+      </div>
+    );
+  };
+
+  // Render rating scale
+  const renderRatingScale = () => {
+    const ratingOptions = Array.from({ length: 5 }, (_, i) => i + 1);
+    
+    return (
+      <div className="rating-container">
+        <div className="rating-options">
+          {ratingOptions.map((value) => (
+            <div
+              key={value}
+              className={`rating-option ${answer === value.toString() ? 'selected' : ''}`}
+              onClick={() => {
+                // Set answer in state
+                setAnswer(value.toString());
+                // Save answer immediately but don't navigate
+                console.log('Rating selected, saving immediately:', value.toString());
+                // Use a flag to indicate this is just a save, not a navigation trigger
+                const saveOnly = true;
+                onAnswer(value.toString(), saveOnly);
+              }}
+              style={answer === value.toString() ? {backgroundColor: color} : {}}
+            >
+              {value}
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -275,72 +451,214 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     );
   };
   
+  // Get responseType from the correct location in the question object
+  const getResponseType = () => {
+    try {
+      // Log the full question object to see its structure
+      console.log('Full question object:', question);
+      
+      // Based on the database structure, we need to check if this is a question from
+      // the questions collection (which has versions array)
+      if (question && typeof question === 'object') {
+        // Check for direct type property which is used in some questions
+        if (question.type) {
+          console.log('Found question.type:', question.type);
+          return question.type;
+        }
+        
+        // Also check for direct responseType property
+        if (question.responseType) {
+          console.log('Found question.responseType:', question.responseType);
+          return question.responseType;
+        }
+        
+        // First check if we're dealing with a question from the MongoDB collection
+        // These questions have a versions array with responseType inside
+        if (Array.isArray(question.versions) && question.versions.length > 0) {
+          // Get the current version index (usually 0)
+          const versionIndex = question.currentVersion !== undefined ? 
+            Math.min(question.currentVersion, question.versions.length - 1) : 0;
+          
+          // Get the responseType from the appropriate version
+          const versionData = question.versions[versionIndex];
+          if (versionData && versionData.responseType) {
+            console.log('Found responseType in versions array:', versionData.responseType);
+            return versionData.responseType;
+          }
+        }
+        
+        // If we couldn't find it in versions, check direct responseType
+        if (question.responseType) {
+          console.log('Using direct responseType:', question.responseType);
+          return question.responseType;
+        }
+      }
+    } catch (error) {
+      console.error('Error getting responseType:', error);
+    }
+    
+    // Default fallback
+    return 'text';
+  };
+
   // Render the appropriate input based on question type
   const renderQuestionInput = () => {
-    switch (question.type) {
-      case 'likert':
-      case 'likert_scale':
-      case 'scale':
-        return renderNumericScale();
+    // Use the actual question type determined by getActualQuestionType
+    const actualType = getActualQuestionType();
+    
+    console.log('Rendering input for type:', actualType);
+    
+    // Check responseType directly for dropdown to ensure we catch all dropdown variants
+    const responseType = getResponseType().toLowerCase();
+    if (responseType.includes('dropdown') || responseType === 'select') {
+      console.log('Forcing dropdown rendering based on responseType:', responseType);
+      return renderDropdown();
+    }
+    
+    // Standard rendering based on actualType
+    switch (actualType) {
+      case 'rating':
+        return renderRatingScale();
         
       case 'text':
-      case 'textarea':
-      case 'open_text':
-      case 'free_text':
         return renderTextInput();
-        
-      case 'choice':
+      
+      case 'long_text':
+        return renderTextInput();
+      
+      case 'dropdown':
+        console.log('Rendering dropdown from switch case');
+        return renderDropdown();
+      
+      case 'date':
+        return renderDateInput();
+      
+      case 'file':
+        return renderFileUpload();
+      
+      case 'single_choice':
       case 'multiple_choice':
       case 'single_choice':
+        return renderRadioOptions();
+      
       default:
+        // If question has options but no specific type, check if it should be a dropdown
+        if (question.options && question.options.length > 0) {
+          console.log('Question has options, checking if it should be dropdown');
+          // If it has more than 5 options, render as dropdown for better UX
+          if (question.options.length > 5) {
+            console.log('Many options detected, rendering as dropdown');
+            return renderDropdown();
+          }
+        }
         return renderRadioOptions();
     }
   };
 
+  // Define the possible question types as a type for better type safety
+  type QuestionType = 'dropdown' | 'date' | 'file' | 'rating' | 'single_choice' | 'multiple_choice' | 'long_text' | 'text';
+  
   // Determine actual question type based on question properties and type
-  const getActualQuestionType = () => {
-    // If it has options, it's either multiple choice or single choice
-    if (question.options && question.options.length > 0) {
-      // Check if the type contains 'multiple' or is explicitly multiple_choice
-      if (question.type === 'multiple_choice' || question.type.includes('multiple')) {
-        return 'multiple_choice';
-      } else {
-        return 'single_choice';
-      }
+  const getActualQuestionType = (): QuestionType => {
+    // Get responseType using our helper function that handles the complex structure
+    const responseType = getResponseType().toLowerCase();
+    
+    // Log the exact responseType for debugging
+    console.log('Normalized responseType:', responseType);
+    
+    // Check for dropdown types
+    if (responseType.includes('dropdown') || responseType === 'select') {
+      return 'dropdown';
     }
     
-    // If it has scale or labels, it's a scale question
-    if (question.scale || (question.labels && question.labels.length > 0)) {
-      return 'scale';
+    // Check for date type
+    if (responseType === 'date') {
+      return 'date';
     }
     
-    // If type contains text or textarea, it's a text question
-    if (question.type.includes('text') || question.type.includes('textarea')) {
+    // Check for file type
+    if (responseType === 'file') {
+      return 'file';
+    }
+    
+    // Check for rating types
+    if (responseType === 'rating' || responseType === 'likert' || 
+        responseType === 'likert_scale' || responseType === 'scale') {
+      return 'rating';
+    }
+    
+    // Check for single choice types
+    if (responseType === 'radio' || responseType === 'choice') {
+      return 'single_choice';
+    }
+    
+    // Check for multiple choice types
+    if (responseType === 'checkbox' || responseType.includes('multiple') || responseType === 'multiple-choice') {
+      return 'multiple_choice';
+    }
+    
+    // Check for long text types
+    if (responseType === 'textarea' || responseType === 'long_text') {
+      return 'long_text';
+    }
+    
+    // Check for text types
+    if (responseType === 'short_text' || responseType === 'open_text' || 
+        responseType === 'free_text' || responseType.includes('text')) {
       return 'text';
     }
     
-    // Default to the original type
-    return question.type;
+    // Additional checks based on question properties
+    
+    // If it has options, it's either multiple choice or single choice
+    if (question.options && question.options.length > 0) {
+      // Check if the type contains 'multiple'
+      if (responseType.includes('multiple')) {
+        return 'multiple_choice';
+      }
+      // Otherwise, it's single choice (radio)
+      return 'single_choice';
+    }
+    
+    // If it has a scale, it's a rating question
+    if (question.scale) {
+      return 'rating';
+    }
+    
+    // Default to text input
+    return 'text';
   };
   
-  // Determine question type for display and icon
+  // Determine if the question should use a textarea instead of a text input
+  const shouldUseTextarea = () => {
+    const responseType = getResponseType().toLowerCase();
+    return responseType === 'textarea' || responseType === 'long_text';
+  };
+
+  // Get question type info for display
   const getQuestionTypeInfo = () => {
     const actualType = getActualQuestionType();
+    const responseType = getResponseType().toLowerCase();
+    
+    // Log the question type info for debugging
+    console.log('Getting question type info for:', actualType, 'from responseType:', responseType);
     
     switch (actualType) {
+      case 'dropdown':
+        return { label: 'Dropdown', icon: <FiChevronDown size={16} /> };
       case 'multiple_choice':
         return { label: 'Multiple Choice', icon: <FiList size={16} /> };
       case 'single_choice':
-      case 'choice':
         return { label: 'Single Choice', icon: <FiList size={16} /> };
-      case 'scale':
-      case 'likert':
-      case 'likert_scale':
-        return { label: 'Scale', icon: <FiBarChart2 size={16} /> };
+      case 'rating':
+        return { label: 'Rating', icon: <FiBarChart2 size={16} /> };
+      case 'date':
+        return { label: 'Date', icon: <FiCalendar size={16} /> };
+      case 'file':
+        return { label: 'File Upload', icon: <FiUpload size={16} /> };
+      case 'long_text':
+        return { label: 'Long Text', icon: <FiAlignLeft size={16} /> };
       case 'text':
-      case 'textarea':
-      case 'open_text':
-      case 'free_text':
         return { label: 'Text', icon: <FiEdit size={16} /> };
       default:
         return { label: actualType, icon: <FiInfo size={16} /> };
@@ -403,6 +721,11 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             {questionTypeInfo.icon}
             <span>{questionTypeInfo.label}</span>
             {question.required && <span className="required-tag">Required</span>}
+          </div>
+          
+          {/* Display question type label */}
+          <div className="question-type-label">
+            Question type: <strong>{getResponseType() || 'text'}</strong>
           </div>
           
           <div className="answer-options">

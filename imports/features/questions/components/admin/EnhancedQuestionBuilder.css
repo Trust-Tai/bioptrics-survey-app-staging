@@ -477,6 +477,16 @@
 
 .tab-content {
   padding: 20px 0;
+  background-color: transparent;
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+}
+
+.answer-options-tab-content {
+  background-color: transparent !important;
+  padding: 0;
+  width: 100%;
+  overflow: visible;
 }
 
 /* Custom Fields Styles */
