@@ -1918,6 +1918,70 @@ const ModernSurveyContent: React.FC<{
     return calculateProgressInfo().progress;
   };
   
+  // Calculate the estimated time to complete the survey based on total question count
+  const calculateEstimatedTime = (): string => {
+    // Get the total number of questions
+    const totalQuestions = questions.length;
+    
+    // Determine estimated time range based on question count
+    let timeRange: string;
+    
+    if (totalQuestions <= 3) {
+      // 1-3 questions: 1-2 minutes
+      timeRange = "1-2";
+    } else if (totalQuestions <= 5) {
+      // 4-5 questions: 2-3 minutes
+      timeRange = "2-3";
+    } else if (totalQuestions <= 9) {
+      // 6-9 questions: 3-4 minutes
+      timeRange = "3-4";
+    } else if (totalQuestions <= 13) {
+      // 10-13 questions: 4-5 minutes
+      timeRange = "4-5";
+    } else if (totalQuestions <= 17) {
+      // 14-17 questions: 5-6 minutes
+      timeRange = "5-6";
+    } else if (totalQuestions <= 22) {
+      // 18-22 questions: 6-7 minutes
+      timeRange = "6-7";
+    } else if (totalQuestions <= 27) {
+      // 23-27 questions: 7-8 minutes
+      timeRange = "7-8";
+    } else if (totalQuestions <= 32) {
+      // 28-32 questions: 8-9 minutes
+      timeRange = "8-9";
+    } else if (totalQuestions <= 37) {
+      // 33-37 questions: 9-10 minutes
+      timeRange = "9-10";
+    } else {
+      // 38+ questions: 10+ minutes with a range
+      const baseTime = 10 + Math.floor((totalQuestions - 38) / 5);
+      timeRange = `${baseTime}-${baseTime + 2}`;
+    }
+    
+    // Add a small buffer for sections if needed
+    if (sections.length > 2) {
+      // Only adjust the range for 3+ sections
+      // Extract the upper bound of the current range
+      const rangeParts = timeRange.split('-');
+      const upperBound = parseInt(rangeParts[1] || rangeParts[0], 10);
+      
+      // Add 1-2 minutes to the upper bound based on section count
+      const sectionBuffer = Math.min(2, Math.ceil((sections.length - 2) / 2));
+      timeRange = `${rangeParts[0]}-${upperBound + sectionBuffer}`;
+    }
+    
+    // Log the calculation for debugging
+    console.log('Survey completion time calculation:', {
+      totalQuestions,
+      sectionCount: sections.length,
+      timeRange
+    });
+    
+    // Return the time range
+    return timeRange;
+  };
+  
   // Render the appropriate content based on the current step
   const renderContent = () => {
     switch (currentStep.type) {
@@ -1926,14 +1990,32 @@ const ModernSurveyContent: React.FC<{
         const totalQuestions = questions.length;
         const totalSections = sections.length;
         
-        console.log('Welcome screen data:', {
+        // Calculate the dynamic estimated time to complete the survey
+        const dynamicEstimatedTime = calculateEstimatedTime();
+        
+        // Create a modified survey object with the dynamic estimated time
+        // We ensure the estimatedTime property is set to our dynamic calculation
+        // This will override any static value that might be in the database
+        const surveyWithDynamicTime = {
+          ...survey,
+          estimatedTime: dynamicEstimatedTime,
+          // Also update questionCount to ensure consistency
+          questionCount: totalQuestions,
+          // And sectionCount for completeness
+          sectionCount: totalSections
+        };
+        
+        console.log('Welcome screen data with dynamic time calculation:', {
           totalQuestions,
-          totalSections
+          totalSections,
+          staticEstimatedTime: survey.estimatedTime || 'not set',
+          dynamicEstimatedTime,
+          surveyId: survey._id
         });
         
         return (
           <ModernSurveyWelcome
-            survey={survey}
+            survey={surveyWithDynamicTime}
             onStart={handleStart}
             totalQuestions={totalQuestions}
             totalSections={totalSections}
@@ -1950,16 +2032,27 @@ const ModernSurveyContent: React.FC<{
         // Get the current section index (1-based)
         const dynamicSectionIndex = getCurrentSectionIndex(currentSection.id);
         
-        console.log('Section screen data:', {
+        // Calculate the dynamic estimated time based on section questions
+        const dynamicSectionTime = calculateEstimatedTime();
+        
+        // Create a modified section object with the dynamic estimated time
+        const sectionWithDynamicTime = {
+          ...currentSection,
+          estimatedTime: dynamicSectionTime,
+          questionCount: sectionQuestionsCount
+        };
+        
+        console.log('Section screen data with dynamic time:', {
           sectionId: currentSection.id,
           sectionName: currentSection.name,
           sectionIndex: dynamicSectionIndex,
-          questionsCount: sectionQuestionsCount
+          questionsCount: sectionQuestionsCount,
+          dynamicEstimatedTime: dynamicSectionTime
         });
         
         return (
           <ModernSurveySection
-            section={currentSection}
+            section={sectionWithDynamicTime}
             onContinue={() => handleSectionContinue(currentSection.id)}
             onBack={handleBack}
             color={survey.color}

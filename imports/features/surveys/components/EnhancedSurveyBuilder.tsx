@@ -1577,8 +1577,13 @@ const EnhancedSurveyBuilder: React.FC = () => {
         // Map our sections and questions to the expected server format
         surveySections: sections.map(section => ({
           id: String(section.id),
-          name: String(section.title || ''), // Changed from title to name to match SurveySectionItem interface
-          priority: Number(section.order || 0) // Changed from order to priority to match SurveySectionItem interface
+          name: String(section.name || ''), // Use name property consistently to match SurveySectionItem interface
+          description: String(section.description || ''), // Add description to ensure it's saved
+          priority: Number(section.priority || 0), // Use priority property consistently to match SurveySectionItem interface
+          isActive: Boolean(section.isActive !== undefined ? section.isActive : true),
+          color: String(section.color || ''),
+          instructions: String(section.instructions || ''),
+          isRequired: Boolean(section.isRequired !== undefined ? section.isRequired : false)
         })),
         sectionQuestions: surveyQuestions.map(q => ({
           id: String(q.id),
@@ -1685,7 +1690,17 @@ const EnhancedSurveyBuilder: React.FC = () => {
         // Include the updated defaultSettings
         defaultSettings,
         // Use surveySections instead of sections to match the server-side property name
-        surveySections: sections,
+        // Make sure to map section properties to match the expected server format
+        surveySections: sections.map(section => ({
+          id: section.id,
+          name: section.name,
+          description: section.description,
+          isActive: section.isActive,
+          priority: section.priority,
+          color: section.color,
+          instructions: section.instructions,
+          isRequired: section.isRequired
+        })),
         sectionQuestions: surveyQuestions,
         // Include demographics, themes, categories, and tags
         selectedDemographics,

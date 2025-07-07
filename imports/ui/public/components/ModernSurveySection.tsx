@@ -106,7 +106,7 @@ const HeaderContent = styled.div`
 const SectionTitle = styled.h2`
   font-size: 2.5rem;
   font-weight: 700;
-  margin: 0 0 1rem 1.5rem;
+  margin: 0 0 1rem 0rem;
   color: var(--primary-color, #1f2937);
   line-height: 1.2;
   font-family: var(--heading-font, 'Inter, sans-serif');
@@ -680,7 +680,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
       <SectionCard>
         <SectionHeader>
           <HeaderContent style={{ flex: sectionImage ? 1 : 'auto', maxWidth: sectionImage ? '60%' : '100%' }}>
-            <SectionNumberBadge>{section.index || sectionIndex}</SectionNumberBadge>
+            {/* <SectionNumberBadge>{section.index || sectionIndex}</SectionNumberBadge> */}
             <SectionTitle>{section.name}</SectionTitle>
             {renderDescription()}
           </HeaderContent>
@@ -700,7 +700,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
                 <FiClock size={24} />
               </StatIcon>
               <StatValue>{metadata.estimatedTime}</StatValue>
-              <StatLabel>Minutes to complete</StatLabel>
+              <StatLabel>Minutes</StatLabel>
             </StatCard>
             
             <StatCard>
