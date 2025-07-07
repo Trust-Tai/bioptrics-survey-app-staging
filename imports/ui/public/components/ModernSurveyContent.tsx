@@ -1709,8 +1709,9 @@ const ModernSurveyContent: React.FC<{
             console.error('Error retrieving current response ID:', e);
           }
           
-          // First mark as completed to prevent new responses from being created
-          if (responseIdToProcess) {
+          // FIXED: Only mark incomplete response as completed if it's different from the one we just submitted
+          // This prevents duplicate processing of the same response
+          if (responseIdToProcess && responseIdToProcess !== responseId) {
             console.log(`First marking as completed: ${responseIdToProcess}`);
             Meteor.call('incompleteSurveyResponses.markAsCompleted', responseIdToProcess, (markError: any, markResult: boolean) => {
               if (markError) {
@@ -1729,8 +1730,9 @@ const ModernSurveyContent: React.FC<{
               }
             });
           } else {
-            // No ID available, try by attributes directly
-            markByAttributes();
+            // No ID available or it's the same as the submitted response ID, just clear localStorage
+            console.log('No separate incomplete response ID to process, clearing localStorage only');
+            clearLocalStorage();
           }
           
           // Helper function to mark by surveyId and respondentId
