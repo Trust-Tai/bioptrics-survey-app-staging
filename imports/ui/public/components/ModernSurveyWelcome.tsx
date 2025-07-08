@@ -459,8 +459,26 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
     }
   }, [survey._id]);
   
-  // Use the metadata
-  const { estimatedTime, questionCount, sectionCount } = metadata;
+  // Use the metadata, but prioritize the survey prop values if available
+  // This ensures our dynamic calculation from ModernSurveyContent takes precedence
+  const estimatedTime = survey.estimatedTime || metadata.estimatedTime;
+  const questionCount = totalQuestions || survey.questionCount || metadata.questionCount;
+  const sectionCount = totalSections || survey.sectionCount || metadata.sectionCount;
+  
+  // Log values for debugging
+  console.log('ModernSurveyWelcome - Time calculation values:', {
+    'survey.estimatedTime': survey.estimatedTime,
+    'metadata.estimatedTime': metadata.estimatedTime,
+    'final estimatedTime': estimatedTime,
+    'totalQuestions prop': totalQuestions,
+    'survey.questionCount': survey.questionCount,
+    'metadata.questionCount': metadata.questionCount,
+    'final questionCount': questionCount,
+    'totalSections prop': totalSections,
+    'survey.sectionCount': survey.sectionCount,
+    'metadata.sectionCount': metadata.sectionCount,
+    'final sectionCount': sectionCount
+  });
   
   return (
     <WelcomeContainer>
@@ -485,7 +503,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
               <FaRegClock size={20} />
             </StatIcon>
             <StatValue>{loading ? '...' : estimatedTime}</StatValue>
-            <StatLabel>Minutes to complete</StatLabel>
+            <StatLabel>Minutes</StatLabel>
           </StatCard>
           
           <StatCard>

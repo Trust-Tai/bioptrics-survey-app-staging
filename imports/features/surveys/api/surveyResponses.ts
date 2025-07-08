@@ -646,7 +646,26 @@ if (Meteor.isServer) {
             console.log(`SERVER: Survey has ${totalQuestions} questions, ${answeredCount} answered, ${unansweredQuestions} unanswered`);
           }
           
-          console.log('Attempting to insert new survey response using insertAsync');
+          console.log('Checking for existing submissions with the same metadata before inserting');
+          
+          // CRITICAL FIX: Check if a response with the same metadata was already submitted in the last minute
+          // This prevents duplicate submissions caused by multiple client-side calls
+          if (responseData.metadata && responseData.metadata.token) {
+            const oneMinuteAgo = new Date(now.getTime() - 15000); // 15 secound /1 minute ago
+            
+            const existingSubmission = await SurveyResponses.findOneAsync({
+              surveyId: responseData.surveyId,
+              'metadata.token': responseData.metadata.token,
+              createdAt: { $gte: oneMinuteAgo }
+            });
+            
+            if (existingSubmission) {
+              console.log('Found recent submission with the same token, returning existing ID to prevent duplicate:', existingSubmission._id);
+              return existingSubmission._id;
+            }
+          }
+          
+          console.log('No recent duplicate found, inserting new survey response');
           
           // Use insertAsync instead of insert as required by newer Meteor versions
           // Use type assertion to satisfy TypeScript
