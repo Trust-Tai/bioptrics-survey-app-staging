@@ -2,6 +2,126 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background-color: transparent;
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+}
+
+/* Assessment toggle styles */
+.assessment-toggle-container {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.assessment-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.assessment-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.points-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.points-input label {
+  font-weight: 600;
+  color: #0056b3;
+}
+
+.points-input input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.assessment-toggle input {
+  margin-right: 8px;
+}
+
+.assessment-info {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.assessment-info svg {
+  margin-right: 6px;
+  color: #007bff;
+}
+
+/* Correct answer input styles */
+.correct-text-answer,
+.correct-date-answer {
+  background-color: #e8f4ff;
+  border: 1px solid #b8daff;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.correct-text-answer label,
+.correct-date-answer label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #0056b3;
+}
+
+.correct-answer-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+
+/* Answer option row with correct checkbox */
+.answer-option-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.answer-option-row .answer-option {
+  flex: 1;
+}
+
+.correct-answer-checkbox {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
+  padding: 0 8px;
+  background-color: #e8f4ff;
+  border-radius: 4px;
+  height: 36px;
+}
+
+.correct-answer-checkbox label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: #0056b3;
+}
+
+.correct-answer-checkbox input {
+  margin-right: 6px;
 }
 
 .answer-options-header {
@@ -29,10 +149,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
   padding: 8px;
   border: 1px solid #eee;
   border-radius: 6px;
-  background: #f9f9f9;
+  background-color: #f9f9f9;
   min-height: 100px;
 }
 
@@ -105,46 +226,7 @@
   height: 0;
 }
 
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-  background-color: #552a47;
-}
-
-input:focus + .toggle-slider {
-  box-shadow: 0 0 1px #552a47;
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-}
-
-.toggle-label {
-  font-size: 14px;
-  color: #6e5a67;
-}
+/* Toggle styles removed to fix display issues */
 
 .no-answer-options-message {
   display: flex;

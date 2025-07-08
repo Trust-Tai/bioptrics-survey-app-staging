@@ -63,6 +63,9 @@ interface Question {
   branchingLogic?: any;
   customFields?: QuestionCustomField[];
   status?: 'draft' | 'published'; // Question status: draft or published
+  isAssessment?: boolean; // Flag to indicate if this question should be scored
+  correctAnswers?: any[]; // Array of correct answers for assessment questions
+  points?: number; // Optional points value for weighted scoring
   [key: string]: any;
 }
 
@@ -424,7 +427,10 @@ const EnhancedQuestionBuilder: React.FC = () => {
       priority: 0,
       active: true,
       keywords: [],
-      branchingLogic: {}
+      branchingLogic: {},
+      isAssessment: false,
+      correctAnswers: [],
+      points: 1
     };
     
     const newSection: QuestionSection = {
@@ -994,11 +1000,18 @@ const EnhancedQuestionBuilder: React.FC = () => {
                         
                         {/* Answer Options Tab */}
                         <TabPanel>
-                          <div className="tab-content">
+                          <div className="tab-content" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '4px' }}>
                             <QuestionBuilderAnswerOptions
                               answerType={question.answerType}
                               answers={question.answers || []}
                               onAnswersChange={(answers) => setQuestion(prev => ({ ...prev, answers }))}
+                              disabled={question.disabled || false}
+                              isAssessment={question.isAssessment || false}
+                              onIsAssessmentChange={(isAssessment) => setQuestion(prev => ({ ...prev, isAssessment }))}
+                              correctAnswers={question.correctAnswers || []}
+                              onCorrectAnswersChange={(correctAnswers) => setQuestion(prev => ({ ...prev, correctAnswers }))}
+                              points={question.points || 1}
+                              onPointsChange={(points) => setQuestion(prev => ({ ...prev, points }))}
                             />
                           </div>
                         </TabPanel>

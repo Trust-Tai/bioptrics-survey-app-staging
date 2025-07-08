@@ -215,15 +215,34 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
             option: (base) => ({
               ...base,
               fontFamily: 'monospace',
-              whiteSpace: 'pre'
+              whiteSpace: 'pre',
+              backgroundColor: 'white',
+              '&:hover': {
+                backgroundColor: '#f0f0f0'
+              }
             }),
             menu: (base) => ({
               ...base,
-              zIndex: 9999
+              zIndex: 9999,
+              width: 'auto',
+              minWidth: '100%',
+              backgroundColor: 'white',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
             }),
             menuList: (base) => ({
               ...base,
-              maxHeight: '300px'
+              maxHeight: '300px',
+              backgroundColor: 'white',
+              padding: '4px'
+            }),
+            control: (base) => ({
+              ...base,
+              width: '100%',
+              minWidth: '300px'
+            }),
+            container: (base) => ({
+              ...base,
+              width: '100%'
             })
           }}
           formatCreateLabel={(inputValue) => `Create this tag: "${inputValue}"`}
