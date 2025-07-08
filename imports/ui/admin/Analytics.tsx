@@ -22,7 +22,8 @@ import {
   FiCalendar,
   FiUsers,
   FiList,
-  FiX
+  FiX,
+  FiCheckCircle
 } from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
@@ -1187,6 +1188,12 @@ const Analytics: React.FC = () => {
             Surveys
           </Tab>
           <Tab
+            active={activeTab === 'completionSurvey'}
+            onClick={() => setActiveTab('completionSurvey')}
+          >
+            Completion based Survey
+          </Tab>
+          <Tab
             active={activeTab === 'questions'}
             onClick={() => setActiveTab('questions')}
             data-tab="questions"
@@ -1377,6 +1384,49 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <QuestionPerformanceChart />
+            </Card>
+          </DashboardGrid>
+        )}
+        
+        {activeTab === 'completionSurvey' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Completion based Survey Analysis</CardTitle>
+                <CardIcon>
+                  <FiCheckCircle />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer>
+                <div style={{ padding: '20px 0' }}>
+                  {/* <h3>Survey Completion Analysis</h3>
+                  <p>This section provides detailed analytics on survey completion rates and patterns.</p> */}
+                  
+                  {/* Placeholder for completion rate chart */}
+                  <div style={{ marginTop: '20px', marginBottom: '30px' }}>
+                    <h4>Completion Rate by Survey</h4>
+                    <div style={{ height: '300px', background: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {isLoading ? (
+                        <div>Loading chart data...</div>
+                      ) : (
+                        <div>Completion Rate Chart Coming Soon</div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Placeholder for completion time analysis */}
+                  <div style={{ marginTop: '30px' }}>
+                    <h4>Average Completion Time Analysis</h4>
+                    <div style={{ height: '300px', background: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {isLoading ? (
+                        <div>Loading analysis data...</div>
+                      ) : (
+                        <div>Completion Time Analysis Coming Soon</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </ChartContainer>
             </Card>
           </DashboardGrid>
         )}
