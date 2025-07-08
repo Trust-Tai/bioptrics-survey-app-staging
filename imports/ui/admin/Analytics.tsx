@@ -23,7 +23,8 @@ import {
   FiUsers,
   FiList,
   FiX,
-  FiCheckCircle
+  FiCheckCircle,
+  FiAlertCircle
 } from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
@@ -32,6 +33,9 @@ import QuestionPerformanceChart from '/imports/features/analytics/components/adm
 import ResponseRateChart from '/imports/features/analytics/components/admin/ResponseRateChart';
 import CompletionTimeChart from '/imports/features/analytics/components/admin/CompletionTimeChart';
 import CompletionRateChart from '/imports/features/analytics/components/admin/CompletionRateChart';
+import FunnelChart from '/imports/features/analytics/components/admin/FunnelChart';
+import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
+import CompletionTimeDistribution from '/imports/features/analytics/components/admin/CompletionTimeDistribution';
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
@@ -1370,6 +1374,24 @@ const Analytics: React.FC = () => {
                 <div>NLP Topic Modeling Coming Soon</div>
               </ChartContainer>
             </Card> */}
+            
+            {/* Dropout Analysis Section */}
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Dropout Analysis</CardTitle>
+                <CardIcon>
+                  <FiAlertCircle />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ flex: '1 1 48%', minWidth: '300px' }}>
+                  <FunnelChart />
+                </div>
+                <div style={{ flex: '1 1 48%', minWidth: '300px' }}>
+                  <DropoutAnalysis />
+                </div>
+              </ChartContainer>
+            </Card>
             
             {/* Question Performance */}
             <Card cols={12}>
