@@ -433,7 +433,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   });
 
   // Featured image for the header
-  const featuredImage = survey.featuredImage || survey.image || null;
+  const logo = survey.logo || survey.image || null;
 
   // Fetch survey metadata
   useEffect(() => {
@@ -483,13 +483,13 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   return (
     <WelcomeContainer>
       <WelcomeHeader>
-        <WelcomeHeaderContent style={{ flex: featuredImage ? 1 : 'auto', maxWidth: featuredImage ? '60%' : '100%' }}>
+        <WelcomeHeaderContent style={{ flex: logo ? 1 : 'auto', maxWidth: logo ? '60%' : '100%' }}>
           <h1>{survey.title || 'Customer Experience Survey'}</h1>
           <p dangerouslySetInnerHTML={{ __html: survey.description || 'Help us understand your experience and improve our services. Your feedback matters and takes just a few minutes to complete.' }} />
         </WelcomeHeaderContent>
-        {featuredImage && (
+        {logo && (
           <WelcomeHeaderImage>
-            <img src={featuredImage} alt="Survey featured image" />
+            <img src={logo} alt="Survey featured image" />
           </WelcomeHeaderImage>
         )}
       </WelcomeHeader>
