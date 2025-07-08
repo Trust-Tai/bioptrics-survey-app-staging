@@ -328,8 +328,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
       };
       setSections([defaultSection]);
       
-      // Automatically navigate to the sections tab for new surveys
-      setActiveStep('sections');
+      // Always default to the welcome tab (Survey Basics)
+      setActiveStep('welcome');
     }
   }, [surveyId, sections.length]);
   const [saving, setSaving] = useState(false);

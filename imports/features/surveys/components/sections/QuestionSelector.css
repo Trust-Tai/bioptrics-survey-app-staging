@@ -167,6 +167,16 @@
   height: 38px;
 }
 
+/* Remove border and background styling when used with Tom Select */
+select.filter-select[multiple] {
+  border: none;
+  background-image: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  background-color: transparent;
+}
+
 .filter-select:focus {
   outline: none;
   border-color: #7b3d6e;

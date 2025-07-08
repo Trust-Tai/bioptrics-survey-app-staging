@@ -617,6 +617,14 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
           <FormGroup>
             <FormLabel>
               Display Order
+              <TooltipContainer>
+                <TooltipIcon>
+                  <FiHelpCircle size={14} />
+                </TooltipIcon>
+                <TooltipText>
+                  Controls the order in which sections appear in the survey. Sections with lower numbers appear first. If two sections have the same number, they will be ordered by creation date.
+                </TooltipText>
+              </TooltipContainer>
             </FormLabel>
             <FormInput
               type="number"
