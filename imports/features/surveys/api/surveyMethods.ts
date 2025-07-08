@@ -155,33 +155,92 @@ if (Meteor.isServer) {
       }
     },
     
-    // Enhanced response rate calculation that considers both completed and incomplete surveys
-    async 'getEnhancedResponseRate'() {
-      console.log('getEnhancedResponseRate method called');
+    // Filtered response rate calculation that considers both completed and incomplete surveys
+    async 'getFilteredResponseRate'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getFilteredResponseRate method called with filters:', filterParams);
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get response rate');
       }
       
       try {
-        // Get the date for 7 days ago
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        // Default date range: last 30 days (consistent with other metrics)
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
         
-        // Count completed responses in the last 7 days
-        const completedCount = await SurveyResponses.find({
-          createdAt: { $gte: sevenDaysAgo },
-          completed: true
-        }).countAsync();
+        // Build the query with filters for completed surveys
+        const completedQuery: any = { completed: true };
         
-        // Count incomplete responses in the last 7 days
-        const incompleteCount = await IncompleteSurveyResponses.find({
-          startedAt: { $gte: sevenDaysAgo },
+        // Apply date range filter if provided
+        if (filterParams?.startDate || filterParams?.endDate) {
+          completedQuery.createdAt = {};
+          if (filterParams.startDate) {
+            completedQuery.createdAt.$gte = new Date(filterParams.startDate);
+          } else {
+            completedQuery.createdAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            completedQuery.createdAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          // Default date range if not provided
+          completedQuery.createdAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          completedQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+          completedQuery.tags = { $in: filterParams.tagIds };
+        }
+        
+        // Apply question filter if provided (this is more complex and might need adjustment)
+        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+          completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        // Build similar query for incomplete surveys
+        const incompleteQuery: any = { 
           isCompleted: false,
           isAbandoned: { $ne: true }
-        }).countAsync();
+        };
         
-        console.log(`Found ${completedCount} completed and ${incompleteCount} incomplete responses in the last 7 days`);
+        // Apply date filters to incomplete surveys
+        if (filterParams?.startDate || filterParams?.endDate) {
+          incompleteQuery.startedAt = {};
+          if (filterParams.startDate) {
+            incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
+          } else {
+            incompleteQuery.startedAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            incompleteQuery.startedAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          incompleteQuery.startedAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter to incomplete surveys if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          incompleteQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Count completed and incomplete surveys
+        const completedCount = await SurveyResponses.find(completedQuery).countAsync();
+        const incompleteCount = await IncompleteSurveyResponses.find(incompleteQuery).countAsync();
+        
+        console.log(`Found ${completedCount} completed and ${incompleteCount} incomplete responses with applied filters`);
         
         // Calculate response rate
         let responseRate = 0;
@@ -189,10 +248,10 @@ if (Meteor.isServer) {
           responseRate = Math.round((completedCount / (completedCount + incompleteCount)) * 100);
         }
         
-        console.log(`Enhanced response rate: ${responseRate}%`);
+        console.log(`Filtered response rate: ${responseRate}%`);
         return responseRate;
       } catch (error: unknown) {
-        console.error('Error calculating enhanced response rate:', error);
+        console.error('Error calculating filtered response rate:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('calculation-failed', `Failed to calculate response rate: ${errorMessage}`);
       }
@@ -301,9 +360,764 @@ if (Meteor.isServer) {
     
     // Note: getCompletedSurveysCount and getAverageEngagementScore methods are already defined in surveyResponses.ts
     
-    // Get daily response and completion data for the last 7 days
-    async 'getResponseTrendsData'() {
-      console.log('getResponseTrendsData method called');
+    // Get surveys count with optional filters
+    async 'getFilteredSurveysCount'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string,
+      includeIncomplete?: boolean
+    }) {
+      console.log('getFilteredSurveysCount method called with filters:', filterParams);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get surveys count');
+      }
+      
+      try {
+        // Default date range: last 30 days
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
+        
+        // Build the query with filters for completed surveys
+        const completedQuery: any = { completed: true };
+        
+        // Apply date range filter if provided
+        if (filterParams?.startDate || filterParams?.endDate) {
+          completedQuery.createdAt = {};
+          if (filterParams.startDate) {
+            completedQuery.createdAt.$gte = new Date(filterParams.startDate);
+          } else {
+            completedQuery.createdAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            completedQuery.createdAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          // Default date range if not provided
+          completedQuery.createdAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          completedQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+          completedQuery.tags = { $in: filterParams.tagIds };
+        }
+        
+        // Apply question filter if provided
+        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+          completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        // Count completed surveys
+        const completedCount = await SurveyResponses.find(completedQuery).countAsync();
+        
+        // If we don't need to include incomplete surveys, return just the completed count
+        if (!filterParams?.includeIncomplete) {
+          console.log(`Filtered completed surveys count: ${completedCount}`);
+          return completedCount;
+        }
+        
+        // Build similar query for incomplete surveys
+        const incompleteQuery: any = { 
+          isCompleted: false,
+          isAbandoned: { $exists: false }
+        };
+        
+        // Apply date filters to incomplete surveys
+        if (filterParams?.startDate || filterParams?.endDate) {
+          incompleteQuery.startedAt = {};
+          if (filterParams.startDate) {
+            incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
+          } else {
+            incompleteQuery.startedAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            incompleteQuery.startedAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          incompleteQuery.startedAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter to incomplete surveys if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          incompleteQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Count incomplete surveys
+        const incompleteCount = await IncompleteSurveyResponses.find(incompleteQuery).countAsync();
+        
+        // Calculate total surveys
+        const totalCount = completedCount + incompleteCount;
+        
+        console.log(`Filtered surveys count: ${totalCount} (${completedCount} completed + ${incompleteCount} incomplete)`);
+        
+        return totalCount;
+      } catch (error) {
+        console.error('Error calculating filtered surveys count:', error);
+        return 0;
+      }
+    },
+    
+    // Get question completion rate (answered questions vs total questions)
+    async 'getQuestionCompletionRate'(filterParams: any = {}) {
+      console.log('getQuestionCompletionRate method called with filters:', JSON.stringify(filterParams));
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get completion rate');
+      }
+      
+      try {
+        // Apply date range filter with default of last 30 days if not specified
+        const endDate = filterParams.endDate ? new Date(filterParams.endDate) : new Date();
+        const startDate = filterParams.startDate ? new Date(filterParams.startDate) : new Date(endDate.getTime() - (30 * 24 * 60 * 60 * 1000));
+        
+        // Build the query for completed surveys
+        const query: any = {
+          completed: true,
+          createdAt: { $gte: startDate, $lte: endDate }
+        };
+        
+        // Apply survey ID filter if provided
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
+          query.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams.tagIds && filterParams.tagIds.length > 0) {
+          // Get surveys with the specified tags
+          const surveysWithTags = await Surveys.find({
+            'tags.tagId': { $in: filterParams.tagIds }
+          }).fetchAsync();
+          
+          const surveyIdsWithTags = surveysWithTags.map(survey => survey._id);
+          
+          // Add to the query - if survey IDs are already filtered, use the intersection
+          if (query.surveyId) {
+            const existingIds = query.surveyId.$in;
+            query.surveyId.$in = existingIds.filter((id: string) => surveyIdsWithTags.includes(id));
+          } else {
+            query.surveyId = { $in: surveyIdsWithTags };
+          }
+        }
+        
+        // Apply question filter if provided
+        if (filterParams.questionIds && filterParams.questionIds.length > 0) {
+          // We need to find responses that contain these questions
+          query['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        console.log('Final query for completion rate:', JSON.stringify(query));
+        
+        // Get all completed survey responses that match the filters
+        const completedResponses = await SurveyResponses.find(query).fetchAsync();
+        console.log(`Found ${completedResponses.length} completed responses for completion rate calculation`);
+        
+        if (completedResponses.length === 0) {
+          return 0; // No responses, so completion rate is 0%
+        }
+        
+        let totalQuestions = 0;
+        let answeredQuestions = 0;
+        
+        // Count total questions and answered questions across all responses
+        completedResponses.forEach(response => {
+          if (response.responses && Array.isArray(response.responses)) {
+            // If we're filtering by specific questions, only count those
+            const relevantResponses = filterParams.questionIds && filterParams.questionIds.length > 0
+              ? response.responses.filter(r => filterParams.questionIds.includes(r.questionId))
+              : response.responses;
+            
+            totalQuestions += relevantResponses.length;
+            
+            // Count questions with non-empty answers
+            answeredQuestions += relevantResponses.filter(r => {
+              const answer = r.answer;
+              return answer !== undefined && answer !== null && answer !== '' && 
+                    !(Array.isArray(answer) && answer.length === 0);
+            }).length;
+          }
+        });
+        
+        console.log(`Completion rate calculation: ${answeredQuestions} answered questions out of ${totalQuestions} total questions`);
+        
+        // Calculate completion rate as percentage
+        const completionRate = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
+        
+        console.log(`Final completion rate: ${completionRate}%`);
+        return completionRate;
+      } catch (error: unknown) {
+        console.error('Error calculating question completion rate:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating question completion rate: ${errorMessage}`);
+      }
+    },
+    
+    async 'getFilteredCompletionRate'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getFilteredCompletionRate method called with filters:', filterParams);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get completion rate');
+      }
+      
+      try {
+        // Default date range: last 30 days
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
+        
+        // Build the query with filters for completed surveys
+        const completedQuery: any = { completed: true };
+        
+        // Apply date range filter if provided
+        if (filterParams?.startDate || filterParams?.endDate) {
+          completedQuery.createdAt = {};
+          if (filterParams.startDate) {
+            completedQuery.createdAt.$gte = new Date(filterParams.startDate);
+          } else {
+            completedQuery.createdAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            completedQuery.createdAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          // Default date range if not provided
+          completedQuery.createdAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          completedQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+          completedQuery.tags = { $in: filterParams.tagIds };
+        }
+        
+        // Apply question filter if provided
+        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+          completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        // Build similar query for incomplete surveys
+        const incompleteQuery: any = { 
+          isCompleted: false,
+          isAbandoned: { $exists: false }
+        };
+        
+        // Apply date filters to incomplete surveys
+        if (filterParams?.startDate || filterParams?.endDate) {
+          incompleteQuery.startedAt = {};
+          if (filterParams.startDate) {
+            incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
+          } else {
+            incompleteQuery.startedAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            incompleteQuery.startedAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          incompleteQuery.startedAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter to incomplete surveys if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          incompleteQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Count completed and incomplete surveys
+        const completedCount = await SurveyResponses.find(completedQuery).countAsync();
+        const incompleteCount = await IncompleteSurveyResponses.find(incompleteQuery).countAsync();
+        
+        // Calculate total responses
+        const totalResponses = completedCount + incompleteCount;
+        
+        // Calculate completion rate as the percentage of completed surveys out of all surveys
+        const completionRate = totalResponses > 0 ? Math.round((completedCount / totalResponses) * 100) : 0;
+        
+        console.log(`Filtered completion rate: ${completionRate}% (${completedCount} completed / ${totalResponses} total)`);
+        
+        return completionRate;
+      } catch (error) {
+        console.error('Error calculating filtered completion rate:', error);
+        return 0;
+      }
+    },
+    
+    async 'getFilteredParticipationRate'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getFilteredParticipationRate method called with filters:', filterParams);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get participation rate');
+      }
+      
+      try {
+        // Default date range: last 30 days
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
+        
+        // Build the query with filters for completed surveys
+        const completedQuery: any = { completed: true };
+        
+        // Apply date range filter if provided
+        if (filterParams?.startDate || filterParams?.endDate) {
+          completedQuery.createdAt = {};
+          if (filterParams.startDate) {
+            completedQuery.createdAt.$gte = new Date(filterParams.startDate);
+          } else {
+            completedQuery.createdAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            completedQuery.createdAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          // Default date range if not provided
+          completedQuery.createdAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          completedQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+          completedQuery.tags = { $in: filterParams.tagIds };
+        }
+        
+        // Apply question filter if provided (this is more complex and might need adjustment)
+        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+          completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        // Build similar query for incomplete surveys
+        const incompleteQuery: any = { 
+          isCompleted: false,
+          isAbandoned: { $exists: false }
+        };
+        
+        // Apply date filters to incomplete surveys
+        if (filterParams?.startDate || filterParams?.endDate) {
+          incompleteQuery.createdAt = {};
+          if (filterParams.startDate) {
+            incompleteQuery.createdAt.$gte = new Date(filterParams.startDate);
+          } else {
+            incompleteQuery.createdAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            incompleteQuery.createdAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          incompleteQuery.createdAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter to incomplete surveys if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          incompleteQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Count completed and incomplete surveys
+        const completedCount = await SurveyResponses.find(completedQuery).countAsync();
+        const incompleteCount = await IncompleteSurveyResponses.find(incompleteQuery).countAsync();
+        
+        // Calculate total responses
+        const totalResponses = completedCount + incompleteCount;
+        
+        // Calculate participation rate - currently fixed at 100% since we're using responses/responses
+        // This can be enhanced in the future with proper invitation tracking
+        const participationRate = totalResponses > 0 ? 100 : 0;
+        
+        console.log(`Filtered participation rate: ${participationRate}% (${completedCount} completed + ${incompleteCount} incomplete / ${totalResponses} total)`);
+        
+        return participationRate;
+      } catch (error) {
+        console.error('Error calculating filtered participation rate:', error);
+        return 0;
+      }
+    },
+    
+    async 'getFilteredSurveysCount'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getFilteredSurveysCount method called with filters:', filterParams);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get survey counts');
+      }
+      
+      try {
+        // Default date range: last 30 days
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
+        
+        // Build the query with filters
+        const query: any = { completed: true };
+        
+        // Apply date range filter if provided
+        if (filterParams?.startDate || filterParams?.endDate) {
+          query.createdAt = {};
+          if (filterParams.startDate) {
+            query.createdAt.$gte = new Date(filterParams.startDate);
+          } else {
+            query.createdAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            query.createdAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          // Default date range if not provided
+          query.createdAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          query.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+          query.tags = { $in: filterParams.tagIds };
+        }
+        
+        // Apply question filter if provided (this is more complex and might need adjustment)
+        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+          query['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        // Build similar query for incomplete surveys
+        const incompleteQuery: any = { 
+          isCompleted: false,
+          isAbandoned: { $exists: false }
+        };
+        
+        // Apply date filters to incomplete surveys
+        if (filterParams?.startDate || filterParams?.endDate) {
+          incompleteQuery.startedAt = {};
+          if (filterParams.startDate) {
+            incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
+          } else {
+            incompleteQuery.startedAt.$gte = startDateFilter;
+          }
+          
+          if (filterParams.endDate) {
+            incompleteQuery.startedAt.$lte = new Date(filterParams.endDate);
+          }
+        } else {
+          incompleteQuery.startedAt = { $gte: startDateFilter };
+        }
+        
+        // Apply survey ID filter to incomplete surveys if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          incompleteQuery.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Count both completed and incomplete surveys
+        const completedCount = await SurveyResponses.find(query).countAsync();
+        const incompleteCount = await IncompleteSurveyResponses.find(incompleteQuery).countAsync();
+        
+        // Calculate total count
+        const totalCount = completedCount + incompleteCount;
+        
+        console.log(`Filtered surveys count: ${completedCount} completed + ${incompleteCount} incomplete = ${totalCount} total`);
+        return totalCount;
+      } catch (error) {
+        console.error('Error getting filtered survey count:', error);
+        return 0;
+      }
+    },
+    
+    // Get dynamic engagement score based on multiple factors
+    async 'getFilteredEngagementScore'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getFilteredEngagementScore method called with filters:', JSON.stringify(filterParams));
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get engagement score');
+      }
+      
+      try {
+        // Apply date range filter with default of last 30 days if not specified
+        const endDate = filterParams?.endDate ? new Date(filterParams.endDate) : new Date();
+        const startDate = filterParams?.startDate ? new Date(filterParams.startDate) : new Date(endDate.getTime() - (30 * 24 * 60 * 60 * 1000));
+        
+        // Build the query for completed surveys
+        const query: any = {
+          completed: true,
+          createdAt: { $gte: startDate, $lte: endDate }
+        };
+        
+        // Apply survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          query.surveyId = { $in: filterParams.surveyIds };
+        }
+        
+        // Apply tag filter if provided
+        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+          // Get surveys with the specified tags
+          const surveysWithTags = await Surveys.find({
+            'tags.tagId': { $in: filterParams.tagIds }
+          }).fetchAsync();
+          
+          const surveyIdsWithTags = surveysWithTags.map(survey => survey._id);
+          
+          // Add to the query - if survey IDs are already filtered, use the intersection
+          if (query.surveyId) {
+            const existingIds = query.surveyId.$in;
+            query.surveyId.$in = existingIds.filter((id: string) => surveyIdsWithTags.includes(id));
+          } else {
+            query.surveyId = { $in: surveyIdsWithTags };
+          }
+        }
+        
+        // Apply question filter if provided
+        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+          // We need to find responses that contain these questions
+          query['responses.questionId'] = { $in: filterParams.questionIds };
+        }
+        
+        console.log('Final query for engagement score:', JSON.stringify(query));
+        
+        // Get all completed survey responses that match the filters
+        const completedResponses = await SurveyResponses.find(query).fetchAsync();
+        console.log(`Found ${completedResponses.length} completed responses for engagement score calculation`);
+        
+        if (completedResponses.length === 0) {
+          return 0; // No responses, so engagement score is 0
+        }
+        
+        // Calculate engagement score based on multiple factors
+        let totalEngagementScore = 0;
+        
+        for (const response of completedResponses) {
+          // Initialize factors for this response
+          let questionCompletionFactor = 0;
+          let timeEngagementFactor = 0;
+          let responseQualityFactor = 0;
+          
+          // 1. Question Completion Factor (40%)
+          if (response.responses && Array.isArray(response.responses)) {
+            // If we're filtering by specific questions, only count those
+            const relevantResponses = filterParams?.questionIds && filterParams.questionIds.length > 0
+              ? response.responses.filter(r => filterParams.questionIds.includes(r.questionId))
+              : response.responses;
+            
+            const totalQuestions = relevantResponses.length;
+            
+            // Count questions with non-empty answers
+            const answeredQuestions = relevantResponses.filter(r => {
+              const answer = r.answer;
+              return answer !== undefined && answer !== null && answer !== '' && 
+                    !(Array.isArray(answer) && answer.length === 0);
+            }).length;
+            
+            questionCompletionFactor = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 2 : 0;
+          }
+          
+          // 2. Time Engagement Factor (30%)
+          // Higher score for responses that took reasonable time (not too quick, not too slow)
+          if (response.completionTime) {
+            // Convert seconds to minutes for easier calculation
+            const completionTimeMinutes = response.completionTime / 60;
+            
+            // Ideal time range: 2-10 minutes (adjust based on your survey complexity)
+            if (completionTimeMinutes < 0.5) {
+              // Too quick, likely not engaged
+              timeEngagementFactor = 0.5;
+            } else if (completionTimeMinutes < 2) {
+              // Quick but possibly valid
+              timeEngagementFactor = 1.0;
+            } else if (completionTimeMinutes <= 10) {
+              // Ideal range - fully engaged
+              timeEngagementFactor = 1.5;
+            } else {
+              // Took too long, might indicate distractions
+              timeEngagementFactor = 1.0;
+            }
+          } else {
+            // No completion time data
+            timeEngagementFactor = 0.75; // Default to medium engagement
+          }
+          
+          // 3. Response Quality Factor (30%)
+          // Analyze text responses for length and detail
+          if (response.responses && Array.isArray(response.responses)) {
+            let textResponseQuality = 0;
+            let textResponseCount = 0;
+            
+            // Analyze text responses
+            response.responses.forEach(r => {
+              if (r.answer && typeof r.answer === 'string' && r.answer.trim() !== '') {
+                const wordCount = r.answer.split(/\s+/).length;
+                
+                // Score based on word count
+                if (wordCount >= 20) {
+                  textResponseQuality += 1.5; // Detailed response
+                } else if (wordCount >= 10) {
+                  textResponseQuality += 1.0; // Average response
+                } else if (wordCount >= 3) {
+                  textResponseQuality += 0.5; // Brief response
+                } else {
+                  textResponseQuality += 0.25; // Very brief response
+                }
+                
+                textResponseCount++;
+              }
+            });
+            
+            // Calculate average quality for text responses
+            responseQualityFactor = textResponseCount > 0 ? 
+              (textResponseQuality / textResponseCount) : 1.0;
+          } else {
+            responseQualityFactor = 1.0; // Default quality
+          }
+          
+          // Calculate weighted engagement score for this response (out of 5)
+          const responseEngagement = (
+            (questionCompletionFactor * 0.4) + 
+            (timeEngagementFactor * 0.3) + 
+            (responseQualityFactor * 0.3)
+          ) * 2.5; // Scale to 0-5 range
+          
+          totalEngagementScore += responseEngagement;
+        }
+        
+        // Calculate average engagement score across all responses
+        const averageEngagementScore = completedResponses.length > 0 ? 
+          totalEngagementScore / completedResponses.length : 0;
+        
+        // Round to one decimal place
+        const roundedScore = Math.round(averageEngagementScore * 10) / 10;
+        
+        console.log(`Final engagement score: ${roundedScore} (out of 5.0)`);
+        return roundedScore;
+      } catch (error: unknown) {
+        console.error('Error calculating engagement score:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating engagement score: ${errorMessage}`);
+      }
+    },
+    
+    // Get filtered completion time with optional filters
+    async 'getFilteredCompletionTime'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getFilteredCompletionTime method called with filters:', filterParams);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get completion time');
+      }
+      
+      try {
+        // Default date range: last 30 days
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
+        
+        let endDateFilter = new Date();
+        
+        // Use provided date range if available
+        if (filterParams?.startDate) {
+          startDateFilter = new Date(filterParams.startDate);
+        }
+        
+        if (filterParams?.endDate) {
+          endDateFilter = new Date(filterParams.endDate);
+        }
+        
+        // Build query for completed responses
+        const query: any = {
+          createdAt: { $gte: startDateFilter, $lte: endDateFilter },
+          completed: true,
+          completionTime: { $exists: true, $ne: null }
+        };
+        
+        // Add survey filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          query.surveyId = { $in: filterParams.surveyIds };
+          console.log('Filtering completion time by surveyIds:', filterParams.surveyIds);
+        }
+        
+        // Find all completed responses with filters
+        const responses = await SurveyResponses.find(query).fetchAsync();
+        
+        if (responses.length === 0) {
+          return 0;
+        }
+        
+        // Calculate average completion time in minutes
+        let totalCompletionTime = 0;
+        let validResponseCount = 0;
+        
+        responses.forEach(response => {
+          if (response.completionTime && response.completionTime > 0) {
+            totalCompletionTime += response.completionTime;
+            validResponseCount++;
+          }
+        });
+        
+        if (validResponseCount === 0) {
+          return 0;
+        }
+        
+        // Calculate average completion time in seconds first
+        const avgCompletionTimeSeconds = totalCompletionTime / validResponseCount;
+        
+        // Convert to minutes with 1 decimal place precision
+        const avgCompletionTimeMinutes = parseFloat((avgCompletionTimeSeconds / 60).toFixed(1));
+        
+        console.log(`Enhanced average completion time with filters: ${avgCompletionTimeSeconds.toFixed(1)} seconds (${avgCompletionTimeMinutes} minutes)`);
+        
+        return avgCompletionTimeMinutes;
+      } catch (error: unknown) {
+        console.error('Error calculating enhanced completion time:', error);
+      }
+    },
+    
+    // Get enhanced completion time with optional filters
+    async 'getResponseTrendsData'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      console.log('getResponseTrendsData method called with filters:', filterParams);
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get response trends data');
@@ -345,15 +1159,28 @@ if (Meteor.isServer) {
         // Log the date range we're querying
         console.log(`Fetching responses from ${sixDaysAgo.toISOString()} to present`);
         
-        // Get all completed responses in the last 7 days
-        const completedResponses = await SurveyResponses.find({
+        // Build query for completed responses
+        const completedQuery: any = {
           createdAt: { $gte: sixDaysAgo },
-        }).fetchAsync();
+        };
         
-        // Get all incomplete responses in the last 7 days
-        const incompleteResponses = await IncompleteSurveyResponses.find({
+        // Build query for incomplete responses
+        const incompleteQuery: any = {
           startedAt: { $gte: sixDaysAgo },
-        }).fetchAsync();
+        };
+        
+        // Add survey filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          completedQuery.surveyId = { $in: filterParams.surveyIds };
+          incompleteQuery.surveyId = { $in: filterParams.surveyIds };
+          console.log('Filtering response trends by surveyIds:', filterParams.surveyIds);
+        }
+        
+        // Get all completed responses with filters
+        const completedResponses = await SurveyResponses.find(completedQuery).fetchAsync();
+        
+        // Get all incomplete responses with filters
+        const incompleteResponses = await IncompleteSurveyResponses.find(incompleteQuery).fetchAsync();
         
         console.log(`Found ${completedResponses.length} completed responses:`, completedResponses.map(r => ({ 
           id: r._id, 

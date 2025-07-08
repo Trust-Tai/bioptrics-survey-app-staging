@@ -72,7 +72,7 @@ if (Meteor.isServer) {
     },
     
     // Enhanced method to calculate average engagement score
-    async 'getEnhancedEngagementScore'() {
+    async 'getAnalyticsEngagementScore'() {
       console.log('getAverageEngagementScore method called (enhanced version)');
       
       if (!this.userId) {
@@ -122,8 +122,8 @@ if (Meteor.isServer) {
     },
     
     // Enhanced method to calculate average completion time
-    async 'getEnhancedCompletionTime'() {
-      console.log('getAverageCompletionTime method called (enhanced version)');
+    async 'getAnalyticsCompletionTime'() {
+      console.log('getAnalyticsCompletionTime method called');
       
       if (!this.userId) {
         throw new Meteor.Error('not-authorized', 'You must be logged in to get average completion time');
