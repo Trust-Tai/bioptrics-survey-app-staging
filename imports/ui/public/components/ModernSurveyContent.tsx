@@ -91,7 +91,10 @@ interface ExtendedSurvey extends Survey {
     allowRetake?: boolean;
     retakeMode?: 'replace' | 'new';
     [key: string]: any;
-  };
+  }
+  allowRetake?: boolean;
+  retakeMode?: 'replace' | 'new';
+  estimatedTime?: string;
 }
 
 const ModernSurveyContent: React.FC<{
@@ -1091,29 +1094,24 @@ const handleRestart = () => {
           if (responses[questionId] === undefined) {
             // Try to get the response from the DOM if it's not in the state
             const questionType = currentQuestion.type?.toLowerCase() || '';
-            let answer;
+            let answer: string | undefined;
             
             // Check for Likert/scale questions specifically
             if (questionType.includes('scale') || questionType.includes('likert')) {
               const selectedButton = document.querySelector('.scale-button.selected');
               if (selectedButton) {
-                answer = selectedButton.textContent?.trim();
+                answer = (selectedButton as HTMLElement)?.textContent?.trim();
+                console.log('Found Likert/scale answer from selected button:', answer);
+                
+                // Update responses state with the answer
+                if (answer) {
+                  setResponses(prev => ({
+                    ...prev,
+                    [questionId]: answer
+                  }));
+                  console.log(`Added response for last question ${questionId} before submission:`, answer);
+                }
               }
-            } else {
-              // For other question types
-              answer = (document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement)?.value || 
-                     (document.querySelector(`input[name="${questionId}"]`) as HTMLInputElement)?.value || 
-                     (document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement)?.value ||
-                     document.querySelector(`.option-button.selected`)?.textContent?.trim();
-            }
-            
-            if (answer) {
-              // Update the responses state with the current answer
-              setResponses(prev => ({
-                ...prev,
-                [questionId]: answer
-              }));
-              console.log(`Added response for last question ${questionId} before submission:`, answer);
             }
           }
           
@@ -1273,7 +1271,7 @@ const handleRestart = () => {
           answer = checkedInput?.value || 
                   regularInput?.value || 
                   textArea?.value ||
-                  optionButton?.textContent?.trim() ||
+                  (optionButton as HTMLElement)?.textContent?.trim() ||
                   selectedOptionButton?.textContent?.trim();
         }
         
@@ -1792,43 +1790,100 @@ const handleRestart = () => {
   };
   
   // Calculate the estimated time to complete the survey based on total question count
-  const calculateEstimatedTime = (): string => {
-    // Get the total number of questions
+  // If sectionId is provided, calculate time only for that section
+  const calculateEstimatedTime = (sectionId?: string): string => {
+    // Get the total number of questions for the entire survey
     const totalQuestions = questions.length;
     
+    // If sectionId is provided, calculate time proportionally for that section
+    if (sectionId) {
+      // Get questions for this specific section
+      const sectionQuestions = getQuestionsForSection(sectionId);
+      const sectionQuestionCount = sectionQuestions.length;
+      
+      // If no questions in this section, return minimal time
+      if (sectionQuestionCount === 0) return "1";
+      
+      // If all questions are in this section, calculate normally
+      if (sectionQuestionCount === totalQuestions) {
+        // Use the standard calculation below
+      } else {
+        // Calculate proportional time based on question count ratio
+        // First, get the time range for the entire survey
+        const surveyTimeRange = calculateSurveyTimeRange(totalQuestions);
+        
+        // Extract min and max from the range
+        const rangeParts = surveyTimeRange.split('-');
+        const minTime = parseInt(rangeParts[0], 10);
+        const maxTime = parseInt(rangeParts[1] || rangeParts[0], 10);
+        
+        // Calculate proportional times based on question ratio
+        const ratio = sectionQuestionCount / totalQuestions;
+        let sectionMinTime = Math.max(1, Math.round(minTime * ratio));
+        let sectionMaxTime = Math.max(sectionMinTime + 1, Math.round(maxTime * ratio));
+        
+        // Ensure we have at least a 1-minute range for sections with multiple questions
+        if (sectionQuestionCount > 1 && sectionMinTime === sectionMaxTime) {
+          sectionMaxTime = sectionMinTime + 1;
+        }
+        
+        // For very small sections (1-2 questions), just use "1-2" minutes
+        if (sectionQuestionCount <= 2) {
+          return "1-2";
+        }
+        
+        // Log the calculation
+        console.log(`Section time calculation for ${sectionId}:`, {
+          sectionQuestionCount,
+          totalQuestions,
+          ratio,
+          surveyTimeRange,
+          sectionTimeRange: `${sectionMinTime}-${sectionMaxTime}`
+        });
+        
+        return `${sectionMinTime}-${sectionMaxTime}`;
+      }
+    }
+    
+    // Standard calculation for entire survey
+    return calculateSurveyTimeRange(totalQuestions);
+  };
+  
+  // Helper function to calculate time range based on question count
+  const calculateSurveyTimeRange = (questionCount: number): string => {
     // Determine estimated time range based on question count
     let timeRange: string;
     
-    if (totalQuestions <= 3) {
+    if (questionCount <= 3) {
       // 1-3 questions: 1-2 minutes
       timeRange = "1-2";
-    } else if (totalQuestions <= 5) {
+    } else if (questionCount <= 5) {
       // 4-5 questions: 2-3 minutes
       timeRange = "2-3";
-    } else if (totalQuestions <= 9) {
+    } else if (questionCount <= 9) {
       // 6-9 questions: 3-4 minutes
       timeRange = "3-4";
-    } else if (totalQuestions <= 13) {
+    } else if (questionCount <= 13) {
       // 10-13 questions: 4-5 minutes
       timeRange = "4-5";
-    } else if (totalQuestions <= 17) {
+    } else if (questionCount <= 17) {
       // 14-17 questions: 5-6 minutes
       timeRange = "5-6";
-    } else if (totalQuestions <= 22) {
+    } else if (questionCount <= 22) {
       // 18-22 questions: 6-7 minutes
       timeRange = "6-7";
-    } else if (totalQuestions <= 27) {
+    } else if (questionCount <= 27) {
       // 23-27 questions: 7-8 minutes
       timeRange = "7-8";
-    } else if (totalQuestions <= 32) {
+    } else if (questionCount <= 32) {
       // 28-32 questions: 8-9 minutes
       timeRange = "8-9";
-    } else if (totalQuestions <= 37) {
+    } else if (questionCount <= 37) {
       // 33-37 questions: 9-10 minutes
       timeRange = "9-10";
     } else {
       // 38+ questions: 10+ minutes with a range
-      const baseTime = 10 + Math.floor((totalQuestions - 38) / 5);
+      const baseTime = 10 + Math.floor((questionCount - 38) / 5);
       timeRange = `${baseTime}-${baseTime + 2}`;
     }
     
@@ -1846,7 +1901,7 @@ const handleRestart = () => {
     
     // Log the calculation for debugging
     console.log('Survey completion time calculation:', {
-      totalQuestions,
+      questionCount,
       sectionCount: sections.length,
       timeRange
     });
@@ -1864,6 +1919,7 @@ const handleRestart = () => {
         const totalSections = sections.length;
         
         // Calculate the dynamic estimated time to complete the survey
+        // For welcome screen, we want the total survey time
         const dynamicEstimatedTime = calculateEstimatedTime();
         
         // Create a modified survey object with the dynamic estimated time
@@ -1906,7 +1962,8 @@ const handleRestart = () => {
         const dynamicSectionIndex = getCurrentSectionIndex(currentSection.id);
         
         // Calculate the dynamic estimated time based on section questions
-        const dynamicSectionTime = calculateEstimatedTime();
+        // Pass the section ID to calculate time proportionally for just this section
+        const dynamicSectionTime = calculateEstimatedTime(currentSection.id);
         
         // Create a modified section object with the dynamic estimated time
         const sectionWithDynamicTime = {
