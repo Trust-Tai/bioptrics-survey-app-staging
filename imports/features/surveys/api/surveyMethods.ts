@@ -61,10 +61,11 @@ if (Meteor.isServer) {
     },
     
     // Method to get unanswered questions count for a survey
-    async 'getUnansweredQuestionsCount'(surveyId: string) {
+    async 'getUnansweredQuestionsCount'(surveyId: string, responseId?: string) {
       check(surveyId, String);
+      if (responseId) check(responseId, String);
       
-      console.log('Getting unanswered questions count for survey:', surveyId);
+      console.log('Getting unanswered questions count for survey:', surveyId, responseId ? `with response ID: ${responseId}` : '');
       
       try {
         // First, get the survey to determine total question count
@@ -94,14 +95,23 @@ if (Meteor.isServer) {
         const totalQuestions = allQuestions.length;
         console.log('Total questions in survey:', totalQuestions);
         
-        // Get the most recent response for this survey
-        const response = await SurveyResponses.findOneAsync(
-          { surveyId, completed: true },
-          { sort: { updatedAt: -1 } }
-        );
+        // Get the response - either by specific ID or most recent
+        let response;
+        if (responseId) {
+          // Get the specific response if ID is provided
+          response = await SurveyResponses.findOneAsync({ _id: responseId });
+          console.log('Looking for specific response:', responseId, response ? 'found' : 'not found');
+        } else {
+          // Get the most recent response for this survey
+          response = await SurveyResponses.findOneAsync(
+            { surveyId, completed: true },
+            { sort: { updatedAt: -1 } }
+          );
+          console.log('Using most recent response:', response?._id);
+        }
         
         if (!response) {
-          console.log('No completed response found for survey:', surveyId);
+          console.log('No response found');
           return totalQuestions; // All questions are unanswered if no response
         }
         
@@ -121,11 +131,68 @@ if (Meteor.isServer) {
       }
     },
     
-    // Combined method to get all survey response data in a single call
-    async 'getSurveyResponseData'(surveyId: string) {
-      check(surveyId, String);
+    // Method to get unanswered questions count for a specific response
+    async 'getResponseUnansweredCount'(responseId: string) {
+      check(responseId, String);
       
-      console.log('Getting combined response data for survey:', surveyId);
+      console.log('Getting unanswered questions count for response:', responseId);
+      
+      try {
+        // Get the response
+        const response = await SurveyResponses.findOneAsync({ _id: responseId });
+        if (!response) {
+          console.log('Response not found:', responseId);
+          return 0;
+        }
+        
+        // Get the survey to determine total question count
+        const survey = await Surveys.findOneAsync({ _id: response.surveyId });
+        if (!survey) {
+          console.log('Survey not found for response:', response.surveyId);
+          return 0;
+        }
+        
+        // Get all questions from the survey
+        let allQuestions: any[] = [];
+        
+        // Check if survey has sectionQuestions
+        if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+          allQuestions = survey.sectionQuestions;
+        } 
+        // Check if survey has selectedQuestions
+        else if (survey.selectedQuestions) {
+          // Flatten the selectedQuestions object into an array
+          Object.values(survey.selectedQuestions).forEach(sectionQuestions => {
+            if (Array.isArray(sectionQuestions)) {
+              allQuestions = allQuestions.concat(sectionQuestions);
+            }
+          });
+        }
+        
+        const totalQuestions = allQuestions.length;
+        
+        // Count how many questions have valid answers
+        const answeredCount = response.responses?.filter(
+          resp => resp.answer !== null && resp.answer !== '' && resp.answer !== undefined
+        ).length || 0;
+        
+        // Calculate unanswered by subtracting answered from total
+        const unansweredCount = totalQuestions - answeredCount;
+        
+        console.log(`Response ${responseId}: ${totalQuestions} questions, ${answeredCount} answered, ${unansweredCount} unanswered`);
+        return unansweredCount;
+      } catch (error) {
+        console.error('Error getting response unanswered count:', error);
+        throw new Meteor.Error('get-response-unanswered-count-failed', 'Failed to get unanswered count for response');
+      }
+    },
+    
+    // Combined method to get all survey response data in a single call
+    async 'getSurveyResponseData'(surveyId: string, responseId?: string) {
+      check(surveyId, String);
+      if (responseId) check(responseId, String);
+      
+      console.log('Getting combined response data for survey:', surveyId, responseId ? `with response ID: ${responseId}` : '');
       
       try {
         // Get total responses count
@@ -134,15 +201,28 @@ if (Meteor.isServer) {
         // Get completion time
         const completionTime = await Meteor.call('getSurveyCompletionTime', surveyId);
         
-        // Get unanswered questions count
-        const unansweredQuestions = await Meteor.call('getUnansweredQuestionsCount', surveyId);
+        // Get unanswered questions count - use responseId if provided
+        const unansweredQuestions = responseId
+          ? await Meteor.call('getResponseUnansweredCount', responseId)
+          : await Meteor.call('getUnansweredQuestionsCount', surveyId);
         
-        console.log('Combined survey response data:', { responseCount, completionTime, unansweredQuestions });
+        // Get total question count
+        const questionCount = await Meteor.call('getSurveyQuestionCount', surveyId);
+        
+        console.log('Combined survey response data:', { 
+          responseCount, 
+          completionTime, 
+          unansweredQuestions,
+          questionCount,
+          forResponseId: responseId || 'none'
+        });
         
         return {
           responseCount: responseCount || 0,
           completionTime: completionTime || 0,
-          unansweredQuestions: unansweredQuestions || 0
+          unansweredQuestions: unansweredQuestions || 0,
+          questionCount: questionCount || 0,
+          responseId: responseId || null
         };
       } catch (error) {
         console.error('Error getting combined survey response data:', error);
@@ -150,8 +230,51 @@ if (Meteor.isServer) {
         return { 
           responseCount: 0, 
           completionTime: 0, 
-          unansweredQuestions: 0 
+          unansweredQuestions: 0,
+          questionCount: 0,
+          responseId: null
         };
+      }
+    },
+    
+    // Method to get the total question count for a survey
+    async 'getSurveyQuestionCount'(surveyId: string) {
+      check(surveyId, String);
+      
+      console.log('Getting total question count for survey:', surveyId);
+      
+      try {
+        // Get the survey to determine total question count
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        if (!survey) {
+          console.log('Survey not found:', surveyId);
+          return 0;
+        }
+        
+        // Get all questions from the survey
+        let allQuestions: any[] = [];
+        
+        // Check if survey has sectionQuestions
+        if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+          allQuestions = survey.sectionQuestions;
+        } 
+        // Check if survey has selectedQuestions
+        else if (survey.selectedQuestions) {
+          // Flatten the selectedQuestions object into an array
+          Object.values(survey.selectedQuestions).forEach(sectionQuestions => {
+            if (Array.isArray(sectionQuestions)) {
+              allQuestions = allQuestions.concat(sectionQuestions);
+            }
+          });
+        }
+        
+        const totalQuestions = allQuestions.length;
+        console.log('Total questions in survey:', totalQuestions);
+        
+        return totalQuestions;
+      } catch (error) {
+        console.error('Error getting total question count:', error);
+        throw new Meteor.Error('get-question-count-failed', 'Failed to get total question count');
       }
     },
     
