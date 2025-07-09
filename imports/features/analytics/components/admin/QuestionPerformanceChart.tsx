@@ -29,7 +29,7 @@ interface QuestionData {
   sentiment: string;
   answers: AnswerData[];
   // Enhanced metrics
-  avgTimeSpent: number; // Average time spent on question in seconds
+  avgTimeSpent: string; // Average time spent on question in formatted string (e.g., '30s' or '1m 15s')
   skipRate: number; // Percentage of users who skipped this question
   completionRate: number; // Percentage of users who completed this question
   engagementScore: number; // Score from 0-100 indicating user engagement
@@ -1043,7 +1043,7 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
       'Response Count': item.responseCount,
       'Average Score': item.averageScore.toFixed(2),
       'Sentiment': item.sentiment,
-      'Avg Time Spent (sec)': item.avgTimeSpent.toFixed(1),
+      'Avg Time Spent': item.avgTimeSpent,
       'Skip Rate (%)': (item.skipRate * 100).toFixed(1),
       'Completion Rate (%)': (item.completionRate * 100).toFixed(1),
       'Engagement Score': item.engagementScore.toFixed(1),
@@ -1186,7 +1186,7 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                   <MetricLabel>Avg Time Spent</MetricLabel>
                   <MetricValue>
                     <MetricIcon><FiClock size={14} /></MetricIcon>
-                    {question.avgTimeSpent} sec
+                    {question.avgTimeSpent}
                   </MetricValue>
                 </MetricCard>
                 

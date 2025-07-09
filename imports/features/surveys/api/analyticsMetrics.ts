@@ -193,21 +193,43 @@ if (Meteor.isServer) {
           isAbandoned: { $exists: false }
         }).fetchAsync();
         
+        // Calculate total number of survey responses for skip rate calculation
+        const totalSurveyResponses = completedResponses.length + incompleteResponses.length;
+        
         console.log(`Processing ${completedResponses.length} completed and ${incompleteResponses.length} incomplete responses for question performance`);
         
         // Create a map to store question data
         // Key: questionId, Value: { question, responses, averageScore, etc. }
         const questionMap = new Map();
         
+        // Create a map to directly track skipped vs. answered questions
+        // Key: questionId, Value: { total: number, answered: number, skipped: number, timeSpentTotal: number }
+        const questionResponseStats = new Map();
+        
         // Collect all unique question IDs first
         const questionIds = new Set();
         
-        // Process completed responses to collect question IDs
+        // Initialize the question response stats map for all question IDs
+        questionIds.forEach(qId => {
+          questionResponseStats.set(qId, { total: 0, answered: 0, skipped: 0, timeSpentTotal: 0 });
+        });
+        
+        // Process completed responses to collect question IDs and count answered/skipped questions
         completedResponses.forEach(response => {
           if (!response.responses || !Array.isArray(response.responses)) {
             return;
           }
           
+          // Calculate total survey time
+          let totalSurveyTime = 0;
+          if (response.startTime && response.endTime) {
+            const startTime = new Date(response.startTime);
+            const endTime = new Date(response.endTime);
+            totalSurveyTime = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
+          }
+          
+          // Count answered questions for this response
+          const answeredQuestionIds = [];
           response.responses.forEach(item => {
             if (!item.questionId) {
               return;
@@ -215,15 +237,50 @@ if (Meteor.isServer) {
             
             // Add to our set of unique question IDs
             questionIds.add(item.questionId);
+            
+            // Initialize stats for this question if not already done
+            if (!questionResponseStats.has(item.questionId)) {
+              questionResponseStats.set(item.questionId, { total: 0, answered: 0, skipped: 0, timeSpentTotal: 0 });
+            }
+            
+            const stats = questionResponseStats.get(item.questionId);
+            stats.total++;
+            
+            // Check if the answer is empty (as shown in your database screenshot)
+            if (item.answer === undefined || item.answer === null || item.answer === '') {
+              stats.skipped++;
+            } else {
+              stats.answered++;
+              answeredQuestionIds.push(item.questionId);
+            }
           });
+          
+          // Distribute survey time across answered questions
+          if (totalSurveyTime > 0 && answeredQuestionIds.length > 0) {
+            const timePerQuestion = totalSurveyTime / answeredQuestionIds.length;
+            answeredQuestionIds.forEach(qId => {
+              const stats = questionResponseStats.get(qId);
+              stats.timeSpentTotal += timePerQuestion;
+            });
+          }
         });
         
-        // Also collect question IDs from incomplete responses
+        // Also process incomplete responses
         incompleteResponses.forEach(response => {
           if (!response.responses || !Array.isArray(response.responses)) {
             return;
           }
           
+          // Calculate total survey time
+          let totalSurveyTime = 0;
+          if (response.startTime && response.endTime) {
+            const startTime = new Date(response.startTime);
+            const endTime = new Date(response.endTime);
+            totalSurveyTime = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
+          }
+          
+          // Count answered questions for this response
+          const answeredQuestionIds = [];
           response.responses.forEach(item => {
             if (!item.questionId) {
               return;
@@ -231,7 +288,32 @@ if (Meteor.isServer) {
             
             // Add to our set of unique question IDs
             questionIds.add(item.questionId);
+            
+            // Initialize stats for this question if not already done
+            if (!questionResponseStats.has(item.questionId)) {
+              questionResponseStats.set(item.questionId, { total: 0, answered: 0, skipped: 0, timeSpentTotal: 0 });
+            }
+            
+            const stats = questionResponseStats.get(item.questionId);
+            stats.total++;
+            
+            // Check if the answer is empty (as shown in your database screenshot)
+            if (item.answer === undefined || item.answer === null || item.answer === '') {
+              stats.skipped++;
+            } else {
+              stats.answered++;
+              answeredQuestionIds.push(item.questionId);
+            }
           });
+          
+          // Distribute survey time across answered questions
+          if (totalSurveyTime > 0 && answeredQuestionIds.length > 0) {
+            const timePerQuestion = totalSurveyTime / answeredQuestionIds.length;
+            answeredQuestionIds.forEach(qId => {
+              const stats = questionResponseStats.get(qId);
+              stats.timeSpentTotal += timePerQuestion;
+            });
+          }
         });
         
         // Fetch actual question data from the database
@@ -454,6 +536,12 @@ if (Meteor.isServer) {
           console.log(`  ${id}: "${text}"`);
         });
         
+        // Log the question response stats for debugging
+        console.log('Question response stats:');
+        questionResponseStats.forEach((stats, qId) => {
+          console.log(`  ${qId}: total=${stats.total}, answered=${stats.answered}, skipped=${stats.skipped}`);
+        });
+        
         // Convert map to array and calculate averages
         const result = Array.from(questionMap.values()).map(question => {
           // Calculate average score for rating questions
@@ -489,26 +577,130 @@ if (Meteor.isServer) {
             return a.value.localeCompare(b.value);
           });
           
-          // Calculate enhanced metrics
-          const avgTimeSpent = question.timeSpentCount > 0 
-            ? Math.round(question.timeSpentTotal / question.timeSpentCount) 
+          // Helper function to format time in minutes and seconds
+          const formatTimeDisplay = (seconds: number): string => {
+            if (seconds < 60) {
+              return `${seconds}s`;
+            } else {
+              const minutes = Math.floor(seconds / 60);
+              const remainingSeconds = seconds % 60;
+              return `${minutes}m ${remainingSeconds}s`;
+            }
+          };
+          
+          // Helper functions for calculating engagement score components
+          
+          // 1. Time Spent Factor (25%)
+          const calculateTimeSpentFactor = (avgTimeInSeconds: number, questionType: string | undefined): number => {
+            // Define ideal time ranges based on question type
+            let minIdealTime = 10; // seconds
+            let maxIdealTime = 30; // seconds
+            
+            // Adjust ideal time range based on question type (with null/undefined check)
+            if (questionType && typeof questionType === 'string') {
+              const lowerType = questionType.toLowerCase();
+              if (lowerType.includes('text')) {
+                minIdealTime = 20;
+                maxIdealTime = 60;
+              } else if (lowerType.includes('multiple')) {
+                minIdealTime = 15;
+                maxIdealTime = 45;
+              }
+            }
+            
+            // Calculate score based on time spent
+            if (avgTimeInSeconds >= minIdealTime && avgTimeInSeconds <= maxIdealTime) {
+              // Full points if within ideal range
+              return 25;
+            } else if (avgTimeInSeconds < minIdealTime) {
+              // Partial points if too quick (potentially rushing)
+              const percentage = Math.max(avgTimeInSeconds / minIdealTime, 0.2); // At least 20%
+              return Math.round(25 * percentage);
+            } else {
+              // Partial points if too slow (potentially distracted)
+              const maxTime = maxIdealTime * 2;
+              const percentage = Math.max(1 - ((avgTimeInSeconds - maxIdealTime) / maxTime), 0.2); // At least 20%
+              return Math.round(25 * percentage);
+            }
+          };
+          
+          // 2. Survey Completion Factor (25%)
+          const calculateCompletionFactor = (completionRate: number): number => {
+            // Scale the completion rate to 25 points
+            return Math.round((completionRate / 100) * 25);
+          };
+          
+          // 3. Response Quality Factor (50%)
+          // 3a. Skip Rate Component (25%)
+          const calculateSkipFactor = (skipRate: number): number => {
+            // Inverse of skip rate (lower skip rate = higher score)
+            return Math.round((1 - (skipRate / 100)) * 25);
+          };
+          
+          // 3b. Answer Quality Component (25%)
+          const calculateAnswerQualityFactor = (questionStats: any, questionType: string | undefined): number => {
+            // For now, a simple implementation based on whether the question was answered
+            if (questionStats.answered === 0) {
+              return 0;
+            }
+            
+            // For text questions, we could analyze text length, etc.
+            // For multiple choice, full points for selecting an option
+            return 25;
+          };
+          
+          // Calculate enhanced metrics - dynamic average time spent
+          const questionStats = questionResponseStats.get(question.questionId) || { total: 0, answered: 0, skipped: 0, timeSpentTotal: 0 };
+          const avgTimeSpentSeconds = questionStats.answered > 0 
+            ? Math.round(questionStats.timeSpentTotal / questionStats.answered) 
             : 30; // Default to 30 seconds if no data
           
-          const skipRate = question.responseCount > 0 
-            ? Math.round((question.skipCount / question.responseCount) * 1000) / 10 
+          // Format the time display
+          const avgTimeSpent = formatTimeDisplay(avgTimeSpentSeconds);
+          
+          // Get the response stats for this question (already retrieved above)
+          // Using the same questionStats variable
+          
+          // Calculate completion rate as percentage of people who answered the question
+          const completionRate = questionStats.total > 0
+            ? Number(((questionStats.answered / questionStats.total) * 100).toFixed(2))
             : 0;
             
-          const completionRate = 100 - skipRate;
+          // Calculate skip rate as percentage of people who didn't answer the question
+          const skipRate = questionStats.total > 0
+            ? Number(((questionStats.skipped / questionStats.total) * 100).toFixed(2))
+            : 0;
           
-          const engagementScore = question.engagementCount > 0 
-            ? Math.round(question.engagementTotal / question.engagementCount) 
-            : Math.round(75 + (averageScore * 5)); // Estimate based on score if no data
+          // Calculate dynamic engagement score based on multiple factors
           
-          // Determine response quality based on engagement and completion
+          // 1. Time Spent Factor (25%)
+          const timeSpentFactor = calculateTimeSpentFactor(avgTimeSpentSeconds, question.questionType);
+          
+          // 2. Survey Completion Factor (25%)
+          const completionFactor = calculateCompletionFactor(completionRate);
+          
+          // 3a. Skip Rate Component (25%)
+          const skipFactor = calculateSkipFactor(skipRate);
+          
+          // 3b. Answer Quality Component (25%)
+          const answerQualityFactor = calculateAnswerQualityFactor(questionStats, question.questionType);
+          
+          // Calculate total engagement score (0-100)
+          const engagementScore = timeSpentFactor + completionFactor + skipFactor + answerQualityFactor;
+          
+          // Log the engagement score components for debugging
+          console.log(`Engagement score for question ${question.questionId}:`);
+          console.log(`  Time Spent Factor: ${timeSpentFactor}/25 (${avgTimeSpentSeconds}s)`); 
+          console.log(`  Completion Factor: ${completionFactor}/25 (${completionRate}%)`); 
+          console.log(`  Skip Factor: ${skipFactor}/25 (${skipRate}% skip rate)`); 
+          console.log(`  Answer Quality Factor: ${answerQualityFactor}/25`); 
+          console.log(`  Total Engagement Score: ${engagementScore}/100`);
+          
+          // Determine response quality based on the new engagement score
           let responseQuality = 'medium';
-          if (engagementScore > 85 && completionRate > 95) {
+          if (engagementScore >= 85) {
             responseQuality = 'high';
-          } else if (engagementScore < 60 || completionRate < 80) {
+          } else if (engagementScore < 60) {
             responseQuality = 'low';
           }
           
