@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import AllSurveyResponses from './components/AllSurveyResponses';
 import { Layers, Layer } from '/imports/api/layers';
 import { Surveys } from '/imports/features/surveys/api/surveys';
 import { Questions } from '/imports/features/questions/api/questions';
@@ -1438,6 +1439,14 @@ const Analytics: React.FC = () => {
               <ChartContainer>
                 <div>Insights Coming Soon</div>
               </ChartContainer>
+            </Card>
+          </DashboardGrid>
+        )}
+        
+        {activeTab === 'responses' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <AllSurveyResponses />
             </Card>
           </DashboardGrid>
         )}

@@ -14,20 +14,264 @@ interface ResponseTrendDataPoint {
 
 if (Meteor.isServer) {
   Meteor.methods({
-    // Get total responses count for a survey
-    'getTotalResponsesCount'(surveyId) {
+    // Debug method to check survey responses
+    async 'debug.checkSurveyResponses'() {
+      // Only allow in development
+      if (!Meteor.isDevelopment) {
+        throw new Meteor.Error('not-authorized', 'This method is only available in development');
+      }
+      
       try {
-        check(surveyId, String);
-        console.log('Getting total responses count for survey ID:', surveyId);
+        console.log('[SERVER] Starting debug.checkSurveyResponses method');
         
-        // Get the total count of all responses for this survey
-        const totalCount = SurveyResponses.find({ surveyId: surveyId }).countAsync();
-        console.log(`Found ${totalCount} total survey responses for survey ID: ${surveyId}`);
+        // Check if SurveyResponses collection is properly initialized
+        if (!SurveyResponses) {
+          console.error('[SERVER] SurveyResponses collection is not defined');
+          throw new Meteor.Error('collection-error', 'SurveyResponses collection is not defined');
+        }
         
-        return totalCount; // Return the actual count (0 if none found)
-      } catch (error) {
-        console.error('Error in getTotalResponsesCount method:', error);
-        throw new Meteor.Error('count-error', 'Failed to get response count');
+        // Check if we have survey responses in the collection
+        const responseCount = await SurveyResponses.find().countAsync();
+        console.log(`[SERVER] Found ${responseCount} survey responses in collection`);
+        
+        // Get some sample data
+        const sampleResponses = SurveyResponses.find({}, { limit: 5 }).fetch();
+        
+        // Check collection name
+        const collectionName = (SurveyResponses as any)._name || 'unknown';
+        console.log(`[SERVER] Collection name is: ${collectionName}`);
+        
+        // Check which publications are available
+        const publications = [
+          'responses.all',
+          'survey_responses.all',
+          'surveyResponses.all',
+          'surveyResponses.bySurvey'
+        ];
+        
+        // Check if any user has admin role - with safer error handling
+        let adminCount = 0;
+        try {
+          // Check if roles field exists in the schema
+          adminCount = await Meteor.users.find({ roles: { $in: ['admin'] } }).countAsync();
+          console.log(`[SERVER] Found ${adminCount} users with admin role`);
+        } catch (roleError: any) {
+          console.warn('[SERVER] Could not check admin roles:', roleError?.message || 'Unknown error');
+          // Continue execution even if role check fails
+        }
+        
+        return {
+          responseCount,
+          sampleResponses,
+          collectionName,
+          publications,
+          adminCount
+        };
+      } catch (error: any) {
+        console.error('[SERVER] Error in debug.checkSurveyResponses method:', error);
+        
+        // Provide more detailed error information
+        const errorMessage = error?.message || 'Unknown error';
+        const errorType = error?.error || 'debug-error';
+        
+        console.error(`[SERVER] Debug method error details - Type: ${errorType}, Message: ${errorMessage}`);
+        
+        // Return a partial result with error information instead of throwing
+        return {
+          error: true,
+          errorType,
+          errorMessage,
+          responseCount: 0,
+          sampleResponses: [],
+          collectionName: (SurveyResponses as any)?._name || 'unknown',
+          adminCount: 0
+        };
+      }
+    },
+    
+    // Create a test survey response for development purposes
+    async 'debug.createTestSurveyResponse'() {
+      // Only allow in development
+      if (!Meteor.isDevelopment) {
+        throw new Meteor.Error('not-authorized', 'This method is only available in development');
+      }
+      
+      try {
+        // First, check if we have any surveys
+        const survey = Surveys.findOne();
+        if (!survey) {
+          throw new Meteor.Error('no-survey', 'No survey found to create test response');
+        }
+        
+        // Create a test response
+        const testResponse = {
+          surveyId: survey._id || '', // Ensure surveyId is never undefined
+          responses: [
+            {
+              questionId: 'test-question-1',
+              answer: 'Test answer 1',
+              sectionId: 'section-1'
+            },
+            {
+              questionId: 'test-question-2',
+              answer: 'Test answer 2',
+              sectionId: 'section-1'
+            }
+          ],
+          completed: true,
+          startTime: new Date(Date.now() - 3600000), // 1 hour ago
+          endTime: new Date(),
+          progress: 100,
+          metadata: {
+            browser: 'Chrome',
+            device: 'Desktop',
+            os: 'Windows',
+            deviceType: 'desktop' as 'desktop' | 'tablet' | 'mobile'
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        // Insert the test response
+        const responseId = SurveyResponses.insert(testResponse);
+        console.log(`[SERVER] Created test survey response with ID: ${responseId}`);
+        
+        return { success: true, responseId };
+      } catch (error: any) {
+        console.error('Error in debug.createTestSurveyResponse method:', error);
+        throw new Meteor.Error('create-error', `Failed to create test survey response: ${error.message || 'Unknown error'}`);
+      }
+    },
+    
+    async 'debug.createMultipleTestResponses'(count = 5) {
+      // Only allow in development
+      if (!Meteor.isDevelopment) {
+        throw new Meteor.Error('not-authorized', 'This method is only available in development');
+      }
+      
+      check(count, Number);
+      
+      try {
+        console.log('[SERVER] Starting debug.createMultipleTestResponses with count:', count);
+        
+        // Get surveys to associate the responses with
+        const surveys = Surveys.find({}, { limit: 3 }).fetch();
+        console.log('[SERVER] Found surveys for test data:', surveys.length);
+        
+        if (surveys.length === 0) {
+          console.error('[SERVER] No surveys found for creating test responses');
+          throw new Meteor.Error('no-survey', 'No surveys found to create test responses for');
+        }
+        
+        // Log survey IDs for debugging
+        surveys.forEach((survey: any, index) => {
+          console.log(`[SERVER] Survey ${index + 1}:`, { 
+            id: survey._id, 
+            name: survey.name || 'Unnamed Survey'
+          });
+        });
+        
+        const deviceTypes = ['desktop', 'mobile', 'tablet'] as const;
+        const browsers = ['Chrome', 'Firefox', 'Safari', 'Edge'];
+        const operatingSystems = ['Windows', 'MacOS', 'Android', 'iOS'];
+        
+        const responseIds = [];
+        
+        // Create multiple test responses
+        for (let i = 0; i < count; i++) {
+          // Select a random survey from the available ones
+          const survey = surveys[Math.floor(Math.random() * surveys.length)];
+          
+          // Check if survey has a valid _id
+          if (!survey || !survey._id) {
+            console.error('Invalid survey object or missing _id:', survey);
+            throw new Meteor.Error('invalid-survey', 'Selected survey is invalid or missing _id');
+          }
+          
+          // Create a date within the last 30 days
+          const daysAgo = Math.floor(Math.random() * 30);
+          const hoursAgo = Math.floor(Math.random() * 24);
+          const startTime = new Date(Date.now() - (daysAgo * 24 * 60 * 60 * 1000) - (hoursAgo * 60 * 60 * 1000));
+          
+          // Random completion time between 2 and 15 minutes
+          const completionMinutes = 2 + Math.floor(Math.random() * 13);
+          const endTime = new Date(startTime.getTime() + (completionMinutes * 60 * 1000));
+          
+          // Random device info
+          const deviceType = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
+          const browser = browsers[Math.floor(Math.random() * browsers.length)];
+          const os = operatingSystems[Math.floor(Math.random() * operatingSystems.length)];
+          
+          // Ensure we have a valid survey ID
+          const surveyId = survey._id;
+          if (!surveyId) {
+            console.error('[SERVER] Missing survey ID for test response creation');
+            throw new Meteor.Error('invalid-survey-id', 'Survey ID is missing or invalid');
+          }
+          
+          // Create response with detailed logging
+          console.log(`[SERVER] Creating test response for survey: ${surveyId}`);
+          const responseId = SurveyResponses.insert({
+            surveyId,
+            responses: [
+              { 
+                questionId: `q${i+1}-1`, 
+                answer: `Test Answer ${i+1}-1`,
+                sectionId: 'section-1'
+              },
+              { 
+                questionId: `q${i+1}-2`, 
+                answer: `Test Answer ${i+1}-2`,
+                sectionId: 'section-1'
+              },
+              { 
+                questionId: `q${i+1}-3`, 
+                answer: `Test Answer ${i+1}-3`,
+                sectionId: 'section-2'
+              }
+            ],
+            startTime,
+            endTime,
+            completed: Math.random() > 0.2, // 80% chance of being completed
+            progress: Math.random() > 0.2 ? 100 : Math.floor(Math.random() * 100),
+            metadata: {
+              browser,
+              device: deviceType === 'desktop' ? 'Desktop' : deviceType === 'tablet' ? 'Tablet' : 'Mobile',
+              os,
+              deviceType
+            },
+            createdAt: startTime,
+            updatedAt: endTime
+          });
+          
+          responseIds.push(responseId);
+        }
+        
+        console.log(`[SERVER] Created ${responseIds.length} test survey responses`);
+        
+        return {
+          success: true,
+          count: responseIds.length,
+          responseIds
+        };
+      } catch (error: any) {
+        console.error('[SERVER] Error in debug.createMultipleTestResponses method:', error);
+        
+        // Provide more detailed error information
+        let errorMessage = error.message || 'Unknown error';
+        let errorType = 'create-error';
+        
+        // Check for specific error types
+        if (error.error === 'invalid-survey' || error.error === 'invalid-survey-id') {
+          errorType = error.error;
+          errorMessage = `Survey validation error: ${errorMessage}`;
+        } else if (errorMessage.includes('undefined') && errorMessage.includes('_id')) {
+          errorType = 'missing-survey-id';
+          errorMessage = 'Cannot read survey ID - survey object may be invalid';
+        }
+        
+        console.error(`[SERVER] Error details - Type: ${errorType}, Message: ${errorMessage}`);
+        throw new Meteor.Error(errorType, `Failed to create test survey responses: ${errorMessage}`);
       }
     },
     
