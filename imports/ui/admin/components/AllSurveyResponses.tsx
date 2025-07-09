@@ -364,7 +364,6 @@ const AllSurveyResponses: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [responsesPerPage] = useState(10);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [isCreatingTestData, setIsCreatingTestData] = useState(false);
   
   // Stats state variables
   const [completedSurveysCount, setCompletedSurveysCount] = useState<number>(0);
@@ -484,35 +483,7 @@ const AllSurveyResponses: React.FC = () => {
         console.log('No responses found, checking collection on server');
         
         // Call our debug method to check the collection on the server
-        Meteor.call('debug.checkSurveyResponses', (error: any, result: any) => {
-          if (error) {
-            console.error('Error checking survey responses:', error);
-            setNotification({
-              type: 'error',
-              message: `Error checking responses: ${error.reason || error.message || 'Unknown error'}`
-            });
-          } else {
-            console.log('Server collection check result:', result);
-            
-            // Check if the result contains an error flag (our improved error handling)
-            if (result && result.error) {
-              console.warn('Server returned error in result:', result.errorMessage);
-              setNotification({
-                type: 'warning',
-                message: `Server diagnostic: ${result.errorMessage || 'Unknown issue'}`
-              });
-              return;
-            }
-            
-            // If we have responses on the server but not on the client, there might be a publication issue
-            if (result && result.responseCount > 0) {
-              setNotification({
-                type: 'error',
-                message: `Found ${result.responseCount} responses on server but none on client. Check admin permissions.`
-              });
-            }
-          }
-        });
+        
       }
       
       // Fetch all surveys
@@ -671,30 +642,6 @@ const AllSurveyResponses: React.FC = () => {
     return data.map(row => row.map((item: any) => `"${item}"`).join(',')).join('\n');
   };
   
-  // Create test data for development purposes
-  const createTestData = (count = 10) => {
-    if (!Meteor.isDevelopment) return;
-    
-    setIsCreatingTestData(true);
-    setNotification({ type: 'success', message: `Creating ${count} test survey responses...` });
-    
-    Meteor.call('debug.createMultipleTestResponses', count, (error: any, result: any) => {
-      setIsCreatingTestData(false);
-      
-      if (error) {
-        console.error('Error creating test data:', error);
-        setNotification({ type: 'error', message: `Error creating test data: ${error.message}` });
-      } else {
-        console.log('Test data created:', result);
-        setNotification({ type: 'success', message: `Successfully created ${result.count} test survey responses` });
-        
-        // Force a refresh of the data
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      }
-    });
-  };
   
   // Generate CSV data for export
   const generateCSV = () => {
@@ -795,15 +742,6 @@ const AllSurveyResponses: React.FC = () => {
         <Header>
           <Title>All Survey Responses</Title>
           
-          {/* Development-only test data button */}
-          {Meteor.isDevelopment && (
-            <TestDataButton 
-              onClick={() => createTestData(10)} 
-              disabled={isCreatingTestData}
-            >
-              {isCreatingTestData ? 'Creating...' : 'Create Test Data'}
-            </TestDataButton>
-          )}
         </Header>
         
         {/* Stats Section */}
