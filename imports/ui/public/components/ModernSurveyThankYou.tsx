@@ -266,6 +266,9 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     return { loading: false, surveyResponse: response };
   }, []);
   
+  // State for total question count
+  const [totalQuestionCount, setTotalQuestionCount] = useState<number>(0);
+  
   // Use effect to get the current survey response data
   useEffect(() => {
     // Skip if survey doesn't have an ID
@@ -278,58 +281,31 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     const currentSurveyId = survey._id;
     console.log('Current survey ID:', currentSurveyId);
     
-    // First try: If we have a survey response from the tracker, use that data
-    if (surveyResponse && surveyResponse.surveyId === currentSurveyId) {
-      const responseCount = surveyResponse.responses?.length || 0;
-      const completionTime = surveyResponse.completionTime || 0;
-      
-      console.log('Using data from reactive data source:', { responseCount, completionTime });
-      
-      // setCurrentResponseData({
-      //   responseCount,
-      //   completionTime,
-      //   unansweredQuestions: surveyResponse.unansweredQuestions || 0
-      // });
-      return;
-    }
+    // Check if we have a current response ID from the tracker
+    const currentResponseId = surveyResponse?._id;
+    console.log('Current response ID:', currentResponseId || 'none');
     
-    // Otherwise, use the separate Meteor method calls with the current survey ID
-    console.log('Using separate Meteor method calls to get data for survey:', currentSurveyId);
+    // Use the combined method to get all survey data at once
+    console.log('Fetching combined survey response data for survey:', currentSurveyId);
     
-    // Use individual method calls as a fallback
-    console.log('Using individual method calls for survey:', currentSurveyId);
-    
-    // Get total responses count
-    Meteor.call('getTotalResponsesCount', currentSurveyId, (error1: any, responseCount: number) => {
-      if (error1) {
-        console.error('Error getting total responses count:', error1);
-        responseCount = 0;
+    // Pass the current response ID if available to get accurate unanswered questions count
+    Meteor.call('getSurveyResponseData', currentSurveyId, currentResponseId, (error: any, result: any) => {
+      if (error) {
+        console.error('Error getting survey response data:', error);
+        return;
       }
       
-      // Get completion time
-      Meteor.call('getSurveyCompletionTime', currentSurveyId, (error2: any, completionTime: number) => {
-        if (error2) {
-          console.error('Error getting completion time:', error2);
-          completionTime = 0;
-        }
-        
-        // Get unanswered questions count
-        Meteor.call('getUnansweredQuestionsCount', currentSurveyId, (error3: any, unansweredQuestions: number) => {
-          if (error3) {
-            console.error('Error getting unanswered questions count:', error3);
-            unansweredQuestions = 0;
-          }
-          responseCount = responseCount+1;
-          console.log('All data collected:', { responseCount, completionTime, unansweredQuestions });
-          
-          // Update state with all values
-          setCurrentResponseData({
-            responseCount: responseCount || 0,
-            completionTime: completionTime || 0,
-            unansweredQuestions: unansweredQuestions || 0
-          });
-        });
+      console.log('Received survey response data:', result);
+      
+      // Update state with all values
+      setCurrentResponseData({
+        responseCount: result.responseCount || 0,
+        completionTime: result.completionTime || 0,
+        unansweredQuestions: result.unansweredQuestions || 0
       });
+      
+      // Set the total question count
+      setTotalQuestionCount(result.questionCount || 0);
     });
   }, [survey._id, surveyResponse]);
   
@@ -345,6 +321,29 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   // For completion time, use prop if provided, otherwise use the actual completion time
   const surveyTime = propCompletionTime !== undefined ? propCompletionTime : 
                     (currentResponseData.completionTime || 222);
+                    
+  // Get the unanswered questions count
+  const unansweredQuestions = currentResponseData.unansweredQuestions || 0;
+  console.log('currentResponseData---:', currentResponseData);
+  
+  // Get the total questions count - prioritize the count from our method call
+  // Fall back to survey.questionCount or a default value if needed
+  const totalQuestions = totalQuestionCount || survey.questionCount || 0;
+  console.log('Total questions---:', totalQuestions, 'from server:', totalQuestionCount);
+  // Calculate the actual number of answered questions
+  const answeredQuestions = Math.max(0, totalQuestions - unansweredQuestions);
+  
+  // Calculate completion percentage
+  // If all questions are unanswered, completion should be 0%
+  const completionPercentage = totalQuestions > 0 ? 
+    Math.round((answeredQuestions / totalQuestions) * 100) : 100;
+    
+  console.log('Completion calculation:', { 
+    totalQuestions, 
+    unansweredQuestions, 
+    answeredQuestions, 
+    completionPercentage 
+  });
   const [mounted, setMounted] = useState(false);
   
   // Hide header and remove padding from main div
@@ -423,7 +422,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
             <FiCheckCircle size={20} />
           </StatIcon>
           <StatContent>
-            <StatValue>100%</StatValue>
+            <StatValue>{completionPercentage}%</StatValue>
             <StatLabel>Completion</StatLabel>
             <StatSublabel>Survey completed</StatSublabel>
           </StatContent>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import AllSurveyResponses from './components/AllSurveyResponses';
 import { Layers, Layer } from '/imports/api/layers';
 import { Surveys } from '/imports/features/surveys/api/surveys';
 import { Questions } from '/imports/features/questions/api/questions';
@@ -22,7 +23,9 @@ import {
   FiCalendar,
   FiUsers,
   FiList,
-  FiX
+  FiX,
+  FiCheckCircle,
+  FiAlertCircle
 } from 'react-icons/fi';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
@@ -31,6 +34,9 @@ import QuestionPerformanceChart from '/imports/features/analytics/components/adm
 import ResponseRateChart from '/imports/features/analytics/components/admin/ResponseRateChart';
 import CompletionTimeChart from '/imports/features/analytics/components/admin/CompletionTimeChart';
 import CompletionRateChart from '/imports/features/analytics/components/admin/CompletionRateChart';
+import FunnelChart from '/imports/features/analytics/components/admin/FunnelChart';
+import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
+import CompletionTimeDistribution from '/imports/features/analytics/components/admin/CompletionTimeDistribution';
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
@@ -607,17 +613,72 @@ const Analytics: React.FC = () => {
       // Reset data while loading
       setCompletionRateData({completed: 0, incomplete: 0});
       
-      // Get completed surveys count with date range
-      Meteor.call('getSurveyCompletedSurveysCount', selectedDateRange, (error: Error, completedCount: number) => {
+      // Prepare filter parameters based on date range
+      const filterParams: any = {};
+      
+      // Convert selectedDateRange to actual date objects
+      const today = new Date();
+      let startDate: Date | undefined;
+      let endDate: Date | undefined = new Date(today);
+      
+      switch (selectedDateRange) {
+        case 'today':
+          startDate = new Date(today);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'current_week':
+          startDate = new Date(today);
+          startDate.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'last_7_days':
+          startDate = new Date(today);
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case 'last_week':
+          startDate = new Date(today);
+          startDate.setDate(today.getDate() - today.getDay() - 7); // Start of last week
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 6); // End of last week
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case 'current_month':
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          break;
+        case 'last_month':
+          startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+          break;
+        case 'last_3_months':
+          startDate = new Date(today);
+          startDate.setMonth(today.getMonth() - 3);
+          break;
+      }
+      
+      if (startDate) filterParams.startDate = startDate.toISOString();
+      if (endDate) filterParams.endDate = endDate.toISOString();
+      
+      // Use our new filtered methods to get completion rate data
+      Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, completedCount: number) => {
         if (error) {
           console.error('Error fetching completed surveys count:', error);
         } else {
-          // Get incomplete surveys count with date range
-          Meteor.call('getIncompleteSurveysCount', selectedDateRange, (error: Error, incompleteCount: number) => {
+          // Calculate incomplete surveys by getting the difference between total surveys and completed surveys
+          // We need to get both completed and incomplete surveys to calculate the completion rate
+          const filterParamsForIncomplete = { ...filterParams, includeIncomplete: true };
+          
+          // Get total surveys count (both completed and incomplete)
+          Meteor.call('getFilteredSurveysCount', filterParamsForIncomplete, (error: Error, totalCount: number) => {
             if (error) {
-              console.error('Error fetching incomplete surveys count:', error);
+              console.error('Error fetching total surveys count:', error);
             } else {
-              console.log('Completion rate data received for range', selectedDateRange, ':', { completed: completedCount, incomplete: incompleteCount });
+              const incompleteCount = totalCount - completedCount;
+              console.log('Completion rate data received for range', selectedDateRange, ':', { 
+                completed: completedCount, 
+                incomplete: incompleteCount,
+                total: totalCount
+              });
               setCompletionRateData({ completed: completedCount, incomplete: incompleteCount });
             }
           });
@@ -626,62 +687,113 @@ const Analytics: React.FC = () => {
     }
   }, [showCompletionRateChart, selectedDateRange]);
   
-  // State for all KPI metrics
-  const [completedSurveysCount, setCompletedSurveysCount] = useState(0);
-  const [participationRate, setParticipationRate] = useState(0);
-  const [avgEngagementScore, setAvgEngagementScore] = useState(0);
-  const [avgCompletionTime, setAvgCompletionTime] = useState(0);
+  // State for KPI metrics
+  const [completedSurveysCount, setCompletedSurveysCount] = useState<number>(0);
+  const [participationRate, setParticipationRate] = useState<number>(0);
+  const [completionRate, setCompletionRate] = useState<number>(0);
+  const [avgEngagementScore, setAvgEngagementScore] = useState<number>(0);
+  const [avgCompletionTime, setAvgCompletionTime] = useState<number>(0);
+  const [responseRate, setResponseRate] = useState<number>(0);
+  const [responseTrendsData, setResponseTrendsData] = useState<any[]>([]);
   
-  // Fetch KPI metrics on component mount
-  useEffect(() => {
+  // Function to apply filters and update metrics
+  const applyFilters = () => {
     setIsLoading(true);
     
-    // Fetch completed surveys count using existing method
-    Meteor.call('getCompletedSurveysCount', (error, result) => {
+    // Prepare filter parameters
+    const filterParams = {
+      surveyIds: selectedSurveys.length > 0 ? selectedSurveys : undefined,
+      tagIds: selectedTags.length > 0 ? selectedTags : undefined,
+      questionIds: selectedQuestions.length > 0 ? selectedQuestions : undefined,
+      startDate: startDate ? startDate.toISOString() : undefined,
+      endDate: endDate ? endDate.toISOString() : undefined
+    };
+    
+    console.log('Applying filters:', filterParams);
+    
+    // Fetch completed surveys count with filters
+    Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
       if (error) {
         console.error('Error fetching completed surveys count:', error);
       } else {
+        console.log('Completed surveys count:', result);
         setCompletedSurveysCount(result);
       }
     });
     
-    // Fetch participation rate using enhanced response rate method
-    Meteor.call('getResponseRateByDate', (error, result) => {
+    // Fetch participation rate with filters
+    Meteor.call('getFilteredParticipationRate', filterParams, (error: Error, result: number) => {
       if (error) {
-        console.error('Error fetching enhanced response rate:', error);
+        console.error('Error fetching enhanced participation rate:', error);
       } else {
-        // Calculate average participation rate from the last 7 days
-        if (result && result.length > 0) {
-          const sum = result.reduce((acc, item) => acc + item.count, 0);
-          setParticipationRate(Math.round(sum / result.length));
-        }
+        console.log('Participation rate:', result);
+        setParticipationRate(result);
       }
     });
     
-    // Fetch average engagement score using existing method
-    Meteor.call('getAverageEngagementScore', (error, result) => {
+    // Fetch question completion rate with filters
+    Meteor.call('getQuestionCompletionRate', filterParams, (error: Error, result: number) => {
       if (error) {
-        console.error('Error fetching average engagement score:', error);
+        console.error('Error fetching question completion rate:', error);
       } else {
+        console.log('Question completion rate:', result);
+        setCompletionRate(result);
+      }
+    });
+    
+    // Fetch average engagement score with filters
+    Meteor.call('getFilteredEngagementScore', filterParams, (error: Error, result: number) => {
+      if (error) {
+        console.error('Error fetching enhanced engagement score:', error);
+      } else {
+        console.log('Average engagement score:', result);
         setAvgEngagementScore(result || 0);
       }
     });
     
-    // Fetch average completion time
-    Meteor.call('getCompletionTimeByDate', (error, result) => {
+    // Fetch average completion time with filters
+    Meteor.call('getFilteredCompletionTime', filterParams, (error: Error, result: number) => {
       if (error) {
-        console.error('Error fetching completion time data:', error);
+        console.error('Error fetching filtered completion time:', error);
       } else {
-        // Calculate average completion time from all available data
-        if (result && result.length > 0) {
-          const sum = result.reduce((acc, item) => acc + item.minutes, 0);
-          setAvgCompletionTime(sum / result.length);
-        }
+        console.log('Average completion time (minutes):', result);
+        setAvgCompletionTime(result);
+      }
+    });
+    
+    // Fetch response rate with filters
+    Meteor.call('getFilteredResponseRate', filterParams, (error: Error, result: number) => {
+      if (error) {
+        console.error('Error fetching filtered response rate:', error);
+      } else {
+        console.log('Response rate:', result);
+        setResponseRate(result);
+      }
+    });
+    
+    // Fetch response trends data with filters
+    Meteor.call('getResponseTrendsData', filterParams, (error: Error, result: any[]) => {
+      if (error) {
+        console.error('Error fetching response trends data:', error);
+      } else {
+        console.log('Response trends data:', result);
+        // Transform the data for the ResponseRateChart component
+        const chartData = result.map((item: any) => ({
+          date: item.date,
+          count: item.responses
+        }));
+        setResponseTrendsData(result);
+        setResponseRateData(chartData);
       }
       setIsLoading(false);
     });
+  };
+  
+  // Fetch KPI metrics on component mount
+  useEffect(() => {
+    // Initial data load without filters
+    applyFilters();
   }, []);
-  const [responseRate, setResponseRate] = useState(0);
   const [filterVisible, setFilterVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -712,74 +824,9 @@ const Analytics: React.FC = () => {
     };
   }, []);
   
-  // Use direct database query for accurate metrics
-  useEffect(() => {
-    // Get enhanced surveys count (completed + incomplete)
-    Meteor.call('getEnhancedSurveysCount', (error: any, result: number) => {
-      if (error) {
-        console.error('Error getting enhanced surveys count:', error);
-      } else {
-        console.log('Direct DB query result - enhanced surveys count:', result);
-        setCompletedSurveysCount(result);
-      }
-    });
-    
-    // Get enhanced participation rate
-    Meteor.call('getEnhancedParticipationRate', (error: any, result: number) => {
-      if (error) {
-        console.error('Error getting enhanced participation rate:', error);
-      } else {
-        console.log('Direct DB query result - enhanced participation rate:', result);
-        setParticipationRate(result);
-      }
-    });
-    
-    // Get enhanced average engagement score
-    Meteor.call('getEnhancedEngagementScore', (error: any, result: number) => {
-      if (error) {
-        console.error('Error getting enhanced engagement score:', error);
-      } else {
-        console.log('Direct DB query result - enhanced avg engagement score:', result);
-        setAvgEngagementScore(result);
-      }
-    });
-    
-    // Get enhanced average completion time
-    Meteor.call('getEnhancedCompletionTime', (error: any, result: number) => {
-      if (error) {
-        console.error('Error getting enhanced completion time:', error);
-      } else {
-        console.log('Direct DB query result - enhanced avg completion time:', result);
-        setAvgCompletionTime(result);
-      }
-    });
-    
-    // Get enhanced response rate that includes incomplete surveys
-    Meteor.call('getEnhancedResponseRate', (error: any, result: number) => {
-      if (error) {
-        console.error('Error getting response rate:', error);
-      } else {
-        console.log('Direct DB query result - response rate:', result);
-        setResponseRate(result);
-      }
-      setIsLoading(loading);
-    });
-    
-    // Fetch response trends data for the response rate chart
-    Meteor.call('getResponseTrendsData', (error: any, result: any) => {
-      if (error) {
-        console.error('Error getting response trends data:', error);
-      } else {
-        console.log('Response trends data for chart:', result);
-        // Transform the data for the ResponseRateChart component
-        const chartData = result.map((item: any) => ({
-          date: item.date,
-          count: item.responses
-        }));
-        setResponseRateData(chartData);
-      }
-    });
-  }, [loading]);
+  // Response rate chart data state
+  // const [responseRateData, setResponseRateData] = useState<any[]>([]);
+  
   const surveySelectRef = useRef<HTMLSelectElement>(null);
   const questionSelectRef = useRef<HTMLSelectElement>(null);
   const tomSelectInstance = useRef<{[key: string]: any}>({});
@@ -825,7 +872,7 @@ const Analytics: React.FC = () => {
   }, []);
   
   // Function to build a flat list of tags with depth information
-  const buildFlatTagList = (tags: LayerWithChildren[], depth = 0): LayerWithChildren[] => {
+  const buildFlatTagList = (tags: LayerWithChildren[] | undefined, depth = 0): LayerWithChildren[] => {
     if (!tags || !Array.isArray(tags)) {
       return [];
     }
@@ -1148,7 +1195,7 @@ const Analytics: React.FC = () => {
               </DateRangeContainer>
             </FilterGroup>
             <FilterButtons>
-              <Button primary>Apply Filters</Button>
+              <Button primary onClick={() => applyFilters()}>Apply Filters</Button>
               <Button onClick={() => {
                 // Reset all filters
                 setSelectedTags([]);
@@ -1157,11 +1204,16 @@ const Analytics: React.FC = () => {
                 setDateRange([undefined, undefined]);
                 
                 // Reset tom-select instances
-                Object.values(tomSelectInstance.current).forEach((instance: any) => {
-                  if (instance && instance.clear) {
-                    instance.clear();
-                  }
-                });
+                if (tomSelectInstance.current) {
+                  Object.values(tomSelectInstance.current).forEach((instance: any) => {
+                    if (instance && instance.clear) {
+                      instance.clear();
+                    }
+                  });
+                }
+                
+                // Reload data with no filters
+                applyFilters();
               }}>Reset</Button>
             </FilterButtons>
           </FilterBar>
@@ -1185,6 +1237,12 @@ const Analytics: React.FC = () => {
             onClick={() => setActiveTab('surveys')}
           >
             Surveys
+          </Tab>
+          <Tab
+            active={activeTab === 'completionSurvey'}
+            onClick={() => setActiveTab('completionSurvey')}
+          >
+            Completion based Survey
           </Tab>
           <Tab
             active={activeTab === 'questions'}
@@ -1242,8 +1300,8 @@ const Analytics: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                   title="Click to view completion rate chart"
                 >
-                  <StatValue>{isLoading ? '...' : `${participationRate}%`}</StatValue>
-                  <StatLabel>Participation Rate</StatLabel>
+                  <StatValue>{isLoading ? '...' : `${completionRate}%`}</StatValue>
+                  <StatLabel>Answered / Total Questions</StatLabel>
                 </StatCard>
               </Card>
 
@@ -1290,7 +1348,7 @@ const Analytics: React.FC = () => {
                   title="Click to view response rate chart"
                 >
                   <StatValue>{isLoading ? '...' : `${responseRate}%`}</StatValue>
-                  <StatLabel>Last 7 days</StatLabel>
+                  <StatLabel>Completed / Total Surveys</StatLabel>
                 </ResponseRateKPI>
               </Card>
             </KPIContainer>
@@ -1317,6 +1375,24 @@ const Analytics: React.FC = () => {
                 <div>NLP Topic Modeling Coming Soon</div>
               </ChartContainer>
             </Card> */}
+            
+            {/* Dropout Analysis Section */}
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Dropout Analysis</CardTitle>
+                <CardIcon>
+                  <FiAlertCircle />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ flex: '1 1 48%', minWidth: '300px' }}>
+                  <FunnelChart />
+                </div>
+                <div style={{ flex: '1 1 48%', minWidth: '300px' }}>
+                  <DropoutAnalysis />
+                </div>
+              </ChartContainer>
+            </Card>
             
             {/* Question Performance */}
             <Card cols={12}>
@@ -1367,6 +1443,14 @@ const Analytics: React.FC = () => {
           </DashboardGrid>
         )}
         
+        {activeTab === 'responses' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <AllSurveyResponses />
+            </Card>
+          </DashboardGrid>
+        )}
+        
         {activeTab === 'questions' && (
           <DashboardGrid>
             <Card cols={12}>
@@ -1377,6 +1461,49 @@ const Analytics: React.FC = () => {
                 </CardIcon>
               </CardHeader>
               <QuestionPerformanceChart />
+            </Card>
+          </DashboardGrid>
+        )}
+        
+        {activeTab === 'completionSurvey' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <CardHeader>
+                <CardTitle>Completion based Survey Analysis</CardTitle>
+                <CardIcon>
+                  <FiCheckCircle />
+                </CardIcon>
+              </CardHeader>
+              <ChartContainer>
+                <div style={{ padding: '20px 0' }}>
+                  {/* <h3>Survey Completion Analysis</h3>
+                  <p>This section provides detailed analytics on survey completion rates and patterns.</p> */}
+                  
+                  {/* Placeholder for completion rate chart */}
+                  <div style={{ marginTop: '20px', marginBottom: '30px' }}>
+                    <h4>Completion Rate by Survey</h4>
+                    <div style={{ height: '300px', background: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {isLoading ? (
+                        <div>Loading chart data...</div>
+                      ) : (
+                        <div>Completion Rate Chart Coming Soon</div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Placeholder for completion time analysis */}
+                  <div style={{ marginTop: '30px' }}>
+                    <h4>Average Completion Time Analysis</h4>
+                    <div style={{ height: '300px', background: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {isLoading ? (
+                        <div>Loading analysis data...</div>
+                      ) : (
+                        <div>Completion Time Analysis Coming Soon</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </ChartContainer>
             </Card>
           </DashboardGrid>
         )}

@@ -104,16 +104,48 @@ if (Meteor.isServer) {
       return this.ready();
     }
     
+    // In development mode, allow access without admin role
+    if (Meteor.isDevelopment) {
+      console.log('[SERVER] Development mode: bypassing admin check for responses.all publication');
+      return SurveyResponses.find({});
+    }
+    
+    // In production, require admin role
     const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
     if (!user) {
+      console.log('[SERVER] User does not have admin role, denying access to responses.all');
       return this.ready();
     }
     
     return SurveyResponses.find({});
   });
   
-  // Alias for backward compatibility
+  // Backward compatibility publication for 'survey_responses.all'
   Meteor.publish('survey_responses.all', async function() {
+    // Check if user is an admin
+    const currentUserId = this.userId;
+    if (!currentUserId) {
+      return this.ready();
+    }
+    
+    // In development mode, allow access without admin role
+    if (Meteor.isDevelopment) {
+      console.log('[SERVER] Development mode: bypassing admin check for survey_responses.all publication');
+      return SurveyResponses.find({});
+    }
+    
+    // In production, require admin role
+    const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
+    if (!user) {
+      console.log('[SERVER] User does not have admin role, denying access to survey_responses.all');
+      return this.ready();
+    }
+    
+    return SurveyResponses.find({});
+  });
+  
+  // Add publication for 'surveyResponses.all' for backward compatibility
+  Meteor.publish('surveyResponses.all', async function() {
     
     // Check if user is an admin
     const currentUserId = this.userId;
@@ -121,12 +153,24 @@ if (Meteor.isServer) {
       return this.ready();
     }
     
+    // In development mode, allow access without admin role
+    if (Meteor.isDevelopment) {
+      console.log('[SERVER] Development mode: bypassing admin check for surveyResponses.all publication');
+      // Use countAsync instead of count
+      const responseCount = await SurveyResponses.find({}).countAsync();
+      console.log(`[SERVER] Found ${responseCount} survey responses in surveyResponses.all publication`);
+      return SurveyResponses.find({});
+    }
+    
     const user = await Meteor.users.findOneAsync({ _id: currentUserId, roles: { $in: ['admin'] } });
     if (!user) {
+      console.log('[SERVER] User does not have admin role, denying access to surveyResponses.all');
       return this.ready();
     }
     
-    const responseCount = SurveyResponses.find({}).count();
+    // Use countAsync instead of count
+    const responseCount = await SurveyResponses.find({}).countAsync();
+    console.log(`[SERVER] Found ${responseCount} survey responses in surveyResponses.all publication`);
     
     // Return all survey responses
     return SurveyResponses.find({});
