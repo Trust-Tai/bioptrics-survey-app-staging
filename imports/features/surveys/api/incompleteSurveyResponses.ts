@@ -384,6 +384,24 @@ if (Meteor.isServer) {
     return IncompleteSurveyResponses.find({ respondentId });
   });
   
+  Meteor.publish('incompleteSurveyResponses.bySurvey', function (surveyId) {
+    check(surveyId, String);
+    
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    return IncompleteSurveyResponses.find({ surveyId });
+  });
+  
+  Meteor.publish('incompleteSurveyResponses', function () {
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    return IncompleteSurveyResponses.find({});
+  });
+  
   // Replace all remaining update calls with updateAsync
   // We'll update the specific instances instead of overriding the method
 }

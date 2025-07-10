@@ -37,6 +37,7 @@ import CompletionRateChart from '/imports/features/analytics/components/admin/Co
 import FunnelChart from '/imports/features/analytics/components/admin/FunnelChart';
 import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
 import CompletionTimeDistribution from '/imports/features/analytics/components/admin/CompletionTimeDistribution';
+import RealTimeAnalytics from '/imports/features/analytics/components/admin/RealTimeAnalytics';
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
@@ -1404,6 +1405,16 @@ const Analytics: React.FC = () => {
               </CardHeader>
               <ChartContainer>
                 <QuestionPerformanceChart isOverview={true} />
+              </ChartContainer>
+            </Card>
+          </DashboardGrid>
+        )}
+
+        {activeTab === 'realtime' && (
+          <DashboardGrid>
+            <Card cols={12}>
+              <ChartContainer>
+                <RealTimeAnalytics />
               </ChartContainer>
             </Card>
           </DashboardGrid>

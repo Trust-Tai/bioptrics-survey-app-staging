@@ -11,7 +11,8 @@ import {
   FiDownload, 
   FiShare2, 
   FiFileText,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiActivity
 } from 'react-icons/fi';
 
 // Import from features instead of old structure
@@ -26,6 +27,7 @@ import ThemeHeatmap from './heatmap/ThemeHeatmap';
 import EngagementTrendLine from './trends/EngagementTrendLine';
 import FlaggedIssuesList, { Issue } from './issues/FlaggedIssuesList';
 import CommentClusterView from './comments/CommentClusterView';
+import RealTimeAnalytics from './RealTimeAnalytics';
 
 // Types
 interface FilterState {
@@ -415,6 +417,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ surveyId }) => 
           <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
             Overview
           </Tab>
+          <Tab active={activeTab === 'real-time'} onClick={() => setActiveTab('real-time')}>
+            <FiActivity style={{ marginRight: '6px' }} /> Real Time
+          </Tab>
           <Tab active={activeTab === 'engagement'} onClick={() => setActiveTab('engagement')}>
             Engagement
           </Tab>
@@ -513,6 +518,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ surveyId }) => 
             />
           </FullWidthCard>
         </ChartGrid>
+      )}
+      
+      {activeTab === 'real-time' && (
+        <RealTimeAnalytics 
+          surveyId={surveyId}
+          isLoading={loading}
+          isBlurred={false}
+        />
       )}
       
       <QuickActionsContainer>
