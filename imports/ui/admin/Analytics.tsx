@@ -1075,13 +1075,28 @@ const Analytics: React.FC = () => {
         className="react-select-container"
         classNamePrefix="react-select"
         styles={{
-          option: (provided) => ({
+          option: (provided, state) => ({
             ...provided,
             padding: '8px 12px',
+            width: '200px',
+            minWidth: '100%',
+            backgroundColor: state.isFocused ? '#f0e6ee' : '#ffffff',
+            color: state.isFocused ? '#552a47' : '#333333',
+            '&:hover': {
+              backgroundColor: '#f0e6ee',
+              color: '#552a47',
+            },
+          }),
+          menu: (provided) => ({
+            ...provided,
+            backgroundColor: '#ffffff',
+            width: '500px',
+            minWidth: '100%',
           }),
           control: (provided) => ({
             ...provided,
             minHeight: '38px',
+            backgroundColor: '#ffffff',
           }),
           multiValue: (provided) => ({
             ...provided,
@@ -1346,10 +1361,10 @@ const Analytics: React.FC = () => {
                 <ResponseRateKPI 
                   onClick={() => setShowResponseRateChart(true)} 
                   style={{ cursor: 'pointer' }}
-                  title="Click to view response rate chart"
+                  
                 >
                   <StatValue>{isLoading ? '...' : `${responseRate}%`}</StatValue>
-                  <StatLabel>Completed / Total Surveys</StatLabel>
+                  <StatLabel>Completed / Total Surveys Responses</StatLabel>
                 </ResponseRateKPI>
               </Card>
             </KPIContainer>

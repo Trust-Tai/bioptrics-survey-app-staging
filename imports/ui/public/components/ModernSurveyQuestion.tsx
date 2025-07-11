@@ -66,6 +66,36 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     console.log('Question:', question);
     console.log('Question responseType:', question.responseType);
     
+    // ENHANCED DEBUGGING: Log all properties of the question object
+    console.log('DETAILED QUESTION INSPECTION:');
+    console.log('- _id:', question._id);
+    console.log('- text:', question.text);
+    console.log('- responseType:', question.responseType);
+    console.log('- type:', question.type);
+    console.log('- options:', question.options);
+    
+    // Check versions array specifically
+    if (Array.isArray(question.versions) && question.versions.length > 0) {
+      console.log('VERSIONS ARRAY FOUND:');
+      question.versions.forEach((version, index) => {
+        console.log(`VERSION ${index}:`, version);
+        console.log(`- responseType:`, version.responseType);
+        console.log(`- questionText:`, version.questionText);
+        console.log(`- options:`, version.options);
+      });
+      
+      // Force dropdown rendering if responseType is dropdown in versions
+      const versionIndex = question.currentVersion !== undefined ? 
+        Math.min(question.currentVersion, question.versions.length - 1) : 0;
+      const versionData = question.versions[versionIndex];
+      
+      if (versionData && versionData.responseType === 'dropdown') {
+        console.log('CRITICAL: DROPDOWN FOUND IN VERSIONS ARRAY - This should render as dropdown');
+        // Force dropdown rendering by setting a flag
+        (question as any)._forceDropdown = true;
+      }
+    }
+    
     // Special handling for dropdown questions - ensure they're properly detected
     if (question.responseType === 'dropdown' || 
         (question.responseType && question.responseType.toLowerCase().includes('dropdown'))) {
@@ -75,7 +105,28 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     const actualType = getActualQuestionType();
     console.log('Actual question type:', actualType);
     console.log('Will render:', actualType === 'dropdown' ? 'dropdown select' : 'other component');
-    setAnswer(value || '');
+    
+    // Initialize answer based on question type
+    if (actualType === 'multiple_choice') {
+      // For multiple choice questions, initialize as array if needed
+      if (value === '' || value === null || value === undefined) {
+        setAnswer([]);
+      } else if (!Array.isArray(value)) {
+        // If answer exists but is not an array, convert it to array
+        try {
+          // Try to parse if it's a JSON string
+          const parsed = typeof value === 'string' ? JSON.parse(value) : [value];
+          setAnswer(Array.isArray(parsed) ? parsed : [value]);
+        } catch (e) {
+          setAnswer([value]);
+        }
+      } else {
+        setAnswer(value);
+      }
+    } else {
+      // For other question types, use value directly
+      setAnswer(value || '');
+    }
   }, [value, question._id]);
   
   // Parse progress string to get current and total questions
@@ -272,6 +323,64 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     );
   };
   
+  // Render checkbox options
+  const renderCheckboxOptions = () => {
+    if (!question.options || question.options.length === 0) return null;
+    
+    // Determine if options are strings or objects
+    const isObjectOptions = question.options.length > 0 && 
+      typeof question.options[0] === 'object' && 
+      question.options[0] !== null;
+    
+    // Handle checkbox selection
+    const handleCheckboxChange = (value: string) => {
+      let newAnswer = [...(Array.isArray(answer) ? answer : [])];
+      
+      if (newAnswer.includes(value)) {
+        // Remove if already selected
+        newAnswer = newAnswer.filter(item => item !== value);
+      } else {
+        // Add if not selected
+        newAnswer.push(value);
+      }
+      
+      // Set answer in state
+      setAnswer(newAnswer);
+      // Save answer immediately but don't navigate
+      console.log('Checkbox option selected, saving immediately:', newAnswer);
+      // Use a flag to indicate this is just a save, not a navigation trigger
+      const saveOnly = true;
+      onAnswer(newAnswer, saveOnly);
+    };
+    
+    return (
+      <div className="options-list checkbox-list">
+        {question.options.map((option, index) => {
+          // Handle both string options and object options
+          const value = isObjectOptions ? (option as any).value || (option as any).label : option as string;
+          const label = isObjectOptions ? (option as any).label : option as string;
+          const isSelected = Array.isArray(answer) && answer.includes(value);
+          
+          return (
+            <div
+              key={index}
+              className={`option-item ${isSelected ? 'selected' : ''}`}
+              onClick={() => handleCheckboxChange(value)}
+            >
+              <div 
+                className={`option-checkmark checkbox ${isSelected ? 'selected' : ''}`} 
+                style={isSelected ? {borderColor: color, backgroundColor: color} : {}}
+              >
+                {isSelected && <FiCheck size={14} color="white" />}
+              </div>
+              <div className="option-text" dangerouslySetInnerHTML={createMarkup(label)}></div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+  
   // Render date input
   const renderDateInput = () => {
     return (
@@ -457,6 +566,33 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       // Log the full question object to see its structure
       console.log('Full question object:', question);
       
+      // DIRECT INSPECTION: If we have a versions array, check it first and log all contents
+      if (Array.isArray(question.versions) && question.versions.length > 0) {
+        console.log('VERSIONS ARRAY FOUND, inspecting all versions:', question.versions);
+        
+        // Get the current version index (usually 0)
+        const versionIndex = question.currentVersion !== undefined ? 
+          Math.min(question.currentVersion, question.versions.length - 1) : 0;
+        
+        // Get the version data
+        const versionData = question.versions[versionIndex];
+        console.log('Current version data:', versionData);
+        
+        if (versionData) {
+          // Check for responseType in version data
+          if (versionData.responseType) {
+            console.log('FOUND responseType IN VERSION:', versionData.responseType);
+            return versionData.responseType;
+          }
+          
+          // Check for type in version data as fallback
+          if (versionData.type) {
+            console.log('FOUND type IN VERSION:', versionData.type);
+            return versionData.type;
+          }
+        }
+      }
+      
       // Based on the database structure, we need to check if this is a question from
       // the questions collection (which has versions array)
       if (question && typeof question === 'object') {
@@ -471,27 +607,6 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
           console.log('Found question.responseType:', question.responseType);
           return question.responseType;
         }
-        
-        // First check if we're dealing with a question from the MongoDB collection
-        // These questions have a versions array with responseType inside
-        if (Array.isArray(question.versions) && question.versions.length > 0) {
-          // Get the current version index (usually 0)
-          const versionIndex = question.currentVersion !== undefined ? 
-            Math.min(question.currentVersion, question.versions.length - 1) : 0;
-          
-          // Get the responseType from the appropriate version
-          const versionData = question.versions[versionIndex];
-          if (versionData && versionData.responseType) {
-            console.log('Found responseType in versions array:', versionData.responseType);
-            return versionData.responseType;
-          }
-        }
-        
-        // If we couldn't find it in versions, check direct responseType
-        if (question.responseType) {
-          console.log('Using direct responseType:', question.responseType);
-          return question.responseType;
-        }
       }
     } catch (error) {
       console.error('Error getting responseType:', error);
@@ -503,12 +618,62 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
 
   // Render the appropriate input based on question type
   const renderQuestionInput = () => {
+    // CRITICAL: Check if we've flagged this as a dropdown in useEffect
+    if ((question as any)._forceDropdown) {
+      console.log('FORCE DROPDOWN FLAG DETECTED - Rendering dropdown');
+      return renderDropdown();
+    }
+    
+    // DIRECT CHECK FOR DROPDOWN IN VERSIONS ARRAY
+    // This is a special case check for the issue with dropdown questions
+    if (Array.isArray(question.versions) && question.versions.length > 0) {
+      console.log('VERSIONS ARRAY INSPECTION FOR DROPDOWN:');
+      
+      // Log all versions for debugging
+      question.versions.forEach((version, idx) => {
+        if (version.responseType) {
+          console.log(`Version ${idx} responseType:`, version.responseType);
+        }
+      });
+      
+      const versionIndex = question.currentVersion !== undefined ? 
+        Math.min(question.currentVersion, question.versions.length - 1) : 0;
+      const versionData = question.versions[versionIndex];
+      
+      // Check if this is a dropdown question by inspecting the versions array directly
+      if (versionData) {
+        console.log('DIRECT VERSION CHECK - Current version data:', versionData);
+        
+        // Check for responseType in version data - CASE INSENSITIVE CHECK
+        if (versionData.responseType && 
+            typeof versionData.responseType === 'string' && 
+            versionData.responseType.toLowerCase() === 'dropdown') {
+          console.log('DROPDOWN DETECTED in versions array, forcing dropdown rendering');
+          return renderDropdown();
+        }
+        
+        // Also check for 'select' type which is equivalent to dropdown
+        if (versionData.responseType && 
+            typeof versionData.responseType === 'string' && 
+            versionData.responseType.toLowerCase() === 'select') {
+          console.log('SELECT TYPE DETECTED in versions array, treating as dropdown');
+          return renderDropdown();
+        }
+      }
+    }
+    
     // Use the actual question type determined by getActualQuestionType
     const actualType = getActualQuestionType();
     
     console.log('Rendering input for type:', actualType);
     
-    // Check responseType directly for dropdown to ensure we catch all dropdown variants
+    // If actualType is dropdown, render dropdown
+    if (actualType === 'dropdown') {
+      console.log('Rendering dropdown based on actualType');
+      return renderDropdown();
+    }
+    
+    // Last resort check: Check responseType directly for dropdown to ensure we catch all dropdown variants
     const responseType = getResponseType().toLowerCase();
     if (responseType.includes('dropdown') || responseType === 'select') {
       console.log('Forcing dropdown rendering based on responseType:', responseType);
@@ -537,21 +702,20 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
         return renderFileUpload();
       
       case 'single_choice':
-      case 'multiple_choice':
-      case 'single_choice':
         return renderRadioOptions();
+        
+      case 'multiple_choice':
+        return renderCheckboxOptions();
       
       default:
         // If question has options but no specific type, check if it should be a dropdown
         if (question.options && question.options.length > 0) {
           console.log('Question has options, checking if it should be dropdown');
-          // If it has more than 5 options, render as dropdown for better UX
-          if (question.options.length > 5) {
-            console.log('Many options detected, rendering as dropdown');
-            return renderDropdown();
-          }
+          // If it has options, render as dropdown for better UX
+          console.log('Options detected, rendering as dropdown');
+          return renderDropdown();
         }
-        return renderRadioOptions();
+        return renderTextInput();
     }
   };
 
@@ -560,72 +724,67 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   
   // Determine actual question type based on question properties and type
   const getActualQuestionType = (): QuestionType => {
-    // Get responseType using our helper function that handles the complex structure
-    const responseType = getResponseType().toLowerCase();
-    
-    // Log the exact responseType for debugging
-    console.log('Normalized responseType:', responseType);
-    
-    // Check for dropdown types
-    if (responseType.includes('dropdown') || responseType === 'select') {
+    // SPECIAL CASE: If we've flagged this question as a dropdown in the useEffect
+    if ((question as any)._forceDropdown) {
+      console.log('FORCE DROPDOWN FLAG DETECTED - Returning dropdown type');
       return 'dropdown';
     }
     
-    // Check for date type
+    // DIRECT VERSION CHECK: Check versions array first for dropdown type
+    if (Array.isArray(question.versions) && question.versions.length > 0) {
+      const versionIndex = question.currentVersion !== undefined ? 
+        Math.min(question.currentVersion, question.versions.length - 1) : 0;
+      const versionData = question.versions[versionIndex];
+      
+      if (versionData && versionData.responseType) {
+        const versionType = versionData.responseType.toLowerCase();
+        console.log('Checking version responseType directly:', versionType);
+        
+        if (versionType === 'dropdown' || versionType === 'select') {
+          console.log('DROPDOWN DETECTED in version - returning dropdown type');
+          return 'dropdown';
+        }
+      }
+    }
+    
+    // Get responseType using our helper function that handles the complex structure
+    const responseType = getResponseType().toLowerCase();
+    console.log('Standard type detection with responseType:', responseType);
+    
+    // Check for dropdown types
+    if (responseType.includes('dropdown') || responseType === 'select') {
+      console.log('Standard dropdown detection - returning dropdown type');
+      return 'dropdown';
+    }
+    
+    // Check for other types
     if (responseType === 'date') {
       return 'date';
     }
-    
-    // Check for file type
     if (responseType === 'file') {
       return 'file';
     }
-    
-    // Check for rating types
-    if (responseType === 'rating' || responseType === 'likert' || 
-        responseType === 'likert_scale' || responseType === 'scale') {
+    if (responseType === 'rating' || responseType === 'likert' || responseType === 'likert_scale' || responseType === 'scale') {
       return 'rating';
     }
-    
-    // Check for single choice types
     if (responseType === 'radio' || responseType === 'choice') {
       return 'single_choice';
     }
-    
-    // Check for multiple choice types
     if (responseType === 'checkbox' || responseType.includes('multiple') || responseType === 'multiple-choice') {
       return 'multiple_choice';
     }
-    
-    // Check for long text types
     if (responseType === 'textarea' || responseType === 'long_text') {
       return 'long_text';
     }
     
-    // Check for text types
-    if (responseType === 'short_text' || responseType === 'open_text' || 
-        responseType === 'free_text' || responseType.includes('text')) {
-      return 'text';
-    }
-    
-    // Additional checks based on question properties
-    
-    // If it has options, it's either multiple choice or single choice
+    // Check if the question has options but no specific type
+    // If it has options, it might be a dropdown
     if (question.options && question.options.length > 0) {
-      // Check if the type contains 'multiple'
-      if (responseType.includes('multiple')) {
-        return 'multiple_choice';
-      }
-      // Otherwise, it's single choice (radio)
-      return 'single_choice';
+      console.log('Question has options but no specific type, defaulting to dropdown');
+      return 'dropdown';
     }
     
-    // If it has a scale, it's a rating question
-    if (question.scale) {
-      return 'rating';
-    }
-    
-    // Default to text input
+    // Default to text if no specific type is found
     return 'text';
   };
   

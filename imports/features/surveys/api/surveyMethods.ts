@@ -15,6 +15,38 @@ interface ResponseTrendDataPoint {
 if (Meteor.isServer) {
   Meteor.methods({
     
+    // Method to get active surveys count
+    async 'getActiveSurveysCount'() {
+      try {
+        console.log('Getting active surveys count');
+        
+        // Get current date for comparison
+        const now = new Date();
+        
+        // Find all published surveys
+        const allSurveys = await Surveys.find({ published: true }).fetchAsync();
+        
+        // Count active surveys (published and not expired)
+        let activeSurveys = 0;
+        
+        // Use a simple loop to count active surveys
+        for (const survey of allSurveys) {
+          // Check if survey is not expired - use any to bypass type checking
+          const surveyAny = survey as any;
+          const expiresAt = surveyAny.expiresAt ? new Date(surveyAny.expiresAt) : null;
+          if (!expiresAt || expiresAt > now) {
+            activeSurveys++;
+          }
+        }
+        
+        console.log(`Active surveys count: ${activeSurveys}`);
+        return activeSurveys;
+      } catch (error) {
+        console.error('Error in getActiveSurveysCount method:', error);
+        throw new Meteor.Error('active-surveys-count-error', 'Failed to get active surveys count');
+      }
+    },
+    
     // Get completion time for a survey
     async 'getSurveyCompletionTime'(surveyId) {
       try {
@@ -295,13 +327,15 @@ if (Meteor.isServer) {
     },
     
     // Filtered response rate calculation that considers both completed and incomplete surveys
-    async 'getFilteredResponseRate'(filterParams?: { 
-      surveyIds?: string[], 
-      tagIds?: string[], 
-      questionIds?: string[],
-      startDate?: string,
-      endDate?: string
-    }) {
+    async 'getFilteredResponseRate'(surveyIds?: string[], tagIds?: string[], questionIds?: string[], startDate?: string, endDate?: string) {
+      // Create a filter params object with default values to avoid undefined errors
+      const filterParams = {
+        surveyIds: surveyIds || [],
+        tagIds: tagIds || [],
+        questionIds: questionIds || [],
+        startDate: startDate || null,
+        endDate: endDate || null
+      };
       console.log('getFilteredResponseRate method called with filters:', filterParams);
       
       if (!this.userId) {
@@ -317,7 +351,7 @@ if (Meteor.isServer) {
         const completedQuery: any = { completed: true };
         
         // Apply date range filter if provided
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           completedQuery.createdAt = {};
           if (filterParams.startDate) {
             completedQuery.createdAt.$gte = new Date(filterParams.startDate);
@@ -334,17 +368,17 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           completedQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
         // Apply tag filter if provided
-        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+        if (filterParams.tagIds && filterParams.tagIds.length > 0) {
           completedQuery.tags = { $in: filterParams.tagIds };
         }
         
         // Apply question filter if provided (this is more complex and might need adjustment)
-        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+        if (filterParams.questionIds && filterParams.questionIds.length > 0) {
           completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
         }
         
@@ -355,7 +389,7 @@ if (Meteor.isServer) {
         };
         
         // Apply date filters to incomplete surveys
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           incompleteQuery.startedAt = {};
           if (filterParams.startDate) {
             incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
@@ -371,7 +405,7 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter to incomplete surveys if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           incompleteQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
@@ -508,6 +542,15 @@ if (Meteor.isServer) {
       endDate?: string,
       includeIncomplete?: boolean
     }) {
+      // Ensure filterParams is defined with default values
+      filterParams = filterParams || {
+        surveyIds: [],
+        tagIds: [],
+        questionIds: [],
+        startDate: undefined,
+        endDate: undefined,
+        includeIncomplete: false
+      };
       console.log('getFilteredSurveysCount method called with filters:', filterParams);
       
       if (!this.userId) {
@@ -523,7 +566,7 @@ if (Meteor.isServer) {
         const completedQuery: any = { completed: true };
         
         // Apply date range filter if provided
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           completedQuery.createdAt = {};
           if (filterParams.startDate) {
             completedQuery.createdAt.$gte = new Date(filterParams.startDate);
@@ -540,17 +583,17 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           completedQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
         // Apply tag filter if provided
-        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+        if (filterParams.tagIds && filterParams.tagIds.length > 0) {
           completedQuery.tags = { $in: filterParams.tagIds };
         }
         
         // Apply question filter if provided
-        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+        if (filterParams.questionIds && filterParams.questionIds.length > 0) {
           completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
         }
         
@@ -570,7 +613,7 @@ if (Meteor.isServer) {
         };
         
         // Apply date filters to incomplete surveys
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           incompleteQuery.startedAt = {};
           if (filterParams.startDate) {
             incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
@@ -586,7 +629,7 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter to incomplete surveys if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           incompleteQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
@@ -706,6 +749,14 @@ if (Meteor.isServer) {
       startDate?: string,
       endDate?: string
     }) {
+      // Ensure filterParams is defined with default values
+      filterParams = filterParams || {
+        surveyIds: [],
+        tagIds: [],
+        questionIds: [],
+        startDate: undefined,
+        endDate: undefined
+      };
       console.log('getFilteredCompletionRate method called with filters:', filterParams);
       
       if (!this.userId) {
@@ -721,7 +772,7 @@ if (Meteor.isServer) {
         const completedQuery: any = { completed: true };
         
         // Apply date range filter if provided
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           completedQuery.createdAt = {};
           if (filterParams.startDate) {
             completedQuery.createdAt.$gte = new Date(filterParams.startDate);
@@ -738,17 +789,17 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           completedQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
         // Apply tag filter if provided
-        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+        if (filterParams.tagIds && filterParams.tagIds.length > 0) {
           completedQuery.tags = { $in: filterParams.tagIds };
         }
         
         // Apply question filter if provided
-        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+        if (filterParams.questionIds && filterParams.questionIds.length > 0) {
           completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
         }
         
@@ -759,7 +810,7 @@ if (Meteor.isServer) {
         };
         
         // Apply date filters to incomplete surveys
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           incompleteQuery.startedAt = {};
           if (filterParams.startDate) {
             incompleteQuery.startedAt.$gte = new Date(filterParams.startDate);
@@ -775,7 +826,7 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter to incomplete surveys if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           incompleteQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
@@ -805,6 +856,14 @@ if (Meteor.isServer) {
       startDate?: string,
       endDate?: string
     }) {
+      // Ensure filterParams is defined with default values
+      filterParams = filterParams || {
+        surveyIds: [],
+        tagIds: [],
+        questionIds: [],
+        startDate: undefined,
+        endDate: undefined
+      };
       console.log('getFilteredParticipationRate method called with filters:', filterParams);
       
       if (!this.userId) {
@@ -820,7 +879,7 @@ if (Meteor.isServer) {
         const completedQuery: any = { completed: true };
         
         // Apply date range filter if provided
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           completedQuery.createdAt = {};
           if (filterParams.startDate) {
             completedQuery.createdAt.$gte = new Date(filterParams.startDate);
@@ -837,17 +896,17 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           completedQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
         // Apply tag filter if provided
-        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+        if (filterParams.tagIds && filterParams.tagIds.length > 0) {
           completedQuery.tags = { $in: filterParams.tagIds };
         }
         
         // Apply question filter if provided (this is more complex and might need adjustment)
-        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+        if (filterParams.questionIds && filterParams.questionIds.length > 0) {
           completedQuery['responses.questionId'] = { $in: filterParams.questionIds };
         }
         
@@ -858,7 +917,7 @@ if (Meteor.isServer) {
         };
         
         // Apply date filters to incomplete surveys
-        if (filterParams?.startDate || filterParams?.endDate) {
+        if (filterParams.startDate || filterParams.endDate) {
           incompleteQuery.createdAt = {};
           if (filterParams.startDate) {
             incompleteQuery.createdAt.$gte = new Date(filterParams.startDate);
@@ -874,7 +933,7 @@ if (Meteor.isServer) {
         }
         
         // Apply survey ID filter to incomplete surveys if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           incompleteQuery.surveyId = { $in: filterParams.surveyIds };
         }
         
@@ -924,12 +983,12 @@ if (Meteor.isServer) {
         };
         
         // Apply survey ID filter if provided
-        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
           query.surveyId = { $in: filterParams.surveyIds };
         }
         
         // Apply tag filter if provided
-        if (filterParams?.tagIds && filterParams.tagIds.length > 0) {
+        if (filterParams.tagIds && filterParams.tagIds.length > 0) {
           // Get surveys with the specified tags
           const surveysWithTags = await Surveys.find({
             'tags.tagId': { $in: filterParams.tagIds }
@@ -947,7 +1006,7 @@ if (Meteor.isServer) {
         }
         
         // Apply question filter if provided
-        if (filterParams?.questionIds && filterParams.questionIds.length > 0) {
+        if (filterParams.questionIds && filterParams.questionIds.length > 0) {
           // We need to find responses that contain these questions
           query['responses.questionId'] = { $in: filterParams.questionIds };
         }
