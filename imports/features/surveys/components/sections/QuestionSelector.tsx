@@ -155,7 +155,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     questionText: '',
     questionDescription: '',
     branchingEnabled: false,
-    questionType: 'text', // Default question type
+    questionType: 'likert', // Default question type
     questionImage: null,
     questionImagePreview: '',
     questionTags: [],
@@ -456,7 +456,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   };
 
   // Define question types array
-  const questionTypes = ['text', 'textarea', 'radio', 'checkbox', 'select', 'scale', 'date', 'time', 'file', 'matrix', 'likert'];
+  const questionTypes = ['radio', 'checkbox', 'dropdown', 'text', 'textarea', 'rating', 'likert', 'ranking', 'date', 'file'];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedQuestionIds);
@@ -1410,7 +1410,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                         alignItems: 'center',
                         gap: '4px',
                         fontSize: '12px',
-                        color: '#64748b',
+                        color: '#fff',
                         backgroundColor: '#f1f5f9',
                         padding: '3px 8px',
                         borderRadius: '4px'
@@ -1595,7 +1595,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                         setFormData({
                           questionText: '',
                           questionDescription: '',
-                          questionType: 'text',
+                          questionType: 'likert',
                           questionImage: null,
                           questionImagePreview: '',
                           questionTags: [],
@@ -1681,24 +1681,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                           outline: 'none',
                           transition: 'all 0.2s ease'
                         }}>Answer Options</Tab>
-                        <Tab style={{ 
-                          padding: '8px 12px', 
-                          cursor: 'pointer',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          borderBottom: '3px solid transparent',
-                          fontWeight: 500,
-                          fontSize: '14px',
-                          color: '#64748b',
-                          outline: 'none',
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}>
-                          <FiTag size={14} />
-                          Classification
-                        </Tab>
                         <Tab style={{ 
                           padding: '8px 12px', 
                           cursor: 'pointer',
@@ -2028,16 +2010,16 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                             paddingRight: '40px'
                           }}
                         >
-                          <option value="text">Text Input</option>
-                          <option value="textarea">Long Text</option>
                           <option value="radio">Single Choice (Radio)</option>
-                          <option value="checkbox">Multiple Choice (Checkbox)</option>
-                          <option value="select">Dropdown</option>
-                          <option value="scale">Scale (1-10)</option>
-                          <option value="date">Date</option>
-                          <option value="time">Time</option>
-                          <option value="file">File Upload</option>
-                          <option value="matrix">Matrix</option>
+                                <option value="checkbox">Multiple Choice (Checkbox)</option>
+                                <option value="dropdown">Dropdown</option>
+                                <option value="text">Short Text</option>
+                                <option value="textarea">Long Text</option>
+                                <option value="rating">Rating Scale</option>
+                                <option value="likert">Likert Scale</option>
+                                <option value="ranking">Ranking</option>
+                                <option value="date">Date</option>
+                                <option value="file">File Upload</option>
                         </select>
                       </div>
                       
@@ -2238,173 +2220,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                             
                           
                         </div>
-                      </TabPanel>
-                      
-                      {/* Tab Panel 3: Classification */}
-                      <TabPanel>
-                        {/* Question Category */}
-                        <div className="form-group">
-                          <label style={{
-                            display: 'block',
-                            marginBottom: '8px',
-                            fontWeight: 600,
-                            fontSize: '14px',
-                            color: '#475569'
-                          }}>Question Category <span style={{ color: 'red' }}>*</span></label>
-                          <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                              <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#e2e8f0' }}></span>
-                              Select a primary category for this question
-                            </span>
-                          </div>
-                          <select
-                            id="questionCategory"
-                            multiple
-                            value={formData.primaryCategory || []}
-                            onChange={(e) => {
-                              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                              setFormData(prev => ({
-                                ...prev,
-                                primaryCategory: selectedOptions
-                              }));
-                            }}
-                            className="tom-select"
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              borderRadius: '8px',
-                              border: '1px solid #ddd',
-                              fontSize: '15px',
-                              marginBottom: '20px'
-                            }}
-                          >
-                            <option value="demographic">Demographic</option>
-                            <option value="clinical">Clinical</option>
-                            <option value="lifestyle">Lifestyle</option>
-                            <option value="medical_history">Medical History</option>
-                            <option value="satisfaction">Satisfaction</option>
-                          </select>
-                          
-                          {/* WPS Categories */}
-                          <div className="form-group" style={{ marginBottom: '20px' }}>
-                            <label style={{
-                              display: 'block',
-                              marginBottom: '8px',
-                              fontWeight: 600,
-                              fontSize: '14px',
-                              color: '#475569'
-                            }}>WPS Categories</label>
-                            <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
-                              Align workplace safety framework categories to organize questions
-                            </div>
-                            <select
-                              id="wpsCategories"
-                              multiple
-                              value={formData.categories}
-                              onChange={(e) => {
-                                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                                setFormData(prev => ({
-                                  ...prev,
-                                  categories: selectedOptions
-                                }));
-                              }}
-                              className="tom-select"
-                              style={{
-                                width: '100%',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: '1px solid #ddd',
-                                fontSize: '15px',
-                                marginBottom: '20px'
-                              }}
-                            >
-                              <option value="safety_culture">Safety Culture</option>
-                              <option value="risk_assessment">Risk Assessment</option>
-                              <option value="incident_reporting">Incident Reporting</option>
-                              <option value="training">Training & Education</option>
-                              <option value="leadership">Leadership Commitment</option>
-                            </select>
-                          </div>
-                          
-                          {/* Survey Themes */}
-                          <div className="form-group" style={{ marginBottom: '20px' }}>
-                            <label style={{
-                              display: 'block',
-                              marginBottom: '8px',
-                              fontWeight: 600,
-                              fontSize: '14px',
-                              color: '#475569'
-                            }}>Survey Themes</label>
-                            <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                                <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#e2e8f0' }}></span>
-                                Group related questions by assigning survey themes
-                              </span>
-                            </div>
-                            <select
-                              id="surveyThemes"
-                              multiple
-                              value={formData.surveyThemes}
-                              onChange={(e) => {
-                                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                                setFormData(prev => ({
-                                  ...prev,
-                                  surveyThemes: selectedOptions
-                                }));
-                              }}
-                              className="tom-select"
-                              style={{
-                                width: '100%',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: '1px solid #ddd',
-                                fontSize: '15px',
-                                marginBottom: '20px'
-                              }}
-                            >
-                              <option value="health">Health</option>
-                              <option value="education">Education</option>
-                              <option value="finance">Finance</option>
-                              <option value="technology">Technology</option>
-                              <option value="lifestyle">Lifestyle</option>
-                              <option value="demographics">Demographics</option>
-                            </select>
-                          </div>
-                          
-                        
-                          
-                          {/* Question Tags will be handled by the TagBuilder component in the Classification tab */}
-                          
-                          {/* Keywords */}
-                          <div className="form-group">
-                            <label htmlFor="keywordsInput" style={{
-                              display: 'block',
-                              marginBottom: '8px',
-                              fontWeight: 600,
-                              fontSize: '14px',
-                              color: '#475569'
-                            }}>Keywords</label>
-                            <div style={{ marginBottom: '5px', fontSize: '13px', color: '#64748b' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                                <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#e2e8f0' }}></span>
-                                Add keywords to make this question easier to find in searches
-                              </span>
-                            </div>
-                            <input
-                              type="text"
-                              id="keywordsInput"
-                              placeholder="Type keywords and press enter..."
-                              style={{
-                                width: '100%',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: '1px solid #ddd',
-                                fontSize: '15px'
-                              }}
-                            />
-                          </div>
-                        </div>
-                        
                       </TabPanel>
                       
                       {/* Tab Panel 4: Custom Fields */}
@@ -2765,337 +2580,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                                 ></span>
                               </label>
                               <span style={{ fontSize: '14px' }}>Active Question</span>
-                            </div>
-                            
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              marginBottom: '15px',
-                              padding: '10px 0'
-                            }}>
-                              <label className="switch" style={{ 
-                                position: 'relative', 
-                                display: 'inline-block', 
-                                width: '36px', 
-                                height: '20px', 
-                                marginRight: '15px' 
-                              }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="demographicsToggle"
-                                  checked={formData.collectDemographics}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    collectDemographics: e.target.checked
-                                  }))}
-                                  style={{ 
-                                    opacity: 0, 
-                                    width: 0, 
-                                    height: 0 
-                                  }}
-                                />
-                                <span 
-                                  className="slider round" 
-                                  style={{
-                                    position: 'absolute',
-                                    cursor: 'pointer',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    backgroundColor: formData.collectDemographics ? '#4a2d4e' : '#ccc',
-                                    borderRadius: '34px',
-                                    transition: '.4s'
-                                  }}
-                                ></span>
-                              </label>
-                              <span style={{ fontSize: '14px' }}>Collect Demographics</span>
-                            </div>
-                          </div>
-                          
-                          {/* Demographics Metrics */}
-                          <div id="demographicsMetrics" style={{ 
-                            marginBottom: '20px', 
-                            padding: '20px', 
-                            backgroundColor: '#f8f9fa',
-                            borderRadius: '8px',
-                            display: formData.collectDemographics ? 'block' : 'none'
-                          }}>
-                            <h4 style={{ 
-                              fontSize: '15px', 
-                              fontWeight: 600, 
-                              marginTop: 0,
-                              marginBottom: '15px'
-                            }}>Demographics Metrics</h4>
-                            <p style={{ 
-                              fontSize: '13px', 
-                              color: '#64748b', 
-                              marginBottom: '20px'
-                            }}>Select which demographic data to collect when users answer this question:</p>
-                            
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="ageGroup" 
-                                  checked={formData.demographicsMetrics.ageGroup}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      ageGroup: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="ageGroup" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>👤</span> Age Group
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="gender" 
-                                  checked={formData.demographicsMetrics.gender}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      gender: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="gender" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>⚧️</span> Gender
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="location" 
-                                  checked={formData.demographicsMetrics.location}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      location: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="location" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>📍</span> Geographic Location
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="education" 
-                                  checked={formData.demographicsMetrics.education}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      education: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="education" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>🎓</span> Education Level
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="employment" 
-                                  checked={formData.demographicsMetrics.employment}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      employment: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="employment" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>💼</span> Employment Status
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="household" 
-                                  checked={formData.demographicsMetrics.household}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      household: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="household" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>🏠</span> Household Size
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="income" 
-                                  checked={formData.demographicsMetrics.income}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      income: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="income" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>💰</span> Income Range
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="ethnicity" 
-                                  checked={formData.demographicsMetrics.ethnicity}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      ethnicity: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="ethnicity" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>🌍</span> Ethnicity
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="language" 
-                                  checked={formData.demographicsMetrics.language || false}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      language: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="language" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>🗣️</span> Primary Language
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="device" 
-                                  checked={formData.demographicsMetrics.device || false}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      device: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="device" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>📱</span> Device Type
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="industry" 
-                                  checked={formData.demographicsMetrics.industry || false}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      industry: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="industry" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>🏭</span> Industry
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input 
-                                  type="checkbox" 
-                                  id="marital" 
-                                  checked={formData.demographicsMetrics.marital || false}
-                                  onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    demographicsMetrics: {
-                                      ...prev.demographicsMetrics,
-                                      marital: e.target.checked
-                                    }
-                                  }))}
-                                />
-                                <label htmlFor="marital" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>💍</span> Marital Status
-                                </label>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input type="checkbox" id="role" />
-                                <label htmlFor="role" style={{ fontSize: '14px' }}>
-                                  <span style={{ marginRight: '5px' }}>👔</span> Role
-                                </label>
-                              </div>
-                            </div>
-                            
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                              <button 
-                                type="button"
-                                style={{
-                                  padding: '8px 12px',
-                                  fontSize: '13px',
-                                  backgroundColor: '#f1f5f9',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                                onClick={() => {
-                                  // Select all checkboxes
-                                  const checkboxes = document.querySelectorAll('#demographicsMetrics input[type="checkbox"]');
-                                  checkboxes.forEach((checkbox: any) => {
-                                    checkbox.checked = true;
-                                  });
-                                }}
-                              >Select All</button>
-                              
-                              <button 
-                                type="button"
-                                style={{
-                                  padding: '8px 12px',
-                                  fontSize: '13px',
-                                  backgroundColor: '#f1f5f9',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                                onClick={() => {
-                                  // Clear all checkboxes
-                                  const checkboxes = document.querySelectorAll('#demographicsMetrics input[type="checkbox"]');
-                                  checkboxes.forEach((checkbox: any) => {
-                                    checkbox.checked = false;
-                                  });
-                                }}
-                              >Clear All</button>
                             </div>
                           </div>
                           

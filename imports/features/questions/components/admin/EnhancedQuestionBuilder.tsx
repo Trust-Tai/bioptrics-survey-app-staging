@@ -886,7 +886,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
                         <TabList>
                           <Tab><FaInfoCircle /> Basic Information</Tab>
                           <Tab><FaList /> Answer Options</Tab>
-                          <Tab><FaTags /> Classification</Tab>
+                          {/* <Tab><FaTags /> Classification</Tab> */}
                           <Tab><FaEdit /> Custom Fields</Tab>
                           <Tab><FaCodeBranch /> Branching Logic</Tab>
                           <Tab><FaCog /> Settings</Tab>
@@ -1016,26 +1016,6 @@ const EnhancedQuestionBuilder: React.FC = () => {
                           </div>
                         </TabPanel>
                         
-                        {/* Classification Tab */}
-                        <TabPanel>
-                          <div className="tab-content">
-                            <QuestionClassification
-                              selectedCategoryIds={question.categories || []}
-                              selectedThemeIds={question.themes || []}
-                              selectedTagIds={question.labels || []}
-                              keywords={question.keywords || []}
-                              selectedCategoryId={question.categoryId}
-                              categoryDetails={question.categoryDetails || ''}
-                              onCategoryChange={(categories) => setQuestion(prev => ({ ...prev, categories }))}
-                              onThemeChange={(themes) => setQuestion(prev => ({ ...prev, themes }))}
-                              onTagChange={(labels) => setQuestion(prev => ({ ...prev, labels }))}
-                              onKeywordsChange={(keywords) => setQuestion(prev => ({ ...prev, keywords }))}
-                              onSingleCategoryChange={(categoryId) => setQuestion(prev => ({ ...prev, categoryId }))}
-                              onCategoryDetailsChange={(details) => setQuestion(prev => ({ ...prev, categoryDetails: details }))}
-                            />
-                          </div>
-                        </TabPanel>
-                        
                         {/* Custom Fields Tab */}
                         <TabPanel>
                           <div className="tab-content">
@@ -1158,87 +1138,6 @@ const EnhancedQuestionBuilder: React.FC = () => {
                                 label="Active Question"
                               />
                             </div>
-                            
-                            <div className="form-group toggle-group">
-                              <ToggleSwitch
-                                checked={question.collectDemographics === undefined ? true : question.collectDemographics}
-                                onChange={(checked) => setQuestion(prev => ({ ...prev, collectDemographics: checked }))}
-                                label="Collect Demographics"
-                              />
-                            </div>
-                            
-                            {(question.collectDemographics === undefined || question.collectDemographics) && (
-                              <div className="demographics-metrics-section">
-                                <h4>Demographics Metrics</h4>
-                                <p className="helper-text">Select which demographic data to collect when users answer this question:</p>
-                                
-                                <div className="demographics-list">
-                                  {[
-                                    { id: 'age_group', label: 'Age Group', icon: <FaUser /> },
-                                    { id: 'gender', label: 'Gender', icon: <FaVenusMars /> },
-                                    { id: 'location', label: 'Geographic Location', icon: <FaGlobe /> },
-                                    { id: 'education', label: 'Education Level', icon: <FaGraduationCap /> },
-                                    { id: 'employment', label: 'Employment Status', icon: <FaBriefcase /> },
-                                    { id: 'household', label: 'Household Size', icon: <FaUsers /> },
-                                    { id: 'income', label: 'Income Range', icon: <FaMoneyBillAlt /> },
-                                    { id: 'ethnicity', label: 'Ethnicity', icon: <FaUserFriends /> },
-                                    { id: 'language', label: 'Primary Language', icon: <FaLanguage /> },
-                                    { id: 'device', label: 'Device Type', icon: <FaMobile /> },
-                                    { id: 'industry', label: 'Industry', icon: <FaIndustry /> },
-                                    { id: 'marital_status', label: 'Marital Status', icon: <FaRing /> },
-                                    { id: 'role', label: 'Role', icon: <FaUserFriends /> },
-                                  ].map(option => (
-                                    <label key={option.id} className="demographic-checkbox">
-                                      <input 
-                                        type="checkbox" 
-                                        checked={question.selectedDemographics?.includes(option.id) || false}
-                                        onChange={(e) => {
-                                          const isChecked = e.target.checked;
-                                          setQuestion(prev => {
-                                            const currentSelected = prev.selectedDemographics || [];
-                                            if (isChecked && !currentSelected.includes(option.id)) {
-                                              return { ...prev, selectedDemographics: [...currentSelected, option.id] };
-                                            } else if (!isChecked) {
-                                              return { ...prev, selectedDemographics: currentSelected.filter((item: string) => item !== option.id) };
-                                            }
-                                            return prev;
-                                          });
-                                        }}
-                                      />
-                                      <span className="checkbox-label">{option.icon} {option.label}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                                
-                                <div className="demographics-select-buttons">
-                                  <button 
-                                    type="button" 
-                                    className="select-all-btn"
-                                    onClick={() => {
-                                      setQuestion(prev => ({
-                                        ...prev,
-                                        selectedDemographics: [
-                                          'age_group', 'gender', 'location', 'education', 'employment',
-                                          'household', 'income', 'ethnicity', 'language', 'device',
-                                          'industry', 'marital_status'
-                                        ]
-                                      }));
-                                    }}
-                                  >
-                                    Select All
-                                  </button>
-                                  <button 
-                                    type="button" 
-                                    className="clear-all-btn"
-                                    onClick={() => {
-                                      setQuestion(prev => ({ ...prev, selectedDemographics: [] }));
-                                    }}
-                                  >
-                                    Clear All
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                             
                             <div className="form-group">
                               <label>Priority</label>
