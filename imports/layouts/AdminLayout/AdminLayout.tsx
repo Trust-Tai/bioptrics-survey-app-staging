@@ -182,7 +182,7 @@ const Logo = styled.div<{theme?: any}>`
   text-align: center;
   margin-bottom: 2rem;
   padding: 0 1rem;
-  color: ${props => props.theme?.colors?.primary || '#007bff'};
+  color: ${props => props.theme?.colors?.primary || '#ffffff'};
 `;
 
 interface NavItemProps {
@@ -245,7 +245,7 @@ const NavIcon = styled.div<IconProps & {theme?: any}>`
   margin-right: ${props => props.collapsed ? '0' : '16px'};
   display: flex;
   align-items: center;
-  color: ${props => props.theme?.colors?.primary || '#007bff'};
+  color: ${props => props.theme?.colors?.primary || '#ffffff'};
   justify-content: center;
 `;
 
