@@ -1361,10 +1361,10 @@ const Analytics: React.FC = () => {
                 <ResponseRateKPI 
                   onClick={() => setShowResponseRateChart(true)} 
                   style={{ cursor: 'pointer' }}
-                  title="Click to view response rate chart"
+                  
                 >
                   <StatValue>{isLoading ? '...' : `${responseRate}%`}</StatValue>
-                  <StatLabel>Completed / Total Surveys</StatLabel>
+                  <StatLabel>Completed / Total Surveys Responses</StatLabel>
                 </ResponseRateKPI>
               </Card>
             </KPIContainer>

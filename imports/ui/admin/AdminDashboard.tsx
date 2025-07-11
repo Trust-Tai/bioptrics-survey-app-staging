@@ -684,6 +684,7 @@ const AdminDashboardContent: React.FC = () => {
   const [responseRate, setResponseRate] = useState(0);
   const [participationRate, setParticipationRate] = useState<number>(0);
   const [participantCount, setParticipantCount] = useState<number>(0);
+  const [activeSurveysCount, setActiveSurveysCount] = useState<number>(0);
   
   // State for response trends data
   const [responseTrendsData, setResponseTrendsData] = useState<{labels: string[], data: number[]}>({ 
@@ -694,12 +695,23 @@ const AdminDashboardContent: React.FC = () => {
   
   // Fetch enhanced metrics and trends data
   useEffect(() => {
-    // Get enhanced response rate
-    Meteor.call('getEnhancedResponseRate', (error: any, result: number) => {
+    // Get filtered response rate using the same method as in Analytics
+    Meteor.call('getFilteredResponseRate', [], [], [], null, null, (error: any, result: number) => {
       if (error) {
-        console.error('Error fetching enhanced response rate:', error);
+        console.error('Error fetching filtered response rate:', error);
       } else {
+        console.log('Filtered response rate received:', result);
         setResponseRate(result);
+      }
+    });
+    
+    // Get active surveys count
+    Meteor.call('getActiveSurveysCount', (error: any, result: number) => {
+      if (error) {
+        console.error('Error fetching active surveys count:', error);
+      } else {
+        console.log('Active surveys count received:', result);
+        setActiveSurveysCount(result);
       }
     });
     
@@ -828,7 +840,7 @@ const AdminDashboardContent: React.FC = () => {
 
   const stats = [
     { label: 'Total Surveys', value: surveys.length, icon: FaClipboardList, link: '/admin/surveys/all' },
-    { label: 'Active Surveys', value: activeSurveys.length, icon: FaCalendarAlt, link: '/admin/surveys/all' },
+    { label: 'Active Surveys', value: activeSurveysCount, icon: FaCalendarAlt, link: '/admin/surveys/all' },
     { label: 'Question Bank', value: totalQuestions, icon: FaQuestionCircle, link: '/admin/questions/all' },
     { label: 'Survey Responses', value: participantCount, icon: FaUsers, link: '/admin/analytics' }
   ];
@@ -879,7 +891,7 @@ const AdminDashboardContent: React.FC = () => {
           </WelcomeSubtitle>
           <MetricsRow>
             <MetricItem>
-              <FaClipboardList /> {activeSurveys.length} active surveys
+              <FaClipboardList /> {activeSurveysCount} active surveys
             </MetricItem>
             <MetricItem>
               <FaChartLine /> {responseRate}% response rate
