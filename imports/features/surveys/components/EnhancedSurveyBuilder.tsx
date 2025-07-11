@@ -7,7 +7,7 @@ import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams, useLocation, UNSAFE_NavigationContext } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiChevronRight, FiChevronDown, FiChevronUp, FiSave } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiChevronRight, FiChevronDown, FiChevronUp, FiSave, FiMove } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
@@ -301,6 +301,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
   const [surveyData, setSurveyData] = useState<any>(null);
   const [activeStep, setActiveStep] = useState('welcome');
+  const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null);
+  const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
   const [isLoadingResponses, setIsLoadingResponses] = useState<boolean>(false);
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
   const [responseStats, setResponseStats] = useState<any>({
@@ -2013,6 +2015,75 @@ const EnhancedSurveyBuilder: React.FC = () => {
     });
   };
   
+  // Handle reordering sections
+  const handleReorderSection = async (oldIndex: number, newIndex: number) => {
+    // Reorder the sections
+    const reorderedSections = [...sections];
+    const [movedSection] = reorderedSections.splice(oldIndex, 1);
+    reorderedSections.splice(newIndex, 0, movedSection);
+    
+    // Update the priority and displayOrder properties for each section
+    const updatedSections = reorderedSections.map((section, index) => ({
+      ...section,
+      priority: index,
+      displayOrder: index, // Update the displayOrder to match the new position
+    }));
+    
+    // Update the sections state
+    setSections(updatedSections);
+    
+    // Mark that we have unsaved changes
+    setHasUnsavedChanges(true);
+    
+    // Save changes immediately instead of waiting for auto-save
+    try {
+      // Ensure we have valid data before proceeding
+      if (!survey || !survey._id) {
+        console.log('Cannot save: Survey not fully loaded');
+        return;
+      }
+      
+      // Prepare survey data with updated sections
+      const surveyData = {
+        title: String(survey.title || ''),
+        description: String(survey.description || ''),
+        status: String(survey.status || 'draft'),
+        surveySections: updatedSections.map(section => ({
+          id: String(section.id),
+          name: String(section.name || ''),
+          description: String(section.description || ''),
+          priority: Number(section.priority || 0),
+          displayOrder: Number(section.displayOrder || 0),
+          isActive: Boolean(section.isActive !== undefined ? section.isActive : true),
+          color: String(section.color || ''),
+          instructions: String(section.instructions || ''),
+          isRequired: Boolean(section.isRequired !== undefined ? section.isRequired : false)
+        })),
+        sectionQuestions: surveyQuestions.map(q => ({
+          id: String(q.id),
+          text: String(q.text || ''),
+          type: String(q.type || ''),
+          status: String(q.status || 'draft'),
+          sectionId: String(q.sectionId || ''),
+          order: Number(q.order || 0)
+        })),
+        selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
+        selectedTheme: survey.selectedTheme || '',
+        selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
+        selectedTags: Array.isArray(selectedTags) ? selectedTags : []
+      };
+      
+      // Call the server method to update the survey
+      await Meteor.callAsync('surveys.update', survey._id, surveyData);
+      console.log('Survey sections reordered and saved successfully');
+      
+      // Reset unsaved changes flag
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Error saving section reordering:', error);
+    }
+  };
+  
   // Get questions that belong to a specific section
   const getQuestionsForSection = (sectionId: string) => {
     return surveyQuestions.filter(q => q.sectionId === sectionId);
@@ -2655,19 +2726,89 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="survey-sections-container">
+                  <div 
+                    className="survey-sections-container"
+                  >
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      .survey-section-wrapper {
+                        margin-bottom: 16px;
+                        transition: all 0.2s ease;
+                        position: relative;
+                      }
+                      .survey-section-wrapper.dragging {
+                        opacity: 0.5;
+                        transform: scale(0.98);
+                      }
+                      .survey-section-wrapper.drag-over:before {
+                        content: '';
+                        position: absolute;
+                        top: -8px;
+                        left: 0;
+                        right: 0;
+                        height: 4px;
+                        background-color: #552a47;
+                        border-radius: 2px;
+                        z-index: 10;
+                      }
+                      .section-drag-handle {
+                        border-radius: 4px 4px 0 0;
+                        border-bottom: none;
+                      }
+                      .section-drag-placeholder {
+                        height: 80px;
+                        border: 2px dashed #552a47;
+                        border-radius: 4px;
+                        margin-bottom: 16px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background-color: rgba(85, 42, 71, 0.05);
+                        color: #552a47;
+                      }
+                    `}} />
                     {sections.length > 0 ? (
-                      sections.map(section => (
-                        <EnhancedSurveySection
+                      sections.map((section, index) => (
+                        <div 
                           key={section.id}
-                          section={section}
-                          questions={surveyQuestions.filter(q => q.sectionId === section.id)}
-                          onEditSection={handleEditSection}
-                          onDeleteSection={handleDeleteSection}
-                          onAddQuestion={handleAddQuestion}
-                          onRemoveQuestion={handleRemoveQuestion}
-                          onReorderQuestion={handleReorderQuestion}
-                        />
+                          className={`survey-section-wrapper ${draggingSectionIndex === index ? 'dragging' : ''} ${dragOverSectionIndex === index ? 'drag-over' : ''}`}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', index.toString());
+                            setDraggingSectionIndex(index);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            if (draggingSectionIndex !== index) {
+                              setDragOverSectionIndex(index);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            setDragOverSectionIndex(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                            if (sourceIndex !== index) {
+                              handleReorderSection(sourceIndex, index);
+                            }
+                            setDraggingSectionIndex(null);
+                            setDragOverSectionIndex(null);
+                          }}
+                          onDragEnd={() => {
+                            setDraggingSectionIndex(null);
+                            setDragOverSectionIndex(null);
+                          }}
+                        >
+                          <EnhancedSurveySection
+                            section={section}
+                            questions={surveyQuestions.filter(q => q.sectionId === section.id)}
+                            onEditSection={handleEditSection}
+                            onDeleteSection={handleDeleteSection}
+                            onAddQuestion={handleAddQuestion}
+                            onRemoveQuestion={handleRemoveQuestion}
+                            onReorderQuestion={handleReorderQuestion}
+                          />
+                        </div>
                       ))
                     ) : (
                       <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>

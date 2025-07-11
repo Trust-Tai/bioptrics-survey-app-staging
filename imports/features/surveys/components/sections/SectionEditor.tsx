@@ -526,6 +526,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
                     name="image"
                     accept="image/*"
                     onChange={handleInputChange}
+                    style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', overflow: 'hidden' }}
                   />
                 </ImageUploadInput>
               ) : (
@@ -614,27 +615,30 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
             </CheckboxGroup>
           </FormGroup>
           
-          <FormGroup>
-            <FormLabel>
-              Display Order
-              <TooltipContainer>
-                <TooltipIcon>
-                  <FiHelpCircle size={14} />
-                </TooltipIcon>
-                <TooltipText>
-                  Controls the order in which sections appear in the survey. Sections with lower numbers appear first. If two sections have the same number, they will be ordered by creation date.
-                </TooltipText>
-              </TooltipContainer>
-            </FormLabel>
-            <FormInput
-              type="number"
-              name="priority"
-              value={formData.priority}
-              onChange={handleInputChange}
-              min="0"
-              style={{ width: '100px' }}
-            />
-          </FormGroup>
+          {/* Display Order field - hidden but still functional */}
+          <div style={{ display: 'none' }}>
+            <FormGroup>
+              <FormLabel>
+                Display Order
+                <TooltipContainer>
+                  <TooltipIcon>
+                    <FiHelpCircle size={14} />
+                  </TooltipIcon>
+                  <TooltipText>
+                    Controls the order in which sections appear in the survey. Sections with lower numbers appear first. If two sections have the same number, they will be ordered by creation date.
+                  </TooltipText>
+                </TooltipContainer>
+              </FormLabel>
+              <FormInput
+                type="number"
+                name="priority"
+                value={formData.priority}
+                onChange={handleInputChange}
+                min="0"
+                style={{ width: '100px' }}
+              />
+            </FormGroup>
+          </div>
           </ModalBody>
           
           <ModalFooter>

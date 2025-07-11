@@ -61,6 +61,16 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
           <span className="icon-wrapper" style={{ display: 'inline-flex', marginRight: '8px', verticalAlign: 'middle' }}>
             {isExpanded ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
           </span>
+          <div className="section-drag-handle" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            cursor: 'grab',
+            color: 'transparent',
+            marginBottom: '4px'
+          }}>
+            <FiMove size={16} style={{ marginRight: '8px', color: 'rgba(102, 102, 102, 0.5)' }} /> 
+          </div>
           {section.name}
           {section.isRequired && (
             <span style={{ color: '#e74c3c', marginLeft: '4px' }}>*</span>
