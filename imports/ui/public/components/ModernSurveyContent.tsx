@@ -785,6 +785,8 @@ const handleRestart = () => {
     // Normalize the type string (lowercase, trim spaces)
     const normalizedType = backendType.toLowerCase().trim();
     
+    console.log(`Mapping question type: ${backendType} (normalized: ${normalizedType})`);
+    
     // Map to the types expected by ModernSurveyQuestion
     switch (normalizedType) {
       case 'text':
@@ -799,6 +801,16 @@ const handleRestart = () => {
       case 'textarea':
       case 'paragraph':
         return 'textarea';
+        
+      case 'dropdown':
+      case 'select':
+      case 'combobox':
+      case 'combo':
+      case 'dropdown_menu':
+      case 'dropdown-menu':
+      case 'dropdownmenu':
+        console.log('Detected dropdown question type');
+        return 'dropdown';
         
       case 'single_choice':
       case 'single-choice':
@@ -829,36 +841,60 @@ const handleRestart = () => {
   
   // Process question options to ensure they're in the correct format
   const processQuestionOptions = (question: Question): string[] => {
+    console.log('Processing options for question:', question._id || question.id, 'type:', question.type);
+    
+    // Check for versions array first (important for dropdown questions)
+    if (Array.isArray((question as any).versions) && (question as any).versions.length > 0) {
+      const versionIndex = (question as any).currentVersion !== undefined ? 
+        Math.min((question as any).currentVersion, (question as any).versions.length - 1) : 0;
+      const versionData = (question as any).versions[versionIndex];
+      
+      console.log('Found versions array, checking version data:', versionData);
+      
+      if (versionData && Array.isArray(versionData.options) && versionData.options.length > 0) {
+        console.log('Using options from versions array:', versionData.options);
+        return versionData.options;
+      }
+    }
+    
     // If the question already has options in the right format, return them
     if (question.options && Array.isArray(question.options) && question.options.length > 0) {
+      console.log('Using direct options from question:', question.options);
       return question.options;
     }
     
     // Handle different formats of options that might be in the data
     const questionType = mapQuestionType(question.type);
+    console.log('Mapped question type:', questionType);
     
-    // For choice-based questions, provide default options if none are available
-    if (questionType === 'single-choice' || questionType === 'multiple-choice') {
+    // For choice-based questions and dropdowns, provide default options if none are available
+    if (questionType === 'single-choice' || questionType === 'multiple-choice' || questionType === 'dropdown') {
       // Check if options might be in a different property
       const anyQuestion = question as any;
       
       // Try to find options in various possible properties
       if (anyQuestion.choices && Array.isArray(anyQuestion.choices)) {
+        console.log('Using choices property:', anyQuestion.choices);
         return anyQuestion.choices;
       }
       
       if (anyQuestion.answers && Array.isArray(anyQuestion.answers)) {
+        console.log('Using answers property:', anyQuestion.answers);
         return anyQuestion.answers;
       }
       
       // If we have a string of comma-separated options, split them
       if (typeof anyQuestion.options === 'string') {
-        return anyQuestion.options.split(',').map((opt: string) => opt.trim());
+        const options = anyQuestion.options.split(',').map((opt: string) => opt.trim());
+        console.log('Split string options into array:', options);
+        return options;
       }
       
       // If all else fails, provide default options
-      console.warn(`No options found for choice question: ${question._id}, using defaults`);
-      return ['Option 1', 'Option 2', 'Option 3'];
+      console.warn(`No options found for ${questionType} question: ${question._id || question.id}, using defaults`);
+      return questionType === 'dropdown' ? 
+        ['Select an option...', 'Option 1', 'Option 2', 'Option 3'] : 
+        ['Option 1', 'Option 2', 'Option 3'];
     }
     
     // For scale questions, return empty array (scale is handled separately)
@@ -2012,12 +2048,44 @@ const handleRestart = () => {
           `Section ${sections.findIndex(s => s.id === questionSection.id) + 1}: Question ${currentQuestionIndex + 1} of ${sectionQuestions.length}` :
           `Question ${currentQuestionIndex + 1} of ${sectionQuestions.length}`;
         
+        // Check if this question has a versions array with dropdown type
+        let questionType = currentQuestion.type;
+        
+        // Check for dropdown type in versions array
+        if (Array.isArray((currentQuestion as any).versions) && (currentQuestion as any).versions.length > 0) {
+          const versionIndex = (currentQuestion as any).currentVersion !== undefined ? 
+            Math.min((currentQuestion as any).currentVersion, (currentQuestion as any).versions.length - 1) : 0;
+          const versionData = (currentQuestion as any).versions[versionIndex];
+          
+          console.log('Checking versions array for dropdown type:', versionData);
+          
+          if (versionData && versionData.responseType) {
+            if (versionData.responseType.toLowerCase() === 'dropdown' || 
+                versionData.responseType.toLowerCase() === 'select') {
+              console.log('Found dropdown type in versions array!');
+              questionType = 'dropdown';
+            }
+          }
+        }
+        
         // Map backend question type to frontend display type and ensure options are properly formatted
         const mappedQuestion = {
           ...currentQuestion,
-          type: mapQuestionType(currentQuestion.type),
-          options: processQuestionOptions(currentQuestion)
+          type: mapQuestionType(questionType),
+          options: processQuestionOptions(currentQuestion),
+          // Add a special flag to force dropdown rendering in ModernSurveyQuestion
+          _forceDropdown: questionType.toLowerCase() === 'dropdown' || 
+                         questionType.toLowerCase() === 'select' ||
+                         (currentQuestion as any).responseType?.toLowerCase() === 'dropdown' ||
+                         (currentQuestion as any).responseType?.toLowerCase() === 'select'
         };
+        
+        console.log('Mapped question for rendering:', {
+          originalType: currentQuestion.type,
+          mappedType: mappedQuestion.type,
+          forceDropdown: mappedQuestion._forceDropdown,
+          options: mappedQuestion.options?.length || 0
+        });
         
         // Determine if this is the last question in its section
         const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
