@@ -832,6 +832,24 @@ const handleRestart = () => {
       case 'likert_scale':
       case 'likert-scale':
         return 'scale';
+      case 'file':
+      case 'attachment':
+      case 'upload':
+      case 'document':
+      case 'fileupload':
+      case 'file_upload':
+      case 'file-upload':
+        console.log('Detected file question type');
+        return 'file';
+        
+      case 'date':
+      case 'datetime':
+      case 'calendar':
+      case 'datepicker':
+      case 'date_picker':
+      case 'date-picker':
+        console.log('Detected date question type');
+        return 'date';
         
       default:
         console.warn(`Unknown question type: ${backendType}, defaulting to text`);
