@@ -834,7 +834,8 @@ const AllQuestions: React.FC = () => {
     const handle = Meteor.subscribe('questions.all');
     return {
       loading: !handle.ready(),
-      questions: Questions.find({}).fetch()
+      // Sort by createdAt in descending order to show latest questions first
+      questions: Questions.find({}, { sort: { createdAt: -1 } }).fetch()
     };
   }, []);
   

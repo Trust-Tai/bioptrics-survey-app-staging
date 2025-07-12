@@ -176,7 +176,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
           name="questionTags"
           isMulti
           closeMenuOnSelect={false}
-          hideSelectedOptions={false}
+          hideSelectedOptions={true}
           options={selectOptions}
           value={selectOptions.filter(option => selectedTagIds.includes(option.value))}
           onChange={(selected) => {
@@ -186,6 +186,19 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
               onTagChange([]);
             }
           }}
+          filterOption={(option, inputValue) => {
+            // Only show options when there's input text
+            if (!inputValue) return false;
+            
+            // Don't show already selected options
+            if (selectedTagIds.includes(option.value)) return false;
+            
+            // Case-insensitive search
+            return option.label.toLowerCase().includes(inputValue.toLowerCase());
+          }}
+          noOptionsMessage={({inputValue}) => 
+            inputValue ? "No matching tags found" : "Type to search for tags"
+          }
           onCreateOption={(inputValue) => {
             // Call Meteor method to create a new tag
             Meteor.call('layers.create', {
@@ -209,7 +222,9 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
             });
           }}
           components={{
-            Option: CustomOption
+            Option: CustomOption,
+            DropdownIndicator: () => null,
+            IndicatorSeparator: () => null
           }}
           styles={{
             option: (base) => ({

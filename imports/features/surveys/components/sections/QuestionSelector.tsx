@@ -85,17 +85,67 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     
     // Create new instances
     dropdowns.forEach(dropdown => {
-      new TomSelect(dropdown, {
+      // For tag select elements, we need special handling to only show options when typing
+      const isTags = dropdown.classList.contains('tag-filter-select');
+      
+      const tomSelect = new TomSelect(dropdown, {
         plugins: ['remove_button'],
         create: false,
         sortField: { field: 'text', direction: 'asc' },
+        placeholder: dropdown.getAttribute('data-placeholder') || 'Type to search for tags',
         render: {
           dropdown: function() {
             return '<div class="ts-dropdown-content" style="z-index: 1500;"></div>';
+          },
+          no_results: function() {
+            return '<div class="no-results">No matching tags found</div>';
           }
         },
-        dropdownParent: 'body' // This helps with z-index issues
+        dropdownParent: 'body', // This helps with z-index issues
+        shouldOpen: false, // Don't open dropdown on focus by default
+        openOnFocus: false // Explicitly prevent opening on focus
       });
+      
+      if (isTags) {
+        // For tag selects, completely override the dropdown behavior
+        
+        // Prevent dropdown from opening on click
+        tomSelect.on('focus', function() {
+          tomSelect.close();
+        });
+        
+        // Prevent dropdown from opening on click of the control
+        const control = tomSelect.control;
+        if (control) {
+          control.addEventListener('mousedown', function(e) {
+            if (tomSelect.isOpen) {
+              e.stopPropagation();
+            }
+          });
+          
+          control.addEventListener('click', function(e) {
+            if (!tomSelect.isOpen) {
+              e.preventDefault();
+              e.stopPropagation();
+              tomSelect.close();
+              // Focus the input but don't open dropdown
+              setTimeout(() => {
+                const input = control.querySelector('input');
+                if (input) input.focus();
+              }, 0);
+            }
+          });
+        }
+        
+        // Only open dropdown when typing
+        tomSelect.on('type', function(str: string) {
+          if (str && str.length > 0) {
+            tomSelect.open();
+          } else {
+            tomSelect.close();
+          }
+        });
+      }
     });
     
     // Cleanup function to destroy instances when component unmounts
@@ -1241,7 +1291,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 
                 {/* Tag Filter with Tom Select */}
                 <div className="filter-group" style={{
-                  flex: '1 1 180px'
+                  flex: '1 1 350px'
                 }}>
                   <label className="filter-label">Tags</label>
                   {loading ? (
@@ -1250,8 +1300,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     <select 
                       ref={tagSelectRef} 
                       multiple
-                      className="filter-select"
+                      className="filter-select tag-filter-select"
                       aria-label="Filter by tags"
+                      data-placeholder="Type to search for tags"
                     />
                   )}
                 </div>
