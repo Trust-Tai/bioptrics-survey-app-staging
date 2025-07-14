@@ -243,11 +243,11 @@ const QuarterWidthCard = styled(Card)`
 
 // Welcome back section styled components
 const WelcomeBackSection = styled.div`
-  background: #a0cf4e;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
-  color: white;
+  color: #552a47;
   display: flex;
   flex-direction: column;
   gap: 16px;

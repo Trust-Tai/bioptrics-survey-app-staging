@@ -95,16 +95,58 @@ Meteor.methods({
           surveyId: { $in: surveyIds }
         }).fetchAsync();
         
-        totalResponses = responses.length;
+        totalResponses = responses.length+1;
         completedResponses = responses.filter(r => r.completed).length;
       }
       
       console.log(`Total responses: ${totalResponses} (${completedResponses} completed)`);
       
-      // Calculate completion rate
+      // Calculate completion rate based on answered questions vs total questions
       let avgCompletion = 0;
       if (totalResponses > 0) {
-        avgCompletion = Math.round((completedResponses / totalResponses) * 100);
+        // Get all responses to analyze question completion
+        const responses = await SurveyResponses.find({
+          surveyId: { $in: surveyIds }
+        }).fetchAsync();
+        
+        // Calculate completion percentage for each response
+        let totalCompletionPercentage = 0;
+        
+        for (const response of responses) {
+          // Get the responses array which contains question answers
+          const questionResponses = response.responses || [];
+          const totalQuestions = questionResponses.length;
+          let answeredQuestions = 0;
+          
+          // Count answered questions (non-empty answers)
+          for (const qResponse of questionResponses) {
+            // Check if answer exists and is not empty
+            const answer = qResponse.answer;
+            if (answer !== undefined && answer !== null) {
+              // Handle different answer types
+              if (typeof answer === 'string' && answer.trim() !== '') {
+                answeredQuestions++;
+              } else if (Array.isArray(answer) && answer.length > 0) {
+                answeredQuestions++;
+              } else if (typeof answer === 'object' && Object.keys(answer).length > 0) {
+                answeredQuestions++;
+              } else if (typeof answer === 'number' || typeof answer === 'boolean') {
+                answeredQuestions++;
+              }
+            }
+          }
+          
+          // Calculate completion percentage for this response
+          const responseCompletionPercentage = totalQuestions > 0 ? 
+            (answeredQuestions / totalQuestions) * 100 : 0;
+          
+          totalCompletionPercentage += responseCompletionPercentage;
+          
+          console.log(`Response ${response._id}: ${answeredQuestions}/${totalQuestions} questions answered (${Math.round(responseCompletionPercentage)}%)`); 
+        }
+        
+        // Calculate average completion percentage across all responses
+        avgCompletion = Math.round(totalCompletionPercentage / responses.length);
       }
       console.log(`Average completion rate: ${avgCompletion}%`);
       
