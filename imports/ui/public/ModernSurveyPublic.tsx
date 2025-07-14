@@ -9,6 +9,7 @@ import ModernSurveyContent from './components/ModernSurveyContent';
 import ModernSurveyLoader from './components/ModernSurveyLoader';
 import ModernSurveyError from './components/ModernSurveyError';
 import SurveyThemeProvider from './SurveyThemeProvider';
+import { RealTimeTracker } from '../../features/analytics/components/public';
 
 // Types
 interface Survey {
@@ -103,6 +104,31 @@ const ModernSurveyPublic: React.FC = () => {
   const [isAuthorized, setIsAuthorized] = useState<boolean>(true); // Default to true, will check later
   const [themeId, setThemeId] = useState<string>('default');
   const [themeObject, setThemeObject] = useState<any>(null);
+  
+  // Generate a unique respondent ID if not already present
+  const [respondentId] = useState<string>(() => {
+    // Check if we already have a respondent ID in localStorage
+    const storedId = localStorage.getItem('survey-respondent-id');
+    if (storedId) return storedId;
+    
+    // Generate a new ID
+    const newId = `r-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
+    localStorage.setItem('survey-respondent-id', newId);
+    return newId;
+  });
+  
+  // Track current question and section
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | undefined>();
+  const [currentSectionId, setCurrentSectionId] = useState<string | undefined>();
+  
+  // Handle question and section changes
+  const handleQuestionChange = (questionId: string) => {
+    setCurrentQuestionId(questionId);
+  };
+  
+  const handleSectionChange = (sectionId: string) => {
+    setCurrentSectionId(sectionId);
+  };
   
   // Add survey-public class to body for theme styling
   useEffect(() => {
@@ -348,15 +374,34 @@ const ModernSurveyPublic: React.FC = () => {
     );
   }
   
+  // Render the survey content
   return (
     <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
       <PageContainer>
+        <Header>
+          <HeaderContent>
+            {surveyData.logo && (
+              <Logo src={surveyData.logo} alt="Survey Logo" />
+            )}
+          </HeaderContent>
+        </Header>
         <MainContent>
           <ModernSurveyContent 
             survey={surveyData} 
             isPreviewMode={isPreviewMode} 
-            token={token || ''} 
+            token={token || ''}
+            onQuestionChange={handleQuestionChange}
+            onSectionChange={handleSectionChange}
           />
+          {/* Add real-time analytics tracker (invisible component) */}
+          {!isPreviewMode && surveyData._id && (
+            <RealTimeTracker
+              surveyId={surveyData._id}
+              respondentId={respondentId}
+              currentQuestionId={currentQuestionId}
+              currentSectionId={currentSectionId}
+            />
+          )}
         </MainContent>
         <Footer>
           © {new Date().getFullYear()} Powered By Bioptrics. All rights reserved.

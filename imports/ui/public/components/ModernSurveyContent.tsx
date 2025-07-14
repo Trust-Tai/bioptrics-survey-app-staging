@@ -101,7 +101,9 @@ const ModernSurveyContent: React.FC<{
   survey: ExtendedSurvey;
   isPreviewMode: boolean;
   token: string;
-}> = ({ survey, isPreviewMode, token }) => {
+  onQuestionChange?: (questionId: string) => void;
+  onSectionChange?: (sectionId: string) => void;
+}> = ({ survey, isPreviewMode, token, onQuestionChange, onSectionChange }) => {
   // State for questions, sections, and navigation
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
@@ -789,6 +791,15 @@ const updateCurrentStep = (newStep: {
   questionId?: string;
 }) => {
   setCurrentStep(newStep);
+  
+  // Call the callback functions for real-time tracking
+  if (newStep.type === 'question' && newStep.questionId && onQuestionChange) {
+    onQuestionChange(newStep.questionId);
+  }
+  
+  if (newStep.type === 'section' && newStep.sectionId && onSectionChange) {
+    onSectionChange(newStep.sectionId);
+  }
   
   // Don't save welcome screen progress or if survey has been submitted
   if (newStep.type !== 'welcome' && !isSubmitted) {

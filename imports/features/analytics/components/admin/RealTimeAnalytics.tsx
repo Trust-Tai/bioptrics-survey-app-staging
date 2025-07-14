@@ -42,6 +42,7 @@ ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 import { SurveyResponses } from '../../../../features/surveys/api/surveyResponses';
 import { Surveys } from '../../../../features/surveys/api/surveys';
 import { IncompleteSurveyResponses } from '../../../../features/surveys/api/incompleteSurveyResponses';
+import { RealTimeAnalytics as RealTimeEvents, RealTimeStats } from '../../api/realTimeTracker';
 
 // Types
 interface RealTimeMetrics {
@@ -351,7 +352,7 @@ const RealTimeAnalytics: React.FC<RealTimeAnalyticsProps> = ({
   const [deviceDistribution, setDeviceDistribution] = useState<DeviceDistribution[]>([]);
   
   // Get real data from Meteor collections
-  const { surveys, responses, incompleteResponses, loading } = useTracker(() => {
+  const { surveys, responses, incompleteResponses, realTimeEvents, realTimeStats, loading } = useTracker(() => {
     // First try the specific publications
     const surveysHandle = Meteor.subscribe('surveys');
     
@@ -377,16 +378,32 @@ const RealTimeAnalytics: React.FC<RealTimeAnalyticsProps> = ({
       incompleteHandle = { ready: () => true }; // Fallback to prevent blocking
     }
     
+    // Subscribe to real-time events and stats
+    const realTimeEventsHandle = surveyId
+      ? Meteor.subscribe('realTimeEvents.bySurvey', surveyId)
+      : Meteor.subscribe('realTimeStats.all');
+      
+    const realTimeStatsHandle = surveyId
+      ? Meteor.subscribe('realTimeStats.bySurvey', surveyId)
+      : Meteor.subscribe('realTimeStats.all');
+    
     // Check if subscriptions are ready
-    const isLoading = !surveysHandle.ready() || !responsesHandle.ready() || !incompleteHandle.ready();
+    const isLoading = !surveysHandle.ready() || 
+                     !responsesHandle.ready() || 
+                     !incompleteHandle.ready() || 
+                     !realTimeEventsHandle.ready() || 
+                     !realTimeStatsHandle.ready();
     
     const responsesQuery = surveyId ? { surveyId } : {};
     const incompleteQuery = surveyId ? { surveyId } : {};
+    const realTimeQuery = surveyId ? { surveyId } : {};
     
     return {
       surveys: Surveys.find({}).fetch(),
       responses: SurveyResponses.find(responsesQuery).fetch(),
       incompleteResponses: IncompleteSurveyResponses.find(incompleteQuery).fetch() || [],
+      realTimeEvents: RealTimeEvents.find(realTimeQuery, { sort: { timestamp: -1 } }).fetch(),
+      realTimeStats: RealTimeStats.findOne(realTimeQuery) || null,
       loading: isLoading,
     };
   }, [surveyId]);
@@ -526,9 +543,12 @@ const RealTimeAnalytics: React.FC<RealTimeAnalyticsProps> = ({
   const [hourlyActivity, setHourlyActivity] = useState<any[]>([]);
   const [browserData, setBrowserData] = useState<any[]>([]);
   
-  // Initialize with sample data if nothing is available
+  // Process real-time events to generate metrics
   useEffect(() => {
-    if (!loading && !isLoading && incompleteResponses.length === 0 && activeUsers.length === 0) {
+    if (!loading && realTimeEvents && realTimeEvents.length > 0) {
+      // Process real-time events to update metrics
+      processRealTimeEvents(realTimeEvents, realTimeStats);
+    } else if (!loading && !isLoading && incompleteResponses.length === 0 && activeUsers.length === 0) {
       // Generate sample data for demonstration
       const sampleActiveUsers = [];
       for (let i = 0; i < 5; i++) {
@@ -640,7 +660,337 @@ const RealTimeAnalytics: React.FC<RealTimeAnalyticsProps> = ({
       }
       setHourlyActivity(sampleHourlyActivity);
     }
-  }, [loading, isLoading, incompleteResponses.length, activeUsers.length]);
+  }, [loading, isLoading, incompleteResponses.length, activeUsers.length, realTimeEvents, realTimeStats]);
+  
+  // Function to process real-time events
+  const processRealTimeEvents = (events: any[], stats: any) => {
+    if (!events || events.length === 0) return;
+    
+    // Use stats data if available
+    if (stats) {
+      setMetrics({
+        activeUsers: stats.activeUsers || 0,
+        completedSurveys: stats.completedSurveys || 0,
+        averageCompletionTime: stats.averageCompletionTime || 0,
+        dropoutRate: stats.dropoutRate || 0,
+        questionsAnswered: stats.questionsAnswered || 0,
+        responseRate: stats.responseRate || 0
+      });
+    }
+    
+    // Process active users
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    
+    // Get unique active users in the last 5 minutes
+    const recentEvents = events.filter(event => 
+      new Date(event.timestamp) >= fiveMinutesAgo
+    );
+    
+    // Group by respondent
+    const userMap = new Map();
+    recentEvents.forEach(event => {
+      if (!userMap.has(event.respondentId)) {
+        // Find the most recent event for this user
+        const userEvents = events.filter(e => e.respondentId === event.respondentId)
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          
+        const lastEvent = userEvents[0];
+        const firstEvent = userEvents[userEvents.length - 1];
+        
+        // Calculate progress based on question events
+        const questionEvents = userEvents.filter(e => e.eventType === 'questionAnswer');
+        const totalQuestions = Math.max(20, questionEvents.length); // Assume at least 20 questions
+        const progress = (questionEvents.length / totalQuestions) * 100;
+        
+        userMap.set(event.respondentId, {
+          id: event.respondentId,
+          surveyId: event.surveyId,
+          surveyTitle: getSurveyTitle(event.surveyId),
+          currentQuestion: questionEvents.length + 1,
+          totalQuestions,
+          startTime: new Date(firstEvent.timestamp),
+          lastActivity: new Date(lastEvent.timestamp),
+          progress: Math.min(100, progress),
+          device: event.device?.type || 'Unknown',
+          browser: event.device?.browser || 'Unknown',
+          location: event.location?.city || 'Unknown'
+        });
+      }
+    });
+    
+    // Convert map to array
+    const activeUsersList = Array.from(userMap.values());
+    setActiveUsers(activeUsersList);
+    
+    // Process time series data
+    const timeSeriesMap = new Map();
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    
+    // Group events by minute
+    events.filter(event => new Date(event.timestamp) >= thirtyMinutesAgo)
+      .forEach(event => {
+        const eventTime = new Date(event.timestamp);
+        const timeKey = eventTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        
+        if (!timeSeriesMap.has(timeKey)) {
+          timeSeriesMap.set(timeKey, {
+            time: timeKey,
+            activeUsers: 0,
+            completedSurveys: 0
+          });
+        }
+        
+        const entry = timeSeriesMap.get(timeKey);
+        
+        // Count unique users
+        entry.activeUsers = Math.max(entry.activeUsers, 1);
+        
+        // Count completed surveys
+        if (event.eventType === 'surveyComplete') {
+          entry.completedSurveys += 1;
+        }
+      });
+      
+    // Convert map to array and sort by time
+    const timeSeriesData = Array.from(timeSeriesMap.values())
+      .sort((a, b) => {
+        const timeA = new Date(`1970/01/01 ${a.time}`).getTime();
+        const timeB = new Date(`1970/01/01 ${b.time}`).getTime();
+        return timeA - timeB;
+      });
+      
+    setTimeSeriesData(timeSeriesData);
+    
+    // Process question metrics
+    const questionMap = new Map();
+    events.filter(event => event.eventType === 'questionAnswer' && event.questionId)
+      .forEach(event => {
+        const questionId = event.questionId;
+        
+        if (!questionMap.has(questionId)) {
+          questionMap.set(questionId, {
+            questionId,
+            questionText: `Question ${questionId}`,
+            averageTimeSpent: 0,
+            dropoutCount: 0,
+            responseCount: 0,
+            timeSpentTotal: 0
+          });
+        }
+        
+        const entry = questionMap.get(questionId);
+        entry.responseCount += 1;
+        
+        if (event.timeSpent) {
+          entry.timeSpentTotal += event.timeSpent / 1000; // Convert to seconds
+        }
+      });
+      
+    // Calculate averages and get dropout counts
+    questionMap.forEach(question => {
+      if (question.responseCount > 0) {
+        question.averageTimeSpent = Math.round(question.timeSpentTotal / question.responseCount);
+      }
+      
+      // Count dropouts after this question
+      const dropouts = events.filter(event => 
+        event.eventType === 'surveyDropout' && 
+        event.questionId === question.questionId
+      ).length;
+      
+      question.dropoutCount = dropouts;
+    });
+    
+    // Convert map to array
+    const questionMetricsList = Array.from(questionMap.values());
+    setQuestionMetrics(questionMetricsList);
+    
+    // Process section metrics
+    const sectionMap = new Map();
+    events.filter(event => event.sectionId)
+      .forEach(event => {
+        const sectionId = event.sectionId;
+        
+        if (!sectionMap.has(sectionId)) {
+          sectionMap.set(sectionId, {
+            sectionId,
+            sectionTitle: `Section ${sectionId}`,
+            averageTimeSpent: 0,
+            dropoutCount: 0,
+            completionRate: 0,
+            timeSpentTotal: 0,
+            startCount: 0,
+            completeCount: 0
+          });
+        }
+        
+        const entry = sectionMap.get(sectionId);
+        
+        if (event.eventType === 'sectionComplete') {
+          entry.completeCount += 1;
+        }
+        
+        if (event.timeSpent) {
+          entry.timeSpentTotal += event.timeSpent / 1000; // Convert to seconds
+        }
+        
+        // Count section starts
+        if (event.eventType === 'pageView') {
+          entry.startCount += 1;
+        }
+        
+        // Count dropouts in this section
+        if (event.eventType === 'surveyDropout') {
+          entry.dropoutCount += 1;
+        }
+      });
+      
+    // Calculate averages and completion rates
+    sectionMap.forEach(section => {
+      if (section.completeCount > 0) {
+        section.averageTimeSpent = Math.round(section.timeSpentTotal / section.completeCount);
+      }
+      
+      if (section.startCount > 0) {
+        section.completionRate = (section.completeCount / section.startCount) * 100;
+      }
+    });
+    
+    // Convert map to array
+    const sectionMetricsList = Array.from(sectionMap.values());
+    setSectionMetrics(sectionMetricsList);
+    
+    // Process device distribution
+    const deviceMap = new Map();
+    events.filter(event => event.device?.type)
+      .forEach(event => {
+        const deviceType = event.device.type;
+        
+        if (!deviceMap.has(deviceType)) {
+          deviceMap.set(deviceType, {
+            device: deviceType,
+            count: 0,
+            percentage: 0
+          });
+        }
+        
+        deviceMap.get(deviceType).count += 1;
+      });
+      
+    // Calculate percentages
+    const totalDevices = Array.from(deviceMap.values()).reduce((sum, device) => sum + device.count, 0);
+    deviceMap.forEach(device => {
+      if (totalDevices > 0) {
+        device.percentage = (device.count / totalDevices) * 100;
+      }
+    });
+    
+    // Convert map to array
+    const deviceDistributionList = Array.from(deviceMap.values());
+    setDeviceDistribution(deviceDistributionList);
+    
+    // Process browser distribution
+    const browserMap = new Map();
+    events.filter(event => event.device?.browser)
+      .forEach(event => {
+        const browser = event.device.browser;
+        
+        if (!browserMap.has(browser)) {
+          browserMap.set(browser, {
+            name: browser,
+            value: 0
+          });
+        }
+        
+        browserMap.get(browser).value += 1;
+      });
+      
+    // Convert map to array
+    const browserDistributionList = Array.from(browserMap.values());
+    setBrowserData(browserDistributionList);
+    
+    // Process location data
+    const locationMap = new Map();
+    events.filter(event => event.location?.city)
+      .forEach(event => {
+        const location = event.location.city;
+        
+        if (!locationMap.has(location)) {
+          locationMap.set(location, {
+            name: location,
+            value: 0
+          });
+        }
+        
+        locationMap.get(location).value += 1;
+      });
+      
+    // Convert map to array
+    const locationDataList = Array.from(locationMap.values());
+    setLocationData(locationDataList);
+    
+    // Process completion time data
+    const completionTimes = events
+      .filter(event => event.eventType === 'surveyComplete' && event.timeSpent)
+      .map(event => event.timeSpent / 1000 / 60); // Convert to minutes
+      
+    const completionTimeMap = new Map([
+      ['0-5 min', 0],
+      ['5-10 min', 0],
+      ['10-15 min', 0],
+      ['15-20 min', 0],
+      ['20+ min', 0]
+    ]);
+    
+    completionTimes.forEach(time => {
+      if (time < 5) completionTimeMap.set('0-5 min', (completionTimeMap.get('0-5 min') || 0) + 1);
+      else if (time < 10) completionTimeMap.set('5-10 min', (completionTimeMap.get('5-10 min') || 0) + 1);
+      else if (time < 15) completionTimeMap.set('10-15 min', (completionTimeMap.get('10-15 min') || 0) + 1);
+      else if (time < 20) completionTimeMap.set('15-20 min', (completionTimeMap.get('15-20 min') || 0) + 1);
+      else completionTimeMap.set('20+ min', (completionTimeMap.get('20+ min') || 0) + 1);
+    });
+    
+    // Convert map to array
+    const completionTimeDataList = Array.from(completionTimeMap.entries())
+      .map(([range, count]) => ({ range, count }));
+    setCompletionTimeData(completionTimeDataList);
+    
+    // Process hourly activity
+    const hourlyMap = new Map();
+    for (let i = 0; i < 24; i++) {
+      const hour = i < 10 ? `0${i}:00` : `${i}:00`;
+      hourlyMap.set(hour, {
+        hour,
+        activeUsers: 0,
+        submissions: 0
+      });
+    }
+    
+    events.forEach(event => {
+      const eventHour = new Date(event.timestamp).getHours();
+      const hourKey = eventHour < 10 ? `0${eventHour}:00` : `${eventHour}:00`;
+      
+      if (hourlyMap.has(hourKey)) {
+        const entry = hourlyMap.get(hourKey);
+        entry.activeUsers += 1;
+        
+        if (event.eventType === 'surveyComplete') {
+          entry.submissions += 1;
+        }
+      }
+    });
+    
+    // Convert map to array
+    const hourlyActivityList = Array.from(hourlyMap.values());
+    setHourlyActivity(hourlyActivityList);
+  };
+  
+  // Helper function to get survey title
+  const getSurveyTitle = (surveyId: string) => {
+    const survey = surveys.find(s => s._id === surveyId);
+    return survey ? survey.title : 'Unknown Survey';
+  };
   
   // Show loading indicator only briefly
   const [showLoading, setShowLoading] = useState(true);
@@ -648,6 +998,18 @@ const RealTimeAnalytics: React.FC<RealTimeAnalyticsProps> = ({
     const timer = setTimeout(() => setShowLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
+  
+  // Set up polling for real-time updates
+  useEffect(() => {
+    // Refresh data every 10 seconds
+    const refreshInterval = setInterval(() => {
+      if (surveyId) {
+        Meteor.call('realTimeAnalytics.getStats', surveyId);
+      }
+    }, 10000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [surveyId]);
   
   if ((isLoading || loading) && showLoading) {
     return <div>Loading real-time analytics...</div>;
