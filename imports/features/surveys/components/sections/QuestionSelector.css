@@ -82,10 +82,10 @@
 .filter-group {
   display: flex;
   flex-direction: column;
-  width: 28%;
+  width: 38%;
   min-width: 0;
   flex-shrink: 0;
-  max-width: 28%;
+  max-width: 38%;
 }
 
 .search-container {
@@ -105,12 +105,10 @@
 }
 
 .search-input {
-  width: 100%;
+  width: 80%;
   padding: 0 8px 0 32px;
   font-size: 14px;
   border: 1px solid #e2e8f0;
-  border-left: 2px solid #552a47;
-  border-right: 2px solid #552a47;
   border-radius: 6px;
   background-color: #f8fafc;
   transition: all 0.2s ease;
@@ -153,7 +151,7 @@
   width: 100%;
   padding: 0 16px;
   font-size: 14px;
-  border: 1px solid #e2e8f0;
+  /* border: 1px solid #e2e8f0; */
   border-radius: 6px;
   background-color: #f8fafc;
   cursor: pointer;
@@ -175,6 +173,96 @@ select.filter-select[multiple] {
   padding: 0;
   height: auto;
   background-color: transparent;
+}
+
+/* Custom styling for Tom Select to prevent double borders */
+.ts-wrapper.multi .ts-control {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ts-wrapper.focus .ts-control {
+  border-color: #7b3d6e;
+  box-shadow: 0 0 0 3px rgba(123, 61, 110, 0.15);
+}
+
+/* Specific styling for the tag filter select */
+.tag-filter-select + .ts-wrapper .ts-control {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  min-height: 38px;
+  padding: 4px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.tag-filter-select + .ts-wrapper.has-items .ts-control {
+  padding: 4px;
+}
+
+.tag-filter-select + .ts-wrapper .ts-control input {
+  height: 28px;
+  min-width: 100px;
+  flex: 1;
+}
+
+/* Style for selected tag items */
+.tag-filter-select + .ts-wrapper .ts-control .item {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin: 2px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-filter-select + .ts-wrapper .ts-control .item .remove {
+  margin-left: 5px;
+  color: #94a3b8;
+}
+
+.tag-filter-select + .ts-wrapper .ts-control .item .remove:hover {
+  color: #7b3d6e;
+}
+
+/* Style for the dropdown */
+.ts-dropdown .ts-dropdown-content {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 5px 0;
+}
+
+/* Horizontal layout for tag items in dropdown */
+.tag-filter-select + .ts-wrapper .ts-dropdown .ts-dropdown-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+}
+
+.tag-filter-select + .ts-wrapper .ts-dropdown .option {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.tag-filter-select + .ts-wrapper .ts-dropdown .option:hover,
+.tag-filter-select + .ts-wrapper .ts-dropdown .option.active {
+  background-color: #f1f5f9;
+  color: #7b3d6e;
+}
+
+/* Placeholder styling */
+.ts-control input::placeholder {
+  color: #94a3b8;
+  opacity: 0.8;
 }
 
 .filter-select:focus {

@@ -226,6 +226,29 @@ const StyledSelect = styled.select`
   }
 `;
 
+const FilterTopRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const FilterBottomRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
 const FilterButtons = styled.div`
   display: flex;
   gap: 8px;
@@ -243,7 +266,7 @@ const DateRangeContainer = styled.div`
 const DateRangeText = styled.span`
   font-size: 14px;
   color: #666;
-  margin: 0 4px;
+  margin: 0 4px 0 25px;
 `;
 
 const DashboardGrid = styled.div`
@@ -851,11 +874,15 @@ const Analytics: React.FC = () => {
     
     // First pass: create a map of all tags
     allTags.forEach(tag => {
-      tagMap[tag._id] = { ...tag, children: [] };
+      if (tag && tag._id) { // Check if tag and tag._id exist
+        tagMap[tag._id] = { ...tag, children: [] };
+      }
     });
     
     // Second pass: build the hierarchy
     allTags.forEach(tag => {
+      if (!tag || !tag._id) return; // Skip invalid tags
+      
       if (tag.parentId && tagMap[tag.parentId]) {
         // This tag has a parent, add it to the parent's children
         tagMap[tag.parentId].children = tagMap[tag.parentId].children || [];
@@ -909,10 +936,43 @@ const Analytics: React.FC = () => {
   // Fetch questions data
   const { questions, questionsLoading } = useTracker(() => {
     const subscription = Meteor.subscribe('questions.all');
-    const allQuestions = Questions.find({}, { sort: { title: 1 } }).fetch();
+    const allQuestions = Questions.find({}).fetch();
+    
+    console.log('Questions data from MongoDB:', allQuestions);
+    if (allQuestions.length > 0) {
+      console.log('First question structure:', JSON.stringify(allQuestions[0], null, 2));
+      console.log('Question fields available:', Object.keys(allQuestions[0]));
+      
+      // Extract the questionText from the first question to verify the structure
+      const firstQuestion = allQuestions[0];
+      if (firstQuestion.versions && firstQuestion.versions.length > 0) {
+        console.log('First version questionText:', firstQuestion.versions[0].questionText);
+        console.log('HTML content of questionText:', firstQuestion.versions[0].questionText);
+      }
+    }
+    
+    // Process questions to extract text from versions array
+    const processedQuestions = allQuestions.map(q => {
+      // Extract text from HTML if needed
+      let displayText = 'Untitled Question';
+      
+      if (q.versions && q.versions.length > 0 && q.versions[0].questionText) {
+        // Remove HTML tags if present
+        const htmlText = q.versions[0].questionText;
+        displayText = htmlText.replace(/<[^>]*>/g, '');
+        if (!displayText.trim()) {
+          displayText = 'Untitled Question'; // Fallback if text is empty after removing HTML
+        }
+      }
+      
+      return {
+        ...q,
+        displayText: displayText
+      };
+    });
     
     return {
-      questions: allQuestions,
+      questions: processedQuestions,
       questionsLoading: !subscription.ready()
     };
   }, []);
@@ -939,6 +999,31 @@ const Analytics: React.FC = () => {
           sortField: { field: 'text', direction: 'asc' },
           onChange: function(values: string[]) {
             onChangeHandler(values);
+          },
+          // Only show dropdown when typing
+          shouldOpen: false,
+          openOnFocus: false,
+          closeAfterSelect: true,
+          // Show dropdown when typing
+          onType: function(str: string) {
+            console.log('Typing in dropdown:', str);
+            console.log('Available options count:', Object.keys(this.options).length);
+            console.log('First few options:', Object.keys(this.options).slice(0, 3).map(key => this.options[key]));
+            console.log('Matching options:', this.search(str).items);
+            
+            if (str.length > 0) {
+              console.log('Opening dropdown with search:', str);
+              this.open();
+            } else {
+              console.log('Closing dropdown');
+              this.close();
+            }
+          },
+          // Remove dropdown indicator
+          render: {
+            dropdown: function() {
+              return '<div></div>';
+            }
           }
         };
         
@@ -971,12 +1056,16 @@ const Analytics: React.FC = () => {
       );
       
       // Initialize Questions tom-select
+      // Questions are already formatted in the useTracker hook
+      console.log('Questions ready for TomSelect:', questions);
+      
+      // Initialize Questions tom-select
       tomSelectInstance.current.questions = createTomSelect(
         questionSelectRef.current,
         'Select questions...',
         questions,
         '_id',
-        'title',
+        'displayText',
         setSelectedQuestions
       );
       
@@ -1029,9 +1118,14 @@ const Analytics: React.FC = () => {
     selectedTagIds: string[];
     onChange: (selectedIds: string[]) => void;
     isLoading: boolean;
+    openMenuOnClick?: boolean;
+    openMenuOnFocus?: boolean;
+    filterOption?: (option: any, inputValue: string) => boolean;
+    onInputChange?: (inputValue: string, actionMeta: any) => string;
+    components?: any;
   }
   
-  const TagSelect: React.FC<TagSelectProps> = ({ tags, selectedTagIds, onChange, isLoading }) => {
+  const TagSelect: React.FC<TagSelectProps> = ({ tags, selectedTagIds, onChange, isLoading, openMenuOnClick, openMenuOnFocus, filterOption, onInputChange, components }) => {
     // Prepare options for React Select
     const options = useMemo(() => {
       // Get flat list of tags with depth information
@@ -1071,7 +1165,11 @@ const Analytics: React.FC = () => {
         placeholder="Select tags..."
         isLoading={isLoading}
         hideSelectedOptions={false}
-        components={{ Option: CustomOption }}
+        openMenuOnClick={openMenuOnClick}
+        openMenuOnFocus={openMenuOnFocus}
+        filterOption={filterOption}
+        onInputChange={onInputChange}
+        components={components || { Option: CustomOption }}
         className="react-select-container"
         classNamePrefix="react-select"
         styles={{
@@ -1140,98 +1238,123 @@ const Analytics: React.FC = () => {
 
         {filterVisible && (
           <FilterBar>
-            <FilterGroup>
-              <FilterLabel>Organization</FilterLabel>
-              <StyledSelect className="form-control">
-                {organizations.map((organization) => (
-                  <option key={organization} value={organization}>
-                    {organization}
-                  </option>
-                ))}
-              </StyledSelect>
-            </FilterGroup>
-            <FilterGroup>
-              <FilterLabel>Tags</FilterLabel>
-              <div className="react-select-container">
-                <TagSelect 
-                  tags={tags} 
-                  selectedTagIds={selectedTags}
-                  onChange={setSelectedTags}
-                  isLoading={tagsLoading}
-                />
-              </div>
-            </FilterGroup>
-            <FilterGroup>
-              <FilterLabel>Surveys</FilterLabel>
-              <div className="tom-select-container">
-                <select 
-                  ref={surveySelectRef} 
-                  multiple 
-                  style={{ width: '100%' }}
-                  data-placeholder="Select surveys..."
-                />
-              </div>
-            </FilterGroup>
-            <FilterGroup>
-              <FilterLabel>Questions</FilterLabel>
-              <div className="tom-select-container">
-                <select 
-                  ref={questionSelectRef} 
-                  multiple 
-                  style={{ width: '100%' }}
-                  data-placeholder="Select questions..."
-                />
-              </div>
-            </FilterGroup>
-            <FilterGroup>
-              <FilterLabel>Date Range</FilterLabel>
-              <DateRangeContainer>
-                <DatePicker
-                  selected={startDate}
-                  onChange={(date: Date | undefined) => setDateRange([date, endDate])}
-                  startDate={startDate}
-                  endDate={endDate}
-                  selectsStart
-                  placeholderText="Start Date"
-                  className="date-picker"
-                  dateFormat="MMM d, yyyy"
-                />
-                <DateRangeText>to</DateRangeText>
-                <DatePicker
-                  selected={endDate}
-                  onChange={(date: Date | undefined) => setDateRange([startDate, date])}
-                  startDate={startDate}
-                  endDate={endDate}
-                  selectsEnd
-                  minDate={startDate}
-                  placeholderText="End Date"
-                  className="date-picker"
-                  dateFormat="MMM d, yyyy"
-                />
-              </DateRangeContainer>
-            </FilterGroup>
-            <FilterButtons>
-              <Button primary onClick={() => applyFilters()}>Apply Filters</Button>
-              <Button onClick={() => {
-                // Reset all filters
-                setSelectedTags([]);
-                setSelectedSurveys([]);
-                setSelectedQuestions([]);
-                setDateRange([undefined, undefined]);
-                
-                // Reset tom-select instances
-                if (tomSelectInstance.current) {
-                  Object.values(tomSelectInstance.current).forEach((instance: any) => {
-                    if (instance && instance.clear) {
-                      instance.clear();
-                    }
-                  });
-                }
-                
-                // Reload data with no filters
-                applyFilters();
-              }}>Reset</Button>
-            </FilterButtons>
+            <FilterTopRow>
+              <FilterGroup>
+                <FilterLabel>Organization</FilterLabel>
+                <StyledSelect className="form-control">
+                  {organizations.map((organization) => (
+                    <option key={organization} value={organization}>
+                      {organization}
+                    </option>
+                  ))}
+                </StyledSelect>
+              </FilterGroup>
+              <FilterGroup>
+                <FilterLabel>Tags</FilterLabel>
+                <div className="react-select-container">
+                  <TagSelect
+                    tags={tags}
+                    selectedTagIds={selectedTags}
+                    onChange={setSelectedTags}
+                    isLoading={tagsLoading}
+                    openMenuOnClick={false}
+                    openMenuOnFocus={false}
+                    filterOption={(option, inputValue) => {
+                      if (!inputValue) return false;
+                      return option.label.toLowerCase().includes(inputValue.toLowerCase());
+                    }}
+                    onInputChange={(inputValue, { action }) => {
+                      // Only open menu when typing
+                      if (action === 'input-change' && inputValue) {
+                        return inputValue;
+                      }
+                      return inputValue;
+                    }}
+                    components={{ 
+                      Option: CustomOption,
+                      DropdownIndicator: () => null, // Remove dropdown icon
+                      IndicatorSeparator: () => null // Remove separator
+                    }}
+                  />
+                </div>
+              </FilterGroup>
+              <FilterGroup>
+                <FilterLabel>Surveys</FilterLabel>
+                <div className="tom-select-container">
+                  <select 
+                    ref={surveySelectRef} 
+                    multiple 
+                    style={{ width: '100%' }}
+                    data-placeholder="Select surveys..."
+                  />
+                </div>
+              </FilterGroup>
+              <FilterGroup>
+                <FilterLabel>Questions</FilterLabel>
+                <div className="tom-select-container">
+                  <select 
+                    ref={questionSelectRef} 
+                    multiple 
+                    style={{ width: '100%' }}
+                    data-placeholder="Select questions..."
+                  />
+                </div>
+              </FilterGroup>
+            </FilterTopRow>
+            
+            <FilterBottomRow>
+              <FilterGroup>
+                <FilterLabel>Date Range</FilterLabel>
+                <DateRangeContainer>
+                  <div style={{ width: '160px' }}>
+                    <DatePicker
+                      selected={startDate}
+                      onChange={(date: Date | undefined) => setDateRange([date, endDate])}
+                      startDate={startDate}
+                      endDate={endDate}
+                      selectsStart
+                      placeholderText="Start Date"
+                      className="date-picker"
+                      dateFormat="MMM d, yyyy"
+                    />
+                  </div>
+                  <DateRangeText>to</DateRangeText>
+                  <div style={{ width: '160px' }}>
+                    <DatePicker
+                      selected={endDate}
+                      onChange={(date: Date | undefined) => setDateRange([startDate, date])}
+                      startDate={startDate}
+                      endDate={endDate}
+                      selectsEnd
+                      minDate={startDate}
+                      placeholderText="End Date"
+                      className="date-picker"
+                      dateFormat="MMM d, yyyy"
+                    />
+                  </div>
+                </DateRangeContainer>
+              </FilterGroup>
+              <FilterButtons>
+                <Button primary onClick={() => applyFilters()}>Apply Filters</Button>
+                <Button onClick={() => {
+                  // Reset all filters
+                  setSelectedTags([]);
+                  setSelectedSurveys([]);
+                  setSelectedQuestions([]);
+                  setDateRange([null, null]);
+                  
+                  // Reset tom-select instances
+                  if (tomSelectInstance.current.surveys) {
+                    tomSelectInstance.current.surveys.clear();
+                  }
+                  if (tomSelectInstance.current.questions) {
+                    tomSelectInstance.current.questions.clear();
+                  }
+                  
+                  applyFilters();
+                }}>Reset</Button>
+              </FilterButtons>
+            </FilterBottomRow>
           </FilterBar>
         )}
 

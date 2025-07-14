@@ -876,16 +876,6 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
         </h2>
         
         <div className="question-card">
-          <div className="question-type-indicator">
-            {questionTypeInfo.icon}
-            <span>{questionTypeInfo.label}</span>
-            {question.required && <span className="required-tag">Required</span>}
-          </div>
-          
-          {/* Display question type label */}
-          <div className="question-type-label">
-            Question type: <strong>{getResponseType() || 'text'}</strong>
-          </div>
           
           <div className="answer-options">
             {renderQuestionInput()}

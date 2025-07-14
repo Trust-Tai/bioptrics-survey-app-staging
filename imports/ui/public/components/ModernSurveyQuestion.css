@@ -160,8 +160,9 @@
   font-size: 0.9em;
 }
 
-.question-title {
-  font-size: 2rem;
+.modern-survey-container .question-title {
+  font-size: 40px;
+  text-align: center;
   line-height: 1.5;
   color: var(--heading-color, #2c3e50);
   margin-bottom: 16px;
@@ -252,7 +253,7 @@
   border-radius: 20px;
   display: inline-block;
   font-weight: 500;
-  color: var(--text-color);
+  color: #fff;
   border: 1px solid rgba(44, 62, 80, 0.2);
 }
 
@@ -262,7 +263,7 @@
 
 .selected-answer-display strong {
   font-weight: 600;
-  color: var(--text-color);
+  color: #fff;
 }
 
 .scale-selected-indicator {

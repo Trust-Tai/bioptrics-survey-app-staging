@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
-import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes, FaFolder, FaArrowDown, FaChartBar, FaFont, FaHashtag, FaCheck, FaCalendar } from 'react-icons/fa';
+import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes, FaFolder, FaArrowDown, FaChartBar, FaFont, FaHashtag, FaCheck, FaCalendar, FaSearch, FaFilter, FaChevronLeft, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -8,6 +8,7 @@ import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import { Layers, LayerField, Layer } from '../../../api/layers';
 import { Questions } from '../../../features/questions/api/questions';
 import { Surveys } from '../../../features/surveys/api/surveys';
+import ReactSelect, { components } from 'react-select';
 
 // Define local Layer interface that extends the imported one
 interface CustomField {
@@ -325,9 +326,8 @@ const EmptyState = styled.div`
   border: 1px dashed #ddd;
   
   h3 {
-    margin-bottom: 1rem;
-    color: #555;
-    font-weight: 500;
+    margin: 1rem 0 0.5rem;
+    color: #333;
   }
   
   p {
@@ -429,6 +429,81 @@ const CloseButton = styled.button`
   }
 `;
 
+const FilterSection = styled.div`
+  /* React Select Styling */
+  .react-select-container .react-select__control {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    min-height: 38px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background-color: white;
+  }
+  
+  .react-select-container .react-select__control:hover {
+    border-color: #552a47;
+  }
+  
+  .react-select-container .react-select__control--is-focused {
+    border-color: #552a47;
+    box-shadow: 0 0 0 1px #552a47;
+    background-color: white;
+  }
+  
+  .react-select-container .react-select__menu {
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    background-color: white;
+  }
+  
+  .react-select-container .react-select__option {
+    padding: 8px 12px;
+    background-color: white;
+  }
+  
+  .react-select-container .react-select__option--is-focused {
+    background-color: #f0e6ee;
+    color: #552a47;
+  }
+  
+  .react-select-container .react-select__option--is-selected {
+    background-color: #552a47;
+    color: white;
+  }
+  
+  .react-select-container .react-select__multi-value {
+    background-color: #f7f2f5;
+    border-radius: 4px;
+  }
+  
+  .react-select-container .react-select__multi-value__label {
+    color: #552a47;
+    font-size: 14px;
+    padding: 2px 6px;
+  }
+  
+  .react-select-container .react-select__multi-value__remove {
+    color: #552a47;
+  }
+  
+  .react-select-container .react-select__multi-value__remove:hover {
+    background-color: #552a47;
+    color: white;
+  }
+  
+  .react-select-container .react-select__placeholder {
+    color: #999;
+  }
+  
+  .react-select-container .react-select__value-container {
+    background-color: white;
+  }
+  
+  .react-select-container .react-select__input {
+    color: #333;
+  }
+`;
+
 const FormGroup = styled.div`
   margin-bottom: 1.5rem;
 `;
@@ -485,11 +560,26 @@ const StatusMessage = styled.div<{ success?: boolean; error?: boolean }>`
 `;
 
 // AllLayers Component
+// Helper function to strip HTML tags from text
+const stripHtmlTags = (html: string | undefined): string => {
+  if (!html) return 'Untitled Question';
+  return html.replace(/<[^>]*>/g, '');
+};
+
 const AllLayers = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('tree');
   // Initialize with all items expanded by default
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(10);
+  
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   
   const [status, setStatus] = useState<{ 
     loading: boolean; 
@@ -553,7 +643,7 @@ const AllLayers = () => {
   }>({});
   
   // Subscribe to layers collection and get usage data
-  const { layers, isLoading } = useTracker(() => {
+  const { layers, isLoading, questions, surveys } = useTracker(() => {
     const layersSub = Meteor.subscribe('layers.all');
     const questionsSub = Meteor.subscribe('questions.all');
     const surveysSub = Meteor.subscribe('surveys.all');
@@ -629,6 +719,8 @@ const AllLayers = () => {
     
     return {
       layers: layersWithUsage,
+      questions,
+      surveys,
       isLoading: !isReady
     };
   }, []);
@@ -1119,11 +1211,52 @@ const AllLayers = () => {
     };
   }, [layers]);
 
+  // Filter layers based on search term and dropdown selections
+  const filteredLayers = useMemo(() => {
+    return layers.filter(layer => {
+      // Filter by search term
+      const matchesSearch = searchTerm === '' || 
+        layer.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filter by selected surveys (multiple selection)
+      const matchesSurvey = selectedSurveys.length === 0 || 
+        (layer.surveyCount && layer.surveyCount > 0 && 
+         surveys.some(survey => 
+           selectedSurveys.includes(survey._id) && 
+           ((survey.selectedTags && survey.selectedTags.includes(layer._id || '')) || 
+            (survey.templateTags && survey.templateTags.includes(layer._id || '')))
+         ));
+      
+      // Filter by selected questions (multiple selection)
+      const matchesQuestion = selectedQuestions.length === 0 || 
+        (layer.questionCount && layer.questionCount > 0 && 
+         questions.some(question => {
+           const currentVersion = question.versions[question.currentVersion - 1];
+           return selectedQuestions.includes(question._id) && 
+             currentVersion && 
+             ((currentVersion.categoryTags && currentVersion.categoryTags.includes(layer._id || '')) || 
+              (currentVersion.labels && currentVersion.labels.includes(layer._id || '')));
+         }));
+      
+      return matchesSearch && matchesSurvey && matchesQuestion;
+    });
+  }, [layers, searchTerm, selectedSurveys, selectedQuestions, surveys, questions]);
+  
+  // Get current items for pagination
+  const currentItems = useMemo(() => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return filteredLayers.slice(indexOfFirstItem, indexOfLastItem);
+  }, [filteredLayers, currentPage, itemsPerPage]);
+  
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  
   // Organize layers into hierarchical structure for tree view
   const hierarchicalLayers = useMemo(() => {
     // First pass: create a map of all layers with empty children arrays
     const layerMap = new Map<string, LayerDisplay>();
-    layers.forEach(layer => {
+    filteredLayers.forEach(layer => {
       layerMap.set(layer._id || '', {
         ...layer,
         children: []
@@ -1133,7 +1266,7 @@ const AllLayers = () => {
     // Second pass: build the hierarchy by adding children to their parents
     const rootLayers: LayerDisplay[] = [];
     
-    layers.forEach(layer => {
+    filteredLayers.forEach(layer => {
       if (layer.parentId && layerMap.has(layer.parentId)) {
         // This layer has a parent, add it to the parent's children
         const parent = layerMap.get(layer.parentId);
@@ -1160,7 +1293,7 @@ const AllLayers = () => {
     };
     
     return sortLayersByName(rootLayers);
-  }, [layers]);
+  }, [filteredLayers]); // Use filteredLayers as dependency instead of layers
 
   return (
     <AdminLayout>
@@ -1206,35 +1339,120 @@ const AllLayers = () => {
           </StatCard>
         </StatsContainer>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <input
-            type="text"
-            placeholder="Search tags..."
-            style={{ 
-              height: '38px', 
-              fontSize: '14px', 
-              padding: '0 12px', 
-              borderRadius: '4px', 
-              border: '1px solid #ddd', 
-              width: '300px'
-            }}
-          />
-          
-          <ViewToggleGroup>
-            <ViewToggleButton 
-              active={viewMode === 'tree'} 
-              onClick={() => setViewMode('tree')}
-            >
-              <FaList /> Tree
-            </ViewToggleButton>
-            <ViewToggleButton 
-              active={viewMode === 'list'} 
-              onClick={() => setViewMode('list')}
-            >
-              <FaTable /> List
-            </ViewToggleButton>
-          </ViewToggleGroup>
-        </div>
+        <FilterSection style={{ marginBottom: '1.5rem', padding: '1rem', background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '300px' }}>
+              <input
+                type="text"
+                placeholder="Search tags..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page on search
+                }}
+                style={{
+                  height: '38px', 
+                  fontSize: '14px', 
+                  padding: '0 12px 0 36px', 
+                  borderRadius: '4px', 
+                  border: '1px solid #ddd', 
+                  width: '100%'
+                }}
+              />
+              <FaSearch style={{ position: 'absolute', left: '12px', color: '#777' }} />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '300px' }}>
+                  <ReactSelect
+                    id="surveyFilter"
+                    isMulti
+                    components={{ DropdownIndicator: () => null, IndicatorSeparator: () => null }}
+                    value={surveys
+                      .filter(survey => selectedSurveys.includes(survey._id))
+                      .map(survey => ({ value: survey._id, label: survey.title || 'Untitled Survey' }))}
+                    onChange={(selected) => {
+                      const selectedValues = selected ? selected.map(option => option.value) : [];
+                      setSelectedSurveys(selectedValues as string[]);
+                      setCurrentPage(1); // Reset to first page on filter change
+                    }}
+                    options={surveys.map(survey => ({
+                      value: survey._id,
+                      label: survey.title || 'Untitled Survey'
+                    }))}
+                    placeholder="Select surveys..."
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    filterOption={(option, inputValue) => {
+                      if (!inputValue) return false;
+                      return option.label.toLowerCase().includes(inputValue.toLowerCase());
+                    }}
+                    noOptionsMessage={({inputValue}) => !inputValue ? "Type to search..." : "No options found"}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '300px' }}>
+                  <ReactSelect
+                    id="questionFilter"
+                    isMulti
+                    components={{ DropdownIndicator: () => null, IndicatorSeparator: () => null }}
+                    value={questions
+                      .filter(question => selectedQuestions.includes(question._id))
+                      .map(question => {
+                        const currentVersion = question.versions?.[question.currentVersion - 1];
+                        const cleanText = stripHtmlTags(currentVersion?.questionText);
+                        const text = cleanText.substring(0, 30);
+                        return { 
+                          value: question._id, 
+                          label: text + (cleanText.length > 30 ? '...' : '') 
+                        };
+                      })}
+                    onChange={(selected) => {
+                      const selectedValues = selected ? selected.map(option => option.value) : [];
+                      setSelectedQuestions(selectedValues as string[]);
+                      setCurrentPage(1); // Reset to first page on filter change
+                    }}
+                    options={questions.map(question => {
+                      const currentVersion = question.versions?.[question.currentVersion - 1];
+                      const cleanText = stripHtmlTags(currentVersion?.questionText);
+                      const text = cleanText.substring(0, 30);
+                      return {
+                        value: question._id,
+                        label: text + (cleanText.length > 30 ? '...' : '')
+                      };
+                    })}
+                    placeholder="Select questions..."
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    filterOption={(option, inputValue) => {
+                      if (!inputValue) return false;
+                      return option.label.toLowerCase().includes(inputValue.toLowerCase());
+                    }}
+                    noOptionsMessage={({inputValue}) => !inputValue ? "Type to search..." : "No options found"}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <ViewToggleGroup>
+              <ViewToggleButton 
+                active={viewMode === 'tree'} 
+                onClick={() => setViewMode('tree')}
+              >
+                <FaList /> Tree
+              </ViewToggleButton>
+              <ViewToggleButton 
+                active={viewMode === 'list'} 
+                onClick={() => setViewMode('list')}
+              >
+                <FaTable /> List
+              </ViewToggleButton>
+            </ViewToggleGroup>
+          </div>
+        </FilterSection>
 
         {status.message && (
           <StatusMessage success={status.type === 'success'} error={status.type === 'error'}>
@@ -1257,62 +1475,166 @@ const AllLayers = () => {
             </Button>
           </EmptyState>
         ) : viewMode === 'list' ? (
-          <Table>
-            <thead>
-              <tr>
-                <th>Tag Name</th>
-                {/* Location column removed */}
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Created Date</th>
-                <th>Fields</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {layers.map(layer => (
-                <tr key={layer._id}>
-                  <td>{layer.name}</td>
-                  {/* Location column data removed */}
-                  <td>{layer.priority}</td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div 
-                        onClick={() => toggleTagStatus(layer._id || '', !layer.active)}
-                        style={{ 
+          <>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Tag Name</th>
+                  <th>Status</th>
+                  <th>Created Date</th>
+                  <th>Usage</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map(layer => (
+                  <tr key={layer._id}>
+                    <td>{layer.name}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div 
+                          onClick={() => toggleTagStatus(layer._id || '', !layer.active)}
+                          style={{ 
+                            cursor: 'pointer',
+                            color: layer.active ? '#4CAF50' : '#ccc'
+                          }}
+                        >
+                          {layer.active ? <FaToggleOn size={20} /> : <FaToggleOff size={20} />}
+                        </div>
+                        <span>{layer.active ? 'Active' : 'Inactive'}</span>
+                      </div>
+                    </td>
+                    <td>{layer.createdAt.toLocaleDateString()}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <UsageTag title="Questions using this tag">
+                          <FaFont size={12} /> {layer.questionCount || 0}
+                        </UsageTag>
+                        <UsageTag title="Surveys using this tag">
+                          <FaLayerGroup size={12} /> {layer.surveyCount || 0}
+                        </UsageTag>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <ActionButton
+                          title="Edit Tag"
+                          onClick={() => editTag(layer._id || '')}
+                          disabled={status.loading}
+                        >
+                          <FaPencilAlt />
+                        </ActionButton>
+                        <ActionButton
+                          title="Delete Tag"
+                          onClick={() => deleteTag(layer._id || '', layer.name || 'Unnamed Tag')}
+                          disabled={status.loading}
+                        >
+                          {status.loading ? <FaSpinner /> : <FaTrash color="#e74c3c" />}
+                        </ActionButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            
+            {/* Pagination */}
+            {filteredLayers.length > itemsPerPage && (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                marginTop: '1.5rem',
+                gap: '0.5rem'
+              }}>
+                <button 
+                  onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    background: currentPage === 1 ? '#f5f5f5' : 'white',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <FaChevronLeft size={14} />
+                </button>
+                
+                {Array.from({ length: Math.ceil(filteredLayers.length / itemsPerPage) }).map((_, index) => {
+                  // Show limited page numbers with ellipsis for better UX
+                  const pageNum = index + 1;
+                  const totalPages = Math.ceil(filteredLayers.length / itemsPerPage);
+                  
+                  // Always show first, last, current, and pages around current
+                  if (
+                    pageNum === 1 || 
+                    pageNum === totalPages || 
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => paginate(pageNum)}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          background: currentPage === pageNum ? '#552a47' : 'white',
+                          color: currentPage === pageNum ? 'white' : '#333',
                           cursor: 'pointer',
-                          color: layer.active ? '#4CAF50' : '#ccc'
+                          minWidth: '2rem',
+                          textAlign: 'center'
                         }}
                       >
-                        {layer.active ? <FaToggleOn size={20} /> : <FaToggleOff size={20} />}
-                      </div>
-                      <span>{layer.active ? 'Active' : 'Inactive'}</span>
-                    </div>
-                  </td>
-                  <td>{layer.createdAt.toLocaleDateString()}</td>
-                  <td>{layer.fields.length} fields</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <ActionButton
-                        title="Edit Tag"
-                        onClick={() => editTag(layer._id || '')}
-                        disabled={status.loading}
-                      >
-                        <FaPencilAlt />
-                      </ActionButton>
-                      <ActionButton
-                        title="Delete Tag"
-                        onClick={() => deleteTag(layer._id || '', layer.name || 'Unnamed Tag')}
-                        disabled={status.loading}
-                      >
-                        {status.loading ? <FaSpinner /> : <FaTrash color="#e74c3c" />}
-                      </ActionButton>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                  
+                  // Show ellipsis
+                  if (
+                    (pageNum === 2 && currentPage > 3) ||
+                    (pageNum === totalPages - 1 && currentPage < totalPages - 2)
+                  ) {
+                    return <span key={pageNum} style={{ padding: '0.5rem' }}>...</span>;
+                  }
+                  
+                  return null;
+                })}
+                
+                <button 
+                  onClick={() => paginate(currentPage < Math.ceil(filteredLayers.length / itemsPerPage) ? currentPage + 1 : currentPage)}
+                  disabled={currentPage === Math.ceil(filteredLayers.length / itemsPerPage)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    background: currentPage === Math.ceil(filteredLayers.length / itemsPerPage) ? '#f5f5f5' : 'white',
+                    cursor: currentPage === Math.ceil(filteredLayers.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <FaChevronRight size={14} />
+                </button>
+              </div>
+            )}
+            
+            {/* Results summary */}
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: '1rem', 
+              fontSize: '0.9rem', 
+              color: '#666' 
+            }}>
+              Showing {filteredLayers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredLayers.length)} of {filteredLayers.length} tags
+              {searchTerm || selectedSurveys || selectedQuestions ? ' (filtered)' : ''}
+            </div>
+          </>
         ) : (
           <ListViewContainer>
             <TagHierarchyTitle>Tag Hierarchy</TagHierarchyTitle>
