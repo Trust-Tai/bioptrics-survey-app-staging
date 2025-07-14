@@ -146,7 +146,11 @@
 .search-input:focus + .search-icon {
   color: #7b3d6e;
 }
-
+.select-existing-questions .tag-builder{
+padding: 0;
+margin-top: 6px;
+margin-bottom: 0px;
+}
 .filter-select {
   width: 100%;
   padding: 0 16px;

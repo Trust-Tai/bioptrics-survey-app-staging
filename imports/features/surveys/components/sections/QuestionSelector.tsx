@@ -716,6 +716,70 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     }
   }, [activeTab, newQuestionId, selectedIds]);
   
+  // Preserve tag selections when switching tabs
+  useEffect(() => {
+    // Only run this effect when activeTab changes and we're on the first tab (Select Existing Questions)
+    if (activeTab === 0 && isOpen && !loading) {
+      setTimeout(() => {
+        const tagFilter = document.querySelector('select.tag-filter-select') as HTMLSelectElement;
+        if (tagFilter) {
+          let selectedValues: string[] = [];
+          const tomSelectInstance = (tagFilter as any).tomselect;
+          if (tomSelectInstance) {
+            // Save the currently selected values before destroying the instance
+            selectedValues = tomSelectInstance.getValue();
+            tomSelectInstance.destroy();
+          }
+          
+          // Initialize a new TomSelect instance
+          const tomSelect = new TomSelect(tagFilter, {
+            plugins: ['remove_button'],
+            placeholder: 'Filter by tags...',
+            create: false,
+            maxItems: null, // Allow multiple selections
+            sortField: { field: 'text', direction: 'asc' },
+            onChange: function(values: string[]) {
+              handleFilterChange('tags', values);
+            },
+            shouldOpen: false,
+            openOnFocus: false
+          });
+          
+          // Add event to only open dropdown when typing
+          tomSelect.on('type', function(str: string) {
+            if (str && str.length > 0) {
+              tomSelect.open();
+            } else {
+              tomSelect.close();
+            }
+          });
+          
+          // Restore previously selected values
+          if (selectedValues.length > 0) {
+            tomSelect.setValue(selectedValues, true);
+          }
+          
+          // Add options from allTags
+          if (allTags && allTags.length > 0) {
+            const sortedTags = [...allTags].sort((a, b) => {
+              return a.name.localeCompare(b.name);
+            });
+            
+            sortedTags.forEach((tag: Layer) => {
+              const tagId = tag._id || tag.id || '';
+              if (tag && tagId) {
+                tomSelect.addOption({
+                  value: tagId,
+                  text: tag.name
+                });
+              }
+            });
+          }
+        }
+      }, 100);
+    }
+  }, [activeTab, isOpen, loading, allTags]);
+  
   // Filter questions based on search query, type, and tags
   const filteredQuestions = questions.filter(question => {
     // Filter by search query
@@ -1289,23 +1353,36 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                   </select>
                 </div>
                 
-                {/* Tag Filter with Tom Select */}
+                {/* New Tag Builder Dropdown */}
                 <div className="filter-group" style={{
-                  flex: '1 1 350px'
+                  flex: '1 1 250px'
                 }}>
-                  <label className="filter-label">Tags</label>
-                  {loading ? (
-                    <div style={{ fontSize: '14px', color: '#64748b', padding: '12px 0' }}>Loading tags...</div>
-                  ) : (
-                    <select 
-                      ref={tagSelectRef} 
-                      multiple
-                      className="filter-select tag-filter-select"
-                      aria-label="Filter by tags"
-                      data-placeholder="Type to search for tags"
-                    />
-                  )}
+                  <label className="filter-label" style={{ 
+                    marginBottom: 0,
+                    }}>Question Categories</label>
+                  <div className="tag-builder-container">
+                    <div style={{ 
+                      /* Override TagBuilder border styles for this specific usage */
+                      border: 'none',
+                      borderRadius: 0,
+                      backgroundColor: 'transparent',
+                      padding: 0,
+                      margin: 0
+                    }} className="tag-builder select-existing-questions">
+                      <TagBuilder 
+                        selectedTagIds={filters.tags || []} 
+                        onTagChange={(tags: string[]) => {
+                          handleFilterChange('tags', tags);
+                        }}
+                        hideLabels={true}
+                        allowTagCreation={false}
+                        removePadding={true}
+                      />
+                    </div>
+                  </div>
                 </div>
+                
+                
               </div>
           
           {/* Check All Option */}
