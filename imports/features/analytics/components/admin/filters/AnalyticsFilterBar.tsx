@@ -118,7 +118,7 @@ const FilterOption = styled.label`
 `;
 
 const ApplyButton = styled.button`
-  background: #552a47;
+  background: ${props => props.theme.secondaryColor};
   color: white;
   border: none;
   border-radius: 4px;
@@ -129,7 +129,7 @@ const ApplyButton = styled.button`
   transition: background 0.2s;
   
   &:hover {
-    background: #6a3459;
+    background: ${props => props.theme.primaryColor};
   }
 `;
 

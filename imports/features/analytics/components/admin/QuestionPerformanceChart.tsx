@@ -5,6 +5,7 @@ import { FiRefreshCw, FiSettings, FiDownload, FiBarChart2, FiArrowRight } from '
 import { FaStar } from 'react-icons/fa';
 import { BiLineChart } from 'react-icons/bi';
 import ViewAllButton from './ViewAllButton';
+import { useTheme } from '/imports/contexts/ThemeContext';
 
 // Define interfaces for the component
 interface QuestionPerformanceProps {
@@ -38,12 +39,10 @@ interface QuestionData {
 
 // Styled components
 const ChartContainer = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.accentColor};
+  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  padding: 24px;
-  margin-bottom: 24px;
-  width: 100%;
+  border: 1px solid ${({ theme }) => theme.primaryColor}20;
 `;
 
 const PaginationContainer = styled.div`
@@ -85,11 +84,10 @@ const ChartHeader = styled.div`
 `;
 
 const ChartTitle = styled.h3`
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.primaryColor};
   margin: 0;
-  margin-bottom: 4px;
 `;
 
 const ChartSubtitle = styled.p`
@@ -139,6 +137,33 @@ const FilterSelect = styled.div`
   position: relative;
 `;
 
+const QuestionTypeSelect = styled.select`
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  background-color: white;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 32px;
+
+  &:hover {
+    border-color: #552a47;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #552a47;
+    box-shadow: 0 0 0 3px rgba(85, 42, 71, 0.1);
+  }
+`;
+
 // Create a styled component for the color indicator
 const ColorIndicator = styled.span<{ questionType: string }>`
   display: inline-block;
@@ -147,35 +172,33 @@ const ColorIndicator = styled.span<{ questionType: string }>`
   border-radius: 50%;
   margin-right: 8px;
   background-color: ${props => {
+    const { theme } = props;
     switch (props.questionType) {
-      case 'likert': return '#a0cf4e'; // Green for Likert scales
-      case 'multiple_choice': return '#4e9dcf'; // Blue for multiple choice
-      case 'open_text': return '#cf9e4e'; // Orange for open text
-      default: return '#adadad'; // Gray for unknown
+      case 'likert': return theme.primaryColor; // Use theme primary color for Likert scales
+      case 'multiple_choice': return theme.secondaryColor; // Use theme secondary color for multiple choice
+      case 'open_text': return theme.primaryColor + '80'; // Use theme primary with opacity for open text
+      default: return theme.textColor + '60'; // Use theme text color with opacity for unknown
     }
   }};
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background: #fff;
-  font-size: 13px;
-  color: #333;
-  appearance: none;
-  cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 28px;
-  height: 36px;
+const CustomTooltipContainer = styled.div`
+  background: ${({ theme }) => theme.backgroundColor};
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.primaryColor}40;
+`;
 
-  &:focus {
-    outline: none;
-    border-color: #4285F4;
-  }
+const TooltipContent = styled.div`
+  color: ${({ theme }) => theme.textColor};
+  font-size: 13px;
+`;
+
+const TooltipTitle = styled.div`
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: ${({ theme }) => theme.primaryColor};
 `;
 
 const ExportButton = styled.button`
@@ -522,6 +545,8 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
   subtitle = 'Average scores and response patterns',
   isOverview = false
 }) => {
+  const theme = useTheme();
+  
   // State for chart data
   const [data, setData] = useState<QuestionData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -1074,9 +1099,9 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
         </div>
         <ChartControls>
           <SelectContainer>
-            <Select
+            <QuestionTypeSelect
               value={selectedQuestionType}
-              onChange={(e) => setSelectedQuestionType(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedQuestionType(e.target.value)}
             >
               <option value="all">All Question Types</option>
               {questionTypes.map((type) => (
@@ -1104,7 +1129,7 @@ const QuestionPerformanceChart: React.FC<QuestionPerformanceProps> = ({
                   })() }
                 </option>
               ))}
-            </Select>
+            </QuestionTypeSelect>
           </SelectContainer>
           <ExportButton onClick={handleExport}>
             <FiDownload size={14} />

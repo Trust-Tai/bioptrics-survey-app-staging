@@ -44,31 +44,13 @@ const ActionButtons = styled.div`
 const Title = styled.h1`
   font-size: 28px;
   margin-bottom: 30px;
-  color: #333;
+  color: var(--color-text);
 `;
 
 const CardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
-`;
-
-const Card = styled(Link)`
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  padding: 24px;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  color: #333;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  }
 `;
 
 const CardHeader = styled.div`
@@ -81,15 +63,49 @@ const IconWrapper = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background-color: #552a47;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 16px;
+  transition: all 0.3s ease;
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background: color-mix(in srgb, var(--color-primary) 15%, transparent)) {
+    background-color: rgba(85, 42, 71, 0.15);
+  }
   
   svg {
-    color: white;
+    color: var(--color-primary);
     font-size: 22px;
+  }
+`;
+
+const Card = styled(Link)`
+  background: var(--color-background);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--color-accent);
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-primary);
+    
+    ${IconWrapper} {
+      background: var(--color-primary);
+      
+      svg {
+        color: white;
+      }
+    }
   }
 `;
 
@@ -97,23 +113,25 @@ const CardTitle = styled.h2`
   font-size: 18px;
   font-weight: 600;
   margin: 0;
+  color: var(--color-text);
 `;
 
 const CardDescription = styled.p`
   margin: 0;
-  color: #666;
+  color: var(--color-accent);
   font-size: 14px;
   line-height: 1.5;
   flex-grow: 1;
 `;
+
 const Button = styled.button<{ primary?: boolean }>`
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: ${(props) => (props.primary ? '#552a47' : '#f7f2f5')};
-  color: ${(props) => (props.primary ? '#fff' : '#552a47')};
-  border: none;
+  background: ${(props) => (props.primary ? 'var(--color-primary)' : 'var(--color-background)')};
+  color: ${(props) => (props.primary ? '#fff' : 'var(--color-primary)')};
+  border: 1px solid var(--color-primary);
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -122,7 +140,8 @@ const Button = styled.button<{ primary?: boolean }>`
   text-decoration: none;
 
   &:hover {
-    background: ${(props) => (props.primary ? '#693658' : '#efe7ed')};
+    background: var(--color-primary);
+    color: white;
     transform: translateY(-2px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-decoration: none;
@@ -173,7 +192,7 @@ const OrgSetupDashboard: React.FC = () => {
     <AdminLayout>
       <Container>
         <PageHeader>
-          <Title>Branding / Custom Fields</Title>
+          <Title>Organization Setup</Title>
           <ActionButtons>
             <Button as={Link} to="/admin/org-setup/participants">
               Participants

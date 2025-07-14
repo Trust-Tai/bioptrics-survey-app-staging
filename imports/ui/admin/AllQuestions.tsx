@@ -50,7 +50,7 @@ interface AlertProps {
 const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
   useEffect(() => {
     // Only set timers if we're not in a Meteor simulation
-    if (Meteor.isClient && !Meteor.isSimulation) {
+    if (Meteor.isClient) {
       // Auto-close the alert after 5 seconds
       const timer = setTimeout(() => {
         onClose();
@@ -68,9 +68,9 @@ const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
       zIndex: 1000,
       padding: '12px 20px',
       borderRadius: '4px',
-      backgroundColor: type === 'success' ? '#d4edda' : '#f8d7da',
-      color: type === 'success' ? '#155724' : '#721c24',
-      border: `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+      backgroundColor: type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
+      color: 'white',
+      border: `1px solid ${type === 'success' ? 'var(--color-success)' : 'var(--color-error)'}`,
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       display: 'flex',
       alignItems: 'center',
@@ -86,7 +86,7 @@ const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
           cursor: 'pointer',
           fontSize: '16px',
           marginLeft: '10px',
-          color: type === 'success' ? '#155724' : '#721c24',
+          color: 'white',
         }}
       >
         &times;
@@ -113,65 +113,7 @@ const QUE_TYPE_LABELS: Record<string, string> = {
   date: 'Date'
 };
 
-// Analytics Modal Styled Components
-const AnalyticsSubtitle = styled.p`
-  color: #666;
-  font-size: 16px;
-  margin-top: 5px;
-  margin-bottom: 20px;
-`;
-
-const MetricsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 30px;
-`;
-
-const MetricCard = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-const MetricValue = styled.div`
-  font-size: 32px;
-  font-weight: bold;
-  color: #333;
-  margin: 10px 0;
-`;
-
-const MetricLabel = styled.div`
-  font-size: 14px;
-  color: #666;
-  text-align: center;
-`;
-
-const ChartContainer = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-top: 30px;
-`;
-
-const ChartCard = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-`;
-
-const ChartTitle = styled.h3`
-  font-size: 18px;
-  color: #333;
-  margin-top: 0;
-  margin-bottom: 20px;
-`;
-
+// Updated styled components to use theme variables
 const IconWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -179,8 +121,8 @@ const IconWrapper = styled.div`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #f0f0f0;
-  color: #4a2748;
+  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
 `;
 
 // Modal styled components
@@ -198,7 +140,7 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: white;
+  background-color: var(--color-background);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   width: 90%;
@@ -207,14 +149,6 @@ const ModalContent = styled.div`
   overflow-y: auto;
   position: relative;
 `;
-
-// const ModalHeader = styled.div`
-//   display: flex;
-//   justify-content: space-between;
-//   align-items: center;
-//   padding: 20px 24px;
-//   border-bottom: 1px solid #eee;
-// `;
 
 const ModalBody = styled.div`
   padding: 24px;
@@ -225,7 +159,7 @@ const CloseButton = styled.button`
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #666;
+  color: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,12 +169,13 @@ const CloseButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: #f0f0f0;
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-text);
   }
 `;
 
 const ExportButton = styled.button`
-  background-color: #4a2748;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -250,22 +185,12 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: all 0.2s ease;
   
   &:hover {
-    background-color: #3a1d38;
+    background-color: var(--color-secondary);
   }
 `;
-
-// const IconWrapper = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   width: 40px;
-//   height: 40px;
-//   border-radius: 50%;
-//   background-color: #f0f0f0;
-//   color: #4a2748;
-// `;
 
 const Container = styled.div`
   padding: 40px;
@@ -283,6 +208,7 @@ const Title = styled.h2`
   font-size: 1.3rem;
   font-weight: 600;
   margin: 0;
+  color: var(--color-text);
 `;
 
 const SearchFilterRow = styled.div`
@@ -297,12 +223,12 @@ const ViewToggleContainer = styled.div`
   display: flex;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-accent);
 `;
 
 const ViewToggleButton = styled.button<{ active: boolean }>`
-  background: ${props => props.active ? '#552a47' : '#ffffff'};
-  color: ${props => props.active ? '#ffffff' : '#555555'};
+  background: ${props => props.active ? 'var(--color-primary)' : 'var(--color-background)'};
+  color: ${props => props.active ? '#ffffff' : 'var(--color-text)'};
   border: none;
   padding: 8px 12px;
   cursor: pointer;
@@ -312,26 +238,37 @@ const ViewToggleButton = styled.button<{ active: boolean }>`
   transition: all 0.2s ease;
   
   &:hover {
-    background: ${props => props.active ? '#552a47' : '#f0f0f0'};
+    background: ${props => props.active ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)'};
   }
   
   &:first-child {
-    border-right: 1px solid #e0e0e0;
+    border-right: 1px solid var(--color-accent);
   }
 `;
 
 const SearchInput = styled.input`
   padding: 8px 16px;
   border-radius: 20px;
-  border: none;
-  background: #f7f2f5;
+  border: 1px solid var(--color-accent);
+  background: var(--color-background);
+  color: var(--color-text);
   font-size: 1rem;
   width: 260px;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+  
+  &::placeholder {
+    color: var(--color-accent);
+  }
 `;
 
 const FilterButton = styled.button`
-  background: #fff;
-  border: 1px solid #eee;
+  background: var(--color-background);
+  border: 1px solid var(--color-accent);
   border-radius: 20px;
   padding: 8px 16px;
   display: flex;
@@ -339,15 +276,18 @@ const FilterButton = styled.button`
   gap: 6px;
   cursor: pointer;
   font-size: 0.9rem;
+  color: var(--color-text);
+  transition: all 0.2s ease;
   
   &:hover {
-    background: #f9f9f9;
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-color: var(--color-primary);
   }
 `;
 
 const FilterToggle = styled.button`
-  background: #fff;
-  border: 1px solid #eee;
+  background: var(--color-background);
+  border: 1px solid var(--color-accent);
   border-radius: 20px;
   padding: 8px 16px;
   display: flex;
@@ -355,15 +295,18 @@ const FilterToggle = styled.button`
   gap: 6px;
   cursor: pointer;
   font-size: 0.9rem;
+  color: var(--color-text);
+  transition: all 0.2s ease;
   
   &:hover {
-    background: #f9f9f9;
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-color: var(--color-primary);
   }
 `;
 
 const Button = styled.button`
-  background: #fff;
-  border: 1px solid #eee;
+  background: var(--color-background);
+  border: 1px solid var(--color-accent);
   border-radius: 4px;
   padding: 8px 16px;
   display: flex;
@@ -371,25 +314,27 @@ const Button = styled.button`
   gap: 6px;
   cursor: pointer;
   font-size: 0.9rem;
+  color: var(--color-text);
   transition: all 0.2s ease;
   
   &:hover {
-    background: #f9f9f9;
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-color: var(--color-primary);
   }
   
   &.primary {
-    background: #552a47;
+    background: var(--color-primary);
     color: #fff;
     border: none;
     
     &:hover {
-      background: #6a3559;
+      background: var(--color-secondary);
     }
   }
 `;
 
 const FiltersPanel = styled.div`
-  background: #fff;
+  background: var(--color-background);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   padding: 16px;
@@ -397,6 +342,7 @@ const FiltersPanel = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
+  border: 1px solid var(--color-accent);
 `;
 
 const FilterGroup = styled.div`
@@ -408,14 +354,21 @@ const FilterGroup = styled.div`
 const FilterLabel = styled.div`
   font-size: 0.9rem;
   font-weight: 500;
-  color: #666;
+  color: var(--color-text);
 `;
 
 const FilterSelect = styled.select`
   padding: 8px;
   border-radius: 4px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-accent);
   font-size: 0.9rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
 `;
 
 const QuestionsGrid = styled.div`
@@ -431,16 +384,23 @@ const QuestionList = styled.div`
 `;
 
 const QuestionCard = styled.div`
-  background: #fff;
+  background: var(--color-background);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: hidden;
+  border: 1px solid var(--color-accent);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: var(--color-primary);
+  }
 `;
 
 const QuestionHeader = styled.div`
   padding: 12px 16px;
-  background: #f7f2f5;
-  border-bottom: 1px solid #eee;
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  border-bottom: 1px solid var(--color-accent);
   font-weight: 500;
   display: flex;
   justify-content: space-between;
@@ -449,10 +409,11 @@ const QuestionHeader = styled.div`
 
 const QuestionType = styled.div`
   font-size: 0.8rem;
-  color: #666;
-  background: #fff;
+  color: var(--color-accent);
+  background: var(--color-background);
   padding: 4px 8px;
   border-radius: 12px;
+  border: 1px solid var(--color-accent);
 `;
 
 const QuestionContent = styled.div`
@@ -463,6 +424,7 @@ const QuestionText = styled.div`
   font-size: 0.95rem;
   margin-bottom: 12px;
   line-height: 1.4;
+  color: var(--color-text);
 `;
 
 const QuestionMeta = styled.div`
@@ -473,11 +435,12 @@ const QuestionMeta = styled.div`
 `;
 
 const MetaTag = styled.div`
-  background: #f0f0f0;
-  color: #666;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-accent);
   font-size: 0.8rem;
   padding: 4px 8px;
   border-radius: 12px;
+  border: 1px solid var(--color-accent);
 `;
 
 const StatusTag = styled.div<{ published?: boolean }>`
@@ -486,9 +449,10 @@ const StatusTag = styled.div<{ published?: boolean }>`
   font-size: 0.8rem;
   padding: 4px 8px;
   border-radius: 12px;
-  background: ${props => props.published ? '#e6f7e6' : '#ffebee'};
-  color: ${props => props.published ? '#2e7d32' : '#c62828'};
+  background: ${props => props.published ? 'color-mix(in srgb, var(--color-success) 15%, transparent)' : 'color-mix(in srgb, var(--color-error) 15%, transparent)'};
+  color: ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
   font-weight: 500;
+  border: 1px solid ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
 `;
 
 const QuestionActions = styled.div`
@@ -503,28 +467,35 @@ const PaginationContainer = styled.div`
   align-items: center;
   margin-top: 24px;
   padding: 16px 0;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--color-accent);
 `;
 
 const PaginationButton = styled.button<{ active?: boolean }>`
   padding: 8px 12px;
   margin: 0 4px;
   border-radius: 4px;
-  border: 1px solid ${props => props.active ? '#552a47' : '#e0e0e0'};
-  background-color: ${props => props.active ? '#552a47' : 'white'};
-  color: ${props => props.active ? 'white' : '#333'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary)' : 'var(--color-accent)'};
+  background-color: ${props => props.active ? 'var(--color-primary)' : 'var(--color-background)'};
+  color: ${props => props.active ? 'white' : 'var(--color-text)'};
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.active ? '#6025c0' : '#f5f5f5'};
+    background-color: ${props => props.active ? 'var(--color-secondary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)'};
+    border-color: var(--color-primary);
   }
   
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: #f5f5f5;
+    background-color: var(--color-background);
+    border-color: var(--color-accent);
+    
+    &:hover {
+      background-color: var(--color-background);
+      border-color: var(--color-accent);
+    }
   }
 `;
 
@@ -533,151 +504,116 @@ const ActionButton = styled.button`
   border-radius: 4px;
   font-size: 0.8rem;
   cursor: pointer;
-  border: none;
+  border: 1px solid var(--color-accent);
+  transition: all 0.2s ease;
   
   &.preview {
-    background: #f0f0f0;
-    color: #333;
+    background: var(--color-background);
+    color: var(--color-text);
+    
+    &:hover {
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+      border-color: var(--color-primary);
+    }
   }
   
   &.edit {
-    background: #552a47;
+    background: var(--color-primary);
     color: #fff;
+    border-color: var(--color-primary);
+    
+    &:hover {
+      background: var(--color-secondary);
+    }
   }
   
   &.delete {
-    background: #f44336;
-    color: #fff;
+    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+    color: var(--color-error);
+    border-color: var(--color-error);
+    
+    &:hover {
+      background: var(--color-error);
+      color: white;
+    }
   }
 `;
-
-// Modal components for the import functionality
-// const Modal = styled.div`
-//   position: fixed;
-//   top: 0;
-//   left: 0;
-//   width: 100%;
-//   height: 100%;
-//   background-color: rgba(0, 0, 0, 0.5);
-//   display: flex;
-//   justify-content: center;
-//   align-items: center;
-//   z-index: 1000;
-// `;
-
-// const ModalContent = styled.div`
-//   background-color: white;
-//   border-radius: 8px;
-//   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-//   width: 90%;
-//   max-width: 800px;
-//   max-height: 90vh;
-//   overflow-y: auto;
-// `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 30px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-accent);
   
   h3 {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #333;
+    color: var(--color-text);
   }
 `;
 
-// AnalyticsSubtitle is already defined above
-
-// ModalBody is already defined above
-
-// const CloseButton = styled.button`
-//   background: none;
-//   border: none;
-//   font-size: 24px;
-//   cursor: pointer;
-//   color: #666;
-  
-//   &:hover {
-//     color: #333;
-//   }
-// `;
-
 // Analytics Modal Styled Components
-// const AnalyticsSubtitle = styled.p`
-//   color: #666;
-//   font-size: 16px;
-//   margin-top: 5px;
-//   margin-bottom: 20px;
-// `;
+const AnalyticsSubtitle = styled.p`
+  color: var(--color-accent);
+  font-size: 16px;
+  margin-top: 5px;
+  margin-bottom: 20px;
+`;
 
-// const MetricsGrid = styled.div`
-//   display: grid;
-//   grid-template-columns: repeat(4, 1fr);
-//   gap: 20px;
-//   margin-bottom: 30px;
-// `;
+const MetricsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+`;
 
-// MetricCard is already defined above
+const MetricCard = styled.div`
+  background-color: var(--color-background);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--color-accent);
+`;
 
+const MetricValue = styled.div`
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--color-text);
+  margin: 10px 0;
+`;
 
-// const MetricValue = styled.div`
-//   font-size: 32px;
-//   font-weight: bold;
-//   color: #333;
-//   margin: 10px 0;
-// `;
+const MetricLabel = styled.div`
+  font-size: 14px;
+  color: var(--color-accent);
+  text-align: center;
+`;
 
-// MetricLabel is already defined above
+const ChartContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 30px;
+`;
 
-// ChartContainer is already defined above
+const ChartCard = styled.div`
+  background-color: var(--color-background);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-accent);
+`;
 
-// const ChartCard = styled.div`
-//   background-color: white;
-//   border-radius: 8px;
-//   padding: 20px;
-//   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-// `;
-
-// const ChartTitle = styled.h3`
-//   font-size: 18px;
-//   color: #333;
-//   margin-top: 0;
-//   margin-bottom: 20px;
-// `;
-
-// const IconWrapper = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   width: 40px;
-//   height: 40px;
-//   border-radius: 50%;
-//   background-color: #f0f0f0;
-//   color: #4a2748;
-// `;
-
-// ExportButton is already defined above
-//  const ExportButton = styled.button`
-//   background-color: #552a47;
-//   color: white;
-//   border: none;
-//   border-radius: 4px;
-//   padding: 8px 16px;
-//   font-size: 14px;
-//   display: flex;
-//   align-items: center;
-//   gap: 8px;
-//   cursor: pointer;
-//   margin-left: auto;
-  
-//   &:hover {
-//     background-color: #3a1d38;
-//   }
-// `;
+const ChartTitle = styled.h3`
+  font-size: 18px;
+  color: var(--color-text);
+  margin-top: 0;
+  margin-bottom: 20px;
+`;
 
 // Helper function to get the latest version of a question
 const getLatestVersion = (question: any) => {
@@ -1311,7 +1247,7 @@ const AllQuestions: React.FC = () => {
         {showImportModal && (
           <ImportQuestions
             onImportComplete={handleImportQuestions}
-            organizationId={organizationId}
+            organizationId={undefined}
           />
         )}
 
@@ -1327,7 +1263,7 @@ const AllQuestions: React.FC = () => {
                   </AnalyticsSubtitle>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <ExportButton onClick={() => alert('Exporting data...')}>
+                  <ExportButton onClick={() => window.alert('Exporting data...')}>
                     <FaDownload size={14} /> Export Data
                   </ExportButton>
                   <CloseButton onClick={() => setAnalyticsModalOpen(false)}>

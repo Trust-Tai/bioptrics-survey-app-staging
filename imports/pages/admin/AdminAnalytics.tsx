@@ -18,6 +18,7 @@ import {
 import { AdminLayout } from '../../layouts';
 import { Surveys } from '../../features/surveys/api';
 import { SurveyResponses } from '../../features/surveys/api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Import analytics components directly until index is properly set up
 import AnalyticsFilterBar from '../../features/analytics/components/admin/AnalyticsFilterBar';
@@ -50,6 +51,8 @@ const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
+  background: ${({ theme }) => theme.backgroundColor};
+  min-height: 100vh;
 `;
 
 const Header = styled.div`
@@ -62,7 +65,7 @@ const Header = styled.div`
 const Title = styled.h1`
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const ActionButtons = styled.div`
@@ -75,15 +78,17 @@ const Button = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
+  background-color: ${({ theme }) => theme.accentColor};
+  border: 1px solid ${({ theme }) => theme.primaryColor};
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  color: ${({ theme }) => theme.textColor};
 
   &:hover {
-    background-color: #e9e9e9;
+    background-color: ${({ theme }) => theme.primaryColor};
+    color: white;
   }
 `;
 
@@ -95,10 +100,11 @@ const ChartsContainer = styled.div`
 `;
 
 const ChartCard = styled.div`
-  background: white;
+  background: ${({ theme }) => theme.accentColor};
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
+  border: 1px solid ${({ theme }) => theme.primaryColor}20;
 `;
 
 const ChartHeader = styled.div`
@@ -111,7 +117,7 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
   font-size: 16px;
   font-weight: 500;
-  color: #333;
+  color: ${({ theme }) => theme.primaryColor};
 `;
 
 const ChartActions = styled.div`
@@ -122,20 +128,21 @@ const ChartActions = styled.div`
 const IconButton = styled.button`
   background: none;
   border: none;
-  color: #666;
+  color: ${({ theme }) => theme.primaryColor};
   cursor: pointer;
   
   &:hover {
-    color: #333;
+    color: ${({ theme }) => theme.secondaryColor};
   }
 `;
 
 const CommentsSection = styled.div`
   margin-top: 24px;
-  background: white;
+  background: ${({ theme }) => theme.accentColor};
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
+  border: 1px solid ${({ theme }) => theme.primaryColor}20;
 `;
 
 const NoDataMessage = styled.div`
@@ -145,28 +152,34 @@ const NoDataMessage = styled.div`
   justify-content: center;
   padding: 40px;
   text-align: center;
-  color: #666;
+  color: ${({ theme }) => theme.textColor};
+  background: ${({ theme }) => theme.accentColor};
+  border-radius: 8px;
   
   svg {
     font-size: 48px;
     margin-bottom: 16px;
-    color: #ddd;
+    color: ${({ theme }) => theme.primaryColor}40;
   }
   
   h3 {
     font-size: 18px;
     margin-bottom: 8px;
+    color: ${({ theme }) => theme.primaryColor};
   }
   
   p {
     font-size: 14px;
     max-width: 400px;
+    color: ${({ theme }) => theme.textColor};
   }
 `;
 
 const AdminAnalytics: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  
   const [selectedFilters, setSelectedFilters] = useState<FilterState>({
     sites: [],
     departments: [],
@@ -214,6 +227,18 @@ const AdminAnalytics: React.FC = () => {
       responsesCount: {
         value: analyticsData.totalResponses,
         icon: FiMessageSquare
+      },
+      completedSurveys: {
+        value: responsesData.filter(r => r.completed).length,
+        icon: FiFileText
+      },
+      timeToComplete: {
+        value: calculateAverageTimeToComplete(responsesData),
+        icon: FiCalendar
+      },
+      responseRate: {
+        value: analyticsData.completionRate,
+        icon: FiStar
       },
       daysRemaining: {
         value: 14, // Example value
@@ -447,6 +472,12 @@ function getTopComments(responses: any[]): any[] {
       date: r.createdAt
     }))
     .slice(0, 5);
+}
+
+function calculateAverageTimeToComplete(responses: any[]): number {
+  if (responses.length === 0) return 0;
+  const totalTime = responses.reduce((sum, r) => sum + (r.completed ? r.timeToComplete : 0), 0);
+  return totalTime / responses.length;
 }
 
 export default AdminAnalytics;

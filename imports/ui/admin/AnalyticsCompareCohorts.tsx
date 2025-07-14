@@ -1,26 +1,39 @@
 import React from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
-import styled from 'styled-components';
+import styled, { ThemeProvider } from 'styled-components';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { FaChartBar, FaUsers, FaFileExport } from 'react-icons/fa';
-// Using specific primary color #552a47
+import { useTheme } from '/imports/contexts/ThemeContext';
 
 const StyledButton = styled.button`
   padding: 8px 16px;
-  background-color: #552a47;
+  background-color: ${({ theme }) => theme.primaryColor || '#552a47'};
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
+  transition: all 0.2s;
   
   &:hover {
-    background-color: #46223b; /* Slightly darker shade for hover */
+    background-color: ${({ theme }) => theme.secondaryColor || '#46223b'};
   }
 `;
 
 const Container = styled.div`
   padding: 20px;
+  background: ${({ theme }) => theme.backgroundColor || '#f8f9fa'};
+  min-height: 100vh;
+`;
+
+const PageTitle = styled.h1`
+  color: ${({ theme }) => theme.primaryColor || '#552a47'};
+  margin-bottom: 8px;
+`;
+
+const PageDescription = styled.p`
+  color: ${({ theme }) => theme.textColor || '#2e2e2e'};
+  margin-bottom: 20px;
 `;
 
 const GridContainer = styled.div`
@@ -31,9 +44,10 @@ const GridContainer = styled.div`
 `;
 
 const StyledCard = styled.div`
-  background-color: white;
+  background-color: ${({ theme }) => theme.accentColor || '#A9A59D'};
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid ${({ theme }) => theme.primaryColor ? `${theme.primaryColor}20` : 'rgba(85, 42, 71, 0.2)'};
   padding: 20px;
   height: 100%;
   display: flex;
@@ -48,12 +62,13 @@ const CardHeader = styled.div`
   svg {
     margin-right: 10px;
     font-size: 1.5rem;
-    color: #552a47;
+    color: ${({ theme }) => theme.primaryColor || '#552a47'};
   }
   
   h3 {
     margin: 0;
     font-size: 1.2rem;
+    color: ${({ theme }) => theme.primaryColor || '#552a47'};
   }
 `;
 
@@ -62,14 +77,20 @@ const CardContent = styled.div`
 `;
 
 const ChartPlaceholder = styled.div`
-  background-color: #f5f7ff;
+  background-color: ${({ theme }) => theme.backgroundColor || '#f8f9fa'};
+  border: 1px solid ${({ theme }) => theme.primaryColor ? `${theme.primaryColor}20` : 'rgba(85, 42, 71, 0.2)'};
   border-radius: 8px;
   height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 15px;
-  color: #8a94a6;
+  color: ${({ theme }) => theme.textColor ? `${theme.textColor}80` : 'rgba(46, 46, 46, 0.8)'};
+`;
+
+const CardDescription = styled.p`
+  color: ${({ theme }) => theme.textColor || '#2e2e2e'};
+  margin: 0;
 `;
 
 const ButtonContainer = styled.div`
@@ -79,7 +100,8 @@ const ButtonContainer = styled.div`
 `;
 
 const AnalyticsCompareCohorts: React.FC = () => {
-  // Using hardcoded primary color #552a47
+  const themeContext = useTheme();
+  
   // This would be replaced with actual data from your Meteor collections
   const { isLoading, cohorts } = useTracker(() => {
     // Placeholder for actual subscription and data fetching
@@ -96,62 +118,64 @@ const AnalyticsCompareCohorts: React.FC = () => {
 
   return (
     <AdminLayout>
-      <Container>
-        <div>
-          <h1>Compare Cohorts</h1>
-          <p>Compare analytics data across different cohorts to identify trends and insights.</p>
-        </div>
-        
-        <GridContainer>
-          <StyledCard>
-            <CardHeader>
-              <FaChartBar />
-              <h3>Cohort Comparison</h3>
-            </CardHeader>
-            <CardContent>
-              <ChartPlaceholder>
-                Cohort Comparison Chart
-              </ChartPlaceholder>
-              <p>Compare key metrics across different cohorts to identify performance patterns and outliers.</p>
-            </CardContent>
-            <ButtonContainer>
-              <StyledButton>View Details</StyledButton>
-            </ButtonContainer>
-          </StyledCard>
+      <ThemeProvider theme={themeContext}>
+        <Container>
+          <div>
+            <PageTitle>Compare Cohorts</PageTitle>
+            <PageDescription>Compare analytics data across different cohorts to identify trends and insights.</PageDescription>
+          </div>
           
-          <StyledCard>
-            <CardHeader>
-              <FaUsers />
-              <h3>Response Distribution</h3>
-            </CardHeader>
-            <CardContent>
-              <ChartPlaceholder>
-                Response Distribution Chart
-              </ChartPlaceholder>
-              <p>Analyze how responses are distributed across different cohorts and question categories.</p>
-            </CardContent>
-            <ButtonContainer>
-              <StyledButton>View Details</StyledButton>
-            </ButtonContainer>
-          </StyledCard>
-          
-          <StyledCard>
-            <CardHeader>
-              <FaFileExport />
-              <h3>Trend Analysis</h3>
-            </CardHeader>
-            <CardContent>
-              <ChartPlaceholder>
-                Trend Analysis Chart
-              </ChartPlaceholder>
-              <p>Track how cohort performance has changed over time to identify improvements or areas of concern.</p>
-            </CardContent>
-            <ButtonContainer>
-              <StyledButton>View Details</StyledButton>
-            </ButtonContainer>
-          </StyledCard>
-        </GridContainer>
-      </Container>
+          <GridContainer>
+            <StyledCard>
+              <CardHeader>
+                <FaChartBar />
+                <h3>Cohort Comparison</h3>
+              </CardHeader>
+              <CardContent>
+                <ChartPlaceholder>
+                  Cohort Comparison Chart
+                </ChartPlaceholder>
+                <CardDescription>Compare key metrics across different cohorts to identify performance patterns and outliers.</CardDescription>
+              </CardContent>
+              <ButtonContainer>
+                <StyledButton>View Details</StyledButton>
+              </ButtonContainer>
+            </StyledCard>
+            
+            <StyledCard>
+              <CardHeader>
+                <FaUsers />
+                <h3>Response Distribution</h3>
+              </CardHeader>
+              <CardContent>
+                <ChartPlaceholder>
+                  Response Distribution Chart
+                </ChartPlaceholder>
+                <CardDescription>Analyze how responses are distributed across different cohorts and question categories.</CardDescription>
+              </CardContent>
+              <ButtonContainer>
+                <StyledButton>View Details</StyledButton>
+              </ButtonContainer>
+            </StyledCard>
+            
+            <StyledCard>
+              <CardHeader>
+                <FaFileExport />
+                <h3>Trend Analysis</h3>
+              </CardHeader>
+              <CardContent>
+                <ChartPlaceholder>
+                  Trend Analysis Chart
+                </ChartPlaceholder>
+                <CardDescription>Track how cohort performance has changed over time to identify improvements or areas of concern.</CardDescription>
+              </CardContent>
+              <ButtonContainer>
+                <StyledButton>View Details</StyledButton>
+              </ButtonContainer>
+            </StyledCard>
+          </GridContainer>
+        </Container>
+      </ThemeProvider>
     </AdminLayout>
   );
 };

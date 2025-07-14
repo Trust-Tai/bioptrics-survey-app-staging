@@ -284,7 +284,7 @@ const OrgSetup: React.FC = () => {
       <DashboardBg>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 20px', width: '100%', boxSizing: 'border-box' }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>
-            Organization Setup
+            Branding / Custom Fields
           </h1>
           
           {alert && (

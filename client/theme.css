@@ -1,0 +1,171 @@
+/* Global theme variables and application-wide theme styles */
+:root {
+  /* Default theme colors - will be overridden by ThemeContext */
+  --color-primary: #542A46;
+  --color-secondary: #3B1D31;
+  --color-accent: #A9A59D;
+  --color-background: #f8f9fa;
+  --color-text: #2e2e2e;
+  --color-sidebar: #542A46;
+  --color-sidebar-text: #ffffff;
+  --color-error: #d32f2f;
+  
+  /* Transitions for smooth theme changes */
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Apply theme variables to global elements */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  transition: var(--theme-transition);
+}
+
+/* Button theming */
+button:not([data-theme-ignore]) {
+  transition: var(--theme-transition);
+}
+
+.btn-primary, .primary-button {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.btn-secondary, .secondary-button {
+  background-color: var(--color-secondary) !important;
+  border-color: var(--color-secondary) !important;
+  color: #fff !important;
+}
+
+/* Card and container theming */
+.card, .container-themed {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  transition: var(--theme-transition);
+}
+
+/* Form elements theming */
+input:not([data-theme-ignore]), 
+textarea:not([data-theme-ignore]), 
+select:not([data-theme-ignore]) {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  transition: var(--theme-transition);
+}
+
+input:focus:not([data-theme-ignore]), 
+textarea:focus:not([data-theme-ignore]), 
+select:focus:not([data-theme-ignore]) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(84, 42, 70, 0.2);
+}
+
+/* Sidebar theming (for AdminLayout) */
+.admin-sidebar {
+  background-color: var(--color-sidebar) !important;
+  color: var(--color-sidebar-text) !important;
+}
+
+.admin-sidebar .nav-item {
+  color: var(--color-sidebar-text) !important;
+}
+
+.admin-sidebar .nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.admin-sidebar .nav-item.active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Text color classes */
+.text-primary { color: var(--color-primary) !important; }
+.text-secondary { color: var(--color-secondary) !important; }
+.text-muted { color: var(--color-accent) !important; }
+
+/* Background color classes */
+.bg-primary { background-color: var(--color-primary) !important; }
+.bg-secondary { background-color: var(--color-secondary) !important; }
+.bg-light { background-color: var(--color-background) !important; }
+
+/* Border color classes */
+.border-primary { border-color: var(--color-primary) !important; }
+.border-secondary { border-color: var(--color-secondary) !important; }
+
+/* Link theming */
+a:not([data-theme-ignore]) {
+  color: var(--color-primary);
+  transition: var(--theme-transition);
+}
+
+a:hover:not([data-theme-ignore]) {
+  color: var(--color-secondary);
+}
+
+/* Alert/notification theming */
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-error, .alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: var(--color-error);
+}
+
+/* Modal theming */
+.modal-content {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+/* Table theming */
+.table {
+  color: var(--color-text);
+}
+
+.table th {
+  background-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+/* Ensure styled-components work with theme variables */
+.theme-aware {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #000000;
+    --color-secondary: #404040;
+    --color-accent: #ffcc00;
+    --color-background: #ffffff;
+    --color-text: #000000;
+    --color-sidebar: #000000;
+    --color-sidebar-text: #ffffff;
+  }
+}
+
+/* Dark mode preferences */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #9a4d85;
+    --color-secondary: #7a3e68;
+    --color-accent: #f0b160;
+    --color-background: #2a2a2a;
+    --color-text: #e0e0e0;
+    --color-sidebar: #353535;
+    --color-sidebar-text: #e0e0e0;
+  }
+}
+
+/* Smooth transitions for all theme-aware elements */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
