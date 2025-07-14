@@ -28,6 +28,7 @@ export interface QuestionVersion {
   priority?: number;
   isActive?: boolean;
   keywords?: string[];
+  estimatedTimeSeconds?: number;
   customFields?: CustomField[];
 }
 
@@ -76,6 +77,7 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.isActive': { type: Boolean, optional: true },
     'versions.$.keywords': { type: Array, optional: true },
     'versions.$.keywords.$': { type: String },
+    'versions.$.estimatedTimeSeconds': { type: SimpleSchema.Integer, optional: true },
     'versions.$.customFields': { type: Array, optional: true },
     'versions.$.customFields.$': { type: Object, blackbox: true },
     'versions.$.customFields.$.title': { type: String },

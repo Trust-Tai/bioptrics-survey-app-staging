@@ -183,6 +183,7 @@ const ModernSurveyContent: React.FC<{
       
       // Calculate progress percentage based on answered questions vs total questions
       const answeredCount = Object.keys(allResponses).length;
+      console.log('question::---', questions);
       const totalQuestions = questions.length;
       const progressPercentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
       

@@ -13,7 +13,7 @@ import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 import { Layers, Layer } from '../../../api/layers';
-import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage } from 'react-icons/fa';
+import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } from 'react-icons/fa';
 
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
@@ -373,7 +373,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   // Styled components for response stats
   const StatsContainer = styled.div`
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-bottom: 24px;
     width: 100%;
@@ -2634,7 +2634,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   }}
                   className="action-button copy-url-button"
                   style={{
-                    padding: '10px 20px',
+                    padding: '10px 4px 4px 10px',
                     borderRadius: '8px',
                     border: '2px solid #2ecc40',
                     backgroundColor: '#fff',
@@ -2643,7 +2643,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     fontSize: '15px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    minWidth: '100px',
+                    // minWidth: '100px',
                     boxShadow: '0 2px 4px rgba(46,204,64,0.1)'
                   }}
                   onMouseOver={(e) => {
@@ -2657,7 +2657,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.1)';
                   }}
                 >
-                  {copied ? 'Copied!' : 'Copy URL'}
+                  {copied ? <FaCopy style={{ marginRight: '8px' }} /> : <><FaCopy style={{ marginRight: '8px' }} /> </>}
                 </button>
               )}
             </div>
@@ -3145,7 +3145,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               <StatLabel>Completion Rate</StatLabel>
                             </StatContent>
                           </StatCard>
-                          
+                        </StatsContainer>
+                        <StatsContainer>  
                           <StatCard>
                             <IconContainer color="#F4B400">
                               <FaHeart />

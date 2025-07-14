@@ -1388,19 +1388,37 @@ if (Meteor.isServer) {
         
         // Get categories as sections
         let sections: Array<{title: string; description: string; questionCount?: number}> = [];
-        if (survey.selectedCategories && survey.selectedCategories.length > 0) {
-          // Get questions by category
+        
+        // Track total estimated time in seconds
+        let totalEstimatedTimeSeconds = 0;
+        let questionsWithTimeData = 0;
+        
+        // Process all questions to get their estimated time
+        if (survey.selectedQuestions) {
           const questionsByCategory: Record<string, Array<any>> = {};
           
-          // Group selected questions by category
-          if (survey.selectedQuestions) {
-            for (const questionId of Object.keys(survey.selectedQuestions)) {
-              const question = await Questions.findOneAsync({ _id: questionId });
-              if (question && question.versions && question.versions.length > 0) {
-                // Get the current version of the question
-                const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+          // Detailed logging for debugging
+          console.log(`Processing ${Object.keys(survey.selectedQuestions).length} questions for survey ${surveyId}`);
+          
+          for (const questionId of Object.keys(survey.selectedQuestions)) {
+            const question = await Questions.findOneAsync({ _id: questionId });
+            if (question && question.versions && question.versions.length > 0) {
+              // Get the current version of the question
+              const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+              
+              // Get the estimated time for this question
+              if (currentVersion) {
+                // Use estimatedTimeSeconds if available, otherwise use default (30 seconds)
+                // Make sure to convert to a number in case it's stored as a string
+                const questionTimeSeconds = currentVersion.estimatedTimeSeconds ? 
+                  Number(currentVersion.estimatedTimeSeconds) : 30;
                 
-                if (currentVersion && currentVersion.category) {
+                console.log(`Question ${questionId}: estimatedTimeSeconds = ${questionTimeSeconds} seconds`);
+                totalEstimatedTimeSeconds += questionTimeSeconds;
+                questionsWithTimeData++;
+                
+                // Process category data for sections
+                if (currentVersion.category) {
                   const category = currentVersion.category;
                   if (!questionsByCategory[category]) {
                     questionsByCategory[category] = [];
@@ -1411,14 +1429,18 @@ if (Meteor.isServer) {
             }
           }
           
-          // Create sections from categories
-          sections = Object.keys(questionsByCategory).map(category => ({
-            title: category,
-            description: `${questionsByCategory[category].length} questions about ${category.toLowerCase()}`,
-            questionCount: questionsByCategory[category].length
-          }));
-        } else {
-          // Default section if no categories
+          // Create sections from categories if we have category data
+          if (survey.selectedCategories && survey.selectedCategories.length > 0) {
+            sections = Object.keys(questionsByCategory).map(category => ({
+              title: category,
+              description: `${questionsByCategory[category].length} questions about ${category.toLowerCase()}`,
+              questionCount: questionsByCategory[category].length
+            }));
+          }
+        }
+        
+        // If no sections were created, use a default section
+        if (sections.length === 0) {
           sections = [{
             title: 'Survey Questions',
             description: `${questionCount} questions to gather your feedback`,
@@ -1426,40 +1448,50 @@ if (Meteor.isServer) {
           }];
         }
         
-        // Calculate estimated time based on question count with a more accurate formula
-        // For very short surveys, use a fixed range that makes sense
-        if (questionCount <= 2) {
-          return {
-            questionCount,
-            sectionCount: sections.length,
-            sections,
-            estimatedTime: "1-2" // Fixed range for very short surveys
-          };
+        // Calculate average time per question for questions without time data
+        const avgTimePerQuestion = questionsWithTimeData > 0 ? 
+          totalEstimatedTimeSeconds / questionsWithTimeData : 
+          30; // Default 30 seconds per question if no data
+        
+        // Add estimated time for questions without time data
+        const questionsWithoutTimeData = questionCount - questionsWithTimeData;
+        if (questionsWithoutTimeData > 0) {
+          totalEstimatedTimeSeconds += questionsWithoutTimeData * avgTimePerQuestion;
         }
         
-        // Base time: 1 minute + 30 seconds per question
-        const baseMinutes = Math.max(1, Math.round(1 + (questionCount * 0.5)));
+        // Add a base time of 30 seconds for survey overhead (reading intro, etc.)
+        totalEstimatedTimeSeconds += 30;
         
-        // For surveys with many questions, the per-question time tends to decrease
-        // as respondents get into a rhythm
-        let estimatedMinutes;
-        if (questionCount <= 5) {
-          estimatedMinutes = baseMinutes;
-        } else if (questionCount <= 15) {
-          estimatedMinutes = Math.round(baseMinutes * 0.9); // 10% efficiency for medium surveys
-        } else {
-          estimatedMinutes = Math.round(baseMinutes * 0.8); // 20% efficiency for longer surveys
-        }
+        // Convert to minutes and create a range
+        const estimatedMinutes = Math.max(1, Math.ceil(totalEstimatedTimeSeconds / 60));
         
-        // Ensure the range is always at least 2 minutes difference
-        const upperBound = Math.max(estimatedMinutes + 2, estimatedMinutes + Math.ceil(questionCount / 10));
-        const estimatedTimeRange = `${estimatedMinutes}-${upperBound}`;
+        // Create a range with upper bound being ~20% more than the calculated time
+        // but at least 1 minute more for very short surveys
+        const upperBound = Math.max(
+          estimatedMinutes + 1, 
+          Math.ceil(estimatedMinutes * 1.2)
+        );
+        
+        // Format the time range
+        const estimatedTimeRange = estimatedMinutes === upperBound ? 
+          `${estimatedMinutes}` : 
+          `${estimatedMinutes}-${upperBound}`;
+        
+        console.log(`Survey ${surveyId} estimated time calculation:`, {
+          questionCount,
+          questionsWithTimeData,
+          totalEstimatedTimeSeconds,
+          estimatedMinutes,
+          upperBound,
+          estimatedTimeRange
+        });
         
         return {
           questionCount,
           sectionCount: sections.length,
           sections,
-          estimatedTime: estimatedTimeRange
+          estimatedTime: estimatedTimeRange,
+          estimatedTimeSeconds: totalEstimatedTimeSeconds
         };
       } catch (error: unknown) {
         console.error('Error getting survey metadata:', error);

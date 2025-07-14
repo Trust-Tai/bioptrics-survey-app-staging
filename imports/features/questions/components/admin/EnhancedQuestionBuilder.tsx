@@ -66,6 +66,7 @@ interface Question {
   isAssessment?: boolean; // Flag to indicate if this question should be scored
   correctAnswers?: any[]; // Array of correct answers for assessment questions
   points?: number; // Optional points value for weighted scoring
+  estimatedTimeSeconds?: number; // Estimated time to answer the question in seconds
   [key: string]: any;
 }
 
@@ -139,6 +140,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
     active: true,
     keywords: [],
     status: 'draft', // Default to draft status
+    estimatedTimeSeconds: 30, // Default estimated time in seconds
     branchingLogic: {
       enabled: false,
       rules: [],
@@ -168,6 +170,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
     active: true,
     keywords: [],
     status: 'draft', // Default to draft status
+    estimatedTimeSeconds: 30, // Default estimated time in seconds
     branchingLogic: {},
     customFields: []
   };
@@ -226,6 +229,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
               active: currentVersion.isActive !== false, // Default to true if not explicitly set to false
               keywords: currentVersion.keywords || [],
               status: currentVersion.status || 'draft',
+              estimatedTimeSeconds: currentVersion.estimatedTimeSeconds || 30, // Default to 30 seconds if not set
               branchingLogic: currentVersion.branchingLogic || {},
               customFields: currentVersion.customFields || [],
               // Add any other fields you need
@@ -343,6 +347,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
         priority: questionData.priority,
         isActive: questionData.active,
         keywords: questionData.keywords,
+        estimatedTimeSeconds: questionData.estimatedTimeSeconds || 30, // Include estimated time in seconds
         status: status || questionData.status,
         branchingLogic: questionData.branchingLogic,
         customFields: questionData.customFields || []
@@ -739,15 +744,15 @@ const EnhancedQuestionBuilder: React.FC = () => {
                 <div className="edit-mode-header-top">
                   <button 
                     className="back-button" 
-                    onClick={() => navigate('/admin/questions')}
+                    onClick={() => navigate('/admin/questions/all')}
                   >
                     <FaArrowLeft /> Back to Questions
                   </button>
-                  <h1>Edit Question</h1>
+                  {/* <h1>Edit Question</h1> */}
                 </div>
-                <div className="edit-mode-info">
+                {/* <div className="edit-mode-info">
                   <span>ID: {id}</span>
-                </div>
+                </div> */}
               </div>
             )}
             
@@ -1121,6 +1126,77 @@ const EnhancedQuestionBuilder: React.FC = () => {
                                 <option value="rating">Rating Feedback</option>
                                 <option value="rating_comment">Rating with Comment</option>
                               </select>
+                            </div>
+                            
+                            <div className="form-group">
+                              <label>Estimated Time to Answer</label>
+                              {(() => {
+                                // Use an IIFE to create a local scope for our state
+                                const totalSeconds = question.estimatedTimeSeconds || 30;
+                                const [minutes, setMinutes] = React.useState(Math.floor(totalSeconds / 60));
+                                const [seconds, setSeconds] = React.useState(totalSeconds % 60);
+                                
+                                // Update minutes and seconds when question changes
+                                React.useEffect(() => {
+                                  const total = question.estimatedTimeSeconds || 30;
+                                  setMinutes(Math.floor(total / 60));
+                                  setSeconds(total % 60);
+                                }, [question.estimatedTimeSeconds]);
+                                
+                                // Function to update the total time in seconds
+                                const updateTotalTime = (mins: number, secs: number) => {
+                                  const totalSecs = (mins * 60) + secs;
+                                  console.log(`EnhancedQuestionBuilder: Setting estimatedTimeSeconds to ${totalSecs} (${mins} minutes and ${secs} seconds)`);
+                                  setQuestion(prev => ({ ...prev, estimatedTimeSeconds: totalSecs }));
+                                };
+                                
+                                return (
+                                  <>
+                                    <div className="estimated-time-container" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          max="60"
+                                          value={minutes}
+                                          onChange={(e) => {
+                                            const mins = parseInt(e.target.value);
+                                            if (!isNaN(mins) && mins >= 0) {
+                                              setMinutes(mins);
+                                              updateTotalTime(mins, seconds);
+                                            }
+                                          }}
+                                          className="form-control"
+                                          style={{ width: '70px' }}
+                                        />
+                                        <span style={{ margin: '0 5px' }}>min</span>
+                                      </div>
+                                      
+                                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          max="59"
+                                          value={seconds}
+                                          onChange={(e) => {
+                                            const secs = parseInt(e.target.value);
+                                            if (!isNaN(secs) && secs >= 0 && secs < 60) {
+                                              setSeconds(secs);
+                                              updateTotalTime(minutes, secs);
+                                            }
+                                          }}
+                                          className="form-control"
+                                          style={{ width: '70px' }}
+                                        />
+                                        <span style={{ margin: '0 5px' }}>sec</span>
+                                      </div>
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                              <small className="form-text text-muted">
+                                Set the estimated time it takes to answer this question. This helps in calculating the total survey completion time.
+                              </small>
                             </div>
                             
                             <div className="form-group toggle-group">

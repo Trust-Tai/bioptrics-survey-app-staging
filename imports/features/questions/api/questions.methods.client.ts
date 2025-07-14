@@ -32,6 +32,8 @@ export interface Question {
   // Demographics collection
   collectDemographics?: boolean;
   selectedDemographics?: string[];
+  // Estimated time to answer the question in seconds
+  estimatedTimeSeconds?: number;
 }
 
 // Define the QuestionVersion interface to match what's expected by the DB
@@ -48,6 +50,7 @@ export interface QuestionVersion {
   categoryTags: string[];
   surveyThemes: string[];
   adminNotes: string;
+  estimatedTimeSeconds?: number; // Estimated time to answer the question in seconds
   language: string;
   published: boolean;
   updatedBy: string;
@@ -81,6 +84,8 @@ export function mapQuestionToVersion(q: Question, userId?: string) {
     collectFeedback: q.collectFeedback ?? false,
     feedbackType: q.feedbackType ?? 'text',
     feedbackPrompt: q.feedbackPrompt || '',
+    // Estimated time
+    estimatedTimeSeconds: q.estimatedTimeSeconds,
   };
 }
 

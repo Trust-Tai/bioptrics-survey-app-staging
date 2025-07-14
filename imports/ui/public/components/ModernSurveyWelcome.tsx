@@ -464,7 +464,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   const estimatedTime = survey.estimatedTime || metadata.estimatedTime;
   const questionCount = totalQuestions || survey.questionCount || metadata.questionCount;
   const sectionCount = totalSections || survey.sectionCount || metadata.sectionCount;
-  
+  console.log("questionCount----", questionCount);
   // Log values for debugging
   console.log('ModernSurveyWelcome - Time calculation values:', {
     'survey.estimatedTime': survey.estimatedTime,
