@@ -366,20 +366,34 @@
   transition: all 0.2s ease;
 }
 
+/* Hide the default CSS arrow since we're using a component */
 .dropdown-container::after {
-  content: '';
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #666;
-  pointer-events: none;
+  display: none;
 }
 
+/* Custom dropdown arrow component styling */
+.dropdown-arrow {
+  position: absolute;
+  right: 16px;
+  top: 16px; /* Fixed position from top instead of percentage */
+  pointer-events: none;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2; /* Ensure it appears above the select element */
+}
+.dropdown-arrow-1{
+  position: absolute;
+  right: 16px;
+  top: 50px; /* Fixed position from top instead of percentage */
+  pointer-events: none;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2; /* Ensure it appears above the select element */
+}
 .dropdown-select:focus {
   outline: none;
   border-color: var(--primary-color, #2c3e50);

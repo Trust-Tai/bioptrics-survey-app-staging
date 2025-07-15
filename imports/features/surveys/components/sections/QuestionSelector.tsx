@@ -2601,7 +2601,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                                 ...prev,
                                 feedbackCollection: e.target.value
                               }))}
-                              className="tom-select"
+                              // className="tom-select"
                               style={{
                                 width: '100%',
                                 padding: '12px',
@@ -2834,7 +2834,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 >
                   ← Previous
                 </button>
-                {tabIndex === 5 ? (
+                {tabIndex === 4 ? (
                   <button
                   type="button"
                   id="saveQuestionButton"

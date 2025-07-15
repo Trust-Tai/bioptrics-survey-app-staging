@@ -1477,7 +1477,6 @@ if (Meteor.isServer) {
           `${estimatedMinutes}` : 
           `${estimatedMinutes}-${upperBound}`;
         
-        console.log(`Amit All Question time for main screen: ${totalEstimatedTimeSeconds} seconds (${estimatedTimeRange} minutes)`);
         
         console.log(`Survey ${surveyId} estimated time calculation:`, {
           questionCount,

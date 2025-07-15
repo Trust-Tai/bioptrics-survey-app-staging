@@ -436,12 +436,18 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             }}
             style={{borderColor: answer ? color : '#d1d5db'}}
           >
-            <option value="" disabled>Select an option</option>
+            {/* <option value="" disabled>Select an option</option> */}
             {question.options.map((option, index) => {
               // Handle both string options and object options
               const value = isObjectOptions ? (option as any).value || (option as any).label : option;
               const label = isObjectOptions ? (option as any).label : option;
-              
+              if (label === 'Select an option...') {
+                return (
+                  <option key={index} value="">
+                    {label}
+                  </option>
+                );
+              }
               return (
                 <option key={index} value={value}>
                   {label}
@@ -449,7 +455,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
               );
             })}
           </select>
-          <div className="dropdown-arrow">
+          <div className={`${answer ? 'dropdown-arrow-1' : 'dropdown-arrow'} `}>
             <FiChevronDown size={16} />
           </div>
         </div>
