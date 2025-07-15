@@ -559,7 +559,6 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                 const minutes = Math.ceil(totalWithBuffer / 60);
                 
                 // Log with the requested format
-                console.log(`Amit All Question time for main screen: ${totalWithBuffer} seconds (${minutes} minutes)`);
                 
                 // Store the calculated values in state
                 setMetadata({
