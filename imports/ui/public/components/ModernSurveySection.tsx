@@ -28,7 +28,8 @@ interface ModernSurveySectionProps {
   surveyDescription?: string;
   surveyId?: string;
   sectionIndex?: number;
-  totalQuestions?: number; // Total questions in this section
+  totalQuestions?: number;
+  requiredQuestionCount?: number;
   dynamicTimeData?: {
     totalEstimatedSeconds: number;
     minutes: number;
@@ -389,6 +390,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   surveyId,
   sectionIndex = 1,
   totalQuestions,
+  requiredQuestionCount,
   dynamicTimeData: propDynamicTimeData
 }) => {
   // Add CSS to hide header and remove padding
@@ -480,9 +482,20 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   // Initialize with section data immediately to avoid showing '...'
   useEffect(() => {
     // Set initial values from section props to avoid showing '...'
+    // Use the requiredQuestionCount prop if available, otherwise fall back to section data
+    const initialRequiredCount = requiredQuestionCount !== undefined ? 
+      requiredQuestionCount : 
+      (section.requiredQuestionCount || 0);
+      
+    console.log('Initial required question count:', {
+      fromProp: requiredQuestionCount,
+      fromSection: section.requiredQuestionCount,
+      finalValue: initialRequiredCount
+    });
+    
     setMetadata({
       questionCount: section.questionCount || 0,
-      requiredQuestionCount: section.requiredQuestionCount || 0,
+      requiredQuestionCount: initialRequiredCount,
       estimatedTime: section.estimatedTime || '~2'
     });
     
@@ -503,9 +516,9 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
 
             const questionCount = parsedData.sectionQuestions[0].questions.length;
             const requiredQuestions = parsedData.sectionQuestions[0].questions.filter(
-              (q: any) => q.status === 'published'
+              (q: any) => q.required === true
             ).length;
-            
+            console.log('Get required questions count:---', requiredQuestions);
             setMetadata(prev => ({
               ...prev,
               questionCount: questionCount,
@@ -787,7 +800,22 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
               <StatIcon>
                 <FiStar size={24} />
               </StatIcon>
-              <StatValue>{metadata.requiredQuestionCount}</StatValue>
+              <StatValue>
+                {(() => {
+                  // Use prop first, then metadata as fallback
+                  const displayCount = requiredQuestionCount !== undefined ? 
+                    requiredQuestionCount : 
+                    metadata.requiredQuestionCount;
+                  
+                  console.log('Displaying required question count:', {
+                    fromProp: requiredQuestionCount,
+                    fromMetadata: metadata.requiredQuestionCount,
+                    finalValue: displayCount
+                  });
+                  
+                  return displayCount;
+                })()}
+              </StatValue>
               <StatLabel>Required questions</StatLabel>
             </StatCard>
           </StatsContainer>

@@ -616,9 +616,7 @@ const ModernSurveyContent: React.FC<{
         
         const minutes = Math.ceil(totalWithBuffer / 60);
         
-        // Log with the requested format
-        console.log(`Amit All Question time for main screen: ${totalWithBuffer} seconds (${minutes} minutes)`);
-        
+   
         // Store in localStorage for use by ModernSurveyWelcome and ModernSurveySection
         // Add a small delay to ensure all calculations are complete
         setTimeout(() => {
@@ -677,7 +675,6 @@ const ModernSurveyContent: React.FC<{
     
     // Enhanced logging with question IDs
     const questionIds = sortedQuestions.map(q => q._id || q.id);
-    console.log(`Ok amit i have done for you - Section ${sectionName} (${sectionId}) contains these question IDs:`);
     questionIds.forEach((id, index) => {
       console.log(`Question ${index + 1}: ${id}`);
     });
@@ -709,7 +706,6 @@ const ModernSurveyContent: React.FC<{
             
             // Extract and log the estimatedTimeSeconds specifically
             const estimatedTimeSeconds = doc.currentVersion?.estimatedTimeSeconds || 'Not set';
-            console.log(`Amit I have get time for this question - ${doc._id}: ${estimatedTimeSeconds} seconds`);
             
             console.groupEnd();
           });
@@ -725,6 +721,8 @@ const ModernSurveyContent: React.FC<{
           })));
           console.groupEnd();
           
+          const requiredQuestionCount = result.filter((doc: any) => doc.currentVersion?.required).length;
+          console.log('requiredQuestionCount----', requiredQuestionCount);
           // Calculate and log the total estimated time for this section
           const totalEstimatedSeconds = result.reduce((total: number, doc: any) => {
             const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
@@ -732,7 +730,6 @@ const ModernSurveyContent: React.FC<{
           }, 0);
           
           const minutes = Math.ceil(totalEstimatedSeconds / 60);
-          console.log(`Amit I have calculated total estimated time for section ${sectionName}: ${totalEstimatedSeconds} seconds (${minutes} minutes)`);
           
           // Store the calculated time in localStorage for access by other components
           try {
@@ -2254,6 +2251,66 @@ const handleRestart = () => {
         
         // Get section-specific time data from localStorage if available
         let dynamicTimeData = null;
+        
+        // Try to get required question count from localStorage first
+        const requiredCountKey = `section_required_count_${currentSection.id}`;
+        let requiredQuestionCount = 0;
+        
+        try {
+          const storedRequiredCount = localStorage.getItem(requiredCountKey);
+          if (storedRequiredCount) {
+            requiredQuestionCount = parseInt(storedRequiredCount, 10);
+            console.log(`Found stored required count for section ${currentSection.id}:`, requiredQuestionCount);
+          }
+        } catch (error) {
+          console.error('Error reading required count from localStorage:', error);
+        }
+        
+        // If we have section question IDs, calculate the required count
+        if (sectionQuestionIds.length > 0) {
+          // We'll use this function to update the required count without causing re-renders
+          const updateRequiredCount = (count: number) => {
+            requiredQuestionCount = count;
+            console.log('Updated required count:', requiredQuestionCount);
+            
+            // Store in localStorage for future use
+            try {
+              localStorage.setItem(requiredCountKey, count.toString());
+              
+              // Update the section object directly
+              if (sectionWithDynamicTime) {
+                sectionWithDynamicTime.requiredQuestionCount = count;
+              }
+            } catch (error) {
+              console.error('Error storing required count in localStorage:', error);
+            }
+          };
+          
+          // Make the Meteor call to get question documents
+          Meteor.call('getQuestionDocuments', sectionQuestionIds, (error: any, result: any) => {
+            if (error) {
+              console.error('Error fetching question documents:', error);
+            } else if (result && result.length > 0) {
+              let count = 0;
+              
+              // Count required questions
+              result.forEach((doc: any, index: number) => {
+                const required = doc.currentVersion?.required || false;
+                // Only log the required ones to reduce console spam
+                if (required === true) {
+                  count++;
+                }
+              });
+              
+              console.log('Final required count:', count);
+              updateRequiredCount(count);
+            } else {
+              console.warn('No question documents returned from database');
+            }
+          });
+        }
+        
+        console.log('Current required count (may be from cache):', requiredQuestionCount);
         try {
           // First try to get section-specific time data
           const sectionTimeKey = `section_time_${currentSection.id}`;
@@ -2299,6 +2356,19 @@ const handleRestart = () => {
           console.error('Error reading time data from localStorage:', error);
         }
         
+        // Log all props being passed to ModernSurveySection for debugging
+        console.log('Rendering ModernSurveySection with props:', {
+          sectionId: currentSection.id,
+          sectionName: currentSection.name,
+          totalQuestions: sectionQuestionsCount,
+          requiredQuestionCount: requiredQuestionCount,
+          dynamicTimeData: dynamicTimeData ? {
+            minutes: dynamicTimeData.minutes,
+            questionCount: dynamicTimeData.questionCount,
+            timestamp: new Date(dynamicTimeData.timestamp).toLocaleTimeString()
+          } : null
+        });
+        
         return (
           <ModernSurveySection
             section={sectionWithDynamicTime}
@@ -2310,6 +2380,7 @@ const handleRestart = () => {
             image={currentSection.image || survey.image}
             totalQuestions={sectionQuestionsCount}
             sectionIndex={dynamicSectionIndex}
+            requiredQuestionCount={requiredQuestionCount}
             dynamicTimeData={dynamicTimeData}
           />
         );
