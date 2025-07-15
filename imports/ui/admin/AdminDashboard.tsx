@@ -59,7 +59,7 @@ const GlobalScrollbarStyle = createGlobalStyle`
 `;
 
 const GoldHeaderCard = styled.div`
-  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#542A46'}, ${props => props.theme.secondaryColor || '#3B1D31'});
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 1.75rem 2.5rem;
@@ -188,7 +188,7 @@ const Card = styled.div`
 const SectionTitle = styled.div`
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1c1c1c;
+  color: var(--color-text);
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
@@ -204,8 +204,12 @@ const SectionTitle = styled.div`
     transform: translate(0, -50%);
     width: 4px;
     height: 18px;
-    background: linear-gradient(to bottom, #552a47, #7a4e7a);
+    background: linear-gradient(to bottom, var(--color-primary), var(--color-secondary));
     border-radius: 2px;
+  }
+  
+  svg {
+    color: var(--color-primary);
   }
 `;
 const DonutChart = styled.div`
@@ -243,7 +247,11 @@ const QuarterWidthCard = styled(Card)`
 
 // Welcome back section styled components
 const WelcomeBackSection = styled.div`
+<<<<<<< HEAD
   background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+=======
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+>>>>>>> 4cce65865f863ec7ebd85fd6aaa3eae26eeeacd2
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
@@ -260,12 +268,14 @@ const WelcomeTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 8px;
+  color: white;
 `;
 
 const WelcomeSubtitle = styled.p`
   font-size: 16px;
   margin: 0;
   opacity: 0.9;
+  color: white;
 `;
 
 const MetricsRow = styled.div`
@@ -307,7 +317,7 @@ const ChartTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 16px 0;
-  color: #333;
+  color: var(--color-text);
 `;
 
 const ChartSelect = styled.select`
@@ -328,7 +338,6 @@ const ChartHeader = styled.div`
 
 const BarChart = styled.div`
   margin: 1rem 0;
-  width: 100%;
 `;
 const BarBar = styled.div`
   display: flex;
@@ -361,7 +370,7 @@ const FilterContainer = styled.div`
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(135deg, #552a47 0%, #7a4e7a 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   }
 `;
 
@@ -374,13 +383,13 @@ const FilterHeader = styled.div`
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   
   svg {
-    color: #552a47;
+    color: var(--color-primary);
     font-size: 1.1rem;
   }
   
   span {
     font-weight: 600;
-    color: #333;
+    color: var(--color-text);
     font-size: 1rem;
   }
   
@@ -459,12 +468,12 @@ const FilterButton = styled.button<{ primary?: boolean }>`
   cursor: pointer;
   transition: all 0.2s;
   
-  background: ${props => props.primary ? '#552a47' : 'white'};
+  background: ${props => props.primary ? 'var(--color-primary)' : 'white'};
   color: ${props => props.primary ? 'white' : '#666'};
   border: ${props => props.primary ? 'none' : '1px solid #e0e0e0'};
   
   &:hover {
-    background: ${props => props.primary ? '#693658' : '#f5f5f5'};
+    background: ${props => props.primary ? 'var(--color-secondary)' : '#f5f5f5'};
     transform: translateY(-1px);
   }
   
@@ -506,12 +515,12 @@ const ActionButton = styled.button`
   }
   
   &.primary {
-    background: #552a47;
-    border-color: #552a47;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
     color: white;
     
     &:hover {
-      background: #693658;
+      background: var(--color-secondary);
     }
   }
 `;
@@ -543,97 +552,95 @@ const FlaggedItem = styled.li<{ severity?: 'high' | 'medium' | 'low' }>`
 `;
 
 
-
 const KpiCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   display: flex;
-  align-items: center;
-  gap: 1.25rem;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  height: 100%;
+  cursor: pointer;
   position: relative;
-  z-index: 1;
-  width: 100%;
-`;
-
-const HeatMapGrid = styled.div`
-  display: grid;
-  grid-template-columns: 130px repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  flex: 1;
   overflow: hidden;
-`;
-
-const HeatMapHeader = styled.div`
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 0.5rem 0.25rem;
-  text-align: center;
-  background: #f5f5f5;
-  border-radius: 6px;
-`;
-
-const HeatMapRow = styled.div`
-  display: contents;
-`;
-
-const HeatMapLabel = styled.div`
-  font-size: 0.875rem;
-  padding: 0.5rem;
-  display: flex;
-  align-items: center;
-`;
-
-const HeatMapCell = styled.div<{ score: number }>`
-  padding: 0.5rem 0.25rem;
-  text-align: center;
-  font-weight: 600;
-  font-size: 0.875rem;
-  background: ${props => {
-    if (props.score >= 4.0) return '#7ec16c';
-    if (props.score >= 3.0) return '#ffd166';
-    return '#ef476f';
-  }};
-  color: ${props => props.score >= 3.0 ? '#1c1c1c' : '#fff'};
-  border-radius: 6px;
-  transition: transform 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
   
   &:hover {
-    transform: scale(1.03);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   }
 `;
 
-const AnonymityAlert = styled.div`
-  background: #ffe9e9;
-  color: #e74c3c;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
+const KPIIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(84, 42, 70, 0.1);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  justify-content: center;
+  margin-bottom: 16px;
+  
+  svg {
+    color: var(--color-primary);
+    font-size: 20px;
+  }
 `;
-const TrendBar = styled.div`
-  margin-top: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
+
+const KPIValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
 `;
-const TrendRow = styled.div`
+
+const KPILabel = styled.div`
+  font-size: 14px;
+  color: var(--color-accent);
+  font-weight: 500;
+`;
+
+const ViewDetails = styled.div`
+  font-size: 12px;
+  color: #4a5568;
+  margin-top: 16px;
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;
-  padding: 0.25rem 0;
+  gap: 4px;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 6px 10px;
+  border-radius: 4px;
+  width: fit-content;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(84, 42, 70, 0.1);
+    color: var(--color-primary);
+  }
 `;
+
 const TrendLabel = styled.div`
   width: 70px;
   font-size: 1.08rem;
-  color: #552a47;
+  color: var(--color-primary);
   font-weight: 600;
 `;
+
 const TrendFill = styled.div<{ width: number; color?: string }>`
   height: 14px;
-  background: linear-gradient(90deg, #5e3b5e 0%, #7a4e7a 100%);
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   border-radius: 8px;
   margin: 0 12px 0 0;
   width: ${({ width }) => width}%;
@@ -646,7 +653,168 @@ const TrendValue = styled.div`
   color: #444;
 `;
 
+// Additional styled components for enhanced features
+const TrendBar = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 1rem 0;
+`;
 
+const TrendRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const HeatMapGrid = styled.div`
+  display: grid;
+  grid-template-columns: 120px repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+`;
+
+const HeatMapHeader = styled.div`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+`;
+
+const HeatMapRow = styled.div`
+  display: contents;
+`;
+
+const HeatMapLabel = styled.div`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+`;
+
+const HeatMapCell = styled.div<{ score: number }>`
+  background: ${props => {
+    const intensity = props.score / 5;
+    return intensity > 0.7 ? '#27ae60' : 
+           intensity > 0.5 ? '#f39c12' : '#e74c3c';
+  }};
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const AnonymityAlert = styled.div`
+  background: #ffe9e9;
+  color: #e74c3c;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ffcdd2;
+`;
+
+// Marvin AI Coming Soon Section Additional Styles
+const BackgroundDecoration = styled.div`
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at center, rgba(85, 42, 71, 0.05) 0%, rgba(85, 42, 71, 0) 70%);
+  border-radius: 50%;
+`;
+
+const BackgroundDecoration2 = styled.div`
+  position: absolute;
+  bottom: -30px;
+  left: -30px;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle at center, rgba(85, 42, 71, 0.03) 0%, rgba(85, 42, 71, 0) 60%);
+  border-radius: 50%;
+`;
+
+const MarvinAIContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
+  
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+`;
+
+const MarvinAILeft = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const MarvinAIRight = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const MarvinAIHeader = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const MarvinAIDescription = styled.div`
+  color: #4b5563;
+  fontSize: 0.9rem;
+  lineHeight: 1.5;
+`;
+
+const FeaturesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+`;
+
+const FeatureCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+`;
+
+const FeatureTitle = styled.h3`
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+`;
+
+const FeatureDescription = styled.p`
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+`;
 
 // Type for filter state
 interface DashboardFilters {
@@ -657,8 +825,6 @@ interface DashboardFilters {
 }
 
 const AdminDashboard: React.FC = () => {
-  // const navigate = useNavigate();
-  
   // Apply custom scrollbar styling
   return (
     <>
@@ -754,7 +920,7 @@ const AdminDashboardContent: React.FC = () => {
     });
   }, []);
   
-  // Filter state
+  // State for filters
   const [filters, setFilters] = useState<DashboardFilters>({
     site: 'all',
     department: 'all',
@@ -875,8 +1041,6 @@ const AdminDashboardContent: React.FC = () => {
     { id: 5, text: 'Manager Feedback score critically low at 2.5', severity: 'low' as const }
   ];
 
-
-
   return (
     <AdminLayout>
       <div className="dashboard-bg">
@@ -896,9 +1060,9 @@ const AdminDashboardContent: React.FC = () => {
             <MetricItem>
               <FaChartLine /> {responseRate}% response rate
             </MetricItem>
-            {/* <MetricItem>
+            <MetricItem>
               <FaUsers /> {participationRate}% participation rate
-            </MetricItem> */}
+            </MetricItem>
           </MetricsRow>
         </WelcomeBackSection>
         
@@ -933,7 +1097,7 @@ const AdminDashboardContent: React.FC = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <KPICard key={index} onClick={() => navigate(stat.link)}>
+              <KpiCard key={index} onClick={() => navigate(stat.link)}>
                 <KPIIcon>
                   <Icon />
                 </KPIIcon>
@@ -944,7 +1108,7 @@ const AdminDashboardContent: React.FC = () => {
                 <ViewDetails>
                   View details <FaChevronRight size={10} />
                 </ViewDetails>
-              </KPICard>
+              </KpiCard>
             );
           })}
         </div>
@@ -1429,8 +1593,6 @@ const AdminDashboardContent: React.FC = () => {
                   {issue.text}
                 </FlaggedItem>
               ))}
-              <FlaggedItem color="#f06292"><span>❗</span> Work-Life Balance flagged in multiple sites</FlaggedItem>
-              <FlaggedItem color="#ff9800"><span>⚠️</span> Manager Feedback score critically low at 2.5</FlaggedItem>
             </FlaggedList>
           </QuarterWidthCard>
           
@@ -1668,9 +1830,9 @@ const AdminDashboardContent: React.FC = () => {
       </div>
     </AdminLayout>
   );
-}
+};
 
-
+export default AdminDashboard;
 
 const TrendContainer = styled.div`
   background: white;
@@ -1904,50 +2066,8 @@ const MarvinAICard = styled.div`
   overflow: hidden;
 `;
 
-const MarvinAIContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  align-items: flex-start;
-  
-  @media (max-width: 992px) {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-`;
-
-const MarvinAILeft = styled.div`
-  flex: 0 0 300px;
-  
-  @media (max-width: 992px) {
-    flex: 1;
-    width: 100%;
-  }
-`;
-
-const MarvinAIRight = styled.div`
-  flex: 1;
-  
-  @media (max-width: 992px) {
-    width: 100%;
-  }
-`;
-
-const MarvinAIHeader = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: 1.2rem;
-  position: relative;
-  z-index: 2;
-  
-  @media (max-width: 992px) {
-    align-items: center;
-  }
-`;
-
 const ComingSoonBadge = styled.div`
-  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: white;
   font-size: 0.8rem;
   font-weight: 600;
@@ -1963,7 +2083,7 @@ const MarvinAITitle = styled.h2`
   font-size: 1.8rem;
   font-weight: 700;
   margin: 0 0 0.6rem 0;
-  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: left;
@@ -1973,61 +2093,11 @@ const MarvinAITitle = styled.h2`
   }
 `;
 
-const MarvinAIDescription = styled.p`
-  color: #4b5563;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  text-align: left;
-  margin: 0;
-  
-  @media (max-width: 992px) {
-    text-align: center;
-    max-width: 650px;
-    margin: 0 auto;
-  }
-`;
-
-const FeaturesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-top: 0;
-  position: relative;
-  z-index: 2;
-  
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const FeatureCard = styled.div`
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 10px;
-  padding: 1.2rem;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
-  z-index: 2;
-  
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-  }
-`;
-
 const FeatureIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2036,149 +2106,26 @@ const FeatureIcon = styled.div`
   margin-bottom: 0.8rem;
 `;
 
-const FeatureTitle = styled.h3`
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  color: #1f2937;
-`;
-
-const FeatureDescription = styled.p`
-  font-size: 0.85rem;
-  color: #666;
-  margin: 0;
-  line-height: 1.4;
-`;
-
 const NotifyButton = styled.button`
-  background: linear-gradient(135deg, ${props => props.theme.primaryColor || '#552a47'} 0%, ${props => props.theme.secondaryColor || '#3B1D31'} 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: white;
   border: none;
-  border-radius: 20px;
-  padding: 0.7rem 1.8rem;
+  border-radius: 10px;
+  padding: 0.8rem 1.5rem;
   font-size: 0.9rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 1.5rem 0 0;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 3px 8px rgba(85, 42, 71, 0.15);
-  
-  @media (max-width: 992px) {
-    margin: 1.5rem auto 0;
-  }
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(85, 42, 71, 0.2);
-  }
-`;
-
-const BackgroundDecoration = styled.div`
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(85, 42, 71, 0.1) 0%, rgba(85, 42, 71, 0) 70%);
-  top: -200px;
-  right: -100px;
-  z-index: 1;
-`;
-
-const BackgroundDecoration2 = styled.div`
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(59, 29, 49, 0.1) 0%, rgba(59, 29, 49, 0) 70%);
-  bottom: -150px;
-  left: -100px;
-  z-index: 1;
-`;
-
-const KPICard = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
-  height: 100%;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  }
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, #552a47 0%, #7a4e7a 100%);
-  }
-`;
-
-const KPIIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(85, 42, 71, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  
-  svg {
-    color: #552a47;
-    font-size: 20px;
+    box-shadow: 0 6px 16px rgba(85, 42, 71, 0.3);
   }
 `;
 
 const KPIContent = styled.div`
   flex: 1;
 `;
-
-const KPIValue = styled.div`
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-`;
-
-const KPILabel = styled.div`
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-`;
-
-const ViewDetails = styled.div`
-  font-size: 12px;
-  color: #4a5568;
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-  background: rgba(0, 0, 0, 0.03);
-  padding: 6px 10px;
-  border-radius: 4px;
-  width: fit-content;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(85, 42, 71, 0.1);
-    color: #552a47;
-  }
-`;
-
-export default AdminDashboard;

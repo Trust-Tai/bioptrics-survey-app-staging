@@ -109,12 +109,13 @@ const Button = styled.button<{ primary?: boolean }>`
   cursor: pointer;
   transition: all 0.2s;
   
-  background: ${props => props.primary ? '#552a47' : 'transparent'};
-  color: ${props => props.primary ? 'white' : '#666'};
-  border: ${props => props.primary ? 'none' : '1px solid #e2e8f0'};
+  background: ${props => props.primary ? props.theme.secondaryColor : 'transparent'};
+  color: ${props => props.primary ? 'white' : props.theme.textColor};
+  border: ${props => props.primary ? 'none' : `1px solid ${props.theme.accentColor}`};
   
   &:hover {
-    background: ${props => props.primary ? '#693658' : '#f7fafc'};
+    background: ${props => props.primary ? props.theme.primaryColor : `${props.theme.accentColor}20`};
+    color: ${props => props.primary ? 'white' : props.theme.primaryColor};
   }
   
   @media (max-width: 768px) {
@@ -191,10 +192,7 @@ const AnalyticsFilterBar: React.FC<AnalyticsFilterBarProps> = ({
       <FilterHeader onClick={toggleFilters}>
         <FiFilter />
         <span>Filter Analytics</span>
-        {/* Only show toggle icon on mobile */}
-        <div style={{ marginLeft: 'auto', display: 'none', '@media (max-width: 768px)': { display: 'block' } }}>
-          {isOpen ? <FiChevronUp /> : <FiChevronDown />}
-        </div>
+        {/* Only show toggle icon on mobile - handled by CSS media queries in FilterHeader */}
       </FilterHeader>
       
       <FilterContent isOpen={isOpen}>

@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { ThemeProvider } from 'styled-components';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { FaFileExport, FaFilePdf, FaFileExcel, FaFileCsv } from 'react-icons/fa';
+import { useTheme } from '/imports/contexts/ThemeContext';
 
 const StyledButton = styled.button`
   padding: 8px 16px;
-  background-color: #552a47;
-  color: white;
+  background-color: ${({ theme }) => theme.primaryColor || '#552a47'};
+  color: white !important;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
+  transition: all 0.2s;
   
   &:hover {
-    background-color: #46223b; /* Slightly darker shade for hover */
+    background-color: ${({ theme }) => theme.secondaryColor || '#46223b'};
+  }
+
+  /* Ensure all child elements also have white text */
+  * {
+    color: white !important;
   }
 `;
 
@@ -21,20 +28,46 @@ const StyledSelect = styled.select`
   width: 100%;
   padding: 8px;
   border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: white;
+  border: 1px solid ${({ theme }) => theme.primaryColor ? `${theme.primaryColor}40` : '#ddd'};
+  background-color: ${({ theme }) => theme.backgroundColor || 'white'};
+  color: ${({ theme }) => theme.textColor || '#333'};
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primaryColor || '#552a47'};
+    box-shadow: 0 0 0 1px ${({ theme }) => theme.primaryColor || '#552a47'};
+  }
 `;
 
 const StyledDateInput = styled.input`
   width: 100%;
   padding: 8px;
   border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: white;
+  border: 1px solid ${({ theme }) => theme.primaryColor ? `${theme.primaryColor}40` : '#ddd'};
+  background-color: ${({ theme }) => theme.backgroundColor || 'white'};
+  color: ${({ theme }) => theme.textColor || '#333'};
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primaryColor || '#552a47'};
+    box-shadow: 0 0 0 1px ${({ theme }) => theme.primaryColor || '#552a47'};
+  }
 `;
 
 const Container = styled.div`
   padding: 20px;
+  background: ${({ theme }) => theme.backgroundColor || '#f8f9fa'};
+  min-height: 100vh;
+`;
+
+const PageTitle = styled.h1`
+  color: ${({ theme }) => theme.primaryColor || '#552a47'};
+  margin-bottom: 8px;
+`;
+
+const PageDescription = styled.p`
+  color: ${({ theme }) => theme.textColor || '#2e2e2e'};
+  margin-bottom: 20px;
 `;
 
 const ExportOptionsContainer = styled.div`
@@ -45,9 +78,10 @@ const ExportOptionsContainer = styled.div`
 `;
 
 const StyledCard = styled.div`
-  background-color: white;
+  background-color: ${({ theme }) => theme.accentColor || '#A9A59D'};
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid ${({ theme }) => theme.primaryColor ? `${theme.primaryColor}20` : 'rgba(85, 42, 71, 0.2)'};
   padding: 20px;
   height: 100%;
   display: flex;
@@ -62,12 +96,13 @@ const CardHeader = styled.div`
   svg {
     margin-right: 10px;
     font-size: 1.5rem;
-    color: #552a47;
+    color: ${({ theme }) => theme.primaryColor || '#552a47'};
   }
   
   h3 {
     margin: 0;
     font-size: 1.2rem;
+    color: ${({ theme }) => theme.primaryColor || '#552a47'};
   }
 `;
 
@@ -82,6 +117,7 @@ const FormGroup = styled.div`
     display: block;
     margin-bottom: 5px;
     font-weight: 500;
+    color: ${({ theme }) => theme.textColor || '#333'};
   }
 `;
 
@@ -99,6 +135,7 @@ const FormatTitle = styled.h3`
   margin-bottom: 16px;
   font-size: 1.2rem;
   font-weight: 500;
+  color: ${({ theme }) => theme.primaryColor || '#552a47'};
 `;
 
 const FormatContainer = styled.div`
@@ -120,8 +157,8 @@ const FormatOption = styled.div<{ selected: boolean; color: string }>`
   align-items: center;
   padding: 12px 16px;
   border-radius: 8px;
-  background-color: ${props => props.selected ? `${props.color}10` : 'white'};
-  border: 1px solid ${props => props.selected ? props.color : '#e0e0e0'};
+  background-color: ${props => props.selected ? `${props.color}10` : props.theme.backgroundColor || 'white'};
+  border: 1px solid ${props => props.selected ? props.color : props.theme.primaryColor ? `${props.theme.primaryColor}40` : '#e0e0e0'};
   cursor: pointer;
   transition: all 0.2s ease;
   
@@ -143,15 +180,17 @@ const FormatOption = styled.div<{ selected: boolean; color: string }>`
   .format-name {
     font-weight: 500;
     margin-bottom: 2px;
+    color: ${({ theme }) => theme.textColor || '#333'};
   }
   
   .format-desc {
     font-size: 0.85rem;
-    color: #666;
+    color: ${({ theme }) => theme.textColor ? `${theme.textColor}80` : '#666'};
   }
 `;
 
 const AnalyticsExportReports: React.FC = () => {
+  const themeContext = useTheme();
   const [reportType, setReportType] = useState('summary');
   const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({ start: null, end: null });
   const [format, setFormat] = useState('pdf');
@@ -184,87 +223,89 @@ const AnalyticsExportReports: React.FC = () => {
 
   return (
     <AdminLayout>
-      <Container>
-        <div>
-          <h1>Export Reports</h1>
-          <p>Generate and export analytics reports in various formats.</p>
-        </div>
-        
-        <ExportOptionsContainer>
-          <StyledCard>
-            <CardHeader>
-              <FaFileExport />
-              <h3>Report Configuration</h3>
-            </CardHeader>
-            <CardContent>
-              <FormGroup>
-                <label>Report Type</label>
-                <StyledSelect
-                  value={reportType}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setReportType(e.target.value)}
-                >
-                  {reportTypes.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </StyledSelect>
-              </FormGroup>
-              
-              <FormGroup>
-                <label>Date Range</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <StyledDateInput
-                    type="date"
-                    value={dateRange.start ? dateRange.start.toISOString().split('T')[0] : ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateRange({ ...dateRange, start: e.target.value ? new Date(e.target.value) : null })}
-                  />
-                  <StyledDateInput
-                    type="date"
-                    value={dateRange.end ? dateRange.end.toISOString().split('T')[0] : ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateRange({ ...dateRange, end: e.target.value ? new Date(e.target.value) : null })}
-                  />
-                </div>
-              </FormGroup>
-              
-              <FormGroup>
-                <label>Include Filters</label>
-                <StyledSelect defaultValue="all">
-                  <option value="all">All Data</option>
-                  <option value="department">By Department</option>
-                  <option value="role">By Role</option>
-                  <option value="location">By Location</option>
-                </StyledSelect>
-              </FormGroup>
-            </CardContent>
-          </StyledCard>
+      <ThemeProvider theme={themeContext}>
+        <Container>
+          <div>
+            <PageTitle>Export Reports</PageTitle>
+            <PageDescription>Generate and export analytics reports in various formats.</PageDescription>
+          </div>
           
-          <StyledCard>
-            <FormatTitle>Export Format</FormatTitle>
-            <FormatContainer>
-              <p>Select the file format for your exported report:</p>
-              <FormatOptionContainer>
-                {exportFormats.map((exportFormat) => (
-                  <FormatOption
-                    key={exportFormat.value}
-                    selected={format === exportFormat.value}
-                    color={exportFormat.color}
-                    onClick={() => setFormat(exportFormat.value)}
+          <ExportOptionsContainer>
+            <StyledCard>
+              <CardHeader>
+                <FaFileExport />
+                <h3>Report Configuration</h3>
+              </CardHeader>
+              <CardContent>
+                <FormGroup>
+                  <label>Report Type</label>
+                  <StyledSelect
+                    value={reportType}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setReportType(e.target.value)}
                   >
-                    <exportFormat.icon style={{ color: exportFormat.color }} />
-                    <div className="format-info">
-                      <div className="format-name">{exportFormat.label}</div>
-                      <div className="format-desc">Export as {exportFormat.label}</div>
-                    </div>
-                  </FormatOption>
-                ))}
-              </FormatOptionContainer>
-              
-              <ButtonContainer>
-                <StyledButton onClick={handleExport}>Generate Report</StyledButton>
-              </ButtonContainer>
-            </FormatContainer>
-          </StyledCard>
-        </ExportOptionsContainer>
-      </Container>
+                    {reportTypes.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </StyledSelect>
+                </FormGroup>
+                
+                <FormGroup>
+                  <label>Date Range</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <StyledDateInput
+                      type="date"
+                      value={dateRange.start ? dateRange.start.toISOString().split('T')[0] : ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateRange({ ...dateRange, start: e.target.value ? new Date(e.target.value) : null })}
+                    />
+                    <StyledDateInput
+                      type="date"
+                      value={dateRange.end ? dateRange.end.toISOString().split('T')[0] : ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateRange({ ...dateRange, end: e.target.value ? new Date(e.target.value) : null })}
+                    />
+                  </div>
+                </FormGroup>
+                
+                <FormGroup>
+                  <label>Include Filters</label>
+                  <StyledSelect defaultValue="all">
+                    <option value="all">All Data</option>
+                    <option value="department">By Department</option>
+                    <option value="role">By Role</option>
+                    <option value="location">By Location</option>
+                  </StyledSelect>
+                </FormGroup>
+              </CardContent>
+            </StyledCard>
+            
+            <StyledCard>
+              <FormatTitle>Export Format</FormatTitle>
+              <FormatContainer>
+                <PageDescription>Select the file format for your exported report:</PageDescription>
+                <FormatOptionContainer>
+                  {exportFormats.map((exportFormat) => (
+                    <FormatOption
+                      key={exportFormat.value}
+                      selected={format === exportFormat.value}
+                      color={exportFormat.color}
+                      onClick={() => setFormat(exportFormat.value)}
+                    >
+                      <exportFormat.icon style={{ color: exportFormat.color }} />
+                      <div className="format-info">
+                        <div className="format-name">{exportFormat.label}</div>
+                        <div className="format-desc">Export as {exportFormat.label}</div>
+                      </div>
+                    </FormatOption>
+                  ))}
+                </FormatOptionContainer>
+                
+                <ButtonContainer>
+                  <StyledButton onClick={handleExport}>Generate Report</StyledButton>
+                </ButtonContainer>
+              </FormatContainer>
+            </StyledCard>
+          </ExportOptionsContainer>
+        </Container>
+      </ThemeProvider>
     </AdminLayout>
   );
 };

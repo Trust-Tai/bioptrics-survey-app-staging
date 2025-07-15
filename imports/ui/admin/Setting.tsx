@@ -19,8 +19,8 @@ const PageContainer = styled.div`
 `;
 
 const Container = styled.div<{theme: any}>`
-  background: ${({ theme }) => theme.backgroundColor};
-  color: ${({ theme }) => theme.textColor};
+  background: var(--color-background);
+  color: var(--color-text);
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
@@ -36,12 +36,13 @@ const PageHeader = styled.div`
 `;
 
 const BackLink = styled.a<{theme: any}>`
-  color: ${({ theme }) => theme.primaryColor};
+  color: var(--color-primary);
   font-size: 14px;
   text-decoration: none;
   cursor: pointer;
   &:hover {
     text-decoration: underline;
+    color: var(--color-secondary);
   }
 `;
 
@@ -49,27 +50,27 @@ const PageTitle = styled.h1<{theme: any}>`
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 24px;
-  color: #28211e;
+  color: var(--color-text);
 `;
 
 const Card = styled.div<{theme: any}>`
-  background: #fff;
+  background: var(--color-background);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 24px;
   margin-bottom: 24px;
-  border: 1px solid #e5d6c7;
+  border: 1px solid var(--color-accent);
 `;
 
 const CardTitle = styled.h3<{theme: any}>`
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #28211e;
+  color: var(--color-text);
 `;
 
 const CardContent = styled.div<{theme: any}>`
-  color: ${({ theme }) => theme.textColor};
+  color: var(--color-text);
 `;
 
 const FormGroup = styled.div`
@@ -80,28 +81,29 @@ const Label = styled.label<{theme: any}>`
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #28211e;
+  color: var(--color-text);
 `;
 
 const Input = styled.input<{theme: any}>`
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid ${({ theme }) => `${theme.primaryColor}33`};
+  border: 1px solid var(--color-accent);
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.3s;
   max-width: 400px;
-  background: ${({ theme }) => theme.backgroundColor};
-  color: ${({ theme }) => theme.textColor};
+  background: var(--color-background);
+  color: var(--color-text);
   
   &:focus {
-    border-color: ${({ theme }) => theme.primaryColor};
+    border-color: var(--color-primary);
     outline: none;
+    box-shadow: 0 0 0 2px rgba(84, 42, 70, 0.1);
   }
 `;
 
 const Button = styled.button<{theme: any}>`
-  background-color: #552a47;
+  background-color: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -113,13 +115,17 @@ const Button = styled.button<{theme: any}>`
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   margin-top: 10px;
   &:hover {
-    background-color: ${({ theme }) => theme.secondaryColor};
-    color: ${({ theme }) => theme.textColor};
+    background-color: var(--color-secondary);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
 const ErrorMessage = styled.div<{theme: any}>`
-  color: ${({ theme }) => theme.errorColor};
+  color: var(--color-error);
   font-size: 14px;
   margin-top: 8px;
 `;
@@ -138,7 +144,7 @@ const PasswordRequirements = styled.ul`
   margin-top: 8px;
   padding-left: 20px;
   font-size: 12px;
-  color: #777;
+  color: var(--color-accent);
 `;
 
 const RequirementItem = styled.li`
@@ -317,17 +323,6 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
     setTimeout(() => setSuccess(false), 3000);
   };
   
-  // Using the styled components defined at the file level
-
-  // Card with icon layout
-  const CardWithIcon = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 20px 15px;
-  `;
-
   // Main settings view with cards listing available options
   const renderMainSettings = () => (
     <SettingsGrid>
@@ -367,9 +362,9 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
         </CardWithIcon>
       </SettingCard>
       
-      <SettingCard style={{ cursor: 'default' }}>
+      <SettingCard style={{ cursor: 'default', opacity: 0.7 }}>
         <CardWithIcon>
-          <SettingIcon data-icon-container style={{ backgroundColor: 'rgba(150, 150, 150, 0.15)', color: '#888' }}>
+          <SettingIcon data-icon-container style={{ backgroundColor: 'rgba(150, 150, 150, 0.15)', color: 'var(--color-accent)' }}>
             <FaPlug />
           </SettingIcon>
           <SettingTitle>Other Settings</SettingTitle>
@@ -377,13 +372,13 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
             Coming soon: notification preferences, data retention, and integrations
           </SettingDescription>
           <div style={{ marginTop: '15px', width: '100%', textAlign: 'left' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#888', fontSize: '0.9em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: 'var(--color-accent)', fontSize: '0.9em' }}>
               <FaBell style={{ marginRight: '8px' }} /> Notification settings
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#888', fontSize: '0.9em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: 'var(--color-accent)', fontSize: '0.9em' }}>
               <FaDatabase style={{ marginRight: '8px' }} /> Data retention policies
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', color: '#888', fontSize: '0.9em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', color: 'var(--color-accent)', fontSize: '0.9em' }}>
               <FaPlug style={{ marginRight: '8px' }} /> Integration configurations
             </div>
           </div>
@@ -445,7 +440,7 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
             <Button 
               type="button" 
               onClick={() => navigate('/admin/settings')} 
-              style={{ backgroundColor: '#6e5a67' }}
+              style={{ backgroundColor: 'var(--color-secondary)' }}
             >
               Back to Settings
             </Button>
@@ -461,14 +456,14 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
       <CardTitle>Choose Time Zone</CardTitle>
       <CardContent>
         {!timezoneLoaded ? (
-          <div style={{ padding: '20px 0', color: '#666' }}>
+          <div style={{ padding: '20px 0', color: 'var(--color-accent)' }}>
             <p>Detecting your system time zone...</p>
           </div>
         ) : (
           <>
             <FormGroup>
               <Label htmlFor="timezone">Select your preferred time zone</Label>
-              <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>
+              <div style={{ marginBottom: '8px', fontSize: '14px', color: 'var(--color-accent)' }}>
                 {isDefaultTimezone 
                   ? "Currently using your system's default time zone" 
                   : "Currently using a custom time zone setting"}
@@ -481,10 +476,11 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
                   width: '100%',
                   maxWidth: '400px',
                   padding: '10px 12px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-accent)',
                   borderRadius: '4px',
                   fontSize: '14px',
-                  backgroundColor: 'white'
+                  backgroundColor: 'var(--color-background)',
+                  color: 'var(--color-text)'
                 }}
               >
                 {timezones.map(tz => (
@@ -498,18 +494,18 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
             <div style={{ 
               marginTop: '16px', 
               padding: '12px',
-              backgroundColor: '#f0e8f2', 
+              backgroundColor: 'rgba(84, 42, 70, 0.1)', 
               borderRadius: '6px',
-              borderLeft: '4px solid #552a47'
+              borderLeft: '4px solid var(--color-primary)'
             }}>
               <p style={{ margin: '0', fontSize: '15px' }}>
-                <span style={{ fontWeight: 'bold', color: '#552a47' }}>
+                <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
                   {timezone === prevTimezone 
                     ? `System Default (${timezones.find(tz => tz.value === timezone)?.label || timezone})` 
                     : timezones.find(tz => tz.value === timezone)?.label || timezone}
                 </span>
               </p>
-              <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+              <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: 'var(--color-text)' }}>
                 {new Date().toLocaleString(undefined, {
                   timeZone: timezone,
                   year: 'numeric',
@@ -530,14 +526,14 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
                   onClick={() => {
                     setTimezone(prevTimezone);
                     setIsDefaultTimezone(true);
-                    localStorage.removeItem('userTimezone'); // Clear custom setting
+                    localStorage.removeItem('userTimezone');
                     setSuccess(true);
                     setTimeout(() => setSuccess(false), 3000);
                   }}
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#552a47',
+                    color: 'var(--color-primary)',
                     textDecoration: 'underline',
                     cursor: 'pointer',
                     padding: '8px 0',
@@ -553,7 +549,7 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
               <Button 
                 type="button" 
                 onClick={() => navigate('/admin/settings')}
-                style={{ backgroundColor: '#6e5a67' }}
+                style={{ backgroundColor: 'var(--color-secondary)' }}
               >
                 Back to Settings
               </Button>
@@ -563,9 +559,6 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
       </CardContent>
     </Card>
   );
-  
-  // Handler for theme change
-  // Removed theme management functions as they've been moved to UIPreferences component
   
   // UI Preferences settings - now uses the enhanced UIPreferences component
   const renderUiPreferences = () => {
@@ -590,7 +583,7 @@ const Setting: React.FC<SettingProps> = ({ view }) => {
             <Button 
               type="button" 
               onClick={() => navigate('/admin/settings')}
-              style={{ backgroundColor: '#6e5a67' }}
+              style={{ backgroundColor: 'var(--color-secondary)' }}
             >
               Back to Settings
             </Button>
@@ -609,20 +602,21 @@ const SettingsGrid = styled.div`
 `;
 
 const SettingCard = styled.div<{theme?: any}>`
-  background: #fff;
-  border: 1px solid #e5d6c7;
+  background: var(--color-background);
+  border: 1px solid var(--color-accent);
   border-radius: 8px;
   padding: 20px;
   transition: all 0.2s ease;
   height: 100%;
+  cursor: pointer;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     
     [data-icon-container] {
-      background: #552a47;
+      background: var(--color-primary);
       color: white;
     }
   }
@@ -632,28 +626,41 @@ const SettingIcon = styled.div<{theme?: any}>`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(85, 42, 71, 0.2);
-  color: #552a47;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
   font-size: 18px;
   transition: all 0.2s ease;
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background: color-mix(in srgb, var(--color-primary) 15%, transparent)) {
+    background: rgba(84, 42, 70, 0.15);
+  }
 `;
 
 const SettingTitle = styled.h3<{theme: any}>`
   font-size: 18px;
   margin: 0 0 8px 0;
-  color: #28211e;
+  color: var(--color-text);
   font-weight: 600;
 `;
 
 const SettingDescription = styled.p<{theme: any}>`
   font-size: 14px;
-  color: #6e5a67;
+  color: var(--color-accent);
   margin: 0;
   line-height: 1.5;
+`;
+
+const CardWithIcon = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 15px;
 `;
 
 // Render main settings list

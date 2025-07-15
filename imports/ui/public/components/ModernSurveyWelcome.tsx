@@ -422,18 +422,100 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
 
   // State for survey metadata
   const [loading, setLoading] = useState<boolean>(true);
+  // Add specific loading state for time calculation
+  const [timeCalculationComplete, setTimeCalculationComplete] = useState<boolean>(false);
+  
   const [metadata, setMetadata] = useState<{
     estimatedTime: string;
+    estimatedTimeSeconds: number;
     questionCount: number;
     sectionCount: number;
   }>({ 
     estimatedTime: '3-5',
+    estimatedTimeSeconds: 180, // Default 3 minutes in seconds
     questionCount: 8,
     sectionCount: 3
   });
+  
+  // State for dynamic time calculation from ModernSurveyContent
+  const [dynamicTimeData, setDynamicTimeData] = useState<{
+    totalEstimatedSeconds: number;
+    minutes: number;
+    questionCount: number;
+    timestamp: number;
+  } | null>(null);
 
   // Featured image for the header
   const logo = survey.logo || survey.image || null;
+  
+  // Effect to listen for the custom event from ModernSurveyContent
+  useEffect(() => {
+    if (survey._id) {
+      const handleTimeDataReady = (event: any) => {
+        const { surveyId, timeData } = event.detail;
+        
+        // Only process if this is for our survey
+        if (surveyId === survey._id) {
+          console.log('Received time data from event:', timeData);
+          
+          // Check if we already have this data to prevent unnecessary re-renders
+          if (!dynamicTimeData || 
+              dynamicTimeData.timestamp !== timeData.timestamp ||
+              dynamicTimeData.totalEstimatedSeconds !== timeData.totalEstimatedSeconds) {
+            
+            console.log('Time data changed, updating state');
+            setDynamicTimeData(timeData);
+            setTimeCalculationComplete(true);
+          } else {
+            console.log('Time data unchanged, skipping update');
+          }
+        }
+      };
+      
+      // Add event listener
+      window.addEventListener('survey-time-data-ready', handleTimeDataReady);
+      
+      // Clean up
+      return () => {
+        window.removeEventListener('survey-time-data-ready', handleTimeDataReady);
+      };
+    }
+  }, [survey._id, dynamicTimeData]);
+  
+  // Effect to check for dynamic time data from ModernSurveyContent
+  useEffect(() => {
+    if (survey._id) {
+      try {
+        // Check if we have time data in localStorage
+        const surveyTimeKey = `survey_time_${survey._id}`;
+        const storedTimeData = localStorage.getItem(surveyTimeKey);
+        
+        if (storedTimeData) {
+          const timeData = JSON.parse(storedTimeData);
+          console.log(`Found stored time data for survey ${survey._id}:`, timeData);
+          
+          // Check if the data is recent (within the last hour)
+          const now = new Date().getTime();
+          const dataAge = now - timeData.timestamp;
+          const isRecent = dataAge < 3600000; // 1 hour in milliseconds
+          
+          if (isRecent) {
+            // Add a small delay to ensure UI is ready
+            setTimeout(() => {
+              setDynamicTimeData(timeData);
+              // Mark time calculation as complete since we have valid data
+              setTimeCalculationComplete(true);
+              console.log(`Using dynamic time data: ${timeData.totalEstimatedSeconds} seconds (${timeData.minutes} minutes)`);
+            }, 100);
+          } else {
+            console.log('Stored time data is too old, will recalculate');
+          }
+        }
+      } catch (error) {
+        console.error('Error reading survey time data from localStorage:', error);
+      }
+    }
+  }, [survey._id]);
 
   // Fetch survey metadata
   useEffect(() => {
@@ -441,20 +523,83 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
       setLoading(true);
       console.log('Fetching survey metadata for survey ID:', survey._id);
       
+      // First get the survey metadata for basic info
       Meteor.call('getSurveyMetadata', survey._id, (error: any, result: any) => {
         if (error) {
           console.error('Error fetching survey metadata:', error);
+          setLoading(false);
         } else if (result) {
           console.log('Received survey metadata:', result);
-          setMetadata({
-            estimatedTime: result.estimatedTime || '3-5',
-            questionCount: result.questionCount || 8,
-            sectionCount: result.sectionCount || 3
-          });
+          
+          // Get all question IDs from the survey
+          if (result.questionIds && result.questionIds.length > 0) {
+            // Now fetch all question documents to calculate time directly
+            Meteor.call('getQuestionDocuments', result.questionIds, (questionError: any, questionDocs: any) => {
+              if (questionError) {
+                console.error('Error fetching question documents:', questionError);
+                // Fall back to the metadata from server
+                setMetadata({
+                  estimatedTime: result.estimatedTime || '3-5',
+                  estimatedTimeSeconds: result.estimatedTimeSeconds || 180,
+                  questionCount: result.questionCount || 8,
+                  sectionCount: result.sectionCount || 3
+                });
+              } else if (questionDocs && questionDocs.length > 0) {
+                // Calculate total time directly from question documents
+                const totalEstimatedSeconds = questionDocs.reduce((total: number, doc: any) => {
+                  const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
+                  console.log(`Question ${doc._id}: ${seconds} seconds`);
+                  return total + seconds;
+                }, 0);
+                
+                // Add 30 seconds buffer for survey overhead (reading intro, etc.)
+                const totalWithBuffer = totalEstimatedSeconds + 30;
+                console.log('Total seconds with buffer:', totalWithBuffer);
+                
+                const minutes = Math.ceil(totalWithBuffer / 60);
+                
+                // Log with the requested format
+                console.log(`Amit All Question time for main screen: ${totalWithBuffer} seconds (${minutes} minutes)`);
+                
+                // Store the calculated values in state
+                setMetadata({
+                  estimatedTime: `${minutes}`,
+                  estimatedTimeSeconds: totalWithBuffer,
+                  questionCount: questionDocs.length,
+                  sectionCount: result.sectionCount || 3
+                });
+                
+                // Store in localStorage for potential use by other components
+                try {
+                  const surveyTimeKey = `survey_time_${survey._id}`;
+                  const timeData = {
+                    surveyId: survey._id,
+                    totalEstimatedSeconds: totalWithBuffer,
+                    minutes,
+                    questionCount: questionDocs.length,
+                    timestamp: new Date().getTime()
+                  };
+                  localStorage.setItem(surveyTimeKey, JSON.stringify(timeData));
+                  
+                  // Also update dynamicTimeData state to ensure UI consistency
+                  setDynamicTimeData(timeData);
+                  
+                  // Mark time calculation as complete
+                  setTimeCalculationComplete(true);
+                  console.log('Time calculation complete, updating UI...');
+                } catch (storageError) {
+                  console.error('Error storing survey time data:', storageError);
+                }
+              }
+              setLoading(false);
+            });
+          } else {
+            setLoading(false);
+          }
         } else {
           console.warn('No result received from getSurveyMetadata');
+          setLoading(false);
         }
-        setLoading(false);
       });
     }
   }, [survey._id]);
@@ -502,15 +647,36 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             <StatIcon>
               <FaRegClock size={20} />
             </StatIcon>
-            <StatValue>{loading ? '...' : estimatedTime}</StatValue>
-            <StatLabel>Minutes</StatLabel>
+            <StatValue>
+              {loading ? '...' : 
+                // Only show calculated time when calculation is complete
+                timeCalculationComplete && dynamicTimeData ? 
+                  // Use memoized value to prevent re-renders
+                  dynamicTimeData.minutes : 
+                  // Show loading indicator while calculation is in progress
+                  !timeCalculationComplete ? '...' :
+                  Math.ceil(metadata.estimatedTimeSeconds / 60)
+              }
+            </StatValue>
+            <StatLabel>
+              Avg Minutes
+            </StatLabel>
           </StatCard>
           
           <StatCard>
             <StatIcon>
               <FaRegCheckCircle size={20} />
             </StatIcon>
-            <StatValue>{loading ? '...' : (totalQuestions || questionCount || survey.questionCount || 0)}</StatValue>
+            <StatValue>
+              {loading ? '...' : 
+                // Only show calculated question count when calculation is complete
+                timeCalculationComplete && dynamicTimeData ? 
+                  dynamicTimeData.questionCount : 
+                  // Show loading indicator while calculation is in progress
+                  !timeCalculationComplete ? '...' :
+                  (totalQuestions || metadata.questionCount || survey.questionCount || 0)
+              }
+            </StatValue>
             <StatLabel>Total questions</StatLabel>
           </StatCard>
           

@@ -15,10 +15,11 @@ import {
   ReferenceDot
 } from 'recharts';
 import { FiRefreshCw, FiSettings } from 'react-icons/fi';
+import { useTheme } from '/imports/contexts/ThemeContext';
 
 // Styled components
 const ChartContainer = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.accentColor};
   height: 100%;
   min-height: 380px;
 `;
@@ -33,13 +34,13 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.primaryColor};
   margin: 0;
 `;
 
 const ChartSubtitle = styled.p`
   font-size: 14px;
-  color: #666;
+  color: ${({ theme }) => theme.textColor};
   margin: 4px 0 0 0;
 `;
 
@@ -51,7 +52,7 @@ const ChartControls = styled.div`
 const IconButton = styled.button`
   background: none;
   border: none;
-  color: #666;
+  color: ${({ theme }) => theme.primaryColor};
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -60,38 +61,32 @@ const IconButton = styled.button`
   justify-content: center;
   
   &:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: ${({ theme }) => theme.primaryColor}20;
+    color: ${({ theme }) => theme.secondaryColor};
   }
 `;
 
 const CustomTooltipContainer = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.backgroundColor};
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   padding: 12px;
-  border: 1px solid #eaeaea;
+  border: 1px solid ${({ theme }) => theme.primaryColor}40;
 `;
 
 const TooltipDate = styled.div`
   font-weight: 600;
   margin-bottom: 8px;
   font-size: 14px;
+  color: ${({ theme }) => theme.primaryColor};
 `;
 
 const TooltipItem = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 4px;
+  gap: 8px;
   font-size: 13px;
-`;
-
-const ColorIndicator = styled.div<{ color: string }>`
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: ${props => props.color};
-  margin-right: 8px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 // Format date for tooltip display
@@ -112,9 +107,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <CustomTooltipContainer>
         <TooltipDate>{label}</TooltipDate>
         {payload.map((entry: any, index: number) => (
-          <TooltipItem key={`item-${index}`}>
-            <ColorIndicator color={entry.color} />
-            <span><strong>{entry.name}</strong>: {entry.value}</span>
+          <TooltipItem key={index}>
+            <div 
+              style={{ 
+                width: 12, 
+                height: 12, 
+                backgroundColor: entry.color, 
+                borderRadius: '50%' 
+              }} 
+            />
+            <span>{entry.name}: {entry.value}</span>
           </TooltipItem>
         ))}
       </CustomTooltipContainer>
@@ -138,6 +140,7 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
   title = "Response Trends", 
   subtitle = "Daily response and completion patterns" 
 }) => {
+  const theme = useTheme();
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -293,20 +296,20 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
         >
           <defs>
             <linearGradient id="colorResponses" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
+              <stop offset="5%" stopColor={theme.primaryColor} stopOpacity={0.8}/>
+              <stop offset="95%" stopColor={theme.primaryColor} stopOpacity={0.1}/>
             </linearGradient>
             <linearGradient id="colorCompletions" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#4CAF50" stopOpacity={0.1} />
+              <stop offset="5%" stopColor={theme.secondaryColor} stopOpacity={0.8}/>
+              <stop offset="95%" stopColor={theme.secondaryColor} stopOpacity={0.1}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
           <XAxis 
             dataKey="date" 
             tickFormatter={formatDate}
-            tick={{ fill: '#666', fontSize: 12 }}
-            axisLine={{ stroke: '#E0E0E0' }}
+            tick={{ fill: theme.textColor, fontSize: 12 }}
+            axisLine={{ stroke: theme.primaryColor + '60' }}
             tickLine={false}
             ticks={data.map(item => item.date)}
           />
@@ -314,7 +317,7 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
             domain={[0, 125]}
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: '#666' }}
+            tick={{ fontSize: 12, fill: theme.textColor }}
             ticks={[0, 25, 70, 125]}
           />
           <Tooltip content={<CustomTooltip />} />
@@ -325,20 +328,20 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
           <Area 
             type="monotone" 
             dataKey="responses" 
-            stroke="#8884d8" 
+            stroke={theme.primaryColor} 
             fillOpacity={1} 
             fill="url(#colorResponses)" 
             name="Responses"
-            activeDot={{ r: 6, fill: '#8884d8', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: theme.primaryColor, stroke: '#fff', strokeWidth: 2 }}
           />
           <Area 
             type="monotone" 
             dataKey="completions" 
-            stroke="#4CAF50" 
+            stroke={theme.secondaryColor} 
             fillOpacity={1} 
             fill="url(#colorCompletions)" 
             name="Completions"
-            activeDot={{ r: 6, fill: '#4CAF50', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: theme.secondaryColor, stroke: '#fff', strokeWidth: 2 }}
           />
           
           {/* Reference dots for hover effect */}
@@ -348,7 +351,7 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
                 x={data[activeIndex].date}
                 y={data[activeIndex].responses}
                 r={6}
-                fill="#8884d8"
+                fill={theme.primaryColor}
                 stroke="#fff"
                 strokeWidth={2}
               />
@@ -356,7 +359,7 @@ const ResponseTrendsChart: React.FC<ResponseTrendsChartProps> = ({
                 x={data[activeIndex].date}
                 y={data[activeIndex].completions}
                 r={6}
-                fill="#4CAF50"
+                fill={theme.secondaryColor}
                 stroke="#fff"
                 strokeWidth={2}
               />

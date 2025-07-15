@@ -1477,26 +1477,59 @@ if (Meteor.isServer) {
           `${estimatedMinutes}` : 
           `${estimatedMinutes}-${upperBound}`;
         
+        console.log(`Amit All Question time for main screen: ${totalEstimatedTimeSeconds} seconds (${estimatedTimeRange} minutes)`);
+        
         console.log(`Survey ${surveyId} estimated time calculation:`, {
           questionCount,
           questionsWithTimeData,
+          questionsWithoutTimeData: questionCount - questionsWithTimeData,
+          avgTimePerQuestion: Math.round(avgTimePerQuestion),
           totalEstimatedTimeSeconds,
           estimatedMinutes,
           upperBound,
           estimatedTimeRange
         });
         
+        // Get all unique question IDs for client-side calculations
+        const allQuestionIds = Array.from(uniqueQuestionIds);
+        
         return {
           questionCount,
           sectionCount: sections.length,
           sections,
           estimatedTime: estimatedTimeRange,
-          estimatedTimeSeconds: totalEstimatedTimeSeconds
+          estimatedTimeSeconds: totalEstimatedTimeSeconds,
+          questionIds: allQuestionIds // Add this for client-side calculation
         };
       } catch (error: unknown) {
         console.error('Error getting survey metadata:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error getting survey metadata: ${errorMessage}`);
+      }
+    },
+    
+    // Method to get full question documents by IDs
+    async 'getQuestionDocuments'(questionIds: string[]) {
+      check(questionIds, [String]);
+      console.log(`getQuestionDocuments method called for ${questionIds.length} questions`);
+      
+      try {
+        // Find all questions with the given IDs
+        const questions = await Questions.find({ _id: { $in: questionIds } }).fetchAsync();
+        
+        console.log(`Retrieved ${questions.length} question documents from database`);
+        
+        // For each question, add the current version as a property for easier access
+        const enhancedQuestions = questions.map(question => {
+          const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+          return { ...question, currentVersion };
+        });
+        
+        return enhancedQuestions;
+      } catch (error: unknown) {
+        console.error('Error fetching question documents:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error fetching question documents: ${errorMessage}`);
       }
     },
     
@@ -1543,13 +1576,16 @@ if (Meteor.isServer) {
         }).length;
         
         // Calculate estimated time (roughly 30 seconds per question)
-        const estimatedMinutes = Math.max(1, Math.round(questionCount * 0.5));
+        const totalEstimatedSeconds = questionCount * 30;
         
+        // Return the metadata
         return {
-          questionCount,
-          requiredQuestionCount,
-          estimatedTime: `~${estimatedMinutes}`,
-          title: sectionTitle || sectionId
+          questionCount: sectionQuestions.length,
+          requiredQuestionCount: requiredQuestionCount,
+          estimatedTime: `~${Math.max(1, Math.round(totalEstimatedSeconds / 60))}`,
+          estimatedTimeSeconds: totalEstimatedSeconds,
+          questionIds: sectionQuestions.map(q => q._id),
+          questionDetails: sectionQuestions
         };
       } catch (error: unknown) {
         console.error('Error getting section metadata:', error);

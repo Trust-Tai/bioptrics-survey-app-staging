@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { DeviceUsageData } from '../../../surveys/api/deviceUsageMethods';
-import { FiRefreshCw, FiSettings } from 'react-icons/fi';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { FiSmartphone, FiMonitor, FiTablet } from 'react-icons/fi';
+import { useTheme } from '/imports/contexts/ThemeContext';
 
-// Use the imported DeviceUsageData interface instead of defining a local one
+interface DeviceUsageData {
+  name: string;
+  value: number;
+  count: number;
+  color: string;
+  deviceType?: string; // Add deviceType as optional property
+}
 
 // Props for the component
 interface DeviceUsageChartProps {
@@ -15,16 +21,13 @@ interface DeviceUsageChartProps {
 
 // Styled components
 const ChartContainer = styled.div`
-  background: #fff;
-  border-radius: 12px;
+  background: ${({ theme }) => theme.accentColor};
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  min-height: 300px;
 `;
 
 const ChartHeader = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 `;
@@ -32,38 +35,56 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.primaryColor};
   margin: 0;
 `;
 
 const ChartSubtitle = styled.p`
   font-size: 14px;
-  color: #666;
+  color: ${({ theme }) => theme.textColor};
   margin: 4px 0 0 0;
 `;
 
-const ChartControls = styled.div`
-  display: flex;
-  gap: 8px;
+const CustomTooltipContainer = styled.div`
+  background: ${({ theme }) => theme.backgroundColor};
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.primaryColor}40;
 `;
 
-const IconButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #666;
+const TooltipItem = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border-radius: 4px;
-  
-  &:hover {
-    background: #f5f5f5;
-    color: #333;
-  }
+  gap: 8px;
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
+const LegendContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const LegendColor = styled.div<{ color: string }>`
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: ${props => props.color};
+`;
+
+// Styled components
 const ChartContent = styled.div`
   flex: 1;
   display: flex;
@@ -129,19 +150,6 @@ const LoadingOverlay = styled.div`
   min-height: 200px;
 `;
 
-// Colors for the chart
-const COLORS = ['#4285F4', '#F5A623', '#34A853'];
-
-// Device names mapping
-const DEVICE_NAMES: Record<string, string> = {
-  desktop: 'Desktop',
-  mobile: 'Mobile',
-  tablet: 'Tablet'
-};
-
-// Device order for consistent display
-const DEVICE_ORDER = ['desktop', 'mobile', 'tablet'];
-
 /**
  * Generate dummy data for device usage when real data is not available
  */
@@ -149,19 +157,25 @@ const generateDummyData = (): DeviceUsageData[] => {
   // Generate data that matches the reference design
   return [
     {
+      name: 'Desktop',
       deviceType: 'desktop',
       count: 114,
-      percentage: 100
+      value: 100,
+      color: '#552a47'
     },
     {
+      name: 'Mobile',
       deviceType: 'mobile',
       count: 0,
-      percentage: 0
+      value: 0,
+      color: '#8B4A6B'
     },
     {
+      name: 'Tablet',
       deviceType: 'tablet',
       count: 0,
-      percentage: 0
+      value: 0,
+      color: '#552a4780'
     }
   ];
 };
@@ -173,6 +187,15 @@ const DeviceUsageChart: React.FC<DeviceUsageChartProps> = ({
   title = 'Device Usage',
   subtitle = 'Distribution of survey responses by device type'
 }) => {
+  const theme = useTheme();
+  
+  // Use theme colors for devices
+  const deviceColors = [
+    theme.primaryColor,
+    theme.secondaryColor,
+    theme.primaryColor + '80'
+  ];
+
   const [data, setData] = useState<DeviceUsageData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -217,19 +240,38 @@ const DeviceUsageChart: React.FC<DeviceUsageChartProps> = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div style={{ 
-          backgroundColor: '#fff', 
-          padding: '10px', 
-          border: '1px solid #ccc',
-          borderRadius: '4px'
-        }}>
-          <p style={{ margin: 0 }}><strong>{DEVICE_NAMES[data.deviceType]}</strong></p>
-          <p style={{ margin: 0 }}>{data.count} responses</p>
-          <p style={{ margin: 0 }}>{data.percentage}%</p>
-        </div>
+        <CustomTooltipContainer>
+          <TooltipItem>
+            <LegendColor color={data.color} />
+            <span>{data.name}: {data.value}% ({data.count} users)</span>
+          </TooltipItem>
+        </CustomTooltipContainer>
       );
     }
     return null;
+  };
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent < 0.05) return null; // Don't show labels for slices less than 5%
+    
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill={theme.backgroundColor}
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight={600}
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
   };
 
   return (
@@ -239,74 +281,36 @@ const DeviceUsageChart: React.FC<DeviceUsageChartProps> = ({
           <ChartTitle>{title}</ChartTitle>
           <ChartSubtitle>{subtitle}</ChartSubtitle>
         </div>
-        <ChartControls>
-          <IconButton 
-            title="Refresh data" 
-            onClick={() => {
-              setLoading(true);
-              console.log('Manually refreshing device usage data...');
-              fetchData();
-            }}
-          >
-            <FiRefreshCw size={16} />
-          </IconButton>
-          <IconButton title="Chart settings">
-            <FiSettings size={16} />
-          </IconButton>
-        </ChartControls>
       </ChartHeader>
       
-      <ChartContent>
-        {loading ? (
-          <LoadingOverlay>Loading device data...</LoadingOverlay>
-        ) : (
-          <>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="count"
-                >
-                  {data.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]} 
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            
-            <DeviceList>
-              {DEVICE_ORDER.map((deviceType, index) => {
-                const item = data.find(d => d.deviceType === deviceType) || {
-                  deviceType,
-                  count: 0,
-                  percentage: 0
-                };
-                return (
-                <DeviceItem key={item.deviceType}>
-                  <DeviceLabel>
-                    <ColorIndicator color={COLORS[index % COLORS.length]} />
-                    <DeviceName>{DEVICE_NAMES[item.deviceType]}</DeviceName>
-                  </DeviceLabel>
-                  <DeviceCount>
-                    <Count>{item.count.toLocaleString()}</Count>
-                    <Percentage>{item.percentage}%</Percentage>
-                  </DeviceCount>
-                </DeviceItem>
-              );
-              })}
-            </DeviceList>
-          </>
-        )}
-      </ChartContent>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={renderCustomizedLabel}
+            outerRadius={80}
+            fill={theme.primaryColor}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={deviceColors[index % deviceColors.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+      
+      <LegendContainer>
+        {data.map((entry, index) => (
+          <LegendItem key={entry.name}>
+            <LegendColor color={deviceColors[index % deviceColors.length]} />
+            <span>{entry.name}</span>
+          </LegendItem>
+        ))}
+      </LegendContainer>
     </ChartContainer>
   );
 };

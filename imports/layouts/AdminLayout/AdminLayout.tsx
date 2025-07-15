@@ -103,11 +103,54 @@ interface SidebarProps {
   theme?: any;
 }
 
+interface NavItemProps {
+  active: boolean;
+  collapsed: boolean;
+}
+
+interface IconProps {
+  collapsed: boolean;
+}
+
+interface LabelProps {
+  collapsed: boolean;
+}
+
+interface ToggleButtonProps {
+  collapsed: boolean;
+}
+
+interface MainContentProps {
+  sidebarCollapsed: boolean;
+}
+
+// Define SubmenuItem first
+const SubmenuItem = styled(Link)<{active?: boolean, theme?: any}>`
+  display: block;
+  color: var(--color-sidebar-text) !important;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 10px 24px;
+  background: ${({active}) => active ? 'rgba(255,255,255,0.15)' : 'transparent'};
+  border-left: ${({active}) => active ? '4px solid var(--color-primary)' : '4px solid transparent'};
+  font-weight: ${({active}) => active ? 700 : 500};
+  transition: background 0.15s, border-left 0.15s;
+  
+  &:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--color-sidebar-text) !important;
+  }
+  
+  &:visited {
+    color: var(--color-sidebar-text) !important;
+  }
+`;
+
 const SubmenuFlyout = styled.ul<{theme?: any}>`
   list-style: none;
   margin: 0;
   padding: 0;
-  background: #3d1f33;
+  background: var(--color-sidebar);
   border-radius: 10px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.13);
   position: absolute;
@@ -116,40 +159,33 @@ const SubmenuFlyout = styled.ul<{theme?: any}>`
   min-width: 180px;
   z-index: 9999;
   overflow: visible;
-  border: 1px solid #552a4733;
+  border: 1px solid rgba(255,255,255,0.1);
   pointer-events: auto;
+  
+  ${SubmenuItem} {
+    color: var(--color-sidebar-text) !important;
+    
+    &:hover {
+      color: var(--color-sidebar-text) !important;
+    }
+  }
 `;
 
 const SubmenuInline = styled.ul`
   list-style: none;
   margin: 0 0 0 0;
   padding: 0;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.08);
   border-radius: 0 0 10px 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   overflow: hidden;
-  color: var(--color-sidebar-text, #fff);
+  color: var(--color-sidebar-text) !important;
 `;
-const SubmenuItem = styled(Link)<{active?: boolean, theme?: any}>`
-  display: block;
-  color: #fff;
-  text-decoration: none;
-  font-size: 15px;
-  padding: 10px 24px;
-  background: ${({active}) => active ? 'rgba(255,255,255,0.13)' : 'transparent'};
-  border-left: ${({active}) => active ? '4px solid #7a3e68' : '4px solid transparent'};
-  font-weight: ${({active}) => active ? 700 : 500};
-  transition: background 0.15s, border-left 0.15s;
-  &:hover {
-    background: rgba(255,255,255,0.18);
-  }
-`;
-
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
-  background: linear-gradient(180deg, #552a47 0%, #3d1f33 100%);
-  color: #fff;
+  background: var(--color-sidebar);
+  color: var(--color-sidebar-text) !important;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
@@ -174,26 +210,28 @@ const Sidebar = styled.aside<SidebarProps>`
     height: 100vh;
     top: 0;
   }
+  
+  /* Force all text elements to use sidebar text color */
+  * {
+    color: var(--color-sidebar-text) !important;
+  }
 `;
-
-
 
 const Logo = styled.div<{theme?: any}>`
   text-align: center;
   margin-bottom: 2rem;
   padding: 0 1rem;
-  color: ${props => props.theme?.colors?.primary || '#ffffff'};
+  color: var(--color-sidebar-text, #ffffff) !important;
+  
+  span {
+    color: var(--color-sidebar-text, #ffffff) !important;
+  }
 `;
-
-interface NavItemProps {
-  active: boolean;
-  collapsed: boolean;
-}
 
 const NavItem = styled(Link)<NavItemProps & {theme?: any}>`
   display: flex;
   align-items: center;
-  color: #fff;
+  color: var(--color-sidebar-text) !important;
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
@@ -203,18 +241,23 @@ const NavItem = styled(Link)<NavItemProps & {theme?: any}>`
   transition: background 0.2s, border-left 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
-  background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
+  border-left: ${props => props.active ? '4px solid var(--color-primary)' : '4px solid transparent'};
+  background: ${props => props.active ? 'rgba(255,255,255,0.15)' : 'transparent'};
   
   &:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.1);
+    color: var(--color-sidebar-text) !important;
+  }
+  
+  &:visited {
+    color: var(--color-sidebar-text) !important;
   }
 `;
 
 const NavButton = styled.button<NavItemProps & {theme?: any}>`
   display: flex;
   align-items: center;
-  color: #fff;
+  color: var(--color-sidebar-text) !important;
   text-decoration: none;
   padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
@@ -224,38 +267,36 @@ const NavButton = styled.button<NavItemProps & {theme?: any}>`
   transition: background 0.2s, border-left 0.2s;
   position: relative;
   justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid #552a47' : '4px solid transparent'};
-  background: ${props => props.active ? 'rgba(255,255,255,0.08)' : 'transparent'};
+  border-left: ${props => props.active ? '4px solid var(--color-primary)' : '4px solid transparent'};
+  background: ${props => props.active ? 'rgba(255,255,255,0.15)' : 'transparent'};
   width: 100%;
   border: none;
   cursor: pointer;
   text-align: left;
   
   &:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.1);
+    color: var(--color-sidebar-text) !important;
   }
 `;
-
-interface IconProps {
-  collapsed: boolean;
-}
 
 const NavIcon = styled.div<IconProps & {theme?: any}>`
   font-size: 24px;
   margin-right: ${props => props.collapsed ? '0' : '16px'};
   display: flex;
   align-items: center;
-  color: ${props => props.theme?.colors?.primary || '#ffffff'};
+  color: var(--color-sidebar-text, #ffffff) !important;
   justify-content: center;
+  
+  svg {
+    color: var(--color-sidebar-text, #ffffff) !important;
+  }
 `;
-
-interface LabelProps {
-  collapsed: boolean;
-}
 
 const NavLabel = styled.span<LabelProps>`
   display: ${props => props.collapsed ? 'none' : 'block'};
   white-space: nowrap;
+  color: var(--color-sidebar-text) !important;
 `;
 
 const Tooltip = styled.div`
@@ -273,10 +314,6 @@ const Tooltip = styled.div`
   z-index: 1000;
   pointer-events: none;
 `;
-
-interface ToggleButtonProps {
-  collapsed: boolean;
-}
 
 const ToggleButton = styled.button<ToggleButtonProps>`
   position: fixed;
@@ -301,10 +338,6 @@ const ToggleButton = styled.button<ToggleButtonProps>`
     display: flex;
   }
 `;
-
-interface MainContentProps {
-  sidebarCollapsed: boolean;
-}
 
 const MainContent = styled.main<MainContentProps>`
   padding: 2rem;

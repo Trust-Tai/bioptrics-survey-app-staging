@@ -14,6 +14,9 @@ interface ThemeContextType {
   colors: ThemeColors;
   isDark: boolean;
   toggleTheme: () => void;
+  theme?: string;
+  setTheme: (themeId: string) => void;
+  setCustomTheme?: (colors: ThemeColors) => void;
   // Add styled-components compatible properties
   primaryColor: string;
   secondaryColor: string;
@@ -26,82 +29,139 @@ interface ThemeContextType {
 }
 
 const lightTheme: ThemeColors = {
-  primary: '#007bff',
-  secondary: '#6c757d',
-  accent: '#e9ecef',
-  background: '#ffffff',
-  text: '#212529',
-  sidebar: '#343a40',
-  sidebarText: '#f8f9fa',
+  primary: '#542A46',
+  secondary: '#3B1D31',
+  accent: '#A9A59D',
+  background: '#f8f9fa',
+  text: '#2e2e2e',
+  sidebar: '#542A46',
+  sidebarText: '#ffffff', // White text on dark sidebar
 };
 
 const darkTheme: ThemeColors = {
-  primary: '#1a73e8',
-  secondary: '#5f6368',
-  accent: '#202124',
-  background: '#121212',
-  text: '#e8eaed',
-  sidebar: '#343a40',
-  sidebarText: '#f8f9fa',
+  primary: '#9a4d85',
+  secondary: '#7a3e68',
+  accent: '#f0b160',
+  background: '#2a2a2a',
+  text: '#e0e0e0',
+  sidebar: '#353535',
+  sidebarText: '#ffffff', // White text on dark sidebar
 };
 
 const defaultColors: ThemeColors = {
-  primary: '#007bff',
-  secondary: '#6c757d',
-  accent: '#e9ecef',
-  background: '#ffffff',
-  text: '#212529',
-  sidebar: '#343a40',
-  sidebarText: '#f8f9fa',
+  primary: '#542A46',
+  secondary: '#3B1D31',
+  accent: '#A9A59D',
+  background: '#f8f9fa',
+  text: '#2e2e2e',
+  sidebar: '#542A46',
+  sidebarText: '#ffffff', // White text on dark sidebar
 };
 
 const defaultTheme: ThemeContextType = {
   colors: defaultColors,
   isDark: false,
   toggleTheme: () => {},
+  theme: 'default',
+  setTheme: () => {},
+  setCustomTheme: () => {},
   // Map colors to the styled-components DefaultTheme properties
   primaryColor: defaultColors.primary,
   secondaryColor: defaultColors.secondary,
   accentColor: defaultColors.accent,
   backgroundColor: defaultColors.background,
   textColor: defaultColors.text,
-  sidebarColor: '#343a40',
-  sidebarTextColor: '#f8f9fa',
+  sidebarColor: defaultColors.sidebar,
+  sidebarTextColor: defaultColors.sidebarText,
   errorColor: '#dc3545',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Apply CSS variables to document root
+const applyCSSVariables = (colors: ThemeColors) => {
+  const root = document.documentElement;
+  
+  // Set all color variables
+  root.style.setProperty('--color-primary', colors.primary);
+  root.style.setProperty('--color-secondary', colors.secondary);
+  root.style.setProperty('--color-accent', colors.accent);
+  root.style.setProperty('--color-background', colors.background);
+  root.style.setProperty('--color-text', colors.text);
+  root.style.setProperty('--color-sidebar', colors.sidebar);
+  root.style.setProperty('--color-sidebar-text', colors.sidebarText);
+  
+  console.log('CSS Variables applied:', {
+    primary: colors.primary,
+    sidebar: colors.sidebar,
+    sidebarText: colors.sidebarText
+  });
+};
+
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState('default');
+  const [currentColors, setCurrentColors] = useState<ThemeColors>(defaultColors);
 
+  // Load theme from localStorage on startup
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
+    try {
+      const savedTheme = localStorage.getItem('bioptrics_theme');
+      if (savedTheme) {
+        const themeData = JSON.parse(savedTheme);
+        if (themeData.colors && themeData.name) {
+          setCurrentTheme(themeData.name);
+          setCurrentColors(themeData.colors);
+          applyCSSVariables(themeData.colors);
+          console.log('Loaded theme from localStorage:', themeData.name);
+        }
+      } else {
+        // Apply default theme if no saved theme
+        applyCSSVariables(defaultColors);
+      }
+    } catch (error) {
+      console.error('Error loading theme from localStorage:', error);
+      applyCSSVariables(defaultColors);
     }
   }, []);
 
   const toggleTheme = () => {
     const newTheme = !isDark;
     setIsDark(newTheme);
+    const colors = newTheme ? darkTheme : lightTheme;
+    setCurrentColors(colors);
+    applyCSSVariables(colors);
     localStorage.setItem('theme', newTheme ? 'dark' : 'light');
   };
 
-  const colors = isDark ? darkTheme : lightTheme;
+  const setTheme = (themeId: string) => {
+    setCurrentTheme(themeId);
+    console.log('Theme ID set to:', themeId);
+  };
+
+  const setCustomTheme = (colors: ThemeColors) => {
+    setCurrentColors(colors);
+    applyCSSVariables(colors);
+    console.log('Custom theme colors applied:', colors);
+  };
+
+  const colors = currentColors;
 
   const themeValue: ThemeContextType = {
     colors,
     isDark,
     toggleTheme,
+    theme: currentTheme,
+    setTheme,
+    setCustomTheme,
     // Map colors to styled-components compatible properties
     primaryColor: colors.primary,
     secondaryColor: colors.secondary,
     accentColor: colors.accent,
     backgroundColor: colors.background,
     textColor: colors.text,
-    sidebarColor: '#343a40',
-    sidebarTextColor: '#f8f9fa',
+    sidebarColor: colors.sidebar,
+    sidebarTextColor: colors.sidebarText,
     errorColor: '#dc3545',
   };
 

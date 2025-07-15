@@ -1,6 +1,49 @@
 import React, { useState, useEffect } from 'react';
+import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
-import { FiTrendingUp, FiTrendingDown, FiChevronDown } from 'react-icons/fi';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTheme } from '/imports/contexts/ThemeContext';
+
+const ChartContainer = styled.div`
+  background: ${({ theme }) => theme.accentColor};
+  height: 100%;
+  min-height: 300px;
+`;
+
+const ChartHeader = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+const ChartTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.primaryColor};
+  margin: 0;
+`;
+
+const ChartSubtitle = styled.p`
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor};
+  margin: 4px 0 0 0;
+`;
+
+const CustomTooltipContainer = styled.div`
+  background: ${({ theme }) => theme.backgroundColor};
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.primaryColor}40;
+`;
+
+const TooltipItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
+`;
 
 interface ResponseRateChartProps {
   data: Array<{
@@ -12,252 +55,8 @@ interface ResponseRateChartProps {
 
 type DateRangeOption = 'today' | 'current_week' | 'last_7_days' | 'last_week' | 'current_month' | 'last_month' | 'last_3_months';
 
-const ChartContainer = styled.div`
-  height: 300px;
-  position: relative;
-  padding: 10px 40px 20px;
-  background-color: #ffffff;
-  border-radius: 8px;
-`;
-
-const BarContainer = styled.div`
-  display: flex;
-  height: 200px;
-  align-items: flex-end;
-  gap: 16px;
-  margin-top: 30px;
-  padding-left: 10px;
-`;
-
-const Bar = styled.div<{ height: string; isHighlighted: boolean; isEmpty?: boolean }>`
-  flex: 1;
-  height: ${props => props.height};
-  background-color: ${props => {
-    if (props.isEmpty) return '#e0e0e0';
-    return props.isHighlighted ? '#552a47' : '#4a90e2';
-  }};
-  border-radius: 4px 4px 0 0;
-  transition: all 0.4s ease;
-  min-width: 30px;
-  position: relative;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  
-  &:hover {
-    background-color: ${props => {
-      if (props.isEmpty) return '#d0d0d0';
-      return props.isHighlighted ? '#7a3e68' : '#2a70c2';
-    }};
-    transform: translateY(-4px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-`;
-
-const XAxis = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-top: 12px;
-  font-size: 12px;
-  color: #666;
-  padding-left: 10px;
-`;
-
-const YAxis = styled.div`
-  position: absolute;
-  left: 0;
-  top: 30px;
-  height: 200px;
-  display: flex;
-  flex-direction: column-reverse; /* Reversed to show 0 at bottom */
-  justify-content: space-between;
-  font-size: 12px;
-  color: #666;
-  border-right: 1px dashed #eee;
-  padding-right: 8px;
-`;
-
-const DateLabel = styled.div`
-  font-size: 12px;
-  color: #666;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-`;
-
-const Tooltip = styled.div<{ isEmpty?: boolean }>`
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: ${props => props.isEmpty ? '#666' : '#552a47'};
-  color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-  white-space: nowrap;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 10;
-  
-  &:after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -6px;
-    border-width: 6px;
-    border-style: solid;
-    border-color: ${props => props.isEmpty ? '#666' : '#552a47'} transparent transparent transparent;
-  }
-  
-  ${Bar}:hover & {
-    opacity: 1;
-  }
-`;
-
-const ChartHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 10px;
-`;
-
-const ChartTitle = styled.h3`
-  font-size: 18px;
-  font-weight: 600;
-  color: #552a47;
-  margin: 0;
-  flex: 1;
-`;
-
-const ChartSummary = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const TrendIndicator = styled.div<{ isPositive: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  color: ${props => props.isPositive ? '#28a745' : '#dc3545'};
-`;
-
-const GridLines = styled.div`
-  position: absolute;
-  left: 40px;
-  right: 0;
-  top: 30px;
-  height: 200px;
-  display: flex;
-  flex-direction: column-reverse; /* Reversed to show 0 at bottom */
-  justify-content: space-between;
-  z-index: 0;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background-color: #eee;
-  }
-`;
-
-const GridLine = styled.div`
-  height: 1px;
-  background-color: #eee;
-  width: 100%;
-`;
-
-const NoDataMessage = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: #999;
-  font-size: 16px;
-  font-style: italic;
-`;
-
-const EmptyBarLabel = styled.div`
-  position: absolute;
-  top: -25px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  color: #999;
-  font-size: 11px;
-  font-style: italic;
-`;
-
-const FilterContainer = styled.div`
-  position: relative;
-  min-width: 180px;
-`;
-
-const FilterButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: #eee;
-  }
-  
-  svg {
-    margin-left: 8px;
-  }
-`;
-
-const DropdownMenu = styled.div<{ isOpen: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-top: 4px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  overflow: hidden;
-  max-height: ${props => props.isOpen ? '300px' : '0'};
-  opacity: ${props => props.isOpen ? '1' : '0'};
-  transition: all 0.3s ease;
-`;
-
-const DropdownItem = styled.div<{ isActive: boolean }>`
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  background-color: ${props => props.isActive ? '#f0f0f0' : 'transparent'};
-  color: ${props => props.isActive ? '#552a47' : '#333'};
-  
-  &:hover {
-    background-color: ${props => props.isActive ? '#f0f0f0' : '#f9f9f9'};
-  }
-`;
-
 const ResponseRateChart: React.FC<ResponseRateChartProps> = ({ data, title = 'Daily Survey Response Rate' }) => {
+  const theme = useTheme();
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
   const [animateIn, setAnimateIn] = useState(false);
   const [dateRange, setDateRange] = useState<DateRangeOption>('last_7_days');
@@ -424,8 +223,6 @@ const ResponseRateChart: React.FC<ResponseRateChartProps> = ({ data, title = 'Da
     setAnimateIn(true);
   }, []);
   
-
-  
   // Only show a subset of dates on the x-axis to avoid overcrowding
   const displayedDates = sortedData.filter((_: {date: string; count: number}, index: number) => 
     index % Math.ceil(sortedData.length / 10) === 0
@@ -434,122 +231,51 @@ const ResponseRateChart: React.FC<ResponseRateChartProps> = ({ data, title = 'Da
   // Generate y-axis tick values (0 at bottom, max at top)
   const yAxisTicks = [0, maxCount / 4, maxCount / 2, (3 * maxCount) / 4, maxCount].map(Math.round);
   
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <CustomTooltipContainer>
+          <TooltipItem>
+            <span>{label}: {payload[0].value}%</span>
+          </TooltipItem>
+        </CustomTooltipContainer>
+      );
+    }
+    return null;
+  };
+
   return (
     <ChartContainer>
       <ChartHeader>
-        <ChartTitle>{title}</ChartTitle>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {sortedData.length > 0 && (
-            <ChartSummary>
-              <TrendIndicator isPositive={trend >= 0}>
-                {trend >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
-                {Math.abs(trendPercentage)}% {trend >= 0 ? 'increase' : 'decrease'}
-              </TrendIndicator>
-            </ChartSummary>
-          )}
-          
-          <FilterContainer className="date-filter-dropdown">
-            <FilterButton onClick={toggleDropdown}>
-              {getDateRangeDisplayName(dateRange)}
-              <FiChevronDown />
-            </FilterButton>
-            <DropdownMenu isOpen={dropdownOpen}>
-              <DropdownItem 
-                isActive={dateRange === 'today'}
-                onClick={() => handleSelectOption('today')}
-              >
-                Today
-              </DropdownItem>
-              <DropdownItem 
-                isActive={dateRange === 'current_week'}
-                onClick={() => handleSelectOption('current_week')}
-              >
-                Current Week
-              </DropdownItem>
-              <DropdownItem 
-                isActive={dateRange === 'last_7_days'}
-                onClick={() => handleSelectOption('last_7_days')}
-              >
-                Last 7 Days
-              </DropdownItem>
-              <DropdownItem 
-                isActive={dateRange === 'last_week'}
-                onClick={() => handleSelectOption('last_week')}
-              >
-                Last Week
-              </DropdownItem>
-              <DropdownItem 
-                isActive={dateRange === 'current_month'}
-                onClick={() => handleSelectOption('current_month')}
-              >
-                Current Month
-              </DropdownItem>
-              <DropdownItem 
-                isActive={dateRange === 'last_month'}
-                onClick={() => handleSelectOption('last_month')}
-              >
-                Last Month
-              </DropdownItem>
-              <DropdownItem 
-                isActive={dateRange === 'last_3_months'}
-                onClick={() => handleSelectOption('last_3_months')}
-              >
-                Last 3 Months
-              </DropdownItem>
-            </DropdownMenu>
-          </FilterContainer>
+        <div>
+          <ChartTitle>{title}</ChartTitle>
+          <ChartSubtitle>Daily response rate percentage</ChartSubtitle>
         </div>
       </ChartHeader>
       
-      <GridLines>
-        {yAxisTicks.map((_, index) => (
-          <GridLine key={index} />
-        ))}
-      </GridLines>
-      
-      {sortedData.length > 0 ? (
-        <>
-          <BarContainer>
-            {sortedData.map((item: {date: string; count: number}, index: number) => {
-              const barHeight = item.count > 0 ? `${(item.count / maxCount) * 100}%` : '5%';
-              const isLastDay = index === sortedData.length - 1;
-              const isEmpty = item.count === 0;
-              
-              return (
-                <Bar 
-                  key={index} 
-                  height={animateIn ? barHeight : '0%'} 
-                  isHighlighted={highlightedIndex === index || isLastDay}
-                  isEmpty={isEmpty}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  onMouseLeave={() => setHighlightedIndex(null)}
-                >
-                  {isEmpty && <EmptyBarLabel>No data</EmptyBarLabel>}
-                  <Tooltip isEmpty={isEmpty}>
-                    {isEmpty 
-                      ? `${formatFullDate(item.date)}: No responses on this date` 
-                      : `${formatFullDate(item.date)}: ${item.count} responses`}
-                  </Tooltip>
-                </Bar>
-              );
-            })}
-          </BarContainer>
-          
-          <XAxis>
-            {sortedData.map((item: {date: string; count: number}, index: number) => (
-              <DateLabel key={index}>{formatFullDate(item.date)}</DateLabel>
-            ))}
-          </XAxis>
-          
-          <YAxis>
-            {yAxisTicks.map((tick, index) => (
-              <div key={index}>{tick}</div>
-            ))}
-          </YAxis>
-        </>
-      ) : (
-        <NoDataMessage>No response data available for this period</NoDataMessage>
-      )}
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={theme.primaryColor + '30'} />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fontSize: 12, fill: theme.textColor }}
+            axisLine={{ stroke: theme.primaryColor + '60' }}
+          />
+          <YAxis 
+            tick={{ fontSize: 12, fill: theme.textColor }}
+            axisLine={{ stroke: theme.primaryColor + '60' }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line 
+            type="monotone" 
+            dataKey="rate" 
+            stroke={theme.primaryColor} 
+            strokeWidth={3}
+            dot={{ fill: theme.primaryColor, strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, fill: theme.primaryColor }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </ChartContainer>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
 import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -17,6 +18,410 @@ import SurveyResponsesModal from './components/SurveyResponsesModal';
 
 // Import the survey stats method
 import '../../features/surveys/api/surveyStats';
+
+// Styled components for theme support
+const Container = styled.div`
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 18px;
+  padding: 24px 24px 40px 24px;
+  background: transparent;
+  box-sizing: border-box;
+  overflow: hidden;
+`;
+
+const Title = styled.h1`
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--color-text);
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+`;
+
+const SearchInputWrapper = styled.div`
+  position: relative;
+  min-width: 280px;
+`;
+
+const SearchInput = styled.input`
+  height: 44px;
+  font-size: 16px;
+  padding: 0 16px 0 42px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-accent);
+  width: 100%;
+  color: var(--color-text);
+  font-weight: 500;
+  outline: none;
+  background: var(--color-background);
+  
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+  
+  &::placeholder {
+    color: var(--color-accent);
+  }
+`;
+
+const SearchIcon = styled(FaSearch)`
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-primary);
+  opacity: 0.6;
+`;
+
+const ActionsContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const AddButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 0 22px;
+  font-size: 16px;
+  height: 44px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: var(--color-secondary);
+  }
+`;
+
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ModalContent = styled.div`
+  background: var(--color-background);
+  border-radius: 14px;
+  box-shadow: 0 2px 18px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  padding: 38px 40px 32px 40px;
+  min-width: 340px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+`;
+
+const ModalTitle = styled.h1`
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--color-text);
+`;
+
+const ModalText = styled.div`
+  font-size: 16px;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  text-align: center;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 18px;
+  margin-top: 18px;
+`;
+
+const DeleteButton = styled.button`
+  background: var(--color-error);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 8px 28px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-error) 85%, black);
+  }
+`;
+
+const CancelButton = styled.button`
+  background: var(--color-background);
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 8px 28px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+`;
+
+const GridContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 65px 24px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+`;
+
+const SurveyCard = styled.div`
+  background: var(--color-background);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  height: 100%;
+  margin: 0;
+  border: 1px solid var(--color-accent);
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 12px;
+  margin-bottom: 8px;
+`;
+
+const StatusBadge = styled.div<{ published: boolean }>`
+  background: ${props => props.published 
+    ? 'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 20%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))' 
+    : 'linear-gradient(135deg, color-mix(in srgb, var(--color-error) 20%, transparent), color-mix(in srgb, var(--color-error) 15%, transparent))'};
+  color: ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
+  border-radius: 30px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+`;
+
+const StatusDot = styled.div<{ published: boolean }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
+  margin-right: 2px;
+`;
+
+const LastUpdated = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+const SurveyTitle = styled.h3`
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0 0 14px 0;
+  padding-right: 20px;
+  border-left: 3px solid var(--color-primary);
+  padding-left: 12px;
+  line-height: 1.3;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
+  box-sizing: border-box;
+  
+  &:hover {
+    color: var(--color-primary);
+  }
+`;
+
+const PublicUrlSection = styled.div`
+  margin-top: auto;
+  padding: 14px 16px;
+  border-top: 1px solid var(--color-accent);
+  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+`;
+
+const PublicUrlLabel = styled.span`
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const CopyUrlButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    background: var(--color-secondary);
+  }
+`;
+
+const ActionsRow = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-accent);
+`;
+
+const ActionButton = styled.button`
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+  
+  &.delete:hover {
+    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+    box-shadow: 0 4px 8px color-mix(in srgb, var(--color-error) 15%, transparent);
+  }
+`;
+
+const NoResultsText = styled.div`
+  text-align: center;
+  padding: 40px 0;
+  color: var(--color-accent);
+`;
+
+const Notification = styled.div<{ type: 'success' | 'error' }>`
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: ${props => props.type === 'success' ? 'var(--color-success)' : 'var(--color-error)'};
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  z-index: 2000;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const NotificationCloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: pointer;
+  flex: 1;
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+`;
+
+const PaginationButton = styled.button<{ active: boolean }>`
+  background: ${props => props.active ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)'};
+  color: ${props => props.active ? '#fff' : 'var(--color-primary)'};
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: ${props => props.active ? '0 2px 8px color-mix(in srgb, var(--color-primary) 20%, transparent)' : 'none'};
+  transition: background 0.2s, color 0.2s;
+  
+  &:hover {
+    background: ${props => props.active ? 'var(--color-secondary)' : 'color-mix(in srgb, var(--color-primary) 15%, transparent)'};
+  }
+`;
 
 interface SurveyDisplay {
   _id: string;
@@ -134,38 +539,14 @@ const AllSurveys: React.FC = () => {
       <DashboardBg>
         {/* Delete Confirmation Modal */}
         {confirmDelete && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.18)',
-            zIndex: 3000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <div style={{
-              background: '#fff',
-              borderRadius: 14,
-              boxShadow: '0 2px 18px #552a4733',
-              padding: '38px 40px 32px 40px',
-              minWidth: 340,
-              maxWidth: '90vw',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 18,
-              position: 'relative',
-            }}>
-              <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>Delete {surveyLabel}</h1>
-              <div style={{ fontSize: 16, color: '#222', marginBottom: 12, textAlign: 'center' }}>
+          <Modal>
+            <ModalContent>
+              <ModalTitle>Delete {surveyLabel}</ModalTitle>
+              <ModalText>
                 Are you sure you want to delete <span style={{ fontWeight: 700 }}>'{confirmDelete.title}'</span>? This action cannot be undone.
-              </div>
-              <div style={{ display: 'flex', gap: 18, marginTop: 18 }}>
-                <button
-                  style={{ background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '8px 28px', fontSize: 16, cursor: 'pointer' }}
+              </ModalText>
+              <ModalButtons>
+                <DeleteButton
                   onClick={async () => {
                     try {
                       await Meteor.callAsync('surveys.remove', confirmDelete._id);
@@ -177,132 +558,64 @@ const AllSurveys: React.FC = () => {
                   }}
                 >
                   Delete
-                </button>
-                <button
-                  style={{ background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: 8, fontWeight: 700, padding: '8px 28px', fontSize: 16, cursor: 'pointer' }}
+                </DeleteButton>
+                <CancelButton
                   onClick={() => setConfirmDelete(null)}
                 >
                   Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+                </CancelButton>
+              </ModalButtons>
+            </ModalContent>
+          </Modal>
         )}
-        <div style={{ 
-          width: '100%', 
-          maxWidth: 1200, 
-          margin: '0 auto', 
-          borderRadius: 18, 
-          padding: '24px 24px 40px 24px', 
-          background: 'transparent',
-          boxSizing: 'border-box',
-          overflow: 'hidden'
-        }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#28211e' }}>All {surveyLabelPlural}</h1>
+        <Container>
+          <Title>All {surveyLabelPlural}</Title>
           {/* Survey Statistics Summary */}
           <SurveyStatsSummary />
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginBottom: 24, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            <div style={{ position: 'relative', minWidth: 280 }}>
-              <FaSearch style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#552a47', opacity: 0.6 }} />
-              <input
+          <SearchContainer>
+            <SearchInputWrapper>
+              <SearchIcon />
+              <SearchInput
                 type="text"
                 placeholder={`Search ${surveyLabelPlural.toLowerCase()}...`}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{
-                  height: 44,
-                  fontSize: 16,
-                  padding: '0 16px 0 42px',
-                  borderRadius: 8,
-                  border: '1.5px solid #e5d6c7',
-                  width: '100%',
-                  color: '#28211e',
-                  fontWeight: 500,
-                  outline: 'none',
-                  background: '#fff',
-                }}
               />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            </SearchInputWrapper>
+            <ActionsContainer>
               {/* View Toggle */}
               <ViewToggle view={view} onViewChange={setView} />
               
-              <button
+              <AddButton
                 onClick={() => {
                   window.location.href = '/admin/surveys/builder';
                 }}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
               >
                 <FaPlus style={{ fontSize: 14 }} />
                 <span style={{ marginLeft: 6 }}>Add Survey</span>
-              </button>
-            </div>
-          </div>
+              </AddButton>
+            </ActionsContainer>
+          </SearchContainer>
           {/* Notification Bar */}
           {notification && (
-            <div
-              style={{
-                position: 'fixed',
-                top: 24,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: notification.type === 'success' ? '#2ecc40' : '#e74c3c',
-                color: '#fff',
-                padding: '12px 28px',
-                borderRadius: 8,
-                fontWeight: 600,
-                fontSize: 16,
-                zIndex: 2000,
-                boxShadow: '0 2px 12px #552a4733',
-                minWidth: 280,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 16,
-              }}
-            >
+            <Notification type={notification.type}>
               <span style={{ flex: 1 }}>{notification.message}</span>
-              <button
+              <NotificationCloseButton
                 onClick={() => setNotification(null)}
-                style={{ background: 'none', border: 'none', color: '#fff', fontWeight: 700, fontSize: 18, cursor: 'pointer' }}
               >
                 ×
-              </button>
-            </div>
+              </NotificationCloseButton>
+            </Notification>
           )}
           {/* Survey List */}
-          {filtered.length === 0 && <div style={{ textAlign: 'center', padding: '40px 0', color: '#6e5a67' }}>No {surveyLabelPlural.toLowerCase()} found.</div>}
+          {filtered.length === 0 && <NoResultsText>No {surveyLabelPlural.toLowerCase()} found.</NoResultsText>}
           {paginated.length > 0 && (
             view === 'grid' ? (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-                gap: '65px 24px',
-                width: '100%',
-                maxWidth: '100%',
-                overflow: 'hidden'
-              }}>
+              <GridContainer>
                 {paginated.map((s) => (
-                  <div
+                  <SurveyCard
                     key={s._id}
-                    style={{
-                      background: '#fff',
-                      borderRadius: 16,
-                      boxShadow: '0 4px 16px rgba(85, 42, 71, 0.08)',
-                      padding: '22px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 12,
-                      position: 'relative',
-                      transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
-                      height: '100%',
-                      margin: 0,
-                      border: '1px solid #f4ebf1',
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      maxWidth: '100%',
-                      overflow: 'hidden'
-                    }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
                       e.currentTarget.style.boxShadow = '0 8px 24px rgba(85, 42, 71, 0.12)';
@@ -312,102 +625,28 @@ const AllSurveys: React.FC = () => {
                       e.currentTarget.style.boxShadow = '0 3px 12px rgba(85, 42, 71, 0.08)';
                     }}
                   >
-                    <div style={{ 
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      width: '100%',
-                      marginTop: 12,
-                      marginBottom: 8
-                    }}>
-                      <div style={{ 
-                        background: s.published ? 'linear-gradient(135deg, #e6f8e0, #d7f9c8)' : 'linear-gradient(135deg, #ffe6e6, #ffcece)', 
-                        color: s.published ? '#0a8043' : '#c0392b', 
-                        borderRadius: 30, 
-                        padding: '6px 14px', 
-                        fontSize: 13, 
-                        fontWeight: 700, 
-                        letterSpacing: 0.3,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                      }}>
-                        <div style={{ 
-                          width: 8, 
-                          height: 8, 
-                          borderRadius: '50%', 
-                          background: s.published ? '#0a8043' : '#c0392b',
-                          marginRight: 2
-                        }}></div>
+                    <CardHeader>
+                      <StatusBadge published={s.published}>
+                        <StatusDot published={s.published} />
                         {s.published ? 'Published' : 'Draft'}
-                      </div>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        gap: 6,
-                        color: '#777',
-                        fontSize: 12,
-                        fontWeight: 500,
-                      }}>
+                      </StatusBadge>
+                      <LastUpdated>
                         <FaClock style={{ fontSize: 11 }} />
                         {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </div>
-                    </div>
-                    <h3 
-                      style={{ 
-                        color: '#28211e', 
-                        fontWeight: 700, 
-                        fontSize: 20, 
-                        letterSpacing: 0.2,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        margin: '0 0 14px 0',
-                        paddingRight: '20px',
-                        borderLeft: '3px solid #552a47',
-                        paddingLeft: '12px',
-                        lineHeight: 1.3,
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word',
-                        width: '100%',
-                        boxSizing: 'border-box'
-                      }} 
+                      </LastUpdated>
+                    </CardHeader>
+                    <SurveyTitle 
                       onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = '#552a47';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '#28211e';
-                      }}
                       title="Click to manage this survey"
                     >
                       {s.title}
-                    </h3>
+                    </SurveyTitle>
                     {s.shareToken && s.published && (
-                      <div style={{ 
-                        marginTop: 'auto', 
-                        padding: '14px 16px', 
-                        borderTop: '1px solid #f4ebf1',
-                        backgroundColor: '#f9f4f7',
-                        borderRadius: 8,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        maxWidth: '100%'
-                      }}>
-                        <span style={{ 
-                          fontWeight: 600, 
-                          color: '#552a47', 
-                          fontSize: 14,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6
-                        }}>
+                      <PublicUrlSection>
+                        <PublicUrlLabel>
                           <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
-                        </span>
-                        <button 
+                        </PublicUrlLabel>
+                        <CopyUrlButton 
                           onClick={() => {
                             // Use the same server-side token generation as the survey edit page
                             Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
@@ -420,164 +659,43 @@ const AllSurveys: React.FC = () => {
                               }
                             });
                           }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            background: '#552a47',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 6,
-                            padding: '8px 14px',
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(85, 42, 71, 0.15)',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.2)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.15)';
-                          }}
                         >
                           <FaCopy style={{ fontSize: 12 }} /> Copy URL
-                        </button>
-                      </div>
+                        </CopyUrlButton>
+                      </PublicUrlSection>
                     )}
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      gap: 16, 
-                      marginTop: 'auto', 
-                      paddingTop: s.shareToken && s.published ? 0 : 16, 
-                      borderTop: s.shareToken && s.published ? 'none' : '1px solid #f4ebf1' 
-                    }}>
-                      <button
-                        style={{ 
-                          background: '#f9f4f7', 
-                          border: 'none', 
-                          borderRadius: '50%',
-                          width: 40,
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                          transition: 'all 0.2s ease'
-                        }}
+                    <ActionsRow>
+                      <ActionButton
                         onClick={() => {
                           window.open(`/preview/survey/${s._id}?status=preview`, '_blank');
                         }}
                         title="Preview"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#f4ebf1';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#f9f4f7';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                        }}
                       >
-                        <FaEye style={{ color: '#552a47', fontSize: 16 }} />
-                      </button>
-                      <button
-                        style={{ 
-                          background: '#f9f4f7', 
-                          border: 'none', 
-                          borderRadius: '50%',
-                          width: 40,
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                          transition: 'all 0.2s ease'
-                        }}
+                        <FaEye style={{ color: 'var(--color-primary)', fontSize: 16 }} />
+                      </ActionButton>
+                      <ActionButton
                         onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
                         title="Manage"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#f4ebf1';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#f9f4f7';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                        }}
                       >
-                        <FaTasks style={{ color: '#552a47', fontSize: 16 }} />
-                      </button>
-                      <button
-                        style={{ 
-                          background: '#f9f4f7', 
-                          border: 'none', 
-                          borderRadius: '50%',
-                          width: 40,
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                          transition: 'all 0.2s ease'
-                        }}
+                        <FaTasks style={{ color: 'var(--color-primary)', fontSize: 16 }} />
+                      </ActionButton>
+                      <ActionButton
                         onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
                         title="Edit"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#f4ebf1';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(85, 42, 71, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#f9f4f7';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                        }}
                       >
-                        <FaEdit style={{ color: '#552a47', fontSize: 16 }} />
-                      </button>
-                      <button
-                        style={{ 
-                          background: '#f9f4f7', 
-                          border: 'none', 
-                          borderRadius: '50%',
-                          width: 40,
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 4px rgba(85, 42, 71, 0.1)',
-                          transition: 'all 0.2s ease'
-                        }}
+                        <FaEdit style={{ color: 'var(--color-primary)', fontSize: 16 }} />
+                      </ActionButton>
+                      <ActionButton
                         onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
                         title="Delete"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#ffeeee';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 8px rgba(192, 57, 43, 0.15)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#f9f4f7';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(85, 42, 71, 0.1)';
-                        }}
+                        className="delete"
                       >
-                        <FaTrash style={{ color: '#c0392b', fontSize: 16 }} />
-                      </button>
-                    </div>
-                  </div>
+                        <FaTrash style={{ color: 'var(--color-error)', fontSize: 16 }} />
+                      </ActionButton>
+                    </ActionsRow>
+                  </SurveyCard>
                 ))}
-              </div>
+              </GridContainer>
             ) : (
               <SurveyListView 
                 surveys={paginated} 
@@ -599,29 +717,18 @@ const AllSurveys: React.FC = () => {
             )
           )}
           {/* Pagination */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 32 }}>
+          <PaginationContainer>
             {Array.from({ length: pageCount }, (_, i) => (
-              <button
+              <PaginationButton
                 key={i}
                 onClick={() => setPage(i + 1)}
-                style={{
-                  background: page === i + 1 ? '#552a47' : '#f4ebf1',
-                  color: page === i + 1 ? '#fff' : '#552a47',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '6px 16px',
-                  fontWeight: 700,
-                  fontSize: 16,
-                  cursor: 'pointer',
-                  boxShadow: page === i + 1 ? '0 2px 8px #552a4733' : 'none',
-                  transition: 'background 0.2s, color 0.2s',
-                }}
+                active={page === i + 1}
               >
                 {i + 1}
-              </button>
+              </PaginationButton>
             ))}
-          </div>
-        </div>
+          </PaginationContainer>
+        </Container>
       </DashboardBg>
       
       {/* Survey Responses Modal */}

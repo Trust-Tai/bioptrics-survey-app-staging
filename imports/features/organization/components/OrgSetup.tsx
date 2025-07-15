@@ -320,7 +320,7 @@ const OrgSetup: React.FC = () => {
             }}>
               <div style={{ padding: '0 16px 16px', borderBottom: '1px solid #e5d6c7', marginBottom: 8 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 600, color: '#6e5a67', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Organization Settings
+                  Branding / Custom Fields
                 </h3>
               </div>
               <VerticalTabButton 
