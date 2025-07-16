@@ -247,11 +247,11 @@ const QuarterWidthCard = styled(Card)`
 
 // Welcome back section styled components
 const WelcomeBackSection = styled.div`
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
-  color: white;
+  color: #552a47;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -264,14 +264,14 @@ const WelcomeTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 8px;
-  color: white;
+  color: #552a47;
 `;
 
 const WelcomeSubtitle = styled.p`
   font-size: 16px;
   margin: 0;
   opacity: 0.9;
-  color: white;
+  color: #552a47;
 `;
 
 const MetricsRow = styled.div`

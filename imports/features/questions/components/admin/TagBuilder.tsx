@@ -16,6 +16,9 @@ interface LayerWithChildren extends Layer {
 interface TagBuilderProps {
   selectedTagIds: string[];
   onTagChange: (tagIds: string[]) => void;
+  hideLabels?: boolean;
+  allowTagCreation?: boolean;
+  removePadding?: boolean;
 }
 
 // Helper function to build a flat list of tags with depth information
@@ -45,7 +48,7 @@ interface SelectOption {
   isDisabled?: boolean;
 }
 
-const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChange }) => {
+const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChange, hideLabels = false, allowTagCreation = true, removePadding = false }) => {
   // State for alerts
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // Subscribe to and fetch tags from Layers collection
@@ -155,9 +158,11 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
 
   return (
     <div className="form-group tag-builder">
-      <label className="tag-builder-label">
-        <FaTags size={18} /> Tag builder
-      </label>
+      {!hideLabels && (
+        <label className="tag-builder-label">
+          <FaTags size={18} /> Tag builder
+        </label>
+      )}
       <div className="tag-builder-container">
         {alert && (
           <div className={`alert alert-${alert.type}`} style={{
@@ -171,7 +176,8 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
             {alert.message}
           </div>
         )}
-        <CreatableSelect
+        {allowTagCreation ? (
+          <CreatableSelect
           id="questionTags"
           name="questionTags"
           isMulti
@@ -253,7 +259,13 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
             control: (base) => ({
               ...base,
               width: '100%',
-              minWidth: '300px'
+              minWidth: '300px',
+              ...(removePadding && {
+                padding: '0',
+                border: 'none',
+                boxShadow: 'none',
+                backgroundColor: 'transparent'
+              })
             }),
             container: (base) => ({
               ...base,
@@ -264,14 +276,88 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
           classNamePrefix="react-select"
           placeholder="Select tags..."
         />
+        ) : (
+          <Select
+            id="questionTags"
+            name="questionTags"
+            isMulti
+            closeMenuOnSelect={false}
+            hideSelectedOptions={true}
+            options={selectOptions}
+            value={selectOptions.filter(option => selectedTagIds.includes(option.value))}
+            onChange={(selected) => {
+              if (Array.isArray(selected)) {
+                onTagChange(selected.map(option => option.value));
+              } else {
+                onTagChange([]);
+              }
+            }}
+            filterOption={(option, inputValue) => {
+              // Only show options when there's input text
+              if (!inputValue) return false;
+              
+              // Don't show already selected options
+              if (selectedTagIds.includes(option.value)) return false;
+              
+              // Case-insensitive search
+              return option.label.toLowerCase().includes(inputValue.toLowerCase());
+            }}
+            noOptionsMessage={({inputValue}) => 
+              inputValue ? "No matching tags found" : "Type to search for tags"
+            }
+            components={{
+              Option: CustomOption,
+              DropdownIndicator: () => null,
+              IndicatorSeparator: () => null
+            }}
+            styles={{
+              option: (base) => ({
+                ...base,
+                fontFamily: 'monospace',
+                whiteSpace: 'pre',
+                backgroundColor: 'white',
+                '&:hover': {
+                  backgroundColor: '#f0f0f0'
+                }
+              }),
+              menu: (base) => ({
+                ...base,
+                zIndex: 9999,
+                width: 'auto',
+                minWidth: '100%',
+                backgroundColor: 'white',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+              }),
+              menuList: (base) => ({
+                ...base,
+                maxHeight: '300px',
+                backgroundColor: 'white',
+                padding: '4px'
+              }),
+              control: (base) => ({
+                ...base,
+                width: '100%',
+                minWidth: '300px'
+              }),
+              container: (base) => ({
+                ...base,
+                width: '100%'
+              })
+            }}
+            classNamePrefix="react-select"
+            placeholder="Select tags..."
+          />
+        )}
         {loading && <div className="tag-loading">Loading tags...</div>}
         {!loading && allTags && allTags.length === 0 && (
           <div className="tag-empty">No tags available. Please create tags in the Tags & Classifications section.</div>
         )}
       </div>
-      <div className="tag-builder-help">
-        Select tags to categorize this question
-      </div>
+      {!hideLabels && (
+        <div className="tag-builder-help">
+          Select tags to categorize this question
+        </div>
+      )}
     </div>
   );
 };

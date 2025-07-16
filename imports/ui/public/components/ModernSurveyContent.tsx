@@ -183,6 +183,7 @@ const ModernSurveyContent: React.FC<{
       
       // Calculate progress percentage based on answered questions vs total questions
       const answeredCount = Object.keys(allResponses).length;
+      console.log('question::---', questions);
       const totalQuestions = questions.length;
       const progressPercentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
       
@@ -597,6 +598,54 @@ const ModernSurveyContent: React.FC<{
         questionCount: allQuestions.filter(q => q.sectionId === section.id).length
       }))
     });
+// Calculate and store the total survey time for all questions
+    console.log('Calculating total time for all questions in survey');
+    Meteor.call('getQuestionDocuments', allQuestions.map(q => q._id), (questionError: any, questionDocs: any) => {
+      if (questionError) {
+        console.error('Error fetching question documents:', questionError);
+      } else if (questionDocs && questionDocs.length > 0) {
+        // Calculate total time directly from question documents
+        const totalEstimatedSeconds = questionDocs.reduce((total: number, doc: any) => {
+          const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
+          console.log(`Question ${doc._id}: ${seconds} seconds`);
+          return total + seconds;
+        }, 0);
+        
+        // Add 30 seconds buffer for survey overhead (reading intro, etc.)
+        const totalWithBuffer = totalEstimatedSeconds + 30;
+        
+        const minutes = Math.ceil(totalWithBuffer / 60);
+        
+   
+        // Store in localStorage for use by ModernSurveyWelcome and ModernSurveySection
+        // Add a small delay to ensure all calculations are complete
+        setTimeout(() => {
+          try {
+            const surveyTimeKey = `survey_time_${survey._id}`;
+            const timeData = {
+              surveyId: survey._id,
+              totalEstimatedSeconds: totalWithBuffer,
+              minutes,
+              questionCount: questionDocs.length,
+              timestamp: new Date().getTime()
+            };
+            localStorage.setItem(surveyTimeKey, JSON.stringify(timeData));
+            console.log(`Stored total survey time in localStorage with key ${surveyTimeKey}:`, timeData);
+            
+            // Dispatch a custom event to notify other components that time data is ready
+            const timeDataReadyEvent = new CustomEvent('survey-time-data-ready', { 
+              detail: { surveyId: survey._id, timeData } 
+            });
+            window.dispatchEvent(timeDataReadyEvent);
+            console.log('Dispatched survey-time-data-ready event');
+          } catch (storageError) {
+            console.error('Error storing survey time data:', storageError);
+          }
+        }, 200);
+      }
+    });
+
+
   }, [survey]);
   
   // Get the current question based on the current step
@@ -621,19 +670,93 @@ const ModernSurveyContent: React.FC<{
     // Sort questions by their order property
     const sortedQuestions = [...filteredQuestions].sort((a, b) => (a.order || 0) - (b.order || 0));
     
-    console.log(`getQuestionsForSection(${sectionId}):`, {
-      sectionId,
-      sectionName: sections.find(s => s.id === sectionId)?.name,
-      totalQuestions: questions.length,
-      filteredCount: filteredQuestions.length,
-      questions: sortedQuestions.map(q => ({
-        id: q._id || q.id,
-        text: q.text?.substring(0, 30),
-        order: q.order,
-        sectionId: q.sectionId
-      }))
+    // Get section name for better logging
+    const sectionName = sections.find(s => s.id === sectionId)?.name || 'Unknown Section';
+    
+    // Enhanced logging with question IDs
+    const questionIds = sortedQuestions.map(q => q._id || q.id);
+    questionIds.forEach((id, index) => {
+      console.log(`Question ${index + 1}: ${id}`);
     });
-  
+    
+    // Create a formatted table of questions for better visualization
+    console.group(`Detailed questions for section ${sectionName}:`);
+    console.table(sortedQuestions.map(q => ({
+      id: q._id || q.id,
+      text: q.text?.substring(0, 30) + (q.text && q.text.length > 30 ? '...' : ''),
+      order: q.order,
+      type: q.type,
+      required: q.required ? 'Yes' : 'No'
+    })));
+    console.groupEnd();
+    
+    // Fetch full question documents from the database
+    if (questionIds.length > 0) {
+      console.log('Fetching full question documents from database...');
+      Meteor.call('getQuestionDocuments', questionIds, (error: any, result: any) => {
+        if (error) {
+          console.error('Error fetching question documents:', error);
+        } else if (result && result.length > 0) {
+          console.log(`Retrieved ${result.length} full question documents:`);
+          
+          // Log each question document
+          result.forEach((doc: any, index: number) => {
+            console.group(`Full question document ${index + 1}: ${doc._id}`);
+            console.log(doc);
+            
+            // Extract and log the estimatedTimeSeconds specifically
+            const estimatedTimeSeconds = doc.currentVersion?.estimatedTimeSeconds || 'Not set';
+            
+            console.groupEnd();
+          });
+          
+          // Create a summary table of the question documents with focus on estimated time
+          console.group('Question estimated times summary:');
+          console.table(result.map((doc: any) => ({
+            id: doc._id,
+            title: doc.currentVersion?.title || 'Untitled',
+            estimatedTimeSeconds: doc.currentVersion?.estimatedTimeSeconds || 'Not set',
+            category: doc.currentVersion?.category || 'Uncategorized',
+            required: doc.currentVersion?.required ? 'Yes' : 'No'
+          })));
+          console.groupEnd();
+          
+          const requiredQuestionCount = result.filter((doc: any) => doc.currentVersion?.required).length;
+          console.log('requiredQuestionCount----', requiredQuestionCount);
+          // Calculate and log the total estimated time for this section
+          const totalEstimatedSeconds = result.reduce((total: number, doc: any) => {
+            const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
+            return total + seconds;
+          }, 0);
+          
+          const minutes = Math.ceil(totalEstimatedSeconds / 60);
+          
+          // Store the calculated time in localStorage for access by other components
+          try {
+            // Create a key for this specific section
+            const sectionTimeKey = `section_time_${sectionId}`;
+            
+            // Store the time data
+            const timeData = {
+              sectionId,
+              sectionName,
+              totalEstimatedSeconds,
+              minutes,
+              timestamp: new Date().getTime()
+            };
+            
+            localStorage.setItem(sectionTimeKey, JSON.stringify(timeData));
+            console.log(`Stored calculated time for section ${sectionName} in localStorage`);
+          } catch (error) {
+            console.error('Error storing section time data:', error);
+          }
+          
+        } else {
+          console.warn('No question documents returned from database');
+        }
+      });
+    }
+    
     return sortedQuestions;
   };
   
@@ -2015,9 +2138,101 @@ const handleRestart = () => {
         // Get the current section index (1-based)
         const dynamicSectionIndex = getCurrentSectionIndex(currentSection.id);
         
-        // Calculate the dynamic estimated time based on section questions
-        // Pass the section ID to calculate time proportionally for just this section
-        const dynamicSectionTime = calculateEstimatedTime(currentSection.id);
+        // Calculate the section-specific estimated time
+        const currentSectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+        const sectionQuestionIds = currentSectionQuestions.map(q => q._id || q.id);
+        
+        // Default section time while we calculate the actual time
+        let dynamicSectionTime = '~2';
+        
+        // Check if we already have cached section time data that's recent
+        let hasCachedData = false;
+        try {
+          const sectionTimeKey = `section_time_${currentSection.id}`;
+          const storedSectionTimeData = localStorage.getItem(sectionTimeKey);
+          if (storedSectionTimeData) {
+            const sectionTimeData = JSON.parse(storedSectionTimeData);
+            // Check if the data is recent (within the last hour)
+            const isRecent = (new Date().getTime() - sectionTimeData.timestamp) < 3600000;
+            if (isRecent) {
+              hasCachedData = true;
+              console.log(`Using cached section time data, skipping recalculation`);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking cached section time data:', error);
+        }
+        
+        // Only fetch and calculate if we don't have recent cached data
+        if (!hasCachedData) {
+          console.log('No recent cached data found, calculating section time...');
+          // Get question documents for this section only
+          Meteor.call('getQuestionDocuments', sectionQuestionIds, (error: any, sectionQuestionDocs: any) => {
+            if (error) {
+              console.error('Error fetching section question documents:', error);
+            } else if (sectionQuestionDocs && sectionQuestionDocs.length > 0) {
+              // Calculate total time for this section's questions
+              const sectionTotalSeconds = sectionQuestionDocs.reduce((total: number, doc: any) => {
+                const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
+                console.log(`Section question ${doc._id}: ${seconds} seconds`);
+                return total + seconds;
+              }, 0);
+              
+              // Add a small buffer (10 seconds) for section overhead
+              const sectionTotalWithBuffer = sectionTotalSeconds + 10;
+              const sectionMinutes = Math.ceil(sectionTotalWithBuffer / 60);
+              
+              console.log(`Section ${currentSection.id} time: ${sectionTotalWithBuffer} seconds (${sectionMinutes} minutes)`);
+              
+              // Store section-specific time data
+              try {
+                const sectionTimeKey = `section_time_${currentSection.id}`;
+                const sectionTimeData = {
+                  sectionId: currentSection.id,
+                  totalEstimatedSeconds: sectionTotalWithBuffer,
+                  minutes: sectionMinutes,
+                  questionCount: sectionQuestionDocs.length,
+                  timestamp: new Date().getTime()
+                };
+                localStorage.setItem(sectionTimeKey, JSON.stringify(sectionTimeData));
+                console.log(`Stored section time in localStorage with key ${sectionTimeKey}:`, sectionTimeData);
+                
+                // Update the section object with the calculated time
+                const updatedSection = {
+                  ...currentSection,
+                  estimatedTime: `${sectionMinutes}`,
+                  questionCount: sectionQuestionDocs.length
+                };
+                
+                // Re-render with updated section data - only once when calculation is complete
+                setSections(prevSections => {
+                  return prevSections.map(s => 
+                    s.id === currentSection.id ? updatedSection : s
+                  );
+                });
+              } catch (storageError) {
+                console.error('Error storing section time data:', storageError);
+              }
+            }
+          });
+        }
+        
+        // Try to get cached section time data
+        try {
+          const sectionTimeKey = `section_time_${currentSection.id}`;
+          const storedSectionTimeData = localStorage.getItem(sectionTimeKey);
+          if (storedSectionTimeData) {
+            const sectionTimeData = JSON.parse(storedSectionTimeData);
+            // Check if the data is recent (within the last hour)
+            const isRecent = (new Date().getTime() - sectionTimeData.timestamp) < 3600000;
+            if (isRecent) {
+              dynamicSectionTime = `${sectionTimeData.minutes}`;
+              console.log(`Using cached section time: ${dynamicSectionTime} minutes`);
+            }
+          }
+        } catch (error) {
+          console.error('Error reading cached section time:', error);
+        }
         
         // Create a modified section object with the dynamic estimated time
         const sectionWithDynamicTime = {
@@ -2034,6 +2249,126 @@ const handleRestart = () => {
           dynamicEstimatedTime: dynamicSectionTime
         });
         
+        // Get section-specific time data from localStorage if available
+        let dynamicTimeData = null;
+        
+        // Try to get required question count from localStorage first
+        const requiredCountKey = `section_required_count_${currentSection.id}`;
+        let requiredQuestionCount = 0;
+        
+        try {
+          const storedRequiredCount = localStorage.getItem(requiredCountKey);
+          if (storedRequiredCount) {
+            requiredQuestionCount = parseInt(storedRequiredCount, 10);
+            console.log(`Found stored required count for section ${currentSection.id}:`, requiredQuestionCount);
+          }
+        } catch (error) {
+          console.error('Error reading required count from localStorage:', error);
+        }
+        
+        // If we have section question IDs, calculate the required count
+        if (sectionQuestionIds.length > 0) {
+          // We'll use this function to update the required count without causing re-renders
+          const updateRequiredCount = (count: number) => {
+            requiredQuestionCount = count;
+            console.log('Updated required count:', requiredQuestionCount);
+            
+            // Store in localStorage for future use
+            try {
+              localStorage.setItem(requiredCountKey, count.toString());
+              
+              // Update the section object directly
+              if (sectionWithDynamicTime) {
+                sectionWithDynamicTime.requiredQuestionCount = count;
+              }
+            } catch (error) {
+              console.error('Error storing required count in localStorage:', error);
+            }
+          };
+          
+          // Make the Meteor call to get question documents
+          Meteor.call('getQuestionDocuments', sectionQuestionIds, (error: any, result: any) => {
+            if (error) {
+              console.error('Error fetching question documents:', error);
+            } else if (result && result.length > 0) {
+              let count = 0;
+              
+              // Count required questions
+              result.forEach((doc: any, index: number) => {
+                const required = doc.currentVersion?.required || false;
+                // Only log the required ones to reduce console spam
+                if (required === true) {
+                  count++;
+                }
+              });
+              
+              console.log('Final required count:', count);
+              updateRequiredCount(count);
+            } else {
+              console.warn('No question documents returned from database');
+            }
+          });
+        }
+        
+        console.log('Current required count (may be from cache):', requiredQuestionCount);
+        try {
+          // First try to get section-specific time data
+          const sectionTimeKey = `section_time_${currentSection.id}`;
+          const storedSectionTimeData = localStorage.getItem(sectionTimeKey);
+          
+          if (storedSectionTimeData) {
+            dynamicTimeData = JSON.parse(storedSectionTimeData);
+            console.log(`Found stored section-specific time data:`, dynamicTimeData);
+          } else {
+            // Fallback to survey-level time data
+            const surveyTimeKey = `survey_time_${survey._id}`;
+            const storedSurveyTimeData = localStorage.getItem(surveyTimeKey);
+            if (storedSurveyTimeData) {
+              // Get the survey-level data
+              const surveyTimeData = JSON.parse(storedSurveyTimeData);
+              console.log(`No section-specific time data found, using survey data:`, surveyTimeData);
+              
+              // Calculate an approximate section time based on question count proportion
+              const sectionQuestionsCount = getQuestionsCountForSection(currentSection.id);
+              const totalQuestionsCount = surveyTimeData.questionCount;
+              const sectionProportion = sectionQuestionsCount / totalQuestionsCount;
+              
+              // Calculate section time based on proportion of questions
+              const sectionSeconds = Math.round(surveyTimeData.totalEstimatedSeconds * sectionProportion);
+              const sectionMinutes = Math.ceil(sectionSeconds / 60);
+              
+              // Create section-specific time data
+              dynamicTimeData = {
+                sectionId: currentSection.id,
+                totalEstimatedSeconds: sectionSeconds,
+                minutes: sectionMinutes,
+                questionCount: sectionQuestionsCount,
+                timestamp: new Date().getTime()
+              };
+              
+              console.log(`Calculated proportional section time: ${sectionSeconds} seconds (${sectionMinutes} minutes)`);
+              
+              // Store this for future use
+              localStorage.setItem(sectionTimeKey, JSON.stringify(dynamicTimeData));
+            }
+          }
+        } catch (error) {
+          console.error('Error reading time data from localStorage:', error);
+        }
+        
+        // Log all props being passed to ModernSurveySection for debugging
+        console.log('Rendering ModernSurveySection with props:', {
+          sectionId: currentSection.id,
+          sectionName: currentSection.name,
+          totalQuestions: sectionQuestionsCount,
+          requiredQuestionCount: requiredQuestionCount,
+          dynamicTimeData: dynamicTimeData ? {
+            minutes: dynamicTimeData.minutes,
+            questionCount: dynamicTimeData.questionCount,
+            timestamp: new Date(dynamicTimeData.timestamp).toLocaleTimeString()
+          } : null
+        });
+        
         return (
           <ModernSurveySection
             section={sectionWithDynamicTime}
@@ -2045,6 +2380,8 @@ const handleRestart = () => {
             image={currentSection.image || survey.image}
             totalQuestions={sectionQuestionsCount}
             sectionIndex={dynamicSectionIndex}
+            requiredQuestionCount={requiredQuestionCount}
+            dynamicTimeData={dynamicTimeData}
           />
         );
         

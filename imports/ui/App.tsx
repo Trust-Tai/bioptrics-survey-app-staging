@@ -183,7 +183,7 @@ const AppRoutes: React.FC = () => {
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
         <Route path="/admin/questions/builder" element={<EnhancedQuestionBuilder />} />
-        <Route path="/admin/questions/builder/:id" element={<QuestionBuilder />} />
+        <Route path="/admin/questions/builder/:id" element={<EnhancedQuestionBuilder />} />
         <Route path="/admin/questions/tags" element={<QuestionTagsPage />} />
         <Route path="/admin/questions/categories" element={<QuestionCategoriesPage />} />
         <Route path="/admin/questions/templates" element={<QuestionTemplatesPage />} />

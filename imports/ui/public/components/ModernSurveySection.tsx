@@ -28,7 +28,14 @@ interface ModernSurveySectionProps {
   surveyDescription?: string;
   surveyId?: string;
   sectionIndex?: number;
-  totalQuestions?: number; // Total questions in this section
+  totalQuestions?: number;
+  requiredQuestionCount?: number;
+  dynamicTimeData?: {
+    totalEstimatedSeconds: number;
+    minutes: number;
+    questionCount: number;
+    timestamp: number;
+  };
 }
 
 const SectionContainer = styled.div`
@@ -382,7 +389,9 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   surveyDescription,
   surveyId,
   sectionIndex = 1,
-  totalQuestions
+  totalQuestions,
+  requiredQuestionCount,
+  dynamicTimeData: propDynamicTimeData
 }) => {
   // Add CSS to hide header and remove padding
   useEffect(() => {
@@ -412,13 +421,81 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     requiredQuestionCount: number;
     estimatedTime: string;
   }>({ questionCount: 0, requiredQuestionCount: 0, estimatedTime: '~2' });
+  
+  // State for dynamic time calculation from ModernSurveyContent
+  const [dynamicTimeData, setDynamicTimeData] = useState<{
+    totalEstimatedSeconds: number;
+    minutes: number;
+    timestamp: number;
+  } | null>(null);
 
+  // Effect to use the dynamicTimeData prop passed from ModernSurveyContent
+  // Only run this effect once on mount to avoid continuous re-renders
+  useEffect(() => {
+    // Function to get time data
+    const getTimeData = () => {
+      // First try to use prop data
+      if (propDynamicTimeData) {
+        console.log(`Using dynamic time data from props for section ${section.id}: ${propDynamicTimeData.minutes} minutes`);
+        setDynamicTimeData({
+          totalEstimatedSeconds: propDynamicTimeData.totalEstimatedSeconds,
+          minutes: propDynamicTimeData.minutes,
+          timestamp: propDynamicTimeData.timestamp
+        });
+        return true;
+      }
+      
+      // Fallback to localStorage if prop is not available
+      if (section && section.id) {
+        try {
+          // Check if we have stored time data for this section
+          const sectionTimeKey = `section_time_${section.id}`;
+          const storedTimeData = localStorage.getItem(sectionTimeKey);
+          
+          if (storedTimeData) {
+            const timeData = JSON.parse(storedTimeData);
+            
+            // Check if the data is recent (within the last hour)
+            const isRecent = (new Date().getTime() - timeData.timestamp) < 3600000;
+            
+            if (isRecent && timeData.sectionId === section.id) {
+              console.log(`Found stable time data in localStorage for section ${section.id}: ${timeData.minutes} minutes`);
+              setDynamicTimeData({
+                totalEstimatedSeconds: timeData.totalEstimatedSeconds,
+                minutes: timeData.minutes,
+                timestamp: timeData.timestamp
+              });
+              return true;
+            }
+          }
+        } catch (error) {
+          console.error('Error reading section time data from localStorage:', error);
+        }
+      }
+      return false;
+    };
+    
+    // Get time data once on component mount
+    getTimeData();
+  }, [propDynamicTimeData, section]);
+  
   // Initialize with section data immediately to avoid showing '...'
   useEffect(() => {
     // Set initial values from section props to avoid showing '...'
+    // Use the requiredQuestionCount prop if available, otherwise fall back to section data
+    const initialRequiredCount = requiredQuestionCount !== undefined ? 
+      requiredQuestionCount : 
+      (section.requiredQuestionCount || 0);
+      
+    console.log('Initial required question count:', {
+      fromProp: requiredQuestionCount,
+      fromSection: section.requiredQuestionCount,
+      finalValue: initialRequiredCount
+    });
+    
     setMetadata({
       questionCount: section.questionCount || 0,
-      requiredQuestionCount: section.requiredQuestionCount || 0,
+      requiredQuestionCount: initialRequiredCount,
       estimatedTime: section.estimatedTime || '~2'
     });
     
@@ -439,9 +516,9 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
 
             const questionCount = parsedData.sectionQuestions[0].questions.length;
             const requiredQuestions = parsedData.sectionQuestions[0].questions.filter(
-              (q: any) => q.status === 'published'
+              (q: any) => q.required === true
             ).length;
-            
+            console.log('Get required questions count:---', requiredQuestions);
             setMetadata(prev => ({
               ...prev,
               questionCount: questionCount,
@@ -699,8 +776,16 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
               <StatIcon>
                 <FiClock size={24} />
               </StatIcon>
-              <StatValue>{metadata.estimatedTime}</StatValue>
-              <StatLabel>Minutes</StatLabel>
+              <StatValue>
+                {dynamicTimeData ? 
+                  // Show minutes from dynamic data
+                  dynamicTimeData.minutes : 
+                  // Fallback to metadata
+                  metadata.estimatedTime}
+              </StatValue>
+              <StatLabel>
+                Avg Minutes
+              </StatLabel>
             </StatCard>
             
             <StatCard>
@@ -715,7 +800,22 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
               <StatIcon>
                 <FiStar size={24} />
               </StatIcon>
-              <StatValue>{metadata.requiredQuestionCount}</StatValue>
+              <StatValue>
+                {(() => {
+                  // Use prop first, then metadata as fallback
+                  const displayCount = requiredQuestionCount !== undefined ? 
+                    requiredQuestionCount : 
+                    metadata.requiredQuestionCount;
+                  
+                  console.log('Displaying required question count:', {
+                    fromProp: requiredQuestionCount,
+                    fromMetadata: metadata.requiredQuestionCount,
+                    finalValue: displayCount
+                  });
+                  
+                  return displayCount;
+                })()}
+              </StatValue>
               <StatLabel>Required questions</StatLabel>
             </StatCard>
           </StatsContainer>

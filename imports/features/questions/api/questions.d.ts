@@ -17,6 +17,7 @@ export interface QuestionVersion {
   rightLabel?: string;
   feedbackType?: string;
   feedbackValue?: string;
+  estimatedTimeSeconds?: number; // Estimated time to answer the question in seconds
   updatedAt: Date;
   updatedBy: string;
   language?: string;

@@ -13,7 +13,7 @@ import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import DashboardBg from '../../../ui/admin/DashboardBg';
 import { Layers, Layer } from '../../../api/layers';
-import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage } from 'react-icons/fa';
+import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } from 'react-icons/fa';
 
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
@@ -240,40 +240,78 @@ const ResponseDetailsContainer = styled.div`
   background-color: #f9fafb;
   border-top: 1px solid #e2e8f0;
   margin-top: -1px;
+  
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const QuestionItem = styled.div`
   margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px dashed #e2e8f0;
-  &:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+  &:hover {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
   }
 `;
 
 const SectionName = styled.div`
   font-size: 12px;
-  color: #64748b;
-  margin-bottom: 4px;
   font-weight: 500;
+  color: #64748b;
+  padding: 8px 16px 0;
+  background-color: #f1f5f9;
+  flex-shrink: 0;
 `;
 
-const QuestionTitle = styled.div`
-  font-size: 14px;
-  color: #1e293b;
-  margin-bottom: 8px;
-  font-weight: 500;
+const QuestionTitle = styled.h3`
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+  padding: 12px 16px;
+  background-color: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
 `;
 
 const AnswerText = styled.div`
   font-size: 14px;
   color: #334155;
   background-color: #ffffff;
-  padding: 8px 12px;
+  padding: 12px 16px;
   border-radius: 4px;
   border: 1px solid #e2e8f0;
+  flex-grow: 1;
+  overflow-wrap: break-word;
+  line-height: 1.5;
+`;
+
+const ResponseGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 `;
 
 const ExpandButton = styled.button`
@@ -373,53 +411,12 @@ const EnhancedSurveyBuilder: React.FC = () => {
   // Styled components for response stats
   const StatsContainer = styled.div`
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-bottom: 24px;
     width: 100%;
   `;
 
-  // Styled components for response details
-  const ResponseDetailsContainer = styled.div`
-    padding: 16px 24px;
-    background-color: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-    border-top: 1px solid #e2e8f0;
-    margin-bottom: 8px;
-    width: 100%;
-    grid-column: 1 / -1; /* Make it span all columns */
-  `;
-
-  const QuestionItem = styled.div`
-    padding: 12px 16px;
-    border-radius: 6px;
-    background-color: white;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #edf2f7;
-  `;
-
-  const SectionName = styled.div`
-    font-size: 12px;
-    color: #64748b;
-    margin-bottom: 4px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  `;
-
-  const QuestionTitle = styled.div`
-    font-size: 14px;
-    font-weight: 600;
-    color: #334155;
-    margin-bottom: 8px;
-  `;
-
-  const AnswerText = styled.div`
-    font-size: 14px;
-    color: #475569;
-    line-height: 1.5;
-  `;
 
   const ExpandButton = styled.button`
     display: flex;
@@ -840,18 +837,18 @@ const EnhancedSurveyBuilder: React.FC = () => {
               })),
               
               // Format incomplete responses
-              ...incompleteResponses.map(response => ({
-                _id: response._id,
-                respondentName: 'Anonymous',
-                email: 'No email provided',
-                submittedAt: response.lastUpdatedAt,
-                isComplete: false,
-                progress: response.responses ? 
-                  Math.round((response.responses.length / (surveyQuestions.length || 1)) * 100) : 0,
-                responses: response.responses || [],
-                timeToComplete: 0,
-                engagementScore: response.engagementScore || calculateEngagementScore({...response, isCompleted: false, responses: response.responses || []})
-              }))
+              // ...incompleteResponses.map(response => ({
+              //   _id: response._id,
+              //   respondentName: 'Anonymous',
+              //   email: 'No email provided',
+              //   submittedAt: response.lastUpdatedAt,
+              //   isComplete: false,
+              //   progress: response.responses ? 
+              //     Math.round((response.responses.length / (surveyQuestions.length || 1)) * 100) : 0,
+              //   responses: response.responses || [],
+              //   timeToComplete: 0,
+              //   engagementScore: response.engagementScore || calculateEngagementScore({...response, isCompleted: false, responses: response.responses || []})
+              // }))
             ];
             
             // Sort by date (newest first)
@@ -2634,7 +2631,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   }}
                   className="action-button copy-url-button"
                   style={{
-                    padding: '10px 20px',
+                    padding: '10px 4px 4px 10px',
                     borderRadius: '8px',
                     border: '2px solid #2ecc40',
                     backgroundColor: '#fff',
@@ -2643,7 +2640,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     fontSize: '15px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    minWidth: '100px',
+                    // minWidth: '100px',
                     boxShadow: '0 2px 4px rgba(46,204,64,0.1)'
                   }}
                   onMouseOver={(e) => {
@@ -2657,7 +2654,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.1)';
                   }}
                 >
-                  {copied ? 'Copied!' : 'Copy URL'}
+                  {copied ? <FaCopy style={{ marginRight: '8px' }} /> : <><FaCopy style={{ marginRight: '8px' }} /> </>}
                 </button>
               )}
             </div>
@@ -3145,7 +3142,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               <StatLabel>Completion Rate</StatLabel>
                             </StatContent>
                           </StatCard>
-                          
+                        </StatsContainer>
+                        <StatsContainer>  
                           <StatCard>
                             <IconContainer color="#F4B400">
                               <FaHeart />
@@ -3272,40 +3270,43 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                 <ResponseDetailsContainer>
                                   {response.responses && Array.isArray(response.responses) && response.responses.length > 0 ? (
                                     <>
-                                      <div style={{ marginBottom: '12px', fontSize: '14px', color: '#64748b' }}>
-                                        Showing {response.responses.length} answered questions
+                                      <div style={{ marginBottom: '16px', fontSize: '14px', color: '#64748b', fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>Showing {response.responses.length} answered questions</span>
+                                        <span style={{ fontSize: '13px', color: '#94a3b8' }}>3-column view</span>
                                       </div>
-                                      {response.responses.map((item: any, idx: number) => {
-                                        const { questionText, sectionName } = getQuestionDetails(
-                                          item.questionId,
-                                          item.sectionId,
-                                          surveyData
-                                        );
-                                        
-                                        return (
-                                          <QuestionItem key={`${item.questionId}-${idx}`}>
-                                            {sectionName && <SectionName>{sectionName}</SectionName>}
-                                            <QuestionTitle>{questionText}</QuestionTitle>
-                                            <AnswerText>
-                                              {item.answer !== undefined ? (
-                                                item.answer
-                                              ) : item.answers ? (
-                                                Array.isArray(item.answers) ? (
-                                                  <ul style={{ margin: 0, paddingLeft: '16px' }}>
-                                                    {item.answers.map((ans: string, i: number) => (
-                                                      <li key={i}>{ans}</li>
-                                                    ))}
-                                                  </ul>
+                                      <ResponseGrid>
+                                        {response.responses.map((item: any, idx: number) => {
+                                          const { questionText, sectionName } = getQuestionDetails(
+                                            item.questionId,
+                                            item.sectionId,
+                                            surveyData
+                                          );
+                                          
+                                          return (
+                                            <QuestionItem key={`${item.questionId}-${idx}`}>
+                                              {sectionName && <SectionName>{sectionName}</SectionName>}
+                                              <QuestionTitle>{questionText}</QuestionTitle>
+                                              <AnswerText>
+                                                {item.answer !== undefined ? (
+                                                  item.answer
+                                                ) : item.answers ? (
+                                                  Array.isArray(item.answers) ? (
+                                                    <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                                                      {item.answers.map((ans: string, i: number) => (
+                                                        <li key={i}>{ans}</li>
+                                                      ))}
+                                                    </ul>
+                                                  ) : (
+                                                    JSON.stringify(item.answers)
+                                                  )
                                                 ) : (
-                                                  JSON.stringify(item.answers)
-                                                )
-                                              ) : (
-                                                'No answer provided'
-                                              )}
-                                            </AnswerText>
-                                          </QuestionItem>
-                                        );
-                                      })}
+                                                  'No answer provided'
+                                                )}
+                                              </AnswerText>
+                                            </QuestionItem>
+                                          );
+                                        })}
+                                      </ResponseGrid>
                                     </>
                                   ) : (
                                     <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
@@ -4607,6 +4608,24 @@ const StatsContainer = styled.div`
   padding: 16px;
   border: 1px solid #e2e8f0;
 `;
+
+// const QuestionItem = styled.div`
+//   margin-bottom: 16px;
+//   background-color: #f8fafc;
+//   border-radius: 8px;
+//   overflow: hidden;
+//   border: 1px solid #e2e8f0;
+//   height: 100%;
+//   display: flex;
+//   flex-direction: column;
+//   transition: all 0.2s ease;
+//   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+//   &:hover {
+//     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+//     border-color: #cbd5e1;
+//   }
+// `;
 
 const StatCard = styled.div`
   display: flex;
