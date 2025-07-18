@@ -42,11 +42,13 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
 }) => {
   const [newAnswerText, setNewAnswerText] = useState('');
   const [showOtherOption, setShowOtherOption] = useState(
-    answers.some(answer => answer.isOther)
+    answers && Array.isArray(answers) ? answers.some(answer => answer.isOther) : false
   );
 
   // Handle moving an answer option
   const moveAnswer = useCallback((dragIndex: number, hoverIndex: number) => {
+    if (!answers || !Array.isArray(answers)) return;
+    
     onAnswersChange(
       update(answers, {
         $splice: [
@@ -66,12 +68,14 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
       value: newAnswerText.trim()
     };
     
-    onAnswersChange([...answers, newAnswer]);
+    onAnswersChange([...(answers || []), newAnswer]);
     setNewAnswerText('');
   };
 
   // Handle updating an answer option
   const handleUpdateAnswer = (index: number, updatedAnswer: Answer) => {
+    if (!answers || !Array.isArray(answers)) return;
+    
     const updatedAnswers = [...answers];
     updatedAnswers[index] = updatedAnswer;
     onAnswersChange(updatedAnswers);
@@ -79,6 +83,8 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
 
   // Handle removing an answer option
   const handleRemoveAnswer = (index: number) => {
+    if (!answers || !Array.isArray(answers)) return;
+    
     const updatedAnswers = answers.filter((_, i) => i !== index);
     onAnswersChange(updatedAnswers);
   };
@@ -87,6 +93,14 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
   const handleToggleOtherOption = () => {
     const newShowOtherOption = !showOtherOption;
     setShowOtherOption(newShowOtherOption);
+    
+    if (!answers || !Array.isArray(answers)) {
+      if (newShowOtherOption) {
+        // If answers is undefined, initialize with just the Other option
+        onAnswersChange([{ text: 'Other (please specify)', isOther: true }]);
+      }
+      return;
+    }
     
     if (newShowOtherOption) {
       // Add "Other" option if it doesn't exist
@@ -98,8 +112,10 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
       }
     } else {
       // Remove "Other" option if it exists
-      const updatedAnswers = answers.filter(answer => !answer.isOther);
-      onAnswersChange(updatedAnswers);
+      if (answers && Array.isArray(answers)) {
+        const updatedAnswers = answers.filter(answer => !answer.isOther);
+        onAnswersChange(updatedAnswers);
+      }
     }
   };
 
@@ -113,7 +129,7 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
 
   // Check if this is a question type that doesn't need predefined options
   const isNoOptionsType = () => {
-    const noOptionsTypes = ['text', 'date', 'number', 'email', 'phone', 'file', 'paragraph'];
+    const noOptionsTypes = ['text', 'textarea', 'date', 'number', 'email', 'phone', 'file', 'paragraph'];
     return noOptionsTypes.includes(answerType);
   };
 
@@ -142,6 +158,8 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
         return isAssessment 
           ? 'Enter the correct answer text for this question.'
           : 'Short text response field';
+      case 'textarea':
+        return 'Long text response field';
       case 'date':
         return isAssessment 
           ? 'Set the correct date for this question.'
@@ -316,6 +334,7 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
               onUpdate={(updatedAnswer) => handleUpdateAnswer(index, updatedAnswer)}
               onRemove={() => handleRemoveAnswer(index)}
               disabled={disabled || answer.isOther}
+              isAssessment={isAssessment}
             />
             
             {/* Correct Answer Checkbox */}

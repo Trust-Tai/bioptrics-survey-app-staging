@@ -69,12 +69,19 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.surveyThemes.$': { type: String },
     'versions.$.categoryTags': { type: Array, optional: true },
     'versions.$.categoryTags.$': { type: String },
+    'versions.$.labels': { type: Array, optional: true },
+    'versions.$.labels.$': { type: String },
     'versions.$.organizationId': { type: String, optional: true },
     'versions.$.isReusable': { type: Boolean, optional: true },
     'versions.$.usageCount': { type: SimpleSchema.Integer, optional: true },
     'versions.$.lastUsedAt': { type: Date, optional: true },
     'versions.$.priority': { type: SimpleSchema.Integer, optional: true },
     'versions.$.isActive': { type: Boolean, optional: true },
+    // Assessment mode fields
+    'versions.$.isAssessment': { type: Boolean, optional: true },
+    'versions.$.correctAnswers': { type: Array, optional: true },
+    'versions.$.correctAnswers.$': { type: String },
+    'versions.$.points': { type: SimpleSchema.Integer, optional: true },
     'versions.$.keywords': { type: Array, optional: true },
     'versions.$.keywords.$': { type: String },
     'versions.$.estimatedTimeSeconds': { type: SimpleSchema.Integer, optional: true },
@@ -100,6 +107,27 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
+  // Public method to get a single question by ID
+  'questions.getById': function (id: string) {
+    check(id, String);
+    
+    console.log(`[questions.getById] Fetching question with ID: ${id}`);
+    
+    try {
+      const question = Questions.findOne({ _id: id });
+      if (!question) {
+        console.log(`[questions.getById] Question not found with ID: ${id}`);
+        throw new Meteor.Error('questions.getById.notFound', 'Question not found');
+      }
+      
+      console.log(`[questions.getById] Found question: ${question._id}`);
+      return question;
+    } catch (error) {
+      console.error(`[questions.getById] Error fetching question ${id}:`, error);
+      throw new Meteor.Error('questions.getById.error', 'Failed to fetch question');
+    }
+  },
+  
   // Public method to fetch multiple questions by ID
   'questions.getMany': function (ids: string[]) {
     check(ids, Array);

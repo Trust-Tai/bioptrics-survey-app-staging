@@ -7,6 +7,7 @@ interface Answer {
   value?: string;
   image?: string;
   isOther?: boolean;
+  isCorrect?: boolean;
 }
 
 interface DraggableAnswerOptionProps {
@@ -16,6 +17,7 @@ interface DraggableAnswerOptionProps {
   onRemove: () => void;
   moveAnswer: (dragIndex: number, hoverIndex: number) => void;
   disabled?: boolean;
+  isAssessment?: boolean;
 }
 
 interface DragItem {
@@ -34,6 +36,7 @@ const DraggableAnswerOption: React.FC<DraggableAnswerOptionProps> = ({
   onRemove,
   moveAnswer,
   disabled = false,
+  isAssessment = false,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -121,14 +124,26 @@ const DraggableAnswerOption: React.FC<DraggableAnswerOptionProps> = ({
       )}
       <div className="answer-option-content">
         <div className="answer-option-index">{index + 1}</div>
-      <input 
-        type="text" 
-        value={answer.text} 
-        onChange={(e) => onUpdate({ ...answer, text: e.target.value })}
-        placeholder={`Option ${index + 1}`}
-        disabled={disabled}
-        className="answer-option-input"
-      />
+        <input 
+          type="text" 
+          value={answer.text} 
+          onChange={(e) => onUpdate({ ...answer, text: e.target.value })}
+          placeholder={`Option ${index + 1}`}
+          disabled={disabled}
+          className="answer-option-input"
+        />
+        {isAssessment && (
+          <div className="correct-answer-checkbox">
+            <input
+              type="checkbox"
+              checked={!!answer.isCorrect}
+              onChange={() => onUpdate({ ...answer, isCorrect: !answer.isCorrect })}
+              id={`correct-answer-${index}`}
+              disabled={disabled}
+            />
+            <label htmlFor={`correct-answer-${index}`}>Correct</label>
+          </div>
+        )}
       </div>
       {!disabled && (
         <button 
@@ -185,6 +200,24 @@ const styles = `
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  font-size: 14px;
+}
+
+.correct-answer-checkbox {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 0 5px;
+}
+
+.correct-answer-checkbox input {
+  margin-right: 5px;
+}
+
+.correct-answer-checkbox label {
+  font-size: 14px;
+  color: #4CAF50;
+  font-weight: 500;
 }
 
 .remove-answer {
