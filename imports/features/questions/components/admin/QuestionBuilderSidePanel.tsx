@@ -112,13 +112,20 @@ const sidePanelStyles = {
   },
   closeButton: {
     position: 'absolute',
-    top: '15px',
+    top: '25px',
     right: '15px',
-    background: 'none',
+    background: 'rgba(0,0,0,0.05)',
     border: 'none',
-    fontSize: '24px',
+    borderRadius: '50%',
+    width: '36px',
+    height: '36px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
     cursor: 'pointer',
     zIndex: 1002,
+    transition: 'background 0.2s ease',
   },
   header: {
     display: 'flex',
@@ -608,43 +615,60 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           style={sidePanelStyles.closeButton as React.CSSProperties} 
           onClick={onClose}
           aria-label="Close panel"
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
         >
-          <FaTimes />
+          <FaTimes style={{ color: '#444' }} />  
         </button>
         
         {/* Panel header */}
         <div style={sidePanelStyles.header as React.CSSProperties}>
           <h2>{questionId ? 'Edit Question' : 'Create New Question'}</h2>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={handleSaveQuestion}
-              style={{
-                background: '#552a47',
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Save Draft button is hidden as requested */}
+            
+            {/* Publish Button - Saves, publishes, and closes panel */}
+            <div style={{ position: 'relative' }} title="Save, publish to question bank, and close panel">
+              <button
+                onClick={handlePublishQuestion}
+                style={{
+                  background: '#2ecc40',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 18px',
+                  fontWeight: 600,
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+                disabled={isLoading}
+                onMouseOver={(e) => !isLoading && (e.currentTarget.style.background = '#27ae60')}
+                onMouseOut={(e) => !isLoading && (e.currentTarget.style.background = '#2ecc40')}
+              >
+                <span style={{ marginRight: '5px' }}>✓</span> {questionId ? 'Update' : 'Publish'}
+              </button>
+              <div style={{
+                position: 'absolute',
+                bottom: '-30px',
+                left: '0',
+                background: '#333',
                 color: '#fff',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '8px 16px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Save
-            </button>
-            <button
-              onClick={handlePublishQuestion}
-              style={{
-                background: '#2ecc40',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '8px 16px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-              disabled={isLoading}
-            >
-              {questionId ? 'Update' : 'Publish'}
-            </button>
+                padding: '5px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                whiteSpace: 'nowrap',
+                opacity: 0,
+                transition: 'opacity 0.3s',
+                pointerEvents: 'none',
+              }} className="tooltip">
+                {questionId ? 'Update and publish to question bank' : 'Publish to question bank and close'}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -925,6 +949,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                   Required Question
                 </label>
               </div>
+              {/* Add spacing below Required Question */}
+              <div style={{ marginBottom: '20px' }}></div>
             </div>
           </TabPanel>
 
