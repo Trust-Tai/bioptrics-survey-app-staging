@@ -667,7 +667,34 @@ const AllSurveys: React.FC = () => {
                     <ActionsRow>
                       <ActionButton
                         onClick={() => {
-                          window.open(`/preview/survey/${s._id}?status=preview`, '_blank');
+                          // Fetch the latest survey data and save to localStorage before opening preview
+                          Meteor.call('surveys.get', s._id, (err: Meteor.Error | null, surveyData: any) => {
+                            if (err) {
+                              console.error('Error fetching survey data for preview:', err);
+                              setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
+                              return;
+                            }
+                            
+                            // Generate token for preview
+                            Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr: Meteor.Error | null, token: string) => {
+                              if (tokenErr || !token) {
+                                console.error('Error generating token for preview:', tokenErr);
+                                setNotification({ type: 'error', message: 'Failed to generate preview URL' });
+                                return;
+                              }
+                              
+                              try {
+                                // Save the latest survey data to localStorage
+                                localStorage.setItem(`survey-preview-${token}`, JSON.stringify(surveyData));
+                                
+                                // Open preview in new tab
+                                window.open(`/public/${token}?status=preview`, '_blank');
+                              } catch (saveErr) {
+                                console.error('Error saving preview data:', saveErr);
+                                setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
+                              }
+                            });
+                          });
                         }}
                         title="Preview"
                       >
@@ -703,15 +730,43 @@ const AllSurveys: React.FC = () => {
                 onDelete={(id, title) => setConfirmDelete({ _id: id, title })}
                 onViewResponses={(id, title) => setResponsesModal({ isOpen: true, surveyId: id, surveyTitle: title })}
                 onPreview={(id, isPublic) => {
-                  Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
-                    if (!err && token) {
-                      if (isPublic) {
+                  if (isPublic) {
+                    // For public surveys, just open the URL directly
+                    Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
+                      if (!err && token) {
                         window.open(`/public/${token}`, '_blank');
-                      } else {
-                        window.open(`/preview/survey/${id}?status=preview`, '_blank');
                       }
-                    }
-                  });
+                    });
+                  } else {
+                    // For preview, fetch the latest survey data first
+                    Meteor.call('surveys.get', id, (err: Meteor.Error | null, surveyData: any) => {
+                      if (err) {
+                        console.error('Error fetching survey data for preview:', err);
+                        setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
+                        return;
+                      }
+                      
+                      // Generate token for preview
+                      Meteor.call('surveys.generateEncryptedToken', id, (tokenErr: Meteor.Error | null, token: string) => {
+                        if (tokenErr || !token) {
+                          console.error('Error generating token for preview:', tokenErr);
+                          setNotification({ type: 'error', message: 'Failed to generate preview URL' });
+                          return;
+                        }
+                        
+                        try {
+                          // Save the latest survey data to localStorage
+                          localStorage.setItem(`survey-preview-${token}`, JSON.stringify(surveyData));
+                          
+                          // Open preview in new tab
+                          window.open(`/public/${token}?status=preview`, '_blank');
+                        } catch (saveErr) {
+                          console.error('Error saving preview data:', saveErr);
+                          setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
+                        }
+                      });
+                    });
+                  }
                 }}
               />
             )

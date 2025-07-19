@@ -718,6 +718,13 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
               </h2>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
+                  style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: saving ? 'wait' : 'pointer', padding: '0 16px', opacity: saving ? 0.6 : 1 }}
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+                <button
                   style={{ background: '#fff', color: '#552a47', border: '2px solid #552a47', borderRadius: 10, height: 36, fontWeight: 500, fontSize: 15, cursor: 'pointer', padding: '0 16px' }}
                   onClick={() => {
                     // Create a mapping of section indices to section names for the preview
@@ -789,17 +796,14 @@ const questionOptions: QuestionOption[] = allQuestions.map(q => ({ value: q._id,
                     
                     console.log('[SurveyBuilder] Preview data:', completeData);
                     localStorage.setItem(`survey-preview-${previewToken}`, JSON.stringify(completeData));
-                    window.open(`/preview/survey/${previewToken}?status=preview`, '_blank');
+                    
+                    // Use the public URL path with status=preview parameter to match ModernSurveyPublic implementation
+                    window.open(`/public/${previewToken}?status=preview`, '_blank');
+                    
+                    showSuccess('Survey preview opened in a new tab');
                   }}
                 >
                   Preview
-                </button>
-                <button
-                  style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: saving ? 'wait' : 'pointer', padding: '0 16px', opacity: saving ? 0.6 : 1 }}
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 10, height: 36, fontWeight: 600, fontSize: 15, cursor: publishing ? 'wait' : 'pointer', padding: '0 16px', opacity: publishing ? 0.6 : 1 }}

@@ -2585,6 +2585,97 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save Survey'}
               </button>
               
+              {/* Preview Button */}
+              <button 
+                onClick={() => {
+                  if (!survey?._id) {
+                    showErrorAlert('Please save the survey first before previewing.');
+                    return;
+                  }
+                  
+                  // Save current draft to localStorage
+                  try {
+                    // Get the token (either encrypted or share token)
+                    const getToken = async () => {
+                      try {
+                        // Try to generate an encrypted token for the survey
+                        const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
+                        return encryptedToken;
+                      } catch (error) {
+                        console.error('Error generating encrypted token for preview:', error);
+                        // Fallback to shareToken if available
+                        if (survey.shareToken) {
+                          return survey.shareToken;
+                        }
+                        throw new Error('Could not generate token for preview');
+                      }
+                    };
+                    
+                    getToken().then(token => {
+                      // Prepare survey data for preview
+                      const previewData = {
+                        ...survey,
+                        sections: sections,
+                        sectionQuestions: surveyQuestions,
+                        selectedTheme: selectedTheme,
+                        selectedTags: selectedTags,
+                        selectedCategories: selectedCategories,
+                        selectedDemographics: selectedDemographics
+                      };
+                      
+                      // Save to localStorage
+                      localStorage.setItem(`survey-preview-${token}`, JSON.stringify(previewData));
+                      
+                      // Open preview in new tab
+                      const baseUrl = window.location.origin;
+                      const previewUrl = `${baseUrl}/public/${token}?status=preview`;
+                      window.open(previewUrl, '_blank');
+                    }).catch(error => {
+                      showErrorAlert(`Error preparing preview: ${error.message}`);
+                    });
+                  } catch (error) {
+                    showErrorAlert(`Error preparing preview: ${error.message}`);
+                  }
+                }}
+                disabled={!survey?._id}
+                className="action-button preview-button"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#3498db',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                  opacity: !survey?._id ? 0.7 : 1,
+                  transition: 'all 0.3s ease',
+                  minWidth: '100px',
+                  boxShadow: '0 2px 4px rgba(52,152,219,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseOver={(e) => {
+                  if (survey?._id) {
+                    e.currentTarget.style.backgroundColor = '#2980b9';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(52,152,219,0.4)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#3498db';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(52,152,219,0.3)';
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg> Preview
+              </button>
+              
               {/* Publish Button */}
               <button 
                 onClick={handleGeneratePublicUrl}
