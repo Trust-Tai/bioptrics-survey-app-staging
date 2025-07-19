@@ -5,6 +5,17 @@ import { check, Match } from 'meteor/check';
 // Ensure this file is imported on the server
 if (Meteor.isServer) {
   console.log('Registering users methods');
+  
+  // Publication for basic user information (name, email) needed for UI components
+  Meteor.publish('allUsersBasic', function() {
+    return Meteor.users.find({}, {
+      fields: {
+        'profile.name': 1,
+        'username': 1,
+        'emails.address': 1
+      }
+    });
+  });
 }
 
 // Helper function to check if user is admin

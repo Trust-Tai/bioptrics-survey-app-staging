@@ -12,6 +12,19 @@ declare module 'meteor/meteor' {
   }
 }
 
+// Define the collaborator role type
+export type CollaboratorRole = 'editor' | 'viewer';
+
+// Define the collaborator interface
+export interface Collaborator {
+  userId: string;      // User ID of the collaborator
+  email: string;       // Email of the collaborator
+  name?: string;       // Name of the collaborator (optional)
+  role: CollaboratorRole; // Role of the collaborator (editor or viewer)
+  addedAt: Date;       // When the collaborator was added
+  addedBy: string;     // User ID of who added the collaborator
+}
+
 export interface SurveyDoc {
   _id?: string;
   title: string;
@@ -34,6 +47,8 @@ export interface SurveyDoc {
   organizationId?: string;
   startDate?: Date;
   endDate?: Date;
+  // Collaboration feature: array of collaborators who can access this survey
+  collaborators?: Collaborator[];
   // Template-related fields
   isTemplate?: boolean;
   templateName?: string;
@@ -145,6 +160,21 @@ if (Meteor.isServer) {
     return Surveys.find({ shareToken, published: true });
   });
 
+  // Publication for surveys where the user is either the owner or a collaborator
+  Meteor.publish('surveys.ownedAndCollaborated', function () {
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    // Return surveys where the user is either the owner or a collaborator
+    return Surveys.find({
+      $or: [
+        { createdBy: this.userId },
+        { 'collaborators.userId': this.userId }
+      ]
+    });
+  });
+
   // Preview: allow owner or admin to view the latest draft (published or not)
   Meteor.publish('surveys.preview', async function (encryptedToken) {
     check(encryptedToken, String);
@@ -185,10 +215,17 @@ if (Meteor.isServer) {
       return surveyId ? Surveys.find({ _id: surveyId }) : Surveys.find({ shareToken: encryptedToken });
     }
     
-    // If no shareToken and not the creator or admin, don't return anything
-    if (!this.userId || 
-        (surveyDoc.createdBy !== this.userId && 
-         !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin'))) {
+    // If no shareToken and not the creator, admin, or collaborator, don't return anything
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const isOwner = surveyDoc.createdBy === this.userId;
+    const isAdmin = user?.roles?.includes('admin');
+    const isCollaborator = surveyDoc.collaborators?.some(c => c.userId === this.userId);
+    
+    if (!isOwner && !isAdmin && !isCollaborator) {
       return this.ready();
     }
     
@@ -298,8 +335,17 @@ Meteor.methods({
     // Validate the survey exists and user has permission
     const survey = await Surveys.findOneAsync(surveyId);
     if (!survey) throw new Meteor.Error('Survey not found');
-    if (survey.createdBy !== this.userId && !(await Meteor.users.findOneAsync(this.userId))?.roles?.includes('admin')) {
-      throw new Meteor.Error('Not authorized');
+    
+    // Check if user is owner, admin, or editor collaborator
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const isOwner = survey.createdBy === this.userId;
+    const isAdmin = user?.roles?.includes('admin');
+    const isEditorCollaborator = survey.collaborators?.some(c => 
+      c.userId === this.userId && c.role === 'editor'
+    );
+    
+    if (!isOwner && !isAdmin && !isEditorCollaborator) {
+      throw new Meteor.Error('Not authorized', 'You do not have permission to update this survey');
     }
     
     // Update the branching logic
@@ -415,14 +461,28 @@ Meteor.methods({
   async 'surveys.publish'(survey: Partial<SurveyDoc>) {
     if (!this.userId) throw new Meteor.Error('Not authorized');
     const now = new Date();
-
+    
     // Fetch the existing survey from the DB
     const existingRaw = survey._id && await Surveys.findOneAsync(survey._id);
     const existing: SurveyDoc | undefined = (typeof existingRaw === 'object' && existingRaw !== null ? existingRaw as SurveyDoc : undefined);
-
-    // If already published and has a shareToken, just return it
-    if (existing && existing.published && existing.shareToken) {
-      return { _id: existing._id, shareToken: existing.shareToken };
+    
+    // Check if user is authorized to publish this survey
+    if (existing) {
+      const user = await Meteor.users.findOneAsync(this.userId);
+      const isOwner = existing.createdBy === this.userId;
+      const isAdmin = user?.roles?.includes('admin');
+      const isEditorCollaborator = existing.collaborators?.some(c => 
+        c.userId === this.userId && c.role === 'editor'
+      );
+      
+      if (!isAdmin && !isOwner && !isEditorCollaborator) {
+        throw new Meteor.Error('Not authorized', 'You do not have permission to publish this survey');
+      }
+    
+      // If already published and has a shareToken, just return it
+      if (existing.published && existing.shareToken) {
+        return { _id: existing._id, shareToken: existing.shareToken };
+      }
     }
 
     // If not, generate a new token if needed
@@ -433,9 +493,9 @@ Meteor.methods({
         $set: {
           title: survey.title || (existing ? existing.title : ''),
           description: survey.description || (existing ? existing.description : ''),
-          logo: survey.logo ?? (existing ? existing.logo : undefined),
-          image: survey.image ?? (existing ? existing.image : undefined),
-          color: survey.color ?? (existing ? existing.color : undefined),
+          logo: survey.logo !== undefined ? survey.logo : existing?.logo,
+          image: survey.image !== undefined ? survey.image : existing?.image,
+          color: survey.color !== undefined ? survey.color : existing?.color,
           selectedQuestions: survey.selectedQuestions || (existing ? existing.selectedQuestions : {}),
           siteTextQuestions: survey.siteTextQuestions || (existing ? existing.siteTextQuestions : []),
           siteTextQForm: survey.siteTextQForm || (existing ? existing.siteTextQForm : {}),
@@ -446,7 +506,7 @@ Meteor.methods({
           // Include default settings
           defaultSettings: survey.defaultSettings || (existing ? existing.defaultSettings : {}),
           // Include themes, categories, and tags
-          selectedTheme: survey.selectedTheme ?? (existing ? existing.selectedTheme : undefined),
+          selectedTheme: survey.selectedTheme !== undefined ? survey.selectedTheme : existing?.selectedTheme,
           selectedCategories: survey.selectedCategories || (existing ? existing.selectedCategories : []),
           selectedTags: survey.selectedTags || (existing ? existing.selectedTags : []),
           published: true,
@@ -500,9 +560,15 @@ Meteor.methods({
     const existingSurvey = await Surveys.findOneAsync(surveyId);
     if (!existingSurvey) throw new Meteor.Error('Survey not found');
     
-    // Check if user is admin or survey creator
+    // Check if user is admin, survey creator, or editor collaborator
     const user = await Meteor.users.findOneAsync(this.userId);
-    if (!user?.roles?.includes('admin') && existingSurvey.createdBy !== this.userId) {
+    const isOwner = existingSurvey.createdBy === this.userId;
+    const isAdmin = user?.roles?.includes('admin');
+    const isEditorCollaborator = existingSurvey.collaborators?.some(c => 
+      c.userId === this.userId && c.role === 'editor'
+    );
+    
+    if (!isAdmin && !isOwner && !isEditorCollaborator) {
       throw new Meteor.Error('Not authorized to update this survey');
     }
     
@@ -711,5 +777,186 @@ Meteor.methods({
     
     // Return the updated survey
     return await Surveys.findOneAsync({ _id: surveyId });
+  },
+  
+  /**
+   * Add a collaborator to a survey
+   * @param surveyId - The ID of the survey to add a collaborator to
+   * @param collaboratorEmail - The email of the user to add as a collaborator
+   * @param role - The role to assign to the collaborator (editor or viewer)
+   * @param sendNotification - Whether to send an email notification (default: true)
+   * @returns The updated survey document
+   */
+  async 'surveys.addCollaborator'(surveyId: string, collaboratorEmail: string, role: CollaboratorRole, sendNotification = true) {
+    check(surveyId, String);
+    check(collaboratorEmail, String);
+    check(role, String);
+    
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to add collaborators');
+    }
+    
+    // Find the survey
+    const survey = await Surveys.findOneAsync({ _id: surveyId });
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user has permission to modify this survey (must be owner or admin)
+    if (survey.createdBy !== this.userId) {
+      // Check if user is an admin
+      const user = await Meteor.users.findOneAsync(this.userId);
+      if (!user?.roles?.includes('admin')) {
+        throw new Meteor.Error('not-authorized', 'Only the survey owner or an admin can add collaborators');
+      }
+    }
+    
+    // Find the user to add as a collaborator
+    const collaboratorUser = await Meteor.users.findOneAsync({ 'emails.address': collaboratorEmail });
+    if (!collaboratorUser) {
+      throw new Meteor.Error('user-not-found', 'User with this email address not found');
+    }
+    
+    // Don't allow adding the owner as a collaborator
+    if (collaboratorUser._id === survey.createdBy) {
+      throw new Meteor.Error('invalid-operation', 'Cannot add the survey owner as a collaborator');
+    }
+    
+    // Check if user is already a collaborator
+    if (survey.collaborators?.some(c => c.userId === collaboratorUser._id)) {
+      throw new Meteor.Error('already-exists', 'This user is already a collaborator on this survey');
+    }
+    
+    // Create the collaborator object
+    const collaborator: Collaborator = {
+      userId: collaboratorUser._id,
+      email: collaboratorEmail,
+      name: collaboratorUser.profile?.name,
+      role: role,
+      addedAt: new Date(),
+      addedBy: this.userId
+    };
+    
+    // Add the collaborator to the survey
+    await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $push: { collaborators: collaborator },
+        $set: { updatedAt: new Date() }
+      }
+    );
+    
+    // Send email notification if requested
+    if (sendNotification) {
+      try {
+        // Import the email service
+        const { sendCollaboratorInvitation } = await import('../../../utils/emailService');
+        
+        // Get the inviter's name
+        const inviter = await Meteor.users.findOneAsync(this.userId);
+        const inviterName = inviter?.profile?.name || inviter?.username || 'A survey administrator';
+        
+        // Send the invitation email
+        await sendCollaboratorInvitation(
+          collaboratorEmail,
+          survey.title,
+          inviterName,
+          role,
+          surveyId
+        );
+        
+        console.log(`Sent collaboration invitation email to ${collaboratorEmail} for survey ${surveyId}`);
+      } catch (error) {
+        // Log the error but don't fail the operation if email sending fails
+        console.error('Failed to send collaborator invitation email:', error);
+      }
+    }
+    
+    // Return the updated survey
+    return await Surveys.findOneAsync({ _id: surveyId });
+  },
+
+  /**
+   * Remove a collaborator from a survey
+   * @param surveyId - The ID of the survey to remove a collaborator from
+   * @param collaboratorId - The ID of the user to remove as a collaborator
+   * @returns The updated survey document
+   */
+  async 'surveys.removeCollaborator'(surveyId: string, collaboratorId: string) {
+    check(surveyId, String);
+    check(collaboratorId, String);
+    
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to remove collaborators');
+    }
+    
+    // Find the survey
+    const survey = await Surveys.findOneAsync({ _id: surveyId });
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user has permission to modify this survey (must be owner or admin)
+    if (survey.createdBy !== this.userId) {
+      // Check if user is an admin
+      const user = await Meteor.users.findOneAsync(this.userId);
+      if (!user?.roles?.includes('admin')) {
+        throw new Meteor.Error('not-authorized', 'Only the survey owner or an admin can remove collaborators');
+      }
+    }
+    
+    // Check if the collaborator exists in the survey
+    if (!survey.collaborators?.some(c => c.userId === collaboratorId)) {
+      throw new Meteor.Error('not-found', 'Collaborator not found in this survey');
+    }
+    
+    // Remove the collaborator from the survey
+    await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $pull: { collaborators: { userId: collaboratorId } },
+        $set: { updatedAt: new Date() }
+      }
+    );
+    
+    // Return the updated survey
+    return await Surveys.findOneAsync({ _id: surveyId });
+  },
+  
+  /**
+   * Get all collaborators for a survey
+   * @param surveyId - The ID of the survey to get collaborators for
+   * @returns Array of collaborators
+   */
+  async 'surveys.getCollaborators'(surveyId: string) {
+    check(surveyId, String);
+    
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to view collaborators');
+    }
+    
+    // Find the survey
+    const survey = await Surveys.findOneAsync({ _id: surveyId });
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user has permission to view this survey (must be owner, collaborator, or admin)
+    const isOwner = survey.createdBy === this.userId;
+    const isCollaborator = survey.collaborators?.some(c => c.userId === this.userId);
+    
+    if (!isOwner && !isCollaborator) {
+      // Check if user is an admin
+      const user = await Meteor.users.findOneAsync(this.userId);
+      if (!user?.roles?.includes('admin')) {
+        throw new Meteor.Error('not-authorized', 'You do not have permission to view this survey\'s collaborators');
+      }
+    }
+    
+    // Return the collaborators array or an empty array if none
+    return survey.collaborators || [];
   },
 });

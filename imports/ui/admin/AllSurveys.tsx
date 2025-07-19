@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import DashboardBg from './DashboardBg';
@@ -41,7 +41,7 @@ const Title = styled.h1`
 const SearchContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -81,6 +81,31 @@ const SearchIcon = styled(FaSearch)`
   transform: translateY(-50%);
   color: var(--color-primary);
   opacity: 0.6;
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const FilterSelect = styled.select`
+  height: 44px;
+  font-size: 15px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-accent);
+  color: var(--color-text);
+  font-weight: 500;
+  outline: none;
+  background: var(--color-background);
+  min-width: 140px;
+  cursor: pointer;
+  
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
 `;
 
 const ActionsContainer = styled.div`
@@ -442,6 +467,9 @@ interface SurveyDisplay {
   };
   scheduledFor?: string;
   potentialRespondents?: number;
+  isOwned?: boolean; // Whether the current user is the owner
+  isSharedByMe?: boolean; // Whether the current user shared this survey
+  isSharedWithMe?: boolean; // Whether this survey is shared with the current user
 }
 
 function stripHtml(html: string): string {
@@ -488,6 +516,10 @@ const AllSurveys: React.FC = () => {
   // Add view state (grid or list) - default to list view as requested
   const [view, setView] = useState<'grid' | 'list'>('list');
 
+  // New filter state variables
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [createdByFilter, setCreatedByFilter] = useState<string>('all');
+
   // State for responses modal
   const [responsesModal, setResponsesModal] = useState<{ isOpen: boolean; surveyId: string; surveyTitle: string }>({ 
     isOpen: false, 
@@ -495,21 +527,86 @@ const AllSurveys: React.FC = () => {
     surveyTitle: '' 
   });
 
-  const surveys = useTracker(() => {
-    Meteor.subscribe('surveys.all');
-    return Surveys.find({}, { sort: { updatedAt: -1 } }).fetch().map((s: any) => {
-      // Calculate additional fields needed for list view
-      const sections = s.sections || [];
-      const questionCount = sections.reduce((total: number, section: any) => {
-        return total + (section.questions?.length || 0);
-      }, 0);
+  // Get the current user ID
+  const userId = Meteor.userId();
+
+  // Fetch surveys data - only get surveys owned by or shared with the current user
+  const { surveys, loading } = useTracker(() => {
+    const handle = Meteor.subscribe('surveys.ownedAndCollaborated');
+    const data = Surveys.find({}, { sort: { updatedAt: -1 } }).fetch();
+    return {
+      loading: !handle.ready(),
+      surveys: data
+    };
+  }, []);
+
+  // Define interface for survey data
+  interface SurveyData {
+    _id: string;
+    title: string;
+    description: string;
+    published: boolean;
+    createdBy: string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+    sections?: Array<{
+      questions?: Array<any>;
+    }>;
+    responses?: Array<{
+      completed: boolean;
+    }>;
+    collaborators?: Array<{
+      userId: string;
+      role: string;
+    }>;
+    [key: string]: any; // Allow for other properties
+  }
+
+  // Define interface for processed survey data
+  interface ProcessedSurvey extends SurveyData {
+    sections: number;
+    questionCount: number;
+    responseStats: {
+      total: number;
+      completed: number;
+      completion: number;
+    };
+    createdByName: string;
+    isOwned: boolean;
+    isSharedByMe: boolean;
+    isSharedWithMe: boolean;
+  }
+
+  // Process surveys for display with ownership and collaboration info
+  const processedSurveys = useMemo(() => {
+    // Create a map of user IDs to names for the creator column
+    const userMap: Record<string, string> = {};
+    Meteor.users.find({}).forEach((user) => {
+      if (user._id && user.profile?.name) {
+        userMap[user._id] = user.profile.name;
+      }
+    });
+    
+    return surveys.map((s: SurveyData) => {
+      // Calculate sections and questions count
+      const sections = s.sections?.length || 0;
+      const questionCount = s.sections?.reduce((total: number, section: any) => total + (section.questions?.length || 0), 0) || 0;
       
       // Calculate response stats
-      const responseStats = s.responseStats || {
-        totalResponses: 0,
-        completedResponses: 0,
-        completionRate: 0
-      };
+      const total = s.responses?.length || 0;
+      const completed = s.responses?.filter((r: any) => r.completed)?.length || 0;
+      const completion = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const responseStats = { total, completed, completion };
+      
+      // Always get the original creator's name from the user map
+      // This ensures we show the main owner's name even for shared surveys
+      const createdByName = s.createdBy ? userMap[s.createdBy] : 'System';
+      
+      // Determine ownership and collaboration relationships
+      const isOwned = s.createdBy === userId;
+      const isSharedByMe = isOwned && Array.isArray(s.collaborators) && s.collaborators.length > 0;
+      const isSharedWithMe = !isOwned && Array.isArray(s.collaborators) && 
+        s.collaborators.some((collab: any) => collab.userId === userId);
       
       return {
         ...s,
@@ -517,22 +614,44 @@ const AllSurveys: React.FC = () => {
         updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt),
         sections,
         questionCount,
-        responseStats
+        responseStats,
+        createdByName,
+        isOwned,
+        isSharedByMe,
+        isSharedWithMe
       };
-    }) as SurveyDisplay[];
-  }, []);
+    });
+  }, [userId, surveys]);
 
   const pageSize = 10;
-  const filtered = surveys.filter(s =>
-    s.title.toLowerCase().includes(search.toLowerCase()) ||
-    s.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = processedSurveys.filter((s: ProcessedSurvey) => {
+    // Text search filter
+    const matchesSearch = 
+      s.title.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase());
+    
+    // Status filter
+    const matchesStatus = 
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && s.published) ||
+      (statusFilter === 'draft' && !s.published);
+    
+    // Created By filter
+    const matchesCreatedBy = 
+      createdByFilter === 'all' ||
+      (createdByFilter === 'owned' && s.isOwned) ||
+      (createdByFilter === 'shared_by_me' && s.isSharedByMe) ||
+      (createdByFilter === 'shared_with_me' && s.isSharedWithMe);
+    
+    return matchesSearch && matchesStatus && matchesCreatedBy;
+  });
+  
   const pageCount = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [search, statusFilter, createdByFilter]);
 
   return (
     <AdminLayout>
@@ -583,6 +702,35 @@ const AllSurveys: React.FC = () => {
                 onChange={e => setSearch(e.target.value)}
               />
             </SearchInputWrapper>
+            
+            <FilterContainer>
+              {/* Status Filter */}
+              <FilterSelect
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1); // Reset to first page when filter changes
+                }}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+              </FilterSelect>
+
+              <FilterSelect
+                value={createdByFilter}
+                onChange={(e) => {
+                  setCreatedByFilter(e.target.value);
+                  setPage(1); // Reset to first page when filter changes
+                }}
+              >
+                <option value="all">All My Surveys</option>
+                <option value="owned">Surveys I Own</option>
+                <option value="shared_by_me">Surveys I've Shared</option>
+                <option value="shared_with_me">Shared With Me</option>
+              </FilterSelect>
+            </FilterContainer>
+            
             <ActionsContainer>
               {/* View Toggle */}
               <ViewToggle view={view} onViewChange={setView} />

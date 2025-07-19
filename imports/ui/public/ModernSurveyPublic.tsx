@@ -147,10 +147,29 @@ const ModernSurveyPublic: React.FC = () => {
           const parsedData = JSON.parse(storedData);
           console.log('[ModernSurveyPublic] Successfully parsed preview data');
           
-          // In preview mode, if the user is logged in and has the data in localStorage,
-          // they should be authorized to view it (since they created it)
-          setIsAuthorized(true);
-          setSurveyData(parsedData);
+          // Check if user is owner, collaborator, or admin for this survey
+          if (!currentUser) {
+            return;
+          }
+          
+          const isOwner = parsedData.createdBy === currentUser._id;
+          const isAdmin = currentUser.roles?.includes('admin');
+          const isCollaborator = parsedData.collaborators?.some((c: { userId: string }) => 
+            c.userId === currentUser._id
+          );
+          
+          if (isOwner || isCollaborator || isAdmin) {
+            console.log('[ModernSurveyPublic] User is authorized to view preview as', 
+              isOwner ? 'owner' : isCollaborator ? 'collaborator' : 'admin');
+            setIsAuthorized(true);
+            setSurveyData(parsedData);
+          } else {
+            console.log('[ModernSurveyPublic] User is not authorized to view this preview');
+            setIsAuthorized(false);
+            setLoadError('You are not authorized to view this survey preview');
+            setIsLoading(false);
+            return;
+          }
           
           // Extract theme ID from preview data
           if (parsedData.selectedTheme) {
