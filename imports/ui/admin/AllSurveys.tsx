@@ -577,15 +577,28 @@ const AllSurveys: React.FC = () => {
     isSharedWithMe: boolean;
   }
 
+  // Subscribe to all users to ensure we have their data for creator names
+  useTracker(() => {
+    Meteor.subscribe('allUsersBasic');
+  }, []);
+  
   // Process surveys for display with ownership and collaboration info
   const processedSurveys = useMemo(() => {
     // Create a map of user IDs to names for the creator column
     const userMap: Record<string, string> = {};
+    
+    // Get all users for creator name lookup
     Meteor.users.find({}).forEach((user) => {
-      if (user._id && user.profile?.name) {
-        userMap[user._id] = user.profile.name;
+      if (user._id) {
+        // Try to get the user's name from different possible fields
+        userMap[user._id] = user.profile?.name || 
+                           user.username || 
+                           (user.emails && user.emails[0] && user.emails[0].address) || 
+                           'Unknown User';
       }
     });
+    
+    console.log('User map:', userMap); // Debug: Log the user map
     
     return surveys.map((s: SurveyData) => {
       // Calculate sections and questions count
@@ -600,7 +613,23 @@ const AllSurveys: React.FC = () => {
       
       // Always get the original creator's name from the user map
       // This ensures we show the main owner's name even for shared surveys
-      const createdByName = s.createdBy ? userMap[s.createdBy] : 'System';
+      let createdByName = 'Unknown User';
+      if (s.createdBy) {
+        if (userMap[s.createdBy]) {
+          createdByName = userMap[s.createdBy];
+        } else {
+          // If we don't have the user in our map yet, try to get it directly
+          const user = Meteor.users.findOne(s.createdBy);
+          if (user) {
+            createdByName = user.profile?.name || 
+                          user.username || 
+                          (user.emails && user.emails[0] && user.emails[0].address) || 
+                          'Unknown User';
+            // Update the map for future use
+            userMap[s.createdBy] = createdByName;
+          }
+        }
+      }
       
       // Determine ownership and collaboration relationships
       const isOwned = s.createdBy === userId;
@@ -724,9 +753,9 @@ const AllSurveys: React.FC = () => {
                   setPage(1); // Reset to first page when filter changes
                 }}
               >
-                <option value="all">All My Surveys</option>
-                <option value="owned">Surveys I Own</option>
-                <option value="shared_by_me">Surveys I've Shared</option>
+                <option value="all">All</option>
+                <option value="owned">Survey I Own</option>
+                <option value="shared_by_me">Survey I've Shared</option>
                 <option value="shared_with_me">Shared With Me</option>
               </FilterSelect>
             </FilterContainer>
