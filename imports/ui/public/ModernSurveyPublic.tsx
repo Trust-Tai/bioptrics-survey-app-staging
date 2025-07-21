@@ -352,27 +352,27 @@ const ModernSurveyPublic: React.FC = () => {
     );
   }
   
-  // if (!surveyData || !isAuthorized) {
-  //   return (
-  //     <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
-  //       <PageContainer>
-  //         <Header>
-  //           <HeaderContent>
-  //             {/* No logo in this state */}
-  //           </HeaderContent>
-  //         </Header>
-  //         <MainContent>
-  //           <ModernSurveyError 
-  //             message={"You are not authorized to view this survey preview"} 
-  //           />
-  //         </MainContent>
-  //         <Footer>
-  //           © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.
-  //         </Footer>
-  //       </PageContainer>
-  //     </SurveyThemeProvider>
-  //   );
-  // }
+  if (!surveyData || !isAuthorized) {
+    return (
+      <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
+        <PageContainer>
+          <Header>
+            <HeaderContent>
+              {/* No logo in this state */}
+            </HeaderContent>
+          </Header>
+          <MainContent>
+            <ModernSurveyError 
+              message={"You are not authorized to view this survey preview"} 
+            />
+          </MainContent>
+          <Footer>
+            © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.
+          </Footer>
+        </PageContainer>
+      </SurveyThemeProvider>
+    );
+  }
   
   // Render the survey content
   return (
