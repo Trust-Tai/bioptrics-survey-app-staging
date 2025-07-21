@@ -1365,38 +1365,6 @@ const AllLayers = () => {
           </StatCard>
         </StatsContainer>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <input
-            type="text"
-            placeholder="Search tags..."
-            style={{ 
-              height: '38px', 
-              fontSize: '14px', 
-              padding: '0 12px', 
-              borderRadius: '4px', 
-              border: '1px solid #ddd', 
-              width: '300px'
-            }}
-          />
-          
-          <ViewToggleGroup>
-            <ViewToggleButton 
-              active={viewMode === 'tree'} 
-              onClick={() => setViewMode('tree')}
-              theme={theme}
-            >
-              <FaList /> Tree
-            </ViewToggleButton>
-            <ViewToggleButton 
-              active={viewMode === 'list'} 
-              onClick={() => setViewMode('list')}
-              theme={theme}
-            >
-              <FaTable /> List
-            </ViewToggleButton>
-          </ViewToggleGroup>
-        </div>
-        
         <FilterSection style={{ marginBottom: '1.5rem', padding: '1rem', background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '300px' }}>

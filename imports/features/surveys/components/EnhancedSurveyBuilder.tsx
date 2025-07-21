@@ -3750,66 +3750,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           )}
                         </div>
                       </div>
-
-                      {/* Primary Color Picker */}
-                      <div className="appearance-item">
-                        <label htmlFor="surveyPrimaryColor" style={{ 
-                          display: 'block', 
-                          marginBottom: '8px', 
-                          fontWeight: 500,
-                          fontSize: '14px',
-                          color: '#495057'
-                        }}>
-                          Primary Color
-                        </label>
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '12px',
-                          backgroundColor: '#ffffff',
-                          padding: '8px 12px',
-                          borderRadius: '4px',
-                          border: '1px solid #dee2e6'
-                        }}>
-                          <input
-                            type="color"
-                            id="surveyPrimaryColor"
-                            className="form-control color-picker"
-                            value={survey?.color || '#552a47'}
-                            onChange={(e) => setSurvey({...survey, color: e.target.value})}
-                            style={{ 
-                              width: '40px', 
-                              height: '40px', 
-                              padding: '0',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer'
-                            }}
-                          />
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={survey?.color || '#552a47'}
-                            onChange={(e) => setSurvey({...survey, color: e.target.value})}
-                            placeholder="#552a47"
-                            style={{ 
-                              width: '100px',
-                              height: '38px',
-                              border: '1px solid #ced4da',
-                              borderRadius: '4px',
-                              padding: '0 8px',
-                              fontSize: '14px'
-                            }}
-                          />
-                          <div style={{ 
-                            fontSize: '13px', 
-                            color: '#6c757d',
-                            marginLeft: '8px'
-                          }}>
-                            This color will be used for buttons, headers, and accents
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

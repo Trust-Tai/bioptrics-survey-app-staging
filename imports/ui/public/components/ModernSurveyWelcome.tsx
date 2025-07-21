@@ -96,16 +96,31 @@ const WelcomeHeaderImage = styled.div`
   justify-content: flex-end;
   
   img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 12px;
+    width: 100%;
+    height: 500px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     object-fit: cover;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
   
   @media (max-width: 768px) {
     margin-top: 1.5rem;
     justify-content: center;
+    
+    img {
+      height: 300px;
+    }
+  }
+`;
+
+const LogoContainer = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+  
+  img {
+    max-height: 80px;
+    max-width: 200px;
   }
 `;
 
@@ -445,8 +460,9 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
     timestamp: number;
   } | null>(null);
 
-  // Featured image for the header
-  const logo = survey.logo || survey.image || null;
+  // Get the featured image and logo separately
+  const featuredImage = survey.featuredImage || null;
+  const logo = survey.logo || null;
   
   // Effect to listen for the custom event from ModernSurveyContent
   useEffect(() => {
@@ -627,13 +643,18 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   return (
     <WelcomeContainer>
       <WelcomeHeader>
-        <WelcomeHeaderContent style={{ flex: logo ? 1 : 'auto', maxWidth: logo ? '60%' : '100%' }}>
+        <WelcomeHeaderContent style={{ flex: featuredImage ? 1 : 'auto', maxWidth: featuredImage ? '60%' : '100%' }}>
+          {logo && (
+            <LogoContainer>
+              <img src={logo} alt="Survey logo" />
+            </LogoContainer>
+          )}
           <h1>{survey.title || 'Customer Experience Survey'}</h1>
           <p dangerouslySetInnerHTML={{ __html: survey.description || 'Help us understand your experience and improve our services. Your feedback matters and takes just a few minutes to complete.' }} />
         </WelcomeHeaderContent>
-        {logo && (
+        {featuredImage && (
           <WelcomeHeaderImage>
-            <img src={logo} alt="Survey featured image" />
+            <img src={featuredImage} alt="Survey featured image" />
           </WelcomeHeaderImage>
         )}
       </WelcomeHeader>
