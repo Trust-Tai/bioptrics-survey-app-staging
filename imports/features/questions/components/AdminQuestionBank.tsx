@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { FaPlus, FaFilter } from 'react-icons/fa';
-import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import DashboardBg from '../../../ui/admin/DashboardBg';
-import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
-import QuestionPreviewModal from '../../../ui/admin/QuestionPreviewModal';
+import { useTracker } from 'meteor/react-meteor-data';
+import styled from 'styled-components';
+import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
+
+// Collections
 import { Questions } from '../../../api/questions';
 import { WPSCategories } from '../../../features/wps-framework/api/wpsCategories';
 import { SurveyThemes } from '../../../features/survey-themes/api/surveyThemes';
+
+// Context
+import { useQuestionBuilderPanel } from '../contexts/QuestionBuilderPanelContext';
+
+// Components
+import AdminLayout from '../../../ui/layouts/AdminLayout';
+import QuestionPreviewModal from '../../../ui/admin/QuestionPreviewModal';
+import DashboardBg from '../../../ui/admin/DashboardBg';
 
 // Styled components
 const Container = styled.div`
@@ -168,6 +175,8 @@ function getLatestVersion(doc: any) {
 
 const AdminQuestionBank = () => {
   const navigate = useNavigate();
+  // Access the question builder panel context
+  const { openPanel } = useQuestionBuilderPanel();
   // Preview modal state
   const [previewQuestion, setPreviewQuestion] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -267,7 +276,7 @@ const AdminQuestionBank = () => {
           <Title>Question Bank</Title>
           <div style={{ display: 'flex', gap: 12 }}>
             <button 
-              onClick={() => navigate('/admin/questions/builder')} 
+              onClick={() => openPanel()} 
               style={{ 
                 background: '#552a47', 
                 color: '#fff', 

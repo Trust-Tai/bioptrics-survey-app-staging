@@ -25,6 +25,13 @@ export interface Question {
   isActive?: boolean;
   keywords?: string[];
   organizationId?: string;
+  // Tag fields
+  labels?: string[];
+  tags?: string[];
+  // Assessment mode fields
+  isAssessment?: boolean;
+  correctAnswers?: any[];
+  points?: number;
   // Feedback fields
   collectFeedback?: boolean;
   feedbackType?: 'text' | 'rating' | 'file';
@@ -49,6 +56,12 @@ export interface QuestionVersion {
   rightLabel?: string;
   categoryTags: string[];
   surveyThemes: string[];
+  // Add labels field for tag storage
+  labels?: string[];
+  // Assessment mode fields
+  isAssessment?: boolean;
+  correctAnswers?: any[];
+  points?: number;
   adminNotes: string;
   estimatedTimeSeconds?: number; // Estimated time to answer the question in seconds
   language: string;
@@ -76,6 +89,12 @@ export function mapQuestionToVersion(q: Question, userId?: string) {
     surveyThemes: q.surveyThemeIds || [],
     questionTag: q.questionTagId,
     customFields: q.customFields || [],
+    // Add labels field to ensure tags are saved properly
+    labels: q.labels || [],
+    // Add assessment mode fields
+    isAssessment: q.isAssessment === true,
+    correctAnswers: q.correctAnswers || [],
+    points: q.points || 1,
     adminNotes: '',
     language: 'en',
     published: false, // Default to false, will be set to true in publishQuestionsToDB

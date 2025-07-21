@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, Routes, Route, useNavigate } from 'react-router-dom';
+import { QuestionBuilderPanelProvider } from '../features/questions/contexts/QuestionBuilderPanelContext';
 import { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { AdminLogin } from './AdminLogin';
@@ -238,7 +239,9 @@ const App: React.FC = () => (
   <Router>
     <ThemeProvider>
       <OrganizationProvider>
-        <AppRoutes />
+        <QuestionBuilderPanelProvider>
+          <AppRoutes />
+        </QuestionBuilderPanelProvider>
       </OrganizationProvider>
     </ThemeProvider>
   </Router>

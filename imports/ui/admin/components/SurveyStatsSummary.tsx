@@ -75,14 +75,14 @@ const SurveyStatsSummary: React.FC<SurveyStatsProps> = ({ organizationId }) => {
       setLoading(true);
       // Call the method with null if organizationId is undefined
       const orgId = organizationId || null;
-      console.log('Calling surveys.getStats with organizationId:', orgId);
+      console.log('Calling surveys.getUserSurveyStats with organizationId:', orgId);
       
-      Meteor.call('surveys.getStats', orgId, (error: Meteor.Error | null, result: any) => {
+      Meteor.call('surveys.getUserSurveyStats', orgId, (error: Meteor.Error | null, result: any) => {
         setLoading(false);
         if (error) {
-          console.error('Error fetching survey stats:', error);
+          console.error('Error fetching user survey stats:', error);
         } else if (result) {
-          console.log('Survey stats received:', result);
+          console.log('User survey stats received:', result);
           setStats(result);
         }
       });

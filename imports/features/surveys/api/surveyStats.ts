@@ -28,6 +28,141 @@ if (Meteor.isServer) {
 
 Meteor.methods({
   /**
+   * Get user-specific survey statistics for the dashboard
+   * Only counts surveys owned by or shared with the current user
+   * @param organizationId Optional organization ID to filter by
+   * @returns Object containing survey statistics
+   */
+  async 'surveys.getUserSurveyStats'(organizationId) {
+    console.log('surveys.getUserSurveyStats method called with organizationId:', organizationId);
+    
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to access survey statistics');
+    }
+    
+    try {
+      // Build query to find surveys owned by or shared with the current user
+      const query: any = {
+        $or: [
+          { createdBy: this.userId },
+          { 'collaborators.userId': this.userId }
+        ]
+      };
+      
+      // Only apply organization filter if explicitly provided
+      if (organizationId) {
+        query.organizationId = organizationId;
+      }
+      
+      console.log('User-specific survey query:', JSON.stringify(query));
+      
+      // Get all matching surveys
+      const allSurveys = await Surveys.find(query).fetchAsync();
+      const totalSurveys = allSurveys.length;
+      console.log(`User's total surveys: ${totalSurveys}`);
+      
+      // Count active surveys (published and not expired)
+      const now = new Date();
+      let activeSurveys = 0;
+      
+      // Use a simple loop to count active surveys
+      for (const survey of allSurveys) {
+        if (survey.published) {
+          // Check if survey is not expired - use any to bypass type checking
+          const surveyAny = survey as any;
+          const expiresAt = surveyAny.expiresAt ? new Date(surveyAny.expiresAt) : null;
+          if (!expiresAt || expiresAt > now) {
+            activeSurveys++;
+          }
+        }
+      }
+      console.log(`User's active surveys: ${activeSurveys}`);
+      
+      // Get all survey IDs - filter out any undefined values
+      const surveyIds = allSurveys.map(s => s._id).filter(id => id !== undefined) as string[];
+      
+      // Get responses for these surveys
+      let totalResponses = 0;
+      let completedResponses = 0;
+      
+      if (surveyIds.length > 0) {
+        const responses = await SurveyResponses.find({
+          surveyId: { $in: surveyIds }
+        }).fetchAsync();
+        
+        totalResponses = responses.length;
+        completedResponses = responses.filter(r => r.completed).length;
+      }
+      
+      console.log(`User's total responses: ${totalResponses} (${completedResponses} completed)`);
+      
+      // Calculate completion rate based on answered questions vs total questions
+      let avgCompletion = 0;
+      if (totalResponses > 0) {
+        // Get all responses to analyze question completion
+        const responses = await SurveyResponses.find({
+          surveyId: { $in: surveyIds }
+        }).fetchAsync();
+        
+        // Calculate completion percentage for each response
+        let totalCompletionPercentage = 0;
+        
+        for (const response of responses) {
+          // Get the responses array which contains question answers
+          const questionResponses = response.responses || [];
+          const totalQuestions = questionResponses.length;
+          let answeredQuestions = 0;
+          
+          // Count answered questions (non-empty answers)
+          for (const qResponse of questionResponses) {
+            // Check if answer exists and is not empty
+            const answer = qResponse.answer;
+            if (answer !== undefined && answer !== null) {
+              // Handle different answer types
+              if (typeof answer === 'string' && answer.trim() !== '') {
+                answeredQuestions++;
+              } else if (Array.isArray(answer) && answer.length > 0) {
+                answeredQuestions++;
+              } else if (typeof answer === 'object' && Object.keys(answer).length > 0) {
+                answeredQuestions++;
+              } else if (typeof answer === 'number' || typeof answer === 'boolean') {
+                answeredQuestions++;
+              }
+            }
+          }
+          
+          // Calculate completion percentage for this response
+          const responseCompletionPercentage = totalQuestions > 0 ? 
+            (answeredQuestions / totalQuestions) * 100 : 0;
+          
+          totalCompletionPercentage += responseCompletionPercentage;
+        }
+        
+        // Calculate average completion percentage across all responses
+        avgCompletion = Math.round(totalCompletionPercentage / responses.length);
+      }
+      console.log(`User's average completion rate: ${avgCompletion}%`);
+      
+      return {
+        totalSurveys,
+        activeSurveys,
+        totalResponses,
+        avgCompletion
+      };
+    } catch (error) {
+      console.error('Error calculating user survey statistics:', error);
+      
+      // Return zeros if there's an error
+      return {
+        totalSurveys: 0,
+        activeSurveys: 0,
+        totalResponses: 0,
+        avgCompletion: 0
+      };
+    }
+  },
+  
+  /**
    * Get survey statistics for the dashboard
    * @param organizationId Optional organization ID to filter by
    * @returns Object containing survey statistics

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
@@ -91,12 +91,16 @@ const Footer = styled.footer`
 const ModernSurveyPublic: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Check if we're in preview mode
   const isPreviewMode = new URLSearchParams(location.search).get('status') === 'preview';
   
-  // State for loading, survey data, errors, and theme
-  const [isLoading, setIsLoading] = useState(true);
-  const [surveyData, setSurveyData] = useState<Survey | null>(null);
+  // State for survey data and loading
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [surveyData, setSurveyData] = useState<Survey | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(true); // Default to true, will check later
   const [themeId, setThemeId] = useState<string>('default');
   const [themeObject, setThemeObject] = useState<any>(null);
   
@@ -111,21 +115,72 @@ const ModernSurveyPublic: React.FC = () => {
     };
   }, []);
   
-  // For preview mode, get survey from localStorage
+  // Check if current user is authorized to view preview
+  const { currentUser, userLoading } = useTracker(() => {
+    const userSub = Meteor.subscribe('userData');
+    return {
+      userLoading: !userSub.ready(),
+      currentUser: Meteor.user()
+    };
+  }, []);
+
+  // For preview mode, get survey from localStorage and check authorization
   useEffect(() => {
     if (isPreviewMode && token) {
+      console.log('[ModernSurveyPublic] Preview mode detected for token:', token);
+      
+      // First check if user is logged in for preview mode
+      if (!userLoading && !currentUser) {
+        console.log('[ModernSurveyPublic] User not logged in, cannot access preview');
+        setIsAuthorized(false);
+        setLoadError('You must be logged in to access survey preview');
+        setIsLoading(false);
+        return;
+      }
+
       try {
+        // Check if preview data exists in localStorage
         const storedData = localStorage.getItem(`survey-preview-${token}`);
+        console.log('[ModernSurveyPublic] Preview data found in localStorage:', !!storedData);
+        
         if (storedData) {
           const parsedData = JSON.parse(storedData);
-          setSurveyData(parsedData);
+          console.log('[ModernSurveyPublic] Successfully parsed preview data');
           
-          // Extract theme ID from preview survey data
-          if (parsedData.defaultSettings?.themes?.length) {
-            console.log('[ModernSurveyPublic] Found theme in preview data:', parsedData.defaultSettings.themes[0]);
+          // Check if user is owner, collaborator, or admin for this survey
+          if (!currentUser) {
+            return;
+          }
+          
+          const isOwner = parsedData.createdBy === currentUser._id;
+          const isAdmin = currentUser.roles?.includes('admin');
+          const isCollaborator = parsedData.collaborators?.some((c: { userId: string }) => 
+            c.userId === currentUser._id
+          );
+          
+          if (isOwner || isCollaborator || isAdmin) {
+            console.log('[ModernSurveyPublic] User is authorized to view preview as', 
+              isOwner ? 'owner' : isCollaborator ? 'collaborator' : 'admin');
+            setIsAuthorized(true);
+            setSurveyData(parsedData);
+          } else {
+            console.log('[ModernSurveyPublic] User is not authorized to view this preview');
+            setIsAuthorized(false);
+            setLoadError('You are not authorized to view this survey preview');
+            setIsLoading(false);
+            return;
+          }
+          
+          // Extract theme ID from preview data
+          if (parsedData.selectedTheme) {
+            console.log('[ModernSurveyPublic] Found theme in preview data.selectedTheme:', parsedData.selectedTheme);
+            setThemeId(parsedData.selectedTheme);
+          } else if (parsedData.defaultSettings?.themes?.length) {
+            console.log('[ModernSurveyPublic] Found theme in preview data.defaultSettings.themes:', parsedData.defaultSettings.themes[0]);
             setThemeId(parsedData.defaultSettings.themes[0]);
           }
         } else {
+          console.log('[ModernSurveyPublic] No preview data found in localStorage for token:', token);
           setLoadError('Preview data not found');
         }
       } catch (e) {
@@ -135,7 +190,7 @@ const ModernSurveyPublic: React.FC = () => {
         setIsLoading(false);
       }
     }
-  }, [isPreviewMode, token]);
+  }, [isPreviewMode, token, currentUser, userLoading]);
   
   // For published surveys, get from database using useTracker
   const { loading: dbLoading, survey: dbSurvey } = useTracker(() => {
@@ -271,7 +326,7 @@ const ModernSurveyPublic: React.FC = () => {
     );
   }
   
-  if (loadError || !surveyData) {
+  if (loadError || !surveyData || !isAuthorized) {
     return (
       <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
         <PageContainer>
@@ -281,7 +336,9 @@ const ModernSurveyPublic: React.FC = () => {
             </HeaderContent>
           </Header>
           <MainContent>
-            <ModernSurveyError message={loadError || "Survey not found"} />
+            <ModernSurveyError 
+              message={!isAuthorized ? "You are not authorized to view this survey preview" : (loadError || "Survey not found")} 
+            />
           </MainContent>
           <Footer>
             © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.

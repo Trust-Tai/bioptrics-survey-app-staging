@@ -322,7 +322,7 @@ const QuestionClassification = ({
       };
       
       setTags([...tags, newTag]);
-      onTagChange([...selectedTagIds, tagId]);
+      onTagChange([...(selectedTagIds || []), tagId]);
       
       // Reset form
       setNewTagName('');
@@ -343,14 +343,14 @@ const QuestionClassification = ({
   };
 
   // Format options for react-select
-  const categoryOptions = categories.map(cat => ({
+  const categoryOptions = (categories || []).map(cat => ({
     value: cat._id || '', // Add fallback for undefined _id
     label: cat.name || '',
     description: cat.description,
   }));
   
   // Format question category options for react-select
-  const questionCategoryOptions = questionCategories.map(cat => ({
+  const questionCategoryOptions = (questionCategories || []).map(cat => ({
     value: cat._id || '', // Add fallback for undefined _id
     label: cat.name || '',
     color: cat.color,
@@ -362,13 +362,13 @@ const QuestionClassification = ({
   console.log('Available categories:', categories);
   console.log('Category options:', categoryOptions);
 
-  const themeOptions = themes.map(theme => ({
+  const themeOptions = (themes || []).map(theme => ({
     value: theme._id || '',
     label: theme.name || '',
     description: theme.description,
   }));
 
-  const tagOptions = tags.map(tag => ({
+  const tagOptions = (tags || []).map(tag => ({
     value: tag._id || '',
     label: tag.name || '',
     color: tag.color,
@@ -393,7 +393,7 @@ const QuestionClassification = ({
   }, []);
 
   // Group tags by category
-  const groupedTagOptions = tagOptions.reduce((groups: any, tag) => {
+  const groupedTagOptions = (tagOptions || []).reduce((groups: any, tag) => {
     const category = tag.category || 'Uncategorized';
     if (!groups[category]) {
       groups[category] = [];
@@ -402,7 +402,7 @@ const QuestionClassification = ({
     return groups;
   }, {});
 
-  const groupedOptions = Object.keys(groupedTagOptions).map(category => ({
+  const groupedOptions = Object.keys(groupedTagOptions || {}).map(category => ({
     label: category,
     options: groupedTagOptions[category],
   }));
@@ -423,7 +423,7 @@ const QuestionClassification = ({
   };
 
   // Format keywords for react-select
-  const keywordOptions = keywords.map(keyword => ({
+  const keywordOptions = (keywords || []).map(keyword => ({
     value: keyword,
     label: keyword,
   }));
@@ -497,7 +497,7 @@ const QuestionClassification = ({
         }
         
         // Set initial values if any
-        if (selectedTagIds.length > 0) {
+        if (selectedTagIds && Array.isArray(selectedTagIds) && selectedTagIds.length > 0) {
           console.log('Setting initial tag values:', selectedTagIds);
           ts.setValue(selectedTagIds, true); // Silent update
         }
@@ -621,7 +621,7 @@ const QuestionClassification = ({
         <Select
           isMulti
           options={categoryOptions}
-          value={categoryOptions.filter(option => selectedCategoryIds.includes(option.value))}
+          value={categoryOptions.filter(option => selectedCategoryIds && Array.isArray(selectedCategoryIds) ? selectedCategoryIds.includes(option.value) : false)}
           onChange={handleCategoryChange}
           placeholder="Select categories..."
           isLoading={loading}
@@ -637,7 +637,7 @@ const QuestionClassification = ({
         <Select
           isMulti
           options={themeOptions}
-          value={themeOptions.filter(option => selectedThemeIds.includes(option.value))}
+          value={themeOptions.filter(option => selectedThemeIds && Array.isArray(selectedThemeIds) ? selectedThemeIds.includes(option.value) : false)}
           onChange={handleThemeChange}
           placeholder="Select themes..."
           isLoading={loading}
@@ -697,7 +697,7 @@ const QuestionClassification = ({
         <Select
           isMulti
           options={groupedOptions}
-          value={tagOptions.filter(option => selectedTagIds.includes(option.value))}
+          value={tagOptions.filter(option => selectedTagIds && Array.isArray(selectedTagIds) ? selectedTagIds.includes(option.value) : false)}
           onChange={handleTagChange}
           placeholder="Select or create tags..."
           isLoading={loading}

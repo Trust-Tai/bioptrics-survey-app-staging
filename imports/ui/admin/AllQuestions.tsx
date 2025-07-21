@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaPlus, FaFilter, FaFileImport, FaEdit, FaTrash, FaEye, FaFileAlt, FaCheckCircle, FaThLarge, FaList, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar } from 'react-icons/fa';
+import { useQuestionBuilderPanel } from '../../features/questions/contexts/QuestionBuilderPanelContext';
+import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge } from 'react-icons/fa';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -646,7 +647,7 @@ const truncateText = (text: string, maxLength: number = 100): string => {
 
 const AllQuestions: React.FC = () => {
   const navigate = useNavigate();
-  // Preview modal state
+  const { openPanel } = useQuestionBuilderPanel();
   const [previewQuestion, setPreviewQuestion] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
@@ -873,14 +874,22 @@ const AllQuestions: React.FC = () => {
     });
   }, [questions, searchTerm, filterActive, filterQuestionType, filterTheme, filterTag]);
   
-  // Handle importing questions
+  // Handle importing questions and completion
   const handleImportQuestions = (importedQuestions: any[]) => {
+    // Process the imported questions
     importedQuestions.forEach(question => {
       Meteor.call('questions.insert', question, (error: any) => {
         if (error) {
           console.error('Error importing question:', error);
         }
       });
+    });
+    
+    // Close modal and show success message
+    setShowImportModal(false);
+    setAlert({
+      type: 'success',
+      message: `Successfully imported ${importedQuestions.length} questions!`
     });
   };
   
@@ -928,7 +937,7 @@ const AllQuestions: React.FC = () => {
           <div style={{ display: 'flex', gap: 12 }}>
             <Button 
               className="primary" 
-              onClick={() => navigate('/admin/questions/builder')}
+              onClick={() => openPanel()}
             >
               <FaPlus size={14} />
               New Question
@@ -1108,7 +1117,7 @@ const AllQuestions: React.FC = () => {
                       </ActionButton>
                       <ActionButton 
                         className="edit"
-                        onClick={() => navigate(`/admin/questions/builder/${doc._id}`)}
+                        onClick={() => openPanel(doc._id)}
                         title="Edit"
                       >
                         <FaEdit size={16} />
@@ -1150,7 +1159,7 @@ const AllQuestions: React.FC = () => {
                 setQuestionForAnalytics(question);
                 setAnalyticsModalOpen(true);
               }}
-              onEdit={(questionId) => navigate(`/admin/questions/builder/${questionId}`)}
+              onEdit={(questionId) => openPanel(questionId)}
               onDelete={(questionId) => {
                 setQuestionToDelete(questionId);
                 setShowDeleteConfirm(true);
