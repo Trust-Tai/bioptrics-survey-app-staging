@@ -36,7 +36,6 @@ import CompletionTimeChart from '/imports/features/analytics/components/admin/Co
 import CompletionRateChart from '/imports/features/analytics/components/admin/CompletionRateChart';
 import FunnelChart from '/imports/features/analytics/components/admin/FunnelChart';
 import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
-import CompletionTimeDistribution from '/imports/features/analytics/components/admin/CompletionTimeDistribution';
 import RealTimeAnalytics from '/imports/features/analytics/components/admin/RealTimeAnalytics';
 
 // Styled components for the Analytics dashboard
@@ -49,7 +48,6 @@ const DashboardContainer = styled.div`
     padding: 16px;
   }
 `;
-
 
 const PageHeader = styled.div`
   display: flex;
@@ -67,7 +65,7 @@ const PageHeader = styled.div`
 const PageTitle = styled.h1`
   font-size: 28px;
   font-weight: 700;
-  color: #552a47;
+  color: var(--color-primary);
   margin: 0;
 `;
 
@@ -86,9 +84,9 @@ const Button = styled.button<{ primary?: boolean }>`
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: ${(props) => (props.primary ? '#552a47' : '#f7f2f5')};
-  color: ${(props) => (props.primary ? '#fff' : '#552a47')};
-  border: none;
+  background: ${(props) => (props.primary ? 'var(--color-primary)' : 'var(--color-background)')};
+  color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
+  border: ${(props) => (props.primary ? 'none' : '1px solid var(--color-primary)')};
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -97,10 +95,33 @@ const Button = styled.button<{ primary?: boolean }>`
   text-decoration: none;
 
   &:hover {
-    background: ${(props) => (props.primary ? '#693658' : '#efe7ed')};
+    background: ${(props) => (props.primary ? 'var(--color-secondary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)')};
+    color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
     transform: translateY(-2px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-decoration: none;
+  }
+
+  &:active {
+    color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
+  }
+
+  &:focus {
+    color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
+  }
+
+  /* Ensure white text on primary buttons regardless of theme */
+  ${(props) => props.primary && `
+    & * {
+      color: #ffffff !important;
+    }
+  `}
+
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
+    &:hover {
+      background: ${(props) => (props.primary ? 'var(--color-secondary)' : 'rgba(84, 42, 70, 0.1)')};
+    }
   }
 
   svg {
@@ -109,7 +130,7 @@ const Button = styled.button<{ primary?: boolean }>`
 `;
 
 const FilterBar = styled.div`
-  background: #ffffff;
+  background: var(--color-background);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 16px;
@@ -117,6 +138,7 @@ const FilterBar = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+  border: 1px solid var(--color-accent);
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -129,60 +151,78 @@ const FilterBar = styled.div`
   }
   
   .tom-select-container .ts-control {
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-accent);
     border-radius: 6px;
     padding: 8px;
     min-height: 38px;
-    background-color: white;
+    background-color: var(--color-background);
+    color: var(--color-text);
   }
   
   .tom-select-container .ts-control:focus {
     outline: none;
-    border-color: #552a47;
-    box-shadow: 0 0 0 1px #552a47;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
   }
   
   .tom-select-container .ts-dropdown {
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--color-background);
   }
   
   .tom-select-container .ts-dropdown .option {
     padding: 8px 10px;
+    color: var(--color-text);
   }
   
   .tom-select-container .ts-dropdown .active {
-    background-color: #f7f2f5;
-    color: #552a47;
+    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+  }
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background-color: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
+    .tom-select-container .ts-dropdown .active {
+      background-color: rgba(84, 42, 70, 0.1);
+      color: var(--color-primary);
+    }
   }
   
   .tom-select-container .ts-control input {
-    color: #333;
+    color: var(--color-text);
   }
   
   .tom-select-container .item {
-    background-color: #f7f2f5;
-    color: #552a47;
+    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
     border-radius: 4px;
     padding: 2px 6px;
     margin: 2px;
+  }
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background-color: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
+    .tom-select-container .item {
+      background-color: rgba(84, 42, 70, 0.1);
+    }
   }
   
   /* Date Picker Styling */
   .date-picker {
     width: 100%;
     padding: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-accent);
     border-radius: 6px;
     font-size: 14px;
-    color: #333;
-    background-color: white;
+    color: var(--color-text);
+    background-color: var(--color-background);
   }
   
   .date-picker:focus {
     outline: none;
-    border-color: #552a47;
-    box-shadow: 0 0 0 1px #552a47;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
   }
   
   .react-datepicker-wrapper {
@@ -207,22 +247,23 @@ const FilterLabel = styled.label`
   display: block;
   margin-bottom: 6px;
   font-size: 13px;
-  color: #666;
+  color: var(--color-accent);
   font-weight: 500;
 `;
 
 const StyledSelect = styled.select`
   width: 100%;
   padding: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-accent);
   border-radius: 6px;
-  background-color: white;
+  background-color: var(--color-background);
+  color: var(--color-text);
   font-size: 14px;
 
   &:focus {
     outline: none;
-    border-color: #552a47;
-    box-shadow: 0 0 0 1px #552a47;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
   }
 `;
 
@@ -265,7 +306,7 @@ const DateRangeContainer = styled.div`
 
 const DateRangeText = styled.span`
   font-size: 14px;
-  color: #666;
+  color: var(--color-accent);
   margin: 0 4px 0 25px;
 `;
 
@@ -286,10 +327,11 @@ const DashboardGrid = styled.div`
 
 const Card = styled.div<{ cols?: number }>`
   grid-column: span ${(props) => props.cols || 1};
-  background: #ffffff;
+  background: var(--color-background);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 20px;
+  border: 1px solid var(--color-accent);
 
   @media (max-width: 1200px) {
     grid-column: span ${(props) => Math.min(props.cols || 1, 6)};
@@ -310,7 +352,7 @@ const CardHeader = styled.div`
 const CardTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary);
   margin: 0;
 `;
 
@@ -320,16 +362,21 @@ const CardIcon = styled.div`
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #f7f2f5;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   border-radius: 8px;
-  color: #552a47;
+  color: var(--color-primary);
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
+    background: rgba(84, 42, 70, 0.1);
+  }
 `;
 
 const StatCard = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #f7f2f5;
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
   border-radius: 12px;
   padding: 24px 16px;
   text-align: center;
@@ -338,6 +385,11 @@ const StatCard = styled.div`
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background: color-mix(in srgb, var(--color-primary) 5%, transparent)) {
+    background: rgba(84, 42, 70, 0.05);
   }
 `;
 
@@ -353,14 +405,14 @@ const ResponseRateKPI = styled(StatCard)`
     left: 50%;
     transform: translateX(-50%);
     font-size: 11px;
-    color: #8a6d8a;
+    color: var(--color-accent);
     opacity: 0;
     transition: opacity 0.2s;
   }
   
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(85, 42, 71, 0.15);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
   }
   
   &:hover:after {
@@ -375,13 +427,13 @@ const ResponseRateKPI = styled(StatCard)`
 const StatValue = styled.div`
   font-size: 32px;
   font-weight: 700;
-  color: #552a47;
+  color: var(--color-primary);
   margin-bottom: 8px;
 `;
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: #666;
+  color: var(--color-accent);
   margin-top: 4px;
 `;
 
@@ -402,7 +454,7 @@ const KPIContainer = styled.div`
 `;
 
 const ThemeCard = styled.div`
-  background: #f0f5fa;
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
   border-radius: 10px;
   padding: 16px;
   text-align: center;
@@ -412,12 +464,17 @@ const ThemeCard = styled.div`
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
+  
+  /* Fallback for browsers that don't support color-mix */
+  @supports not (background: color-mix(in srgb, var(--color-primary) 5%, transparent)) {
+    background: rgba(84, 42, 70, 0.05);
+  }
 `;
 
 const ThemeName = styled.div`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary);
   margin-bottom: 8px;
 `;
 
@@ -425,11 +482,12 @@ const ThemeScore = styled.div`
   font-size: 24px;
   font-weight: 700;
   margin-bottom: 4px;
+  color: var(--color-primary);
 `;
 
 const ThemeLabel = styled.div`
   font-size: 13px;
-  color: #8a6d8a;
+  color: var(--color-accent);
 `;
 
 const ChartContainer = styled.div`
@@ -437,13 +495,13 @@ const ChartContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8a6d8a;
+  color: var(--color-accent);
   font-weight: 500;
 `;
 
 const TabsContainer = styled.div`
   display: flex;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-accent);
   margin-bottom: 16px;
 `;
 
@@ -451,21 +509,21 @@ const Tab = styled.button<{ active?: boolean }>`
   padding: 12px 16px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${(props) => (props.active ? '#552a47' : 'transparent')};
-  color: ${(props) => (props.active ? '#552a47' : '#666')};
+  border-bottom: 2px solid ${(props) => (props.active ? 'var(--color-primary)' : 'transparent')};
+  color: ${(props) => (props.active ? 'var(--color-primary)' : 'var(--color-accent)')};
   font-weight: ${(props) => (props.active ? '600' : '400')};
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    color: #552a47;
+    color: var(--color-primary);
   }
 `;
 
 const IconButton = styled.button`
   background: none;
   border: none;
-  color: #666;
+  color: var(--color-accent);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -474,8 +532,8 @@ const IconButton = styled.button`
   justify-content: center;
   
   &:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-accent);
+    color: var(--color-text);
   }
 `;
 
@@ -510,7 +568,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: white;
+  background-color: var(--color-background);
   padding: 28px 40px;
   border-radius: 12px;
   width: 90%;
@@ -520,6 +578,7 @@ const ModalContent = styled.div`
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   animation: slideIn 0.3s ease-out;
+  border: 1px solid var(--color-accent);
   
   @keyframes slideIn {
     from { transform: translateY(20px); opacity: 0; }
@@ -529,14 +588,14 @@ const ModalContent = styled.div`
 
 const ModalTitle = styled.h2`
   margin-top: 0;
-  color: #552a47;
+  color: var(--color-primary);
   margin-bottom: 20px;
   font-size: 24px;
   font-weight: 600;
 `;
 
 const ModalDescription = styled.p`
-  color: #666;
+  color: var(--color-accent);
   margin-bottom: 24px;
   font-size: 15px;
   line-height: 1.5;
@@ -546,28 +605,23 @@ const ModalCloseButton = styled.button`
   position: absolute;
   top: 12px;
   right: 12px;
-  background: #f5f5f5;
+  background: var(--color-accent);
   border: none;
   border-radius: 50%;
   width: 32px;
   height: 32px;
   font-size: 18px;
   cursor: pointer;
-  color: #555;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: #e0e0e0;
-    color: #333;
-  }
+ 
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.3);
+    box-shadow: 0 0 0 2px var(--color-primary);
   }
 `;
 
@@ -1147,7 +1201,7 @@ const Analytics: React.FC = () => {
         console.warn('selectedTagIds is not an array:', selectedTagIds);
         return [];
       }
-      return options.filter(option => selectedTagIds.includes(option.value));
+      return options.filter(option => option.value && selectedTagIds.includes(option.value));
     }, [options, selectedTagIds]);
     
     // Handle selection change
@@ -1178,38 +1232,40 @@ const Analytics: React.FC = () => {
             padding: '8px 12px',
             width: '200px',
             minWidth: '100%',
-            backgroundColor: state.isFocused ? '#f0e6ee' : '#ffffff',
-            color: state.isFocused ? '#552a47' : '#333333',
+            backgroundColor: state.isFocused ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'var(--color-background)',
+            color: state.isFocused ? 'var(--color-primary)' : 'var(--color-text)',
             '&:hover': {
-              backgroundColor: '#f0e6ee',
-              color: '#552a47',
+              backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+              color: 'var(--color-primary)',
             },
           }),
           menu: (provided) => ({
             ...provided,
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--color-background)',
             width: '500px',
             minWidth: '100%',
+            border: '1px solid var(--color-accent)',
           }),
           control: (provided) => ({
             ...provided,
             minHeight: '38px',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--color-background)',
+            borderColor: 'var(--color-accent)',
           }),
           multiValue: (provided) => ({
             ...provided,
-            backgroundColor: '#f0e6ee',
+            backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
           }),
           multiValueLabel: (provided) => ({
             ...provided,
-            color: '#552a47',
+            color: 'var(--color-primary)',
           }),
           multiValueRemove: (provided) => ({
             ...provided,
-            color: '#552a47',
+            color: 'var(--color-primary)',
             ':hover': {
-              backgroundColor: '#552a47',
-              color: 'white',
+              backgroundColor: 'var(--color-primary)',
+              color: 'var(--color-background)',
             },
           }),
         }}
@@ -1309,7 +1365,7 @@ const Analytics: React.FC = () => {
                   <div style={{ width: '160px' }}>
                     <DatePicker
                       selected={startDate}
-                      onChange={(date: Date | undefined) => setDateRange([date, endDate])}
+                      onChange={(date: Date | null) => setDateRange([date, endDate])}
                       startDate={startDate}
                       endDate={endDate}
                       selectsStart
@@ -1322,11 +1378,11 @@ const Analytics: React.FC = () => {
                   <div style={{ width: '160px' }}>
                     <DatePicker
                       selected={endDate}
-                      onChange={(date: Date | undefined) => setDateRange([startDate, date])}
+                      onChange={(date: Date | null) => setDateRange([startDate, date])}
                       startDate={startDate}
                       endDate={endDate}
                       selectsEnd
-                      minDate={startDate}
+                      minDate={startDate || undefined}
                       placeholderText="End Date"
                       className="date-picker"
                       dateFormat="MMM d, yyyy"
@@ -1701,7 +1757,7 @@ const Analytics: React.FC = () => {
               <CompletionRateChart 
                 data={completionRateData} 
                 title="Survey Completion Rate" 
-                initialDateRange={selectedDateRange}
+                initialDateRange={selectedDateRange as 'today' | 'current_week' | 'last_7_days' | 'last_week' | 'current_month' | 'last_month' | 'last_3_months'}
                 onDateRangeChange={(dateRange) => {
                   console.log('Date range changed to:', dateRange);
                   setSelectedDateRange(dateRange);
