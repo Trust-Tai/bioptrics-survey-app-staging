@@ -901,7 +901,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<SurveySectionItem | undefined>(undefined);
   
   // State for public URL and published status
-  const [publicUrl, setPublicUrl] = useState<string>('');
+  const [publicUrl, setPublicUrl] = useState('');
+  const [showActionDropdown, setShowActionDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   // Removed showPublicUrl state as we no longer need the popup
@@ -1628,6 +1630,25 @@ const EnhancedSurveyBuilder: React.FC = () => {
       }
     };
   }, []);
+  
+  // Effect to handle click outside dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowActionDropdown(false);
+      }
+    }
+    
+    // Add event listener when dropdown is open
+    if (showActionDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showActionDropdown]);
   
   // Set up beforeunload event to warn when leaving with unsaved changes
   useEffect(() => {
@@ -2627,46 +2648,16 @@ const EnhancedSurveyBuilder: React.FC = () => {
               display: 'flex', 
               gap: '12px',
               flexWrap: 'wrap',
-              justifyContent: 'flex-end'
+              justifyContent: 'flex-end',
+              position: 'relative'
             }}>
-              {/* Cancel Button */}
-              {/* <button 
-                onClick={() => navigate('/admin/surveys')}
-                className="action-button cancel-button"
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: '1px solid #d1d1d1',
-                  backgroundColor: '#f8f8f8',
-                  color: '#333',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  minWidth: '100px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#ebebeb';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f8f8f8';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                }}
-              >
-                Cancel
-              </button> */}
-              
               {/* Save Survey Button */}
               <button 
                 onClick={() => handleSaveSurvey(false)}
                 disabled={saving}
                 className="action-button save-button"
                 style={{
-                  padding: '10px 20px',
+                  padding: '10px 15px',
                   borderRadius: '8px',
                   border: 'none',
                   backgroundColor: '#552a47',
@@ -2680,7 +2671,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   justifyContent: 'center',
                   gap: '8px',
                   transition: 'all 0.3s ease',
-                  minWidth: '140px',
                   boxShadow: '0 2px 4px rgba(85,42,71,0.3)'
                 }}
                 onMouseOver={(e) => {
@@ -2696,172 +2686,200 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   e.currentTarget.style.boxShadow = '0 2px 4px rgba(85,42,71,0.3)';
                 }}
               >
-                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save Survey'}
+                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
               </button>
               
-              {/* Preview Button */}
-              <button 
-                onClick={() => {
-                  if (!survey?._id) {
-                    showErrorAlert('Please save the survey first before previewing.');
-                    return;
-                  }
-                  
-                  // Save current draft to localStorage
-                  try {
-                    // Get the token (either encrypted or share token)
-                    const getToken = async () => {
-                      try {
-                        // Try to generate an encrypted token for the survey
-                        const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
-                        return encryptedToken;
-                      } catch (error) {
-                        console.error('Error generating encrypted token for preview:', error);
-                        // Fallback to shareToken if available
-                        if (survey.shareToken) {
-                          return survey.shareToken;
-                        }
-                        throw new Error('Could not generate token for preview');
-                      }
-                    };
-                    
-                    getToken().then(token => {
-                      // Prepare survey data for preview
-                      const previewData = {
-                        ...survey,
-                        sections: sections,
-                        sectionQuestions: surveyQuestions,
-                        selectedTheme: selectedTheme,
-                        selectedTags: selectedTags,
-                        selectedCategories: selectedCategories,
-                        selectedDemographics: selectedDemographics
-                      };
-                      
-                      // Save to localStorage
-                      localStorage.setItem(`survey-preview-${token}`, JSON.stringify(previewData));
-                      
-                      // Open preview in new tab
-                      const baseUrl = window.location.origin;
-                      const previewUrl = `${baseUrl}/public/${token}?status=preview`;
-                      window.open(previewUrl, '_blank');
-                    }).catch(error => {
-                      showErrorAlert(`Error preparing preview: ${error.message}`);
-                    });
-                  } catch (error) {
-                    showErrorAlert(`Error preparing preview: ${error.message}`);
-                  }
-                }}
-                disabled={!survey?._id}
-                className="action-button preview-button"
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: '#3498db',
-                  color: '#fff',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
-                  opacity: !survey?._id ? 0.7 : 1,
-                  transition: 'all 0.3s ease',
-                  minWidth: '100px',
-                  boxShadow: '0 2px 4px rgba(52,152,219,0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                onMouseOver={(e) => {
-                  if (survey?._id) {
-                    e.currentTarget.style.backgroundColor = '#2980b9';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(52,152,219,0.4)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#3498db';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(52,152,219,0.3)';
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg> Preview
-              </button>
-              
-              {/* Publish Button */}
-              <button 
-                onClick={handleGeneratePublicUrl}
-                disabled={!survey?._id}
-                className="action-button publish-button"
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: '#2ecc40',
-                  color: '#fff',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
-                  opacity: !survey?._id ? 0.7 : 1,
-                  transition: 'all 0.3s ease',
-                  minWidth: '100px',
-                  boxShadow: '0 2px 4px rgba(46,204,64,0.3)'
-                }}
-                onMouseOver={(e) => {
-                  if (survey?._id) {
-                    e.currentTarget.style.backgroundColor = '#27ae60';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(46,204,64,0.4)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2ecc40';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.3)';
-                }}
-              >
-                {isPublished ? 'Published' : 'Publish'}
-              </button>
-              
-              {/* Copy URL Button - Only shows when publicUrl is available */}
-              {publicUrl && (
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(publicUrl);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                    showSuccessAlert('URL copied to clipboard!');
-                  }}
-                  className="action-button copy-url-button"
+              {/* Action Dropdown Button */}
+              <div style={{ position: 'relative' }} ref={dropdownRef}>
+                <div 
+                  onClick={() => setShowActionDropdown(!showActionDropdown)}
                   style={{
-                    padding: '10px 4px 4px 10px',
+                    padding: '10px 12px',
                     borderRadius: '8px',
-                    border: '2px solid #2ecc40',
                     backgroundColor: '#fff',
-                    color: '#2ecc40',
+                    color: '#000000',
                     fontWeight: 600,
-                    fontSize: '15px',
+                    fontSize: '18px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '40px',
                     transition: 'all 0.3s ease',
-                    // minWidth: '100px',
-                    boxShadow: '0 2px 4px rgba(46,204,64,0.1)'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0fff0';
+                    e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(46,204,64,0.2)';
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.backgroundColor = '#fff';
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(46,204,64,0.1)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(85,42,71,0.1)';
                   }}
                 >
-                  {copied ? <FaCopy style={{ marginRight: '8px' }} /> : <><FaCopy style={{ marginRight: '8px' }} /> </>}
-                </button>
-              )}
+                  &#8230;
+                </div>
+                
+                {/* Dropdown Menu */}
+                {showActionDropdown && (
+                  <div 
+                    className="action-dropdown-menu"
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: '8px',
+                      backgroundColor: '#fff',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      zIndex: 1000,
+                      minWidth: '200px',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {/* Preview Button */}
+                    <div 
+                      onClick={() => {
+                        setShowActionDropdown(false);
+                        if (!survey?._id) {
+                          showErrorAlert('Please save the survey first before previewing.');
+                          return;
+                        }
+                        
+                        // Save current draft to localStorage
+                        try {
+                          // Get the token (either encrypted or share token)
+                          const getToken = async () => {
+                            try {
+                              // Try to generate an encrypted token for the survey
+                              const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
+                              return encryptedToken;
+                            } catch (error) {
+                              console.error('Error generating encrypted token for preview:', error);
+                              // Fallback to shareToken if available
+                              if (survey.shareToken) {
+                                return survey.shareToken;
+                              }
+                              throw new Error('Could not generate token for preview');
+                            }
+                          };
+                          
+                          getToken().then(token => {
+                            // Prepare survey data for preview
+                            const previewData = {
+                              ...survey,
+                              sections: sections,
+                              sectionQuestions: surveyQuestions,
+                              selectedTheme: selectedTheme,
+                              selectedTags: selectedTags,
+                              selectedCategories: selectedCategories,
+                              selectedDemographics: selectedDemographics
+                            };
+                            
+                            // Save to localStorage
+                            localStorage.setItem(`survey-preview-${token}`, JSON.stringify(previewData));
+                            
+                            // Open preview in new tab
+                            const baseUrl = window.location.origin;
+                            const previewUrl = `${baseUrl}/public/${token}?status=preview`;
+                            window.open(previewUrl, '_blank');
+                          }).catch(error => {
+                            showErrorAlert(`Error preparing preview: ${error.message}`);
+                          });
+                        } catch (error) {
+                          showErrorAlert(`Error preparing preview: ${error.message}`);
+                        }
+                      }}
+                      className="dropdown-item"
+                      style={{
+                        padding: '12px 16px',
+                        cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                        opacity: !survey?._id ? 0.7 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'background-color 0.2s ease',
+                        color: '#000000'
+                      }}
+                      onMouseOver={(e) => {
+                        if (survey?._id) {
+                          e.currentTarget.style.backgroundColor = '#f8f9fa';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fff';
+                      }}
+                    >
+                      Preview
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto' }}>
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                          <polyline points="15 3 21 3 21 9"></polyline>
+                          <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </div>
+                    
+                    {/* Publish Button */}
+                    <div 
+                      onClick={() => {
+                        setShowActionDropdown(false);
+                        handleGeneratePublicUrl();
+                      }}
+                      className="dropdown-item"
+                      style={{
+                        padding: '12px 16px',
+                        cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                        opacity: !survey?._id ? 0.7 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'background-color 0.2s ease',
+                        color: '#000000'
+                      }}
+                      onMouseOver={(e) => {
+                        if (survey?._id) {
+                          e.currentTarget.style.backgroundColor = '#f8f9fa';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fff';
+                      }}
+                    >
+                      {isPublished ? 'Publish Again' : 'Publish'}
+                    </div>
+                    
+                    {/* Copy URL Button - Only shows when publicUrl is available */}
+                    {publicUrl && (
+                      <div 
+                        onClick={() => {
+                          setShowActionDropdown(false);
+                          navigator.clipboard.writeText(publicUrl);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                          showSuccessAlert('URL copied to clipboard!');
+                        }}
+                        className="dropdown-item"
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'background-color 0.2s ease',
+                          color: '#000000'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8f9fa';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#fff';
+                        }}
+                      >
+                        Copy Link
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             
             {/* Add responsive styles */}
