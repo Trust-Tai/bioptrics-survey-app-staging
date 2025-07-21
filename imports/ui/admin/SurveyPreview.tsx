@@ -171,46 +171,77 @@ const SurveyContent = styled.div`
 `;
 
 const SurveyHeader = styled.div<{ color?: string; hasImage?: boolean }>`
-  text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #e5d6c7;
+  padding: 32px 24px;
+  border-radius: 8px;
+  background-color: ${props => props.color ? `${props.color}10` : '#ffffff'};
+  gap: 2rem;
   
-  ${props => props.hasImage && `
-    padding-top: 180px;
-    background-image: url(${props.hasImage ? '/images/survey-header.jpg' : ''});
-    background-size: cover;
-    background-position: center;
-    border-radius: 8px;
-    margin-bottom: 32px;
-  `}
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const SurveyLogo = styled.div`
-  width: 80px;
-  height: 80px;
-  border-radius: 40px;
-  background: #f9f4f8;
-  margin: 0 auto 16px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #552a47;
-  font-weight: 700;
-  font-size: 24px;
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+  
+  img {
+    max-height: 80px;
+    max-width: 200px;
+    object-fit: contain;
+    border-radius: 4px;
+  }
 `;
 
 const SurveyTitle = styled.h1<{ color?: string }>`
-  font-size: 24px;
+  font-size: 3.5rem;
   font-weight: 700;
   color: ${props => props.color || '#28211e'};
-  margin: 0 0 8px 0;
+  margin: 0 0 1.5rem 0;
+  font-family: var(--heading-font, 'Inter, sans-serif');
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
 `;
 
 const SurveyDescription = styled.p`
-  font-size: 16px;
-  color: #666;
+  font-size: 1.25rem;
+  color: var(--text-color, #4b5563);
+  line-height: 1.6;
+  max-width: 600px;
+  font-family: var(--body-font, 'Inter, sans-serif');
   margin: 0;
+`;
+
+const FeaturedImage = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  
+  img {
+    width: 100%;
+    height: 500px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: 1.5rem;
+    justify-content: center;
+    
+    img {
+      height: 300px;
+    }
+  }
 `;
 
 const SectionContainer = styled.div`
@@ -359,6 +390,7 @@ export interface SurveyPreviewData {
   description: string;
   logo?: string;
   image?: string;
+  featuredImage?: string;
   color?: string;
   sections: SurveySectionItem[];
   questions: SurveyQuestion[];
@@ -549,15 +581,20 @@ const SurveyPreview: React.FC<SurveyPreviewProps> = ({
             <SurveyContent>
               {currentSection === 0 && (
                 <SurveyHeader color={data.color} hasImage={!!data.image}>
-                  {data.logo ? (
-                    <img src={data.logo} alt="Survey Logo" style={{ width: 80, height: 80, borderRadius: '50%', marginBottom: 16 }} />
-                  ) : (
-                    <SurveyLogo>
-                      {data.title.substring(0, 2).toUpperCase()}
-                    </SurveyLogo>
+                  <div style={{ flex: data.featuredImage ? 1 : 'auto', maxWidth: data.featuredImage ? '60%' : '100%' }}>
+                    {data.logo && (
+                      <SurveyLogo>
+                        <img src={data.logo} alt="Survey Logo" />
+                      </SurveyLogo>
+                    )}
+                    <SurveyTitle color={data.color}>{data.title}</SurveyTitle>
+                    <SurveyDescription>{data.description}</SurveyDescription>
+                  </div>
+                  {data.featuredImage && (
+                    <FeaturedImage>
+                      <img src={data.featuredImage} alt="Featured Image" />
+                    </FeaturedImage>
                   )}
-                  <SurveyTitle color={data.color}>{data.title}</SurveyTitle>
-                  <SurveyDescription>{data.description}</SurveyDescription>
                 </SurveyHeader>
               )}
               

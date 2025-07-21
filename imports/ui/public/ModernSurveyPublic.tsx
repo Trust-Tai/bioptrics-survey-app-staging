@@ -352,7 +352,7 @@ const ModernSurveyPublic: React.FC = () => {
     );
   }
   
-  if (loadError || !surveyData || !isAuthorized) {
+  if (!surveyData || !isAuthorized) {
     return (
       <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
         <PageContainer>
@@ -363,7 +363,7 @@ const ModernSurveyPublic: React.FC = () => {
           </Header>
           <MainContent>
             <ModernSurveyError 
-              message={!isAuthorized ? "You are not authorized to view this survey preview" : (loadError || "Survey not found")} 
+              message={"You are not authorized to view this survey preview"} 
             />
           </MainContent>
           <Footer>
