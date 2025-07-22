@@ -1723,7 +1723,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
     try {
       // Set a temporary saving state for UI feedback
       const tempLastSaved = lastSaved;
+      
+      // First mark as saving in progress
       setLastSaved(null); // Clear last saved timestamp to show saving in progress
+      setHasUnsavedChanges(true); // Ensure we show unsaved changes during save
       
       // Ensure we have valid data before proceeding
       if (!survey || !survey._id) {
@@ -1789,17 +1792,25 @@ const EnhancedSurveyBuilder: React.FC = () => {
         }
       }
       
-      // Update the last saved timestamp
-      setLastSaved(Date.now());
+      // Important: First set lastSaved, then reset unsaved changes flag
+      // This ensures the correct rendering order for our indicator
+      const now = Date.now();
+      setLastSaved(now);
       
-      // Reset unsaved changes flag
-      setHasUnsavedChanges(false);
-      
-      // Only show alert for manual saves, not auto-saves
-      if (!isAutoSave) {
-        setAlert({ type: 'success', message: 'Survey saved successfully!' });
-        setTimeout(() => setAlert(null), 3000);
-      }
+      // Use a slight delay to ensure state updates are processed in the correct order
+      // This helps React batch the updates properly
+      setTimeout(() => {
+        // Reset unsaved changes flag
+        setHasUnsavedChanges(false);
+        
+        // Only show alert for manual saves, not auto-saves
+        if (!isAutoSave) {
+          setAlert({ type: 'success', message: 'Survey saved successfully!' });
+          setTimeout(() => setAlert(null), 3000);
+        }
+        
+        console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
+      }, 10);
       
       console.log('Save completed successfully');
       return true;
@@ -3016,7 +3027,13 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <div 
                     key={step.id}
                     className={`survey-builder-step ${activeStep === step.id ? 'active' : ''}`}
-                    onClick={() => setActiveStep(step.id)}
+                    onClick={() => {
+                      // If there are unsaved changes, trigger auto-save before changing tabs
+                      if (hasUnsavedChanges) {
+                        silentSave(true);
+                      }
+                      setActiveStep(step.id);
+                    }}
                   >
                     <div className="survey-builder-step-icon">
                       {step.id === 'sections' && <FiChevronRight />}
@@ -3314,7 +3331,13 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     <div className="form-actions">
                       <button 
                         className="btn btn-primary"
-                        onClick={() => setActiveStep('sections')}
+                        onClick={() => {
+                          // If there are unsaved changes, trigger auto-save before changing tabs
+                          if (hasUnsavedChanges) {
+                            silentSave(true);
+                          }
+                          setActiveStep('sections');
+                        }}
                       >
                         Save and Continue
                       </button>
