@@ -1935,6 +1935,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
         navigate(`/admin/surveys/builder/${savedSurveyId}`);
       }
       
+      // Set the lastSaved timestamp to update the save status indicator
+      const now = Date.now();
+      setLastSaved(now);
+      
       setSaving(false);
       setHasUnsavedChanges(false);
       
@@ -1942,6 +1946,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
       if (!isAutoSave) {
         showSuccessAlert('Survey saved successfully!');
       }
+      
+      console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
       
       return true; // Return success
     } catch (error) {
@@ -2572,7 +2578,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     }}>WPS Category</span>
                     <select
                       value={newThemeWpsCategoryId}
-                      onChange={e => setNewThemeWpsCategoryId(e.target.value)}
+                      onChange={e => {
+                        setNewThemeWpsCategoryId(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       style={{ 
                         width: '100%',
                         height: 48,
@@ -2742,29 +2752,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 ) : null}
               </div>
               
-              {/* Manual Save Button */}
-              <button
-                onClick={() => silentSave()}
-                disabled={!hasUnsavedChanges}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  backgroundColor: hasUnsavedChanges ? '#552a47' : '#e0e0e0',
-                  color: hasUnsavedChanges ? 'white' : '#666',
-                  border: 'none',
-                  cursor: hasUnsavedChanges ? 'pointer' : 'not-allowed',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 7H5C3.89543 7 3 7.89543 3 9V18C3 19.1046 3.89543 20 5 20H19C20.1046 20 21 19.1046 21 18V9C21 7.89543 20.1046 7 19 7H16M15 11L12 14M12 14L9 11M12 14V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Save
-              </button>
+              {/* Save button removed - using only the main save button */}
               {/* Save Survey Button */}
               <button 
                 onClick={() => handleSaveSurvey(false)}
@@ -3172,7 +3160,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         id="surveyTitle"
                         className="form-control"
                         value={survey?.title || ''}
-                        onChange={(e) => setSurvey({...survey, title: e.target.value})}
+                        onChange={(e) => {
+                          setSurvey({...survey, title: e.target.value});
+                          setHasUnsavedChanges(true);
+                          triggerAutoSave();
+                        }}
                         placeholder="Enter survey title"
                       />
                     </div>
@@ -3187,6 +3179,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             // Just store the content as is during editing to improve performance
                             // We'll clean it up when saving
                             setSurvey({...survey, description: content});
+                            setHasUnsavedChanges(true);
+                            triggerAutoSave();
                           }}
                           placeholder="Enter survey description"
                           modules={{
@@ -3390,11 +3384,14 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => {
-                                  setSelectedDemographics(
-                                    isSelected
-                                      ? selectedDemographics.filter(v => v !== opt.value)
-                                      : [...selectedDemographics, opt.value]
-                                  );
+                                  const newDemographics = isSelected
+                                    ? selectedDemographics.filter(v => v !== opt.value)
+                                    : [...selectedDemographics, opt.value];
+                                  
+                                  setSelectedDemographics(newDemographics);
+                                  setSurvey({...survey, demographics: newDemographics});
+                                  setHasUnsavedChanges(true);
+                                  triggerAutoSave();
                                 }}
                                 style={{ 
                                   width: 18, 
@@ -3770,6 +3767,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                   const reader = new FileReader();
                                   reader.onload = (event) => {
                                     setSurvey({...survey, logo: event.target?.result as string});
+                                    setHasUnsavedChanges(true);
+                                    triggerAutoSave();
                                   };
                                   reader.readAsDataURL(file);
                                 }
@@ -3849,10 +3848,14 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                   reader.onload = (event) => {
                                     const result = event.target?.result as string;
                                     console.log('Featured image loaded:', result ? 'Image data available' : 'No image data');
-                                    setSurvey((prevSurvey) => ({
-                                      ...prevSurvey,
-                                      image: result
-                                    }));
+                                    setSurvey((prevSurvey) => {
+                                      setHasUnsavedChanges(true);
+                                      triggerAutoSave();
+                                      return {
+                                        ...prevSurvey,
+                                        image: result
+                                      };
+                                    });
                                   };
                                   reader.readAsDataURL(file);
                                 }
@@ -3937,7 +3940,12 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         </div>
                         {selectedTheme ? (
                           <button 
-                            onClick={() => setSelectedTheme('')}
+                            onClick={() => {
+                              setSelectedTheme('');
+                              setSurvey({...survey, selectedTheme: ''});
+                              setHasUnsavedChanges(true);
+                              triggerAutoSave();
+                            }}
                             style={{
                               backgroundColor: '#fff',
                               border: '1px solid #e53e3e',
@@ -4043,7 +4051,12 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         return (
                           <div 
                             key={theme._id} 
-                            onClick={() => setSelectedTheme(theme._id)}
+                            onClick={() => {
+                              setSelectedTheme(theme._id);
+                              setSurvey({...survey, selectedTheme: theme._id});
+                              setHasUnsavedChanges(true);
+                              triggerAutoSave();
+                            }}
                             style={{ 
                               cursor: 'pointer',
                               borderRadius: 12,
@@ -4213,6 +4226,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedTheme('');
+                                    setSurvey({...survey, selectedTheme: ''});
+                                    setHasUnsavedChanges(true);
+                                    triggerAutoSave();
                                   }}
                                   style={{
                                     display: 'flex',
@@ -4236,6 +4252,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedTheme(theme._id);
+                                    setSurvey({...survey, selectedTheme: theme._id});
+                                    setHasUnsavedChanges(true);
+                                    triggerAutoSave();
                                   }}
                                   style={{
                                     display: 'flex',
@@ -4439,7 +4458,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           <input 
                             type="email" 
                             value={newCollaboratorEmail}
-                            onChange={(e) => setNewCollaboratorEmail(e.target.value)}
+                            onChange={(e) => {
+                              setNewCollaboratorEmail(e.target.value);
+                              setHasUnsavedChanges(true);
+                              triggerAutoSave();
+                            }}
                             placeholder="Enter email address"
                             style={{
                               width: '100%',
@@ -4456,7 +4479,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           </label>
                           <select
                             value={newCollaboratorRole}
-                            onChange={(e) => setNewCollaboratorRole(e.target.value)}
+                            onChange={(e) => {
+                              setNewCollaboratorRole(e.target.value);
+                              setHasUnsavedChanges(true);
+                              triggerAutoSave();
+                            }}
                             style={{
                               width: '100%',
                               padding: '8px 12px',
@@ -4643,6 +4670,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                 }
                               };
                               setSurvey(updatedSurvey);
+                              setHasUnsavedChanges(true);
+                              triggerAutoSave();
                             }}
                             style={{ 
                               width: 18, 
@@ -4677,6 +4706,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                         retakeMode: 'replace'
                                       }
                                     });
+                                    setHasUnsavedChanges(true);
+                                    triggerAutoSave();
                                   }}
                                   style={{ accentColor: '#552a47' }}
                                 />
@@ -4696,6 +4727,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                         retakeMode: 'new'
                                       }
                                     });
+                                    setHasUnsavedChanges(true);
+                                    triggerAutoSave();
                                   }}
                                   style={{ accentColor: '#552a47' }}
                                 />
@@ -4869,7 +4902,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     id="themeName"
                     type="text"
                     value={newThemeName}
-                    onChange={(e) => setNewThemeName(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeName(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     placeholder="Enter theme name"
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
                     required
@@ -4883,13 +4920,21 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       id="themeColor"
                       type="color"
                       value={newThemeColor}
-                      onChange={(e) => setNewThemeColor(e.target.value)}
+                      onChange={(e) => {
+                        setNewThemeColor(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       style={{ width: 42, height: 42, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
                     />
                     <input
                       type="text"
                       value={newThemeColor}
-                      onChange={(e) => setNewThemeColor(e.target.value)}
+                      onChange={(e) => {
+                        setNewThemeColor(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       placeholder="#552a47"
                       style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
                     />
@@ -4903,13 +4948,21 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       id="themeSecondaryColor"
                       type="color"
                       value={newThemeSecondaryColor}
-                      onChange={(e) => setNewThemeSecondaryColor(e.target.value)}
+                      onChange={(e) => {
+                        setNewThemeSecondaryColor(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       style={{ width: 42, height: 42, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
                     />
                     <input
                       type="text"
                       value={newThemeSecondaryColor}
-                      onChange={(e) => setNewThemeSecondaryColor(e.target.value)}
+                      onChange={(e) => {
+                        setNewThemeSecondaryColor(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       placeholder="#8e44ad"
                       style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
                     />
@@ -4923,13 +4976,21 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       id="themeAccentColor"
                       type="color"
                       value={newThemeAccentColor}
-                      onChange={(e) => setNewThemeAccentColor(e.target.value)}
+                      onChange={(e) => {
+                        setNewThemeAccentColor(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       style={{ width: 42, height: 42, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
                     />
                     <input
                       type="text"
                       value={newThemeAccentColor}
-                      onChange={(e) => setNewThemeAccentColor(e.target.value)}
+                      onChange={(e) => {
+                        setNewThemeAccentColor(e.target.value);
+                        setHasUnsavedChanges(true);
+                        triggerAutoSave();
+                      }}
                       placeholder="#9b59b6"
                       style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15 }}
                     />
@@ -4941,7 +5002,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <textarea
                     id="themeDescription"
                     value={newThemeDescription}
-                    onChange={(e) => setNewThemeDescription(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeDescription(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     placeholder="Enter theme description"
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, minHeight: 80, resize: 'vertical' }}
                   />
@@ -4952,7 +5017,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <select
                     id="themeTemplateType"
                     value={newThemeTemplateType}
-                    onChange={(e) => setNewThemeTemplateType(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeTemplateType(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
                   >
                     <option value="Custom">Custom</option>
@@ -4966,7 +5035,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <select
                     id="themeHeadingFont"
                     value={newThemeHeadingFont}
-                    onChange={(e) => setNewThemeHeadingFont(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeHeadingFont(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
                   >
                     <option value="Inter">Inter</option>
@@ -4981,7 +5054,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <select
                     id="themeBodyFont"
                     value={newThemeBodyFont}
-                    onChange={(e) => setNewThemeBodyFont(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeBodyFont(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
                   >
                     <option value="Inter">Inter</option>
@@ -4996,7 +5073,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <select
                     id="themeButtonStyle"
                     value={newThemeButtonStyle}
-                    onChange={(e) => setNewThemeButtonStyle(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeButtonStyle(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
                   >
                     <option value="Rounded">Rounded</option>
@@ -5010,7 +5091,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <select
                     id="themeQuestionStyle"
                     value={newThemeQuestionStyle}
-                    onChange={(e) => setNewThemeQuestionStyle(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeQuestionStyle(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
                   >
                     <option value="Card">Card</option>
@@ -5024,7 +5109,11 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   <select
                     id="themeHeaderStyle"
                     value={newThemeHeaderStyle}
-                    onChange={(e) => setNewThemeHeaderStyle(e.target.value)}
+                    onChange={(e) => {
+                      setNewThemeHeaderStyle(e.target.value);
+                      setHasUnsavedChanges(true);
+                      triggerAutoSave();
+                    }}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, backgroundColor: '#fff' }}
                   >
                     <option value="Solid">Solid</option>
