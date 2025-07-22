@@ -25,7 +25,7 @@ const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   border-radius: 18px;
-  padding: 24px 24px 40px 24px;
+  padding: 0px;
   background: transparent;
   box-sizing: border-box;
   overflow: hidden;

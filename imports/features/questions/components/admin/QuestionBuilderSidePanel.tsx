@@ -741,7 +741,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         >
           <TabList className="react-tabs__tab-list question-builder-tab-list">
             <Tab className="react-tabs__tab"><FaInfoCircle /> Basic Information</Tab>
-            <Tab className="react-tabs__tab"><FaList /> Answer Options</Tab>
             <Tab className="react-tabs__tab"><FaEdit /> Custom Fields</Tab>
             <Tab className="react-tabs__tab"><FaCodeBranch /> Branching Logic</Tab>
             <Tab className="react-tabs__tab"><FaCog /> Settings</Tab>
@@ -850,6 +849,52 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                   <option value="date">Date</option>
                   <option value="file">File Upload</option>
                 </select>
+              </div>
+              
+              {/* Answer Options - Moved from Answer Options tab */}
+              <div className="form-group answer-options-section">
+                <h3>Answer Options</h3>
+                <QuestionBuilderDndProvider>
+                  <QuestionBuilderAnswerOptions
+                    answerType={questions[0].question.answerType}
+                    answers={questions[0].question.answers || []}
+                    onAnswersChange={(answers) => {
+                      const updatedQuestions = [...questions];
+                      updatedQuestions[0].question = {
+                        ...updatedQuestions[0].question,
+                        answers
+                      };
+                      setQuestions(updatedQuestions);
+                    }}
+                    isAssessment={questions[0].question.isAssessment || false}
+                    onIsAssessmentChange={(isAssessment) => {
+                      const updatedQuestions = [...questions];
+                      updatedQuestions[0].question = {
+                        ...updatedQuestions[0].question,
+                        isAssessment
+                      };
+                      setQuestions(updatedQuestions);
+                    }}
+                    correctAnswers={questions[0].question.correctAnswers || []}
+                    onCorrectAnswersChange={(correctAnswers) => {
+                      const updatedQuestions = [...questions];
+                      updatedQuestions[0].question = {
+                        ...updatedQuestions[0].question,
+                        correctAnswers
+                      };
+                      setQuestions(updatedQuestions);
+                    }}
+                    points={questions[0].question.points || 1}
+                    onPointsChange={(points) => {
+                      const updatedQuestions = [...questions];
+                      updatedQuestions[0].question = {
+                        ...updatedQuestions[0].question,
+                        points
+                      };
+                      setQuestions(updatedQuestions);
+                    }}
+                  />
+                </QuestionBuilderDndProvider>
               </div>
               
               {/* Tag Builder */}

@@ -657,7 +657,7 @@ const SurveyPublic: React.FC = () => {
     <div style={{
       background: isPreviewMode ? '#FFF9EB' : '#f9f4f7',
       minHeight: '100vh',
-      padding: '2.5rem 2.5rem 4rem 2.5rem',
+      padding: '1.5rem',
       // Remove box-shadow and border-radius for preview mode
       boxShadow: isPreviewMode ? 'none' : '0px 0px 10px 0px #0000001A',
       borderRadius: isPreviewMode ? '0' : '20px',
