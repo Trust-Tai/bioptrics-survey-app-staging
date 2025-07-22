@@ -8,7 +8,7 @@ const Table = styled.table`
   border-collapse: collapse;
   background: #fff;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to visible to prevent dropdown clipping */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 `;
 
@@ -154,6 +154,8 @@ const DropdownMenu = styled.div<{ position?: 'top' | 'bottom' }>`
   transform: translateZ(0);
   margin-top: ${props => (props.position || 'bottom') === 'bottom' ? '4px' : '0'};
   margin-bottom: ${props => (props.position || 'bottom') === 'top' ? '4px' : '0'};
+  /* Additional styles to prevent clipping */
+  filter: drop-shadow(0 0 5px rgba(0,0,0,0.1));
 `;
 
 // Set default props for DropdownMenu
@@ -240,8 +242,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     const viewportHeight = window.innerHeight;
     const spaceBelow = viewportHeight - buttonRect.bottom;
     
-    // If less than 200px below (typical dropdown height), position above
-    setDropdownPosition(spaceBelow < 200 ? 'top' : 'bottom');
+    // Calculate percentage of viewport height available below the button
+    const spaceBelowPercentage = (spaceBelow / viewportHeight) * 100;
+    
+    // If less than 30% of viewport height is available below, position dropdown above
+    setDropdownPosition(spaceBelowPercentage < 30 ? 'top' : 'bottom');
     setOpenDropdown(surveyId);
   };
   return (
@@ -341,10 +346,28 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           <DropdownItem 
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (onCopyLink) {
-                                onCopyLink(survey._id);
-                                setOpenDropdown(null);
-                              }
+                              // Generate token and copy public URL directly
+                              Meteor.call('surveys.generateEncryptedToken', survey._id, (err: Meteor.Error | null, token: string) => {
+                                if (err || !token) {
+                                  console.error('Error generating token for copying link:', err);
+                                  // Show error notification if available
+                                  return;
+                                }
+                                
+                                // Create the full URL
+                                const url = `${window.location.origin}/public/${token}`;
+                                
+                                // Copy to clipboard
+                                navigator.clipboard.writeText(url)
+                                  .then(() => {
+                                    // Success notification could be shown here if we had access to notification state
+                                    console.log('Public URL copied to clipboard');
+                                  })
+                                  .catch((clipboardErr) => {
+                                    console.error('Failed to copy link to clipboard:', clipboardErr);
+                                  });
+                              });
+                              setOpenDropdown(null);
                             }}
                           >
                             <FaCopy /> Copy Shareable Link
