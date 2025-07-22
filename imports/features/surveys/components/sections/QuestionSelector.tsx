@@ -315,8 +315,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     }}>
       <div className="modal-content" style={{
         backgroundColor: 'white',
-        width: '900px', /* Further increased width from 700px to 900px */
-        maxWidth: '95%',
+        width: '90%',
+        maxWidth: '1000px',
         height: '100%',
         boxShadow: '-5px 0 15px rgba(0, 0, 0, 0.2)',
         display: 'flex',

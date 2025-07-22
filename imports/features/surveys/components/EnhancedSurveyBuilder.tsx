@@ -3715,7 +3715,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       </button>
                   </div>
                   
-                  <div style={{ padding: 20 }}>
+                  <div>
                   {/* Survey Appearance Settings Section */}
                   <div style={{ 
                     marginBottom: '24px', 

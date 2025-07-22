@@ -105,7 +105,7 @@ const sidePanelStyles = {
     height: '100%',
     backgroundColor: '#fff',
     boxShadow: '-2px 0 10px rgba(0, 0, 0, 0.2)',
-    zIndex: 2001, /* Increased z-index to be higher than QuestionSelector */
+    zIndex: 2001,
     overflowY: 'auto',
     transition: 'transform 0.3s ease-in-out',
     padding: '20px',
@@ -632,12 +632,13 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               <button
                 onClick={handlePublishQuestion}
                 style={{
-                  background: '#2ecc40',
+                  background: '#552a47', /* Brand color */
                   color: '#fff',
                   border: 'none',
                   borderRadius: '8px',
-                  padding: '10px 18px',
+                  padding: '10px 20px',
                   fontWeight: 600,
+                  fontSize: '16px',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                   transition: 'all 0.2s ease',
@@ -647,10 +648,10 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                   opacity: isLoading ? 0.7 : 1,
                 }}
                 disabled={isLoading}
-                onMouseOver={(e) => !isLoading && (e.currentTarget.style.background = '#27ae60')}
-                onMouseOut={(e) => !isLoading && (e.currentTarget.style.background = '#2ecc40')}
+                onMouseOver={(e) => !isLoading && (e.currentTarget.style.background = '#6e3a5d')} /* Darker shade for hover */
+                onMouseOut={(e) => !isLoading && (e.currentTarget.style.background = '#552a47')}
               >
-                <span style={{ marginRight: '5px' }}>✓</span> {questionId ? 'Update' : 'Publish'}
+                {questionId ? 'Update' : 'Publish'}
               </button>
               <div style={{
                 position: 'absolute',
@@ -740,9 +741,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           className="react-tabs question-builder-tabs"
         >
           <TabList className="react-tabs__tab-list question-builder-tab-list">
-            <Tab className="react-tabs__tab"><FaInfoCircle /> Basic Information</Tab>
-            <Tab className="react-tabs__tab"><FaCodeBranch /> Branching Logic</Tab>
-            <Tab className="react-tabs__tab"><FaCog /> Settings</Tab>
+            <Tab className="react-tabs__tab"><FaInfoCircle /> Basic Question</Tab>
+            <Tab className="react-tabs__tab"><FaCog /> Advanced</Tab>
           </TabList>
 
           {/* Basic Information Tab */}
@@ -832,8 +832,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     
                     setQuestions(updatedQuestions);
                     
-                    // Automatically switch to Answer Options tab when question type changes
-                    setActiveTabIndex(1); // Index 1 is the Answer Options tab
+                    // Keep user on the Basic Information tab since Answer Options are now there
+                    setActiveTabIndex(0); // Index 0 is the Basic Information tab
                   }}
                   className="form-control"
                 >
@@ -979,67 +979,11 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
             </div>
           </TabPanel>
 
-          {/* Answer Options Tab */}
-          <TabPanel className="react-tabs__tab-panel">
-            <QuestionBuilderDndProvider>
-              <QuestionBuilderAnswerOptions
-                answerType={questions[0].question.answerType}
-                answers={questions[0].question.answers || []}
-                onAnswersChange={(answers) => {
-                  const updatedQuestions = [...questions];
-                  updatedQuestions[0].question = {
-                    ...updatedQuestions[0].question,
-                    answers
-                  };
-                  setQuestions(updatedQuestions);
-                }}
-                isAssessment={questions[0].question.isAssessment || false}
-                onIsAssessmentChange={(isAssessment) => {
-                  const updatedQuestions = [...questions];
-                  updatedQuestions[0].question = {
-                    ...updatedQuestions[0].question,
-                    isAssessment
-                  };
-                  setQuestions(updatedQuestions);
-                }}
-                correctAnswers={questions[0].question.correctAnswers || []}
-                onCorrectAnswersChange={(correctAnswers) => {
-                  const updatedQuestions = [...questions];
-                  updatedQuestions[0].question = {
-                    ...updatedQuestions[0].question,
-                    correctAnswers
-                  };
-                  setQuestions(updatedQuestions);
-                }}
-                points={questions[0].question.points || 1}
-                onPointsChange={(points) => {
-                  const updatedQuestions = [...questions];
-                  updatedQuestions[0].question = {
-                    ...updatedQuestions[0].question,
-                    points
-                  };
-                  setQuestions(updatedQuestions);
-                }}
-              />
-            </QuestionBuilderDndProvider>
-          </TabPanel>
-          
           {/* Classification Tab removed as requested */}
           {/* Custom Fields Tab removed as requested */}
+          {/* Answer Options Tab removed as requested */}
 
-          {/* Branching Logic Tab */}
-          <TabPanel className="react-tabs__tab-panel">
-            <QuestionBuilderBranchingTab
-              question={questions[0].question}
-              onChange={(updatedQuestion) => {
-                const updatedQuestions = [...questions];
-                updatedQuestions[0].question = updatedQuestion;
-                setQuestions(updatedQuestions);
-              }}
-            />
-          </TabPanel>
-
-          {/* Settings Tab */}
+          {/* Advanced Tab */}
           <TabPanel className="react-tabs__tab-panel">
             <div className="question-builder-section">
               <h3>Question Settings</h3>

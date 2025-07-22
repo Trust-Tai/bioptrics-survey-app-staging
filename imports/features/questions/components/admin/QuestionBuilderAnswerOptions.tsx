@@ -316,7 +316,7 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
       
       {/* Answer Options Header */}
       <div className="answer-options-header">
-        <h3>Answer Options</h3>
+        <label>Answer Options</label>
         <div className="helper-text">
           <FaInfoCircle /> {getHelperText()}
         </div>
