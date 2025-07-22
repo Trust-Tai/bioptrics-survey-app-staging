@@ -771,25 +771,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 />
               </div>
               
-              <div className="form-group">
-                <label>Description</label>
-                <ReactQuill
-                  theme="snow"
-                  value={questions[0].question.description || ''}
-                  onChange={(value) => {
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.description = value;
-                    setQuestions(updatedQuestions);
-                  }}
-                  modules={{
-                    toolbar: [
-                      ['bold', 'italic', 'underline'],
-                      ['link'],
-                      ['clean']
-                    ]
-                  }}
-                />
-              </div>
+              {/* Description field removed as requested */}
               
               {/* Question Type Dropdown */}
               <div className="form-group">
