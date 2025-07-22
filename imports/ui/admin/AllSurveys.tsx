@@ -28,7 +28,7 @@ const Container = styled.div`
   padding: 0px;
   background: transparent;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 `;
 
 const Title = styled.h1`
