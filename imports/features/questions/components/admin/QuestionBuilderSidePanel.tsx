@@ -741,8 +741,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           className="react-tabs question-builder-tabs"
         >
           <TabList className="react-tabs__tab-list question-builder-tab-list">
-            <Tab className="react-tabs__tab"><FaInfoCircle /> Basic Question</Tab>
-            <Tab className="react-tabs__tab"><FaCog /> Advanced</Tab>
+            <Tab className="react-tabs__tab" style={{ padding: '15px' }}><FaInfoCircle /> Basic Question</Tab>
+            <Tab className="react-tabs__tab" style={{ padding: '15px' }}><FaCog /> Advanced</Tab>
           </TabList>
 
           {/* Basic Information Tab */}
@@ -910,6 +910,34 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 />
               </div>
               
+              {/* Question Image moved to Advanced tab */}
+              
+              <div className="form-group checkbox-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!!questions[0].question.required}
+                    onChange={(e) => {
+                      const updatedQuestions = [...questions];
+                      updatedQuestions[0].question.required = e.target.checked;
+                      setQuestions(updatedQuestions);
+                    }}
+                  />
+                  Required Question
+                </label>
+              </div>
+              {/* Add spacing below Required Question */}
+              <div style={{ marginBottom: '20px' }}></div>
+            </div>
+          </TabPanel>
+
+          {/* Classification Tab removed as requested */}
+          {/* Custom Fields Tab removed as requested */}
+          {/* Answer Options Tab removed as requested */}
+
+          {/* Advanced Tab */}
+          <TabPanel className="react-tabs__tab-panel">
+            <div className="question-builder-section">
               <div className="form-group">
                 <label>Question Image</label>
                 <div className="image-upload-container">
@@ -959,34 +987,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                   )}
                 </div>
               </div>
-              
-              <div className="form-group checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={!!questions[0].question.required}
-                    onChange={(e) => {
-                      const updatedQuestions = [...questions];
-                      updatedQuestions[0].question.required = e.target.checked;
-                      setQuestions(updatedQuestions);
-                    }}
-                  />
-                  Required Question
-                </label>
-              </div>
-              {/* Add spacing below Required Question */}
-              <div style={{ marginBottom: '20px' }}></div>
-            </div>
-          </TabPanel>
-
-          {/* Classification Tab removed as requested */}
-          {/* Custom Fields Tab removed as requested */}
-          {/* Answer Options Tab removed as requested */}
-
-          {/* Advanced Tab */}
-          <TabPanel className="react-tabs__tab-panel">
-            <div className="question-builder-section">
-              <h3>Question Settings</h3>
               
               <div className="form-group">
                 <label>Feedback Collection</label>

@@ -67,6 +67,11 @@
   flex-shrink: 0;
 }
 
+
+.question-builder-sections .form-group {
+  margin-bottom: 2rem;
+}
+
 .sections-header {
   display: flex;
   flex-direction: column;
@@ -856,6 +861,10 @@
   
   .question-builder-sections {
     width: 240px;
+  }
+
+  .question-builder-sections .form-group {
+    margin-bottom: 2rem;
   }
   
   .question-title {
