@@ -3044,10 +3044,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
               {/* Welcome Screen */}
               {activeStep === 'welcome' && (
                 <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Survey Basics</h2>
-                  </div>
-                  
                   <div className="survey-builder-panel-content">
                     <div className="form-group">
                       <label htmlFor="surveyTitle">Title</label>
@@ -3143,11 +3139,19 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             option: (base, state) => ({
                               ...base,
                               fontFamily: 'monospace',
-                              whiteSpace: 'pre'
+                              whiteSpace: 'pre',
+                              backgroundColor: state.isFocused ? '#f0f0f0' : '#ffffff' // White background for options
                             }),
                             menu: (base) => ({
                               ...base,
-                              zIndex: 9999
+                              zIndex: 9999,
+                              width: '100%',  // Make dropdown full width
+                              backgroundColor: '#ffffff' // White background for menu
+                            }),
+                            menuList: (base) => ({
+                              ...base,
+                              width: '100%',  // Ensure menu list is also full width
+                              backgroundColor: '#ffffff' // White background for menu list
                             })
                           }}
                           formatCreateLabel={(inputValue) => `Create this tag: "${inputValue}"`}
