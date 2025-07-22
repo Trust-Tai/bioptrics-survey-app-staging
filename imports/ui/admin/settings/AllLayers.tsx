@@ -66,8 +66,8 @@ const ViewToggleGroup = styled.div`
   background: #f5f5f5;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 1rem;
-  width: fit-content;
+  width: max-content;
+  margin: auto;
 `;
 
 const ViewToggleButton = styled.button<{ active?: boolean; theme?: any }>`
@@ -1325,7 +1325,7 @@ const AllLayers = () => {
     <AdminLayout>
       <Container>
         <Header>
-          <Title>Tags and Classifications</Title>
+          <Title>Tags</Title>
           <ButtonGroup>
             <Button primary onClick={createNewTag} theme={theme}>
               <FaPlus /> Create New Tag
@@ -1366,8 +1366,8 @@ const AllLayers = () => {
         </StatsContainer>
         
         <FilterSection style={{ marginBottom: '1.5rem', padding: '1rem', background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '300px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', position: 'relative'}}>
               <input
                 type="text"
                 placeholder="Search tags..."
@@ -1468,13 +1468,13 @@ const AllLayers = () => {
                 active={viewMode === 'tree'} 
                 onClick={() => setViewMode('tree')}
               >
-                <FaList /> Tree
+                <FaList />
               </ViewToggleButton>
               <ViewToggleButton 
                 active={viewMode === 'list'} 
                 onClick={() => setViewMode('list')}
               >
-                <FaTable /> List
+                <FaTable />
               </ViewToggleButton>
             </ViewToggleGroup>
           </div>
@@ -1663,7 +1663,6 @@ const AllLayers = () => {
           </>
         ) : (
           <ListViewContainer>
-            <TagHierarchyTitle>Tag Hierarchy</TagHierarchyTitle>
             <div style={{ padding: '1rem' }}>
               {hierarchicalLayers && hierarchicalLayers.map((layer, index) => renderTagItem(layer, 0))}
             </div>

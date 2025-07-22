@@ -140,17 +140,26 @@ const DropdownButton = styled.button`
   }
 `;
 
-const DropdownMenu = styled.div`
+const DropdownMenu = styled.div<{ position?: 'top' | 'bottom' }>`
   position: absolute;
-  top: 100%;
+  ${props => (props.position || 'bottom') === 'bottom' ? 'top: 100%;' : 'bottom: 100%;'}
   right: 0;
   background-color: white;
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   min-width: 160px;
-  z-index: 1000;
-  overflow: hidden;
+  z-index: 9999;
+  overflow: visible;
+  /* Ensure the dropdown is not clipped by any parent containers */
+  transform: translateZ(0);
+  margin-top: ${props => (props.position || 'bottom') === 'bottom' ? '4px' : '0'};
+  margin-bottom: ${props => (props.position || 'bottom') === 'top' ? '4px' : '0'};
 `;
+
+// Set default props for DropdownMenu
+DropdownMenu.defaultProps = {
+  position: 'bottom'
+};
 
 const DropdownItem = styled.button`
   display: flex;
@@ -199,6 +208,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onCopyLink
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Handle click outside to close dropdown
@@ -214,6 +224,26 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  
+  // Function to determine dropdown position based on available space
+  const handleDropdownToggle = (e: React.MouseEvent, surveyId: string) => {
+    e.stopPropagation();
+    
+    // If already open, just close it
+    if (openDropdown === surveyId) {
+      setOpenDropdown(null);
+      return;
+    }
+    
+    // Check position in viewport
+    const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    
+    // If less than 200px below (typical dropdown height), position above
+    setDropdownPosition(spaceBelow < 200 ? 'top' : 'bottom');
+    setOpenDropdown(surveyId);
+  };
   return (
     <Table>
       <TableHeader>
@@ -268,17 +298,14 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               <TableCell onClick={(e) => e.stopPropagation()}>
                 <ActionContainer ref={dropdownRef}>
                   <DropdownButton 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(openDropdown === survey._id ? null : survey._id);
-                    }}
+                    onClick={(e) => handleDropdownToggle(e, survey._id)}
                     title="Actions"
                   >
                     <FaEllipsisV />
                   </DropdownButton>
                   
                   {openDropdown === survey._id && (
-                    <DropdownMenu>
+                    <DropdownMenu position={dropdownPosition}>
                       <DropdownItem 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -320,7 +347,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                               }
                             }}
                           >
-                            <FaCopy /> Copy Sharable Link
+                            <FaCopy /> Copy Shareable Link
                           </DropdownItem>
                         </>
                       )}
