@@ -1609,6 +1609,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // Track if there are unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [lastUserActivity, setLastUserActivity] = useState<number>(Date.now());
+  const [lastSaved, setLastSaved] = useState<number | null>(null);
   
   // Handle auto-save functionality
   useEffect(() => {
@@ -1639,31 +1641,65 @@ const EnhancedSurveyBuilder: React.FC = () => {
     };
   }, [showActionDropdown]);
   
-  // Set up beforeunload event to warn when leaving with unsaved changes
+  // Set up beforeunload event to warn when leaving and track user activity
   useEffect(() => {
+    // Function to handle beforeunload event
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
-        // Standard way to show confirmation dialog when leaving page
-        const message = 'You have unsaved changes. Are you sure you want to leave?';
         e.preventDefault();
-        e.returnValue = message;
-        return message;
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
       }
     };
     
+    // Function to track user activity
+    const handleUserActivity = () => {
+      updateUserActivity();
+    };
+    
+    // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
     
+    // Track user activity with these events
+    const activityEvents = ['mousedown', 'keydown', 'mousemove', 'wheel'];
+    activityEvents.forEach(event => {
+      document.addEventListener(event, handleUserActivity);
+    });
+    
+    // Set up periodic auto-save (every 2 minutes)
+    const periodicSaveInterval = setInterval(() => {
+      // Only save if there are unsaved changes and user has been inactive for at least 5 seconds
+      const inactiveTime = Date.now() - lastUserActivity;
+      if (hasUnsavedChanges && inactiveTime > 5000) {
+        console.log('Periodic auto-save triggered');
+        silentSave(true); // Pass true to indicate this is an auto-save
+      }
+    }, 120000); // 2 minutes
+    
+    // Clean up
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, handleUserActivity);
+      });
+      clearInterval(periodicSaveInterval);
     };
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, lastUserActivity]);
   
   // Get React Router location and navigation context
   const location = useLocation();
   const navigationContext = React.useContext(UNSAFE_NavigationContext);
   
-  // Function to trigger auto-save - DISABLED
+  // Function to update last user activity timestamp
+  const updateUserActivity = () => {
+    setLastUserActivity(Date.now());
+  };
+
+  // Function to trigger auto-save based on inactivity
   const triggerAutoSave = () => {
+    // Update user activity timestamp
+    updateUserActivity();
+    
     // Clear any existing timer
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
@@ -1672,37 +1708,48 @@ const EnhancedSurveyBuilder: React.FC = () => {
     // Set unsaved changes flag
     setHasUnsavedChanges(true);
     
-    // Auto-save functionality is disabled
-    // Uncomment the following code to re-enable auto-save
-    /*
+    // Set a new timer for 5 seconds of inactivity before saving
     autoSaveTimerRef.current = setTimeout(() => {
-      // Silent auto-save without UI updates
-      silentSave();
-    }, 3000);
-    */
-    
-    // Log that auto-save is disabled
-    console.log('Auto-save is disabled');
+      // Only save if there are unsaved changes
+      if (hasUnsavedChanges) {
+        console.log('Auto-saving after 5 seconds of inactivity');
+        silentSave(true); // Pass true to indicate this is an auto-save
+      }
+    }, 5000); // 5 seconds of inactivity
   };
   
   // Silent save function that doesn't update UI or show notifications
-  const silentSave = async () => {
+  const silentSave = async (isAutoSave = false) => {
     try {
-      // Don't set saving state to avoid UI spinner
-      // setSaving(true);
+      // Set a temporary saving state for UI feedback
+      const tempLastSaved = lastSaved;
+      setLastSaved(null); // Clear last saved timestamp to show saving in progress
       
       // Ensure we have valid data before proceeding
       if (!survey || !survey._id) {
         console.log('Skipping auto-save: Survey not fully loaded');
+        setLastSaved(tempLastSaved); // Restore previous timestamp
         return false;
       }
+      
+      // Take a snapshot of the current state before saving
+      // This ensures we're using the most up-to-date state values
+      const currentState = {
+        title: survey.title,
+        description: survey.description,
+        status: survey.status || 'draft',
+        selectedTags: selectedTags,
+        selectedDemographics: selectedDemographics,
+        selectedTheme: selectedTheme,
+        selectedCategories: selectedCategories
+      };
       
       // Prepare survey data - ensure all fields have proper types
       // Format data according to the server's expected structure
       const surveyData = {
-        title: String(survey.title || ''),
-        description: String(survey.description || ''),
-        status: String(survey.status || 'draft'),
+        title: String(currentState.title || ''),
+        description: String(currentState.description || ''),
+        status: String(currentState.status || 'draft'),
         // Map our sections and questions to the expected server format
         surveySections: sections.map(section => ({
           id: String(section.id),
@@ -1729,19 +1776,32 @@ const EnhancedSurveyBuilder: React.FC = () => {
         defaultSettings: survey.defaultSettings || { allowRetake: true }
       };
       
-      // Call Meteor method to save
+      // Call Meteor method to save or update the survey
       if (surveyId) {
         await Meteor.callAsync('surveys.update', surveyId, surveyData);
+        console.log('Auto-save successful');
       } else {
-        await Meteor.callAsync('surveys.saveDraft', surveyData);
+        const newSurveyId = await Meteor.callAsync('surveys.saveDraft', surveyData);
+        console.log('Auto-save successful (new draft)');
+        if (newSurveyId) {
+          // If this is a new survey, update the URL with the new ID
+          navigate(`/surveys/builder/${newSurveyId}`);
+        }
       }
       
-      // Reset unsaved changes flag without UI updates
+      // Update the last saved timestamp
+      setLastSaved(Date.now());
+      
+      // Reset unsaved changes flag
       setHasUnsavedChanges(false);
       
-      // Don't show success notification
-      // Don't reset saving state to avoid UI changes
-      // setSaving(false);
+      // Only show alert for manual saves, not auto-saves
+      if (!isAutoSave) {
+        setAlert({ type: 'success', message: 'Survey saved successfully!' });
+        setTimeout(() => setAlert(null), 3000);
+      }
+      
+      console.log('Save completed successfully');
       return true;
     } catch (error) {
       console.log('Silent save error:', error);
@@ -2642,8 +2702,58 @@ const EnhancedSurveyBuilder: React.FC = () => {
               gap: '12px',
               flexWrap: 'wrap',
               justifyContent: 'flex-end',
-              position: 'relative'
+              position: 'relative',
+              alignItems: 'center'
             }}>
+              {/* Save indicator */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '14px',
+                color: hasUnsavedChanges ? '#e67e22' : '#2ecc71',
+                marginRight: '8px'
+              }}>
+                {hasUnsavedChanges ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Unsaved changes</span>
+                  </>
+                ) : lastSaved ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Changes saved</span>
+                  </>
+                ) : null}
+              </div>
+              
+              {/* Manual Save Button */}
+              <button
+                onClick={() => silentSave()}
+                disabled={!hasUnsavedChanges}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  backgroundColor: hasUnsavedChanges ? '#552a47' : '#e0e0e0',
+                  color: hasUnsavedChanges ? 'white' : '#666',
+                  border: 'none',
+                  cursor: hasUnsavedChanges ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 7H5C3.89543 7 3 7.89543 3 9V18C3 19.1046 3.89543 20 5 20H19C20.1046 20 21 19.1046 21 18V9C21 7.89543 20.1046 7 19 7H16M15 11L12 14M12 14L9 11M12 14V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Save
+              </button>
               {/* Save Survey Button */}
               <button 
                 onClick={() => handleSaveSurvey(false)}
@@ -3100,6 +3210,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             console.log('Tags: ', selected);
                             if (Array.isArray(selected)) {
                               setSelectedTags(selected.map(option => option.value));
+                              triggerAutoSave(); // Trigger auto-save when tags change
                             }
                           }}
                           onCreateOption={(inputValue) => {
@@ -3120,6 +3231,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               
                               // Add the new tag to selected tags
                               setSelectedTags([...selectedTags, newTagId]);
+                              triggerAutoSave(); // Trigger auto-save when new tag is created
                               setAlert({ type: 'success', message: `Tag "${inputValue}" created successfully!` });
                               setTimeout(() => setAlert(null), 3000);
                             });
