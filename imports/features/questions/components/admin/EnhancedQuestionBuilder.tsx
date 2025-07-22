@@ -916,20 +916,7 @@ const EnhancedQuestionBuilder: React.FC = () => {
                               />
                             </div>
                             
-                            <div className="form-group">
-                              <label>Description</label>
-                              <ReactQuill
-                                value={question.description || ''}
-                                onChange={(value) => setQuestion(prev => ({ ...prev, description: value }))}
-                                modules={{
-                                  toolbar: [
-                                    ['bold', 'italic', 'underline'],
-                                    ['link'],
-                                    ['clean']
-                                  ]
-                                }}
-                              />
-                            </div>
+                            {/* Description field removed as requested */}
                             
                             <div className="form-group">
                               <label>Question Type <span className="required-asterisk">*</span></label>
