@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -122,10 +122,63 @@ const ActionButton = styled.button`
   }
 `;
 
+const DropdownButton = styled.button`
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 6px;
+  margin: 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background-color: #f1f3f5;
+    color: #212529;
+  }
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 160px;
+  z-index: 1000;
+  overflow: hidden;
+`;
+
+const DropdownItem = styled.button`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #212529;
+  
+  svg {
+    margin-right: 8px;
+    font-size: 14px;
+  }
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+`;
+
 const ActionContainer = styled.div`
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
+  position: relative;
 `;
 
 interface SurveyListViewProps {
@@ -143,6 +196,22 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onPreview,
   onViewResponses
 }) => {
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Handle click outside to close dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   return (
     <Table>
       <TableHeader>
@@ -150,8 +219,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           <TableHeaderCell>SURVEY</TableHeaderCell>
           <TableHeaderCell>STATUS</TableHeaderCell>
           <TableHeaderCell>STRUCTURE</TableHeaderCell>
+          <TableHeaderCell>CREATED BY</TableHeaderCell>
           <TableHeaderCell>UPDATED</TableHeaderCell>
-          <TableHeaderCell>CREATOR</TableHeaderCell>
           <TableHeaderCell>ACTIONS</TableHeaderCell>
         </tr>
       </TableHeader>
@@ -189,27 +258,68 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                   {survey.sectionQuestions?.length || 0} {(survey.sectionQuestions?.length || 0) === 1 ? 'Question' : 'Questions'}
                 </div>
               </TableCell>
-              <TableCell>{updatedDate}</TableCell>
               <TableCell>{survey.createdByName || 'System'}</TableCell>
+              <TableCell>{updatedDate}</TableCell>
               <TableCell>
-                <ActionContainer>
-                  <ActionButton onClick={() => onEdit(survey._id)} title="Edit">
-                    <FaEdit />
-                  </ActionButton>
-                  <ActionButton onClick={() => onViewResponses(survey._id, survey.title)} title="Responses">
-                    <FaChartBar />
-                  </ActionButton>
-                  <ActionButton onClick={() => onPreview(survey._id)} title="Preview">
-                    <FaEye />
-                  </ActionButton>
-                  {survey.published && (
-                    <ActionButton onClick={() => onPreview(survey._id, true)} title="Open Public Link">
-                      <FaExternalLinkAlt />
-                    </ActionButton>
+                <ActionContainer ref={dropdownRef}>
+                  <DropdownButton 
+                    onClick={() => setOpenDropdown(openDropdown === survey._id ? null : survey._id)}
+                    title="Actions"
+                  >
+                    <FaEllipsisV />
+                  </DropdownButton>
+                  
+                  {openDropdown === survey._id && (
+                    <DropdownMenu>
+                      <DropdownItem 
+                        onClick={() => {
+                          onEdit(survey._id);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <FaEdit /> Edit
+                      </DropdownItem>
+                      
+                      <DropdownItem 
+                        onClick={() => {
+                          onPreview(survey._id);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <FaEye /> Preview
+                      </DropdownItem>
+                      
+                      {survey.published && (
+                        <DropdownItem 
+                          onClick={() => {
+                            onPreview(survey._id, true);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <FaExternalLinkAlt /> Open Public Link
+                        </DropdownItem>
+                      )}
+                      
+                      <DropdownItem 
+                        onClick={() => {
+                          onViewResponses(survey._id, survey.title);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <FaChartBar /> Analytics
+                      </DropdownItem>
+                      
+                      <DropdownItem 
+                        onClick={() => {
+                          onDelete(survey._id, survey.title);
+                          setOpenDropdown(null);
+                        }}
+                        style={{ color: '#dc3545' }}
+                      >
+                        <FaTrash /> Delete
+                      </DropdownItem>
+                    </DropdownMenu>
                   )}
-                  <ActionButton onClick={() => onDelete(survey._id, survey.title)} title="Delete">
-                    <FaTrash />
-                  </ActionButton>
                 </ActionContainer>
               </TableCell>
             </TableRow>

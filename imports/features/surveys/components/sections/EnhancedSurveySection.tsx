@@ -85,7 +85,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
             }}
             style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <FiEdit2 size={16} />
+            <FiEdit2 size={16} color='#ffffff' />
           </button>
           <button 
             className="btn btn-icon btn-secondary"
@@ -95,7 +95,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
             }}
             style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <FiTrash2 size={16} />
+            <FiTrash2 size={16} color='#ffffff' />
           </button>
         </div>
       </div>

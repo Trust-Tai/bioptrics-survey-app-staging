@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import DashboardBg from './DashboardBg';
@@ -6,7 +6,7 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
-import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar, FaEllipsisV } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
@@ -389,6 +389,72 @@ const ActionButton = styled.button`
   }
 `;
 
+const DropdownButton = styled.button`
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  transition: all 0.2s ease;
+  position: relative;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--color-background);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+`;
+
+const DropdownItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  color: var(--color-text);
+  font-size: 14px;
+  
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  }
+  
+  &.delete:hover {
+    background: color-mix(in srgb, var(--color-error) 5%, transparent);
+    color: var(--color-error);
+  }
+  
+  svg {
+    font-size: 16px;
+  }
+`;
+
+const DropdownContainer = styled.div`
+  position: relative;
+`;
+
 const NoResultsText = styled.div`
   text-align: center;
   padding: 40px 0;
@@ -508,17 +574,33 @@ const AllSurveys: React.FC = () => {
   // Get the customized survey label
   const surveyLabel = getTerminology('surveyLabel');
   const surveyLabelPlural = `${surveyLabel}s`;
-  const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [createdByFilter, setCreatedByFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  
-  // Add view state (grid or list) - default to list view as requested
+  const [showResponsesModal, setShowResponsesModal] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('list');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  // Close dropdown when clicking outside
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
-  // New filter state variables
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [createdByFilter, setCreatedByFilter] = useState<string>('all');
+  // Filter state variables already declared above
 
   // State for responses modal
   const [responsesModal, setResponsesModal] = useState<{ isOpen: boolean; surveyId: string; surveyTitle: string }>({ 
@@ -842,60 +924,91 @@ const AllSurveys: React.FC = () => {
                       </PublicUrlSection>
                     )}
                     <ActionsRow>
-                      <ActionButton
-                        onClick={() => {
-                          // Fetch the latest survey data and save to localStorage before opening preview
-                          Meteor.call('surveys.get', s._id, (err: Meteor.Error | null, surveyData: any) => {
-                            if (err) {
-                              console.error('Error fetching survey data for preview:', err);
-                              setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
-                              return;
-                            }
+                      <DropdownContainer ref={dropdownRef}>
+                        <DropdownButton
+                          onClick={() => setOpenDropdown(openDropdown === s._id ? null : s._id)}
+                          title="Actions"
+                        >
+                          <FaEllipsisV style={{ color: 'var(--color-primary)', fontSize: 16 }} />
+                        </DropdownButton>
+                        
+                        {openDropdown === s._id && (
+                          <DropdownMenu>
+                            <DropdownItem
+                              onClick={() => {
+                                // Fetch the latest survey data and save to localStorage before opening preview
+                                Meteor.call('surveys.get', s._id, (err: Meteor.Error | null, surveyData: any) => {
+                                  if (err) {
+                                    console.error('Error fetching survey data for preview:', err);
+                                    setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
+                                    return;
+                                  }
+                                  
+                                  // Generate token for preview
+                                  Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr: Meteor.Error | null, token: string) => {
+                                    if (tokenErr || !token) {
+                                      console.error('Error generating token for preview:', tokenErr);
+                                      setNotification({ type: 'error', message: 'Failed to generate preview URL' });
+                                      return;
+                                    }
+                                    
+                                    try {
+                                      // Save the latest survey data to localStorage
+                                      localStorage.setItem(`survey-preview-${token}`, JSON.stringify(surveyData));
+                                      
+                                      // Open preview in new tab
+                                      window.open(`/public/${token}?status=preview`, '_blank');
+                                      setOpenDropdown(null); // Close dropdown after action
+                                    } catch (saveErr) {
+                                      console.error('Error saving preview data:', saveErr);
+                                      setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
+                                    }
+                                  });
+                                });
+                              }}
+                            >
+                              <FaEye style={{ color: 'var(--color-primary)' }} /> Preview
+                            </DropdownItem>
                             
-                            // Generate token for preview
-                            Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr: Meteor.Error | null, token: string) => {
-                              if (tokenErr || !token) {
-                                console.error('Error generating token for preview:', tokenErr);
-                                setNotification({ type: 'error', message: 'Failed to generate preview URL' });
-                                return;
-                              }
-                              
-                              try {
-                                // Save the latest survey data to localStorage
-                                localStorage.setItem(`survey-preview-${token}`, JSON.stringify(surveyData));
-                                
-                                // Open preview in new tab
-                                window.open(`/public/${token}?status=preview`, '_blank');
-                              } catch (saveErr) {
-                                console.error('Error saving preview data:', saveErr);
-                                setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
-                              }
-                            });
-                          });
-                        }}
-                        title="Preview"
-                      >
-                        <FaEye style={{ color: 'var(--color-primary)', fontSize: 16 }} />
-                      </ActionButton>
-                      <ActionButton
-                        onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
-                        title="Manage"
-                      >
-                        <FaTasks style={{ color: 'var(--color-primary)', fontSize: 16 }} />
-                      </ActionButton>
-                      <ActionButton
-                        onClick={() => navigate(`/admin/surveys/builder/${s._id}`)}
-                        title="Edit"
-                      >
-                        <FaEdit style={{ color: 'var(--color-primary)', fontSize: 16 }} />
-                      </ActionButton>
-                      <ActionButton
-                        onClick={() => setConfirmDelete({ _id: s._id, title: s.title })}
-                        title="Delete"
-                        className="delete"
-                      >
-                        <FaTrash style={{ color: 'var(--color-error)', fontSize: 16 }} />
-                      </ActionButton>
+                            <DropdownItem
+                              onClick={() => {
+                                navigate(`/admin/surveys/manage/${s._id}`);
+                                setOpenDropdown(null); // Close dropdown after action
+                              }}
+                            >
+                              <FaTasks style={{ color: 'var(--color-primary)' }} /> Manage
+                            </DropdownItem>
+                            
+                            <DropdownItem
+                              onClick={() => {
+                                navigate(`/admin/surveys/builder/${s._id}`);
+                                setOpenDropdown(null); // Close dropdown after action
+                              }}
+                            >
+                              <FaEdit style={{ color: 'var(--color-primary)' }} /> Edit
+                            </DropdownItem>
+                            
+                            <DropdownItem
+                              onClick={() => {
+                                setConfirmDelete({ _id: s._id, title: s.title });
+                                setOpenDropdown(null); // Close dropdown after action
+                              }}
+                              className="delete"
+                            >
+                              <FaTrash style={{ color: 'var(--color-error)' }} /> Delete
+                            </DropdownItem>
+                            
+                            <DropdownItem
+                              onClick={() => {
+                                setShowResponsesModal(s._id);
+                                setOpenDropdown(null); // Close dropdown after action
+                              }}
+                            >
+                              <FaChartBar style={{ color: 'var(--color-primary)' }} /> Analytics
+                            </DropdownItem>
+                          </DropdownMenu>
+                        )}
+                      </DropdownContainer>
                     </ActionsRow>
                   </SurveyCard>
                 ))}

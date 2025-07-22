@@ -853,7 +853,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               
               {/* Answer Options - Moved from Answer Options tab */}
               <div className="form-group answer-options-section">
-                <h3>Answer Options</h3>
                 <QuestionBuilderDndProvider>
                   <QuestionBuilderAnswerOptions
                     answerType={questions[0].question.answerType}
