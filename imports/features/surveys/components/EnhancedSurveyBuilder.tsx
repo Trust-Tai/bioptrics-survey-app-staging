@@ -1288,20 +1288,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
   }, [availableTags]);
   
   // Effect to handle changes in availableTags (when tags are activated/deactivated)
-  useEffect(() => {
-    if (activeStep === 'tags') {
-      // Get currently active tag IDs
-      const activeTagIds = availableTags.filter(tag => tag.active).map(tag => tag._id);
-      
-      // Update the selected tags to remove any that are now inactive
-      const updatedSelectedTags = selectedTags.filter(tagId => activeTagIds.includes(tagId));
-      
-      // Update state if needed
-      if (updatedSelectedTags.length !== selectedTags.length) {
-        setSelectedTags(updatedSelectedTags);
-      }
-    }
-  }, [availableTags, activeStep, selectedTags]);
+  // We're removing this effect entirely as it was causing the selected tags to be reset
+  // The tag filtering should happen when displaying tags, not by modifying the selectedTags state
+  // This ensures that tag selection persists regardless of which step we're on
 
   // No initialization needed for React Select as it's handled declaratively in the JSX
   
@@ -1673,7 +1662,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const location = useLocation();
   const navigationContext = React.useContext(UNSAFE_NavigationContext);
   
-  // Function to trigger auto-save
+  // Function to trigger auto-save - DISABLED
   const triggerAutoSave = () => {
     // Clear any existing timer
     if (autoSaveTimerRef.current) {
@@ -1683,11 +1672,17 @@ const EnhancedSurveyBuilder: React.FC = () => {
     // Set unsaved changes flag
     setHasUnsavedChanges(true);
     
-    // Set a new timer for 3 seconds
+    // Auto-save functionality is disabled
+    // Uncomment the following code to re-enable auto-save
+    /*
     autoSaveTimerRef.current = setTimeout(() => {
       // Silent auto-save without UI updates
       silentSave();
     }, 3000);
+    */
+    
+    // Log that auto-save is disabled
+    console.log('Auto-save is disabled');
   };
   
   // Silent save function that doesn't update UI or show notifications
@@ -1730,9 +1725,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
         selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
         selectedTheme: survey.selectedTheme || '',
         selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
-        selectedTags: Array.isArray(survey.tags) ? 
-          survey.tags.map((tag: any) => typeof tag === 'string' ? tag : String(tag?.value || '')) : 
-          [],
+        selectedTags: selectedTags, // Use the selectedTags state directly instead of survey.tags
         defaultSettings: survey.defaultSettings || { allowRetake: true }
       };
       
@@ -3104,10 +3097,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           options={selectOptions}
                           value={selectOptions.filter(option => selectedTags.includes(option.value))}
                           onChange={(selected) => {
+                            console.log('Tags: ', selected);
                             if (Array.isArray(selected)) {
                               setSelectedTags(selected.map(option => option.value));
-                            } else {
-                              setSelectedTags([]);
                             }
                           }}
                           onCreateOption={(inputValue) => {
