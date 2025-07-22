@@ -741,7 +741,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         >
           <TabList className="react-tabs__tab-list question-builder-tab-list">
             <Tab className="react-tabs__tab"><FaInfoCircle /> Basic Information</Tab>
-            <Tab className="react-tabs__tab"><FaEdit /> Custom Fields</Tab>
             <Tab className="react-tabs__tab"><FaCodeBranch /> Branching Logic</Tab>
             <Tab className="react-tabs__tab"><FaCog /> Settings</Tab>
           </TabList>
@@ -1026,91 +1025,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           </TabPanel>
           
           {/* Classification Tab removed as requested */}
-
-          {/* Custom Fields Tab */}
-          <TabPanel className="react-tabs__tab-panel">
-            <div className="tab-content">
-              <div className="custom-fields-container">
-                <h3>Question Custom Fields</h3>
-                <p className="custom-fields-description">Add custom fields to store additional information about this question.</p>
-                
-                {/* List of existing custom fields */}
-                {questions[0].question.customFields && questions[0].question.customFields.length > 0 ? (
-                  <div className="custom-fields-list">
-                    {questions[0].question.customFields.map((field: QuestionCustomField, index: number) => (
-                      <div key={field.id} className="custom-field-item">
-                        <div className="custom-field-inputs">
-                          <div className="custom-field-input-group">
-                            <input
-                              type="text"
-                              className="form-control field-name"
-                              placeholder="Field Name"
-                              value={field.name}
-                              onChange={(e) => {
-                                const updatedQuestions = [...questions];
-                                const updatedFields = [...(updatedQuestions[0].question.customFields || [])];
-                                updatedFields[index] = { ...field, name: e.target.value };
-                                updatedQuestions[0].question.customFields = updatedFields;
-                                setQuestions(updatedQuestions);
-                              }}
-                            />
-                            <textarea
-                              className="form-control field-value"
-                              placeholder="Field Value"
-                              value={field.value}
-                              rows={3}
-                              onChange={(e) => {
-                                const updatedQuestions = [...questions];
-                                const updatedFields = [...(updatedQuestions[0].question.customFields || [])];
-                                updatedFields[index] = { ...field, value: e.target.value };
-                                updatedQuestions[0].question.customFields = updatedFields;
-                                setQuestions(updatedQuestions);
-                              }}
-                            />
-                          </div>
-                          <button
-                            className="remove-field-button"
-                            onClick={() => {
-                              const updatedQuestions = [...questions];
-                              const updatedFields = [...(updatedQuestions[0].question.customFields || [])];
-                              updatedFields.splice(index, 1);
-                              updatedQuestions[0].question.customFields = updatedFields;
-                              setQuestions(updatedQuestions);
-                            }}
-                            title="Remove Field"
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="no-custom-fields">No custom fields added yet.</div>
-                )}
-                
-                {/* Add new custom field button */}
-                <button
-                  className="add-custom-field-button"
-                  onClick={() => {
-                    const newField = {
-                      id: `field-${Date.now()}`,
-                      name: '',
-                      value: ''
-                    };
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.customFields = [
-                      ...(updatedQuestions[0].question.customFields || []),
-                      newField
-                    ];
-                    setQuestions(updatedQuestions);
-                  }}
-                >
-                  <FaPlus /> Add Custom Field
-                </button>
-              </div>
-            </div>
-          </TabPanel>
+          {/* Custom Fields Tab removed as requested */}
 
           {/* Branching Logic Tab */}
           <TabPanel className="react-tabs__tab-panel">

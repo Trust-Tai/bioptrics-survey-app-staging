@@ -241,9 +241,12 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
           
           return (
-            <TableRow key={survey._id}>
+            <TableRow key={survey._id} onClick={() => onEdit(survey._id)} style={{ 
+                    cursor: 'pointer',
+                    textDecoration: 'none'
+                  }}>
               <TableCell>
-                <div style={{ fontWeight: 600 }}>{survey.title}</div>
+                {survey.title}
                 {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
                   {survey.description ? survey.description.substring(0, 100) + (survey.description.length > 100 ? '...' : '') : ''}
                 </div> */}
@@ -262,10 +265,13 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               </TableCell>
               <TableCell>{survey.createdByName || 'System'}</TableCell>
               <TableCell>{updatedDate}</TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <ActionContainer ref={dropdownRef}>
                   <DropdownButton 
-                    onClick={() => setOpenDropdown(openDropdown === survey._id ? null : survey._id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDropdown(openDropdown === survey._id ? null : survey._id);
+                    }}
                     title="Actions"
                   >
                     <FaEllipsisV />
@@ -274,7 +280,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                   {openDropdown === survey._id && (
                     <DropdownMenu>
                       <DropdownItem 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onEdit(survey._id);
                           setOpenDropdown(null);
                         }}
@@ -283,7 +290,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       </DropdownItem>
                       
                       <DropdownItem 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onPreview(survey._id);
                           setOpenDropdown(null);
                         }}
@@ -294,7 +302,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       {survey.published && (
                         <>
                           <DropdownItem 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               onPreview(survey._id, true);
                               setOpenDropdown(null);
                             }}
@@ -303,7 +312,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           </DropdownItem>
                           
                           <DropdownItem 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               if (onCopyLink) {
                                 onCopyLink(survey._id);
                                 setOpenDropdown(null);
@@ -316,7 +326,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       )}
                       
                       <DropdownItem 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onViewResponses(survey._id, survey.title);
                           setOpenDropdown(null);
                         }}
@@ -325,7 +336,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       </DropdownItem>
                       
                       <DropdownItem 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onDelete(survey._id, survey.title);
                           setOpenDropdown(null);
                         }}
