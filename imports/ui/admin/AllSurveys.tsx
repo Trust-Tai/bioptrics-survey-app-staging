@@ -1019,6 +1019,28 @@ const AllSurveys: React.FC = () => {
                 onEdit={(id) => navigate(`/admin/surveys/builder/${id}`)}
                 onDelete={(id, title) => setConfirmDelete({ _id: id, title })}
                 onViewResponses={(id, title) => setResponsesModal({ isOpen: true, surveyId: id, surveyTitle: title })}
+                onCopyLink={(id) => {
+                  Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
+                    if (err || !token) {
+                      console.error('Error generating token for copying link:', err);
+                      setNotification({ type: 'error', message: 'Failed to generate sharable link' });
+                      return;
+                    }
+                    
+                    // Create the full URL
+                    const url = `${window.location.origin}/public/${token}`;
+                    
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(url)
+                      .then(() => {
+                        setNotification({ type: 'success', message: 'Sharable link copied to clipboard!' });
+                      })
+                      .catch((clipboardErr) => {
+                        console.error('Failed to copy link to clipboard:', clipboardErr);
+                        setNotification({ type: 'error', message: 'Failed to copy link to clipboard' });
+                      });
+                  });
+                }}
                 onPreview={(id, isPublic) => {
                   if (isPublic) {
                     // For public surveys, just open the URL directly

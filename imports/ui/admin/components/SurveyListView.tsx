@@ -187,6 +187,7 @@ interface SurveyListViewProps {
   onDelete: (id: string, title: string) => void;
   onPreview: (id: string, isPublic?: boolean) => void;
   onViewResponses: (id: string, title: string) => void;
+  onCopyLink?: (id: string) => void;
 }
 
 const SurveyListView: React.FC<SurveyListViewProps> = ({ 
@@ -194,7 +195,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onEdit, 
   onDelete, 
   onPreview,
-  onViewResponses
+  onViewResponses,
+  onCopyLink
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -290,14 +292,27 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       </DropdownItem>
                       
                       {survey.published && (
-                        <DropdownItem 
-                          onClick={() => {
-                            onPreview(survey._id, true);
-                            setOpenDropdown(null);
-                          }}
-                        >
-                          <FaExternalLinkAlt /> Open Public Link
-                        </DropdownItem>
+                        <>
+                          <DropdownItem 
+                            onClick={() => {
+                              onPreview(survey._id, true);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <FaExternalLinkAlt /> Open Public Link
+                          </DropdownItem>
+                          
+                          <DropdownItem 
+                            onClick={() => {
+                              if (onCopyLink) {
+                                onCopyLink(survey._id);
+                                setOpenDropdown(null);
+                              }
+                            }}
+                          >
+                            <FaCopy /> Copy Sharable Link
+                          </DropdownItem>
+                        </>
                       )}
                       
                       <DropdownItem 
