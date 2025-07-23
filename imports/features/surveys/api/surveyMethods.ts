@@ -14,6 +14,45 @@ interface ResponseTrendDataPoint {
 
 if (Meteor.isServer) {
   Meteor.methods({
+    // Method to restore an inactive survey
+    async 'surveys.restore'(surveyId: string) {
+      check(surveyId, String);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to restore a survey');
+      }
+      
+      try {
+        // Get the survey
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        
+        if (!survey) {
+          throw new Meteor.Error('not-found', 'Survey not found');
+        }
+        
+        // Check if user has permission to restore this survey
+        const user = await Meteor.users.findOneAsync(this.userId);
+        if (!user || (!user.roles?.includes('admin') && survey.createdBy !== this.userId)) {
+          throw new Meteor.Error('not-authorized', 'Not authorized to restore this survey');
+        }
+        
+        // Update the survey status to active
+        await Surveys.updateAsync(
+          { _id: surveyId },
+          { 
+            $set: { 
+              status: 'active',
+              updatedAt: new Date() 
+            } 
+          }
+        );
+        
+        return true;
+      } catch (error) {
+        console.error('Error restoring survey:', error);
+        throw new Meteor.Error('restore-failed', 'Failed to restore survey');
+      }
+    },
     
     // Method to get active surveys count
     async 'getActiveSurveysCount'() {

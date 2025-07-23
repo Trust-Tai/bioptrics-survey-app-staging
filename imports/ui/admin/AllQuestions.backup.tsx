@@ -86,7 +86,7 @@ const QUE_TYPE_LABELS: Record<string, string> = {
 };
 
 const Container = styled.div`
-  padding: 40px;
+  padding: 0;
   min-height: 100vh;
 `;
 
@@ -97,10 +97,10 @@ const TitleRow = styled.div`
   margin-bottom: 24px;
 `;
 
-const Title = styled.h2`
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0;
+const Title = styled.h1`
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
 `;
 
 const SearchFilterRow = styled.div`

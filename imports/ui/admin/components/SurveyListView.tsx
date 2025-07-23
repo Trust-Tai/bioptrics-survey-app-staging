@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -52,6 +52,7 @@ const StatusBadge = styled.span<{ status: string }>`
     switch (props.status.toLowerCase()) {
       case 'active': return '#e6f7ed';
       case 'scheduled': return '#fff4e5';
+      case 'inactive': return '#ffebee';
       case 'draft': return '#f0f0f0';
       default: return '#f0f0f0';
     }
@@ -60,6 +61,7 @@ const StatusBadge = styled.span<{ status: string }>`
     switch (props.status.toLowerCase()) {
       case 'active': return '#0a8043';
       case 'scheduled': return '#ff9800';
+      case 'inactive': return '#d32f2f';
       case 'draft': return '#666666';
       default: return '#666666';
     }
@@ -76,6 +78,7 @@ const StatusBadge = styled.span<{ status: string }>`
       switch (props.status.toLowerCase()) {
         case 'active': return '#0a8043';
         case 'scheduled': return '#ff9800';
+        case 'inactive': return '#d32f2f';
         case 'draft': return '#666666';
         default: return '#666666';
       }
@@ -156,6 +159,7 @@ const DropdownMenu = styled.div<{ position?: 'top' | 'bottom' }>`
   margin-bottom: ${props => (props.position || 'bottom') === 'top' ? '4px' : '0'};
   /* Additional styles to prevent clipping */
   filter: drop-shadow(0 0 5px rgba(0,0,0,0.1));
+  pointer-events: auto; /* Ensure clicks are captured by the dropdown */
 `;
 
 // Set default props for DropdownMenu
@@ -174,6 +178,8 @@ const DropdownItem = styled.button`
   cursor: pointer;
   font-size: 14px;
   color: #212529;
+  position: relative; /* Add position relative */
+  z-index: 10000; /* Ensure high z-index */
   
   svg {
     margin-right: 8px;
@@ -264,7 +270,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
       <TableBody>
         {surveys.map(survey => {
           // Calculate status
-          let status = survey.published ? 'ACTIVE' : 'DRAFT';
+          let status = survey.status ? survey.status.toUpperCase() : (survey.published ? 'ACTIVE' : 'DRAFT');
           if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {
             status = 'SCHEDULED';
           }
@@ -276,7 +282,15 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
           
           return (
-            <TableRow key={survey._id} onClick={() => onEdit(survey._id)} style={{ 
+            <TableRow key={survey._id} onClick={(e) => {
+                    // Only navigate if the click is directly on the row and not on a child element with its own click handler
+                    if (e.target === e.currentTarget || 
+                        (e.target as HTMLElement).tagName === 'TD' || 
+                        (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
+                      onEdit(survey._id);
+                    }
+                  }} 
+                  style={{ 
                     cursor: 'pointer',
                     textDecoration: 'none'
                   }}>
@@ -300,23 +314,33 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               </TableCell>
               <TableCell>{survey.createdByName || 'System'}</TableCell>
               <TableCell>{updatedDate}</TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <ActionContainer ref={dropdownRef}>
+              <TableCell data-no-navigate="true">
+                <ActionContainer ref={dropdownRef} data-no-navigate="true">
                   <DropdownButton 
-                    onClick={(e) => handleDropdownToggle(e, survey._id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleDropdownToggle(e, survey._id);
+                    }}
                     title="Actions"
+                    data-no-navigate="true"
                   >
                     <FaEllipsisV />
                   </DropdownButton>
                   
                   {openDropdown === survey._id && (
-                    <DropdownMenu position={dropdownPosition}>
+                    <DropdownMenu position={dropdownPosition} data-no-navigate="true" onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}>
                       <DropdownItem 
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           onEdit(survey._id);
                           setOpenDropdown(null);
                         }}
+                        data-no-navigate="true"
                       >
                         <FaEdit /> Edit
                       </DropdownItem>
@@ -324,9 +348,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       <DropdownItem 
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           onPreview(survey._id);
                           setOpenDropdown(null);
                         }}
+                        data-no-navigate="true"
                       >
                         <FaEye /> Preview
                       </DropdownItem>
@@ -336,9 +362,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           <DropdownItem 
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               onPreview(survey._id, true);
                               setOpenDropdown(null);
                             }}
+                            data-no-navigate="true"
                           >
                             <FaExternalLinkAlt /> Open Public Link
                           </DropdownItem>
@@ -346,11 +374,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           <DropdownItem 
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Generate token and copy public URL directly
+                              e.preventDefault();
+                              // Copy shareable link
                               Meteor.call('surveys.generateEncryptedToken', survey._id, (err: Meteor.Error | null, token: string) => {
                                 if (err || !token) {
                                   console.error('Error generating token for copying link:', err);
-                                  // Show error notification if available
                                   return;
                                 }
                                 
@@ -360,8 +388,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                                 // Copy to clipboard
                                 navigator.clipboard.writeText(url)
                                   .then(() => {
-                                    // Success notification could be shown here if we had access to notification state
-                                    console.log('Public URL copied to clipboard');
+                                    // Success notification handled in parent component
                                   })
                                   .catch((clipboardErr) => {
                                     console.error('Failed to copy link to clipboard:', clipboardErr);
@@ -369,6 +396,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                               });
                               setOpenDropdown(null);
                             }}
+                            data-no-navigate="true"
                           >
                             <FaCopy /> Copy Shareable Link
                           </DropdownItem>
@@ -378,23 +406,47 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       <DropdownItem 
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           onViewResponses(survey._id, survey.title);
                           setOpenDropdown(null);
                         }}
+                        data-no-navigate="true"
                       >
                         <FaChartBar /> Analytics
                       </DropdownItem>
                       
-                      <DropdownItem 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(survey._id, survey.title);
-                          setOpenDropdown(null);
-                        }}
-                        style={{ color: '#dc3545' }}
-                      >
-                        <FaTrash /> Delete
-                      </DropdownItem>
+                      {survey.status === 'inactive' ? (
+                        <DropdownItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            // Will implement restore functionality
+                            Meteor.call('surveys.restore', survey._id, (err: Meteor.Error | null) => {
+                              if (err) {
+                                console.error('Error restoring survey:', err);
+                              }
+                            });
+                            setOpenDropdown(null);
+                          }}
+                          style={{ color: '#28a745' }}
+                          data-no-navigate="true"
+                        >
+                          <FaUndo /> Restore
+                        </DropdownItem>
+                      ) : (
+                        <DropdownItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            onDelete(survey._id, survey.title);
+                            setOpenDropdown(null);
+                          }}
+                          style={{ color: '#dc3545' }}
+                          data-no-navigate="true"
+                        >
+                          <FaTrash /> Delete
+                        </DropdownItem>
+                      )}
                     </DropdownMenu>
                   )}
                 </ActionContainer>

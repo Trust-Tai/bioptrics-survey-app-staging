@@ -6,7 +6,7 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
-import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar, FaEllipsisV } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar, FaEllipsisV, FaUndo } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import TermLabel from '../components/TermLabel';
 
@@ -219,7 +219,7 @@ const GridContainer = styled.div`
   gap: 65px 24px;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
 `;
 
 const SurveyCard = styled.div`
@@ -254,15 +254,29 @@ const CardHeader = styled.div`
   margin-bottom: 16px;
 `;
 
-const StatusBadge = styled.div<{ published: boolean }>`
+const StatusBadge = styled.div<{ status: string }>`
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
-  background-color: ${props => props.published ? '#e6f7ed' : '#f0f0f0'};
-  color: ${props => props.published ? '#0a8043' : '#666666'};
+  background-color: ${props => {
+    switch (props.status) {
+      case 'active': return '#e6f7ed';
+      case 'inactive': return '#ffebee';
+      case 'draft': 
+      default: return '#f0f0f0';
+    }
+  }};
+  color: ${props => {
+    switch (props.status) {
+      case 'active': return '#0a8043';
+      case 'inactive': return '#d32f2f';
+      case 'draft':
+      default: return '#666666';
+    }
+  }};
   
   &::before {
     content: '';
@@ -271,7 +285,14 @@ const StatusBadge = styled.div<{ published: boolean }>`
     height: 8px;
     border-radius: 50%;
     margin-right: 6px;
-    background-color: ${props => props.published ? '#0a8043' : '#666666'};
+    background-color: ${props => {
+      switch (props.status) {
+        case 'active': return '#0a8043';
+        case 'inactive': return '#d32f2f';
+        case 'draft':
+        default: return '#666666';
+      }
+    }};
   }
 `;
 
@@ -667,9 +688,16 @@ const AllSurveys: React.FC = () => {
   const { surveys, loading } = useTracker(() => {
     const handle = Meteor.subscribe('surveys.ownedAndCollaborated');
     const data = Surveys.find({}, { sort: { updatedAt: -1 } }).fetch();
+    
+    // Ensure all required fields are present in the survey data
+    const processedData = data.map((survey: any) => ({
+      ...survey,
+      _id: survey._id || '', // Ensure _id is always a string
+    }));
+    
     return {
       loading: !handle.ready(),
-      surveys: data
+      surveys: processedData
     };
   }, []);
 
@@ -679,6 +707,7 @@ const AllSurveys: React.FC = () => {
     title: string;
     description: string;
     published: boolean;
+    status?: 'active' | 'draft' | 'inactive';
     createdBy: string;
     createdAt: Date | string;
     updatedAt: Date | string;
@@ -696,7 +725,7 @@ const AllSurveys: React.FC = () => {
   }
 
   // Define interface for processed survey data
-  interface ProcessedSurvey extends SurveyData {
+  interface ProcessedSurvey extends Omit<SurveyData, 'sections'> {
     sections: number;
     questionCount: number;
     responseStats: {
@@ -795,8 +824,9 @@ const AllSurveys: React.FC = () => {
     // Status filter
     const matchesStatus = 
       statusFilter === 'all' ||
-      (statusFilter === 'active' && s.published) ||
-      (statusFilter === 'draft' && !s.published);
+      (statusFilter === 'active' && (s.status === 'active' || (s.published && !s.status))) ||
+      (statusFilter === 'draft' && (s.status === 'draft' || (!s.published && !s.status))) ||
+      (statusFilter === 'inactive' && s.status === 'inactive');
     
     // Created By filter
     const matchesCreatedBy = 
@@ -878,6 +908,7 @@ const AllSurveys: React.FC = () => {
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
+                <option value="inactive">Inactive</option>
               </FilterSelect>
 
               <FilterSelect
@@ -937,10 +968,10 @@ const AllSurveys: React.FC = () => {
                     }}
                   >
                     <CardHeader>
-                      <StatusBadge published={s.published}>
-                        {s.published ? 'Active' : 'Draft'}
+                      <StatusBadge status={s.status || (s.published ? 'active' : 'draft')}>
+                        {s.status ? s.status.charAt(0).toUpperCase() + s.status.slice(1) : (s.published ? 'Active' : 'Draft')}
                       </StatusBadge>
-                      <DropdownContainer>
+                      <DropdownContainer ref={openDropdown === s._id ? dropdownRef : null}>
                         <DropdownButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -998,15 +1029,40 @@ const AllSurveys: React.FC = () => {
                             >
                               <FaChartBar /> Analytics
                             </DropdownItem>
-                            <DropdownItem
-                              className="delete"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(s._id, s.title);
-                              }}
-                            >
-                              <FaTrash /> Delete
-                            </DropdownItem>
+                            {s.status === 'inactive' ? (
+                              <DropdownItem
+                                className="restore"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  // Restore the survey
+                                  Meteor.call('surveys.restore', s._id, (err: Meteor.Error | null) => {
+                                    if (err) {
+                                      console.error('Error restoring survey:', err);
+                                      setNotification({ type: 'error', message: `Error restoring ${surveyLabel.toLowerCase()}: ${err.reason || err.message || 'Unknown error'}` });
+                                    } else {
+                                      setNotification({ type: 'success', message: `${surveyLabel} restored successfully.` });
+                                    }
+                                  });
+                                  setOpenDropdown(null);
+                                }}
+                                style={{ color: '#000000' }}
+                              >
+                                <FaUndo /> Restore
+                              </DropdownItem>
+                            ) : (
+                              <DropdownItem
+                                className="delete"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  onDelete(s._id, s.title);
+                                }}
+                                style={{ color: '#dc3545' }}
+                              >
+                                <FaTrash /> Delete
+                              </DropdownItem>
+                            )}
                           </DropdownMenu>
                         )}
                       </DropdownContainer>

@@ -25,6 +25,8 @@ export interface Collaborator {
   addedBy: string;     // User ID of who added the collaborator
 }
 
+export type SurveyStatus = 'active' | 'draft' | 'inactive';
+
 export interface SurveyDoc {
   _id?: string;
   title: string;
@@ -43,6 +45,7 @@ export interface SurveyDoc {
   updatedAt: Date;
   createdBy: string;
   published: boolean;
+  status?: SurveyStatus; // New field for survey status (active, draft, inactive)
   shareToken?: string;
   organizationId?: string;
   startDate?: Date;
@@ -547,7 +550,20 @@ Meteor.methods({
   },
 
   async 'surveys.remove'(surveyId: string) {
-    return await Surveys.removeAsync(surveyId);
+    check(surveyId, String);
+    
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    
+    // Instead of removing the survey, update its status to 'inactive'
+    return await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $set: { 
+          status: 'inactive',
+          updatedAt: new Date() 
+        } 
+      }
+    );
   },
 
   // Update an existing survey with all data including sections and questions
