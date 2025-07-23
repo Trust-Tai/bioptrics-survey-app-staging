@@ -43,6 +43,7 @@ const TableBody = styled.tbody``;
 
 const TableRow = styled.tr`
   border-bottom: 1px solid #e9ecef;
+  cursor: pointer;
   &:hover {
     background-color: #f8f9fa;
   }
@@ -83,8 +84,8 @@ const TypeBadge = styled.span`
   border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
-  background-color: #f0f7ff;
-  color: #2c6ecb;
+  background-color: var(--color-primary, #542A46);
+  color: #ffffff;
 `;
 
 const TagsContainer = styled.div`
@@ -94,8 +95,8 @@ const TagsContainer = styled.div`
 `;
 
 const Tag = styled.span`
-  background: #f7f7f7;
-  color: #555;
+  background: var(--color-primary, #542A46);
+  color: #ffffff;
   padding: 3px 8px;
   border-radius: 12px;
   font-size: 11px;
@@ -383,7 +384,11 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
           ].filter(Boolean).slice(0, 3);
           
           return (
-            <TableRow key={question._id} data-no-navigate="true">
+            <TableRow 
+              key={question._id} 
+              data-no-navigate="true"
+              onClick={() => onEdit(question._id)}
+            >
               <TableCell>
                 {questionText.length > 100 ? `${questionText.substring(0, 100)}...` : questionText}
               </TableCell>

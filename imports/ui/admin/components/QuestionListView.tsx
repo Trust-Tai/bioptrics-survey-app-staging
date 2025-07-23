@@ -65,8 +65,8 @@ const QuestionHeader = styled.div`
 `;
 
 const CategoryLabel = styled.div`
-  background: #f0f7ff;
-  color: #2c6ecb;
+  background: var(--color-primary, #542A46);
+  color: #ffffff;
   font-size: 12px;
   font-weight: 500;
   padding: 4px 12px;

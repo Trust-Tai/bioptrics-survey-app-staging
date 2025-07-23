@@ -1103,7 +1103,7 @@ const AllSurveys: React.FC = () => {
                       <div className="info-item">
                         <span className="info-label">Updated:</span>
                         <span className="info-value">
-                          {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {new Date(s.updatedAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>

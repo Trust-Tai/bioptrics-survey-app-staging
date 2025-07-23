@@ -376,7 +376,10 @@ const FilterSelect = styled.select`
 const QuestionsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
 `;
 
 const QuestionList = styled.div`
@@ -387,80 +390,137 @@ const QuestionList = styled.div`
 
 const QuestionCard = styled.div`
   background: var(--color-background);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  height: 100%;
+  margin: 0;
   border: 1px solid var(--color-accent);
-  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: visible;
   
   &:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border-color: var(--color-primary);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary) 12%, transparent);
   }
 `;
 
 const QuestionHeader = styled.div`
-  padding: 12px 16px;
-  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
-  border-bottom: 1px solid var(--color-accent);
-  font-weight: 500;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  margin-bottom: 16px;
 `;
 
 const QuestionType = styled.div`
-  font-size: 0.8rem;
-  color: var(--color-accent);
-  background: var(--color-background);
-  padding: 4px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--color-accent);
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #e6f7ed;
+  color: #0a8043;
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background-color: #0a8043;
+  }
 `;
 
 const QuestionContent = styled.div`
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
 `;
 
 const QuestionText = styled.div`
-  font-size: 0.95rem;
-  margin-bottom: 12px;
-  line-height: 1.4;
   color: var(--color-text);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0 0 8px 0;
+  padding-right: 20px;
+  border-left: 3px solid var(--color-primary);
+  padding-left: 12px;
+  line-height: 1.3;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
+  box-sizing: border-box;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  &:hover {
+    color: var(--color-primary);
+  }
 `;
 
 const QuestionMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-top: 4px;
 `;
 
 const MetaTag = styled.div`
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  color: var(--color-accent);
-  font-size: 0.8rem;
-  padding: 4px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--color-accent);
+  background-color: var(--color-primary, #542A46);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
 `;
 
 const StatusTag = styled.div<{ published?: boolean }>`
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  font-size: 0.8rem;
-  padding: 4px 8px;
-  border-radius: 12px;
-  background: ${props => props.published ? 'color-mix(in srgb, var(--color-success) 15%, transparent)' : 'color-mix(in srgb, var(--color-error) 15%, transparent)'};
-  color: ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
-  font-weight: 500;
-  border: 1px solid ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: ${props => props.published ? '#e6f7ed' : '#f0f0f0'};
+  color: ${props => props.published ? '#0a8043' : '#666666'};
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background-color: ${props => props.published ? '#0a8043' : '#666666'};
+  }
 `;
 
 const QuestionActions = styled.div`
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  justify-content: center;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-accent);
 `;
 
 const PaginationContainer = styled.div`
@@ -502,41 +562,44 @@ const PaginationButton = styled.button<{ active?: boolean }>`
 `;
 
 const ActionButton = styled.button`
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  border: 1px solid var(--color-accent);
   transition: all 0.2s ease;
+  gap: 8px;
   
   &.preview {
-    background: var(--color-background);
-    color: var(--color-text);
+    background: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
     
     &:hover {
       background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-      border-color: var(--color-primary);
     }
   }
   
   &.edit {
     background: var(--color-primary);
     color: #fff;
-    border-color: var(--color-primary);
+    border: 2px solid var(--color-primary);
     
     &:hover {
-      background: var(--color-secondary);
+      background: color-mix(in srgb, var(--color-primary) 85%, black);
     }
   }
   
   &.delete {
-    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+    background: transparent;
     color: var(--color-error);
-    border-color: var(--color-error);
+    border: 2px solid var(--color-error);
     
     &:hover {
-      background: var(--color-error);
-      color: white;
+      background: color-mix(in srgb, var(--color-error) 10%, transparent);
     }
   }
 `;
@@ -1053,75 +1116,88 @@ const AllQuestions: React.FC = () => {
               if (!latestVersion) return null;
             
               return (
-                <QuestionCard key={doc._id}>
+                <QuestionCard 
+                  key={doc._id} 
+                  onClick={() => openPanel(doc._id)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <QuestionHeader>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
-                        <QuestionType>
-                          {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
-                        </QuestionType>
-                      )}
-                      {latestVersion.status === 'published' ? (
-                        <StatusTag published>
-                          <FaCheckCircle size={12} />
-                        </StatusTag>
-                      ) : (
-                        <StatusTag>
-                          <FaFileAlt size={12} />
-                        </StatusTag>
-                      )}
-                    </div>
-                    <div>
-                      {latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
-                        ? latestVersion.categoryTags.slice(0, 3).map((catId: string, index: number) => (
-                            <MetaTag key={index}>{layerMap[catId] || catId}</MetaTag>
-                          )).concat(latestVersion.categoryTags.length > 3 ? [<MetaTag key="more">+{latestVersion.categoryTags.length - 3}</MetaTag>] : [])
-                        : (latestVersion.category 
-                            ? <MetaTag>{layerMap[latestVersion.category] || latestVersion.category}</MetaTag>
-                            : null)
-                      }
-                    </div>
+                    {latestVersion.status === 'published' ? (
+                      <StatusTag published>
+                        Published
+                      </StatusTag>
+                    ) : (
+                      <StatusTag>
+                        Draft
+                      </StatusTag>
+                    )}
+                    {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
+                      <QuestionType>
+                        {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
+                      </QuestionType>
+                    )}
                   </QuestionHeader>
+                  
                   <QuestionContent>
                     <QuestionText>
                       <AdminRichTextRenderer content={latestVersion.questionText} truncate={120} />
                     </QuestionText>
+                    
                     <QuestionMeta>
-                      {latestVersion.surveyThemes && latestVersion.surveyThemes.map((themeId: string) => (
+                      {latestVersion.categoryTags && latestVersion.categoryTags.length > 0 
+                        ? latestVersion.categoryTags.slice(0, 2).map((catId: string, index: number) => (
+                            <MetaTag key={index}>{layerMap[catId] || catId}</MetaTag>
+                          )).concat(latestVersion.categoryTags.length > 2 ? [<MetaTag key="more">+{latestVersion.categoryTags.length - 2}</MetaTag>] : [])
+                        : (latestVersion.category 
+                            ? <MetaTag>{layerMap[latestVersion.category] || latestVersion.category}</MetaTag>
+                            : null)
+                      }
+                      
+                      {latestVersion.surveyThemes && latestVersion.surveyThemes.slice(0, 1).map((themeId: string) => (
                         <MetaTag key={themeId}>{surveyThemeMap[themeId] || themeId}</MetaTag>
                       ))}
+                      {latestVersion.surveyThemes && latestVersion.surveyThemes.length > 1 && (
+                        <MetaTag>+{latestVersion.surveyThemes.length - 1}</MetaTag>
+                      )}
+                      
                       {latestVersion.isReusable && <MetaTag>Reusable</MetaTag>}
                       {latestVersion.isActive === false && <MetaTag>Inactive</MetaTag>}
                     </QuestionMeta>
-                    <QuestionActions>
+                    
+                    <QuestionActions onClick={(e) => e.stopPropagation()}>
                       <ActionButton 
                         className="preview"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setQuestionForAnalytics(doc);
                           setAnalyticsModalOpen(true);
                         }}
                         title="View Analytics"
                       >
-                        <FaEye size={16} />
+                        <FaEye size={14} />
+                        Preview
                       </ActionButton>
                       <ActionButton 
                         className="edit"
-                        onClick={() => openPanel(doc._id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPanel(doc._id);
+                        }}
                         title="Edit"
                       >
-                        <FaEdit size={16} />
+                        <FaEdit size={14} />
+                        Edit
                       </ActionButton>
                       <ActionButton 
                         className="delete"
-                        onClick={() => handleDeleteQuestion(doc._id)}
-                        title="Delete"
-                        style={{
-                          color: '#e53935',
-                          border: '1px solid #ffcdd2',
-                          background: '#ffebee'
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteQuestion(doc._id);
                         }}
+                        title="Delete"
                       >
-                        <FaTrash size={16} />
+                        <FaTrash size={14} />
+                        Delete
                       </ActionButton>
                     </QuestionActions>
                   </QuestionContent>
