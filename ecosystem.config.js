@@ -7,7 +7,8 @@ module.exports = {
           MONGO_URL: 'mongodb+srv://tayeshobajo:1Manchester_sm@kv8slwx.mongodb.net/bioptrics-demo?retryWrites=true&w=majority',
           ROOT_URL: 'https://survey.bioptrics.com',
           PORT: 3000,
-          NODE_ENV: 'production'
+          NODE_ENV: 'production',
+          DYNAMIC_IMPORTS_URL: 'https://survey.bioptrics.com'
         },
       },
     ],

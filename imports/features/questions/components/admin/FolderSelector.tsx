@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import Select, { components } from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { Folders, FolderDoc } from '../../api/folders';
 import { FaFolder } from 'react-icons/fa';
 import styled from 'styled-components';
@@ -9,6 +10,16 @@ import styled from 'styled-components';
 // Styled components
 const FolderSelectorContainer = styled.div`
   margin-bottom: 20px;
+`;
+
+const Alert = styled.div<{ type: 'success' | 'error' }>`
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background-color: ${props => props.type === 'success' ? 'var(--color-success, #4CAF50)' : 'var(--color-error, #f44336)'};
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
 `;
 
 const Label = styled.label`
@@ -30,6 +41,7 @@ interface FolderSelectorProps {
   selectedFolderId?: string | null;
   onFolderChange: (folderId: string | null) => void;
   hideLabel?: boolean;
+  allowFolderCreation?: boolean;
 }
 
 // Helper function to build a flat list of folders with depth information
@@ -62,8 +74,11 @@ interface SelectOption {
 const FolderSelector: React.FC<FolderSelectorProps> = ({ 
   selectedFolderId = null, 
   onFolderChange, 
-  hideLabel = false 
+  hideLabel = false,
+  allowFolderCreation = true
 }) => {
+  // Alert state for notifications
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // Subscribe to and fetch folders
   const { allFolders, loading } = useTracker(() => {
     const subscription = Meteor.subscribe('folders.all');
@@ -127,6 +142,17 @@ const FolderSelector: React.FC<FolderSelectorProps> = ({
     const indent = '\u00A0\u00A0'.repeat(depth);
     const prefix = depth > 0 ? '└── ' : '';
 
+    // Special styling for the create option
+    if (data.__isNew__) {
+      return (
+        <components.Option {...props}>
+          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: 'var(--color-accent, #542A46)', fontWeight: 'bold' }}>
+            Create folder: "{data.label}"
+          </div>
+        </components.Option>
+      );
+    }
+
     return (
       <components.Option {...props}>
         <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', width: '100%', maxWidth: '100%' }}>
@@ -154,41 +180,111 @@ const FolderSelector: React.FC<FolderSelectorProps> = ({
           <FaFolder size={18} /> Folder
         </Label>
       )}
-      <Select
-        id="questionFolder"
-        name="questionFolder"
-        options={selectOptions}
-        value={selectedOption}
-        onChange={(selected) => {
-          if (selected) {
-            // If "None" is selected, pass null
-            onFolderChange(selected.value === '' ? null : selected.value);
-          } else {
-            onFolderChange(null);
-          }
-        }}
-        isLoading={loading}
-        components={{ Option: CustomOption }}
-        styles={{
-          control: (provided) => ({
-            ...provided,
-            borderColor: 'var(--color-border, #ddd)',
-            boxShadow: 'none',
-            '&:hover': {
-              borderColor: 'var(--color-accent, #552a47)',
-            },
-          }),
-          option: (provided, state) => ({
-            ...provided,
-            backgroundColor: state.isSelected 
-              ? 'var(--color-accent, #552a47)' 
-              : state.isFocused 
-                ? 'var(--color-accent-light, #f0e6ee)'
-                : 'white',
-            color: state.isSelected ? 'white' : 'var(--color-text, #333)',
-          }),
-        }}
-      />
+      {alert && (
+        <Alert type={alert.type}>
+          {alert.message}
+        </Alert>
+      )}
+      {allowFolderCreation ? (
+        <CreatableSelect
+          id="questionFolder"
+          name="questionFolder"
+          options={selectOptions}
+          value={selectedOption}
+          onChange={(selected) => {
+            if (selected) {
+              // If "None" is selected, pass null
+              onFolderChange(selected.value === '' ? null : selected.value);
+            } else {
+              onFolderChange(null);
+            }
+          }}
+          onCreateOption={(inputValue) => {
+            // Call Meteor method to create a new folder
+            Meteor.call('folders.create', {
+              name: inputValue,
+              parentId: null, // Create at root level by default
+              isActive: true,
+              order: 0, // Default order
+              id: `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate a unique ID
+            }, (error: Meteor.Error, newFolderId: string) => {
+              if (error) {
+                setAlert({ type: 'error', message: `Error creating folder: ${error.message}` });
+                setTimeout(() => setAlert(null), 5000);
+                return;
+              }
+              
+              // Select the new folder
+              onFolderChange(newFolderId);
+              setAlert({ type: 'success', message: `Folder "${inputValue}" created successfully!` });
+              setTimeout(() => setAlert(null), 3000);
+            });
+          }}
+          isLoading={loading}
+          components={{ Option: CustomOption }}
+          styles={{
+            control: (provided) => ({
+              ...provided,
+              borderColor: 'var(--color-border, #ddd)',
+              boxShadow: 'none',
+              '&:hover': {
+                borderColor: 'var(--color-accent, #542A46)',
+              },
+            }),
+            option: (provided, state) => ({
+              ...provided,
+              backgroundColor: state.isSelected 
+                ? 'var(--color-accent, #542A46)' 
+                : state.isFocused 
+                  ? 'var(--color-accent-light, #f0e6ee)'
+                  : 'white',
+              color: state.isSelected ? 'white' : 'var(--color-text, #333)',
+            }),
+            menu: (base) => ({
+              ...base,
+              zIndex: 9999,
+              width: 'auto',
+              minWidth: '100%',
+            }),
+          }}
+        />
+      ) : (
+        <Select
+          id="questionFolder"
+          name="questionFolder"
+          options={selectOptions}
+          value={selectedOption}
+          onChange={(selected) => {
+            if (selected) {
+              // If "None" is selected, pass null
+              onFolderChange(selected.value === '' ? null : selected.value);
+            } else {
+              onFolderChange(null);
+            }
+          }}
+          isLoading={loading}
+          components={{ Option: CustomOption }}
+          styles={{
+            control: (provided) => ({
+              ...provided,
+              borderColor: 'var(--color-border, #ddd)',
+              boxShadow: 'none',
+              '&:hover': {
+                borderColor: 'var(--color-accent, #542A46)',
+              },
+            }),
+            option: (provided, state) => ({
+              ...provided,
+              backgroundColor: state.isSelected 
+                ? 'var(--color-accent, #542A46)' 
+                : state.isFocused 
+                  ? 'var(--color-accent-light, #f0e6ee)'
+                  : 'white',
+              color: state.isSelected ? 'white' : 'var(--color-text, #333)',
+            }),
+          }}
+        />
+      )}
     </FolderSelectorContainer>
   );
 };

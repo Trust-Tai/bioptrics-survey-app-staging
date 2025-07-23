@@ -1,21 +1,22 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FaQuestionCircle, FaStar, FaTag } from 'react-icons/fa';
+import { FaQuestionCircle, FaStar, FaTag, FaFolder } from 'react-icons/fa';
 
 interface QuestionStatsProps {
   totalQuestions: number;
   avgQualityScore: number;
   totalTags: number;
+  totalFolders: number;
   isLoading?: boolean;
 }
 
 const StatsContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 24px;
   
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     grid-template-columns: repeat(2, 1fr);
   }
   
@@ -92,6 +93,7 @@ const QuestionStats: React.FC<QuestionStatsProps> = ({
   totalQuestions, 
   avgQualityScore, 
   totalTags, 
+  totalFolders,
   isLoading = false 
 }) => {
   return (
@@ -135,6 +137,20 @@ const QuestionStats: React.FC<QuestionStatsProps> = ({
             <Value>{totalTags}</Value>
           )}
           <Label>Tags</Label>
+        </ContentWrapper>
+      </StatCard>
+      
+      <StatCard>
+        <IconWrapper>
+          <FaFolder />
+        </IconWrapper>
+        <ContentWrapper>
+          {isLoading ? (
+            <LoadingPlaceholder />
+          ) : (
+            <Value>{totalFolders}</Value>
+          )}
+          <Label>Folders</Label>
         </ContentWrapper>
       </StatCard>
     </StatsContainer>

@@ -221,6 +221,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       image: '',
       status: 'draft',
       estimatedTimeSeconds: 30,
+      folderId: null, // Default to no folder
     },
     isExpanded: true,
     isNew: true,
@@ -908,6 +909,19 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     updatedQuestions[0].question.tags = labels;
                     setQuestions(updatedQuestions);
                     console.log('Tags updated:', labels);
+                  }}
+                />
+              </div>
+              
+              {/* Folder Selector */}
+              <div className="form-group">
+                <FolderSelector
+                  selectedFolderId={questions[0].question.folderId || null}
+                  onFolderChange={(folderId) => {
+                    const updatedQuestions = [...questions];
+                    updatedQuestions[0].question.folderId = folderId;
+                    setQuestions(updatedQuestions);
+                    console.log('Folder updated:', folderId);
                   }}
                 />
               </div>

@@ -767,6 +767,7 @@ const AllQuestions: React.FC = () => {
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [filterTheme, setFilterTheme] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [filterFolder, setFilterFolder] = useState<string | null>(null);
   const [filterQuestionType, setFilterQuestionType] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
@@ -807,6 +808,12 @@ const AllQuestions: React.FC = () => {
   const wpsCategories = useTracker(() => {
     Meteor.subscribe('wpsCategories.all');
     return WPSCategories.find().fetch();
+  }, []);
+  
+  // Get folders for filtering
+  const folders = useTracker(() => {
+    Meteor.subscribe('folders.all');
+    return Folders.find({}).fetch();
   }, []);
   
   // Extend Layer interface to include children for hierarchy
@@ -917,7 +924,8 @@ const AllQuestions: React.FC = () => {
       return {
         totalQuestions: 0,
         avgQualityScore: 0,
-        totalTags: 0
+        totalTags: 0,
+        totalFolders: 0
       };
     }
     
@@ -940,15 +948,19 @@ const AllQuestions: React.FC = () => {
     // This matches the "Categories" count shown in the UI screenshot
     const totalTags = layers ? layers.length : 0;
     
+    // Get total folders count
+    const totalFolders = folders ? folders.length : 0;
+    
     // Calculate average score (default to 4.5 if no scores available)
     const avgQualityScore = scoredQuestions > 0 ? totalScore / scoredQuestions : 4.5;
     
     return {
       totalQuestions,
       avgQualityScore,
-      totalTags
+      totalTags,
+      totalFolders
     };
-  }, [questions, layers]);
+  }, [questions, layers, folders]);
 
   // Filter questions based on search and filters
   const filteredQuestions = React.useMemo(() => {
@@ -976,6 +988,16 @@ const AllQuestions: React.FC = () => {
       // Apply theme filter
       if (filterTheme && (!latestVersion.surveyThemes || !latestVersion.surveyThemes.includes(filterTheme))) {
         return false;
+      }
+      
+      // Apply folder filter
+      if (filterFolder) {
+        // Special case for 'none' filter - show questions without a folder
+        if (filterFolder === 'none') {
+          return q.folderId === null || q.folderId === undefined;
+        }
+        // Otherwise match the specific folder ID
+        return q.folderId === filterFolder;
       }
       
       // Apply tag filter
@@ -1007,7 +1029,7 @@ const AllQuestions: React.FC = () => {
       
       return true;
     });
-  }, [questions, searchTerm, filterActive, filterQuestionType, filterTheme, filterTag]);
+  }, [questions, searchTerm, filterActive, filterQuestionType, filterTheme, filterTag, filterFolder]);
   
   // Handle importing questions and completion
   const handleImportQuestions = (importedQuestions: any[]) => {
@@ -1091,6 +1113,7 @@ const AllQuestions: React.FC = () => {
           totalQuestions={questionStats?.totalQuestions || 0}
           avgQualityScore={questionStats?.avgQualityScore || 0}
           totalTags={questionStats?.totalTags || 0}
+          totalFolders={questionStats?.totalFolders || 0}
           isLoading={loading}
         />
         
@@ -1168,6 +1191,22 @@ const AllQuestions: React.FC = () => {
                     </option>
                   );
                 })}
+              </FilterSelect>
+            </FilterGroup>
+            
+            <FilterGroup>
+              <FilterLabel>Folder</FilterLabel>
+              <FilterSelect 
+                value={filterFolder || ''}
+                onChange={(e) => setFilterFolder(e.target.value || null)}
+              >
+                <option value="">All Folders</option>
+                <option value="none">No Folder</option>
+                {folders && folders.map((folder: any) => (
+                  <option key={folder._id} value={folder._id}>
+                    {folder.name}
+                  </option>
+                ))}
               </FilterSelect>
             </FilterGroup>
           </FiltersPanel>
