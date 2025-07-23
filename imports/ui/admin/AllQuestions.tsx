@@ -529,7 +529,7 @@ const DropdownButton = styled.button`
 
 const DropdownMenu = styled.div<{ position: 'top' | 'bottom' }>`
   position: absolute;
-  ${props => props.position === 'bottom' ? 'top: 50px;' : 'bottom: 50px;'}
+  ${props => props.position === 'bottom' ? 'top: 50px;' : 'bottom: calc(100% - 15px);'}
   right: 16px;
   background-color: white;
   border-radius: 8px;
