@@ -152,7 +152,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'progress'; message: string; progress?: number } | null>(null);
   
   // Show success alert
   const showSuccessAlert = (message: string) => {
@@ -164,6 +164,11 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   const showErrorAlert = (message: string) => {
     setAlert({ type: 'error', message });
     setTimeout(() => setAlert(null), 4000);
+  };
+  
+  // Show progress alert
+  const showProgressAlert = (message: string, progress: number) => {
+    setAlert({ type: 'progress', message, progress });
   };
 
   // Handle escape key to close panel
@@ -1021,8 +1026,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            // Show loading state
-                            showSuccessAlert('Uploading image...');
+                            // Show initial loading state with 0% progress
+                            showProgressAlert('Uploading image...', 0);
                             
                             // Create a FormData object to upload the file
                             const formData = new FormData();
@@ -1031,22 +1036,54 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                             // Convert FormData to base64 string for Meteor method
                             const reader = new FileReader();
                             reader.readAsDataURL(file);
+                            
+                            // Show progress during file reading
+                            reader.onprogress = (event) => {
+                              if (event.lengthComputable) {
+                                const progress = Math.round((event.loaded / event.total) * 50); // First 50% for reading
+                                showProgressAlert('Reading image...', progress);
+                              }
+                            };
+                            
                             reader.onload = () => {
                               const base64data = reader.result;
                               
+                              // Show 50% progress when starting upload to server
+                              showProgressAlert('Uploading to server...', 50);
+                              
+                              // Simulate upload progress (since Meteor.call doesn't provide progress events)
+                              let progressInterval = setInterval(() => {
+                                setAlert(prevAlert => {
+                                  if (prevAlert?.type === 'progress' && prevAlert.progress !== undefined) {
+                                    const newProgress = Math.min(prevAlert.progress + 5, 90); // Cap at 90% until complete
+                                    return { ...prevAlert, progress: newProgress };
+                                  }
+                                  return prevAlert;
+                                });
+                              }, 200);
+                              
                               // Use Meteor method to upload the file
                               Meteor.call('uploadQuestionImage', { file: base64data, name: file.name }, (error: Error, result: { url: string }) => {
+                                clearInterval(progressInterval);
+                                
                                 if (error) {
                                   console.error('Error uploading image:', error);
                                   showErrorAlert(`Error uploading image: ${error.message || 'Unknown error'}`);
                                   return;
                                 }
                                 
+                                // Show 100% progress briefly before success message
+                                showProgressAlert('Upload complete!', 100);
+                                
                                 // Update question with the image URL
                                 const updatedQuestions = [...questions];
                                 updatedQuestions[0].question.image = result.url;
                                 setQuestions(updatedQuestions);
-                                showSuccessAlert('Image uploaded successfully!');
+                                
+                                // Show success message after a brief delay
+                                setTimeout(() => {
+                                  showSuccessAlert('Image uploaded successfully!');
+                                }, 500);
                               });
                             };
                             
