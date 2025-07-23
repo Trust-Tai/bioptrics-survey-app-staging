@@ -461,7 +461,6 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       <DropdownItem 
                         onClick={(e) => {
                           e.stopPropagation();
-                          e.preventDefault();
                           onPreview(survey._id);
                           setOpenDropdown(null);
                         }}
@@ -511,7 +510,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             }}
                             data-no-navigate="true"
                           >
-                            Copy Shareable Link
+                            Copy Public Link
                           </DropdownItem>
                         </>
                       )}

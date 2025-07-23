@@ -223,7 +223,7 @@ const CancelButton = styled.button`
 const GridContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 65px 24px;
+  gap: 24px;
   width: 100%;
   max-width: 100%;
   overflow: visible;
@@ -1028,7 +1028,7 @@ const AllSurveys: React.FC = () => {
                                   });
                                 }}
                               >
-                                Copy Shareable Link
+                                Copy Public Link
                               </DropdownItem>
                             )}
                             <DropdownItem

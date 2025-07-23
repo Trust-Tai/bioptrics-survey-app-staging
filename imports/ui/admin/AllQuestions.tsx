@@ -40,6 +40,8 @@ import QuestionPreviewModal from './QuestionPreviewModal';
 import AdminRichTextRenderer from './components/AdminRichTextRenderer';
 import QuestionStats from './components/QuestionStats';
 import QuestionListView from './components/QuestionListView';
+import QuestionTableView from './components/QuestionTableView';
+import ViewToggle from './components/ViewToggle';
 
 // Alert component for success and error messages
 interface AlertProps {
@@ -967,23 +969,11 @@ const AllQuestions: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {/* View Toggle Buttons */}
-            <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
-              <ViewToggleButton 
-                active={viewMode === 'list'} 
-                onClick={() => setViewMode('list')}
-                title="List View"
-              >
-                <FaList size={14} />
-              </ViewToggleButton>
-              <ViewToggleButton 
-                active={viewMode === 'grid'} 
-                onClick={() => setViewMode('grid')}
-                title="Grid View"
-              >
-                <FaThLarge size={14} />
-              </ViewToggleButton>
-            </div>
+            {/* View Toggle */}
+            <ViewToggle 
+              view={viewMode} 
+              onViewChange={setViewMode} 
+            />
             
             <FilterToggle onClick={() => setShowFilters(!showFilters)}>
               <FaFilter size={14} />
@@ -1147,9 +1137,9 @@ const AllQuestions: React.FC = () => {
             )}
           </QuestionsGrid>
         ) : (
-          /* List View */
+          /* Table View */
           <>
-            <QuestionListView 
+            <QuestionTableView 
               questions={filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
               onPreview={(question) => {
                 setPreviewQuestion(question);
