@@ -199,6 +199,7 @@ const FolderSelector: React.FC<FolderSelectorProps> = ({
               onFolderChange(null);
             }
           }}
+          formatCreateLabel={(inputValue) => `Create folder: "${inputValue}"`}
           onCreateOption={(inputValue) => {
             // Call Meteor method to create a new folder
             Meteor.call('folders.create', {
