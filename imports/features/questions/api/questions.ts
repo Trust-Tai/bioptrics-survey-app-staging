@@ -106,6 +106,9 @@ if (Meteor.isServer) {
   });
 }
 
+// Import necessary packages for file handling
+import { Random } from 'meteor/random';
+
 Meteor.methods({
   // Public method to get a single question by ID
   'questions.getById': function (id: string) {
@@ -217,5 +220,51 @@ Meteor.methods({
       $set: { currentVersion: newVersion.version },
       $push: { versions: newVersion },
     });
+  },
+  
+  // Method to handle question image uploads
+  'uploadQuestionImage': function(data: { file: string, name: string }) {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to upload images');
+    }
+    
+    try {
+      // Validate the input data
+      check(data, {
+        file: String,
+        name: String
+      });
+      
+      // Extract the base64 data from the data URL
+      const base64Data = data.file.split(',')[1];
+      if (!base64Data) {
+        throw new Meteor.Error('invalid-file', 'Invalid file format');
+      }
+      
+      // Generate a unique filename
+      const fileExtension = data.name.split('.').pop() || 'jpg';
+      const filename = `question_image_${Random.id()}.${fileExtension}`;
+      
+      // In a production environment, you would save this to a storage service
+      // like AWS S3, Google Cloud Storage, etc.
+      // For this example, we'll simulate storing and return a URL
+      
+      // Log the upload (in production, replace with actual storage)
+      console.log(`[uploadQuestionImage] Uploaded image: ${filename}`);
+      
+      // Store the image in the Assets directory or use a CDN in production
+      // Here we're just returning a simulated URL
+      // In production, implement proper file storage and return the actual URL
+      const url = `/uploads/questions/${filename}`;
+      
+      // For now, we'll use the base64 data directly in the URL for immediate display
+      // This is NOT recommended for production as it can be very large
+      // In production, store the file and return a proper URL
+      return { url: data.file };
+    } catch (error: any) {
+      console.error('[uploadQuestionImage] Error:', error);
+      throw new Meteor.Error('upload-failed', `Failed to upload image: ${error.message || 'Unknown error'}`);
+    }
   },
 });

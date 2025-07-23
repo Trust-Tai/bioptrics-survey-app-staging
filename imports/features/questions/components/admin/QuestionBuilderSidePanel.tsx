@@ -7,7 +7,7 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import ReactQuill from 'react-quill';
 import '../../../../ui/styles/quill-styles';
 import 'react-quill/dist/quill.snow.css';
-import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing, FaArrowLeft, FaCloudUploadAlt } from 'react-icons/fa';
 import TagBuilder from './TagBuilder';
 import ToggleSwitch from './ToggleSwitch';
 
@@ -942,47 +942,108 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 <label>Question Image</label>
                 <div className="image-upload-container">
                   {questions[0].question.image ? (
-                    <div className="image-preview">
-                      <img src={questions[0].question.image} alt="Question" />
+                    <div className="image-preview" style={{ position: 'relative' }}>
+                      <img 
+                        src={questions[0].question.image} 
+                        alt="Question" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '200px', 
+                          display: 'block',
+                          margin: '0 auto',
+                          borderRadius: '4px'
+                        }} 
+                      />
                       <button
                         className="remove-image-button"
+                        style={{
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px',
+                          background: 'rgba(255, 255, 255, 0.8)',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '5px 10px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          fontSize: '12px'
+                        }}
                         onClick={() => {
                           const updatedQuestions = [...questions];
                           updatedQuestions[0].question.image = '';
                           setQuestions(updatedQuestions);
+                          showSuccessAlert('Image removed successfully');
                         }}
                       >
                         <FaTimes /> Remove
                       </button>
                     </div>
                   ) : (
-                    <div className="image-upload">
+                    <div className="image-upload" style={{
+                      border: '2px dashed #ccc',
+                      borderRadius: '4px',
+                      padding: '20px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      backgroundColor: '#f9f9f9',
+                      position: 'relative'
+                    }}>
                       <input
                         type="file"
                         accept="image/*"
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          opacity: 0,
+                          cursor: 'pointer'
+                        }}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            // Show loading state
+                            showSuccessAlert('Uploading image...');
+                            
                             // Create a FormData object to upload the file
                             const formData = new FormData();
                             formData.append('file', file);
                             
-                            // Use Meteor method to upload the file
-                            Meteor.call('uploadQuestionImage', formData, (error: Error, result: { url: string }) => {
-                              if (error) {
-                                console.error('Error uploading image:', error);
-                                return;
-                              }
+                            // Convert FormData to base64 string for Meteor method
+                            const reader = new FileReader();
+                            reader.readAsDataURL(file);
+                            reader.onload = () => {
+                              const base64data = reader.result;
                               
-                              // Update question with the image URL
-                              const updatedQuestions = [...questions];
-                              updatedQuestions[0].question.image = result.url;
-                              setQuestions(updatedQuestions);
-                            });
+                              // Use Meteor method to upload the file
+                              Meteor.call('uploadQuestionImage', { file: base64data, name: file.name }, (error: Error, result: { url: string }) => {
+                                if (error) {
+                                  console.error('Error uploading image:', error);
+                                  showErrorAlert(`Error uploading image: ${error.message || 'Unknown error'}`);
+                                  return;
+                                }
+                                
+                                // Update question with the image URL
+                                const updatedQuestions = [...questions];
+                                updatedQuestions[0].question.image = result.url;
+                                setQuestions(updatedQuestions);
+                                showSuccessAlert('Image uploaded successfully!');
+                              });
+                            };
+                            
+                            reader.onerror = (error) => {
+                              console.error('Error reading file:', error);
+                              showErrorAlert('Error reading file. Please try again.');
+                            };
                           }
                         }}
                       />
-                      <p>Drag an image here or click to browse</p>
+                      <FaCloudUploadAlt style={{ fontSize: '32px', color: '#888', marginBottom: '10px' }} />
+                      <p style={{ margin: '0', color: '#666' }}>Drag an image here or click to browse</p>
+                      <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#888' }}>Supported formats: JPG, PNG, GIF</p>
                     </div>
                   )}
                 </div>
