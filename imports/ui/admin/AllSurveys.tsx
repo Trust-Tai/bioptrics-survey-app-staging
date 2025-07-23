@@ -501,7 +501,7 @@ const Notification = styled.div<{ type: 'success' | 'error' }>`
   top: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: ${props => props.type === 'success' ? 'var(--color-success)' : 'var(--color-error)'};
+  background: ${props => props.type === 'success' ? 'var(--color-success, #4CAF50)' : 'var(--color-error, #f44336)'};
   color: #fff;
   padding: 12px 28px;
   border-radius: 8px;
@@ -523,6 +523,8 @@ const NotificationCloseButton = styled.button`
   font-size: 18px;
   cursor: pointer;
   flex: 1;
+  position: absolute;
+  right: 0;
 `;
 
 const CardInfo = styled.div`

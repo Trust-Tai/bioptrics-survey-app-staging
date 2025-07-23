@@ -2,7 +2,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useQuestionBuilderPanel } from '../../features/questions/contexts/QuestionBuilderPanelContext';
-import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV, FaFolder } from 'react-icons/fa';
+import FolderTree from '../../features/questions/components/admin/FolderTree';
+import FolderModal from '../../features/questions/components/admin/FolderModal';
+import { Folders } from '../../features/questions/api/folders';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -792,6 +795,13 @@ const AllQuestions: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(25);
+  
+  // Folder management state
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>('all');
+  const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
+  const [folderModalMode, setFolderModalMode] = useState<'create' | 'edit'>('create');
+  const [folderToEdit, setFolderToEdit] = useState<any>(null);
+  const [folderParentId, setFolderParentId] = useState<string | null>(null);
   
   // Get categories and themes for filtering
   const wpsCategories = useTracker(() => {

@@ -9,6 +9,7 @@ import '../../../../ui/styles/quill-styles';
 import 'react-quill/dist/quill.snow.css';
 import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing, FaArrowLeft, FaCloudUploadAlt } from 'react-icons/fa';
 import TagBuilder from './TagBuilder';
+import FolderSelector from './FolderSelector';
 import ToggleSwitch from './ToggleSwitch';
 
 // Import enhanced components
@@ -48,6 +49,7 @@ interface Question {
   labels?: string[];
   feedback?: string;
   feedbackType?: 'text' | 'file' | 'rating';
+  folderId?: string | null; // Folder ID for organizing questions
   categories?: string[];
   categoryId?: string; // Single primary category
   categoryDetails?: string; // Details about the selected category

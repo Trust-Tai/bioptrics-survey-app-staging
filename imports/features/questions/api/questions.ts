@@ -38,6 +38,7 @@ export interface QuestionDoc {
   versions: QuestionVersion[];
   createdAt: Date;
   createdBy: string;
+  folderId?: string | null; // null for questions not in any folder
 }
 
 // Extend the Collection type to include schema-related properties
@@ -91,6 +92,7 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.customFields.$.content': { type: String },
     createdAt: { type: Date },
     createdBy: { type: String },
+    folderId: { type: String, optional: true },
   });
   Questions.attachSchema(Questions.schema);
 }
@@ -223,6 +225,118 @@ Meteor.methods({
   },
   
   // Method to handle question image uploads
+  'questions.updateFolder': function(questionId: string, folderId: string | null) {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to update question folders');
+    }
+
+    // Validate parameters
+    check(questionId, String);
+    if (folderId !== null) {
+      check(folderId, String);
+    }
+
+    // Check if question exists
+    const question = Questions.findOne(questionId);
+    if (!question) {
+      throw new Meteor.Error('question-not-found', 'Question not found');
+    }
+
+    // If folderId is provided, check if folder exists
+    if (folderId) {
+      const folder = Meteor.call('folders.getById', folderId);
+      if (!folder) {
+        throw new Meteor.Error('folder-not-found', 'Folder not found');
+      }
+    }
+
+    // Update question's folder
+    Questions.update(questionId, {
+      $set: {
+        folderId: folderId,
+      },
+    });
+
+    return questionId;
+  },
+
+  'questions.getByFolder': function(folderId: string | null) {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to get questions by folder');
+    }
+
+    // Validate parameters
+    if (folderId !== null) {
+      check(folderId, String);
+    }
+
+    // If folderId is null, get questions without a folder
+    if (folderId === null) {
+      return Questions.find({ folderId: { $exists: false } }).fetch();
+    }
+
+    // Check if folder exists
+    const folder = Meteor.call('folders.getById', folderId);
+    if (!folder) {
+      throw new Meteor.Error('folder-not-found', 'Folder not found');
+    }
+
+    // Get questions in folder
+    return Questions.find({ folderId: folderId }).fetch();
+  },
+
+  'questions.countByFolder': function(folderId: string | null) {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to count questions by folder');
+    }
+
+    // Validate parameters
+    if (folderId !== null) {
+      check(folderId, String);
+    }
+
+    // If folderId is null, count questions without a folder
+    if (folderId === null) {
+      return Questions.find({ folderId: { $exists: false } }).count();
+    }
+
+    // Count questions in folder
+    return Questions.find({ folderId: folderId }).count();
+  },
+
+  'questions.moveToFolder': function(questionIds: string[], folderId: string | null) {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to move questions to folders');
+    }
+
+    // Validate parameters
+    check(questionIds, [String]);
+    if (folderId !== null) {
+      check(folderId, String);
+    }
+
+    // If folderId is provided, check if folder exists
+    if (folderId) {
+      const folder = Meteor.call('folders.getById', folderId);
+      if (!folder) {
+        throw new Meteor.Error('folder-not-found', 'Folder not found');
+      }
+    }
+
+    // Move questions to folder
+    Questions.update(
+      { _id: { $in: questionIds } },
+      { $set: { folderId: folderId } },
+      { multi: true }
+    );
+
+    return questionIds.length;
+  },
+
   'uploadQuestionImage': function(data: { file: string, name: string }) {
     // Check if user is logged in
     if (!this.userId) {
