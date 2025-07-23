@@ -1003,7 +1003,7 @@ const AllSurveys: React.FC = () => {
                                 });
                               }}
                             >
-                              <FaEye /> Preview
+                              Preview
                             </DropdownItem>
                             <DropdownItem
                               onClick={(e) => {
@@ -1011,7 +1011,7 @@ const AllSurveys: React.FC = () => {
                                 navigate(`/admin/surveys/manage/${s._id}`);
                               }}
                             >
-                              <FaEdit /> Edit
+                              Edit
                             </DropdownItem>
                             {s.published && (
                               <DropdownItem
@@ -1026,7 +1026,7 @@ const AllSurveys: React.FC = () => {
                                   });
                                 }}
                               >
-                                <FaCopy /> Copy Shareable Link
+                                Copy Shareable Link
                               </DropdownItem>
                             )}
                             <DropdownItem
@@ -1035,7 +1035,7 @@ const AllSurveys: React.FC = () => {
                                 onViewResponses(s._id, s.title);
                               }}
                             >
-                              <FaChartBar /> Analytics
+                              Analytics
                             </DropdownItem>
                             {s.status === 'inactive' ? (
                               <DropdownItem
@@ -1056,7 +1056,7 @@ const AllSurveys: React.FC = () => {
                                 }}
                                 style={{ color: '#000000' }}
                               >
-                                <FaUndo /> Restore
+                                Restore
                               </DropdownItem>
                             ) : (
                               <DropdownItem
@@ -1068,7 +1068,7 @@ const AllSurveys: React.FC = () => {
                                 }}
                                 style={{ color: '#dc3545' }}
                               >
-                                <FaTrash /> Delete
+                                Delete
                               </DropdownItem>
                             )}
                           </DropdownMenu>

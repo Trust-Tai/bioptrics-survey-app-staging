@@ -680,45 +680,30 @@ const SurveyResponsesModal: React.FC<SurveyResponsesModalProps> = ({
               <ResponsesTable>
                 <TableHeader>
                   <tr>
-                    <TableHeaderCell>Respondent</TableHeaderCell>
-                    <TableHeaderCell>Email</TableHeaderCell>
-                    <TableHeaderCell>Date Submitted</TableHeaderCell>
-                    <TableHeaderCell>Status</TableHeaderCell>
+                    <TableHeaderCell>Respondent ID</TableHeaderCell>
+                    <TableHeaderCell>Date</TableHeaderCell>
+                    <TableHeaderCell>Answers</TableHeaderCell>
                   </tr>
                 </TableHeader>
                 <TableBody>
                   {surveyResponses.map(response => (
                     <React.Fragment key={response._id}>
                       <TableRow>
-                        <TableCell>{response.respondentName}</TableCell>
-                        <TableCell>{response.email}</TableCell>
+                        <TableCell>{response.respondentId || response._id}</TableCell>
                         <TableCell>
-                          {new Date(response.submittedAt).toLocaleDateString()} at {new Date(response.submittedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {new Date(response.submittedAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div>
-                              <StatusBadge complete={response.isComplete}>
-                                {response.isComplete ? 'Complete' : 'Incomplete'}
-                              </StatusBadge>
-                              <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
-                                Progress: {response.progress}%
-                              </div>
-                              <ProgressBar>
-                                <ProgressFill percentage={response.progress} />
-                              </ProgressBar>
-                            </div>
-                            <ExpandButton onClick={() => toggleResponseDetails(response._id)}>
-                              {expandedResponseIds.includes(response._id) ? 'Hide Details' : 'Show Details'}
-                            </ExpandButton>
-                          </div>
+                          <ExpandButton onClick={() => toggleResponseDetails(response._id)}>
+                            {expandedResponseIds.includes(response._id) ? 'Hide Answers' : 'Show Answers'}
+                          </ExpandButton>
                         </TableCell>
                       </TableRow>
                       {expandedResponseIds.includes(response._id) && (
                         <tr>
-                          <td colSpan={4}>
+                          <td colSpan={3}>
                             <ResponseDetails>
-                              <h4 style={{ marginTop: 0, marginBottom: '16px' }}>Response Details</h4>
+                              <h4 style={{ marginTop: 0, marginBottom: '16px' }}>Answers</h4>
                               {response.responses && response.responses.length > 0 ? (
                                 response.responses.map((answer: any, index: number) => {
                                   // Get question details using our helper function

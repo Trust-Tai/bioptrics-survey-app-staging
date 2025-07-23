@@ -342,7 +342,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                         }}
                         data-no-navigate="true"
                       >
-                        <FaEdit /> Edit
+                        Edit
                       </DropdownItem>
                       
                       <DropdownItem 
@@ -354,7 +354,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                         }}
                         data-no-navigate="true"
                       >
-                        <FaEye /> Preview
+                        Preview
                       </DropdownItem>
                       
                       {survey.published && (
@@ -368,7 +368,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             }}
                             data-no-navigate="true"
                           >
-                            <FaExternalLinkAlt /> Open Public Link
+                            Open Public Link
                           </DropdownItem>
                           
                           <DropdownItem 
@@ -398,7 +398,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             }}
                             data-no-navigate="true"
                           >
-                            <FaCopy /> Copy Shareable Link
+                            Copy Shareable Link
                           </DropdownItem>
                         </>
                       )}
@@ -412,7 +412,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                         }}
                         data-no-navigate="true"
                       >
-                        <FaChartBar /> Analytics
+                        Analytics
                       </DropdownItem>
                       
                       {survey.status === 'inactive' ? (
@@ -428,10 +428,10 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             });
                             setOpenDropdown(null);
                           }}
-                          style={{ color: '#28a745' }}
+                          style={{ color: '#000000' }}
                           data-no-navigate="true"
                         >
-                          <FaUndo /> Restore
+                          Restore
                         </DropdownItem>
                       ) : (
                         <DropdownItem 
@@ -444,7 +444,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           style={{ color: '#dc3545' }}
                           data-no-navigate="true"
                         >
-                          <FaTrash /> Delete
+                          Delete
                         </DropdownItem>
                       )}
                     </DropdownMenu>
