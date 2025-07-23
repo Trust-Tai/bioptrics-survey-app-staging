@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -17,12 +17,25 @@ const TableHeader = styled.thead`
   border-bottom: 1px solid #e9ecef;
 `;
 
-const TableHeaderCell = styled.th`
+const TableHeaderCell = styled.th<{ sortable?: boolean }>`
   text-align: left;
   padding: 12px 16px;
   font-weight: 600;
   color: #495057;
   font-size: 14px;
+  cursor: ${props => props.sortable ? 'pointer' : 'default'};
+  user-select: none;
+  position: relative;
+  
+  &:hover {
+    background-color: ${props => props.sortable ? '#f1f3f5' : 'transparent'};
+  }
+  
+  .sort-icon {
+    margin-left: 5px;
+    vertical-align: middle;
+    display: inline-block;
+  }
 `;
 
 const TableBody = styled.tbody``;
@@ -207,6 +220,12 @@ interface SurveyListViewProps {
   onCopyLink?: (id: string) => void;
 }
 
+// Define type for sort field
+type SortField = 'title' | 'status' | 'structure' | 'createdBy' | 'updatedAt' | null;
+
+// Define type for sort direction
+type SortDirection = 'asc' | 'desc';
+
 const SurveyListView: React.FC<SurveyListViewProps> = ({ 
   surveys, 
   onEdit, 
@@ -218,6 +237,10 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Add state for sorting
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
   // Handle click outside to close dropdown
   React.useEffect(() => {
@@ -255,20 +278,110 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     setDropdownPosition(spaceBelowPercentage < 30 ? 'top' : 'bottom');
     setOpenDropdown(surveyId);
   };
+  
+  // Function to handle column sorting
+  const handleSort = (field: SortField) => {
+    // If clicking the same field, toggle direction
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a new field, set it as the sort field and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+  
+  // Function to render sort icon
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <FaSort className="sort-icon" size={12} opacity={0.5} />;
+    }
+    
+    return sortDirection === 'asc' 
+      ? <FaSortUp className="sort-icon" size={12} /> 
+      : <FaSortDown className="sort-icon" size={12} />;
+  };
+  
+  // Sort the surveys based on current sort field and direction
+  const sortedSurveys = [...surveys].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let comparison = 0;
+    
+    switch (sortField) {
+      case 'title':
+        comparison = a.title.localeCompare(b.title);
+        break;
+      case 'status':
+        const statusA = a.status ? a.status.toUpperCase() : (a.published ? 'ACTIVE' : 'DRAFT');
+        const statusB = b.status ? b.status.toUpperCase() : (b.published ? 'ACTIVE' : 'DRAFT');
+        comparison = statusA.localeCompare(statusB);
+        break;
+      case 'structure':
+        // Sort by section count, then by question count
+        const sectionsA = a.surveySections?.length || 0;
+        const sectionsB = b.surveySections?.length || 0;
+        comparison = sectionsA - sectionsB;
+        if (comparison === 0) {
+          const questionsA = a.sectionQuestions?.length || 0;
+          const questionsB = b.sectionQuestions?.length || 0;
+          comparison = questionsA - questionsB;
+        }
+        break;
+      case 'createdBy':
+        comparison = (a.createdByName || 'System').localeCompare(b.createdByName || 'System');
+        break;
+      case 'updatedAt':
+        const dateA = new Date(a.updatedAt).getTime();
+        const dateB = new Date(b.updatedAt).getTime();
+        comparison = dateA - dateB;
+        break;
+      default:
+        return 0;
+    }
+    
+    // Reverse the comparison if sorting in descending order
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
   return (
     <Table>
       <TableHeader>
         <tr>
-          <TableHeaderCell>SURVEY</TableHeaderCell>
-          <TableHeaderCell>STATUS</TableHeaderCell>
-          <TableHeaderCell>STRUCTURE</TableHeaderCell>
-          <TableHeaderCell>CREATED BY</TableHeaderCell>
-          <TableHeaderCell>LAST UPDATED</TableHeaderCell>
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('title')}
+          >
+            SURVEY {renderSortIcon('title')}
+          </TableHeaderCell>
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('status')}
+          >
+            STATUS {renderSortIcon('status')}
+          </TableHeaderCell>
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('structure')}
+          >
+            STRUCTURE {renderSortIcon('structure')}
+          </TableHeaderCell>
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('createdBy')}
+          >
+            CREATED BY {renderSortIcon('createdBy')}
+          </TableHeaderCell>
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('updatedAt')}
+          >
+            LAST UPDATED {renderSortIcon('updatedAt')}
+          </TableHeaderCell>
           <TableHeaderCell>ACTIONS</TableHeaderCell>
         </tr>
       </TableHeader>
       <TableBody>
-        {surveys.map(survey => {
+        {sortedSurveys.map(survey => {
           // Calculate status
           let status = survey.status ? survey.status.toUpperCase() : (survey.published ? 'ACTIVE' : 'DRAFT');
           if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {

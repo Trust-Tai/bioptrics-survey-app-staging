@@ -55,8 +55,8 @@ const ModalOverlay = styled.div`
 
 const ModalContent = styled.div`
   background-color: white;
-  width: 90%;
-  max-width: 1400px;
+  width: 80%;
+  max-width: 1000px;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -115,7 +115,7 @@ const ModalBody = styled.div`
 
 const StatsContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 24px;
   overflow-x: auto;
@@ -202,19 +202,16 @@ const TableRow = styled.tr`
 `;
 
 const ExpandButton = styled.button`
-  background: none;
+  background: transparent;
   border: none;
   color: #6c757d;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 0;
   margin-left: 8px;
   border-radius: 4px;
   font-size: 12px;
-  
-  &:hover {
-    background-color: #e9ecef;
-    color: #212529;
-  }
+  display: flex;
+  align-items: center;
 `;
 
 const ResponseDetails = styled.div`
