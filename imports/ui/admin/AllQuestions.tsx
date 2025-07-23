@@ -427,18 +427,8 @@ const QuestionType = styled.div`
   border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
-  background-color: #e6f7ed;
-  color: #0a8043;
-  
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-    background-color: #0a8043;
-  }
+  background-color: var(--color-primary, #542A46);
+  color: #ffffff;
 `;
 
 const QuestionContent = styled.div`
