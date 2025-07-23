@@ -22,14 +22,8 @@ import { Layers, Layer } from '/imports/api/layers';
 import RichTextRenderer from './RichTextRenderer';
 import { Meteor } from 'meteor/meteor';
 import { Questions } from '../../../questions/api/questions';
-import { Sections } from '../../../questions/api/sections';
 import { Surveys } from '../../../surveys/api/surveys';
-import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import 'react-tabs/style/react-tabs.css';
-import EnhancedQuestionBuilder from '../../../questions/components/admin/EnhancedQuestionBuilder';
-import QuestionBuilderStateManager from '../../../questions/components/admin/QuestionBuilderStateManager';
 import TagBuilder from '../../../questions/components/admin/TagBuilder';
-import { QuestionBuilderSidePanel } from '../../../questions/components/admin/QuestionBuilderSidePanel';
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
 import './QuestionSelector.css';
@@ -65,8 +59,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
 }) => {
   // State to handle closing animation
   const [isClosing, setIsClosing] = useState(false);
-  // State for managing the active tab index
-  const [tabIndex, setTabIndex] = useState(0);
   
   // Initialize Tom Select on dropdowns
   useEffect(() => {
@@ -130,11 +122,11 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         }
       });
     };
-  }, [tabIndex]); // Re-initialize when tab changes
+  }, []); // No dependencies since we only need this on unmount
   
   // State for search and filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedType, setSelectedType] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   // State for tag input and menu control
@@ -224,17 +216,24 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         question.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ((question as any).description && (question as any).description.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      // Filter by selected types
-      const matchesType = selectedTypes.length === 0 || 
-        (question.type && selectedTypes.includes(question.type));
+      // Filter by type
+      const matchesType = selectedType === '' || question.type === selectedType;
       
-      // Filter by selected tags
-      const matchesTags = selectedTags.length === 0 || 
-        (questionsWithTags.get(question.id || '')?.some(tagId => selectedTags.includes(tagId)));
+      // Filter by tags
+      let matchesTags = true;
+      if (selectedTags.length > 0 && (question as ExtendedQuestionItem).categoryTags) {
+        matchesTags = selectedTags.every(tagId => 
+          (question as ExtendedQuestionItem).categoryTags?.includes(tagId)
+        );
+      } else if (selectedTags.length > 0) {
+        // If question has no tags but tags are selected for filtering
+        matchesTags = false;
+      }
       
+      // Only show questions that match all filters
       return matchesSearch && matchesType && matchesTags;
     });
-  }, [questions, searchTerm, selectedTypes, selectedTags, questionsWithTags]);
+  }, [questions, searchTerm, selectedType, selectedTags]);
   
   // Toggle question selection
   const handleToggleQuestion = (questionId: string) => {
@@ -269,7 +268,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   // Handle filter changes
   const handleFilterChange = (filterType: 'type' | 'tags', value: string | string[]) => {
     if (filterType === 'type') {
-      setSelectedTypes(typeof value === 'string' ? [value] : value);
+      setSelectedType(typeof value === 'string' ? value : '');
     } else {
       setSelectedTags(typeof value === 'string' ? [value] : value);
     }
@@ -283,20 +282,22 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Handle question creation callback
   const handleQuestionCreated = (questionId: string) => {
-    setQuestionSaved(true);
-    
-    // Add the newly created question to the selected questions
-    if (questionId) {
-      setSelectedIds(prev => [...prev, questionId]);
-    }
-    
-    // Optionally refresh the questions list
-    if (onQuestionsRefresh) {
-      onQuestionsRefresh();
-    }
-    
-    // Switch back to the first tab after creating
-    setTabIndex(0);
+    // Fetch the newly created question
+    Meteor.call('questions.getOne', questionId, (error: any, result: any) => {
+      if (error) {
+        console.error('Error fetching new question:', error);
+        return;
+      }
+      
+      // Add the new question to the selected questions
+      const newSelectedIds = [...selectedIds, questionId];
+      setSelectedIds(newSelectedIds);
+      
+      // Refresh the questions list if a callback was provided
+      if (onQuestionsRefresh) {
+        onQuestionsRefresh();
+      }
+    });
   };
 
   return (
@@ -368,57 +369,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           overflowY: 'auto',
           flex: 1
         }}>
-          <Tabs 
-            selectedIndex={tabIndex} 
-            onSelect={index => setTabIndex(index)}
-            className="question-selector-tabs"
-          >
-            <TabList className="react-tabs__tab-list" style={{
-              display: 'flex',
-              borderBottom: '1px solid #e2e8f0',
-              margin: '0',
-              padding: '0 24px'
-            }}>
-              <Tab 
-                className={`react-tabs__tab ${tabIndex === 0 ? 'react-tabs__tab--selected' : ''}`}
-                style={{
-                  padding: '16px 20px',
-                  borderBottom: tabIndex === 0 ? '2px solid #4a2d4e' : '2px solid transparent',
-                  color: tabIndex === 0 ? '#4a2d4e' : '#64748b',
-                  fontWeight: tabIndex === 0 ? 600 : 400,
-                  cursor: 'pointer',
-                  background: 'none',
-                  border: 'none',
-                  borderRadius: 0,
-                  outline: 'none',
-                  fontSize: '15px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Select Existing Questions
-              </Tab>
-              <Tab 
-                className={`react-tabs__tab ${tabIndex === 1 ? 'react-tabs__tab--selected' : ''}`}
-                style={{
-                  padding: '16px 20px',
-                  borderBottom: tabIndex === 1 ? '2px solid #4a2d4e' : '2px solid transparent',
-                  color: tabIndex === 1 ? '#4a2d4e' : '#64748b',
-                  fontWeight: tabIndex === 1 ? 600 : 400,
-                  cursor: 'pointer',
-                  background: 'none',
-                  border: 'none',
-                  borderRadius: 0,
-                  outline: 'none',
-                  fontSize: '15px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Create New Question
-              </Tab>
-            </TabList>
-            
-            {/* Tab Panel 1: Select Existing Questions */}
-            <TabPanel>
+          <div className="question-selector-content">
               {/* Search and Filter Bar */}
               <div className="search-filter-bar" style={{
                 padding: '16px 24px',
@@ -499,13 +450,14 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                       id="typeFilter"
                       className="tom-select"
                       multiple
-                      placeholder="Filter by question type"
+                      data-placeholder="Filter by question type"
                       onChange={(e) => {
                         const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
                         handleFilterChange('type', selectedOptions);
                       }}
                       style={{
-                        width: '100%'
+                        width: '100%',
+                        backgroundColor: '#ffffff'
                       }}
                     >
                       {availableTypes.map(type => (
@@ -846,24 +798,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                   Add Selected ({selectedIds.length})
                 </button>
               </div>
-            </TabPanel>
-              
-            {/* Tab Panel 2: Create New Question */}
-            <TabPanel>
-                <div className="question-builder-container">
-                  {/* Use our reusable QuestionBuilderSidePanel component */}
-                  <QuestionBuilderSidePanel
-                    isOpen={true} // Always show in this tab
-                    onClose={() => {
-                      // Don't close the parent panel, just switch back to the first tab
-                      setTabIndex(0);
-                    }}
-                    context="surveyBuilder"
-                    onQuestionCreated={handleQuestionCreated} // Use our centralized handler
-                  />
-                </div>
-            </TabPanel>
-          </Tabs>
+          </div>
         </div>
       </div>
     </div>
