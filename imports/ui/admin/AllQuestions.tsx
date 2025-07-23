@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useQuestionBuilderPanel } from '../../features/questions/contexts/QuestionBuilderPanelContext';
-import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV } from 'react-icons/fa';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -500,8 +500,8 @@ const StatusTag = styled.div<{ published?: boolean }>`
   border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
-  background-color: ${props => props.published ? '#e6f7ed' : '#f0f0f0'};
-  color: ${props => props.published ? '#0a8043' : '#666666'};
+  background-color: ${props => props.published ? '#e6f7ed' : '#ffebee'};
+  color: ${props => props.published ? '#0a8043' : '#d32f2f'};
   
   &::before {
     content: '';
@@ -510,7 +510,61 @@ const StatusTag = styled.div<{ published?: boolean }>`
     height: 8px;
     border-radius: 50%;
     margin-right: 6px;
-    background-color: ${props => props.published ? '#0a8043' : '#666666'};
+    background-color: ${props => props.published ? '#0a8043' : '#d32f2f'};
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const DropdownButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background-color: #f1f3f5;
+  }
+`;
+
+const DropdownMenu = styled.div<{ position: 'top' | 'bottom' }>`
+  position: absolute;
+  ${props => props.position === 'bottom' ? 'top: 50px;' : 'bottom: 50px;'}
+  right: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 180px;
+  z-index: 1000;
+  overflow: hidden;
+  transform: translateZ(0); /* Ensures the dropdown renders above other elements */
+`;
+
+const DropdownItem = styled.div`
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #212529;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+  
+  &.delete {
+    color: #dc3545;
   }
 `;
 
@@ -721,6 +775,23 @@ const AllQuestions: React.FC = () => {
   const [filterTheme, setFilterTheme] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [filterQuestionType, setFilterQuestionType] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const [showFilters, setShowFilters] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1122,20 +1193,76 @@ const AllQuestions: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <QuestionHeader>
-                    {latestVersion.status === 'published' ? (
-                      <StatusTag published>
-                        Published
-                      </StatusTag>
-                    ) : (
-                      <StatusTag>
-                        Draft
-                      </StatusTag>
-                    )}
-                    {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
-                      <QuestionType>
-                        {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
-                      </QuestionType>
-                    )}
+                    <div>
+                      {latestVersion.status === 'published' ? (
+                        <StatusTag published>
+                          Published
+                        </StatusTag>
+                      ) : (
+                        <StatusTag>
+                          Draft
+                        </StatusTag>
+                      )}
+                      {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
+                        <QuestionType>
+                          {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
+                        </QuestionType>
+                      )}
+                    </div>
+                    <HeaderActions onClick={(e) => e.stopPropagation()} ref={dropdownRef}>
+                      <DropdownButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(openDropdown === doc._id ? null : doc._id);
+                          
+                          // Check if dropdown should open upward or downward
+                          if (e.clientY > window.innerHeight * 0.7) {
+                            setDropdownPosition('top');
+                          } else {
+                            setDropdownPosition('bottom');
+                          }
+                        }}
+                      >
+                        <FaEllipsisV />
+                      </DropdownButton>
+                      
+                      {openDropdown === doc._id && (
+                        <DropdownMenu position={dropdownPosition}>
+                          <DropdownItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQuestionForAnalytics(doc);
+                              setAnalyticsModalOpen(true);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <FaEye size={14} />
+                            Preview
+                          </DropdownItem>
+                          <DropdownItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPanel(doc._id);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <FaEdit size={14} />
+                            Edit
+                          </DropdownItem>
+                          <DropdownItem
+                            className="delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteQuestion(doc._id);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <FaTrash size={14} />
+                            Delete
+                          </DropdownItem>
+                        </DropdownMenu>
+                      )}
+                    </HeaderActions>
                   </QuestionHeader>
                   
                   <QuestionContent>
@@ -1164,42 +1291,7 @@ const AllQuestions: React.FC = () => {
                       {latestVersion.isActive === false && <MetaTag>Inactive</MetaTag>}
                     </QuestionMeta>
                     
-                    <QuestionActions onClick={(e) => e.stopPropagation()}>
-                      <ActionButton 
-                        className="preview"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setQuestionForAnalytics(doc);
-                          setAnalyticsModalOpen(true);
-                        }}
-                        title="View Analytics"
-                      >
-                        <FaEye size={14} />
-                        Preview
-                      </ActionButton>
-                      <ActionButton 
-                        className="edit"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openPanel(doc._id);
-                        }}
-                        title="Edit"
-                      >
-                        <FaEdit size={14} />
-                        Edit
-                      </ActionButton>
-                      <ActionButton 
-                        className="delete"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteQuestion(doc._id);
-                        }}
-                        title="Delete"
-                      >
-                        <FaTrash size={14} />
-                        Delete
-                      </ActionButton>
-                    </QuestionActions>
+                    {/* Action buttons moved to dropdown menu in header */}
                   </QuestionContent>
                 </QuestionCard>
               );
