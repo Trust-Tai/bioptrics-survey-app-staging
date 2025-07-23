@@ -255,27 +255,29 @@ const CardHeader = styled.div`
 `;
 
 const StatusBadge = styled.div<{ published: boolean }>`
-  background: ${props => props.published 
-    ? 'linear-gradient(135deg, color-mix(in srgb, var(--color-success) 20%, transparent), color-mix(in srgb, var(--color-success) 15%, transparent))' 
-    : 'linear-gradient(135deg, color-mix(in srgb, var(--color-error) 20%, transparent), color-mix(in srgb, var(--color-error) 15%, transparent))'};
-  color: ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
-  border-radius: 30px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: ${props => props.published ? '#e6f7ed' : '#f0f0f0'};
+  color: ${props => props.published ? '#0a8043' : '#666666'};
+  
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background-color: ${props => props.published ? '#0a8043' : '#666666'};
+  }
 `;
 
+// StatusDot is no longer needed since we're using ::before pseudo-element
 const StatusDot = styled.div<{ published: boolean }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${props => props.published ? 'var(--color-success)' : 'var(--color-error)'};
-  margin-right: 2px;
+  display: none; /* Hide this since we're using ::before in StatusBadge */
 `;
 
 const LastUpdated = styled.div`
@@ -936,7 +938,6 @@ const AllSurveys: React.FC = () => {
                   >
                     <CardHeader>
                       <StatusBadge published={s.published}>
-                        <StatusDot published={s.published} />
                         {s.published ? 'Active' : 'Draft'}
                       </StatusBadge>
                       <DropdownContainer>
