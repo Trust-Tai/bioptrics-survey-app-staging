@@ -257,7 +257,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           <TableHeaderCell>STATUS</TableHeaderCell>
           <TableHeaderCell>STRUCTURE</TableHeaderCell>
           <TableHeaderCell>CREATED BY</TableHeaderCell>
-          <TableHeaderCell>UPDATED</TableHeaderCell>
+          <TableHeaderCell>LAST UPDATED</TableHeaderCell>
           <TableHeaderCell>ACTIONS</TableHeaderCell>
         </tr>
       </TableHeader>

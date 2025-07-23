@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -229,7 +229,7 @@ const SurveyCard = styled.div`
   padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   position: relative;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   height: 100%;
@@ -238,7 +238,7 @@ const SurveyCard = styled.div`
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   
   &:hover {
     transform: translateY(-4px);
@@ -251,8 +251,7 @@ const CardHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 `;
 
 const StatusBadge = styled.div<{ published: boolean }>`
@@ -295,7 +294,7 @@ const SurveyTitle = styled.h3`
   letter-spacing: 0.2px;
   cursor: pointer;
   transition: all 0.2s;
-  margin: 0 0 14px 0;
+  margin: 0 0 8px 0;
   padding-right: 20px;
   border-left: 3px solid var(--color-primary);
   padding-left: 12px;
@@ -390,24 +389,17 @@ const ActionButton = styled.button`
 `;
 
 const DropdownButton = styled.button`
-  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  background: transparent;
   border: none;
-  border-radius: 50%;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  box-shadow: none;
   transition: all 0.2s ease;
   position: relative;
-  
-  &:hover {
-    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary) 15%, transparent);
-  }
 `;
 
 const DropdownMenu = styled.div`
@@ -488,6 +480,54 @@ const NotificationCloseButton = styled.button`
   font-size: 18px;
   cursor: pointer;
   flex: 1;
+`;
+
+const CardInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+`;
+
+const InfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+`;
+
+const InfoLabel = styled.span`
+  font-weight: 600;
+  color: var(--color-primary);
+`;
+
+const InfoValue = styled.span`
+  color: var(--color-text);
+`;
+
+const CardStyles = createGlobalStyle`
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  
+  .info-label {
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+  
+  .info-value {
+    color: var(--color-text);
+  }
 `;
 
 const PaginationContainer = styled.div`
@@ -583,6 +623,15 @@ const AllSurveys: React.FC = () => {
   const [showResponsesModal, setShowResponsesModal] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('list');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  // Functions for handling survey actions
+  const onDelete = (id: string, title: string) => {
+    setConfirmDelete({ _id: id, title });
+  };
+  
+  const onViewResponses = (id: string, title: string) => {
+    navigate(`/admin/analytics/${id}`);
+  };
   
   // Close dropdown when clicking outside
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -766,6 +815,7 @@ const AllSurveys: React.FC = () => {
 
   return (
     <AdminLayout>
+      <CardStyles />
       <DashboardBg>
         {/* Delete Confirmation Modal */}
         {confirmDelete && (
@@ -887,46 +937,14 @@ const AllSurveys: React.FC = () => {
                     <CardHeader>
                       <StatusBadge published={s.published}>
                         <StatusDot published={s.published} />
-                        {s.published ? 'Published' : 'Draft'}
+                        {s.published ? 'Active' : 'Draft'}
                       </StatusBadge>
-                      <LastUpdated>
-                        <FaClock style={{ fontSize: 11 }} />
-                        {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </LastUpdated>
-                    </CardHeader>
-                    <SurveyTitle 
-                      onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
-                      title="Click to manage this survey"
-                    >
-                      {s.title}
-                    </SurveyTitle>
-                    {s.shareToken && s.published && (
-                      <PublicUrlSection>
-                        <PublicUrlLabel>
-                          <FaExternalLinkAlt style={{ fontSize: 12 }} /> Public URL
-                        </PublicUrlLabel>
-                        <CopyUrlButton 
-                          onClick={() => {
-                            // Use the same server-side token generation as the survey edit page
-                            Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
-                              if (err) {
-                                console.error('Error generating token:', err);
-                                setNotification({ type: 'error', message: 'Failed to generate survey URL' });
-                              } else {
-                                navigator.clipboard.writeText(`${window.location.origin}/public/${token}`);
-                                setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
-                              }
-                            });
-                          }}
-                        >
-                          <FaCopy style={{ fontSize: 12 }} /> Copy URL
-                        </CopyUrlButton>
-                      </PublicUrlSection>
-                    )}
-                    <ActionsRow>
-                      <DropdownContainer ref={dropdownRef}>
+                      <DropdownContainer>
                         <DropdownButton
-                          onClick={() => setOpenDropdown(openDropdown === s._id ? null : s._id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDropdown(openDropdown === s._id ? null : s._id);
+                          }}
                           title="Actions"
                         >
                           <FaEllipsisV style={{ color: 'var(--color-primary)', fontSize: 16 }} />
@@ -935,81 +953,78 @@ const AllSurveys: React.FC = () => {
                         {openDropdown === s._id && (
                           <DropdownMenu>
                             <DropdownItem
-                              onClick={() => {
-                                // Fetch the latest survey data and save to localStorage before opening preview
-                                Meteor.call('surveys.get', s._id, (err: Meteor.Error | null, surveyData: any) => {
-                                  if (err) {
-                                    console.error('Error fetching survey data for preview:', err);
-                                    setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
-                                    return;
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Preview survey
+                                Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr, token) => {
+                                  if (!tokenErr && token) {
+                                    window.open(`/public/${token}?preview=true`, '_blank');
                                   }
-                                  
-                                  // Generate token for preview
-                                  Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr: Meteor.Error | null, token: string) => {
-                                    if (tokenErr || !token) {
-                                      console.error('Error generating token for preview:', tokenErr);
-                                      setNotification({ type: 'error', message: 'Failed to generate preview URL' });
-                                      return;
-                                    }
-                                    
-                                    try {
-                                      // Save the latest survey data to localStorage
-                                      localStorage.setItem(`survey-preview-${token}`, JSON.stringify(surveyData));
-                                      
-                                      // Open preview in new tab
-                                      window.open(`/public/${token}?status=preview`, '_blank');
-                                      setOpenDropdown(null); // Close dropdown after action
-                                    } catch (saveErr) {
-                                      console.error('Error saving preview data:', saveErr);
-                                      setNotification({ type: 'error', message: 'Failed to prepare survey preview' });
-                                    }
-                                  });
                                 });
                               }}
                             >
-                              <FaEye style={{ color: 'var(--color-primary)' }} /> Preview
+                              <FaEye /> Preview
                             </DropdownItem>
-                            
                             <DropdownItem
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 navigate(`/admin/surveys/manage/${s._id}`);
-                                setOpenDropdown(null); // Close dropdown after action
                               }}
                             >
-                              <FaTasks style={{ color: 'var(--color-primary)' }} /> Manage
+                              <FaEdit /> Edit
                             </DropdownItem>
-                            
+                            {s.published && (
+                              <DropdownItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Copy shareable link
+                                  Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
+                                    if (!err && token) {
+                                      navigator.clipboard.writeText(`${window.location.origin}/public/${token}`);
+                                      setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
+                                    }
+                                  });
+                                }}
+                              >
+                                <FaCopy /> Copy Shareable Link
+                              </DropdownItem>
+                            )}
                             <DropdownItem
-                              onClick={() => {
-                                navigate(`/admin/surveys/builder/${s._id}`);
-                                setOpenDropdown(null); // Close dropdown after action
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewResponses(s._id, s.title);
                               }}
                             >
-                              <FaEdit style={{ color: 'var(--color-primary)' }} /> Edit
+                              <FaChartBar /> Analytics
                             </DropdownItem>
-                            
                             <DropdownItem
-                              onClick={() => {
-                                setConfirmDelete({ _id: s._id, title: s.title });
-                                setOpenDropdown(null); // Close dropdown after action
-                              }}
                               className="delete"
-                            >
-                              <FaTrash style={{ color: 'var(--color-error)' }} /> Delete
-                            </DropdownItem>
-                            
-                            <DropdownItem
-                              onClick={() => {
-                                setShowResponsesModal(s._id);
-                                setOpenDropdown(null); // Close dropdown after action
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(s._id, s.title);
                               }}
                             >
-                              <FaChartBar style={{ color: 'var(--color-primary)' }} /> Analytics
+                              <FaTrash /> Delete
                             </DropdownItem>
                           </DropdownMenu>
                         )}
                       </DropdownContainer>
-                    </ActionsRow>
+                    </CardHeader>
+                    <SurveyTitle 
+                      onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
+                      title="Click to manage this survey"
+                    >
+                      {s.title}
+                    </SurveyTitle>
+                    
+                    <div className="card-info">
+                      <div className="info-item">
+                        <span className="info-label">Updated:</span>
+                        <span className="info-value">
+                          {new Date(s.updatedAt).toLocaleDateString()} at {new Date(s.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      </div>
+                    </div>
                   </SurveyCard>
                 ))}
               </GridContainer>
