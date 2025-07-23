@@ -3082,9 +3082,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       setActiveStep(step.id);
                     }}
                   >
-                    <div className="survey-builder-step-icon">
-                      {step.id === 'sections' && <FiChevronRight />}
-                    </div>
                     <div className="survey-builder-step-label">
                       {step.label}
                     </div>

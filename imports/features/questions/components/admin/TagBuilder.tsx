@@ -115,7 +115,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
       return (
         <components.Option {...props}>
           <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: '#552a47', fontWeight: 'bold' }}>
-            ✨ Create this tag: "{data.label}"
+            Create this tag: "{data.label}"
           </div>
         </components.Option>
       );
@@ -123,7 +123,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
 
     return (
       <components.Option {...props}>
-        <div style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+        <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', width: '100%', maxWidth: '100%' }}>
           {indent}{prefix}{data.label}
         </div>
       </components.Option>
@@ -192,6 +192,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
               onTagChange([]);
             }
           }}
+
           filterOption={(option, inputValue) => {
             // Only show options when there's input text
             if (!inputValue) return false;
@@ -254,12 +255,13 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
               ...base,
               maxHeight: '300px',
               backgroundColor: 'white',
-              padding: '4px'
+              padding: '4px',
+              width: '100%',
+              maxWidth: '100%'
             }),
             control: (base) => ({
               ...base,
               width: '100%',
-              minWidth: '300px',
               ...(removePadding && {
                 padding: '0',
                 border: 'none',
@@ -332,12 +334,14 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
                 ...base,
                 maxHeight: '300px',
                 backgroundColor: 'white',
-                padding: '4px'
+                padding: '4px',
+                width: '100%',
+                maxWidth: '100%'
               }),
               control: (base) => ({
                 ...base,
                 width: '100%',
-                minWidth: '300px'
+                minWidth: '100%'
               }),
               container: (base) => ({
                 ...base,
