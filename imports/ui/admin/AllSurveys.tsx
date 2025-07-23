@@ -56,7 +56,7 @@ const SearchContainer = styled.div`
 
 const SearchInputWrapper = styled.div`
   position: relative;
-  min-width: 280px;
+  max-width: 280px;
 `;
 
 const SearchInput = styled.input`
@@ -65,7 +65,7 @@ const SearchInput = styled.input`
   padding: 0 16px 0 42px;
   border-radius: 8px;
   border: 1.5px solid var(--color-accent);
-  width: 100%;
+  width: auto;
   color: var(--color-text);
   font-weight: 500;
   outline: none;
@@ -903,6 +903,7 @@ const AllSurveys: React.FC = () => {
           <SurveyStatsSummary />
           
           <SearchContainer>
+            <div style={{ display: 'flex', gap: 20 }}>
             <SearchInputWrapper>
               <SearchIcon />
               <SearchInput
@@ -941,6 +942,7 @@ const AllSurveys: React.FC = () => {
                 <option value="shared_with_me">Shared With Me</option>
               </FilterSelect>
             </FilterContainer>
+            </div>
             
             <ActionsContainer>
               {/* View Toggle */}

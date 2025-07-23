@@ -19,6 +19,7 @@ import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } f
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
 import QuestionSelector from './sections/QuestionSelector';
 import SectionEditor from './sections/SectionEditor';
+import ResponsesTab from './ResponsesTab';
 
 // Import existing components we'll reuse
 import SurveyBranchingLogic from '../../../ui/admin/SurveyBranchingLogic';
@@ -386,12 +387,15 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [selectedDemographics, setSelectedDemographics] = useState<string[]>(
     !surveyId ? demographicOptions.map(opt => opt.value) : []
   );
-  const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(10);
   const [previewTheme, setPreviewTheme] = useState<any>(null);
   const [showPreview, setShowPreview] = useState<boolean>(false);
   const [themeSearchQuery, setThemeSearchQuery] = useState<string>('');
   const [currentThemePage, setCurrentThemePage] = useState<number>(1);
   const themesPerPage = 10; // Number of themes to display per page
+  const [selectedTheme, setSelectedTheme] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Layer[]>([]);
@@ -3452,240 +3456,14 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">Survey Responses</h2>
-                    <p className="survey-builder-panel-subtitle">
-                      View all responses received for this survey
-                    </p>
                   </div>
                   
-                  <div className="survey-responses-container" style={{ padding: '20px' }}>
-                    {isLoadingResponses ? (
-                      <Spinner />
-                    ) : surveyResponses.length > 0 ? (
-                      <div>
-                        {/* Stats Summary Bar */}
-                        <StatsContainer>
-                          <StatCard>
-                            <IconContainer color="#4285F4">
-                              <FaUsers />
-                            </IconContainer>
-                            <StatContent>
-                              <StatValue>{responseStats.totalResponses}</StatValue>
-                              <StatLabel>Total Responses</StatLabel>
-                            </StatContent>
-                          </StatCard>
-                          
-                          <StatCard>
-                            <IconContainer color="#0F9D58">
-                              <FaTags />
-                            </IconContainer>
-                            <StatContent>
-                              <StatValue>{responseStats.totalTags}</StatValue>
-                              <StatLabel>Total Tags</StatLabel>
-                            </StatContent>
-                          </StatCard>
-                          
-                          <StatCard>
-                            <IconContainer color="#AA47BC">
-                              <FaChartPie />
-                            </IconContainer>
-                            <StatContent>
-                              <StatValue>{responseStats.completionRate}%</StatValue>
-                              <StatLabel>Completion Rate</StatLabel>
-                            </StatContent>
-                          </StatCard>
-                        </StatsContainer>
-                        <StatsContainer>  
-                          <StatCard>
-                            <IconContainer color="#F4B400">
-                              <FaHeart />
-                            </IconContainer>
-                            <StatContent>
-                              <StatValue>{responseStats.avgEngagement}%</StatValue>
-                              <StatLabel>Avg. Engagement</StatLabel>
-                            </StatContent>
-                          </StatCard>
-                          
-                          <StatCard>
-                            <IconContainer color="#DB4437">
-                              <FaClock />
-                            </IconContainer>
-                            <StatContent>
-                              <StatValue>
-                                {responseStats.timeToComplete > 60 
-                                  ? `${Math.floor(responseStats.timeToComplete / 60)}m ${responseStats.timeToComplete % 60}s` 
-                                  : `${responseStats.timeToComplete}s`}
-                              </StatValue>
-                              <StatLabel>Time to Complete</StatLabel>
-                            </StatContent>
-                          </StatCard>
-                          
-                          <StatCard>
-                            <IconContainer color="#34A853">
-                              <FaPercentage />
-                            </IconContainer>
-                            <StatContent>
-                              <StatValue>{responseStats.responseRate}%</StatValue>
-                              <StatLabel>Response Rate</StatLabel>
-                            </StatContent>
-                          </StatCard>
-                        </StatsContainer>
-                        
-                        <div className="survey-responses-header" style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr 150px 120px',
-                          gap: '16px',
-                          padding: '12px 16px',
-                          backgroundColor: '#f8f9fa',
-                          borderRadius: '8px 8px 0 0',
-                          fontWeight: 600,
-                          borderBottom: '2px solid #e2e8f0'
-                        }}>
-                          <div>Respondent</div>
-                          <div>Email</div>
-                          <div>Date Submitted</div>
-                          <div>Status</div>
-                        </div>
-                        
-                        <div className="survey-responses-list">
-                          {surveyResponses.map((response, index) => (
-                            <div key={response._id || index}>
-                              <div 
-                                className="survey-response-item"
-                                style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: '1fr 1fr 150px 120px',
-                                  gap: '16px',
-                                  padding: '16px',
-                                  borderBottom: expandedResponseIds.includes(response._id) ? 'none' : '1px solid #e2e8f0',
-                                  backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '50%',
-                                  backgroundColor: '#e2e8f0',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}>
-                                  <FiUser style={{ color: '#64748b' }} />
-                                </div>
-                                <div>
-                                  {response.respondentName || 'Anonymous'}
-                                </div>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                {response.email || 'No email provided'}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <FiCalendar size={14} style={{ color: '#64748b' }} />
-                                {response.submittedAt ? new Date(response.submittedAt).toLocaleDateString() + ' ' + 
-                                  new Date(response.submittedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{
-                                  padding: '4px 8px',
-                                  borderRadius: '4px',
-                                  fontSize: '12px',
-                                  fontWeight: 500,
-                                  backgroundColor: response.isComplete ? '#e6f4ea' : '#fef3c7',
-                                  color: response.isComplete ? '#137333' : '#92400e'
-                                }}>
-                                  {response.isComplete ? 'Complete' : `${response.progress || 0}% Complete`}
-                                </span>
-                                <ExpandButton 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleResponseDetails(response._id);
-                                  }}
-                                >
-                                  {expandedResponseIds.includes(response._id) ? (
-                                    <>
-                                      <span style={{ marginRight: '4px' }}>Hide Details</span>
-                                      <FiChevronUp size={16} />
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span style={{ marginRight: '4px' }}>Show Details</span>
-                                      <FiChevronDown size={16} />
-                                    </>
-                                  )}
-                                </ExpandButton>
-                              </div>
-                              
-                              {/* Expandable Response Details */}
-                              {expandedResponseIds.includes(response._id) && (
-                                <ResponseDetailsContainer>
-                                  {response.responses && Array.isArray(response.responses) && response.responses.length > 0 ? (
-                                    <>
-                                      <div style={{ marginBottom: '16px', fontSize: '14px', color: '#64748b', fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span>Showing {response.responses.length} answered questions</span>
-                                        <span style={{ fontSize: '13px', color: '#94a3b8' }}>3-column view</span>
-                                      </div>
-                                      <ResponseGrid>
-                                        {response.responses.map((item: any, idx: number) => {
-                                          const { questionText, sectionName } = getQuestionDetails(
-                                            item.questionId,
-                                            item.sectionId,
-                                            surveyData
-                                          );
-                                          
-                                          return (
-                                            <QuestionItem key={`${item.questionId}-${idx}`}>
-                                              {sectionName && <SectionName>{sectionName}</SectionName>}
-                                              <QuestionTitle>{questionText}</QuestionTitle>
-                                              <AnswerText>
-                                                {item.answer !== undefined ? (
-                                                  item.answer
-                                                ) : item.answers ? (
-                                                  Array.isArray(item.answers) ? (
-                                                    <ul style={{ margin: 0, paddingLeft: '16px' }}>
-                                                      {item.answers.map((ans: string, i: number) => (
-                                                        <li key={i}>{ans}</li>
-                                                      ))}
-                                                    </ul>
-                                                  ) : (
-                                                    JSON.stringify(item.answers)
-                                                  )
-                                                ) : (
-                                                  'No answer provided'
-                                                )}
-                                              </AnswerText>
-                                            </QuestionItem>
-                                          );
-                                        })}
-                                      </ResponseGrid>
-                                    </>
-                                  ) : (
-                                    <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
-                                      No detailed response data available
-                                    </div>
-                                  )}
-                                </ResponseDetailsContainer>
-                              )}
-                            </div>
-                          </div>
-                         ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ 
-                        padding: '40px 20px', 
-                        textAlign: 'center', 
-                        color: '#64748b',
-                        backgroundColor: '#f8fafc',
-                        borderRadius: '8px',
-                        border: '1px dashed #cbd5e1'
-                      }}>
-                        <FiMessageSquare size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
-                        <h3 style={{ marginBottom: '8px', color: '#475569' }}>No Responses Yet</h3>
-                        <p>Once people start responding to your survey, their responses will appear here.</p>
-                      </div>
-                    )}
-                  </div>
+                  <ResponsesTab 
+                    surveyResponses={surveyResponses} 
+                    isLoadingResponses={isLoadingResponses} 
+                    responseStats={responseStats} 
+                    surveyData={survey}
+                  />
                 </div>
               ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">

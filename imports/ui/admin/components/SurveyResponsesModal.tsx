@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaTimes } from 'react-icons/fa';
+import { FiChevronDown, FiChevronUp, FiMessageSquare } from 'react-icons/fi';
 import { SurveyResponses } from '../../../features/surveys/api/surveyResponses';
 import { IncompleteSurveyResponses } from '../../../features/surveys/api/incompleteSurveyResponses';
 
@@ -312,6 +313,9 @@ const SurveyResponsesModal: React.FC<SurveyResponsesModalProps> = ({
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
   const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
   const [surveyData, setSurveyData] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(10);
   const [responseStats, setResponseStats] = useState({
     totalResponses: 0,
     totalTags: 0,
@@ -329,6 +333,24 @@ const SurveyResponsesModal: React.FC<SurveyResponsesModalProps> = ({
         : [...prev, responseId]
     );
   };
+  
+  // Reset pagination when responses change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [surveyResponses]);
+  
+  // Filter responses based on search term
+  const filteredResponses = surveyResponses.filter(response => {
+    if (!searchTerm) return true;
+    
+    const respondentId = response.respondentId || response._id || '';
+    return respondentId.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  // Get current page items
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentResponses = filteredResponses.slice(indexOfFirstItem, indexOfLastItem);
 
   // Calculate engagement score for a response
   const calculateEngagementScore = (response: any) => {
@@ -677,66 +699,178 @@ const SurveyResponsesModal: React.FC<SurveyResponsesModalProps> = ({
               </StatsContainer>
               
               {/* Responses Table */}
-              <ResponsesTable>
-                <TableHeader>
-                  <tr>
-                    <TableHeaderCell>Respondent ID</TableHeaderCell>
-                    <TableHeaderCell>Date</TableHeaderCell>
-                    <TableHeaderCell>Answers</TableHeaderCell>
-                  </tr>
-                </TableHeader>
-                <TableBody>
-                  {surveyResponses.map(response => (
-                    <React.Fragment key={response._id}>
-                      <TableRow>
-                        <TableCell>{response.respondentId || response._id}</TableCell>
-                        <TableCell>
-                          {new Date(response.submittedAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <ExpandButton onClick={() => toggleResponseDetails(response._id)}>
-                            {expandedResponseIds.includes(response._id) ? 'Hide Answers' : 'Show Answers'}
-                          </ExpandButton>
-                        </TableCell>
-                      </TableRow>
-                      {expandedResponseIds.includes(response._id) && (
-                        <tr>
-                          <td colSpan={3}>
-                            <ResponseDetails>
-                              <h4 style={{ marginTop: 0, marginBottom: '16px' }}>Answers</h4>
-                              {response.responses && response.responses.length > 0 ? (
-                                response.responses.map((answer: any, index: number) => {
-                                  // Get question details using our helper function
-                                  const { questionText, sectionName } = getQuestionDetails(answer.questionId, answer.sectionId);
-                                  
-                                  return (
-                                    <QuestionItem key={index}>
-                                      {sectionName && <SectionName>Section: {sectionName}</SectionName>}
-                                      <QuestionTitle>{questionText}</QuestionTitle>
-                                      <AnswerText>
-                                        <strong>Answer:</strong> {answer.answer || 
-                                          (answer.answers && Array.isArray(answer.answers) 
-                                            ? answer.answers.join(", ") 
-                                            : JSON.stringify(answer.answers || ""))}
-                                      </AnswerText>
-                                    </QuestionItem>
-                                  );
-                                })
+              <div style={{ marginTop: '20px', backgroundColor: '#ffffff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>All Responses</div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Search responses..." 
+                      style={{ 
+                        padding: '8px 12px', 
+                        border: '1px solid #e2e8f0', 
+                        borderRadius: '6px',
+                        fontSize: '14px'
+                      }}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 150px 120px', 
+                    gap: '16px', 
+                    padding: '12px 16px', 
+                    borderBottom: '1px solid #e2e8f0',
+                    backgroundColor: '#f8fafc',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    color: '#64748b'
+                  }}>
+                    <div>Respondent ID</div>
+                    <div>Date</div>
+                    <div style={{ textAlign: 'center' }}>Answers</div>
+                  </div>
+                  <div>
+                    {currentResponses.map((response: any, index: number) => (
+                      <div key={response._id}>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 150px 120px',
+                            gap: '16px',
+                            padding: '16px',
+                            borderBottom: expandedResponseIds.includes(response._id) ? 'none' : '1px solid #e2e8f0',
+                            backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div>
+                              {response.respondentId || response._id}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {response.submittedAt ? new Date(response.submittedAt).toLocaleDateString() : 'N/A'}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ExpandButton 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleResponseDetails(response._id);
+                              }}
+                            >
+                              {expandedResponseIds.includes(response._id) ? (
+                                <>
+                                  <span style={{ marginRight: '4px' }}>Hide Answers</span>
+                                  <FiChevronUp size={16} />
+                                </>
                               ) : (
-                                <div>No detailed response data available</div>
+                                <>
+                                  <span style={{ marginRight: '4px' }}>Show Answers</span>
+                                  <FiChevronDown size={16} />
+                                </>
+                              )}
+                            </ExpandButton>
+                          </div>
+                        </div>
+                        {expandedResponseIds.includes(response._id) && (
+                          <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                            <ResponseDetails>
+                              {response.responses && Array.isArray(response.responses) && response.responses.length > 0 ? (
+                                <>
+                                  <div style={{ marginBottom: '16px', fontSize: '14px', color: '#64748b', fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>Showing {response.responses.length} answers</span>
+                                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>3-column view</span>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                                    {response.responses.map((answer: any, idx: number) => {
+                                      // Get question details using our helper function
+                                      const { questionText, sectionName } = getQuestionDetails(answer.questionId, answer.sectionId);
+                                      
+                                      return (
+                                        <QuestionItem key={`${answer.questionId}-${idx}`}>
+                                          {sectionName && <SectionName>{sectionName}</SectionName>}
+                                          <QuestionTitle>{questionText}</QuestionTitle>
+                                          <AnswerText>
+                                            {answer.answer !== undefined ? (
+                                              answer.answer
+                                            ) : answer.answers ? (
+                                              Array.isArray(answer.answers) ? (
+                                                <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                                                  {answer.answers.map((ans: string, i: number) => (
+                                                    <li key={i}>{ans}</li>
+                                                  ))}
+                                                </ul>
+                                              ) : (
+                                                JSON.stringify(answer.answers)
+                                              )
+                                            ) : (
+                                              'No answer provided'
+                                            )}
+                                          </AnswerText>
+                                        </QuestionItem>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                                  No detailed response data available
+                                </div>
                               )}
                             </ResponseDetails>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </ResponsesTable>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {filteredResponses.length > itemsPerPage && (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '16px', borderTop: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          style={{
+                            padding: '6px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            backgroundColor: currentPage === 1 ? '#f1f5f9' : '#ffffff',
+                            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                            color: currentPage === 1 ? '#94a3b8' : '#64748b'
+                          }}
+                        >
+                          Previous
+                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '14px', color: '#64748b' }}>
+                          Page {currentPage} of {Math.ceil(filteredResponses.length / itemsPerPage)}
+                        </div>
+                        <button 
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredResponses.length / itemsPerPage)))}
+                          disabled={currentPage === Math.ceil(filteredResponses.length / itemsPerPage)}
+                          style={{
+                            padding: '6px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            backgroundColor: currentPage === Math.ceil(filteredResponses.length / itemsPerPage) ? '#f1f5f9' : '#ffffff',
+                            cursor: currentPage === Math.ceil(filteredResponses.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                            color: currentPage === Math.ceil(filteredResponses.length / itemsPerPage) ? '#94a3b8' : '#64748b'
+                          }}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           ) : (
             <EmptyState>
-              <div style={{ fontSize: '24px', marginBottom: '16px' }}>No responses yet</div>
+              <FiMessageSquare size={48} style={{ color: '#94a3b8', marginBottom: '16px' }} />
+              <div style={{ fontSize: '24px', marginBottom: '8px', color: '#475569' }}>No responses yet</div>
               <div>This survey hasn't received any responses yet.</div>
             </EmptyState>
           )}
