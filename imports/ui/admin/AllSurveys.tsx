@@ -31,11 +31,18 @@ const Container = styled.div`
   overflow: visible;
 `;
 
+const TitleRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+`;
+
 const Title = styled.h1`
   font-size: 28px;
   font-weight: 700;
-  margin-bottom: 24px;
   color: var(--color-text);
+  margin-bottom: 24px;
 `;
 
 const SearchContainer = styled.div`
@@ -881,7 +888,17 @@ const AllSurveys: React.FC = () => {
           </Modal>
         )}
         <Container>
-          <Title>All {surveyLabelPlural}</Title>
+          <TitleRow>
+            <Title>All {surveyLabelPlural}</Title>
+            <AddButton
+              onClick={() => {
+                window.location.href = '/admin/surveys/builder';
+              }}
+            >
+              <FaPlus style={{ fontSize: 14 }} />
+              <span style={{ marginLeft: 6 }}>Add Survey</span>
+            </AddButton>
+          </TitleRow>
           {/* Survey Statistics Summary */}
           <SurveyStatsSummary />
           
@@ -928,15 +945,6 @@ const AllSurveys: React.FC = () => {
             <ActionsContainer>
               {/* View Toggle */}
               <ViewToggle view={view} onViewChange={setView} />
-              
-              <AddButton
-                onClick={() => {
-                  window.location.href = '/admin/surveys/builder';
-                }}
-              >
-                <FaPlus style={{ fontSize: 14 }} />
-                <span style={{ marginLeft: 6 }}>Add Survey</span>
-              </AddButton>
             </ActionsContainer>
           </SearchContainer>
           {/* Notification Bar */}
