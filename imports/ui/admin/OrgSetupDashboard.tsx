@@ -7,7 +7,8 @@ import {
   FaUsers, 
   FaCog, 
   FaBuilding,
-  FaKey
+  FaKey,
+  FaStore
 } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 
@@ -189,6 +190,12 @@ const OrgSetupDashboard: React.FC = () => {
       description: 'Customize your organization branding, colors, and terminology',
       icon: FaBuilding,
       path: '/admin/org-setup/branding'
+    },
+    {
+      title: 'Marketplace',
+      description: 'Browse and manage survey products like Whole Person Safety and other offerings',
+      icon: FaStore,
+      path: '/admin/org-setup/marketplace'
     }
   ];
 
@@ -212,6 +219,9 @@ const OrgSetupDashboard: React.FC = () => {
             </Button>
             <Button as={Link} to="/admin/org-setup/branding">
               Branding
+            </Button>
+            <Button as={Link} to="/admin/org-setup/marketplace">
+              Marketplace
             </Button>
           </ActionButtons>
         </PageHeader>

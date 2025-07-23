@@ -15,6 +15,7 @@ import SurveyTheme from './admin/SurveyTheme';
 import SurveyThemeManager from '../features/survey-themes/components/SurveyThemeManager';
 import OrgSetup from './admin/OrgSetup';
 import OrgSetupDashboard from './admin/OrgSetupDashboard';
+import Marketplace from './admin/Marketplace';
 import { OrganizationProvider } from '/imports/features/organization/contexts/OrganizationContext';
 import { ThemeProvider } from '/imports/contexts/ThemeContext';
 import Setting from './admin/Setting';
@@ -231,6 +232,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/org-setup/users/roles" element={<Navigate to="/admin/org-setup/roles" replace />} />
         <Route path="/admin/org-setup" element={<OrgSetupDashboard />} />
         <Route path="/admin/org-setup/branding" element={<OrgSetup />} />
+        <Route path="/admin/org-setup/marketplace" element={<Marketplace />} />
       </Route>
     </Routes>
   );

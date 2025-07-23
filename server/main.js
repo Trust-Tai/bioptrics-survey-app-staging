@@ -1,5 +1,4 @@
 import { Meteor } from 'meteor/meteor';
-import { WebApp } from 'meteor/webapp';
 import { Accounts } from 'meteor/accounts-base';
 import 'meteor/accounts-password';
 import { LinksCollection } from '../imports/api/links';
@@ -7,6 +6,9 @@ import '../imports/api/auth';
 import '../imports/api/questions';
 import '../imports/api/goals';
 import '../imports/api/goals.methods';
+import '../imports/api/products/products';
+import '../imports/api/products/methods';
+import { seedProducts } from '../imports/api/products/seed';
 import '../imports/features/surveys/api/surveyResponses';
 import '../imports/features/surveys/api/incompleteSurveyResponses';
 // Import survey methods from both locations
@@ -41,21 +43,6 @@ import '../imports/api/tagItems';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();
-});
-
-WebApp.connectHandlers.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Or restrict to a specific origin
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  
-  // If it's an OPTIONS preflight request, end it here
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-
-  next();
 });
 
 Meteor.startup(async () => {
