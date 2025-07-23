@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { notificationManager } from '/imports/shared/components/GlobalNotification';
 import { createPortal } from 'react-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -493,6 +494,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       }
 
       showSuccessAlert('Question saved successfully!');
+      // Also show global notification that persists after panel closes
+      notificationManager.success('Question saved successfully!');
       
       // Handle different contexts
       const savedQuestionId = result || currentQuestion._id || '';
@@ -571,6 +574,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       }
 
       showSuccessAlert('Question published successfully!');
+      // Also show global notification that persists after panel closes
+      notificationManager.success('Question published successfully!');
       
       // Handle different contexts similar to save function
       const publishedQuestionId = result || currentQuestion._id || '';

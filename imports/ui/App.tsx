@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, Routes, Route, useNavigate } from 'react-router-dom';
+import GlobalNotification from '../shared/components/GlobalNotification';
 import { QuestionBuilderPanelProvider } from '../features/questions/contexts/QuestionBuilderPanelContext';
 import { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
@@ -241,6 +242,7 @@ const App: React.FC = () => (
       <OrganizationProvider>
         <QuestionBuilderPanelProvider>
           <AppRoutes />
+          <GlobalNotification />
         </QuestionBuilderPanelProvider>
       </OrganizationProvider>
     </ThemeProvider>
