@@ -4,6 +4,9 @@ import { createRoot } from 'react-dom/client';
 import { Meteor } from 'meteor/meteor';
 import App from '/imports/ui/App';
 
+// Import dynamic import fix to ensure correct domain is used in production
+import '/imports/startup/client/dynamicImportFix';
+
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends React.Component {
   constructor(props) {
