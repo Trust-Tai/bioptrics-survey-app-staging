@@ -18,6 +18,7 @@ import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } f
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
 import QuestionSelector from './sections/QuestionSelector';
+import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 
@@ -900,6 +901,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // State for modals
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
+  const [showQuestionBuilder, setShowQuestionBuilder] = useState(false);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState<SurveySectionItem | undefined>(undefined);
@@ -2082,7 +2084,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   // State to store refreshed questions for the question selector
   const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
   
-  // Handle adding questions to a section
+  // Handle adding questions to a section from question bank
   const handleAddQuestion = (sectionId: string) => {
     setCurrentSectionId(sectionId);
     
@@ -2109,6 +2111,59 @@ const EnhancedSurveyBuilder: React.FC = () => {
     // Update the question selector items
     setQuestionSelectorItems(refreshedQuestions);
     setShowQuestionSelector(true);
+  };
+  
+  // Handle creating a new question for a section
+  const handleCreateQuestion = (sectionId: string) => {
+    setCurrentSectionId(sectionId);
+    setShowQuestionBuilder(true);
+  };
+  
+  // Refresh survey data after changes
+  const refreshSurveyData = () => {
+    // Refresh questions from the database
+    const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+      // Get the latest version to extract the response type and text
+      const currentVersion = q.currentVersion;
+      const latestVersion = q.versions && Array.isArray(q.versions) ?
+        (q.versions.find((v: any) => v.version === currentVersion) || 
+        (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+      
+      // Create a properly typed QuestionItem
+      const questionItem: QuestionItem = {
+        id: q._id || '',
+        text: extractQuestionText(q),
+        type: latestVersion?.responseType || 'text',
+        status: 'published'
+      };
+      
+      return questionItem;
+    });
+    
+    // Update the question selector items
+    setQuestionSelectorItems(refreshedQuestions);
+    
+    // Refresh the survey questions
+    if (survey && survey._id) {
+      const updatedSurvey = Surveys.findOne(survey._id);
+      if (updatedSurvey) {
+        // Update the current survey
+        setSurvey(updatedSurvey);
+        
+        // Update the survey questions by extracting from the updated survey
+        // This replaces the need for mapSurveyQuestions function
+        if (updatedSurvey.sectionQuestions && Array.isArray(updatedSurvey.sectionQuestions)) {
+          const updatedQuestions: QuestionItem[] = updatedSurvey.sectionQuestions.map((q: any) => ({
+            id: q.questionId,
+            sectionId: q.sectionId,
+            text: extractQuestionText(Questions.findOne(q.questionId) || {}),
+            type: q.type || 'text',
+            status: 'published' as const
+          }));
+          setSurveyQuestions(updatedQuestions);
+        }
+      }
+    }
   };
   
   // Handle selecting questions in the question selector
@@ -3137,6 +3192,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             onEditSection={handleEditSection}
                             onDeleteSection={handleDeleteSection}
                             onAddQuestion={handleAddQuestion}
+                            onCreateQuestion={handleCreateQuestion}
                             onRemoveQuestion={handleRemoveQuestion}
                             onReorderQuestion={handleReorderQuestion}
                           />
@@ -4542,36 +4598,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
         <QuestionSelector
           isOpen={showQuestionSelector}
           onClose={() => setShowQuestionSelector(false)}
-          questions={(() => {
-            // If we have refreshed questions, use those
-            if (questionSelectorItems.length > 0) {
-              return questionSelectorItems;
-            }
-            
-            // Otherwise, fetch questions directly from the database
-            const dbQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
-              // Get the latest version to extract the response type and text
-              const currentVersion = q.currentVersion;
-              const latestVersion = q.versions && Array.isArray(q.versions) ?
-                (q.versions.find((v: any) => v.version === currentVersion) || 
-                (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
-              
-              // Create a properly typed QuestionItem
-              const questionItem: QuestionItem = {
-                id: q._id || '',
-                text: extractQuestionText(q), // Use our helper function to get clean question text
-                type: latestVersion?.responseType || 'text',
-                status: 'published'
-              };
-              
-              return questionItem;
-            });
-            
-            // Update the question selector items for future use
-            setQuestionSelectorItems(dbQuestions);
-            return dbQuestions;
-          })()}
-          selectedQuestionIds={currentSectionId ? getSelectedQuestionIds(currentSectionId) : []}
+          questions={questionSelectorItems}
+          selectedQuestionIds={surveyQuestions
+            .filter(q => q.sectionId === currentSectionId)
+            .map(q => q.id)}
           sectionId={currentSectionId || ''}
           onSelectQuestions={handleSelectQuestions}
           onQuestionsRefresh={() => {
@@ -4596,6 +4626,35 @@ const EnhancedSurveyBuilder: React.FC = () => {
             
             // Update the question selector items
             setQuestionSelectorItems(refreshedQuestions);
+          }}
+        />
+        
+        {/* Question Builder Side Panel */}
+        <QuestionBuilderSidePanel
+          isOpen={showQuestionBuilder}
+          onClose={() => setShowQuestionBuilder(false)}
+          context="surveyBuilder"
+          onQuestionCreated={(questionId: string) => {
+            // When a question is created, add it to the current section
+            if (currentSectionId) {
+              // Add the newly created question to the section
+              const newQuestion: QuestionItem = {
+                id: questionId,
+                sectionId: currentSectionId,
+                text: 'New Question', // This will be updated when we refresh
+                type: 'text',
+                status: 'published'
+              };
+              
+              // Add the question to the survey
+              setSurveyQuestions([...surveyQuestions, newQuestion]);
+              
+              // Close the question builder
+              setShowQuestionBuilder(false);
+              
+              // Refresh the survey data
+              refreshSurveyData();
+            }
           }}
         />
         

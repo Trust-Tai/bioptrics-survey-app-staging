@@ -38,9 +38,13 @@ interface LayerDisplay {
 
 // Styled Components
 const Container = styled.div`
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
+  background: #fff;
+  min-height: 100vh;
+  padding: 1.5rem;
+  box-shadow: 0px 0px 10px 0px #0000001A;
+  border-radius: 20px;
 `;
 
 const Header = styled.div`

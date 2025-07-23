@@ -9,6 +9,7 @@ interface EnhancedSurveySectionProps {
   onEditSection: (section: SurveySectionItem) => void;
   onDeleteSection: (sectionId: string) => void;
   onAddQuestion: (sectionId: string) => void;
+  onCreateQuestion: (sectionId: string) => void;
   onRemoveQuestion: (questionId: string, sectionId: string) => void;
   onReorderQuestion: (sectionId: string, oldIndex: number, newIndex: number) => void;
 }
@@ -19,6 +20,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
   onEditSection,
   onDeleteSection,
   onAddQuestion,
+  onCreateQuestion,
   onRemoveQuestion,
   onReorderQuestion,
 }) => {
@@ -143,12 +145,23 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
               </div>
             )}
             
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <div 
               className="survey-section-add-question"
               onClick={() => onAddQuestion(section.id)}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <FiPlus size={16} /> Add Question
+              <FiPlus size={16} /> Choose from Question Bank
+            </div>
+            <div 
+              className="survey-section-add-question"
+              onClick={() => onCreateQuestion(section.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <FiPlus size={16} /> Create Question
+            </div>
+            
+
             </div>
           </div>
         </div>

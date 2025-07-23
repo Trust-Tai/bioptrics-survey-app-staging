@@ -40,9 +40,13 @@ import RealTimeAnalytics from '/imports/features/analytics/components/admin/Real
 
 // Styled components for the Analytics dashboard
 const DashboardContainer = styled.div`
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 24px;
+  background: #fff;
+  min-height: 100vh;
+  padding: 1.5rem;
+  box-shadow: 0px 0px 10px 0px #0000001A;
+  border-radius: 20px;
 
   @media (max-width: 768px) {
     padding: 16px;
