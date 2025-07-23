@@ -440,9 +440,18 @@ const DropdownMenu = styled.div`
   background: var(--color-background);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100;
+  z-index: 1000;
   min-width: 180px;
   overflow: hidden;
+  /* Prevent clicks inside the dropdown from closing it */
+  & * {
+    pointer-events: auto;
+  }
+  
+  &.portal-dropdown {
+    position: fixed;
+    z-index: 9999;
+  }
 `;
 
 const DropdownItem = styled.button`
@@ -458,6 +467,9 @@ const DropdownItem = styled.button`
   transition: background 0.2s ease;
   color: var(--color-text);
   font-size: 14px;
+  position: relative;
+  z-index: 1001; /* Ensure dropdown items are above other elements */
+  pointer-events: auto; /* Ensure clicks are captured by this element */
   
   &:hover {
     background: color-mix(in srgb, var(--color-primary) 5%, transparent);
@@ -475,6 +487,7 @@ const DropdownItem = styled.button`
 
 const DropdownContainer = styled.div`
   position: relative;
+  z-index: 1002; /* Ensure container is above other elements */
 `;
 
 const NoResultsText = styled.div`
@@ -1008,32 +1021,104 @@ const AllSurveys: React.FC = () => {
                         </DropdownButton>
                         
                         {openDropdown === s._id && (
-                          <DropdownMenu>
-                            <DropdownItem
+                          <div 
+                            style={{
+                              position: 'fixed',
+                              top: dropdownRef.current?.getBoundingClientRect().bottom + 'px',
+                              left: dropdownRef.current?.getBoundingClientRect().left + 'px',
+                              background: 'var(--color-background)',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              zIndex: 9999,
+                              minWidth: '180px',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: 'var(--color-text)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 // Preview survey
                                 Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr, token) => {
                                   if (!tokenErr && token) {
                                     window.open(`/public/${token}?preview=true`, '_blank');
                                   }
                                 });
+                                setOpenDropdown(null);
                               }}
                             >
                               Preview
-                            </DropdownItem>
-                            <DropdownItem
+                            </button>
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: 'var(--color-text)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 navigate(`/admin/surveys/manage/${s._id}`);
+                                setOpenDropdown(null);
                               }}
                             >
                               Edit
-                            </DropdownItem>
+                            </button>
                             {s.published && (
-                              <DropdownItem
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: 'var(--color-text)',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  e.preventDefault();
+                                  console.log(e);
                                   // Copy shareable link
                                   Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
                                     if (!err && token) {
@@ -1041,22 +1126,60 @@ const AllSurveys: React.FC = () => {
                                       setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
                                     }
                                   });
+                                  setOpenDropdown(null);
                                 }}
                               >
                                 Copy Public Link
-                              </DropdownItem>
+                              </button>
                             )}
-                            <DropdownItem
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: 'var(--color-text)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 onViewResponses(s._id, s.title);
+                                setOpenDropdown(null);
                               }}
                             >
                               Analytics
-                            </DropdownItem>
+                            </button>
                             {s.status === 'inactive' ? (
-                              <DropdownItem
-                                className="restore"
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: '#000000',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
@@ -1071,24 +1194,40 @@ const AllSurveys: React.FC = () => {
                                   });
                                   setOpenDropdown(null);
                                 }}
-                                style={{ color: '#000000' }}
                               >
                                 Restore
-                              </DropdownItem>
+                              </button>
                             ) : (
-                              <DropdownItem
-                                className="delete"
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: '#dc3545',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
                                   onDelete(s._id, s.title);
+                                  setOpenDropdown(null);
                                 }}
-                                style={{ color: '#dc3545' }}
                               >
                                 Delete
-                              </DropdownItem>
+                              </button>
                             )}
-                          </DropdownMenu>
+                          </div>
                         )}
                       </DropdownContainer>
                     </CardHeader>

@@ -446,7 +446,25 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       e.stopPropagation();
                       e.preventDefault();
                     }}>
-                      <DropdownItem 
+                      <button
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '10px 16px',
+                          textAlign: 'left',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          transition: 'background-color 0.2s',
+                          color: 'var(--color-text)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -456,22 +474,59 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                         data-no-navigate="true"
                       >
                         Edit
-                      </DropdownItem>
+                      </button>
                       
-                      <DropdownItem 
+                      <button
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '10px 16px',
+                          textAlign: 'left',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          transition: 'background-color 0.2s',
+                          color: 'var(--color-text)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           onPreview(survey._id);
                           setOpenDropdown(null);
                         }}
                         data-no-navigate="true"
                       >
                         Preview
-                      </DropdownItem>
+                      </button>
                       
                       {survey.published && (
                         <>
-                          <DropdownItem 
+                          <button
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '10px 16px',
+                              textAlign: 'left',
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              transition: 'background-color 0.2s',
+                              color: 'var(--color-text)',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
@@ -481,9 +536,27 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             data-no-navigate="true"
                           >
                             Open Public Link
-                          </DropdownItem>
+                          </button>
                           
-                          <DropdownItem 
+                          <button
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: '10px 16px',
+                              textAlign: 'left',
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              transition: 'background-color 0.2s',
+                              color: 'var(--color-text)',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
@@ -511,11 +584,29 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             data-no-navigate="true"
                           >
                             Copy Public Link
-                          </DropdownItem>
+                          </button>
                         </>
                       )}
                       
-                      <DropdownItem 
+                      <button
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '10px 16px',
+                          textAlign: 'left',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          transition: 'background-color 0.2s',
+                          color: 'var(--color-text)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -525,10 +616,28 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                         data-no-navigate="true"
                       >
                         Analytics
-                      </DropdownItem>
+                      </button>
                       
                       {survey.status === 'inactive' ? (
-                        <DropdownItem 
+                        <button
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '10px 16px',
+                            textAlign: 'left',
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            transition: 'background-color 0.2s',
+                            color: '#000000',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
@@ -540,24 +649,40 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             });
                             setOpenDropdown(null);
                           }}
-                          style={{ color: '#000000' }}
                           data-no-navigate="true"
                         >
                           Restore
-                        </DropdownItem>
+                        </button>
                       ) : (
-                        <DropdownItem 
+                        <button
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '10px 16px',
+                            textAlign: 'left',
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            transition: 'background-color 0.2s',
+                            color: '#dc3545',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
                             onDelete(survey._id, survey.title);
                             setOpenDropdown(null);
                           }}
-                          style={{ color: '#dc3545' }}
                           data-no-navigate="true"
                         >
                           Delete
-                        </DropdownItem>
+                        </button>
                       )}
                     </DropdownMenu>
                   )}

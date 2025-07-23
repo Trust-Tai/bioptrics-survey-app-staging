@@ -385,6 +385,19 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                   marginBottom: '16px'
                 }}>
                   {/* Search Bar */}
+                  <div className="filter-group" style={{
+                    flex: '1 1 auto',
+                    maxWidth: '250px'
+                  }}>
+                    <label htmlFor="typeFilter" style={{
+                      display: 'block',
+                      marginBottom: '4px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#475569'
+                    }}>
+                      Search Term
+                    </label>
                   <div className="search-bar" style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -394,10 +407,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     padding: '0 12px',
                     flex: '2 1 auto',
                     height: '42px',
-                    marginTop: '24px', /* Added top margin to align with other elements */
                     outline: 'none'
                   }}>
-                    <FiSearch size={18} color="#94a3b8" />
                     <input 
                       type="text"
                       placeholder="Search questions by text or description..."
@@ -431,6 +442,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                       </button>
                     )}
                   </div>
+
+                  </div>
+                  
                   
                   {/* Question Type Filter */}
                   <div className="filter-group" style={{
