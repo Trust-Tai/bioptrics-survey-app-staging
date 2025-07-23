@@ -28,7 +28,7 @@ const StatCard = styled.div`
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
-  padding: 20px;
+  padding: 16px;
   display: flex;
   align-items: center;
   transition: box-shadow 0.3s ease;

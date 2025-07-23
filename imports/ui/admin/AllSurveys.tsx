@@ -562,25 +562,39 @@ const CardStyles = createGlobalStyle`
 
 const PaginationContainer = styled.div`
   display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 32px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--color-accent);
 `;
 
-const PaginationButton = styled.button<{ active: boolean }>`
-  background: ${props => props.active ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)'};
-  color: ${props => props.active ? '#fff' : 'var(--color-primary)'};
-  border: none;
-  border-radius: 6px;
-  padding: 6px 16px;
-  font-weight: 700;
-  font-size: 16px;
+const PaginationButton = styled.button<{ active?: boolean }>`
+  padding: 8px 12px;
+  margin: 0 4px;
+  border-radius: 4px;
+  border: 1px solid ${props => props.active ? 'var(--color-primary)' : 'var(--color-accent)'};
+  background-color: ${props => props.active ? 'var(--color-primary)' : 'var(--color-background)'};
+  color: ${props => props.active ? 'white' : 'var(--color-text)'};
   cursor: pointer;
-  box-shadow: ${props => props.active ? '0 2px 8px color-mix(in srgb, var(--color-primary) 20%, transparent)' : 'none'};
-  transition: background 0.2s, color 0.2s;
+  font-size: 14px;
+  transition: all 0.2s ease;
   
   &:hover {
-    background: ${props => props.active ? 'var(--color-secondary)' : 'color-mix(in srgb, var(--color-primary) 15%, transparent)'};
+    background-color: ${props => props.active ? 'var(--color-secondary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)'};
+    border-color: var(--color-primary);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--color-background);
+    border-color: var(--color-accent);
+    
+    &:hover {
+      background-color: var(--color-background);
+      border-color: var(--color-accent);
+    }
   }
 `;
 
@@ -648,6 +662,7 @@ const AllSurveys: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [createdByFilter, setCreatedByFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showResponsesModal, setShowResponsesModal] = useState<string | null>(null);
@@ -821,7 +836,7 @@ const AllSurveys: React.FC = () => {
     });
   }, [userId, surveys]);
 
-  const pageSize = 10;
+  // Using itemsPerPage state variable instead of fixed pageSize
   const filtered = processedSurveys.filter((s: ProcessedSurvey) => {
     // Text search filter
     const matchesSearch = 
@@ -845,8 +860,8 @@ const AllSurveys: React.FC = () => {
     return matchesSearch && matchesStatus && matchesCreatedBy;
   });
   
-  const pageCount = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageCount = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   useEffect(() => {
     setPage(1);
@@ -1165,17 +1180,86 @@ const AllSurveys: React.FC = () => {
               />
             )
           )}
-          {/* Pagination */}
+          {/* Pagination Controls */}
           <PaginationContainer>
-            {Array.from({ length: pageCount }, (_, i) => (
-              <PaginationButton
-                key={i}
-                onClick={() => setPage(i + 1)}
-                active={page === i + 1}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ marginRight: '10px' }}>Items per page:</span>
+              <select 
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setPage(1); // Reset to first page when changing items per page
+                }}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid #e0e0e0',
+                  backgroundColor: 'white',
+                  marginRight: '20px'
+                }}
               >
-                {i + 1}
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, filtered.length)} - {Math.min(page * itemsPerPage, filtered.length)} of {filtered.length}</span>
+            </div>
+            
+            <div>
+              <PaginationButton 
+                onClick={() => setPage(1)} 
+                disabled={page === 1}
+              >
+                First
               </PaginationButton>
-            ))}
+              <PaginationButton 
+                onClick={() => setPage(prev => Math.max(prev - 1, 1))} 
+                disabled={page === 1}
+              >
+                Previous
+              </PaginationButton>
+              {(() => {
+                // Show current page and 2 pages before and after
+                const pageNumbers = [];
+                
+                let startPage = Math.max(1, page - 2);
+                let endPage = Math.min(pageCount, page + 2);
+                
+                // Adjust if we're near the start or end
+                if (page <= 3) {
+                  endPage = Math.min(5, pageCount);
+                } else if (page >= pageCount - 2) {
+                  startPage = Math.max(1, pageCount - 4);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                  pageNumbers.push(
+                    <PaginationButton 
+                      key={i} 
+                      onClick={() => setPage(i)}
+                      active={i === page}
+                    >
+                      {i}
+                    </PaginationButton>
+                  );
+                }
+                
+                return pageNumbers;
+              })()}
+              <PaginationButton 
+                onClick={() => setPage(prev => Math.min(prev + 1, pageCount))} 
+                disabled={page === pageCount}
+              >
+                Next
+              </PaginationButton>
+              <PaginationButton 
+                onClick={() => setPage(pageCount)} 
+                disabled={page === pageCount}
+              >
+                Last
+              </PaginationButton>
+            </div>
           </PaginationContainer>
         </Container>
       </DashboardBg>

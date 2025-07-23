@@ -204,7 +204,6 @@ const TitleRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
 `;
 
 const Title = styled.h1`
@@ -668,7 +667,7 @@ const AllQuestions: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(25);
   
   // Get categories and themes for filtering
   const wpsCategories = useTracker(() => {
