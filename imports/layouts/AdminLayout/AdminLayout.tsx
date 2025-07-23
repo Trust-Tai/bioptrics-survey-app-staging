@@ -61,7 +61,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     //   isTag: true
     // })))
   // ] },
-  { to: '/admin/tags/manage', label: 'Tags & Classifications', icon: FaTag },
+  { to: '/admin/tags/manage', label: 'Tags', icon: FaTag },
   { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie},
   //  submenu: [
     // { to: '/admin/analytics/dashboard', label: 'Dashboard' },
