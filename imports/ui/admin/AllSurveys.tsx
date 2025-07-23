@@ -1023,15 +1023,16 @@ const AllSurveys: React.FC = () => {
                         {openDropdown === s._id && (
                           <div 
                             style={{
-                              position: 'fixed',
-                              top: dropdownRef.current?.getBoundingClientRect().bottom + 'px',
-                              left: dropdownRef.current?.getBoundingClientRect().left + 'px',
+                              position: 'absolute',
+                              top: '100%',
+                              right: '0',
                               background: 'var(--color-background)',
                               borderRadius: '8px',
                               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                               zIndex: 9999,
                               minWidth: '180px',
-                              overflow: 'hidden'
+                              overflow: 'hidden',
+                              marginTop: '4px'
                             }}
                           >
                             <button
