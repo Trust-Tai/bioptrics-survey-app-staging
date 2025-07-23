@@ -362,7 +362,7 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
             sortable 
             onClick={() => handleSort('updatedAt')}
           >
-            LAST UPDATED {renderSortIcon('updatedAt')}
+            UPDATED {renderSortIcon('updatedAt')}
           </TableHeaderCell>
           <TableHeaderCell>ACTIONS</TableHeaderCell>
         </tr>
