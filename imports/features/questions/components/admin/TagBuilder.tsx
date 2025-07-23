@@ -160,7 +160,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
     <div className="form-group tag-builder">
       {!hideLabels && (
         <label className="tag-builder-label">
-          <FaTags size={18} /> Tag builder
+          <FaTags size={18} /> Tags
         </label>
       )}
       <div className="tag-builder-container">

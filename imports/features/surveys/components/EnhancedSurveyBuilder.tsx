@@ -4634,26 +4634,55 @@ const EnhancedSurveyBuilder: React.FC = () => {
           isOpen={showQuestionBuilder}
           onClose={() => setShowQuestionBuilder(false)}
           context="surveyBuilder"
-          onQuestionCreated={(questionId: string) => {
+          onQuestionCreated={async (questionId: string) => {
             // When a question is created, add it to the current section
-            if (currentSectionId) {
-              // Add the newly created question to the section
-              const newQuestion: QuestionItem = {
-                id: questionId,
-                sectionId: currentSectionId,
-                text: 'New Question', // This will be updated when we refresh
-                type: 'text',
-                status: 'published'
-              };
-              
-              // Add the question to the survey
-              setSurveyQuestions([...surveyQuestions, newQuestion]);
-              
-              // Close the question builder
-              setShowQuestionBuilder(false);
-              
-              // Refresh the survey data
-              refreshSurveyData();
+            if (currentSectionId && survey && survey._id) {
+              try {
+                // Add the newly created question to the section
+                const newQuestion: QuestionItem = {
+                  id: questionId,
+                  sectionId: currentSectionId,
+                  text: 'New Question', // This will be updated when we refresh
+                  type: 'text',
+                  status: 'published'
+                };
+                
+                // Add the question to the local state
+                setSurveyQuestions([...surveyQuestions, newQuestion]);
+                
+                // Create the section question object for the database
+                const sectionQuestion = {
+                  questionId: questionId,
+                  sectionId: currentSectionId,
+                  type: 'text'
+                };
+                
+                // Get the current survey data
+                const currentSurveyData = Surveys.findOne(survey._id);
+                
+                if (currentSurveyData) {
+                  // Prepare the updated survey data with the new question
+                  const updatedSectionQuestions = [
+                    ...(currentSurveyData.sectionQuestions || []),
+                    sectionQuestion
+                  ];
+                  
+                  // Update the survey in the database
+                  await Meteor.callAsync('surveys.update', survey._id, {
+                    sectionQuestions: updatedSectionQuestions
+                  });
+                  
+                  console.log(`Question ${questionId} added to section ${currentSectionId} in the database`);
+                }
+                
+                // Close the question builder
+                setShowQuestionBuilder(false);
+                
+                // Refresh the survey data to get the updated question information
+                refreshSurveyData();
+              } catch (error) {
+                console.error('Error adding question to section:', error);
+              }
             }
           }}
         />
