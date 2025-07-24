@@ -365,23 +365,12 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [newCollaboratorRole, setNewCollaboratorRole] = useState<string>('editor');
   const [isAddingCollaborator, setIsAddingCollaborator] = useState<boolean>(false);
   
-  // Create a default Welcome section for new surveys
+  // Always default to the welcome tab (Survey Basics) for new surveys
   useEffect(() => {
-    // Only create default section if this is a new survey (no surveyId) and no sections exist yet
-    if (!surveyId && sections.length === 0) {
-      const defaultSection: SurveySectionItem = {
-        id: `section-${Date.now()}`,
-        name: 'Welcome',
-        description: 'Default section for your survey questions',
-        priority: 0,  // Changed from order to priority to match the interface
-        isActive: true  // Required property in the SurveySectionItem interface
-      };
-      setSections([defaultSection]);
-      
-      // Always default to the welcome tab (Survey Basics)
+    if (!surveyId) {
       setActiveStep('welcome');
     }
-  }, [surveyId, sections.length]);
+  }, [surveyId]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   // Initialize all demographic options as selected by default for new surveys
@@ -2084,8 +2073,8 @@ const EnhancedSurveyBuilder: React.FC = () => {
   // State to store refreshed questions for the question selector
   const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
   
-  // Handle adding questions to a section from question bank
-  const handleAddQuestion = (sectionId: string) => {
+  // Handle adding questions to a section from question bank or to no section
+  const handleAddQuestion = (sectionId: string | null) => {
     setCurrentSectionId(sectionId);
     
     // Refresh question data before opening selector to ensure we have the latest question text
@@ -2233,12 +2222,18 @@ const EnhancedSurveyBuilder: React.FC = () => {
     setShowQuestionSelector(false);
   };
   
-  // Handle removing a question from a section
-  const handleRemoveQuestion = (questionId: string, sectionId: string) => {
+  // Handle removing a question from a section or from no-section area
+  const handleRemoveQuestion = (questionId: string, sectionId: string | null) => {
     // Completely remove the question from surveyQuestions
-    setSurveyQuestions(prev => prev.filter(q => 
-      !(q.id === questionId && q.sectionId === sectionId)
-    ));
+    setSurveyQuestions(prev => prev.filter(q => {
+      if (sectionId === null) {
+        // For questions without a section, only check the ID and that it has no sectionId
+        return !(q.id === questionId && !q.sectionId);
+      } else {
+        // For questions in sections, check both ID and sectionId match
+        return !(q.id === questionId && q.sectionId === sectionId);
+      }
+    }));
     
     // Also update the survey state to ensure changes are saved
     setSurvey((prevSurvey: any) => {
@@ -2246,11 +2241,20 @@ const EnhancedSurveyBuilder: React.FC = () => {
       
       return {
         ...prevSurvey,
-        sectionQuestions: prevSurvey.sectionQuestions?.filter((q: any) => 
-          !(q.id === questionId && q.sectionId === sectionId)
-        ) || []
+        sectionQuestions: prevSurvey.sectionQuestions?.filter((q: any) => {
+          if (sectionId === null) {
+            // For questions without a section, only check the ID and that it has no sectionId
+            return !(q.id === questionId && !q.sectionId);
+          } else {
+            // For questions in sections, check both ID and sectionId match
+            return !(q.id === questionId && q.sectionId === sectionId);
+          }
+        }) || []
       };
     });
+    
+    setHasUnsavedChanges(true);
+    triggerAutoSave();
   };
   
   // Handle reordering questions within a section
@@ -3097,17 +3101,16 @@ const EnhancedSurveyBuilder: React.FC = () => {
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <div>
-                      <h2 className="survey-builder-panel-title">Survey Sections</h2>
-                      <p className="survey-builder-panel-subtitle">
-                        Create and manage sections for your survey
-                      </p>
+                     
                     </div>
-                    <button 
-                      className="btn btn-primary"
-                      onClick={handleAddSection}
-                    >
-                      <FiPlus /> Add Section
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        className="btn btn-secondary"
+                        onClick={handleAddSection}
+                      >
+                        <FiPlus /> Add Section
+                      </button>
+                    </div>
                   </div>
                   
                   <div 
@@ -3149,62 +3152,150 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         background-color: rgba(85, 42, 71, 0.05);
                         color: #552a47;
                       }
+                      .question-item {
+                        padding: 12px 16px;
+                        background-color: #fff;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        margin-bottom: 12px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      }
                     `}} />
-                    {sections.length > 0 ? (
-                      sections.map((section, index) => (
-                        <div 
-                          key={section.id}
-                          className={`survey-section-wrapper ${draggingSectionIndex === index ? 'dragging' : ''} ${dragOverSectionIndex === index ? 'drag-over' : ''}`}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', index.toString());
-                            setDraggingSectionIndex(index);
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            if (draggingSectionIndex !== index) {
-                              setDragOverSectionIndex(index);
-                            }
-                          }}
-                          onDragLeave={() => {
-                            setDragOverSectionIndex(null);
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                            if (sourceIndex !== index) {
-                              handleReorderSection(sourceIndex, index);
-                            }
-                            setDraggingSectionIndex(null);
-                            setDragOverSectionIndex(null);
-                          }}
-                          onDragEnd={() => {
-                            setDraggingSectionIndex(null);
-                            setDragOverSectionIndex(null);
-                          }}
-                        >
-                          <EnhancedSurveySection
-                            section={section}
-                            questions={surveyQuestions.filter(q => q.sectionId === section.id)}
-                            onEditSection={handleEditSection}
-                            onDeleteSection={handleDeleteSection}
-                            onAddQuestion={handleAddQuestion}
-                            onCreateQuestion={handleCreateQuestion}
-                            onRemoveQuestion={handleRemoveQuestion}
-                            onReorderQuestion={handleReorderQuestion}
-                          />
+                    
+                    {/* Display questions that don't belong to any section */}
+                    <div className="no-section-questions" style={{ marginBottom: '30px' }}>
+                     
+                      {surveyQuestions.filter(q => !q.sectionId).length > 0 ? (
+                        surveyQuestions
+                          .filter(q => !q.sectionId)
+                          .sort((a, b) => (a.order || 0) - (b.order || 0))
+                          .map((question, index) => (
+                            <div 
+                              key={question.id}
+                              className="question-item"
+                            >
+                              <div>
+                                <div style={{ fontWeight: 500 }}>{question.text}</div>
+                                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                  {question.type}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  onClick={() => handleRemoveQuestion(question.id, null)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#666',
+                                    padding: '4px'
+                                  }}
+                                >
+                                  <FiTrash2 />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div style={{ 
+                          padding: '20px', 
+                          textAlign: 'center', 
+                          color: '#666',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: '8px',
+                          display:'none',
+                          marginBottom: '20px'
+                        }}>
+                          <p>No questions added yet. Use the buttons above to add questions.</p>
                         </div>
-                      ))
+                      )}
+                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '16px' }}>
+                        <div 
+                          className="survey-section-add-question"
+                          onClick={() => handleAddQuestion(null)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <FiPlus size={16} /> Choose from Question Bank
+                        </div>
+                        <div 
+                          className="survey-section-add-question"
+                          onClick={() => handleCreateQuestion(null)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <FiPlus size={16} /> Create Question
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Display sections */}
+                    {sections.length > 0 ? (
+                      <div>
+                        <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Sections</h3>
+                        {sections.map((section, index) => (
+                          <div 
+                            key={section.id}
+                            className={`survey-section-wrapper ${draggingSectionIndex === index ? 'dragging' : ''} ${dragOverSectionIndex === index ? 'drag-over' : ''}`}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', index.toString());
+                              setDraggingSectionIndex(index);
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (draggingSectionIndex !== index) {
+                                setDragOverSectionIndex(index);
+                              }
+                            }}
+                            onDragLeave={() => {
+                              setDragOverSectionIndex(null);
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                              if (sourceIndex !== index) {
+                                handleReorderSection(sourceIndex, index);
+                              }
+                              setDraggingSectionIndex(null);
+                              setDragOverSectionIndex(null);
+                            }}
+                            onDragEnd={() => {
+                              setDraggingSectionIndex(null);
+                              setDragOverSectionIndex(null);
+                            }}
+                          >
+                            <EnhancedSurveySection
+                              section={section}
+                              questions={surveyQuestions.filter(q => q.sectionId === section.id)}
+                              onEditSection={handleEditSection}
+                              onDeleteSection={handleDeleteSection}
+                              onAddQuestion={handleAddQuestion}
+                              onCreateQuestion={handleCreateQuestion}
+                              onRemoveQuestion={handleRemoveQuestion}
+                              onReorderQuestion={handleReorderQuestion}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>
-                        Loading sections...
+                      <div style={{ padding: 20, textAlign: 'center', color: '#666', backgroundColor: '#f9f9f9', borderRadius: '8px', display: 'none'}}>
+                        <p>No sections added yet. Use the 'Add Section' button to create sections.</p>
                       </div>
                     )}
                   </div>
                 </div>
               )}
               
-              {/* Questions tab has been removed */}
+              {/* Branching Logic tab */}
+              {activeStep === 'branching' && (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-content">
+                    <h3>Branching Logic</h3>
+                    <p>Configure branching logic for your survey questions here.</p>
+                  </div>
+                </div>
+              )}
               
               {/* Welcome Screen */}
               {activeStep === 'welcome' && (
