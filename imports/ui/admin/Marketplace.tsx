@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { Products, Product } from '/imports/api/products/products';
@@ -68,6 +69,11 @@ const SearchBar = styled.div`
   position: relative;
   flex: 1;
   max-width: 400px;
+  min-width: 280px;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+  }
 
   svg {
     position: absolute;
@@ -76,6 +82,7 @@ const SearchBar = styled.div`
     transform: translateY(-50%);
     color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
     font-size: 16px;
+    z-index: 1;
   }
 
   input {
@@ -88,6 +95,7 @@ const SearchBar = styled.div`
     transition: border-color 0.2s;
     background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
     color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+    box-sizing: border-box;
 
     &:focus {
       border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
@@ -117,6 +125,9 @@ const FilterButton = styled.button<{ active?: boolean }>`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 100px;
 
   &:hover {
     background: ${props => props.active 
@@ -128,6 +139,11 @@ const FilterButton = styled.button<{ active?: boolean }>`
 
   svg {
     font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    justify-content: center;
+    min-width: 120px;
   }
 `;
 
@@ -738,6 +754,7 @@ const Rating: React.FC<{ rating: number }> = ({ rating }) => {
 
 const Marketplace: React.FC = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -930,9 +947,28 @@ const Marketplace: React.FC = () => {
 
   const handlePurchase = (product: Product) => {
     console.log('Purchasing:', product.name);
-    // Add purchase logic here
-    alert(`Purchasing ${product.name} for $${product.price}${product.priceUnit}`);
+    
+    // Store the selected product in localStorage for the AccountDetails page
+    const selectedPlan = {
+      id: product._id,
+      name: product.name,
+      price: `$${product.price}`,
+      billing: product.priceUnit,
+      category: product.category,
+      description: product.description,
+      rating: product.rating,
+      reviews: product.reviews,
+      tags: product.tags
+    };
+    
+    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlan));
+    
+    // Close the product detail modal
     setShowProductDetail(false);
+    setSelectedProduct(null);
+    
+    // Navigate to the AccountDetails page
+    navigate('/admin/account-details');
   };
 
   const handleLearnMore = (product: Product) => {
