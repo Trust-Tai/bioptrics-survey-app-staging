@@ -32,6 +32,7 @@ export interface Layer {
   active: boolean;
   parentId?: string; // Reference to parent tag
   color?: string; // Color for the tag
+  description?: string; // Description for the tag
   createdAt: Date;
   createdBy?: string;
   updatedAt?: Date;
@@ -84,6 +85,7 @@ if (Meteor.isServer) {
         location: layerData.location,
         parentId: layerData.parentId || undefined,
         color: layerData.color || '#552a47',
+        description: layerData.description || '',
         fields: Array.isArray(layerData.fields) ? layerData.fields.map((field: any) => {
           // Ensure each field has the required properties
           return {
