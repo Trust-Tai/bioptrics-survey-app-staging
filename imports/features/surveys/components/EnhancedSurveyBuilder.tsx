@@ -364,22 +364,27 @@ const EnhancedSurveyBuilder: React.FC = () => {
     title: string;
     subtitle: string;
     icon: string;
+    selected: boolean;
   }>>([{
     title: 'Total Responses',
     subtitle: 'Questions answered',
-    icon: 'clipboard-check'
+    icon: 'clipboard-check',
+    selected: true
   }, {
     title: 'Unanswered Questions',
     subtitle: 'Empty answer fields',
-    icon: 'question-circle'
+    icon: 'question-circle',
+    selected: true
   }, {
     title: 'Completion',
     subtitle: 'Survey completed',
-    icon: 'check-circle'
+    icon: 'check-circle',
+    selected: true
   }, {
     title: 'Time Taken',
     subtitle: 'Total duration',
-    icon: 'clock'
+    icon: 'clock',
+    selected: true
   }]);
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
@@ -3582,6 +3587,35 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             }}>
                               <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Box {index + 1}</h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '14px', color: '#4a5568' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={box.selected}
+                                      onChange={(e) => {
+                                        const newBoxes = [...thankYouBoxes];
+                                        newBoxes[index].selected = e.target.checked;
+                                        setThankYouBoxes(newBoxes);
+                                        // Update the survey state
+                                        setSurvey((prevSurvey: any) => {
+                                          if (!prevSurvey) return prevSurvey;
+                                          return {
+                                            ...prevSurvey,
+                                            thankYouBoxes: newBoxes
+                                          };
+                                        });
+                                        setHasUnsavedChanges(true);
+                                      }}
+                                      style={{ 
+                                        marginRight: '6px',
+                                        accentColor: '#552a47', // Theme color for checkbox
+                                        width: '16px',
+                                        height: '16px'
+                                      }}
+                                    />
+                                    <span style={{ color: '#552a47', fontWeight: 500 }}>Show on thank you page</span>
+                                  </label>
+                                </div>
                               </div>
                               
                               {/* Box Title */}

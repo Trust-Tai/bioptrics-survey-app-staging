@@ -29,6 +29,7 @@ interface Survey {
     title: string;
     subtitle: string;
     icon: string;
+    selected?: boolean;
   }>;
 }
 
@@ -420,28 +421,37 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       <StatsContainer>
         {/* Use custom thank you boxes if available, otherwise use default boxes */}
         {survey.thankYouBoxes && survey.thankYouBoxes.length > 0 ? (
-          // Render custom thank you boxes from survey data
-          survey.thankYouBoxes.map((box, index) => (
-            <StatCard key={`thank-you-box-${index}`}>
-              <StatIcon>
-                {/* Use appropriate icon based on box index if no custom icon is specified */}
-                {index === 0 && <FiCheckSquare size={20} />}
-                {index === 1 && <FiBarChart2 size={20} />}
-                {index === 2 && <FiCheckCircle size={20} />}
-                {index === 3 && <FiClock size={20} />}
-              </StatIcon>
-              <StatContent>
-                <StatValue>
-                  {index === 0 ? displayTotalResponses : 
-                   index === 1 ? (currentResponseData.unansweredQuestions || 0) : 
-                   index === 2 ? `${completionPercentage}%` : 
-                   formatTime(surveyTime)}
-                </StatValue>
-                <StatLabel>{box.title}</StatLabel>
-                <StatSublabel>{box.subtitle}</StatSublabel>
-              </StatContent>
-            </StatCard>
-          ))
+          // Render custom thank you boxes from survey data that are selected
+          survey.thankYouBoxes
+            .filter(box => box.selected !== false) // Show by default if selected is undefined
+            .map((box, index) => {
+              // Find the original index in the full array for correct icon mapping
+              const originalIndex = survey.thankYouBoxes!.findIndex(b => 
+                b.title === box.title && b.subtitle === box.subtitle
+              );
+              
+              return (
+                <StatCard key={`thank-you-box-${index}`}>
+                  <StatIcon>
+                    {/* Use appropriate icon based on original box index if no custom icon is specified */}
+                    {originalIndex === 0 && <FiCheckSquare size={20} />}
+                    {originalIndex === 1 && <FiBarChart2 size={20} />}
+                    {originalIndex === 2 && <FiCheckCircle size={20} />}
+                    {originalIndex === 3 && <FiClock size={20} />}
+                  </StatIcon>
+                  <StatContent>
+                    <StatValue>
+                      {originalIndex === 0 ? displayTotalResponses : 
+                       originalIndex === 1 ? (currentResponseData.unansweredQuestions || 0) : 
+                       originalIndex === 2 ? `${completionPercentage}%` : 
+                       formatTime(surveyTime)}
+                    </StatValue>
+                    <StatLabel>{box.title}</StatLabel>
+                    <StatSublabel>{box.subtitle}</StatSublabel>
+                  </StatContent>
+                </StatCard>
+              );
+            })
         ) : (
           // Render default boxes if no custom boxes are defined
           <>
