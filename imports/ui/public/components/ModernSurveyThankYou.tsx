@@ -20,6 +20,16 @@ interface Survey {
     [key: string]: any;
   };
   questionCount?: number;
+  // Thank you screen customization fields
+  thankYouMessage?: string;
+  thankYouTitle?: string;
+  thankYouDetails?: string;
+  thankYouIcon?: string;
+  thankYouBoxes?: Array<{
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>;
 }
 
 interface ModernSurveyThankYouProps {
@@ -385,59 +395,101 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   return (
     <ThankYouContainer>
       <ThankYouHeader>
-        <ThankYouIcon>
-          <FiCheckCircle size={48} color="var(--primary-color, #552a47)" />
-        </ThankYouIcon>
-        <ThankYouTitle>Thank You!</ThankYouTitle>
+        {/* Only hide the icon container if thankYouIcon is explicitly set to null */}
+        {/* {survey.thankYouIcon !== null && ( */}
+          <ThankYouIcon>
+            {/* Use survey icon if available, otherwise use default */}
+            {survey.thankYouIcon ? (
+              <img 
+                src={survey.thankYouIcon} 
+                alt="Thank You Icon" 
+                style={{ maxWidth: '48px', maxHeight: '48px' }} 
+              />
+            ) : (
+              <FiCheckCircle size={48} color="var(--primary-color, #552a47)" />
+            )}
+          </ThankYouIcon>
+          
+        
+        <ThankYouTitle>{survey.thankYouTitle || 'Thank You!'}</ThankYouTitle>
         <ThankYouMessage>
-          Your responses have been successfully submitted. We appreciate your time and feedback.
+          {survey.thankYouDetails || 'Your responses have been successfully submitted. We appreciate your time and feedback.'}
         </ThankYouMessage>
       </ThankYouHeader>
       
       <StatsContainer>
-        <StatCard>
-          <StatIcon>
-            <FiCheckSquare size={20} />
-          </StatIcon>
-          <StatContent>
-            <StatValue>{displayTotalResponses}</StatValue>
-            <StatLabel>Total Responses</StatLabel>
-            <StatSublabel>Questions answered</StatSublabel>
-          </StatContent>
-        </StatCard>
-        
-        <StatCard>
-          <StatIcon>
-            <FiBarChart2 size={20} />
-          </StatIcon>
-          <StatContent>
-            <StatValue>{currentResponseData.unansweredQuestions || 0}</StatValue>
-            <StatLabel>Unanswered Questions</StatLabel>
-            <StatSublabel>Empty answer fields</StatSublabel>
-          </StatContent>
-        </StatCard>
-        
-        <StatCard>
-          <StatIcon>
-            <FiCheckCircle size={20} />
-          </StatIcon>
-          <StatContent>
-            <StatValue>{completionPercentage}%</StatValue>
-            <StatLabel>Completion</StatLabel>
-            <StatSublabel>Survey completed</StatSublabel>
-          </StatContent>
-        </StatCard>
-        
-        <StatCard>
-          <StatIcon>
-            <FiClock size={20} />
-          </StatIcon>
-          <StatContent>
-            <StatValue>{formatTime(surveyTime)}</StatValue>
-            <StatLabel>Time Taken</StatLabel>
-            <StatSublabel>Total duration</StatSublabel>
-          </StatContent>
-        </StatCard>
+        {/* Use custom thank you boxes if available, otherwise use default boxes */}
+        {survey.thankYouBoxes && survey.thankYouBoxes.length > 0 ? (
+          // Render custom thank you boxes from survey data
+          survey.thankYouBoxes.map((box, index) => (
+            <StatCard key={`thank-you-box-${index}`}>
+              <StatIcon>
+                {/* Use appropriate icon based on box index if no custom icon is specified */}
+                {index === 0 && <FiCheckSquare size={20} />}
+                {index === 1 && <FiBarChart2 size={20} />}
+                {index === 2 && <FiCheckCircle size={20} />}
+                {index === 3 && <FiClock size={20} />}
+              </StatIcon>
+              <StatContent>
+                <StatValue>
+                  {index === 0 ? displayTotalResponses : 
+                   index === 1 ? (currentResponseData.unansweredQuestions || 0) : 
+                   index === 2 ? `${completionPercentage}%` : 
+                   formatTime(surveyTime)}
+                </StatValue>
+                <StatLabel>{box.title}</StatLabel>
+                <StatSublabel>{box.subtitle}</StatSublabel>
+              </StatContent>
+            </StatCard>
+          ))
+        ) : (
+          // Render default boxes if no custom boxes are defined
+          <>
+            <StatCard>
+              <StatIcon>
+                <FiCheckSquare size={20} />
+              </StatIcon>
+              <StatContent>
+                <StatValue>{displayTotalResponses}</StatValue>
+                <StatLabel>Total Responses</StatLabel>
+                <StatSublabel>Questions answered</StatSublabel>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatIcon>
+                <FiBarChart2 size={20} />
+              </StatIcon>
+              <StatContent>
+                <StatValue>{currentResponseData.unansweredQuestions || 0}</StatValue>
+                <StatLabel>Unanswered Questions</StatLabel>
+                <StatSublabel>Empty answer fields</StatSublabel>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatIcon>
+                <FiCheckCircle size={20} />
+              </StatIcon>
+              <StatContent>
+                <StatValue>{completionPercentage}%</StatValue>
+                <StatLabel>Completion</StatLabel>
+                <StatSublabel>Survey completed</StatSublabel>
+              </StatContent>
+            </StatCard>
+            
+            <StatCard>
+              <StatIcon>
+                <FiClock size={20} />
+              </StatIcon>
+              <StatContent>
+                <StatValue>{formatTime(surveyTime)}</StatValue>
+                <StatLabel>Time Taken</StatLabel>
+                <StatSublabel>Total duration</StatSublabel>
+              </StatContent>
+            </StatCard>
+          </>
+        )}
       </StatsContainer>
       
       {/* Removed Journey, Impact, and Next Steps sections as requested */}
