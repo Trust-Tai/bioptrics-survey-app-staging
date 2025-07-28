@@ -21,6 +21,7 @@ import QuestionSelector from './sections/QuestionSelector';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
+import Analytics from '../../../ui/admin/Analytics';
 
 // Import existing components we'll reuse
 import SurveyBranchingLogic from '../../../ui/admin/SurveyBranchingLogic';
@@ -75,6 +76,7 @@ const steps = [
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
+  { id: 'analyzeResults', label: 'Analyze Results', icon: 'FiBarChart2' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   // { id: 'preview', label: 'Preview', icon: 'FiEye' },
@@ -4143,6 +4145,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     responseStats={responseStats} 
                     surveyData={survey}
                   />
+                </div>
+              ) : activeStep === 'analyzeResults' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Analyze Results</h2>
+                  </div>
+                  
+                  {survey?._id ? (
+                    <div style={{ margin: '-1.5rem', width: '100%', marginLeft: '0' }}>
+                      <Analytics surveyFilter={survey._id} embedded={true} />
+                    </div>
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                      <p>Please save the survey first to view analytics.</p>
+                    </div>
+                  )}
                 </div>
               ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">
