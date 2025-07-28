@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
@@ -38,15 +38,21 @@ import FunnelChart from '/imports/features/analytics/components/admin/FunnelChar
 import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
 import RealTimeAnalytics from '/imports/features/analytics/components/admin/RealTimeAnalytics';
 
+// Props interface for Analytics component
+interface AnalyticsProps {
+  surveyFilter?: string; // Survey ID to filter by
+  embedded?: boolean; // Whether the component is embedded in another component
+}
+
 // Styled components for the Analytics dashboard
-const DashboardContainer = styled.div`
+const DashboardContainer = styled.div<{ embedded?: boolean }>`
   max-width: 100%;
-  margin: 0 auto;
+  margin: ${props => props.embedded ? '0' : '0 auto'};
   background: #fff;
-  min-height: 100vh;
+  min-height: ${props => props.embedded ? 'auto' : '100vh'};
   padding: 1.5rem;
-  box-shadow: 0px 0px 10px 0px #0000001A;
-  border-radius: 20px;
+  box-shadow: ${props => props.embedded ? 'none' : '0px 0px 10px 0px #0000001A'};
+  border-radius: ${props => props.embedded ? '0' : '20px'};
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -629,7 +635,7 @@ const ModalCloseButton = styled.button`
   }
 `;
 
-const Analytics: React.FC = () => {
+const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showQuestionPerformance, setShowQuestionPerformance] = useState(false);
   
@@ -771,6 +777,19 @@ const Analytics: React.FC = () => {
   
   // State for KPI metrics
   const [completedSurveysCount, setCompletedSurveysCount] = useState<number>(0);
+  // State for filters and UI
+  const [filterVisible, setFilterVisible] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // State for selected filters
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const startDate = dateRange[0];
+  const endDate = dateRange[1];
+  
+  // State for metrics
   const [participationRate, setParticipationRate] = useState<number>(0);
   const [completionRate, setCompletionRate] = useState<number>(0);
   const [avgEngagementScore, setAvgEngagementScore] = useState<number>(0);
@@ -779,26 +798,26 @@ const Analytics: React.FC = () => {
   const [responseTrendsData, setResponseTrendsData] = useState<any[]>([]);
   
   // Function to apply filters and update metrics
-  const applyFilters = () => {
+  // Memoize the function to prevent unnecessary re-renders
+  const applyFilters = useCallback(() => {
     setIsLoading(true);
     
     // Prepare filter parameters
     const filterParams = {
-      surveyIds: selectedSurveys.length > 0 ? selectedSurveys : undefined,
+      // If in embedded mode and surveyFilter is provided, use it instead of selectedSurveys
+      surveyIds: embedded && surveyFilter ? [surveyFilter] : 
+                (selectedSurveys.length > 0 ? selectedSurveys : undefined),
       tagIds: selectedTags.length > 0 ? selectedTags : undefined,
       questionIds: selectedQuestions.length > 0 ? selectedQuestions : undefined,
       startDate: startDate ? startDate.toISOString() : undefined,
       endDate: endDate ? endDate.toISOString() : undefined
     };
     
-    console.log('Applying filters:', filterParams);
-    
     // Fetch completed surveys count with filters
     Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
       if (error) {
         console.error('Error fetching completed surveys count:', error);
       } else {
-        console.log('Completed surveys count:', result);
         setCompletedSurveysCount(result);
       }
     });
@@ -808,7 +827,6 @@ const Analytics: React.FC = () => {
       if (error) {
         console.error('Error fetching enhanced participation rate:', error);
       } else {
-        console.log('Participation rate:', result);
         setParticipationRate(result);
       }
     });
@@ -818,7 +836,6 @@ const Analytics: React.FC = () => {
       if (error) {
         console.error('Error fetching question completion rate:', error);
       } else {
-        console.log('Question completion rate:', result);
         setCompletionRate(result);
       }
     });
@@ -828,7 +845,6 @@ const Analytics: React.FC = () => {
       if (error) {
         console.error('Error fetching enhanced engagement score:', error);
       } else {
-        console.log('Average engagement score:', result);
         setAvgEngagementScore(result || 0);
       }
     });
@@ -838,7 +854,6 @@ const Analytics: React.FC = () => {
       if (error) {
         console.error('Error fetching filtered completion time:', error);
       } else {
-        console.log('Average completion time (minutes):', result);
         setAvgCompletionTime(result);
       }
     });
@@ -848,7 +863,6 @@ const Analytics: React.FC = () => {
       if (error) {
         console.error('Error fetching filtered response rate:', error);
       } else {
-        console.log('Response rate:', result);
         setResponseRate(result);
       }
     });
@@ -858,7 +872,6 @@ const Analytics: React.FC = () => {
       if (error) {
         console.error('Error fetching response trends data:', error);
       } else {
-        console.log('Response trends data:', result);
         // Transform the data for the ResponseRateChart component
         const chartData = result.map((item: any) => ({
           date: item.date,
@@ -869,26 +882,16 @@ const Analytics: React.FC = () => {
       }
       setIsLoading(false);
     });
-  };
+  }, [embedded, surveyFilter, selectedSurveys, selectedTags, selectedQuestions, startDate, endDate]);
   
   // Fetch KPI metrics on component mount
   useEffect(() => {
-    // Initial data load without filters
+    // Initial data load with survey filter if in embedded mode
     applyFilters();
-  }, []);
-  const [filterVisible, setFilterVisible] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  }, [applyFilters]); // Only depend on the memoized applyFilters function
 
   // Default organization data
   const organizations = ['All Organizations', 'Bioptrics'];
-  
-  // State for selected filters
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-  const startDate = dateRange[0];
-  const endDate = dateRange[1];
   
   // Ensure selectedTags is always an array
   useEffect(() => {
@@ -1277,9 +1280,52 @@ const Analytics: React.FC = () => {
     );
   };
 
-  return (
-    <AdminLayout>
-      <DashboardContainer>
+  // Create a content component to avoid duplication
+  const AnalyticsContent = () => {
+    // Initialize the current survey data when in embedded mode
+    useEffect(() => {
+      if (embedded && surveyFilter) {
+        // Pre-select the current survey and apply filters
+        setSelectedSurveys([surveyFilter]);
+        
+        // Force immediate data load for the current survey
+        const filterParams = {
+          surveyIds: [surveyFilter],
+          tagIds: undefined,
+          questionIds: undefined,
+          startDate: undefined,
+          endDate: undefined
+        };
+        
+        // Load data for the current survey
+        Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
+          if (!error) setCompletedSurveysCount(result);
+        });
+        
+        Meteor.call('getFilteredParticipationRate', filterParams, (error: Error, result: number) => {
+          if (!error) setParticipationRate(result);
+        });
+        
+        Meteor.call('getQuestionCompletionRate', filterParams, (error: Error, result: number) => {
+          if (!error) setCompletionRate(result);
+        });
+        
+        Meteor.call('getFilteredEngagementScore', filterParams, (error: Error, result: number) => {
+          if (!error) setAvgEngagementScore(result || 0);
+        });
+        
+        Meteor.call('getFilteredCompletionTime', filterParams, (error: Error, result: number) => {
+          if (!error) setAvgCompletionTime(result);
+        });
+        
+        Meteor.call('getFilteredResponseRate', filterParams, (error: Error, result: number) => {
+          if (!error) setResponseRate(result);
+        });
+      }
+    }, [embedded, surveyFilter]);
+    
+    return (
+    <DashboardContainer embedded={embedded}>
         <PageHeader>
           <PageTitle>Analytics Dashboard</PageTitle>
           <ActionButtons>
@@ -1338,17 +1384,19 @@ const Analytics: React.FC = () => {
                   />
                 </div>
               </FilterGroup>
-              <FilterGroup>
-                <FilterLabel>Surveys</FilterLabel>
-                <div className="tom-select-container">
-                  <select 
-                    ref={surveySelectRef} 
-                    multiple 
-                    style={{ width: '100%' }}
-                    data-placeholder="Select surveys..."
-                  />
-                </div>
-              </FilterGroup>
+              {!embedded && (
+                <FilterGroup>
+                  <FilterLabel>Surveys</FilterLabel>
+                  <div className="tom-select-container">
+                    <select 
+                      ref={surveySelectRef} 
+                      multiple 
+                      style={{ width: '100%' }}
+                      data-placeholder="Select surveys..."
+                    />
+                  </div>
+                </FilterGroup>
+              )}
               <FilterGroup>
                 <FilterLabel>Questions</FilterLabel>
                 <div className="tom-select-container">
@@ -1771,7 +1819,19 @@ const Analytics: React.FC = () => {
           </ModalOverlay>
         )}
       </DashboardContainer>
-    </AdminLayout>
+    );
+  };
+
+  return (
+    <>
+      {!embedded ? (
+        <AdminLayout>
+          <AnalyticsContent />
+        </AdminLayout>
+      ) : (
+        <AnalyticsContent />
+      )}
+    </>
   );
 };
 

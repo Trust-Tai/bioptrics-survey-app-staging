@@ -102,6 +102,17 @@ export interface SurveyDoc {
     sectionId?: string;
     order?: number;
   }>;
+  // Thank you screen customization
+  thankYouMessage?: string;
+  thankYouTitle?: string;
+  thankYouDetails?: string;
+  thankYouIcon?: string;
+  thankYouBoxes?: Array<{
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>;
+  
   defaultSettings?: {
     allowAnonymous?: boolean;
     requireLogin?: boolean;
@@ -512,6 +523,12 @@ Meteor.methods({
           selectedTheme: survey.selectedTheme !== undefined ? survey.selectedTheme : existing?.selectedTheme,
           selectedCategories: survey.selectedCategories || (existing ? existing.selectedCategories : []),
           selectedTags: survey.selectedTags || (existing ? existing.selectedTags : []),
+          // Include Thank You screen customization fields
+          thankYouMessage: survey.thankYouMessage !== undefined ? survey.thankYouMessage : existing?.thankYouMessage,
+          thankYouTitle: survey.thankYouTitle !== undefined ? survey.thankYouTitle : existing?.thankYouTitle,
+          thankYouDetails: survey.thankYouDetails !== undefined ? survey.thankYouDetails : existing?.thankYouDetails,
+          thankYouIcon: survey.thankYouIcon !== undefined ? survey.thankYouIcon : existing?.thankYouIcon,
+          thankYouBoxes: survey.thankYouBoxes || (existing ? existing.thankYouBoxes : []),
           published: true,
           shareToken,
           updatedAt: now,
@@ -610,6 +627,12 @@ Meteor.methods({
         selectedTheme: survey.selectedTheme !== undefined ? survey.selectedTheme : existingSurvey.selectedTheme,
         selectedCategories: survey.selectedCategories || existingSurvey.selectedCategories || [],
         selectedTags: survey.selectedTags || existingSurvey.selectedTags || [],
+        // Include Thank You screen customization fields
+        thankYouMessage: survey.thankYouMessage !== undefined ? survey.thankYouMessage : existingSurvey.thankYouMessage,
+        thankYouTitle: survey.thankYouTitle !== undefined ? survey.thankYouTitle : existingSurvey.thankYouTitle,
+        thankYouDetails: survey.thankYouDetails !== undefined ? survey.thankYouDetails : existingSurvey.thankYouDetails,
+        thankYouIcon: survey.thankYouIcon !== undefined ? survey.thankYouIcon : existingSurvey.thankYouIcon,
+        thankYouBoxes: survey.thankYouBoxes || existingSurvey.thankYouBoxes || [],
         updatedAt: now,
       },
     });

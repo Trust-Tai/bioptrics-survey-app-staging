@@ -21,6 +21,7 @@ import QuestionSelector from './sections/QuestionSelector';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
+import Analytics from '../../../ui/admin/Analytics';
 
 // Import existing components we'll reuse
 import SurveyBranchingLogic from '../../../ui/admin/SurveyBranchingLogic';
@@ -75,6 +76,7 @@ const steps = [
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
+  { id: 'analyzeResults', label: 'Analyze Results', icon: 'FiBarChart2' },
   { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   // { id: 'preview', label: 'Preview', icon: 'FiEye' },
@@ -355,6 +357,37 @@ const EnhancedSurveyBuilder: React.FC = () => {
     responseRate: 0
   });
   const [survey, setSurvey] = useState<any>({ defaultSettings: { allowRetake: true } });
+  const [thankYouMessage, setThankYouMessage] = useState<string>('');
+  const [thankYouTitle, setThankYouTitle] = useState<string>('Thank You!');
+  const [thankYouDetails, setThankYouDetails] = useState<string>('Your responses have been successfully submitted. We appreciate your time and feedback.');
+  const [thankYouIcon, setThankYouIcon] = useState<string>('');
+  const [showThankYouPreview, setShowThankYouPreview] = useState<boolean>(false);
+  const [thankYouBoxes, setThankYouBoxes] = useState<Array<{
+    title: string;
+    subtitle: string;
+    icon: string;
+    selected: boolean;
+  }>>([{
+    title: 'Total Responses',
+    subtitle: 'Questions answered',
+    icon: 'clipboard-check',
+    selected: true
+  }, {
+    title: 'Unanswered Questions',
+    subtitle: 'Empty answer fields',
+    icon: 'question-circle',
+    selected: true
+  }, {
+    title: 'Completion',
+    subtitle: 'Survey completed',
+    icon: 'check-circle',
+    selected: true
+  }, {
+    title: 'Time Taken',
+    subtitle: 'Total duration',
+    icon: 'clock',
+    selected: true
+  }]);
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   
@@ -1177,6 +1210,58 @@ const EnhancedSurveyBuilder: React.FC = () => {
         setSelectedDemographics(demographicOptions.map(opt => opt.value));
       }
       
+      // Initialize thank you screen fields if they exist in the survey
+      if (currentSurvey.thankYouMessage) {
+        setThankYouMessage(currentSurvey.thankYouMessage);
+      }
+      
+      if (currentSurvey.thankYouTitle) {
+        setThankYouTitle(currentSurvey.thankYouTitle);
+      }
+      
+      if (currentSurvey.thankYouDetails) {
+        setThankYouDetails(currentSurvey.thankYouDetails);
+      }
+      
+      if (currentSurvey.thankYouIcon) {
+        setThankYouIcon(currentSurvey.thankYouIcon);
+      }
+      
+      if (currentSurvey.thankYouBoxes && Array.isArray(currentSurvey.thankYouBoxes) && currentSurvey.thankYouBoxes.length > 0) {
+        setThankYouBoxes(currentSurvey.thankYouBoxes);
+      } else {
+        // Ensure we have default boxes if none exist in the survey
+        const defaultBoxes = [
+          {
+            title: 'Total Responses',
+            subtitle: 'Questions answered',
+            icon: 'clipboard-check'
+          }, {
+            title: 'Unanswered Questions',
+            subtitle: 'Empty answer fields',
+            icon: 'question-circle'
+          }, {
+            title: 'Completion',
+            subtitle: 'Survey completed',
+            icon: 'check-circle'
+          }, {
+            title: 'Time Taken',
+            subtitle: 'Total duration',
+            icon: 'clock'
+          }
+        ];
+        setThankYouBoxes(defaultBoxes);
+        
+        // Update the survey state with default boxes
+        setSurvey((prevSurvey: any) => {
+          if (!prevSurvey) return prevSurvey;
+          return {
+            ...prevSurvey,
+            thankYouBoxes: defaultBoxes
+          };
+        });
+      }
+      
       // Initialize theme if it exists in the survey
       if (currentSurvey.selectedTheme) {
         setSelectedTheme(currentSurvey.selectedTheme);
@@ -1194,6 +1279,12 @@ const EnhancedSurveyBuilder: React.FC = () => {
         
         // No need to manually update React Select as it's controlled by state
         console.log('Tags will be displayed in React Select via state');
+      }
+      
+      // Initialize thankYouMessage if it exists in the survey
+      if (currentSurvey.thankYouMessage) {
+        console.log('Loading saved thank you message from survey');
+        setThankYouMessage(currentSurvey.thankYouMessage);
       }
     }
     
@@ -3283,8 +3374,454 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         <p>No sections added yet. Use the 'Add Section' button to create sections.</p>
                       </div>
                     )}
+
+                    {/* Thank you screen manage dyanamic */}
+                    <div className="survey-section" style={{ marginTop: '30px', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <h3 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 600, color: '#2d3748' }}>Thank You Screen</h3>
+                      <p style={{ marginBottom: '16px', color: '#4a5568', fontSize: '14px' }}>
+                        Customize the message that appears when users complete your survey.
+                      </p>
+                      
+                      {/* Thank You Icon Upload */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <label htmlFor="thankYouIcon" style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#4a5568' }}>
+                          Thank You Icon
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          <div style={{ 
+                            width: '80px', 
+                            height: '80px', 
+                            border: '1px dashed #cbd5e0', 
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#f7fafc',
+                            overflow: 'hidden'
+                          }}>
+                            {thankYouIcon ? (
+                              <img 
+                                src={thankYouIcon} 
+                                alt="Thank You Icon" 
+                                style={{ maxWidth: '100%', maxHeight: '100%' }} 
+                              />
+                            ) : (
+                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="#718096" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                          <div>
+                            <input
+                              type="file"
+                              id="thankYouIconUpload"
+                              style={{ display: 'none' }}
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const result = event.target?.result as string;
+                                    setThankYouIcon(result);
+                                    // Update the survey state to ensure changes are saved
+                                    setSurvey((prevSurvey: any) => {
+                                      if (!prevSurvey) return prevSurvey;
+                                      return {
+                                        ...prevSurvey,
+                                        thankYouIcon: result
+                                      };
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <button 
+                                type="button" 
+                                onClick={() => document.getElementById('thankYouIconUpload')?.click()}
+                                style={{
+                                  padding: '8px 16px',
+                                  backgroundColor: '#552a47',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  marginBottom: '8px'
+                                }}
+                              >
+                                Upload Icon
+                              </button>
+                              {/* Only show remove icon when an icon exists */}
+                              {thankYouIcon && (
+                                <div 
+                                  onClick={() => {
+                                    // Set thankYouIcon to null to indicate it should be removed
+                                    setThankYouIcon(null);
+                                    // Update the survey state
+                                    setSurvey((prevSurvey: any) => {
+                                      if (!prevSurvey) return prevSurvey;
+                                      return {
+                                        ...prevSurvey,
+                                        thankYouIcon: null
+                                      };
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#e53e3e',
+                                    cursor: 'pointer',
+                                    marginBottom: '8px'
+                                  }}
+                                  title="Remove Icon"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <p style={{ fontSize: '13px', color: '#718096', margin: 0 }}>
+                              Recommended size: 128x128px
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Thank You Title */}
+                      <div className="form-group">
+                        <label htmlFor="thankYouTitle" style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#4a5568' }}>
+                          Thank You Title
+                        </label>
+                        <div style={{ padding: '0 20px 0 0' }}>
+                          <input
+                            type="text"
+                            id="thankYouTitle"
+                            value={thankYouTitle}
+                            onChange={(e) => {
+                              setThankYouTitle(e.target.value);
+                              // Update the survey state to ensure changes are saved
+                              setSurvey((prevSurvey: any) => {
+                                if (!prevSurvey) return prevSurvey;
+                                return {
+                                  ...prevSurvey,
+                                  thankYouTitle: e.target.value
+                                };
+                              });
+                              setHasUnsavedChanges(true);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '4px',
+                              fontSize: '16px',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+
+                      
+                      {/* Thank You Details - This is the only Thank You Message box we keep */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <label htmlFor="thankYouDetails" style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#4a5568' }}>
+                          Thank You Details
+                        </label>
+                        <div style={{ padding: '0 20px 0 0' }}>
+                          <textarea
+                            id="thankYouDetails"
+                            value={thankYouDetails}
+                            onChange={(e) => {
+                              setThankYouDetails(e.target.value);
+                              // Update the survey state to ensure changes are saved
+                              setSurvey((prevSurvey: any) => {
+                                if (!prevSurvey) return prevSurvey;
+                                return {
+                                  ...prevSurvey,
+                                  thankYouDetails: e.target.value
+                                };
+                              });
+                              setHasUnsavedChanges(true);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '4px',
+                              minHeight: '80px',
+                              fontSize: '14px',
+                              resize: 'vertical',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Thank You Boxes Configuration */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#2d3748' }}>
+                          Statistics Boxes
+                        </label>
+                        <p style={{ marginBottom: '16px', color: '#4a5568', fontSize: '14px' }}>
+                          Configure the statistics boxes that appear on the thank you screen.
+                        </p>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                          {thankYouBoxes.map((box, index) => (
+                            <div key={index} style={{ 
+                              border: '1px solid #e2e8f0', 
+                              borderRadius: '8px',
+                              padding: '16px',
+                              backgroundColor: '#fff',
+                              overflow: 'hidden' // Prevent content from going outside the box
+                            }}>
+                              <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Box {index + 1}</h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '14px', color: '#4a5568' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={box.selected}
+                                      onChange={(e) => {
+                                        const newBoxes = [...thankYouBoxes];
+                                        newBoxes[index].selected = e.target.checked;
+                                        setThankYouBoxes(newBoxes);
+                                        // Update the survey state
+                                        setSurvey((prevSurvey: any) => {
+                                          if (!prevSurvey) return prevSurvey;
+                                          return {
+                                            ...prevSurvey,
+                                            thankYouBoxes: newBoxes
+                                          };
+                                        });
+                                        setHasUnsavedChanges(true);
+                                      }}
+                                      style={{ 
+                                        marginRight: '6px',
+                                        accentColor: '#552a47', // Theme color for checkbox
+                                        width: '16px',
+                                        height: '16px'
+                                      }}
+                                    />
+                                    <span style={{ color: '#552a47', fontWeight: 500 }}>Show on thank you page</span>
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              {/* Box Title */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#4a5568' }}>
+                                  Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={box.title}
+                                  onChange={(e) => {
+                                    const newBoxes = [...thankYouBoxes];
+                                    newBoxes[index].title = e.target.value;
+                                    setThankYouBoxes(newBoxes);
+                                    // Update the survey state
+                                    setSurvey((prevSurvey: any) => {
+                                      if (!prevSurvey) return prevSurvey;
+                                      return {
+                                        ...prevSurvey,
+                                        thankYouBoxes: newBoxes
+                                      };
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '6px 10px',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '4px',
+                                    fontSize: '14px',
+                                    boxSizing: 'border-box', // Ensure padding is included in width calculation
+                                    overflow: 'hidden', // Prevent text from overflowing
+                                    textOverflow: 'ellipsis' // Show ellipsis for overflowing text
+                                  }}
+                                />
+                              </div>
+                              
+                              {/* Box Subtitle */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#4a5568' }}>
+                                  Subtitle
+                                </label>
+                                <input
+                                  type="text"
+                                  value={box.subtitle}
+                                  onChange={(e) => {
+                                    const newBoxes = [...thankYouBoxes];
+                                    newBoxes[index].subtitle = e.target.value;
+                                    setThankYouBoxes(newBoxes);
+                                    // Update the survey state
+                                    setSurvey((prevSurvey: any) => {
+                                      if (!prevSurvey) return prevSurvey;
+                                      return {
+                                        ...prevSurvey,
+                                        thankYouBoxes: newBoxes
+                                      };
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '6px 10px',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '4px',
+                                    fontSize: '14px',
+                                    boxSizing: 'border-box', // Ensure padding is included in width calculation
+                                    overflow: 'hidden', // Prevent text from overflowing
+                                    textOverflow: 'ellipsis' // Show ellipsis for overflowing text
+                                  }}
+                                />
+                              </div>
+                              
+                              {/* Icon selection removed as requested */}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Preview Button */}
+                      <div style={{ marginTop: '30px', marginBottom: '20px' }}>
+                        <button 
+                          onClick={() => setShowThankYouPreview(!showThankYouPreview)}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#552a47',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            display: 'none',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.03711 12.3224C2.03711 12.3224 5.03711 5.32239 12.0371 5.32239C19.0371 5.32239 22.0371 12.3224 22.0371 12.3224C22.0371 12.3224 19.0371 19.3224 12.0371 19.3224C5.03711 19.3224 2.03711 12.3224 2.03711 12.3224Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12.0371 15.3224C13.6939 15.3224 15.0371 13.9793 15.0371 12.3224C15.0371 10.6656 13.6939 9.32239 12.0371 9.32239C10.3802 9.32239 9.03711 10.6656 9.03711 12.3224C9.03711 13.9793 10.3802 15.3224 12.0371 15.3224Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          {showThankYouPreview ? 'Hide Preview' : 'Show Preview'}
+                        </button>
+                      </div>
+                      
+                      {/* Preview Section */}
+                      {showThankYouPreview && (
+                        <div style={{ marginTop: '10px' }}>
+                          <h4 style={{ marginBottom: '12px', fontSize: '16px', fontWeight: 600, color: '#2d3748' }}>Preview</h4>
+                          <div style={{ 
+                            padding: '20px',
+                            backgroundColor: '#fff',
+                            textAlign: 'center',
+                            maxWidth: '800px',
+                            margin: '0 auto'
+                          }}>
+                            <div style={{ marginBottom: '30px' }}>
+                              {thankYouIcon ? (
+                              <img 
+                                src={thankYouIcon} 
+                                alt="Thank You Icon" 
+                                style={{ width: '80px', height: '80px', marginBottom: '20px' }} 
+                              />
+                            ) : (
+                              <div style={{ 
+                                width: '80px', 
+                                height: '80px', 
+                                borderRadius: '50%',
+                                backgroundColor: '#f8f0f4',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 20px'
+                              }}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#552a47" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            )}
+                              <div style={{ padding: '0 20px', maxWidth: '700px', margin: '0 auto', boxSizing: 'border-box' }}>
+                                <h3 style={{ fontSize: '28px', fontWeight: 600, marginBottom: '16px', color: '#552a47' }}>
+                                  {thankYouTitle || 'Thank You!'}
+                                </h3>
+                                <div style={{ marginBottom: '30px', color: '#4a5568', fontSize: '16px', maxWidth: '600px', margin: '0 auto' }}>
+                                  {thankYouDetails || 'Your responses have been successfully submitted. We appreciate your time and feedback.'}
+                                </div>
+                              </div>
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', maxWidth: '700px', margin: '0 auto' }}>
+                            {thankYouBoxes.map((box, index) => (
+                              <div key={index} style={{ 
+                                padding: '20px', 
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                backgroundColor: '#fff',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                display: 'flex',
+                                alignItems: 'flex-start'
+                              }}>
+                                <div style={{ textAlign: 'left', flex: 1 }}>
+                                  <h4 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 600, color: '#552a47' }}>
+                                    {index === 0 ? '1' : index === 1 ? '3' : index === 2 ? '0%' : '3 min 42 sec'}
+                                  </h4>
+                                  <div style={{ fontSize: '14px', color: '#4a5568', fontWeight: 500 }}>
+                                    {box.title}
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: '#718096' }}>
+                                    {box.subtitle}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Take Survey Again Button */}
+                          <div style={{ marginTop: '30px' }}>
+                            <button style={{
+                              backgroundColor: '#552a47',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '20px',
+                              padding: '10px 20px',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto',
+                              cursor: 'pointer'
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
+                                <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              Take Survey Again
+                            </button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div style={{ marginTop: '16px', fontSize: '13px', color: '#718096' }}>
+                          <p>This preview shows how your thank you screen will appear to users after they complete the survey.</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
               )}
               
               {/* Branching Logic tab */}
@@ -3608,6 +4145,22 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     responseStats={responseStats} 
                     surveyData={survey}
                   />
+                </div>
+              ) : activeStep === 'analyzeResults' ? (
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Analyze Results</h2>
+                  </div>
+                  
+                  {survey?._id ? (
+                    <div style={{ margin: '-1.5rem', width: '100%', marginLeft: '0' }}>
+                      <Analytics surveyFilter={survey._id} embedded={true} />
+                    </div>
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                      <p>Please save the survey first to view analytics.</p>
+                    </div>
+                  )}
                 </div>
               ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">
