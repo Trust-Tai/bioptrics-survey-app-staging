@@ -924,10 +924,77 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
     depth?: number;
   }
 
-  // Fetch tags from the Layers collection
+  // Fetch tags from the Layers collection and determine their usage context
   const { tags, tagsLoading } = useTracker(() => {
     const subscription = Meteor.subscribe('layers.all');
+    const surveysSubscription = Meteor.subscribe('surveys.all');
+    const questionsSubscription = Meteor.subscribe('questions.all');
+    
     const allTags = Layers.find({ active: true }, { sort: { name: 1 } }).fetch();
+    
+    // Get all surveys and questions to check tag usage
+    const allSurveys = Surveys.find({}).fetch();
+    const allQuestions = Questions.find({}).fetch();
+    
+    // Create a map to track tag usage
+    const tagUsageMap: Record<string, { inSurveys: boolean, inQuestions: boolean }> = {};
+    
+    // Initialize usage map for all tags
+    allTags.forEach(tag => {
+      if (tag && tag._id) {
+        tagUsageMap[tag._id] = { inSurveys: false, inQuestions: false };
+      }
+    });
+    
+    // Check which tags are used in surveys - based on AllLayers.tsx logic
+    allSurveys.forEach(survey => {
+      // Check in selectedTags
+      if (survey.selectedTags && Array.isArray(survey.selectedTags)) {
+        survey.selectedTags.forEach(tagId => {
+          if (tagId && tagUsageMap[tagId]) {
+            tagUsageMap[tagId].inSurveys = true;
+          }
+        });
+      }
+      
+      // Check in templateTags
+      if (survey.templateTags && Array.isArray(survey.templateTags)) {
+        survey.templateTags.forEach(tagId => {
+          if (tagId && tagUsageMap[tagId]) {
+            tagUsageMap[tagId].inSurveys = true;
+          }
+        });
+      }
+    });
+    
+    // Check which tags are used in questions - based on AllLayers.tsx logic
+    allQuestions.forEach(question => {
+      // Get the current version of the question
+      const currentVersion = question.versions && question.currentVersion ? 
+        question.versions[question.currentVersion - 1] : null;
+      
+      if (currentVersion) {
+        // Check in categoryTags
+        if (currentVersion.categoryTags && Array.isArray(currentVersion.categoryTags)) {
+          currentVersion.categoryTags.forEach(tagId => {
+            if (tagId && tagUsageMap[tagId]) {
+              tagUsageMap[tagId].inQuestions = true;
+            }
+          });
+        }
+        
+        // Check in labels
+        if ((currentVersion as any).labels && Array.isArray((currentVersion as any).labels)) {
+          (currentVersion as any).labels.forEach((tagId: string) => {
+            if (tagId && tagUsageMap[tagId]) {
+              tagUsageMap[tagId].inQuestions = true;
+            }
+          });
+        }
+      }
+    });
+    
+    console.log('Tag usage map:', tagUsageMap);
     
     // Process tags into hierarchical structure
     const tagsWithChildren: LayerWithChildren[] = [];
@@ -936,7 +1003,17 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
     // First pass: create a map of all tags
     allTags.forEach(tag => {
       if (tag && tag._id) { // Check if tag and tag._id exist
-        tagMap[tag._id] = { ...tag, children: [] };
+        // Add usage context to the tag
+        const usage = tagUsageMap[tag._id] || { inSurveys: false, inQuestions: false };
+        tagMap[tag._id] = { 
+          ...tag, 
+          children: [],
+          // Add usage context to the tag
+          usageContext: {
+            inSurveys: usage.inSurveys,
+            inQuestions: usage.inQuestions
+          }
+        };
       }
     });
     
@@ -956,7 +1033,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
     
     return {
       tags: tagsWithChildren,
-      tagsLoading: !subscription.ready()
+      tagsLoading: !subscription.ready() || !surveysSubscription.ready() || !questionsSubscription.ready()
     };
   }, []);
   
@@ -1157,17 +1234,56 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
     isDisabled?: boolean;
   }
   
-  // Custom Option component to display hierarchical structure
-  const CustomOption = (props: any) => {
+  // Custom option component for hierarchical display
+  const CustomOption = ({ children, ...props }: any) => {
     const { data } = props;
     const depth = data.depth || 0;
-    const indent = '\u00A0\u00A0'.repeat(depth);
+    const indent = '  '.repeat(depth);
     const prefix = depth > 0 ? '└── ' : '';
+    
+    // Context indicator styles
+    const contextStyle = {
+      display: 'inline-block',
+      fontSize: '0.75rem',
+      padding: '2px 6px',
+      borderRadius: '3px',
+      marginLeft: '8px',
+      fontWeight: 'bold',
+      border: '1px solid',
+      whiteSpace: 'nowrap'
+    };
+    
+    // Different styles based on context
+    const getContextStyle = (context: string) => {
+      switch(context) {
+        case 'Survey':
+          return { ...contextStyle, backgroundColor: '#e6f7ff', color: '#0066cc', borderColor: '#0066cc' };
+        case 'Question':
+          return { ...contextStyle, backgroundColor: '#f6ffed', color: '#52c41a', borderColor: '#52c41a' };
+        case 'Both':
+          return { ...contextStyle, backgroundColor: '#fff1f0', color: '#cf1322', borderColor: '#cf1322' };
+        case 'Not Used':
+          return { ...contextStyle, backgroundColor: '#f5f5f5', color: '#666666', borderColor: '#666666' };
+        default:
+          return { ...contextStyle, backgroundColor: '#f5f5f5', color: '#666666', borderColor: '#666666' };
+      }
+    };
+
+    // Use the context from the data if available, otherwise default to 'Not Used'
+    const contextToShow = data.context || 'Not Used';
 
     return (
       <components.Option {...props}>
-        <div style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
-          {indent}{prefix}{data.label}
+        <div style={{ 
+          fontFamily: 'monospace', 
+          whiteSpace: 'pre', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          width: '100%' 
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{indent}{prefix}{data.label}</span>
+          <span style={{ ...getContextStyle(contextToShow), marginLeft: '8px', flexShrink: 0 }}>{contextToShow}</span>
         </div>
       </components.Option>
     );
@@ -1193,13 +1309,34 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
       const flatTagList = buildFlatTagList(tags);
       console.log('Flat tag list:', flatTagList);
       
-      // Map to React Select options format
-      return flatTagList.map(tag => ({
-        value: tag._id,
-        label: tag.name,
-        depth: tag.depth || 0,
-        isDisabled: false
-      }));
+      // Map to React Select options format with context information
+      return flatTagList.map(tag => {
+        // Determine tag context (Survey, Question, or Both)
+        let context = '';
+        
+        // Use the actual usage context data
+        if (tag.usageContext) {
+          if (tag.usageContext.inSurveys && tag.usageContext.inQuestions) {
+            context = 'Both';
+          } else if (tag.usageContext.inSurveys) {
+            context = 'Survey';
+          } else if (tag.usageContext.inQuestions) {
+            context = 'Question';
+          } else {
+            context = 'Not Used'; // Tag exists but isn't used anywhere
+          }
+        } else {
+          context = 'Not Used'; // No usage context available
+        }
+        
+        return {
+          value: tag._id,
+          label: tag.name,
+          depth: tag.depth || 0,
+          isDisabled: false,
+          context: context // Add context information
+        };
+      });
     }, [tags]);
     
     // Find selected options
@@ -1230,14 +1367,27 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
         openMenuOnFocus={openMenuOnFocus}
         filterOption={filterOption}
         onInputChange={onInputChange}
-        components={components || { Option: CustomOption }}
+        components={{
+          Option: CustomOption,
+          NoOptionsMessage: ({ selectProps }) => (
+            <div style={{ 
+              padding: '8px 12px', 
+              color: 'var(--color-text-secondary)',
+              textAlign: 'center'
+            }}>
+              No matching tags found
+            </div>
+          )
+        }}
         className="react-select-container"
         classNamePrefix="react-select"
+        menuPortalTarget={document.body} // Render menu in a portal to avoid containment issues
+        menuPosition="fixed"
         styles={{
           option: (provided, state) => ({
             ...provided,
             padding: '8px 12px',
-            width: '200px',
+            width: '270px',
             minWidth: '100%',
             backgroundColor: state.isFocused ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'var(--color-background)',
             color: state.isFocused ? 'var(--color-primary)' : 'var(--color-text)',
@@ -1249,15 +1399,36 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           menu: (provided) => ({
             ...provided,
             backgroundColor: 'var(--color-background)',
-            width: '500px',
+            width: '100%',
             minWidth: '100%',
             border: '1px solid var(--color-accent)',
+            borderTop: 'none', // Remove top border
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', // Add subtle shadow instead of border
+            marginTop: '0', // Remove gap between input and dropdown
+            borderRadius: '0 0 4px 4px', // Round only bottom corners
+          }),
+          menuPortal: (base) => ({
+            ...base,
+            zIndex: 9999,
+          }),
+          container: (provided) => ({
+            ...provided,
+            width: '100%', // Ensure container takes full width
+          }),
+          control: (provided) => ({
+            ...provided,
+            width: '100%', // Ensure control takes full width
+          }),
+          menuList: (provided) => ({
+            ...provided,
+            padding: '4px 0',
           }),
           control: (provided) => ({
             ...provided,
             minHeight: '38px',
             backgroundColor: 'var(--color-background)',
             borderColor: 'var(--color-accent)',
+            borderRadius: '4px',
           }),
           multiValue: (provided) => ({
             ...provided,
