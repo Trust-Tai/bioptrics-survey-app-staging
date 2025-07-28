@@ -1244,33 +1244,33 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
     // Context indicator styles
     const contextStyle = {
       display: 'inline-block',
-      fontSize: '0.75rem',
-      padding: '2px 6px',
-      borderRadius: '3px',
-      marginLeft: '8px',
-      fontWeight: 'bold',
-      border: '1px solid',
-      whiteSpace: 'nowrap'
+      fontSize: '0.7rem',
+      padding: '1px 4px',
+      borderRadius: '2px',
+      marginLeft: '4px',
+      fontWeight: 'normal',
+      border: '1px solid var(--color-accent)',
+      whiteSpace: 'nowrap',
+      color: 'var(--color-text-secondary)'
     };
     
     // Different styles based on context
     const getContextStyle = (context: string) => {
       switch(context) {
         case 'Survey':
-          return { ...contextStyle, backgroundColor: '#e6f7ff', color: '#0066cc', borderColor: '#0066cc' };
+          return { ...contextStyle, backgroundColor: 'var(--color-background)' };
         case 'Question':
-          return { ...contextStyle, backgroundColor: '#f6ffed', color: '#52c41a', borderColor: '#52c41a' };
-        case 'Both':
-          return { ...contextStyle, backgroundColor: '#fff1f0', color: '#cf1322', borderColor: '#cf1322' };
+          return { ...contextStyle, backgroundColor: 'var(--color-background)' };
         case 'Not Used':
-          return { ...contextStyle, backgroundColor: '#f5f5f5', color: '#666666', borderColor: '#666666' };
+          return { ...contextStyle, backgroundColor: 'var(--color-background)', opacity: 0.7 };
         default:
-          return { ...contextStyle, backgroundColor: '#f5f5f5', color: '#666666', borderColor: '#666666' };
+          return { ...contextStyle, backgroundColor: 'var(--color-background)', opacity: 0.7 };
       }
     };
 
-    // Use the context from the data if available, otherwise default to 'Not Used'
-    const contextToShow = data.context || 'Not Used';
+    // Get contexts to show
+    const contexts = data.contexts || [];
+    const showNotUsed = contexts.length === 0;
 
     return (
       <components.Option {...props}>
@@ -1283,7 +1283,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           width: '100%' 
         }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{indent}{prefix}{data.label}</span>
-          <span style={{ ...getContextStyle(contextToShow), marginLeft: '8px', flexShrink: 0 }}>{contextToShow}</span>
+          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+            {contexts.map((context, index) => (
+              <span key={index} style={getContextStyle(context)}>{context}</span>
+            ))}
+            {showNotUsed && <span style={getContextStyle('Not Used')}>Not Used</span>}
+          </div>
         </div>
       </components.Option>
     );
@@ -1315,18 +1320,26 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
         let context = '';
         
         // Use the actual usage context data
+        const contexts = [];
+        
         if (tag.usageContext) {
-          if (tag.usageContext.inSurveys && tag.usageContext.inQuestions) {
-            context = 'Both';
-          } else if (tag.usageContext.inSurveys) {
-            context = 'Survey';
-          } else if (tag.usageContext.inQuestions) {
-            context = 'Question';
-          } else {
-            context = 'Not Used'; // Tag exists but isn't used anywhere
+          // Add Survey context if used in surveys
+          if (tag.usageContext.inSurveys) {
+            contexts.push('Survey');
+          }
+          
+          // Add Question context if used in questions
+          if (tag.usageContext.inQuestions) {
+            contexts.push('Question');
+          }
+          
+          // If no contexts, tag is not used
+          if (contexts.length === 0) {
+            contexts.push('Not Used');
           }
         } else {
-          context = 'Not Used'; // No usage context available
+          // No usage context available
+          contexts.push('Not Used');
         }
         
         return {
@@ -1334,7 +1347,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           label: tag.name,
           depth: tag.depth || 0,
           isDisabled: false,
-          context: context // Add context information
+          contexts: contexts // Add contexts array instead of single context
         };
       });
     }, [tags]);
