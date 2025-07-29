@@ -11,7 +11,18 @@ interface EnhancedSurveySectionProps {
   onAddQuestion: (sectionId: string) => void;
   onCreateQuestion: (sectionId: string) => void;
   onRemoveQuestion: (questionId: string, sectionId: string) => void;
+  onEditQuestion: (questionId: string, sectionId: string) => void;
   onReorderQuestion: (sectionId: string, oldIndex: number, newIndex: number) => void;
+  onMoveQuestionToSection?: (questionId: string, targetSectionId: string, targetIndex?: number) => void;
+  onMoveQuestionBetweenSections?: (questionId: string, sourceSectionId: string, targetSectionId: string, targetIndex?: number) => void;
+  draggingQuestionId?: string | null;
+  draggingQuestionSectionId?: string | null;
+  setDraggingQuestionId?: (id: string | null) => void;
+  setDraggingQuestionSectionId?: (id: string | null) => void;
+  dragOverSectionId?: string | null;
+  setDragOverSectionId?: (id: string | null) => void;
+  dragOverQuestionId?: string | null;
+  setDragOverQuestionId?: (id: string | null) => void;
 }
 
 const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
@@ -22,7 +33,18 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
   onAddQuestion,
   onCreateQuestion,
   onRemoveQuestion,
+  onEditQuestion,
   onReorderQuestion,
+  onMoveQuestionToSection,
+  onMoveQuestionBetweenSections,
+  draggingQuestionId,
+  draggingQuestionSectionId,
+  setDraggingQuestionId,
+  setDraggingQuestionSectionId,
+  dragOverSectionId,
+  setDragOverSectionId,
+  dragOverQuestionId,
+  setDragOverQuestionId,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -30,31 +52,103 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
   // Filter questions that belong to this section
   const sectionQuestions = questions.filter(q => q.sectionId === section.id);
   
-  // Handle drag and drop for question reordering
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    e.dataTransfer.setData('text/plain', index.toString());
+  // Handle drag and drop for question reordering and cross-section movement
+  const handleDragStart = (e: React.DragEvent, index: number, questionId: string) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      questionId,
+      sectionId: section.id,
+      index
+    }));
     setIsDragging(true);
+    if (setDraggingQuestionId) setDraggingQuestionId(questionId);
+    if (setDraggingQuestionSectionId) setDraggingQuestionSectionId(section.id);
   };
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    if (setDragOverSectionId) setDragOverSectionId(section.id);
+  };
+  
+  const handleDragLeave = () => {
+    if (setDragOverSectionId) setDragOverSectionId(null);
+  };
+  
+  const handleQuestionDragOver = (e: React.DragEvent, questionId: string) => {
+    e.preventDefault();
+    if (setDragOverQuestionId && draggingQuestionId !== questionId) {
+      setDragOverQuestionId(questionId);
+    }
+  };
+  
+  const handleQuestionDragLeave = () => {
+    if (setDragOverQuestionId) setDragOverQuestionId(null);
   };
   
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    if (sourceIndex !== targetIndex) {
-      onReorderQuestion(section.id, sourceIndex, targetIndex);
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      
+      // If dropping from same section (reordering)
+      if (data.sectionId === section.id) {
+        if (data.index !== targetIndex) {
+          onReorderQuestion(section.id, data.index, targetIndex);
+        }
+      } 
+      // If dropping from no-section area to this section
+      else if (data.sectionId === null && onMoveQuestionToSection) {
+        onMoveQuestionToSection(data.questionId, section.id, targetIndex);
+      }
+      // If dropping from another section to this section
+      else if (data.sectionId !== section.id && onMoveQuestionBetweenSections) {
+        onMoveQuestionBetweenSections(data.questionId, data.sectionId, section.id, targetIndex);
+      }
+    } catch (error) {
+      console.error('Error parsing drag data:', error);
     }
+    
     setIsDragging(false);
+    if (setDragOverSectionId) setDragOverSectionId(null);
+    if (setDragOverQuestionId) setDragOverQuestionId(null);
+    if (setDraggingQuestionId) setDraggingQuestionId(null);
+    if (setDraggingQuestionSectionId) setDraggingQuestionSectionId(null);
   };
   
   const handleDragEnd = () => {
     setIsDragging(false);
+    if (setDraggingQuestionId) setDraggingQuestionId(null);
+    if (setDraggingQuestionSectionId) setDraggingQuestionSectionId(null);
+    if (setDragOverSectionId) setDragOverSectionId(null);
+    if (setDragOverQuestionId) setDragOverQuestionId(null);
   };
   
   return (
-    <div className="survey-section">
+    <div 
+      className={`survey-section ${dragOverSectionId === section.id ? 'drag-over-section' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={(e) => {
+        e.preventDefault();
+        try {
+          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+          
+          // If dropping from no-section area to this section
+          if (data.sectionId === null && onMoveQuestionToSection) {
+            onMoveQuestionToSection(data.questionId, section.id);
+          }
+          // If dropping from another section to this section
+          else if (data.sectionId !== section.id && onMoveQuestionBetweenSections) {
+            onMoveQuestionBetweenSections(data.questionId, data.sectionId, section.id);
+          }
+        } catch (error) {
+          console.error('Error parsing drag data:', error);
+        }
+        
+        if (setDragOverSectionId) setDragOverSectionId(null);
+        if (setDraggingQuestionId) setDraggingQuestionId(null);
+        if (setDraggingQuestionSectionId) setDraggingQuestionSectionId(null);
+      }}
+    >
       <div 
         className="survey-section-header" 
         onClick={() => setIsExpanded(!isExpanded)}
@@ -115,10 +209,14 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
               sectionQuestions.map((question, index) => (
                 <div 
                   key={question.id}
-                  className={`survey-section-question ${isDragging ? 'dragging' : ''}`}
+                  className={`survey-section-question ${isDragging ? 'dragging' : ''} ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={handleDragOver}
+                  onDragStart={(e) => handleDragStart(e, index, question.id)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    handleQuestionDragOver(e, question.id);
+                  }}
+                  onDragLeave={handleQuestionDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                 >
@@ -131,8 +229,22 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   <div className="survey-section-question-actions">
                     <button 
                       className="btn btn-icon btn-secondary"
+                      onClick={() => onEditQuestion(question.id, section.id)}
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        marginRight: '6px'
+                      }}
+                      title="Edit question"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
+                    <button 
+                      className="btn btn-icon btn-secondary"
                       onClick={() => onRemoveQuestion(question.id, section.id)}
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      title="Delete question"
                     >
                       <FiTrash2 size={16} />
                     </button>

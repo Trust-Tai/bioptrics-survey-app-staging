@@ -7,7 +7,7 @@ import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams, useLocation, UNSAFE_NavigationContext } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiChevronRight, FiChevronDown, FiChevronUp, FiSave, FiMove, FiUserPlus, FiUsers } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiEdit2, FiChevronRight, FiChevronDown, FiChevronUp, FiSave, FiMove, FiUserPlus, FiUsers } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
@@ -344,8 +344,18 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
   const [surveyData, setSurveyData] = useState<any>(null);
   const [activeStep, setActiveStep] = useState('welcome');
+  // State for question editing
+  const [isQuestionBuilderOpen, setIsQuestionBuilderOpen] = useState<boolean>(false);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editingQuestionSectionId, setEditingQuestionSectionId] = useState<string | null>(null);
+  // State for drag and drop sections and questions
   const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null);
   const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
+  const [draggingQuestionId, setDraggingQuestionId] = useState<string | null>(null);
+  const [draggingQuestionSectionId, setDraggingQuestionSectionId] = useState<string | null>(null);
+  const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [dragOverNoSection, setDragOverNoSection] = useState<boolean>(false);
   const [isLoadingResponses, setIsLoadingResponses] = useState<boolean>(false);
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
   const [responseStats, setResponseStats] = useState<any>({
@@ -422,6 +432,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Layer[]>([]);
+  const tagSelectRef = useRef<any>(null);
   
   // Theme modal state
   const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
@@ -1316,6 +1327,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
       }),
     };
   }, [surveyId]);
+  
   
   // Show success alert
   const showSuccessAlert = (message: string) => {
@@ -2313,6 +2325,29 @@ const EnhancedSurveyBuilder: React.FC = () => {
     setShowQuestionSelector(false);
   };
   
+  // Handle editing a question
+  const handleEditQuestion = (questionId: string, sectionId: string | null) => {
+    console.log(`Editing question ${questionId} from section ${sectionId}`);
+    setEditingQuestionId(questionId);
+    setEditingQuestionSectionId(sectionId);
+    setIsQuestionBuilderOpen(true);
+  };
+
+  // Handle question creation/edit completion
+  const handleQuestionCreated = (questionId: string) => {
+    console.log(`Question created/edited: ${questionId}`);
+    refreshSurveyData();
+    setHasUnsavedChanges(true);
+    triggerAutoSave();
+  };
+
+  // Handle closing the question builder
+  const handleCloseQuestionBuilder = () => {
+    setIsQuestionBuilderOpen(false);
+    setEditingQuestionId(null);
+    setEditingQuestionSectionId(null);
+  };
+
   // Handle removing a question from a section or from no-section area
   const handleRemoveQuestion = (questionId: string, sectionId: string | null) => {
     // Completely remove the question from surveyQuestions
@@ -2350,7 +2385,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // Handle reordering questions within a section
   const handleReorderQuestion = (sectionId: string, oldIndex: number, newIndex: number) => {
-    // Get questions for this section
+    // Get questions for the section
     const sectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
     
     // Reorder the questions
@@ -2361,16 +2396,217 @@ const EnhancedSurveyBuilder: React.FC = () => {
     // Update the order property for each question
     const updatedQuestions = reorderedQuestions.map((q, index) => ({
       ...q,
-      order: index,
+      order: index
     }));
     
-    // Update the survey questions state
-    setSurveyQuestions(prev => {
-      const otherQuestions = prev.filter(q => q.sectionId !== sectionId);
-      return [...otherQuestions, ...updatedQuestions];
+    // Update the questions in the database
+    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+      if (error) {
+        console.error('Error reordering questions:', error);
+        showErrorAlert('Failed to reorder questions.');
+      } else {
+        console.log('Questions reordered successfully');
+        refreshSurveyData();
+      }
+    });
+  };
+
+  // Handle reordering questions in the no-section area
+  const handleReorderNoSectionQuestion = (oldIndex: number, newIndex: number) => {
+    // Get questions for the no-section area
+    const noSectionQuestions = surveyQuestions.filter(q => !q.sectionId);
+    
+    // Reorder the questions
+    const reorderedQuestions = [...noSectionQuestions];
+    const [movedQuestion] = reorderedQuestions.splice(oldIndex, 1);
+    reorderedQuestions.splice(newIndex, 0, movedQuestion);
+    
+    // Update the order property for each question
+    const updatedQuestions = reorderedQuestions.map((q, index) => ({
+      ...q,
+      order: index
+    }));
+    
+    // Update the questions in the database
+    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+      if (error) {
+        console.error('Error reordering no-section questions:', error);
+        showErrorAlert('Failed to reorder questions.');
+      } else {
+        console.log('No-section questions reordered successfully');
+        refreshSurveyData();
+      }
+    });
+  };
+
+  // Handle moving a question from a section to the no-section area
+  const handleMoveQuestionToNoSection = (questionId: string, sectionId: string, targetIndex: number = -1) => {
+    // Get the question to move
+    const questionToMove = surveyQuestions.find(q => q.id === questionId && q.sectionId === sectionId);
+    if (!questionToMove) {
+      console.error('Question not found:', questionId);
+      return;
+    }
+
+    // Get no-section questions to determine order
+    const noSectionQuestions = surveyQuestions.filter(q => !q.sectionId);
+    
+    // Create updated question with no sectionId
+    const updatedQuestion = {
+      ...questionToMove,
+      sectionId: undefined,
+      order: targetIndex >= 0 ? targetIndex : noSectionQuestions.length
+    };
+
+    // Get all questions except the one being moved
+    const otherQuestions = surveyQuestions.filter(q => !(q.id === questionId && q.sectionId === sectionId));
+    
+    // Insert the updated question at the target index or at the end
+    let updatedQuestions;
+    if (targetIndex >= 0) {
+      // Insert at specific position and update orders
+      const beforeQuestions = noSectionQuestions.slice(0, targetIndex);
+      const afterQuestions = noSectionQuestions.slice(targetIndex);
+      
+      // Combine and update orders
+      const reorderedNoSectionQuestions = [
+        ...beforeQuestions, 
+        updatedQuestion, 
+        ...afterQuestions.map(q => ({ ...q, order: (q.order || 0) + 1 }))
+      ];
+      
+      // Combine with questions from sections
+      const sectionQuestions = otherQuestions.filter(q => q.sectionId);
+      updatedQuestions = [...sectionQuestions, ...reorderedNoSectionQuestions];
+    } else {
+      // Just add to the end
+      updatedQuestions = [...otherQuestions, updatedQuestion];
+    }
+
+    // Update the questions in the database
+    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+      if (error) {
+        console.error('Error moving question to no-section area:', error);
+        showErrorAlert('Failed to move question.');
+      } else {
+        console.log('Question moved to no-section area successfully');
+        refreshSurveyData();
+      }
+    });
+  };
+
+  // Handle moving a question from the no-section area to a section
+  const handleMoveQuestionToSection = (questionId: string, targetSectionId: string, targetIndex: number = -1) => {
+    // Get the question to move
+    const questionToMove = surveyQuestions.find(q => q.id === questionId && !q.sectionId);
+    if (!questionToMove) {
+      console.error('Question not found:', questionId);
+      return;
+    }
+
+    // Get section questions to determine order
+    const sectionQuestions = surveyQuestions.filter(q => q.sectionId === targetSectionId);
+    
+    // Create updated question with new sectionId
+    const updatedQuestion = {
+      ...questionToMove,
+      sectionId: targetSectionId,
+      order: targetIndex >= 0 ? targetIndex : sectionQuestions.length
+    };
+
+    // Get all questions except the one being moved
+    const otherQuestions = surveyQuestions.filter(q => !(q.id === questionId && !q.sectionId));
+    
+    // Insert the updated question at the target index or at the end
+    let updatedQuestions;
+    if (targetIndex >= 0) {
+      // Insert at specific position and update orders
+      const beforeQuestions = sectionQuestions.slice(0, targetIndex);
+      const afterQuestions = sectionQuestions.slice(targetIndex);
+      
+      // Combine and update orders
+      const reorderedSectionQuestions = [
+        ...beforeQuestions, 
+        updatedQuestion, 
+        ...afterQuestions.map(q => ({ ...q, order: (q.order || 0) + 1 }))
+      ];
+      
+      // Combine with questions from other sections and no-section
+      const otherSectionsQuestions = otherQuestions.filter(q => q.sectionId !== targetSectionId);
+      updatedQuestions = [...otherSectionsQuestions, ...reorderedSectionQuestions];
+    } else {
+      // Just add to the end
+      updatedQuestions = [...otherQuestions, updatedQuestion];
+    }
+
+    // Update the questions in the database
+    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+      if (error) {
+        console.error('Error moving question to section:', error);
+        showErrorAlert('Failed to move question.');
+      } else {
+        console.log('Question moved to section successfully');
+        refreshSurveyData();
+      }
     });
   };
   
+  // Handle moving a question between sections
+  const handleMoveQuestionBetweenSections = (questionId: string, sourceSectionId: string, targetSectionId: string, targetIndex: number = -1) => {
+    // Get the question to move
+    const questionToMove = surveyQuestions.find(q => q.id === questionId && q.sectionId === sourceSectionId);
+    if (!questionToMove) {
+      console.error('Question not found:', questionId);
+      return;
+    }
+
+    // Get target section questions to determine order
+    const targetSectionQuestions = surveyQuestions.filter(q => q.sectionId === targetSectionId);
+    
+    // Create updated question with new sectionId
+    const updatedQuestion = {
+      ...questionToMove,
+      sectionId: targetSectionId,
+      order: targetIndex >= 0 ? targetIndex : targetSectionQuestions.length
+    };
+
+    // Get all questions except the one being moved
+    const otherQuestions = surveyQuestions.filter(q => !(q.id === questionId && q.sectionId === sourceSectionId));
+    
+    // Insert the updated question at the target index or at the end
+    let updatedQuestions;
+    if (targetIndex >= 0) {
+      // Insert at specific position and update orders
+      const beforeQuestions = targetSectionQuestions.slice(0, targetIndex);
+      const afterQuestions = targetSectionQuestions.slice(targetIndex);
+      
+      // Combine and update orders
+      const reorderedSectionQuestions = [
+        ...beforeQuestions, 
+        updatedQuestion, 
+        ...afterQuestions.map(q => ({ ...q, order: (q.order || 0) + 1 }))
+      ];
+      
+      // Combine with questions from other sections
+      const otherSectionsQuestions = otherQuestions.filter(q => q.sectionId !== targetSectionId);
+      updatedQuestions = [...otherSectionsQuestions, ...reorderedSectionQuestions];
+    } else {
+      // Just add to the end
+      updatedQuestions = [...otherQuestions, updatedQuestion];
+    }
+
+    // Update the questions in the database
+    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+      if (error) {
+        console.error('Error moving question between sections:', error);
+        showErrorAlert('Failed to move question.');
+      } else {
+        console.log('Question moved between sections successfully');
+        refreshSurveyData();
+      }
+    });
+  };
+
   // Handle reordering sections
   const handleReorderSection = async (oldIndex: number, newIndex: number) => {
     // Reorder the sections
@@ -2451,6 +2687,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
       .filter(q => q.sectionId === sectionId)
       .map(q => q.id);
   };
+  
+  // Get questions that don't belong to any section
+  const noSectionQuestions = surveyQuestions.filter(q => !q.sectionId);
   
   // Render loading state
   if (isLoading) {
@@ -3211,13 +3450,14 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       .survey-section-wrapper {
                         margin-bottom: 16px;
                         transition: all 0.2s ease;
-                        position: relative;
                       }
                       .survey-section-wrapper.dragging {
                         opacity: 0.5;
-                        transform: scale(0.98);
                       }
-                      .survey-section-wrapper.drag-over:before {
+                      .survey-section-wrapper.drag-over {
+                        position: relative;
+                      }
+                      .survey-section-wrapper.drag-over::before {
                         content: '';
                         position: absolute;
                         top: -8px;
@@ -3228,18 +3468,15 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         border-radius: 2px;
                         z-index: 10;
                       }
-                      .section-drag-handle {
-                        border-radius: 4px 4px 0 0;
-                        border-bottom: none;
+                      .survey-section-add-question {
+                        padding: 12px 16px;
+                        background-color: #f9fafb;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        border: 1px dashed #cbd5e1;
                       }
-                      .section-drag-placeholder {
-                        height: 80px;
-                        border: 2px dashed #552a47;
-                        border-radius: 4px;
-                        margin-bottom: 16px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
+                      .survey-section-add-question:hover {
                         background-color: rgba(85, 42, 71, 0.05);
                         color: #552a47;
                       }
@@ -3252,43 +3489,155 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
+                        transition: all 0.2s ease;
+                      }
+                      .question-item.dragging {
+                        opacity: 0.5;
+                      }
+                      .question-item.drag-over {
+                        position: relative;
+                        box-shadow: 0 0 0 2px #552a47;
+                      }
+                      .survey-section-question {
+                        transition: all 0.2s ease;
+                      }
+                      .survey-section-question.dragging {
+                        opacity: 0.5;
+                      }
+                      .survey-section-question.drag-over {
+                        position: relative;
+                        box-shadow: 0 0 0 2px #552a47;
+                      }
+                      .no-section-questions {
+                        transition: all 0.2s ease;
+                      }
+                      .no-section-questions.drag-over {
+                        background-color: rgba(85, 42, 71, 0.05);
+                        border-radius: 8px;
+                        padding: 8px;
+                      }
+                      .survey-section.drag-over-section {
+                        background-color: rgba(85, 42, 71, 0.05);
+                        border-radius: 8px;
+                        box-shadow: 0 0 0 2px #552a47;
                       }
                     `}} />
                     
                     {/* Display questions that don't belong to any section */}
-                    <div className="no-section-questions" style={{ marginBottom: '30px' }}>
-                     
-                      {surveyQuestions.filter(q => !q.sectionId).length > 0 ? (
-                        surveyQuestions
-                          .filter(q => !q.sectionId)
-                          .sort((a, b) => (a.order || 0) - (b.order || 0))
-                          .map((question, index) => (
-                            <div 
-                              key={question.id}
-                              className="question-item"
-                            >
+                    <div 
+                      className={`no-section-questions ${dragOverNoSection ? 'drag-over' : ''}`} 
+                      style={{ marginBottom: '30px', padding: '8px' }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (!draggingSectionIndex && draggingQuestionSectionId !== null) {
+                          setDragOverNoSection(true);
+                        }
+                      }}
+                      onDragLeave={() => {
+                        setDragOverNoSection(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        // Handle drop of question from section to no-section area
+                        if (draggingQuestionId && draggingQuestionSectionId) {
+                          handleMoveQuestionToNoSection(draggingQuestionId, draggingQuestionSectionId);
+                        }
+                        setDragOverNoSection(false);
+                        setDraggingQuestionId(null);
+                        setDraggingQuestionSectionId(null);
+                      }}
+                    >
+                      <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#2d3748', marginBottom: '16px' }}>Questions without a section</h3>
+                      
+                      {noSectionQuestions.length > 0 ? (
+                        noSectionQuestions.map((question, index) => (
+                          <div
+                            key={question.id}
+                            className={`question-item ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', JSON.stringify({
+                                questionId: question.id,
+                                sectionId: null,
+                                index
+                              }));
+                              setDraggingQuestionId(question.id);
+                              setDraggingQuestionSectionId(null);
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (draggingQuestionId !== question.id) {
+                                setDragOverQuestionId(question.id);
+                                setDragOverNoSection(false);
+                              }
+                            }}
+                            onDragLeave={() => {
+                              setDragOverQuestionId(null);
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                              
+                              // If dropping from no-section to no-section
+                              if (data.sectionId === null && draggingQuestionId !== question.id) {
+                                handleReorderNoSectionQuestion(data.index, index);
+                              }
+                              // If dropping from section to no-section
+                              else if (data.sectionId !== null) {
+                                handleMoveQuestionToNoSection(data.questionId, index);
+                              }
+                              
+                              setDragOverQuestionId(null);
+                              setDraggingQuestionId(null);
+                              setDraggingQuestionSectionId(null);
+                              setDragOverNoSection(false);
+                            }}
+                            onDragEnd={() => {
+                              setDraggingQuestionId(null);
+                              setDraggingQuestionSectionId(null);
+                              setDragOverQuestionId(null);
+                              setDragOverNoSection(false);
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <div style={{ paddingRight: '8px', cursor: 'grab' }}>
+                                <FiMove size={16} />
+                              </div>
                               <div>
                                 <div style={{ fontWeight: 500 }}>{question.text}</div>
                                 <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                                   {question.type}
                                 </div>
                               </div>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button
-                                  onClick={() => handleRemoveQuestion(question.id, null)}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: '#666',
-                                    padding: '4px'
-                                  }}
-                                >
-                                  <FiTrash2 />
-                                </button>
-                              </div>
                             </div>
-                          ))
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => handleEditQuestion(question.id, null)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#666',
+                                  padding: '4px'
+                                }}
+                              >
+                                <FiEdit2 />
+                              </button>
+                              <button
+                                onClick={() => handleRemoveQuestion(question.id, null)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#666',
+                                  padding: '4px'
+                                }}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+                          </div>
+                        ))
                       ) : (
                         <div style={{ 
                           padding: '20px', 
@@ -3296,10 +3645,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           color: '#666',
                           backgroundColor: '#f9f9f9',
                           borderRadius: '8px',
-                          display:'none',
                           marginBottom: '20px'
                         }}>
-                          <p>No questions added yet. Use the buttons above to add questions.</p>
+                          <p>No questions added yet. Use the buttons below to add questions.</p>
                         </div>
                       )}
                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '16px' }}>
@@ -3364,7 +3712,18 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               onAddQuestion={handleAddQuestion}
                               onCreateQuestion={handleCreateQuestion}
                               onRemoveQuestion={handleRemoveQuestion}
+                              onEditQuestion={handleEditQuestion}
                               onReorderQuestion={handleReorderQuestion}
+                              onMoveQuestionToSection={handleMoveQuestionToSection}
+                              onMoveQuestionBetweenSections={handleMoveQuestionBetweenSections}
+                              draggingQuestionId={draggingQuestionId}
+                              draggingQuestionSectionId={draggingQuestionSectionId}
+                              setDraggingQuestionId={setDraggingQuestionId}
+                              setDraggingQuestionSectionId={setDraggingQuestionSectionId}
+                              dragOverSectionId={dragOverSectionId}
+                              setDragOverSectionId={setDragOverSectionId}
+                              dragOverQuestionId={dragOverQuestionId}
+                              setDragOverQuestionId={setDragOverQuestionId}
                             />
                           </div>
                         ))}
@@ -3734,27 +4093,27 @@ const EnhancedSurveyBuilder: React.FC = () => {
                           }}>
                             <div style={{ marginBottom: '30px' }}>
                               {thankYouIcon ? (
-                              <img 
-                                src={thankYouIcon} 
-                                alt="Thank You Icon" 
-                                style={{ width: '80px', height: '80px', marginBottom: '20px' }} 
-                              />
-                            ) : (
-                              <div style={{ 
-                                width: '80px', 
-                                height: '80px', 
-                                borderRadius: '50%',
-                                backgroundColor: '#f8f0f4',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                margin: '0 auto 20px'
-                              }}>
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#552a47" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </div>
-                            )}
+                                <img 
+                                  src={thankYouIcon} 
+                                  alt="Thank You Icon" 
+                                  style={{ width: '80px', height: '80px', marginBottom: '20px' }} 
+                                />
+                              ) : (
+                                <div style={{ 
+                                  width: '80px', 
+                                  height: '80px', 
+                                  borderRadius: '50%',
+                                  backgroundColor: '#f8f0f4',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  margin: '0 auto 20px'
+                                }}>
+                                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#552a47" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </div>
+                              )}
                               <div style={{ padding: '0 20px', maxWidth: '700px', margin: '0 auto', boxSizing: 'border-box' }}>
                                 <h3 style={{ fontSize: '28px', fontWeight: 600, marginBottom: '16px', color: '#552a47' }}>
                                   {thankYouTitle || 'Thank You!'}
@@ -3763,65 +4122,68 @@ const EnhancedSurveyBuilder: React.FC = () => {
                                   {thankYouDetails || 'Your responses have been successfully submitted. We appreciate your time and feedback.'}
                                 </div>
                               </div>
-                          </div>
-                          
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', maxWidth: '700px', margin: '0 auto' }}>
-                            {thankYouBoxes.map((box, index) => (
-                              <div key={index} style={{ 
-                                padding: '20px', 
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '8px',
-                                backgroundColor: '#fff',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                display: 'flex',
-                                alignItems: 'flex-start'
-                              }}>
-                                <div style={{ textAlign: 'left', flex: 1 }}>
-                                  <h4 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 600, color: '#552a47' }}>
-                                    {index === 0 ? '1' : index === 1 ? '3' : index === 2 ? '0%' : '3 min 42 sec'}
-                                  </h4>
-                                  <div style={{ fontSize: '14px', color: '#4a5568', fontWeight: 500 }}>
-                                    {box.title}
-                                  </div>
-                                  <div style={{ fontSize: '12px', color: '#718096' }}>
-                                    {box.subtitle}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', maxWidth: '700px', margin: '0 auto' }}>
+                              {thankYouBoxes.map((box, index) => (
+                                <div key={index} style={{ 
+                                  padding: '20px', 
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '8px',
+                                  backgroundColor: '#fff',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                  display: 'flex',
+                                  alignItems: 'flex-start'
+                                }}>
+                                  <div style={{ textAlign: 'left', flex: 1 }}>
+                                    <h4 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 600, color: '#552a47' }}>
+                                      {index === 0 ? '1' : index === 1 ? '3' : index === 2 ? '0%' : '3 min 42 sec'}
+                                    </h4>
+                                    <div style={{ fontSize: '14px', color: '#4a5568', fontWeight: 500 }}>
+                                      {box.title}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#718096' }}>
+                                      {box.subtitle}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Take Survey Again Button */}
-                          <div style={{ marginTop: '30px' }}>
-                            <button style={{
-                              backgroundColor: '#552a47',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '20px',
-                              padding: '10px 20px',
-                              fontSize: '14px',
-                              fontWeight: '500',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              margin: '0 auto',
-                              cursor: 'pointer'
-                            }}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
-                                <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Take Survey Again
-                            </button>
+                              ))}
                             </div>
                           </div>
                         </div>
+                      )}
+                          
+                      {/* Take Survey Again Button */}
+                      <div style={{ marginTop: '30px' }}>
+                        <button style={{
+                          backgroundColor: '#552a47',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '20px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto',
+                          cursor: 'pointer'
+                         }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
+                            <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Take Survey Again
+                        </button>
+                              
+                      </div>
+                    </div>
                         
                         <div style={{ marginTop: '16px', fontSize: '13px', color: '#718096' }}>
                           <p>This preview shows how your thank you screen will appear to users after they complete the survey.</p>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  // </div>
+                // </div>
               )}
               
               {/* Branching Logic tab */}
@@ -4842,60 +5204,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : activeStep === 'tags' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">
-                      {steps.find(step => step.id === activeStep)?.label}
-                    </h2>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    <p style={{ marginBottom: 16, fontSize: 18 }}>
-                      Select tags for your survey. Tags help categorize and filter your survey content.
-                    </p>
-                    
-                    <div style={{ marginBottom: 20 }}>
-                      <label htmlFor="survey-tags" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                        Survey Tags
-                      </label>
-                      <div className="tom-select-container" style={{ 
-                        marginBottom: 16,
-                        maxWidth: '600px',
-                        position: 'relative',
-                        zIndex: 1000,
-                        overflow: 'visible'
-                      }}>
-                      {/* Add a style tag to ensure the dropdown menu is visible */}
-                      <style>
-                        {`
-                          .ts-dropdown { 
-                            z-index: 1001 !important; 
-                            max-height: 300px !important;
-                            overflow-y: auto !important;
-                            position: absolute !important;
-                          }
-                          .survey-builder-panel { overflow: visible !important; }
-                          .survey-builder-content { overflow: visible !important; }
-                        `}
-                      </style>
-                        <select 
-                          id="survey-tags"
-                          multiple 
-                          ref={tagSelectRef} 
-                          style={{ width: '100%' }}
-                        >
-                          {availableTags.map((tag) => (
-                            <option key={tag._id} value={tag._id}>{tag.name}</option>
-                          ))}
-                          {availableTags.length === 0 && (
-                            <option value="" disabled>Loading tags...</option>
-                          )}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               ) : activeStep === 'collaboration' ? (
                 <div className="panel">
                   <div className="panel-header">
@@ -5665,27 +5973,54 @@ const EnhancedSurveyBuilder: React.FC = () => {
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               zIndex: 1001,
               animation: 'fadeIn 0.3s ease-out',
-              display: 'flex',
               alignItems: 'center',
               gap: 10
             }}
           >
             {alert.type === 'success' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
             )}
-            {alert.message}
-            <button 
-              onClick={() => setAlert(null)} 
-              style={{ background: 'none', border: 'none', color: 'white', marginLeft: 10, cursor: 'pointer', fontSize: 18, padding: 0 }}
+            <span>{alert.message}</span>
+            <button
+              onClick={() => setAlert(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'white',
+                marginLeft: 10,
+                cursor: 'pointer',
+                fontSize: 18,
+                padding: 0,
+              }}
             >
               ×
             </button>
@@ -5694,6 +6029,17 @@ const EnhancedSurveyBuilder: React.FC = () => {
         
         {/* Theme preview modal */}
         {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
+        
+        {/* Question Builder Side Panel for editing questions */}
+        {isQuestionBuilderOpen && (
+          <QuestionBuilderSidePanel
+            isOpen={isQuestionBuilderOpen}
+            onClose={handleCloseQuestionBuilder}
+            context="surveyBuilder"
+            questionId={editingQuestionId}
+            onQuestionCreated={handleQuestionCreated}
+          />
+        )}
       </DashboardBg>
     </AdminLayout>
   );

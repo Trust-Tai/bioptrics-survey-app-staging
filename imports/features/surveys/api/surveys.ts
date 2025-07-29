@@ -271,6 +271,44 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
+  // Update questions in a survey (used for drag-and-drop functionality)
+  async 'surveys.updateQuestions'(surveyId: string, questions: any[]) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    check(surveyId, String);
+    check(questions, Array);
+    
+    // Find the survey to update
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Process questions to ensure sectionId is properly handled
+    const processedQuestions = questions.map(q => {
+      // If sectionId is explicitly undefined, convert to null for storage
+      // This ensures the database properly recognizes it as having no section
+      if (q.sectionId === undefined) {
+        return { ...q, sectionId: null };
+      }
+      return q;
+    });
+    
+    console.log('Updating questions with processed data:', processedQuestions);
+    
+    // Update the survey with the processed questions
+    const result = await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $set: { 
+          sectionQuestions: processedQuestions,
+          updatedAt: new Date()
+        } 
+      }
+    );
+    
+    return result;
+  },
+  
   // Create a survey template
   async 'surveys.saveAsTemplate'(survey: Partial<SurveyDoc>, templateDetails: { name: string, category: string, description: string, tags: string[] }) {
     if (!this.userId) throw new Meteor.Error('Not authorized');
