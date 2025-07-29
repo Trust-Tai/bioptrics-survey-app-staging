@@ -167,9 +167,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
-  
-  // Create a ref for each dropdown menu
-  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Add state for sorting
   const [sortField, setSortField] = useState<SortField>(null);
@@ -178,12 +176,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   // Handle click outside to close dropdown
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only close if clicking outside all dropdowns
-      const clickedOutsideAll = !Object.values(dropdownRefs.current).some(
-        ref => ref && ref.contains(event.target as Node)
-      );
-      
-      if (clickedOutsideAll) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpenDropdown(null);
       }
     };
@@ -197,8 +190,6 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   // Function to determine dropdown position based on available space
   const handleDropdownToggle = (e: React.MouseEvent, surveyId: string) => {
     e.stopPropagation();
-    e.preventDefault();
-    console.log('Toggle dropdown for survey:', surveyId);
     
     // If already open, just close it
     if (openDropdown === surveyId) {
@@ -285,22 +276,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   });
 
   // Helper function to safely execute action handlers
-  const safelyExecuteAction = (callback: Function, actionName: string, ...args: any[]) => {
-    console.log(`[${actionName}] Button clicked - Before setTimeout`);
-    console.log('Action arguments:', ...args);
-    
+  const safelyExecuteAction = (callback: Function, ...args: any[]) => {
     // Use setTimeout to ensure the event is fully processed before executing the action
-    window.setTimeout(() => {
-      console.log(`[${actionName}] Inside setTimeout - About to execute action`);
-      try {
-        // Directly call the function with arguments
-        callback(...args);
-        console.log(`[${actionName}] Action executed successfully`);
-      } catch (error) {
-        console.error(`[${actionName}] Error executing action:`, error);
-      }
+    setTimeout(() => {
+      callback(...args);
     }, 0);
-    console.log(`[${actionName}] After setTimeout - Event handling complete`);
   };
   
   return (
@@ -360,8 +340,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                     if (e.target === e.currentTarget || 
                         (e.target as HTMLElement).tagName === 'TD' || 
                         (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
-                      console.log('Row clicked - triggering Edit action');
-                      safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
+                      safelyExecuteAction(onEdit, survey._id);
                     }
                   }} 
                   style={{ 
@@ -389,10 +368,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               <TableCell>{survey.createdByName || 'System'}</TableCell>
               <TableCell>{updatedDate}</TableCell>
               <TableCell data-no-navigate="true">
-                <ActionContainer 
-                  ref={(el) => { dropdownRefs.current[survey._id] = el; }} 
-                  data-no-navigate="true"
-                >
+                <ActionContainer ref={dropdownRef} data-no-navigate="true">
                   <DropdownButton 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -430,7 +406,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           e.stopPropagation();
                           e.preventDefault();
                           console.log('Edit button clicked for survey:', survey._id);
-                          safelyExecuteAction(onEdit, 'Edit', survey._id);
+                          safelyExecuteAction(onEdit, survey._id);
                         }}
                         data-no-navigate="true"
                       >
@@ -460,7 +436,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           e.stopPropagation();
                           e.preventDefault();
                           console.log('Preview button clicked for survey:', survey._id);
-                          safelyExecuteAction(onPreview, 'Preview', survey._id);
+                          safelyExecuteAction(onPreview, survey._id);
                         }}
                         data-no-navigate="true"
                       >
@@ -490,7 +466,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                           e.stopPropagation();
                           e.preventDefault();
                           console.log('Analytics button clicked for survey:', survey._id, survey.title);
-                          safelyExecuteAction(onViewResponses, 'Analytics', survey._id, survey.title);
+                          safelyExecuteAction(onViewResponses, survey._id, survey.title);
                         }}
                         data-no-navigate="true"
                       >
@@ -522,7 +498,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                               e.stopPropagation();
                               e.preventDefault();
                               console.log('Preview public survey:', survey._id);
-                              safelyExecuteAction(onPreview, 'View Public', survey._id, true);
+                              safelyExecuteAction(onPreview, survey._id, true);
                             }}
                             data-no-navigate="true"
                           >
@@ -553,7 +529,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                                 e.stopPropagation();
                                 e.preventDefault();
                                 console.log('Copy public link for survey:', survey._id);
-                                safelyExecuteAction(onCopyLink, 'Copy Public Link', survey._id);
+                                safelyExecuteAction(onCopyLink, survey._id);
                               }}
                               data-no-navigate="true"
                             >
@@ -623,7 +599,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             e.stopPropagation();
                             e.preventDefault();
                             console.log('Delete button clicked for survey:', survey._id, survey.title);
-                            safelyExecuteAction(onDelete, 'Delete', survey._id, survey.title);
+                            safelyExecuteAction(onDelete, survey._id, survey.title);
                           }}
                           data-no-navigate="true"
                         >

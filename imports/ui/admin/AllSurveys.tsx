@@ -685,11 +685,13 @@ const AllSurveys: React.FC = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   // Functions for handling survey actions
-  const onDelete = (id: string, title: string) => {
-    setConfirmDelete({ _id: id, title });
+  const onEdit = (id: string, title: string) => {
+    console.log('Editing survey:', id);
+    navigate(`/admin/surveys/builder/${id}`);
   };
   
   const onViewResponses = (id: string, title: string) => {
+    console.log('Viewing analytics for survey:', id);
     navigate(`/admin/analytics/${id}`);
   };
   
@@ -1059,40 +1061,8 @@ const AllSurveys: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                // Preview survey
-                                Meteor.call('surveys.generateEncryptedToken', s._id, (tokenErr, token) => {
-                                  if (!tokenErr && token) {
-                                    window.open(`/public/${token}?preview=true`, '_blank');
-                                  }
-                                });
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              Preview
-                            </button>
-                            <button
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                padding: '10px 16px',
-                                textAlign: 'left',
-                                border: 'none',
-                                background: 'none',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                transition: 'background-color 0.2s',
-                                color: 'var(--color-text)',
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                navigate(`/admin/surveys/manage/${s._id}`);
+                                console.log('Navigating to edit survey:', s._id);
+                                navigate(`/admin/surveys/builder/${s._id}`);
                                 setOpenDropdown(null);
                               }}
                             >
@@ -1121,18 +1091,12 @@ const AllSurveys: React.FC = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
-                                  console.log(e);
-                                  // Copy shareable link
-                                  Meteor.call('surveys.generateEncryptedToken', s._id, (err: Meteor.Error | null, token: string) => {
-                                    if (!err && token) {
-                                      navigator.clipboard.writeText(`${window.location.origin}/public/${token}`);
-                                      setNotification({ type: 'success', message: 'Survey URL copied to clipboard!' });
-                                    }
-                                  });
+                                  console.log('Navigating to analytics for survey:', s._id);
+                                  navigate(`/admin/analytics/${s._id}`);
                                   setOpenDropdown(null);
                                 }}
                               >
-                                Copy Public Link
+                                Analytics
                               </button>
                             )}
                             <button
@@ -1157,86 +1121,52 @@ const AllSurveys: React.FC = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                onViewResponses(s._id, s.title);
+                                console.log('Navigating to preview survey:', s._id);
+                                navigate(`/admin/surveys/preview/${s._id}`);
                                 setOpenDropdown(null);
                               }}
                             >
-                              Analytics
+                              Preview
                             </button>
-                            {s.status === 'inactive' ? (
-                              <button
-                                style={{
-                                  display: 'block',
-                                  width: '100%',
-                                  padding: '10px 16px',
-                                  textAlign: 'left',
-                                  border: 'none',
-                                  background: 'none',
-                                  cursor: 'pointer',
-                                  fontSize: '14px',
-                                  transition: 'background-color 0.2s',
-                                  color: '#000000',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  // Restore the survey
-                                  Meteor.call('surveys.restore', s._id, (err: Meteor.Error | null) => {
-                                    if (err) {
-                                      console.error('Error restoring survey:', err);
-                                      setNotification({ type: 'error', message: `Error restoring ${surveyLabel.toLowerCase()}: ${err.reason || err.message || 'Unknown error'}` });
-                                    } else {
-                                      setNotification({ type: 'success', message: `${surveyLabel} restored successfully.` });
-                                    }
-                                  });
-                                  setOpenDropdown(null);
-                                }}
-                              >
-                                Restore
-                              </button>
-                            ) : (
-                              <button
-                                style={{
-                                  display: 'block',
-                                  width: '100%',
-                                  padding: '10px 16px',
-                                  textAlign: 'left',
-                                  border: 'none',
-                                  background: 'none',
-                                  cursor: 'pointer',
-                                  fontSize: '14px',
-                                  transition: 'background-color 0.2s',
-                                  color: '#dc3545',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  onDelete(s._id, s.title);
-                                  setOpenDropdown(null);
-                                }}
-                              >
-                                Delete
-                              </button>
-                            )}
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#dc3545',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('Deleting survey:', s._id);
+                                setConfirmDelete({ _id: s._id, title: s.title });
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              Delete
+                            </button>
                           </div>
                         )}
                       </DropdownContainer>
                     </CardHeader>
                     <SurveyTitle 
-                      onClick={() => navigate(`/admin/surveys/manage/${s._id}`)}
-                      title="Click to manage this survey"
+                      onClick={() => {
+                        console.log('Navigating to edit survey:', s._id);
+                        navigate(`/admin/surveys/builder/${s._id}`);
+                      }}
+                      title="Click to edit this survey"
                     >
                       {s.title}
                     </SurveyTitle>
@@ -1255,9 +1185,18 @@ const AllSurveys: React.FC = () => {
             ) : (
               <SurveyListView 
                 surveys={paginated} 
-                onEdit={(id) => navigate(`/admin/surveys/builder/${id}`)}
-                onDelete={(id, title) => setConfirmDelete({ _id: id, title })}
-                onViewResponses={(id, title) => setResponsesModal({ isOpen: true, surveyId: id, surveyTitle: title })}
+                onEdit={(id) => {
+                  console.log('Navigating to edit survey:', id);
+                  navigate(`/admin/surveys/builder/${id}`);
+                }}
+                onDelete={(id, title) => {
+                  console.log('Deleting survey:', id, title);
+                  setConfirmDelete({ _id: id, title });
+                }}
+                onViewResponses={(id, title) => {
+                  console.log('Navigating to analytics for survey:', id);
+                  navigate(`/admin/analytics/${id}`);
+                }}
                 onCopyLink={(id) => {
                   Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
                     if (err || !token) {

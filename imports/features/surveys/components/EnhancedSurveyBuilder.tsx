@@ -5164,60 +5164,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">
-                      {steps.find(step => step.id === activeStep)?.label}
-                    </h2>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    <p style={{ marginBottom: 16, fontSize: 18 }}>
-                      Select tags for your survey. Tags help categorize and filter your survey content.
-                    </p>
-                    
-                    <div style={{ marginBottom: 20 }}>
-                      <label htmlFor="survey-tags" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-                        Survey Tags
-                      </label>
-                      <div className="tom-select-container" style={{ 
-                        marginBottom: 16,
-                        maxWidth: '600px',
-                        position: 'relative',
-                        zIndex: 1000,
-                        overflow: 'visible'
-                      }}>
-                      {/* Add a style tag to ensure the dropdown menu is visible */}
-                      <style>
-                        {`
-                          .ts-dropdown { 
-                            z-index: 1001 !important; 
-                            max-height: 300px !important;
-                            overflow-y: auto !important;
-                            position: absolute !important;
-                          }
-                          .survey-builder-panel { overflow: visible !important; }
-                          .survey-builder-content { overflow: visible !important; }
-                        `}
-                      </style>
-                        <select 
-                          id="survey-tags"
-                          multiple 
-                          ref={tagSelectRef} 
-                          style={{ width: '100%' }}
-                        >
-                          {availableTags.map((tag) => (
-                            <option key={tag._id} value={tag._id}>{tag.name}</option>
-                          ))}
-                          {availableTags.length === 0 && (
-                            <option value="" disabled>Loading tags...</option>
-                          )}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               ) : activeStep === 'collaboration' ? (
                 <div className="panel">
                   <div className="panel-header">
