@@ -34,6 +34,7 @@ export interface SurveyDoc {
   logo?: string;
   image?: string;
   color?: string;
+  layout?: 'multiStep' | 'allOnOnePage';
   selectedQuestions: Record<string, any>;
   siteTextQuestions: Array<any>;
   siteTextQForm: any;
@@ -671,6 +672,8 @@ Meteor.methods({
         thankYouDetails: survey.thankYouDetails !== undefined ? survey.thankYouDetails : existingSurvey.thankYouDetails,
         thankYouIcon: survey.thankYouIcon !== undefined ? survey.thankYouIcon : existingSurvey.thankYouIcon,
         thankYouBoxes: survey.thankYouBoxes || existingSurvey.thankYouBoxes || [],
+        // Include layout setting
+        layout: survey.layout !== undefined ? survey.layout : existingSurvey.layout,
         updatedAt: now,
       },
     });

@@ -4741,6 +4741,161 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Survey Layout Settings Section */}
+                  <div style={{ 
+                    marginBottom: '24px', 
+                    padding: '16px 16px 32px 16px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      marginBottom: '16px', 
+                      color: '#343a40',
+                      borderBottom: '1px solid #dee2e6',
+                      paddingBottom: '8px'
+                    }}>
+                      Survey Layout
+                    </h3>
+                    
+                    <div style={{ marginBottom: '16px' }}>
+                      <p style={{ fontSize: '14px', color: '#495057', marginBottom: '12px' }}>
+                        Select how questions will be displayed to respondents.
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <label style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          padding: '16px', 
+                          border: `2px solid ${survey?.layout === 'multiStep' || !survey?.layout ? '#552a47' : '#dee2e6'}`,
+                          borderRadius: '8px',
+                          backgroundColor: survey?.layout === 'multiStep' || !survey?.layout ? 'rgba(85, 42, 71, 0.05)' : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          height: '100%',
+                          boxShadow: survey?.layout === 'multiStep' || !survey?.layout ? '0 2px 8px rgba(85, 42, 71, 0.1)' : 'none'
+                        }}>
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <div style={{ fontWeight: 600, fontSize: '16px' }}>Multi Step</div>
+                            <input 
+                              type="radio" 
+                              name="surveyLayout" 
+                              value="multiStep" 
+                              checked={survey?.layout === 'multiStep' || !survey?.layout}
+                              onChange={() => {
+                                setSurvey({...survey, layout: 'multiStep'});
+                                // Save the survey to ensure layout is persisted
+                                if (surveyId) {
+                                  Meteor.call('surveys.update', surveyId, { layout: 'multiStep' }, (error: any) => {
+                                    if (error) {
+                                      console.error('Error saving survey layout:', error);
+                                    }
+                                  });
+                                }
+                              }}
+                              style={{
+                                accentColor: '#552a47',
+                                cursor: 'pointer',
+                                width: '18px',
+                                height: '18px'
+                              }}
+                            />
+                          </div>
+                          <div style={{ 
+                            width: '100%', 
+                            height: '80px', 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            marginBottom: '12px',
+                            border: '1px solid #e9ecef'
+                          }}>
+                            <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="10" y="10" width="100" height="10" rx="2" fill="#552a47" fillOpacity="0.7" />
+                              <rect x="10" y="25" width="100" height="5" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="35" width="60" height="5" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="45" width="30" height="5" rx="1" fill="#dee2e6" />
+                            </svg>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#6c757d', textAlign: 'center' }}>
+                            Questions are shown step-by-step, one section at a time.
+                          </div>
+                        </label>
+                        
+                        <label style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          padding: '16px', 
+                          border: `2px solid ${survey?.layout === 'allOnOnePage' ? '#552a47' : '#dee2e6'}`,
+                          borderRadius: '8px',
+                          backgroundColor: survey?.layout === 'allOnOnePage' ? 'rgba(85, 42, 71, 0.05)' : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          height: '100%',
+                          boxShadow: survey?.layout === 'allOnOnePage' ? '0 2px 8px rgba(85, 42, 71, 0.1)' : 'none'
+                        }}>
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <div style={{ fontWeight: 600, fontSize: '16px' }}>All on One Page</div>
+                            <input 
+                              type="radio" 
+                              name="surveyLayout" 
+                              value="allOnOnePage" 
+                              checked={survey?.layout === 'allOnOnePage'}
+                              onChange={() => {
+                                setSurvey({...survey, layout: 'allOnOnePage'});
+                                // Save the survey to ensure layout is persisted
+                                if (surveyId) {
+                                  Meteor.call('surveys.update', surveyId, { layout: 'allOnOnePage' }, (error: any) => {
+                                    if (error) {
+                                      console.error('Error saving survey layout:', error);
+                                    }
+                                  });
+                                }
+                              }}
+                              style={{
+                                accentColor: '#552a47',
+                                cursor: 'pointer',
+                                width: '18px',
+                                height: '18px'
+                              }}
+                            />
+                          </div>
+                          <div style={{ 
+                            width: '100%', 
+                            height: '80px', 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            marginBottom: '12px',
+                            border: '1px solid #e9ecef'
+                          }}>
+                            <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="10" y="5" width="100" height="8" rx="2" fill="#552a47" fillOpacity="0.7" />
+                              <rect x="10" y="18" width="100" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="27" width="100" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="36" width="60" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="45" width="80" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="54" width="40" height="4" rx="1" fill="#dee2e6" />
+                            </svg>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#6c757d', textAlign: 'center' }}>
+                            Displays all questions on a single page, like a traditional form.
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                       <p style={{ fontSize: 15, margin: 0 }}>
                         Select a theme for your survey. The theme will affect the appearance and feel of your survey.
