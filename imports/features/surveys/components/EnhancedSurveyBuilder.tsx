@@ -7,7 +7,7 @@ import { FaEye } from 'react-icons/fa';
 import { useNavigate, useParams, useLocation, UNSAFE_NavigationContext } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiChevronRight, FiChevronDown, FiChevronUp, FiSave, FiMove, FiUserPlus, FiUsers } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiEdit2, FiChevronRight, FiChevronDown, FiChevronUp, FiSave, FiMove, FiUserPlus, FiUsers } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import '../../../ui/styles/quill-styles';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
@@ -344,6 +344,10 @@ const EnhancedSurveyBuilder: React.FC = () => {
   const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
   const [surveyData, setSurveyData] = useState<any>(null);
   const [activeStep, setActiveStep] = useState('welcome');
+  // State for question editing
+  const [isQuestionBuilderOpen, setIsQuestionBuilderOpen] = useState<boolean>(false);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editingQuestionSectionId, setEditingQuestionSectionId] = useState<string | null>(null);
   // State for drag and drop sections and questions
   const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null);
   const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
@@ -2321,6 +2325,29 @@ const EnhancedSurveyBuilder: React.FC = () => {
     setShowQuestionSelector(false);
   };
   
+  // Handle editing a question
+  const handleEditQuestion = (questionId: string, sectionId: string | null) => {
+    console.log(`Editing question ${questionId} from section ${sectionId}`);
+    setEditingQuestionId(questionId);
+    setEditingQuestionSectionId(sectionId);
+    setIsQuestionBuilderOpen(true);
+  };
+
+  // Handle question creation/edit completion
+  const handleQuestionCreated = (questionId: string) => {
+    console.log(`Question created/edited: ${questionId}`);
+    refreshSurveyData();
+    setHasUnsavedChanges(true);
+    triggerAutoSave();
+  };
+
+  // Handle closing the question builder
+  const handleCloseQuestionBuilder = () => {
+    setIsQuestionBuilderOpen(false);
+    setEditingQuestionId(null);
+    setEditingQuestionSectionId(null);
+  };
+
   // Handle removing a question from a section or from no-section area
   const handleRemoveQuestion = (questionId: string, sectionId: string | null) => {
     // Completely remove the question from surveyQuestions
@@ -3585,6 +3612,18 @@ const EnhancedSurveyBuilder: React.FC = () => {
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <button
+                                onClick={() => handleEditQuestion(question.id, null)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#666',
+                                  padding: '4px'
+                                }}
+                              >
+                                <FiEdit2 />
+                              </button>
+                              <button
                                 onClick={() => handleRemoveQuestion(question.id, null)}
                                 style={{
                                   background: 'none',
@@ -3673,6 +3712,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                               onAddQuestion={handleAddQuestion}
                               onCreateQuestion={handleCreateQuestion}
                               onRemoveQuestion={handleRemoveQuestion}
+                              onEditQuestion={handleEditQuestion}
                               onReorderQuestion={handleReorderQuestion}
                               onMoveQuestionToSection={handleMoveQuestionToSection}
                               onMoveQuestionBetweenSections={handleMoveQuestionBetweenSections}
@@ -5989,6 +6029,17 @@ const EnhancedSurveyBuilder: React.FC = () => {
         
         {/* Theme preview modal */}
         {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
+        
+        {/* Question Builder Side Panel for editing questions */}
+        {isQuestionBuilderOpen && (
+          <QuestionBuilderSidePanel
+            isOpen={isQuestionBuilderOpen}
+            onClose={handleCloseQuestionBuilder}
+            context="surveyBuilder"
+            questionId={editingQuestionId}
+            onQuestionCreated={handleQuestionCreated}
+          />
+        )}
       </DashboardBg>
     </AdminLayout>
   );

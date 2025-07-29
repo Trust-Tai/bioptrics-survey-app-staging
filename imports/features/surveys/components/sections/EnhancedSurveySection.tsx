@@ -11,6 +11,7 @@ interface EnhancedSurveySectionProps {
   onAddQuestion: (sectionId: string) => void;
   onCreateQuestion: (sectionId: string) => void;
   onRemoveQuestion: (questionId: string, sectionId: string) => void;
+  onEditQuestion: (questionId: string, sectionId: string) => void;
   onReorderQuestion: (sectionId: string, oldIndex: number, newIndex: number) => void;
   onMoveQuestionToSection?: (questionId: string, targetSectionId: string, targetIndex?: number) => void;
   onMoveQuestionBetweenSections?: (questionId: string, sourceSectionId: string, targetSectionId: string, targetIndex?: number) => void;
@@ -32,6 +33,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
   onAddQuestion,
   onCreateQuestion,
   onRemoveQuestion,
+  onEditQuestion,
   onReorderQuestion,
   onMoveQuestionToSection,
   onMoveQuestionBetweenSections,
@@ -227,8 +229,22 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   <div className="survey-section-question-actions">
                     <button 
                       className="btn btn-icon btn-secondary"
+                      onClick={() => onEditQuestion(question.id, section.id)}
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        marginRight: '6px'
+                      }}
+                      title="Edit question"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
+                    <button 
+                      className="btn btn-icon btn-secondary"
                       onClick={() => onRemoveQuestion(question.id, section.id)}
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      title="Delete question"
                     >
                       <FiTrash2 size={16} />
                     </button>
