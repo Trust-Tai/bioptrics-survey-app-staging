@@ -21,7 +21,7 @@ import QuestionSelector from './sections/QuestionSelector';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
-import Analytics from '../../../ui/admin/Analytics';
+import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
 
 // Import existing components we'll reuse
 import SurveyBranchingLogic from '../../../ui/admin/SurveyBranchingLogic';
@@ -4516,7 +4516,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
                   
                   {survey?._id ? (
                     <div style={{ margin: '-1.5rem', width: '100%', marginLeft: '0' }}>
-                      <Analytics surveyFilter={survey._id} embedded={true} />
+                      <SurveyAnalytics surveyId={survey._id} embedded={true} />
                     </div>
                   ) : (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
