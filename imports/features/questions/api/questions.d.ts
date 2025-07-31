@@ -1,6 +1,7 @@
 export interface QuestionVersion {
   version: number;
   versionNumber?: number; // Alias for version
+  versionName?: string; // Added for editable version names
   questionText: string;
   text?: string; // Alias for questionText
   description: string;

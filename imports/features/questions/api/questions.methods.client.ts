@@ -46,6 +46,7 @@ export interface Question {
 // Define the QuestionVersion interface to match what's expected by the DB
 export interface QuestionVersion {
   versionNumber?: number;
+  versionName?: string; // Added for editable version names
   questionText: string;
   description: string;
   responseType: string;

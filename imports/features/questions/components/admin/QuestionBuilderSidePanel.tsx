@@ -3,15 +3,15 @@ import { notificationManager } from '/imports/shared/components/GlobalNotificati
 import { createPortal } from 'react-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { useParams, useNavigate } from 'react-router-dom';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
 import ReactQuill from 'react-quill';
-import '../../../../ui/styles/quill-styles';
 import 'react-quill/dist/quill.snow.css';
-import { FaPlus, FaMinus, FaUndo, FaRedo, FaSave, FaEye, FaChevronDown, FaChevronUp, FaTrash, FaTimes, FaEllipsisV, FaInfoCircle, FaList, FaEdit, FaCodeBranch, FaCog, FaClone, FaDownload, FaUser, FaVenusMars, FaGlobe, FaGraduationCap, FaBriefcase, FaUsers, FaMoneyBillAlt, FaUserFriends, FaLanguage, FaMobile, FaIndustry, FaRing, FaArrowLeft, FaCloudUploadAlt } from 'react-icons/fa';
+import { FaTimes, FaInfoCircle, FaCog, FaCloudUploadAlt, FaHistory } from 'react-icons/fa';
 import TagBuilder from './TagBuilder';
 import FolderSelector from './FolderSelector';
 import ToggleSwitch from './ToggleSwitch';
+import VersionHistoryModal from './VersionHistoryModal';
 
 // Import enhanced components
 import QuestionBuilderDndProvider from './QuestionBuilderDndProvider';
@@ -154,6 +154,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   const panelRef = useRef<HTMLDivElement>(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'progress'; message: string; progress?: number } | null>(null);
+  // Add state for version history modal
+  const [showVersionHistoryModal, setShowVersionHistoryModal] = useState(false);
+  const [versionUpdateLoading, setVersionUpdateLoading] = useState(false);
   
   // Show success alert
   const showSuccessAlert = (message: string) => {
@@ -198,7 +201,60 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   // Handle clicks outside the panel to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node) && isOpen) {
+      // Immediately check if the click is on an element with data-modal-container attribute
+      const target = event.target as Element;
+      if (target.closest('[data-modal-container="true"]')) {
+        // If the click is inside a modal container, don't close the panel
+        return;
+      }
+      
+      // Check if the click target is inside any modal
+      const isClickInsideModal = (target: Node): boolean => {
+        // First check if the click is inside version history modal
+        const versionHistoryElements = document.querySelectorAll('.version-history-modal-overlay, .version-history-modal-content');
+        for (let i = 0; i < versionHistoryElements.length; i++) {
+          if (versionHistoryElements[i].contains(target)) {
+            return true;
+          }
+        }
+        
+        // Then check if the click is inside any button or interactive element inside a modal
+        const modalButtons = document.querySelectorAll('button, input, select, a');
+        for (let i = 0; i < modalButtons.length; i++) {
+          const button = modalButtons[i];
+          // Check if this button is inside a modal-like container
+          let parent = button.parentElement;
+          while (parent) {
+            if (parent.classList && 
+                (parent.classList.contains('modal') || 
+                 parent.classList.contains('modal-content') || 
+                 parent.getAttribute('role') === 'dialog' ||
+                 parent.classList.contains('version-history-modal-content'))) {
+              if (button.contains(target)) {
+                return true;
+              }
+              break;
+            }
+            parent = parent.parentElement;
+          }
+        }
+        
+        // Check if the click is inside any modal by checking for common modal class names or attributes
+        const modalElements = document.querySelectorAll('[role="dialog"], .modal, .modal-content');
+        for (let i = 0; i < modalElements.length; i++) {
+          if (modalElements[i].contains(target)) {
+            return true;
+          }
+        }
+        
+        return false;
+      };
+
+      // Only close the panel if the click is outside the panel AND not inside any modal
+      if (panelRef.current && 
+          !panelRef.current.contains(event.target as Node) && 
+          !isClickInsideModal(event.target as Node) && 
+          isOpen) {
         onClose();
       }
     };
@@ -600,6 +656,74 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
     }
   };
 
+  // Handle reverting to a previous version
+  const handleRevertVersion = async (versionNumber: number): Promise<void> => {
+    try {
+      if (!questionId) return;
+      
+      // Show progress alert
+      showProgressAlert('Reverting to version ' + versionNumber + '...', 50);
+      
+      // Call the server method to revert the question
+      await Meteor.callAsync('questions.revertToVersion', questionId, versionNumber);
+      
+      // Show success message
+      showSuccessAlert('Question reverted to version ' + versionNumber);
+      
+      // Refresh the question data
+      const { Questions } = await import('/imports/features/questions/api/questions');
+      const refreshedQuestion = Questions.findOne({ _id: questionId });
+      if (refreshedQuestion) {
+        processQuestionData(refreshedQuestion);
+      }
+      
+      // Notify parent component if provided
+      if (onQuestionSaved) {
+        onQuestionSaved(questionId);
+      }
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error('Error reverting question version:', error);
+      showErrorAlert('Failed to revert: ' + (error.message || 'Unknown error'));
+      return Promise.reject(error);
+    }
+  };
+  
+  // Handle updating version name
+  const handleUpdateVersionName = async (versionNumber: number, versionName: string): Promise<void> => {
+    try {
+      if (!questionId) return;
+      
+      // Show progress alert
+      showProgressAlert('Updating version name...', 50);
+      
+      // Call the server method to update the version name
+      await Meteor.callAsync('questions.updateVersionName', questionId, versionNumber, versionName);
+      
+      // Show success message
+      showSuccessAlert('Version name updated successfully');
+      
+      // Refresh the question data
+      const { Questions } = await import('/imports/features/questions/api/questions');
+      const refreshedQuestion = Questions.findOne({ _id: questionId });
+      if (refreshedQuestion) {
+        processQuestionData(refreshedQuestion);
+      }
+      
+      // Notify parent component if provided
+      if (onQuestionSaved) {
+        onQuestionSaved(questionId);
+      }
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error('Error updating version name:', error);
+      showErrorAlert('Failed to update version name: ' + (error.message || 'Unknown error'));
+      return Promise.reject(error);
+    }
+  };
+
   // If the panel is not open, don't render anything
   if (!isOpen) {
     return null;
@@ -637,7 +761,31 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         {/* Panel header */}
         <div style={sidePanelStyles.header as React.CSSProperties}>
           <h2>{questionId ? 'Edit Question' : 'Create New Question'}</h2>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            {/* Version History Button - Only show for existing questions */}
+            {questionId && editingDoc?.versions && editingDoc.versions.length > 0 && (
+              <button
+                onClick={() => setShowVersionHistoryModal(true)}
+                style={{
+                  background: '#f0f0f0',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 15px',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = '#e0e0e0')}
+                onMouseOut={(e) => (e.currentTarget.style.background = '#f0f0f0')}
+              >
+                <FaHistory /> Version History
+              </button>
+            )}
+            
             {/* Save Draft button is hidden as requested */}
             
             {/* Publish Button - Saves, publishes, and closes panel */}
@@ -1225,6 +1373,17 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         </Tabs>
       )}
       </div>
+      
+      {/* Version History Modal */}
+      {showVersionHistoryModal && editingDoc?.versions && (
+        <VersionHistoryModal
+          versions={editingDoc.versions}
+          currentVersion={editingDoc.currentVersion}
+          onClose={() => setShowVersionHistoryModal(false)}
+          onRevert={handleRevertVersion}
+          onUpdateVersionName={handleUpdateVersionName}
+        />
+      )}
     </div>,
     document.body
   );
