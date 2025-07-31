@@ -146,6 +146,7 @@ interface SurveyListViewProps {
   surveys: any[];
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
+  onPermanentDelete: (id: string, title: string) => void;
   onPreview: (id: string, isPublic?: boolean) => void;
   onViewResponses: (id: string, title: string) => void;
   onCopyLink?: (id: string) => void;
@@ -161,6 +162,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   surveys, 
   onEdit, 
   onDelete, 
+  onPermanentDelete,
   onPreview,
   onViewResponses,
   onCopyLink
@@ -600,35 +602,70 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       )}
                       
                       {!survey.deleted && (
-                        <button
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: '10px 16px',
-                            textAlign: 'left',
-                            border: 'none',
-                            background: 'none',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            transition: 'background-color 0.2s',
-                            color: '#dc3545',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('Delete button clicked for survey:', survey._id, survey.title);
-                            safelyExecuteAction(onDelete, 'Delete', survey._id, survey.title);
-                          }}
-                          data-no-navigate="true"
-                        >
-                          <FaTrash style={{ marginRight: '8px' }} /> Delete
-                        </button>
+                        <>
+                          {survey.status !== 'inactive' && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#dc3545',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                safelyExecuteAction(onDelete, 'Delete', survey._id, survey.title);
+                              }}
+                              data-no-navigate="true"
+                            >
+                              <FaTrash style={{ marginRight: '8px' }} /> Delete
+                            </button>
+                          )}
+                          {survey.status === 'inactive' && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#dc3545',
+                                fontWeight: 'bold',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('Permanently delete button clicked for survey:', survey._id, survey.title);
+                                safelyExecuteAction(onPermanentDelete, 'Delete Permanently', survey._id, survey.title);
+                              }}
+                              data-no-navigate="true"
+                            >
+                              <FaTrash style={{ marginRight: '8px' }} /> Delete Permanently
+                            </button>
+                          )}
+                        </>
                       )}
                     </DropdownMenu>
                   )}
