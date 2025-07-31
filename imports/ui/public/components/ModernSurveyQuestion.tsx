@@ -37,6 +37,7 @@ interface ModernSurveyQuestionProps {
   backgroundImage?: string;
   sectionName?: string;
   sectionDescription?: string;
+  hideNavigation?: boolean;
 }
 
 
@@ -51,7 +52,8 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   value,
   color = '#2c3e50',
   isLastQuestion = false,
-  onSubmit
+  onSubmit,
+  hideNavigation = false
 }) => {
   const [answer, setAnswer] = useState<any>(value || '');
   const [error, setError] = useState<string | null>(null);
@@ -859,21 +861,24 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
 
   return (
     <>
-      <div className="survey-header">
-        <div className="progress-container">
-          <div className="progress-info">
-            <div className="question-count">Question {currentQuestion} of {totalQuestions}</div>
-            <div className="remaining-count">{remainingQuestions} remaining</div>
+      {/* Progress bar - conditionally rendered based on hideNavigation prop */}
+      {!hideNavigation && (
+        <div className="survey-header">
+          <div className="progress-container">
+            <div className="progress-info">
+              <div className="question-count">Question {currentQuestion} of {totalQuestions}</div>
+              <div className="remaining-count">{remainingQuestions} remaining</div>
+            </div>
+            <div className="progress-bar-wrapper">
+              <div 
+                className="progress-bar-fill" 
+                style={{ width: `${progressPercentage}%`, backgroundColor: color }}
+              ></div>
+            </div>
+            <div className="completion-percentage">{progressPercentage}% Complete</div>
           </div>
-          <div className="progress-bar-wrapper">
-            <div 
-              className="progress-bar-fill" 
-              style={{ width: `${progressPercentage}%`, backgroundColor: color }}
-            ></div>
-          </div>
-          <div className="completion-percentage">{progressPercentage}% Complete</div>
         </div>
-      </div>
+      )}
       
       <div className="question-container modern-survey-container">
         <h2 className="question-title">
@@ -889,37 +894,40 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
           
           {error && <div className="error-message">{error}</div>}
           
-          <div className="button-container">
-            <button 
-              className="button button-back" 
-              onClick={() => {
-                // Save the answer before going back but don't trigger navigation or submission
-                console.log('Saving answer before going back:', answer);
-                // Use saveOnly=true to prevent navigation or submission logic
-                const saveOnly = true;
-                // Only call onAnswer if there's an answer to save
-                if (answer) {
-                  onAnswer(answer, saveOnly);
-                }
-                // Then go back
-                onBack();
-              }}
-            >
-              <FiArrowLeft size={18} />
-              Back
-            </button>
-            
-            <button 
-              className="button button-continue"
-              onClick={handleContinue}
-              disabled={question.required && !isAnswerValid()}
-              style={{backgroundColor: color}}
-              data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
-            >
-              {isLastQuestion ? 'Submit' : 'Continue'}
-              <FiArrowRight size={18} />
-            </button>
-          </div>
+          {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
+          {!hideNavigation && (
+            <div className="button-container">
+              <button 
+                className="button button-back" 
+                onClick={() => {
+                  // Save the answer before going back but don't trigger navigation or submission
+                  console.log('Saving answer before going back:', answer);
+                  // Use saveOnly=true to prevent navigation or submission logic
+                  const saveOnly = true;
+                  // Only call onAnswer if there's an answer to save
+                  if (answer) {
+                    onAnswer(answer, saveOnly);
+                  }
+                  // Then go back
+                  onBack();
+                }}
+              >
+                <FiArrowLeft size={18} />
+                Back
+              </button>
+              
+              <button 
+                className="button button-continue"
+                onClick={handleContinue}
+                disabled={question.required && !isAnswerValid()}
+                style={{backgroundColor: color}}
+                data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
+              >
+                {isLastQuestion ? 'Submit' : 'Continue'}
+                <FiArrowRight size={18} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
