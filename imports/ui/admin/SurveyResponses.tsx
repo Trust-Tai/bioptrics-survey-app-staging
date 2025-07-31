@@ -1128,7 +1128,7 @@ const SurveyResponses: React.FC = () => {
               </FilterGrid>
             </FilterContainer>
             
-            {surveys.length === 0 ? (
+            {surveys && surveys.length === 0 ? (
               <NoData>
                 <FiFileText />
                 <div>No surveys found</div>
