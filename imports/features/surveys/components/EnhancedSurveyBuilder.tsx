@@ -3547,7 +3547,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         setDraggingQuestionSectionId(null);
                       }}
                     >
-                      <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#2d3748', marginBottom: '16px' }}>Questions without a section</h3>
                       
                       {noSectionQuestions.length > 0 ? (
                         noSectionQuestions.map((question, index) => (

@@ -664,7 +664,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 onMouseOver={(e) => !isLoading && (e.currentTarget.style.background = '#6e3a5d')} /* Darker shade for hover */
                 onMouseOut={(e) => !isLoading && (e.currentTarget.style.background = '#552a47')}
               >
-                {questionId ? 'Update' : 'Publish'}
+                {questionId ? 'Update' : 'Add Question'}
               </button>
               <div style={{
                 position: 'absolute',
