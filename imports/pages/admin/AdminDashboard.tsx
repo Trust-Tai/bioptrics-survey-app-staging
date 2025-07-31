@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { 
   FaUsers, 
@@ -9,19 +9,25 @@ import {
   FaEnvelope, 
   FaCalendarAlt, 
   FaFilter, 
-  FaInfoCircle,
   FaExclamationTriangle,
-  FaBell,
-  FaTachometerAlt
+  FaTachometerAlt,
+  FaBell
 } from 'react-icons/fa';
 import AdminDashboardSummary from '../../ui/admin/AdminDashboardSummary';
 import Countdown from '../../ui/admin/Countdown';
 import DashboardBg from '../../ui/admin/DashboardBg';
 
-import { useTracker } from 'meteor/react-meteor-data';
-import { useResponses } from '../../ui/useResponses';
-import { Meteor } from 'meteor/meteor';
-import { IconType } from 'react-icons';
+// Import custom hook and optimized components
+import { useDashboardData, DashboardFilters, ActivityItem } from '../../features/analytics/hooks/useDashboardData';
+import {
+  KpiStatsGrid,
+  ParticipationDonut,
+  SiteResponsesChart,
+  FlaggedIssuesList,
+  TrendChart,
+  HeatMapChart,
+  AnonymityAlert as DashboardAnonymityAlert
+} from '../../features/analytics/components/admin/DashboardComponents';
 
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -344,19 +350,62 @@ const TrendValue = styled.div`
   color: #444;
 `;
 
-// Type for filter state
-interface DashboardFilters {
-  site: string;
-  department: string;
-  role: string;
-  survey: string;
-}
+// Memoized Activity List component to prevent unnecessary re-renders
+const ActivityList = memo(({ activities }: { activities: ActivityItem[] }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    {activities.map((activity, index) => (
+      <div 
+        key={index} 
+        style={{ 
+          padding: '0.75rem', 
+          borderLeft: '3px solid #f0f0f0',
+          background: '#f9f9f9',
+          borderRadius: '4px'
+        }}
+      >
+        <div style={{ fontSize: '0.75rem', color: '#6c6c6c', marginBottom: '0.25rem' }}>
+          {activity.time}
+        </div>
+        <div style={{ fontSize: '0.875rem' }}>
+          {activity.action}
+        </div>
+      </div>
+    ))}
+  </div>
+));
+
+// Filter options for better maintainability
+const filterOptions = {
+  sites: [
+    { value: 'all', label: 'All Sites' },
+    { value: 'rainy-river', label: 'Rainy River' },
+    { value: 'new-afton', label: 'New Afton' },
+    { value: 'corporate', label: 'Corporate' }
+  ],
+  departments: [
+    { value: 'all', label: 'All Departments' },
+    { value: 'engineering', label: 'Engineering' },
+    { value: 'operations', label: 'Operations' },
+    { value: 'hr', label: 'Human Resources' },
+    { value: 'finance', label: 'Finance' }
+  ],
+  roles: [
+    { value: 'all', label: 'All Roles' },
+    { value: 'manager', label: 'Managers' },
+    { value: 'supervisor', label: 'Supervisors' },
+    { value: 'engineer', label: 'Engineers' },
+    { value: 'analyst', label: 'Analysts' }
+  ],
+  surveys: [
+    { value: 'all', label: 'Current Survey' },
+    { value: 'q1-2025', label: 'Q1 2025' },
+    { value: 'q4-2024', label: 'Q4 2024' },
+    { value: 'q3-2024', label: 'Q3 2024' }
+  ]
+};
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  // Dynamically import the Questions and Surveys collections for client-side use
-  const [QuestionsCollection, setQuestionsCollection] = useState<any>(null);
-  const [SurveysCollection, setSurveysCollection] = useState<any>(null);
   
   // Filter state
   const [filters, setFilters] = useState<DashboardFilters>({
@@ -366,397 +415,166 @@ const AdminDashboard: React.FC = () => {
     survey: 'all'
   });
   
-  // Anonymity warning state
-  const [showAnonymityWarning, setShowAnonymityWarning] = useState(false);
+  // Use our custom hook to fetch and process dashboard data
+  const { isLoading, error, dashboardData, showAnonymityWarning } = useDashboardData(filters);
   
-  // Check if responses for current filter are below the anonymity threshold
-  useEffect(() => {
-    // This would be a real check against response counts for the selected filters
-    // For demo, we'll toggle based on role filter
-    setShowAnonymityWarning(filters.role === 'analyst' || filters.department === 'hr');
-  }, [filters]);
-
-  useEffect(() => {
-    import('../../api/questions').then(mod => {
-      setQuestionsCollection(mod.Questions);
-    });
-    import('../../features/surveys').then(mod => {
-      setSurveysCollection(mod.Surveys);
-    });
-  }, []);
-
-  // Fetch questions from MongoDB (if available)
-  const questions = useTracker(() => {
-    if (!QuestionsCollection) return [];
-    Meteor.subscribe('questions.all');
-    return QuestionsCollection.find().fetch();
-  }, [QuestionsCollection]);
-
-  // Fetch surveys from MongoDB (if available)
-  const surveys = useTracker(() => {
-    if (!SurveysCollection) return [];
-    Meteor.subscribe('surveys.all');
-    return SurveysCollection.find().fetch();
-  }, [SurveysCollection]);
-
-  // Filter for active vs all surveys
-  const activeSurveys = surveys.filter((s: any) => 
-    // In a real implementation, check survey.isActive or startDate/endDate
-    true // Placeholder - all surveys are considered active for now
-  );
-
-  // Count total questions and unique participants/responses
-  const totalQuestions = questions.length;
-  const responses = useResponses();
-
-  // Dynamic stats
-  const totalResponses = responses.length;
-  const completedResponses = responses.filter(r => r.completed).length;
-  const pendingResponses = totalResponses - completedResponses;
-  const uniqueParticipants = new Set(responses.map(r => r.userId)).size;
-
-  const stats = [
-    { label: 'Total Surveys', value: surveys.length, icon: FaClipboardList, link: '/admin/surveys/all' },
-    { label: 'Active Surveys', value: activeSurveys.length, icon: FaCalendarAlt, link: '/admin/surveys/all' },
-    { label: 'Question Bank', value: totalQuestions, icon: FaQuestionCircle, link: '/admin/questions/all' },
-    { label: 'Participants', value: uniqueParticipants, icon: FaUsers, link: '/admin/analytics' },
-  ];
-
-  // Participation percentage
-  const participationPct = totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0;
-
-  // Response data by site
-  const siteData = [
-    { name: 'Rainy River', value: 70, color: '#7ec16c' },
-    { name: 'New Afton', value: 55, color: '#f7ca51' },
-    { name: 'Corporate', value: 40, color: '#f28b63' },
-    { name: 'Other', value: 0, color: '#dddddd' }
-  ];
-
-  // Heat map data - Themes x Recent Surveys
-  const heatMapData = [
-    { theme: 'Engagement', surveyScores: [4.2, 3.9, 4.1] },
-    { theme: 'Manager Relations', surveyScores: [3.7, 2.9, 3.1] },
-    { theme: 'Team Dynamics', surveyScores: [4.5, 4.3, 4.2] },
-    { theme: 'Communication', surveyScores: [3.5, 4.1, 3.7] },
-    { theme: 'Recognition', surveyScores: [3.1, 3.0, 3.4] },
-    { theme: 'Work-Life Balance', surveyScores: [2.8, 2.7, 3.2] },
-  ];
-
-  // Flagged issues - based on threshold crossings
-  const flaggedIssues = [
-    { id: 1, text: 'Communication score dropped from 4.1 → 3.5', severity: 'high' as const },
-    { id: 2, text: 'Leadership Trust fell below threshold: 2.9', severity: 'high' as const },
-    { id: 3, text: 'Team Collaboration declined by 12% since last survey', severity: 'medium' as const },
-    { id: 4, text: 'Work-Life Balance flagged in multiple sites', severity: 'medium' as const },
-    { id: 5, text: 'Manager Feedback score critically low at 2.5', severity: 'low' as const }
-  ];
-
-  // Handle filter change
-  const handleFilterChange = (filterName: keyof DashboardFilters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterName]: e.target.value
-    }));
-  };
+  // Handle filter change - memoized to prevent unnecessary re-renders
+  const handleFilterChange = useCallback((filterName: keyof DashboardFilters) => 
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setFilters(prev => ({
+        ...prev,
+        [filterName]: e.target.value
+      }));
+    }, 
+  []);
+  
+  // Handle KPI card click - memoized to prevent unnecessary re-renders
+  const handleCardClick = useCallback((link: string) => {
+    navigate(link);
+  }, [navigate]);
 
   return (
     <AdminLayout>
       <DashboardBg>
-        {/* Survey Countdown Header */}
-        <GoldHeaderCard>
-          <div>
-            <HeaderLabel>MAY '25</HeaderLabel>
-            <HeaderTitle>BIOPTRICS Employee Survey</HeaderTitle>
-            <HeaderEnds>
-              ENDS IN: <Countdown end={new Date('2025-05-31T23:59:59')} />
-            </HeaderEnds>
+        {/* Loading state */}
+        {isLoading && (
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <div>Loading dashboard data...</div>
           </div>
-          <QuickActionBar>
-            <ActionButton className="primary" onClick={() => navigate('/admin/surveys/all')}>
-              <FaClipboardList /> Create Survey
-            </ActionButton>
-            <ActionButton onClick={() => navigate('/admin/questions/builder')}>
-              <FaQuestionCircle /> Add Question
-            </ActionButton>
-            <ActionButton onClick={() => navigate('/admin/analytics')}>
-              <FaFileExport /> Export Results
-            </ActionButton>
-            <ActionButton onClick={() => navigate('/admin/org-setup')}>
-              <FaEnvelope /> Invite Participants
-            </ActionButton>
-          </QuickActionBar>
-        </GoldHeaderCard>
-        
-        {/* Filter Bar */}
-        <FilterBar>
-          <FaFilter style={{ color: '#6c6c6c' }} />
-          <FilterSelect value={filters.site} onChange={handleFilterChange('site')}>
-            <option value="all">All Sites</option>
-            <option value="rainy-river">Rainy River</option>
-            <option value="new-afton">New Afton</option>
-            <option value="corporate">Corporate</option>
-          </FilterSelect>
-          
-          <FilterSelect value={filters.department} onChange={handleFilterChange('department')}>
-            <option value="all">All Departments</option>
-            <option value="engineering">Engineering</option>
-            <option value="operations">Operations</option>
-            <option value="hr">Human Resources</option>
-            <option value="finance">Finance</option>
-          </FilterSelect>
-          
-          <FilterSelect value={filters.role} onChange={handleFilterChange('role')}>
-            <option value="all">All Roles</option>
-            <option value="manager">Managers</option>
-            <option value="supervisor">Supervisors</option>
-            <option value="engineer">Engineers</option>
-            <option value="analyst">Analysts</option>
-          </FilterSelect>
-          
-          <FilterSelect value={filters.survey} onChange={handleFilterChange('survey')}>
-            <option value="all">Current Survey</option>
-            <option value="q1-2025">Q1 2025</option>
-            <option value="q4-2024">Q4 2024</option>
-            <option value="q3-2024">Q3 2024</option>
-          </FilterSelect>
-        </FilterBar>
-        
-        {/* Enhanced Dashboard Summary */}
-        <Card style={{ marginBottom: '24px' }}>
-          <SectionTitle>
-            <FaTachometerAlt size={16} /> Enhanced Dashboard
-          </SectionTitle>
-          <AdminDashboardSummary organizationId={undefined} />
-        </Card>
-        
-        {/* Anonymity Alert */}
-        {showAnonymityWarning && (
-          <AnonymityAlert>
-            <FaExclamationTriangle />
-            <div>Anonymity Warning: This filter selection contains fewer than 5 responses. Data has been hidden to protect employee privacy.</div>
-          </AnonymityAlert>
         )}
         
-        {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          {stats.map((stat) => (
-            <Card key={stat.label} onClick={() => navigate(stat.link)} style={{ cursor: 'pointer' }}>
-              <KpiCard>
-                <KpiIcon>
-                  <stat.icon size={24} />
-                </KpiIcon>
-                <div>
-                  <MetricValue>{stat.value}</MetricValue>
-                  <MetricLabel>{stat.label}</MetricLabel>
-                </div>
-              </KpiCard>
-            </Card>
-          ))}
-        </div>
+        {/* Error state */}
+        {error && (
+          <div style={{ padding: '2rem', color: 'red', textAlign: 'center' }}>
+            <div>Error loading dashboard data: {error.message}</div>
+          </div>
+        )}
         
-        <MainGrid>
-          {/* Survey Participation */}
-          <QuarterWidthCard>
-            <SectionTitle>
-              <FaChartBar size={14} /> Survey Participation
-            </SectionTitle>
-            <div style={{ fontSize: '0.875rem', color: '#6c6c6c', marginBottom: '1rem' }}>
-              Quickly see how many participants have completed the survey.
-            </div>
-            
-            <DonutChart>
-              <svg viewBox="0 0 36 36" style={{ width: '140px', height: '140px' }}>
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#f5f5f5"
-                  strokeWidth="3.6"
-                  strokeDasharray="100, 100"
-                />
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#7ec16c"
-                  strokeWidth="3.8"
-                  strokeDasharray={`${participationPct}, 100`}
-                  strokeLinecap="round"
-                />
-                <text x="18" y="18" textAnchor="middle" fontSize="10" fontWeight="700" fill="#1c1c1c">
-                  {participationPct}%
-                </text>
-                <text x="18" y="22" textAnchor="middle" fontSize="4" fill="#6c6c6c">
-                  COMPLETED
-                </text>
-              </svg>
-            </DonutChart>
-            
-            <DonutLegend>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 10, height: 10, background: '#7ec16c', borderRadius: 2 }} />
-                <div>COMPLETED</div>
+        {/* Dashboard content - only render when data is available */}
+        {!isLoading && !error && dashboardData && (
+          <>
+            {/* Survey Countdown Header */}
+            <GoldHeaderCard>
+              <div>
+                <HeaderLabel>MAY '25</HeaderLabel>
+                <HeaderTitle>BIOPTRICS Employee Survey</HeaderTitle>
+                <HeaderEnds>
+                  ENDS IN: <Countdown end={new Date('2025-05-31T23:59:59')} />
+                </HeaderEnds>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 10, height: 10, background: '#f5f5f5', borderRadius: 2 }} />
-                <div>PENDING</div>
-              </div>
-            </DonutLegend>
-          </QuarterWidthCard>
-          
-          {/* Responses by Site */}
-          <HalfWidthCard>
-            <SectionTitle>
-              <FaChartBar size={14} /> Responses by Site
-            </SectionTitle>
-            <div style={{ fontSize: '0.875rem', color: '#6c6c6c', marginBottom: '1rem' }}>
-              Breakdown of total responses received from each site or department to help monitor participation across locations.
-            </div>
+              <QuickActionBar>
+                <ActionButton className="primary" onClick={() => navigate('/admin/surveys/all')}>
+                  <FaClipboardList /> Create Survey
+                </ActionButton>
+                <ActionButton onClick={() => navigate('/admin/questions/builder')}>
+                  <FaQuestionCircle /> Add Question
+                </ActionButton>
+                <ActionButton onClick={() => navigate('/admin/analytics')}>
+                  <FaFileExport /> Export Results
+                </ActionButton>
+                <ActionButton onClick={() => navigate('/admin/org-setup')}>
+                  <FaEnvelope /> Invite Participants
+                </ActionButton>
+              </QuickActionBar>
+            </GoldHeaderCard>
             
-            <div style={{ fontWeight: 600, color: '#1c1c1c', marginBottom: '0.75rem' }}>
-              TOTAL RESPONSES: 165
-            </div>
-            
-            <BarChart>
-              {siteData.map((site) => (
-                <BarBar key={site.name}>
-                  <BarLabel>{site.name}</BarLabel>
-                  <div style={{ 
-                    height: '14px', 
-                    width: `${site.value * 2}px`, 
-                    background: site.color,
-                    borderRadius: '7px'
-                  }} />
-                  <div style={{ marginLeft: '10px', fontSize: '0.875rem', fontWeight: 600, color: '#1c1c1c' }}>
-                    {site.value}
-                  </div>
-                </BarBar>
-              ))}
-            </BarChart>
-            
-            <div style={{ fontSize: '0.8rem', color: '#6c6c6c', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <FaInfoCircle size={12} />
-                <span>Total invitations sent: 218</span>
-              </div>
-            </div>
-          </HalfWidthCard>
-          
-          {/* Flagged Issues */}
-          <QuarterWidthCard>
-            <SectionTitle>
-              <FaExclamationTriangle size={14} color="#e74c3c" /> Flagged Issues
-            </SectionTitle>
-            
-            <FlaggedList>
-              {flaggedIssues.map(issue => (
-                <FlaggedItem key={issue.id} severity={issue.severity}>
-                  {issue.text}
-                </FlaggedItem>
-              ))}
-              <FlaggedItem color="#f06292"><span>❗</span> Work-Life Balance flagged in multiple sites</FlaggedItem>
-              <FlaggedItem color="#ff9800"><span>⚠️</span> Manager Feedback score critically low at 2.5</FlaggedItem>
-            </FlaggedList>
-          </QuarterWidthCard>
-          <QuarterWidthCard>
-            <SectionTitle>Engagement Score Trend</SectionTitle>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ color: '#666', fontSize: 15 }}>Track how employee engagement has changed over recent surveys.</div>
-              <div style={{ fontWeight: 700, color: '#444' }}>AVERAGE: 4/5</div>
-            </div>
-
-            <TrendBar>
-              {(() => {
-                const data = [
-                  { month: 'Sep', score: 4.2 },
-                  { month: 'Jun', score: 4.0 },
-                  { month: 'Mar', score: 3.6 },
-                ];
-                return data.map((d, i) => {
-                  return (
-                    <TrendRow key={i}>
-                      <TrendLabel>{d.month}</TrendLabel>
-                      <TrendFill width={d.score * 20} />
-                      <TrendValue>{d.score}/5</TrendValue>
-                    </TrendRow>
-                  );
-                });
-              })()}
-            </TrendBar>
-          </QuarterWidthCard>
-          {/* Heat Map */}
-          <HalfWidthCard>
-            <SectionTitle>
-              <FaChartBar size={14} /> Engagement Score Heat Map
-            </SectionTitle>
-            
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              alignItems: 'center', 
-              marginBottom: '0.75rem' 
-            }}>
-              <div style={{ fontSize: '0.875rem', color: '#6c6c6c' }}>
-                Track how employee engagement has changed over recent surveys with a quick view of average scores and trends.
-              </div>
-              <div style={{ fontWeight: 600, color: '#1c1c1c' }}>
-                AVERAGE: 4/5
-              </div>
-            </div>
-            
-            <HeatMapGrid>
-              <HeatMapHeader style={{ background: 'transparent' }}></HeatMapHeader>
-              <HeatMapHeader>JAN '25</HeatMapHeader>
-              <HeatMapHeader>SEP '24</HeatMapHeader>
-              <HeatMapHeader>MAY '24</HeatMapHeader>
+            {/* Filter Bar */}
+            <FilterBar>
+              <FaFilter style={{ color: '#6c6c6c' }} />
               
-              {heatMapData.map((row, index) => (
-                <HeatMapRow key={index}>
-                  <HeatMapLabel>{row.theme}</HeatMapLabel>
-                  {row.surveyScores.map((score, i) => (
-                    <HeatMapCell key={i} score={score}>
-                      {score.toFixed(1)}
-                    </HeatMapCell>
-                  ))}
-                </HeatMapRow>
-              ))}
-            </HeatMapGrid>
-          </HalfWidthCard>
-          
-          {/* Recent Activity */}
-          <HalfWidthCard>
-            <SectionTitle>
-              <FaBell size={14} /> Recent Activity
-            </SectionTitle>
+              <FilterSelect value={filters.site} onChange={handleFilterChange('site')}>
+                {filterOptions.sites.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </FilterSelect>
+              
+              <FilterSelect value={filters.department} onChange={handleFilterChange('department')}>
+                {filterOptions.departments.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </FilterSelect>
+              
+              <FilterSelect value={filters.role} onChange={handleFilterChange('role')}>
+                {filterOptions.roles.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </FilterSelect>
+              
+              <FilterSelect value={filters.survey} onChange={handleFilterChange('survey')}>
+                {filterOptions.surveys.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </FilterSelect>
+            </FilterBar>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {[
-                { time: '2 hours ago', action: 'Jane Smith created a new survey: "Q2 Employee Feedback"' },
-                { time: '5 hours ago', action: 'John Davis exported survey results for "Leadership Assessment"' },
-                { time: 'Yesterday', action: 'Admin sent 45 new invitations to Operations department' },
-                { time: '2 days ago', action: 'Survey threshold alert: Communication score below target' },
-                { time: '3 days ago', action: 'Mike Johnson added 3 new questions to the Question Bank' }
-              ].map((activity, index) => (
-                <div key={index} style={{ 
-                  padding: '0.75rem', 
-                  borderLeft: '3px solid #f0f0f0',
-                  background: '#f9f9f9',
-                  borderRadius: '4px'
-                }}>
-                  <div style={{ fontSize: '0.75rem', color: '#6c6c6c', marginBottom: '0.25rem' }}>
-                    {activity.time}
-                  </div>
-                  <div style={{ fontSize: '0.875rem' }}>
-                    {activity.action}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </HalfWidthCard>
-        </MainGrid>
+            {/* Enhanced Dashboard Summary */}
+            <Card style={{ marginBottom: '24px' }}>
+              <SectionTitle>
+                <FaTachometerAlt size={16} /> Enhanced Dashboard
+              </SectionTitle>
+              <AdminDashboardSummary organizationId={undefined} />
+            </Card>
+            
+            {/* Anonymity Alert */}
+            {showAnonymityWarning && (
+              <DashboardAnonymityAlert>
+                <FaExclamationTriangle />
+                <div>Anonymity Warning: This filter selection contains fewer than 5 responses. Data has been hidden to protect employee privacy.</div>
+              </DashboardAnonymityAlert>
+            )}
+            
+            {/* KPI Cards - Using memoized component */}
+            <KpiStatsGrid 
+              stats={dashboardData.stats} 
+              onCardClick={handleCardClick} 
+            />
+            
+            <MainGrid>
+              {/* Survey Participation - Using memoized component */}
+              <ParticipationDonut 
+                participationPct={dashboardData.participationPct} 
+              />
+              
+              {/* Responses by Site - Using memoized component */}
+              <SiteResponsesChart 
+                siteData={dashboardData.siteData} 
+                totalResponses={dashboardData.totalResponses} 
+              />
+              
+              {/* Flagged Issues - Using memoized component */}
+              <FlaggedIssuesList 
+                flaggedIssues={dashboardData.flaggedIssues} 
+              />
+              
+              {/* Engagement Score Trend - Using memoized component */}
+              <TrendChart 
+                trendData={dashboardData.trendData} 
+              />
+              
+              {/* Heat Map - Using memoized component */}
+              <HeatMapChart 
+                heatMapData={dashboardData.heatMapData} 
+              />
+              
+              {/* Recent Activity */}
+              <HalfWidthCard>
+                <SectionTitle>
+                  <FaBell size={14} /> Recent Activity
+                </SectionTitle>
+                
+                <ActivityList 
+                  activities={[
+                    { time: '2 hours ago', action: 'Jane Smith created a new survey: "Q2 Employee Feedback"' },
+                    { time: '5 hours ago', action: 'John Davis exported survey results for "Leadership Assessment"' },
+                    { time: 'Yesterday', action: 'Admin sent 45 new invitations to Operations department' },
+                    { time: '2 days ago', action: 'Survey threshold alert: Communication score below target' },
+                    { time: '3 days ago', action: 'Mike Johnson added 3 new questions to the Question Bank' }
+                  ]}
+                />
+              </HalfWidthCard>
+            </MainGrid>
+          </>
+        )}
       </DashboardBg>
     </AdminLayout>
   );
