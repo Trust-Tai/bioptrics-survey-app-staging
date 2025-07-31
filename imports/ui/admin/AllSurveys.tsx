@@ -726,8 +726,32 @@ const AllSurveys: React.FC = () => {
 
   // Fetch surveys data - only get surveys owned by or shared with the current user
   const { surveys, loading } = useTracker(() => {
-    const handle = Meteor.subscribe('surveys.ownedAndCollaborated');
-    const data = Surveys.find({}, { sort: { updatedAt: -1 } }).fetch();
+    // Use a more efficient subscription with limit and skip for pagination
+    const handle = Meteor.subscribe('surveys.ownedAndCollaborated', {
+      limit: 100, // Limit the initial load to improve performance
+      fields: { // Only fetch the fields we need initially
+        _id: 1,
+        title: 1,
+        description: 1,
+        published: 1,
+        status: 1,
+        createdBy: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        sections: 1,
+        responses: 1,
+        collaborators: 1,
+        surveySections: 1,
+        sectionQuestions: 1,
+        scheduledFor: 1
+      }
+    });
+    
+    const data = Surveys.find({}, { 
+      sort: { updatedAt: -1 },
+      // Apply the same limit here to ensure consistency
+      limit: 100
+    }).fetch();
     
     // Ensure all required fields are present in the survey data
     const processedData = data.map((survey: any) => ({
@@ -1255,7 +1279,8 @@ const AllSurveys: React.FC = () => {
               </GridContainer>
             ) : (
               <SurveyListView 
-                surveys={paginated} 
+                surveys={paginated}
+                loading={loading}
                 onEdit={(id) => {
                   console.log('Navigating to edit survey:', id);
                   navigate(`/admin/surveys/builder/${id}`);

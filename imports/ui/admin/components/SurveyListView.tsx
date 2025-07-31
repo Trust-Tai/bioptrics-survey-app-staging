@@ -144,6 +144,7 @@ const ActionContainer = styled.div`
 
 interface SurveyListViewProps {
   surveys: any[];
+  loading?: boolean;
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onPermanentDelete: (id: string, title: string) => void;
@@ -160,6 +161,7 @@ type SortDirection = 'asc' | 'desc';
 
 const SurveyListView: React.FC<SurveyListViewProps> = ({ 
   surveys, 
+  loading = false,
   onEdit, 
   onDelete, 
   onPermanentDelete,
@@ -343,33 +345,54 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
         </tr>
       </TableHeader>
       <TableBody>
-        {sortedSurveys.map(survey => {
-          // Calculate status
-          let status = survey.status ? survey.status.toUpperCase() : (survey.published ? 'ACTIVE' : 'DRAFT');
-          if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {
-            status = 'SCHEDULED';
-          }
+        {loading ? (
+          <tr>
+            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ width: '20px', height: '20px', border: '4px solid var(--color-accent)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+              </div>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+            </td>
+          </tr>
+        ) : sortedSurveys && sortedSurveys.length === 0 ? (
+          <tr>
+            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0', color: 'var(--color-text)' }}>
+              No surveys found matching your filters.
+            </td>
+          </tr>
+        ) : sortedSurveys && 
+          sortedSurveys.map(survey => {
+            // Calculate status
+            let status = survey.status ? survey.status.toUpperCase() : (survey.published ? 'ACTIVE' : 'DRAFT');
+            if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {
+              status = 'SCHEDULED';
+            }
           
-          // Calculate completion percentage
-          const completionPercentage = survey.responseStats?.completionRate || 0;
+            // Calculate completion percentage
+            const completionPercentage = survey.responseStats?.completionRate || 0;
+            
+            // Format date
+            const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
           
-          // Format date
-          const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
-          
-          return (
-            <TableRow key={survey._id} onClick={(e) => {
-                    // Only navigate if the click is directly on the row and not on a child element with its own click handler
-                    if (e.target === e.currentTarget || 
-                        (e.target as HTMLElement).tagName === 'TD' || 
-                        (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
-                      console.log('Row clicked - triggering Edit action');
-                      safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
-                    }
-                  }} 
-                  style={{ 
-                    cursor: 'pointer',
-                    textDecoration: 'none'
-                  }}>
+            return (
+              <TableRow key={survey._id} onClick={(e) => {
+                      // Only navigate if the click is directly on the row and not on a child element with its own click handler
+                      if (e.target === e.currentTarget || 
+                          (e.target as HTMLElement).tagName === 'TD' || 
+                          (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
+                        console.log('Row clicked - triggering Edit action');
+                        safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
+                      }
+                    }} 
+                    style={{ 
+                      cursor: 'pointer',
+                      textDecoration: 'none'
+                    }}>
               <TableCell>
                 {survey.title}
                 {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
@@ -670,10 +693,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                     </DropdownMenu>
                   )}
                 </ActionContainer>
-              </TableCell>
-            </TableRow>
-          );
-        })}
+            </TableCell>
+          </TableRow>
+            );
+          })
+        }
       </TableBody>
     </Table>
   );
