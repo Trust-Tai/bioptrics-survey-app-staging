@@ -272,6 +272,22 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
+  // Get a survey by ID
+  async 'surveys.getSurvey'(surveyId: string) {
+    if (!this.userId) throw new Meteor.Error('Not authorized');
+    check(surveyId, String);
+    
+    console.log(`Getting survey with ID: ${surveyId}`);
+    
+    // Find the survey
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    return survey;
+  },
+  
   // Update questions in a survey (used for drag-and-drop functionality)
   async 'surveys.updateQuestions'(surveyId: string, questions: any[]) {
     if (!this.userId) throw new Meteor.Error('Not authorized');

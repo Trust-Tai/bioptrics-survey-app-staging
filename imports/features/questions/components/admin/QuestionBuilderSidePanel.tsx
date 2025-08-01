@@ -85,6 +85,7 @@ interface QuestionBuilderSidePanelProps {
   context?: 'questionBank' | 'surveyBuilder'; // To indicate where it's being used
   onQuestionCreated?: (questionId: string) => void; // Callback for survey builder
   onQuestionSaved?: (questionId: string) => void; // General callback
+  surveyId?: string; // ID of the survey when used in survey builder context
 }
 
 // Side panel styles
@@ -149,7 +150,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   questionId, 
   context = 'questionBank', // Default to questionBank context
   onQuestionCreated,
-  onQuestionSaved 
+  onQuestionSaved,
+  surveyId // Add surveyId to the destructured props
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -237,6 +239,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   const [questions, setQuestions] = useState<QuestionSection[]>([getDefaultQuestion()]);
   // Add state to track if data is fully loaded and ready to display
   const [dataLoaded, setDataLoaded] = useState(false);
+  // State for save to question bank toggle (default to true)
+  const [saveToQuestionBank, setSaveToQuestionBank] = useState(true);
 
   // Subscribe to the specific question data if in edit mode
   const questionSub = useTracker(() => {
@@ -305,6 +309,12 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       const currentVersionData = questionDoc.versions[currentVersionIndex];
       
       console.log('Current version data:', currentVersionData);
+      
+      // Update the saveToQuestionBank toggle state based on the question's saved value
+      // If saveToQuestionBank is explicitly false, set it to false; otherwise default to true
+      const questionSaveToQuestionBank = currentVersionData.saveToQuestionBank !== false;
+      setSaveToQuestionBank(questionSaveToQuestionBank);
+      console.log(`Setting saveToQuestionBank toggle to: ${questionSaveToQuestionBank}`);
       
       // Map the database question format to the form format
       const questionToEdit = {
@@ -476,7 +486,17 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       };
       
       // Map the question to the version format expected by the API
-      const questionVersion = mapQuestionToVersion(questionToSave, userId);
+      // Include saveToQuestionBank flag and surveyId if in survey builder context
+      const questionVersion = mapQuestionToVersion(questionToSave, saveToQuestionBank, surveyId, userId);
+      
+      console.log(`Saving question with saveToQuestionBank=${saveToQuestionBank}, surveyId=${surveyId || 'none'}`);
+      
+      // Check if we're trying to save a survey-specific question without a surveyId
+      if (!saveToQuestionBank && !surveyId) {
+        showErrorAlert('Error saving question: surveyId is not defined');
+        console.error('Cannot save survey-specific question without a surveyId');
+        return;
+      }
       
       // Log the mapped version for debugging
       console.log('Mapped question version for saving:', questionVersion);
@@ -556,7 +576,17 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       };
       
       // Map the question to the version format expected by the API
-      const questionVersion = mapQuestionToVersion(questionToPublish, userId);
+      // Include saveToQuestionBank flag and surveyId if in survey builder context
+      const questionVersion = mapQuestionToVersion(questionToPublish, saveToQuestionBank, surveyId, userId);
+      
+      console.log(`Publishing question with saveToQuestionBank=${saveToQuestionBank}, surveyId=${surveyId || 'none'}`);
+      
+      // Check if we're trying to save a survey-specific question without a surveyId
+      if (!saveToQuestionBank && !surveyId) {
+        showErrorAlert('Error publishing question: surveyId is not defined');
+        console.error('Cannot save survey-specific question without a surveyId');
+        return;
+      }
       
       // Log the mapped version for debugging
       console.log('Mapped question version for publishing:', questionVersion);
@@ -637,6 +667,81 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         {/* Panel header */}
         <div style={sidePanelStyles.header as React.CSSProperties}>
           <h2>{questionId ? 'Edit Question' : 'Create New Question'}</h2>
+          
+          {/* Only show the toggle in survey builder context */}
+          {context === 'surveyBuilder' && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              marginTop: '10px', 
+              marginBottom: '10px',
+              padding: '8px',
+              background: '#f5f5f5',
+              borderRadius: '8px'
+            }}>
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                userSelect: 'none',
+                fontSize: '14px',
+                color: '#444'
+              }}>
+                <div style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  width: '40px',
+                  height: '20px',
+                  marginRight: '10px'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={saveToQuestionBank}
+                    onChange={() => setSaveToQuestionBank(!saveToQuestionBank)}
+                    style={{
+                      opacity: 0,
+                      width: 0,
+                      height: 0
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    cursor: 'pointer',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: saveToQuestionBank ? '#552a47' : '#ccc',
+                    transition: '.4s',
+                    borderRadius: '34px'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      content: '""',
+                      height: '16px',
+                      width: '16px',
+                      left: '2px',
+                      bottom: '2px',
+                      backgroundColor: 'white',
+                      transition: '.4s',
+                      borderRadius: '50%',
+                      transform: saveToQuestionBank ? 'translateX(20px)' : 'translateX(0px)'
+                    }}></span>
+                  </span>
+                </div>
+                Save to Question Bank
+                <span style={{ 
+                  marginLeft: '5px', 
+                  fontSize: '12px', 
+                  color: '#666',
+                  fontStyle: 'italic'
+                }}>
+                  {saveToQuestionBank ? '(Available in all surveys)' : '(Only in this survey)'}
+                </span>
+              </label>
+            </div>
+          )}
+          
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             {/* Save Draft button is hidden as requested */}
             
@@ -664,7 +769,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 onMouseOver={(e) => !isLoading && (e.currentTarget.style.background = '#6e3a5d')} /* Darker shade for hover */
                 onMouseOut={(e) => !isLoading && (e.currentTarget.style.background = '#552a47')}
               >
-                {questionId ? 'Update' : 'Add Question'}
+                {questionId 
+                  ? 'Update Question' 
+                  : `Add ${context === 'surveyBuilder' && !saveToQuestionBank ? 'to Survey' : 'Question'}`}
               </button>
               <div style={{
                 position: 'absolute',
@@ -680,7 +787,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 transition: 'opacity 0.3s',
                 pointerEvents: 'none',
               }} className="tooltip">
-                {questionId ? 'Update and publish to question bank' : 'Publish to question bank and close'}
+                {questionId 
+                  ? `Update and ${saveToQuestionBank ? 'publish to question bank' : 'save only to this survey'}` 
+                  : `${saveToQuestionBank ? 'Publish to question bank' : 'Save only to this survey'} and close`}
               </div>
             </div>
           </div>
