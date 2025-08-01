@@ -50,7 +50,46 @@ if (Meteor.isServer) {
         return true;
       } catch (error) {
         console.error('Error restoring survey:', error);
-        throw new Meteor.Error('restore-failed', 'Failed to restore survey');
+        throw new Meteor.Error('server-error', 'Failed to restore survey');
+      }
+    },
+
+    // Method to permanently delete a survey (no recovery possible)
+    async 'surveys.removePermanently'(surveyId: string) {
+      check(surveyId, String);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to permanently delete a survey');
+      }
+      
+      try {
+        // Get the survey
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        
+        if (!survey) {
+          throw new Meteor.Error('not-found', 'Survey not found');
+        }
+        
+        // Check if user has permission to permanently delete this survey
+        // Only admins or the survey creator can permanently delete surveys
+        const user = await Meteor.users.findOneAsync(this.userId);
+        if (!user || (!user.roles?.includes('admin') && survey.createdBy !== this.userId)) {
+          throw new Meteor.Error('not-authorized', 'Not authorized to permanently delete this survey');
+        }
+        
+        // Delete related survey responses
+        await SurveyResponses.removeAsync({ surveyId });
+        
+        // Delete related incomplete survey responses
+        await IncompleteSurveyResponses.removeAsync({ surveyId });
+        
+        // Permanently remove the survey
+        await Surveys.removeAsync({ _id: surveyId });
+        
+        return true;
+      } catch (error) {
+        console.error('Error permanently deleting survey:', error);
+        throw new Meteor.Error('server-error', 'Failed to permanently delete survey');
       }
     },
     

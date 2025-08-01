@@ -679,6 +679,7 @@ const AllSurveys: React.FC = () => {
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
+  const [confirmPermanentDelete, setConfirmPermanentDelete] = useState<{ _id: string; title: string } | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showResponsesModal, setShowResponsesModal] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('list');
@@ -725,8 +726,32 @@ const AllSurveys: React.FC = () => {
 
   // Fetch surveys data - only get surveys owned by or shared with the current user
   const { surveys, loading } = useTracker(() => {
-    const handle = Meteor.subscribe('surveys.ownedAndCollaborated');
-    const data = Surveys.find({}, { sort: { updatedAt: -1 } }).fetch();
+    // Use a more efficient subscription with limit and skip for pagination
+    const handle = Meteor.subscribe('surveys.ownedAndCollaborated', {
+      limit: 100, // Limit the initial load to improve performance
+      fields: { // Only fetch the fields we need initially
+        _id: 1,
+        title: 1,
+        description: 1,
+        published: 1,
+        status: 1,
+        createdBy: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        sections: 1,
+        responses: 1,
+        collaborators: 1,
+        surveySections: 1,
+        sectionQuestions: 1,
+        scheduledFor: 1
+      }
+    });
+    
+    const data = Surveys.find({}, { 
+      sort: { updatedAt: -1 },
+      // Apply the same limit here to ensure consistency
+      limit: 100
+    }).fetch();
     
     // Ensure all required fields are present in the survey data
     const processedData = data.map((survey: any) => ({
@@ -912,6 +937,42 @@ const AllSurveys: React.FC = () => {
                 </DeleteButton>
                 <CancelButton
                   onClick={() => setConfirmDelete(null)}
+                >
+                  Cancel
+                </CancelButton>
+              </ModalButtons>
+            </ModalContent>
+          </Modal>
+        )}
+        
+        {/* Permanent Delete Confirmation Modal */}
+        {confirmPermanentDelete && (
+          <Modal>
+            <ModalContent>
+              <ModalTitle>Delete {surveyLabel} Permanently</ModalTitle>
+              <ModalText>
+                Are you sure you want to <span style={{ fontWeight: 700, color: 'var(--color-error)' }}>permanently delete</span> <span style={{ fontWeight: 700 }}>'{confirmPermanentDelete.title}'</span>?
+                <br />
+                <span style={{ color: 'var(--color-error)', fontWeight: 500 }}>
+                  This action CANNOT be undone and will remove all associated data including responses.
+                </span>
+              </ModalText>
+              <ModalButtons>
+                <DeleteButton
+                  onClick={async () => {
+                    try {
+                      await Meteor.callAsync('surveys.removePermanently', confirmPermanentDelete._id);
+                      setNotification({ type: 'success', message: `${surveyLabel} permanently deleted.` });
+                    } catch (err: any) {
+                      setNotification({ type: 'error', message: `Error permanently deleting ${surveyLabel.toLowerCase()}: ${err.reason || err.message || 'Unknown error'}` });
+                    }
+                    setConfirmPermanentDelete(null);
+                  }}
+                >
+                  Delete Permanently
+                </DeleteButton>
+                <CancelButton
+                  onClick={() => setConfirmPermanentDelete(null)}
                 >
                   Cancel
                 </CancelButton>
@@ -1128,35 +1189,69 @@ const AllSurveys: React.FC = () => {
                             >
                               Preview
                             </button>
-                            <button
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                padding: '10px 16px',
-                                textAlign: 'left',
-                                border: 'none',
-                                background: 'none',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                transition: 'background-color 0.2s',
-                                color: '#dc3545',
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                console.log('Deleting survey:', s._id);
-                                setConfirmDelete({ _id: s._id, title: s.title });
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              Delete
-                            </button>
+                            {s.status !== 'inactive' && (
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: '#dc3545',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  console.log('Deleting survey:', s._id);
+                                  setConfirmDelete({ _id: s._id, title: s.title });
+                                  setOpenDropdown(null);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
+                            {s.status === 'inactive' && (
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: '#dc3545',
+                                  fontWeight: 'bold',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  console.log('Permanently deleting survey:', s._id);
+                                  setConfirmPermanentDelete({ _id: s._id, title: s.title });
+                                  setOpenDropdown(null);
+                                }}
+                              >
+                                Delete Permanently
+                              </button>
+                            )}
                           </div>
                         )}
                       </DropdownContainer>
@@ -1184,7 +1279,8 @@ const AllSurveys: React.FC = () => {
               </GridContainer>
             ) : (
               <SurveyListView 
-                surveys={paginated} 
+                surveys={paginated}
+                loading={loading}
                 onEdit={(id) => {
                   console.log('Navigating to edit survey:', id);
                   navigate(`/admin/surveys/builder/${id}`);
@@ -1192,6 +1288,10 @@ const AllSurveys: React.FC = () => {
                 onDelete={(id, title) => {
                   console.log('Deleting survey:', id, title);
                   setConfirmDelete({ _id: id, title });
+                }}
+                onPermanentDelete={(id, title) => {
+                  console.log('Permanently deleting survey:', id, title);
+                  setConfirmPermanentDelete({ _id: id, title });
                 }}
                 onViewResponses={(id, title) => {
                   console.log('Navigating to analytics for survey:', id);

@@ -176,10 +176,14 @@ if (Meteor.isServer) {
   });
 
   // Publication for surveys where the user is either the owner or a collaborator
-  Meteor.publish('surveys.ownedAndCollaborated', function () {
+  Meteor.publish('surveys.ownedAndCollaborated', function (options = {}) {
     if (!this.userId) {
       return this.ready();
     }
+    
+    // Extract options with defaults
+    const limit = options.limit || 100;
+    const fields = options.fields || {};
     
     // Return surveys where the user is either the owner or a collaborator
     return Surveys.find({
@@ -187,6 +191,10 @@ if (Meteor.isServer) {
         { createdBy: this.userId },
         { 'collaborators.userId': this.userId }
       ]
+    }, {
+      sort: { updatedAt: -1 },
+      limit: limit,
+      fields: fields
     });
   });
 

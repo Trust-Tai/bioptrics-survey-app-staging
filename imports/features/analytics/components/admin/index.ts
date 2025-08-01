@@ -1,6 +1,7 @@
 // Export all admin analytics components
 export { default as AdminAnalyticsDashboard } from './AdminAnalyticsDashboard';
 export { default as AnalyticsDashboard } from './AnalyticsDashboard';
+export { default as SurveyAnalytics } from './SurveyAnalytics';
 
 // Export migrated components
 export * from './filters';

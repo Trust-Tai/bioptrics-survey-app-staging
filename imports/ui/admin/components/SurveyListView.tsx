@@ -144,8 +144,10 @@ const ActionContainer = styled.div`
 
 interface SurveyListViewProps {
   surveys: any[];
+  loading?: boolean;
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
+  onPermanentDelete: (id: string, title: string) => void;
   onPreview: (id: string, isPublic?: boolean) => void;
   onViewResponses: (id: string, title: string) => void;
   onCopyLink?: (id: string) => void;
@@ -159,8 +161,10 @@ type SortDirection = 'asc' | 'desc';
 
 const SurveyListView: React.FC<SurveyListViewProps> = ({ 
   surveys, 
+  loading = false,
   onEdit, 
   onDelete, 
+  onPermanentDelete,
   onPreview,
   onViewResponses,
   onCopyLink
@@ -341,33 +345,54 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
         </tr>
       </TableHeader>
       <TableBody>
-        {sortedSurveys.map(survey => {
-          // Calculate status
-          let status = survey.status ? survey.status.toUpperCase() : (survey.published ? 'ACTIVE' : 'DRAFT');
-          if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {
-            status = 'SCHEDULED';
-          }
+        {loading ? (
+          <tr>
+            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ width: '20px', height: '20px', border: '4px solid var(--color-accent)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+              </div>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+            </td>
+          </tr>
+        ) : sortedSurveys && sortedSurveys.length === 0 ? (
+          <tr>
+            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0', color: 'var(--color-text)' }}>
+              No surveys found matching your filters.
+            </td>
+          </tr>
+        ) : sortedSurveys && 
+          sortedSurveys.map(survey => {
+            // Calculate status
+            let status = survey.status ? survey.status.toUpperCase() : (survey.published ? 'ACTIVE' : 'DRAFT');
+            if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {
+              status = 'SCHEDULED';
+            }
           
-          // Calculate completion percentage
-          const completionPercentage = survey.responseStats?.completionRate || 0;
+            // Calculate completion percentage
+            const completionPercentage = survey.responseStats?.completionRate || 0;
+            
+            // Format date
+            const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
           
-          // Format date
-          const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
-          
-          return (
-            <TableRow key={survey._id} onClick={(e) => {
-                    // Only navigate if the click is directly on the row and not on a child element with its own click handler
-                    if (e.target === e.currentTarget || 
-                        (e.target as HTMLElement).tagName === 'TD' || 
-                        (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
-                      console.log('Row clicked - triggering Edit action');
-                      safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
-                    }
-                  }} 
-                  style={{ 
-                    cursor: 'pointer',
-                    textDecoration: 'none'
-                  }}>
+            return (
+              <TableRow key={survey._id} onClick={(e) => {
+                      // Only navigate if the click is directly on the row and not on a child element with its own click handler
+                      if (e.target === e.currentTarget || 
+                          (e.target as HTMLElement).tagName === 'TD' || 
+                          (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
+                        console.log('Row clicked - triggering Edit action');
+                        safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
+                      }
+                    }} 
+                    style={{ 
+                      cursor: 'pointer',
+                      textDecoration: 'none'
+                    }}>
               <TableCell>
                 {survey.title}
                 {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
@@ -600,43 +625,79 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       )}
                       
                       {!survey.deleted && (
-                        <button
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: '10px 16px',
-                            textAlign: 'left',
-                            border: 'none',
-                            background: 'none',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            transition: 'background-color 0.2s',
-                            color: '#dc3545',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('Delete button clicked for survey:', survey._id, survey.title);
-                            safelyExecuteAction(onDelete, 'Delete', survey._id, survey.title);
-                          }}
-                          data-no-navigate="true"
-                        >
-                          <FaTrash style={{ marginRight: '8px' }} /> Delete
-                        </button>
+                        <>
+                          {survey.status !== 'inactive' && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#dc3545',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                safelyExecuteAction(onDelete, 'Delete', survey._id, survey.title);
+                              }}
+                              data-no-navigate="true"
+                            >
+                              <FaTrash style={{ marginRight: '8px' }} /> Delete
+                            </button>
+                          )}
+                          {survey.status === 'inactive' && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#dc3545',
+                                fontWeight: 'bold',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('Permanently delete button clicked for survey:', survey._id, survey.title);
+                                safelyExecuteAction(onPermanentDelete, 'Delete Permanently', survey._id, survey.title);
+                              }}
+                              data-no-navigate="true"
+                            >
+                              <FaTrash style={{ marginRight: '8px' }} /> Delete Permanently
+                            </button>
+                          )}
+                        </>
                       )}
                     </DropdownMenu>
                   )}
                 </ActionContainer>
-              </TableCell>
-            </TableRow>
-          );
-        })}
+            </TableCell>
+          </TableRow>
+            );
+          })
+        }
       </TableBody>
     </Table>
   );
