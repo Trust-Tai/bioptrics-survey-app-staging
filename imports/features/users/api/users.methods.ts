@@ -190,5 +190,37 @@ Meteor.methods({
       console.error('Error changing password:', error);
       throw new Meteor.Error('password-change-failed', error.message || 'Failed to change password');
     }
+  },
+  
+  'users.getBasicInfo': async function(userIds) {
+    // Validate input
+    check(userIds, [String]);
+    
+    // This method can be called by any logged-in user
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to access user information');
+    }
+    
+    try {
+      // Create a map of user IDs to names
+      const userMap: Record<string, string> = {};
+      
+      // Find all users with the given IDs
+      const users = await Meteor.users.find(
+        { _id: { $in: userIds } },
+        { fields: { 'profile.name': 1 } }
+      ).fetchAsync();
+      
+      // Map user IDs to names
+      users.forEach(user => {
+        const name = user.profile?.name || 'Unknown User';
+        userMap[user._id] = name;
+      });
+      
+      return userMap;
+    } catch (error: any) {
+      console.error('Error fetching user information:', error);
+      throw new Meteor.Error('fetch-failed', error.message || 'Failed to fetch user information');
+    }
   }
 });
