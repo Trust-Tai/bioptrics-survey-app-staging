@@ -1,13 +1,20 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import EnhancedSurveyBuilder from '../../features/surveys/components/EnhancedSurveyBuilder';
+import { QuestionBuilderPanelProvider } from '../../features/questions/contexts/QuestionBuilderPanelContext';
 
 // This wrapper component extracts the surveyId parameter from the URL
 // and passes it to the EnhancedSurveyBuilder component
+// It also wraps the EnhancedSurveyBuilder with QuestionBuilderPanelProvider
+// to enable the use of the QuestionBuilderPanelContext
 const SurveyBuilderWrapper: React.FC = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
   
-  return <EnhancedSurveyBuilder surveyId={surveyId} />;
+  return (
+    <QuestionBuilderPanelProvider>
+      <EnhancedSurveyBuilder surveyId={surveyId} />
+    </QuestionBuilderPanelProvider>
+  );
 };
 
 export default SurveyBuilderWrapper;

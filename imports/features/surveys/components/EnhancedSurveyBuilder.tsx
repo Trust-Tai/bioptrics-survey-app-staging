@@ -19,6 +19,7 @@ import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } f
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
 import QuestionSelector from './sections/QuestionSelector';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
+import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
@@ -336,9 +337,31 @@ const ExpandButton = styled.button`
   }
 `;
 
-const EnhancedSurveyBuilder: React.FC = () => {
+interface EnhancedSurveyBuilderProps {
+  surveyId?: string;
+}
+
+const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId: propSurveyId }) => {
   const navigate = useNavigate();
-  const { surveyId } = useParams<{ surveyId: string }>();
+  const { surveyId: paramSurveyId } = useParams<{ surveyId: string }>();
+  
+  // Use the prop if provided, otherwise fall back to the URL parameter
+  const surveyId = propSurveyId || paramSurveyId;
+  
+  // Set up initial subscription to questions.all with the current surveyId
+  // This ensures we get both global questions and survey-specific questions for this survey
+  useEffect(() => {
+    if (surveyId) {
+      console.log(`Setting up initial subscription to questions.all with surveyId: ${surveyId}`);
+      const subscription = Meteor.subscribe('questions.all', surveyId);
+      
+      return () => {
+        if (subscription) {
+          subscription.stop();
+        }
+      };
+    }
+  }, [surveyId]);
   
   // State for the survey builder
   const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
@@ -2176,50 +2199,111 @@ const EnhancedSurveyBuilder: React.FC = () => {
   // State to store refreshed questions for the question selector
   const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
   
+  // Helper function to safely get the latest version of a question
+  const getLatestQuestionVersion = (question: any): any => {
+    if (!question) return undefined;
+    
+    const currentVersion = question.currentVersion;
+    
+    // Check if versions array exists and is valid
+    if (!question.versions || !Array.isArray(question.versions) || question.versions.length === 0) {
+      return undefined;
+    }
+    
+    // Try to find the current version
+    const versionMatch = question.versions.find((v: any) => v.version === currentVersion);
+    if (versionMatch) return versionMatch;
+    
+    // Fall back to the last version in the array
+    return question.versions[question.versions.length - 1];
+  };
+  
   // Handle adding questions to a section from question bank or to no section
   const handleAddQuestion = (sectionId: string | null) => {
     setCurrentSectionId(sectionId);
     
-    // Refresh question data before opening selector to ensure we have the latest question text
-    const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
-      // Get the latest version to extract the response type and text
-      const currentVersion = q.currentVersion;
-      const latestVersion = q.versions && Array.isArray(q.versions) ?
-        (q.versions.find((v: any) => v.version === currentVersion) || 
-        (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
-      
-      // Create a properly typed QuestionItem
-      const questionItem: QuestionItem = {
-        id: q._id || '',
-        text: extractQuestionText(q), // Use our helper function to get clean question text
-        type: latestVersion?.responseType || 'text',
-        status: 'published'
-      };
-      
-      console.log(`Question selector item: ${q._id} - ${questionItem.text}`);
-      return questionItem;
+    // First, ensure we're subscribed to the questions.all publication with the current surveyId
+    // This ensures we get both global questions and survey-specific questions for this survey
+    console.log(`Subscribing to questions.all with surveyId: ${surveyId}`);
+    Meteor.subscribe('questions.all', surveyId, {
+      onReady: () => {
+        console.log('Subscription to questions.all is ready');
+        
+        // Now that we're subscribed, fetch the questions
+        const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+          // Get the latest version to extract the response type and text
+          const latestVersion = getLatestQuestionVersion(q);
+          
+          // Create a properly typed QuestionItem
+          const questionItem: QuestionItem = {
+            id: q._id || '',
+            text: extractQuestionText(q), // Use our helper function to get clean question text
+            type: latestVersion?.responseType || 'text',
+            status: 'published'
+          };
+          
+          // Log question details for debugging
+          const isSurveySpecific = latestVersion?.saveToQuestionBank === false;
+          console.log(`Question selector item: ${q._id} - ${questionItem.text} ${isSurveySpecific ? '(survey-specific)' : '(global)'} for survey: ${latestVersion?.surveyId || 'none'}`);
+          
+          return questionItem;
+        });
+        
+        // Update the question selector items
+        setQuestionSelectorItems(refreshedQuestions);
+        setShowQuestionSelector(true);
+      },
+      onError: (error) => {
+        console.error('Error subscribing to questions.all:', error);
+        // Still show the selector with whatever questions we have
+        setShowQuestionSelector(true);
+      }
     });
-    
-    // Update the question selector items
-    setQuestionSelectorItems(refreshedQuestions);
-    setShowQuestionSelector(true);
   };
+  
+  // Get context methods for question builder panel
+  const { openPanel, closePanel } = useQuestionBuilderPanel();
   
   // Handle creating a new question for a section
   const handleCreateQuestion = (sectionId: string) => {
     setCurrentSectionId(sectionId);
-    setShowQuestionBuilder(true);
+    // Use context's openPanel method instead of local state
+    openPanel(undefined, surveyId);
+    console.log(`Creating question for section ${sectionId} in survey ${surveyId}`);
   };
   
   // Refresh survey data after changes
   const refreshSurveyData = () => {
-    // Refresh questions from the database
-    const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
+    // Subscribe to questions.all with surveyId to get both global and survey-specific questions
+    // This subscription is handled by Meteor automatically
+    Meteor.subscribe('questions.all', surveyId);
+    
+    // Get all questions from the database using the updated publication
+    // This will include both global questions and survey-specific questions for this survey
+    const allQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
+    
+    console.log('Question counts:', {
+      total: allQuestions.length,
+      surveyId
+    });
+    
+    // Log the question IDs for debugging
+    allQuestions.forEach(q => {
+      if (q.versions && Array.isArray(q.versions) && q.versions.length > 0) {
+        const latestVersion = q.versions[q.versions.length - 1];
+        if (latestVersion.saveToQuestionBank === false && latestVersion.surveyId === surveyId) {
+          console.log('Found survey-specific question:', q._id, 'for survey:', surveyId);
+        }
+      }
+    });
+    
+    // Use all questions directly since the publication now handles the filtering
+    
+    // Map to QuestionItem format
+    const refreshedQuestions = allQuestions.map(q => {
       // Get the latest version to extract the response type and text
       const currentVersion = q.currentVersion;
-      const latestVersion = q.versions && Array.isArray(q.versions) ?
-        (q.versions.find((v: any) => v.version === currentVersion) || 
-        (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
+      const latestVersion = getLatestQuestionVersion(q);
       
       // Create a properly typed QuestionItem
       const questionItem: QuestionItem = {
@@ -2327,10 +2411,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
   
   // Handle editing a question
   const handleEditQuestion = (questionId: string, sectionId: string | null) => {
-    console.log(`Editing question ${questionId} from section ${sectionId}`);
-    setEditingQuestionId(questionId);
-    setEditingQuestionSectionId(sectionId);
-    setIsQuestionBuilderOpen(true);
+    console.log(`Editing question ${questionId} from section ${sectionId} in survey ${surveyId}`);
+    // Use context's openPanel method instead of local state
+    openPanel(questionId, surveyId);
   };
 
   // Handle question creation/edit completion
@@ -2343,9 +2426,9 @@ const EnhancedSurveyBuilder: React.FC = () => {
 
   // Handle closing the question builder
   const handleCloseQuestionBuilder = () => {
-    setIsQuestionBuilderOpen(false);
-    setEditingQuestionId(null);
-    setEditingQuestionSectionId(null);
+    // Use context's closePanel method instead of local state
+    closePanel();
+    // No need to reset state variables as they're now managed by context
   };
 
   // Handle removing a question from a section or from no-section area
@@ -3547,7 +3630,6 @@ const EnhancedSurveyBuilder: React.FC = () => {
                         setDraggingQuestionSectionId(null);
                       }}
                     >
-                      <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#2d3748', marginBottom: '16px' }}>Questions without a section</h3>
                       
                       {noSectionQuestions.length > 0 ? (
                         noSectionQuestions.map((question, index) => (
@@ -4741,6 +4823,161 @@ const EnhancedSurveyBuilder: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Survey Layout Settings Section */}
+                  <div style={{ 
+                    marginBottom: '24px', 
+                    padding: '16px 16px 32px 16px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      marginBottom: '16px', 
+                      color: '#343a40',
+                      borderBottom: '1px solid #dee2e6',
+                      paddingBottom: '8px'
+                    }}>
+                      Survey Layout
+                    </h3>
+                    
+                    <div style={{ marginBottom: '16px' }}>
+                      <p style={{ fontSize: '14px', color: '#495057', marginBottom: '12px' }}>
+                        Select how questions will be displayed to respondents.
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <label style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          padding: '16px', 
+                          border: `2px solid ${survey?.layout === 'multiStep' || !survey?.layout ? '#552a47' : '#dee2e6'}`,
+                          borderRadius: '8px',
+                          backgroundColor: survey?.layout === 'multiStep' || !survey?.layout ? 'rgba(85, 42, 71, 0.05)' : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          height: '100%',
+                          boxShadow: survey?.layout === 'multiStep' || !survey?.layout ? '0 2px 8px rgba(85, 42, 71, 0.1)' : 'none'
+                        }}>
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <div style={{ fontWeight: 600, fontSize: '16px' }}>Multi Step</div>
+                            <input 
+                              type="radio" 
+                              name="surveyLayout" 
+                              value="multiStep" 
+                              checked={survey?.layout === 'multiStep' || !survey?.layout}
+                              onChange={() => {
+                                setSurvey({...survey, layout: 'multiStep'});
+                                // Save the survey to ensure layout is persisted
+                                if (surveyId) {
+                                  Meteor.call('surveys.update', surveyId, { layout: 'multiStep' }, (error: any) => {
+                                    if (error) {
+                                      console.error('Error saving survey layout:', error);
+                                    }
+                                  });
+                                }
+                              }}
+                              style={{
+                                accentColor: '#552a47',
+                                cursor: 'pointer',
+                                width: '18px',
+                                height: '18px'
+                              }}
+                            />
+                          </div>
+                          <div style={{ 
+                            width: '100%', 
+                            height: '80px', 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            marginBottom: '12px',
+                            border: '1px solid #e9ecef'
+                          }}>
+                            <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="10" y="10" width="100" height="10" rx="2" fill="#552a47" fillOpacity="0.7" />
+                              <rect x="10" y="25" width="100" height="5" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="35" width="60" height="5" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="45" width="30" height="5" rx="1" fill="#dee2e6" />
+                            </svg>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#6c757d', textAlign: 'center' }}>
+                            Questions are shown step-by-step, one section at a time.
+                          </div>
+                        </label>
+                        
+                        <label style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          padding: '16px', 
+                          border: `2px solid ${survey?.layout === 'allOnOnePage' ? '#552a47' : '#dee2e6'}`,
+                          borderRadius: '8px',
+                          backgroundColor: survey?.layout === 'allOnOnePage' ? 'rgba(85, 42, 71, 0.05)' : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          height: '100%',
+                          boxShadow: survey?.layout === 'allOnOnePage' ? '0 2px 8px rgba(85, 42, 71, 0.1)' : 'none'
+                        }}>
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            <div style={{ fontWeight: 600, fontSize: '16px' }}>All on One Page</div>
+                            <input 
+                              type="radio" 
+                              name="surveyLayout" 
+                              value="allOnOnePage" 
+                              checked={survey?.layout === 'allOnOnePage'}
+                              onChange={() => {
+                                setSurvey({...survey, layout: 'allOnOnePage'});
+                                // Save the survey to ensure layout is persisted
+                                if (surveyId) {
+                                  Meteor.call('surveys.update', surveyId, { layout: 'allOnOnePage' }, (error: any) => {
+                                    if (error) {
+                                      console.error('Error saving survey layout:', error);
+                                    }
+                                  });
+                                }
+                              }}
+                              style={{
+                                accentColor: '#552a47',
+                                cursor: 'pointer',
+                                width: '18px',
+                                height: '18px'
+                              }}
+                            />
+                          </div>
+                          <div style={{ 
+                            width: '100%', 
+                            height: '80px', 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '6px', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            marginBottom: '12px',
+                            border: '1px solid #e9ecef'
+                          }}>
+                            <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="10" y="5" width="100" height="8" rx="2" fill="#552a47" fillOpacity="0.7" />
+                              <rect x="10" y="18" width="100" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="27" width="100" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="36" width="60" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="45" width="80" height="4" rx="1" fill="#dee2e6" />
+                              <rect x="10" y="54" width="40" height="4" rx="1" fill="#dee2e6" />
+                            </svg>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#6c757d', textAlign: 'center' }}>
+                            Displays all questions on a single page, like a traditional form.
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                       <p style={{ fontSize: 15, margin: 0 }}>
                         Select a theme for your survey. The theme will affect the appearance and feel of your survey.
@@ -6030,16 +6267,7 @@ const EnhancedSurveyBuilder: React.FC = () => {
         {/* Theme preview modal */}
         {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
         
-        {/* Question Builder Side Panel for editing questions */}
-        {isQuestionBuilderOpen && (
-          <QuestionBuilderSidePanel
-            isOpen={isQuestionBuilderOpen}
-            onClose={handleCloseQuestionBuilder}
-            context="surveyBuilder"
-            questionId={editingQuestionId}
-            onQuestionCreated={handleQuestionCreated}
-          />
-        )}
+        {/* Question Builder Side Panel is now managed by QuestionBuilderPanelContext provider */}
       </DashboardBg>
     </AdminLayout>
   );

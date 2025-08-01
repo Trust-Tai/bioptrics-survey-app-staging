@@ -75,7 +75,7 @@ export interface QuestionVersion {
 }
 
 // Helper to map QuestionBuilder state to QuestionVersion
-export function mapQuestionToVersion(q: Question, userId?: string) {
+export function mapQuestionToVersion(q: Question, saveToQuestionBank: boolean = true, surveyId?: string, userId?: string) {
   return {
     questionText: q.text,
     description: q.description,
@@ -105,6 +105,9 @@ export function mapQuestionToVersion(q: Question, userId?: string) {
     feedbackPrompt: q.feedbackPrompt || '',
     // Estimated time
     estimatedTimeSeconds: q.estimatedTimeSeconds,
+    // Survey-specific question fields
+    saveToQuestionBank: saveToQuestionBank,
+    surveyId: !saveToQuestionBank ? surveyId : undefined,
   };
 }
 

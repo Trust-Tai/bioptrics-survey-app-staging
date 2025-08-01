@@ -30,6 +30,9 @@ export interface QuestionVersion {
   keywords?: string[];
   estimatedTimeSeconds?: number;
   customFields?: CustomField[];
+  // Added fields for survey-specific questions feature
+  saveToQuestionBank?: boolean;
+  surveyId?: string;
 }
 
 export interface QuestionDoc {
@@ -90,6 +93,9 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.customFields.$': { type: Object, blackbox: true },
     'versions.$.customFields.$.title': { type: String },
     'versions.$.customFields.$.content': { type: String },
+    // Survey-specific question fields
+    'versions.$.saveToQuestionBank': { type: Boolean, optional: true, defaultValue: true },
+    'versions.$.surveyId': { type: String, optional: true },
     createdAt: { type: Date },
     createdBy: { type: String },
     folderId: { type: String, optional: true },
@@ -98,8 +104,32 @@ if (typeof Questions.attachSchema === 'function') {
 }
 
 if (Meteor.isServer) {
-  Meteor.publish('questions.all', function() {
-    return Questions.find();
+  
+  Meteor.publish('questions.all', function(surveyId) {
+    // If surveyId is provided, include both global questions and survey-specific questions for this survey
+    // Otherwise, only return global questions (saved to Question Bank)
+    // Build the query
+    // Use type assertion to avoid TypeScript errors with MongoDB operators
+    const query: any = {
+      $or: [
+        // Global questions (saved to Question Bank)
+        { 'versions.saveToQuestionBank': { $ne: false } },
+        { 'versions.saveToQuestionBank': { $exists: false } }
+      ]
+    };
+    
+    // If surveyId is provided, also include survey-specific questions for this survey
+    if (surveyId) {
+      query.$or.push({
+        $and: [
+          { 'versions.saveToQuestionBank': false },
+          { 'versions.surveyId': surveyId }
+        ]
+      });
+    }
+    
+    console.log(`[questions.all] Publishing questions with${surveyId ? ' surveyId: ' + surveyId : ' no surveyId'}`);
+    return Questions.find(query);
   });
   
   Meteor.publish('questions.single', function(questionId) {
