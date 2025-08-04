@@ -14,7 +14,9 @@ const initialProducts: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'create
     imageUrl: '',
     bgColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     tags: ['Safety', 'Wellness', 'Premium'],
-    category: 'Safety & Wellness'
+    category: 'Safety & Wellness',
+    whatsIncluded: ['Comprehensive safety assessment', 'Real-time analytics dashboard', 'Custom reporting tools', 'Expert consultation included'],
+    screenshots: ['https://via.placeholder.com/800x600/667eea/white?text=WPS+Dashboard', 'https://via.placeholder.com/800x600/764ba2/white?text=Safety+Analytics', 'https://via.placeholder.com/800x600/667eea/white?text=Reporting+Tools']
   },
   {
     name: 'Employee Engagement Plus',
@@ -27,7 +29,9 @@ const initialProducts: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'create
     imageUrl: '',
     bgColor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
     tags: ['Engagement', 'Analytics', 'AI'],
-    category: 'Engagement'
+    category: 'Engagement',
+    whatsIncluded: ['AI-powered insights', 'Real-time analytics', 'Custom surveys', 'Team benchmarking'],
+    screenshots: ['https://via.placeholder.com/800x600/f093fb/white?text=Engagement+Dashboard', 'https://via.placeholder.com/800x600/f5576c/white?text=AI+Insights', 'https://via.placeholder.com/800x600/f093fb/white?text=Survey+Builder']
   },
   {
     name: 'Leadership 360 Assessment',
@@ -40,7 +44,9 @@ const initialProducts: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'create
     imageUrl: '',
     bgColor: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
     tags: ['Leadership', '360 Feedback', 'Development'],
-    category: 'Leadership'
+    category: 'Leadership',
+    whatsIncluded: ['360-degree feedback', 'Personalized development plan', 'Coaching session', 'Progress tracking'],
+    screenshots: ['https://via.placeholder.com/800x600/4facfe/white?text=360+Assessment', 'https://via.placeholder.com/800x600/00f2fe/white?text=Feedback+Reports', 'https://via.placeholder.com/800x600/4facfe/white?text=Development+Plans']
   },
   {
     name: 'Culture & Climate Survey',
