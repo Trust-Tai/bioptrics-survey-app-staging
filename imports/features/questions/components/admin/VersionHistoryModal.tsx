@@ -48,6 +48,7 @@ interface VersionHistoryModalProps {
   onUpdateVersionName?: (versionNumber: number, versionName: string) => Promise<void>;
   onViewVersion?: (version: QuestionVersion) => void; // New prop for handling view version action
   keepOpenOnView?: boolean; // New prop to control whether modal stays open when viewing a version
+  questionId?: string; // Question ID to attach to version data
 }
 
 const modalOverlayStyle: React.CSSProperties = {
@@ -148,7 +149,8 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
   onRevert,
   onUpdateVersionName,
   onViewVersion,
-  keepOpenOnView = true // Default to keeping the modal open when viewing a version
+  keepOpenOnView = true, // Default to keeping the modal open when viewing a version
+  questionId // Question ID to attach to version data
 }) => {
   // Helper function to prevent event propagation
   const preventPropagation = (e: React.MouseEvent) => {
@@ -202,8 +204,14 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
     const versionWithCurrentVersion = {
       ...version,
       currentVersion: currentVersion,
-      questionId: versions[0]?.questionId || '' // Add questionId for revert functionality
+      questionId: questionId || versions[0]?.questionId || '' // Use provided questionId first, then fallback to version's questionId
     };
+    
+    // Debug the version data being passed
+    console.log('View version with data:', {
+      questionId: versionWithCurrentVersion.questionId,
+      version: versionWithCurrentVersion.version
+    });
     
     // If onViewVersion prop is provided, use it to open the side panel
     if (onViewVersion) {

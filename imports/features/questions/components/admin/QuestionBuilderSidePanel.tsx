@@ -810,21 +810,51 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           {readOnly && versionData ? (
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button
-                onClick={() => {
-                  // Only enable revert if this is not the current version
-                  if (versionData.version !== versionData.currentVersion) {
-                    setVersionUpdateLoading(true);
-                    Meteor.call('questions.revertToVersion', versionData.questionId, versionData.version, (error: Error | null) => {
-                      setVersionUpdateLoading(false);
-                      if (error) {
-                        showErrorAlert(`Error reverting to version ${versionData.version}: ${error.message}`);
-                      } else {
-                        showSuccessAlert(`Successfully reverted to version ${versionData.version}`);
-                        onClose(); // Close the panel after successful revert
-                      }
-                    });
-                  }
-                }}
+                  onClick={() => {
+                    // Only enable revert if this is not the current version
+                    if (versionData.version !== versionData.currentVersion) {
+                      setVersionUpdateLoading(true);
+                      
+                      // Debug the version data being passed
+                      console.log('Reverting question with data:', {
+                        questionId: versionData.questionId,
+                        version: versionData.version,
+                        versionData
+                      });
+                      
+                      // Ensure we're passing a number for version
+                      const versionNumber = parseInt(versionData.version.toString(), 10);
+                      
+                      // Use Meteor.call to invoke the server method with proper authentication
+                      Meteor.call(
+                        'questions.revertToVersion',
+                        versionData.questionId,
+                        versionNumber,
+                        (error: Error | null, result: any) => {
+                          setVersionUpdateLoading(false);
+                          if (error) {
+                            console.error('Revert error:', error);
+                            showErrorAlert(`Error reverting to version ${versionNumber}: ${error.message}`);
+                          } else {
+                            console.log('Revert success:', result);
+                            // Show success message but keep panel open
+                            showSuccessAlert(`Successfully reverted to version ${versionNumber}. The question has been updated.`);
+                            
+                            // Update the version data to reflect that this is now the current version
+                            // This will disable the revert button since it's now the current version
+                            if (versionData) {
+                              const updatedVersionData = {
+                                ...versionData,
+                                currentVersion: versionData.version
+                              };
+                              // Update the version data in state
+                              setVersionData(updatedVersionData);
+                            }
+                          }
+                        }
+                      );
+                    }
+                  }}
                 disabled={versionData.version === versionData.currentVersion || versionUpdateLoading}
                 style={{
                   background: versionData.version === versionData.currentVersion ? '#e0e0e0' : '#552a47',
@@ -1193,47 +1223,87 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               
               {/* Answer Options - Moved from Answer Options tab */}
               <div className="form-group answer-options-section">
-                <QuestionBuilderDndProvider>
-                  <QuestionBuilderAnswerOptions
-                    answerType={questions[0].question.answerType}
-                    answers={questions[0].question.answers || []}
-                    onAnswersChange={(answers) => {
-                      const updatedQuestions = [...questions];
-                      updatedQuestions[0].question = {
-                        ...updatedQuestions[0].question,
-                        answers
-                      };
-                      setQuestions(updatedQuestions);
-                    }}
-                    isAssessment={questions[0].question.isAssessment || false}
-                    onIsAssessmentChange={(isAssessment) => {
-                      const updatedQuestions = [...questions];
-                      updatedQuestions[0].question = {
-                        ...updatedQuestions[0].question,
-                        isAssessment
-                      };
-                      setQuestions(updatedQuestions);
-                    }}
-                    correctAnswers={questions[0].question.correctAnswers || []}
-                    onCorrectAnswersChange={(correctAnswers) => {
-                      const updatedQuestions = [...questions];
-                      updatedQuestions[0].question = {
-                        ...updatedQuestions[0].question,
-                        correctAnswers
-                      };
-                      setQuestions(updatedQuestions);
-                    }}
-                    points={questions[0].question.points || 1}
-                    onPointsChange={(points) => {
-                      const updatedQuestions = [...questions];
-                      updatedQuestions[0].question = {
-                        ...updatedQuestions[0].question,
-                        points
-                      };
-                      setQuestions(updatedQuestions);
-                    }}
-                  />
-                </QuestionBuilderDndProvider>
+                <label>Answer Options</label>
+                {readOnly && versionData ? (
+                  <div className="read-only-answer-options">
+                    {/* For text-based question types, show a message instead of options */}
+                    {['text', 'textarea', 'date', 'file'].includes(versionData.responseType || versionData.answerType) ? (
+                      <div className="read-only-message" style={{ padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                        {versionData.responseType === 'textarea' || versionData.answerType === 'textarea' ? 
+                          'Long Text input field will be shown to respondents.' : 
+                          versionData.responseType === 'text' || versionData.answerType === 'text' ? 
+                          'Short Text input field will be shown to respondents.' :
+                          versionData.responseType === 'date' || versionData.answerType === 'date' ? 
+                          'Date picker will be shown to respondents.' :
+                          'File upload field will be shown to respondents.'}
+                      </div>
+                    ) : (
+                      /* For options-based question types, show the options */
+                      <div style={{ marginTop: '10px' }}>
+                        {(versionData.options || []).map((option: any, index: number) => (
+                          <div key={index} style={{ 
+                            padding: '8px 12px',
+                            marginBottom: '8px',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <span style={{ marginRight: '8px', color: '#666' }}>{index + 1}.</span>
+                            <span>{option.text}</span>
+                          </div>
+                        ))}
+                        {(versionData.options || []).length === 0 && (
+                          <div style={{ padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '4px', color: '#666' }}>
+                            No options defined for this question.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <QuestionBuilderDndProvider>
+                    <QuestionBuilderAnswerOptions
+                      answerType={questions[0].question.answerType}
+                      answers={questions[0].question.answers || []}
+                      onAnswersChange={(answers) => {
+                        const updatedQuestions = [...questions];
+                        updatedQuestions[0].question = {
+                          ...updatedQuestions[0].question,
+                          answers
+                        };
+                        setQuestions(updatedQuestions);
+                      }}
+                      isAssessment={questions[0].question.isAssessment || false}
+                      onIsAssessmentChange={(isAssessment) => {
+                        const updatedQuestions = [...questions];
+                        updatedQuestions[0].question = {
+                          ...updatedQuestions[0].question,
+                          isAssessment
+                        };
+                        setQuestions(updatedQuestions);
+                      }}
+                      correctAnswers={questions[0].question.correctAnswers || []}
+                      onCorrectAnswersChange={(correctAnswers) => {
+                        const updatedQuestions = [...questions];
+                        updatedQuestions[0].question = {
+                          ...updatedQuestions[0].question,
+                          correctAnswers
+                        };
+                        setQuestions(updatedQuestions);
+                      }}
+                      points={questions[0].question.points || 1}
+                      onPointsChange={(points) => {
+                        const updatedQuestions = [...questions];
+                        updatedQuestions[0].question = {
+                          ...updatedQuestions[0].question,
+                          points
+                        };
+                        setQuestions(updatedQuestions);
+                      }}
+                    />
+                  </QuestionBuilderDndProvider>
+                )}
               </div>
               
               {/* Tag Builder */}
@@ -1568,6 +1638,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           onRevert={handleRevertVersion}
           onUpdateVersionName={handleUpdateVersionName}
           keepOpenOnView={true} /* Keep the modal open when viewing a version */
+          questionId={questionId} /* Pass the current question ID */
         />
       )}
     </div>,

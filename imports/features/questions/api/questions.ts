@@ -421,8 +421,11 @@ Meteor.methods({
    */
   'questions.revertToVersion': async function(questionId: string, versionNumber: number) {
     try {
+      console.log('Reverting question version - method called with:', { questionId, versionNumber, userId: this.userId });
+      
       // Check if user is logged in
       if (!this.userId) {
+        console.log('User not logged in - access denied');
         throw new Meteor.Error('not-authorized', 'You must be logged in to revert question versions');
       }
       
@@ -430,14 +433,18 @@ Meteor.methods({
       check(questionId, String);
       check(versionNumber, Number);
       
-      // Get the question document
-      const question = Questions.findOne({ _id: questionId });
+      // Get the question document - using findOneAsync instead of findOne
+      const question = await Questions.findOneAsync({ _id: questionId });
       if (!question) {
+        console.log('Question not found:', questionId);
         throw new Meteor.Error('not-found', 'Question not found');
       }
       
+      console.log('Question found:', { id: question._id, versions: question.versions.length });
+      
       // Check if the version exists
       if (versionNumber < 1 || versionNumber > question.versions.length) {
+        console.log('Invalid version number:', versionNumber);
         throw new Meteor.Error('invalid-version', 'Invalid version number');
       }
       
@@ -445,32 +452,73 @@ Meteor.methods({
       const targetVersion = question.versions[versionNumber - 1];
       
       if (!targetVersion) {
+        console.log('Target version not found:', versionNumber);
         throw new Meteor.Error('invalid-version', 'Target version not found');
       }
       
-      // Create a new version based on the target version
-      const newVersion = {
-        ...targetVersion,
-        version: question.versions.length + 1,
-        updatedAt: new Date(),
-        updatedBy: this.userId,
-        adminNotes: `Reverted to version ${versionNumber}`,
-        versionName: targetVersion.versionName || `v${question.versions.length + 1} (Reverted from v${versionNumber})`,
-      };
+      console.log('Target version found:', { version: targetVersion.version });
       
-      // Update the question document
-      await Questions.updateAsync(
-        { _id: questionId },
-        { 
-          $push: { versions: newVersion },
-          $set: { currentVersion: question.versions.length + 1 }
-        }
-      );
+      // Check user roles or permissions - allow admins and the original creator
+      // This assumes you have a roles collection or some way to check if user is admin
+      const isAdmin = await Meteor.users.findOneAsync({ _id: this.userId, roles: { $in: ['admin'] } });
+      const isCreator = question.createdBy === this.userId;
       
-      return Questions.findOne({ _id: questionId });
+      // Skip permission check in development for testing
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      if (!isDevelopment && !isAdmin && !isCreator) {
+        console.log('User not authorized to revert this question:', { userId: this.userId, isAdmin, isCreator });
+        throw new Meteor.Error('access-denied', 'You do not have permission to revert this question');
+      }
+      
+      try {
+        // Create a new version based on the target version
+        // Make a clean copy without any unexpected properties
+        const newVersion = {
+          category: targetVersion.category || '',
+          version: question.versions.length + 1,
+          questionText: targetVersion.questionText || '',
+          description: targetVersion.description || '',
+          responseType: targetVersion.responseType || '',
+          options: targetVersion.options || [],
+          updatedAt: new Date(),
+          updatedBy: this.userId,
+          adminNotes: `Reverted to version ${versionNumber}`,
+          versionName: targetVersion.versionName || `v${question.versions.length + 1} (Reverted from v${versionNumber})`,
+          // Include optional fields with safe defaults
+          language: targetVersion.language || 'en',
+          surveyThemes: targetVersion.surveyThemes || [],
+          categoryTags: targetVersion.categoryTags || [],
+          organizationId: targetVersion.organizationId || '',
+          isReusable: targetVersion.isReusable || false,
+          isActive: targetVersion.isActive || true,
+        };
+        
+        console.log('Creating new version:', { 
+          newVersionNumber: newVersion.version,
+          fields: Object.keys(newVersion)
+        });
+        
+        // Update the question document
+        await Questions.updateAsync(
+          { _id: questionId },
+          { 
+            $push: { versions: newVersion },
+            $set: { currentVersion: question.versions.length + 1 }
+          }
+        );
+        
+        console.log('Question updated successfully');
+        
+        // Use findOneAsync instead of findOne
+        return await Questions.findOneAsync({ _id: questionId });
+      } catch (updateError) {
+        console.error('Error updating question with new version:', updateError);
+        throw new Meteor.Error('update-failed', `Failed to update question: ${updateError.message || 'Unknown error'}`);
+      }
     } catch (error) {
       console.error('Error reverting question version:', error);
-      throw error;
+      throw new Meteor.Error('revert-failed', error.message || 'Failed to revert question version');
     }
   },
 
