@@ -15,6 +15,8 @@ export interface Product {
   bgColor: string;
   tags: string[];
   category: string;
+  whatsIncluded?: string[];
+  screenshots?: string[];
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -36,9 +38,13 @@ const ProductSchema = new SimpleSchema({
   tags: { type: Array },
   'tags.$': { type: String },
   category: { type: String },
+  whatsIncluded: { type: Array, optional: true },
+  'whatsIncluded.$': { type: String },
   createdAt: { type: Date },
   updatedAt: { type: Date },
-  createdBy: { type: String }
+  createdBy: { type: String },
+  screenshots: { type: Array, optional: true },
+  'screenshots.$': { type: String }
 });
 
 // Attach schema using type assertion (common pattern in Meteor apps)

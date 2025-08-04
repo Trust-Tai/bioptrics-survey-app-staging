@@ -15,7 +15,8 @@ import {
   FaBars, 
   FaTimes,
   FaBuilding,
-  FaTag
+  FaTag,
+  FaStore
 } from 'react-icons/fa';
 import { 
   FiBarChart2, 
@@ -68,8 +69,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
     // { to: '/admin/analytics/compare-cohorts', label: 'Compare Cohorts' },
     // { to: '/admin/analytics/export-reports', label: 'Export Reports' },
   // ] },
-  // Participants moved to be a submenu under Org Setup
-  // Users and Settings moved to be submenus under Org Setup
+  { to: '/admin/marketplace', label: 'Marketplace', icon: FaStore},
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding},
   //  submenu: [
   //   { to: '/admin/org-setup/participants', label: `${getTerminology('participantLabel')}s` },

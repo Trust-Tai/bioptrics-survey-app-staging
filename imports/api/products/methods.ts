@@ -19,7 +19,9 @@ Meteor.methods({
       imageUrl: Match.Optional(String),
       bgColor: String,
       tags: [String],
-      category: String
+      category: String,
+      whatsIncluded: Match.Optional([String]),
+      screenshots: Match.Optional([String])
     });
 
     // Check if user is authorized
@@ -53,6 +55,11 @@ Meteor.methods({
    * Update an existing product
    */
   async 'products.update'(productId: string, productData: Omit<Product, '_id' | 'createdAt' | 'updatedAt' | 'createdBy'>) {
+    console.log('[products.update] productId:', productId);
+    console.log('[products.update] productData:', JSON.stringify(productData, null, 2));
+    console.log('[products.update] productData type:', typeof productData);
+    console.log('[products.update] productData keys:', Object.keys(productData));
+    
     check(productId, String);
     check(productData, {
       name: String,
@@ -65,7 +72,9 @@ Meteor.methods({
       imageUrl: Match.Optional(String),
       bgColor: String,
       tags: [String],
-      category: String
+      category: String,
+      whatsIncluded: Match.Optional([String]),
+      screenshots: Match.Optional([String])
     });
 
     // Check if user is authorized

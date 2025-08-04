@@ -23,6 +23,33 @@ import {
   FaImage
 } from 'react-icons/fa';
 
+// Color palette constant
+const colorPalette = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  'linear-gradient(135deg, #ff8a80 0%, #ffb74d 100%)',
+  'linear-gradient(135deg, #81c784 0%, #aed581 100%)',
+  'linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%)'
+];
+
+// Rating component
+const Rating: React.FC<{ rating: number }> = ({ rating }) => {
+  return (
+    <StarContainer>
+      {[...Array(Math.floor(rating))].map((_, i) => <FaStar key={i} />)}
+      {rating % 1 !== 0 && <FaStarHalfAlt />}
+      {[...Array(5 - Math.floor(rating) - (rating % 1 !== 0 ? 1 : 0))].map((_, i) => <FaRegStar key={i} />)}
+    </StarContainer>
+  );
+};
+
 // Styled Components with theme integration
 const Container = styled.div`
   padding: 30px;
@@ -68,7 +95,7 @@ const SearchAndFilters = styled.div`
 const SearchBar = styled.div`
   position: relative;
   flex: 1;
-  max-width: 400px;
+ 
   min-width: 280px;
 
   @media (max-width: 768px) {
@@ -174,6 +201,26 @@ const ProductCard = styled.div`
   }
 `;
 
+const AdminProductActions = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+`;
+
+// Enhanced product card with admin functionality
+const EnhancedProductCard = styled(ProductCard)`
+  &:hover {
+    ${AdminProductActions} {
+      opacity: 1;
+    }
+  }
+`;
+
 const ProductImage = styled.div<{ bgColor?: string; hasImage?: boolean }>`
   height: 120px;
   background: ${props => props.bgColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
@@ -270,21 +317,7 @@ const CardRatingText = styled.span`
   font-weight: 500;
 `;
 
-const TagContainer = styled.div`
-  display: flex;
-  gap: 6px;
-  margin: 12px 0;
-  flex-wrap: wrap;
-`;
-
-const Tag = styled.span`
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}20`};
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 10px;
-  font-weight: 500;
-`;
+// Remove TagContainer and Tag styled components
 
 const ActionButtons = styled.div`
   display: flex;
@@ -316,13 +349,6 @@ const LearnMoreButton = styled.button`
   svg {
     font-size: 14px;
   }
-`;
-
-const CategoryFilter = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
 `;
 
 const AdminButtons = styled.div`
@@ -369,17 +395,6 @@ const AdminButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger'
         `;
     }
   }}
-`;
-
-const AdminProductActions = styled.div`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 10;
 `;
 
 const AdminActionButton = styled.button<{ variant?: 'edit' | 'delete' }>`
@@ -638,14 +653,90 @@ const ImagePreview = styled.div`
   }
 `;
 
-const ColorPalette = styled.div`
-  display: grid;
+const ColorPalette = styled.div<{ expanded: boolean }>`
+  display: ${props => props.expanded ? 'grid' : 'none'};
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin-top: 12px;
+  transition: all 0.3s ease;
 `;
 
-const ColorOption = styled.div<{ color: string; selected?: boolean }>`
+const ColorPaletteToggle = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
+  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+    background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}05`};
+  }
+`;
+
+const ColorPaletteToggleText = styled.span`
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+`;
+
+const ColorPaletteToggleIcon = styled.span<{ expanded: boolean }>`
+  font-size: 14px;
+  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  transform: ${props => props.expanded ? 'rotate(180deg)' : 'rotate(0deg)'};
+  transition: transform 0.3s ease;
+`;
+
+// Add missing styled components
+const UploadButton = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const RemoveImageButton = styled.button`
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 8px;
+  
+  &:hover {
+    background: #c0392b;
+  }
+`;
+
+const FileInput = styled.input`
+  display: none;
+`;
+
+const ColorOption = styled.div<{ color: string; selected: boolean }>`
   width: 40px;
   height: 40px;
   border-radius: 8px;
@@ -662,100 +753,9 @@ const ColorOption = styled.div<{ color: string; selected?: boolean }>`
   }
 `;
 
-const FileInput = styled.input`
-  display: none;
-`;
-
-const UploadButton = styled.label`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-  }
-`;
-
-const RemoveImageButton = styled.button`
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-left: 8px;
-  
-  &:hover {
-    background: #c0392b;
-  }
-`;
-
-// Enhanced ProductCard with admin actions
-const EnhancedProductCard = styled(ProductCard)`
-  position: relative;
-  
-  &:hover ${AdminProductActions} {
-    opacity: 1;
-  }
-`;
-
-// Predefined color palette
-const colorPalette = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-  'linear-gradient(135deg, #ff8a80 0%, #ea80fc 100%)',
-  'linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%)',
-  '#3498db',
-  '#e74c3c',
-  '#2ecc71',
-  '#f39c12',
-  '#9b59b6',
-  '#34495e',
-  '#1abc9c',
-  '#e67e22',
-  '#95a5a6',
-  '#16a085',
-  '#27ae60',
-  '#8e44ad'
-];
-
-const categories = ['All', 'Safety & Wellness', 'Engagement', 'Leadership', 'Culture', 'Diversity & Inclusion', 'Retention'];
-
-// Rating component
-const Rating: React.FC<{ rating: number }> = ({ rating }) => {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-  return (
-    <StarContainer>
-      {[...Array(fullStars)].map((_, i) => <FaStar key={i} />)}
-      {hasHalfStar && <FaStarHalfAlt />}
-      {[...Array(emptyStars)].map((_, i) => <FaRegStar key={i} />)}
-    </StarContainer>
-  );
-};
-
 const Marketplace: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
@@ -765,10 +765,13 @@ const Marketplace: React.FC = () => {
   // Admin modal states
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [newTagInput, setNewTagInput] = useState('');
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [newFeatureInput, setNewFeatureInput] = useState('');
+  const [newScreenshotInput, setNewScreenshotInput] = useState('');
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [showColorPalette, setShowColorPalette] = useState(false);
   
-  // Form state
+  // Form state - add whatsIncluded
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -779,8 +782,8 @@ const Marketplace: React.FC = () => {
     image: '',
     imageUrl: '',
     bgColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    tags: [],
-    category: 'Safety & Wellness'
+    whatsIncluded: [],
+    screenshots: []
   });
 
   // Subscribe to products data using useTracker
@@ -793,11 +796,9 @@ const Marketplace: React.FC = () => {
   }, []);
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesCategory && matchesSearch;
+                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const resetForm = () => {
@@ -811,12 +812,14 @@ const Marketplace: React.FC = () => {
       image: '',
       imageUrl: '',
       bgColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      tags: [],
-      category: 'Safety & Wellness'
+      whatsIncluded: [],
+      screenshots: []
     });
     setEditingProduct(null);
-    setNewTagInput('');
     setImagePreview('');
+    setNewFeatureInput('');
+    setNewScreenshotInput('');
+    setShowColorPalette(false);
   };
 
   const openAddModal = () => {
@@ -840,20 +843,37 @@ const Marketplace: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const addTag = () => {
-    if (newTagInput.trim() && !formData.tags?.includes(newTagInput.trim())) {
+  const addFeature = () => {
+    if (newFeatureInput.trim() && !formData.whatsIncluded?.includes(newFeatureInput.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...(prev.tags || []), newTagInput.trim()]
+        whatsIncluded: [...(prev.whatsIncluded || []), newFeatureInput.trim()]
       }));
-      setNewTagInput('');
+      setNewFeatureInput('');
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
+  const removeFeature = (featureToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
+      whatsIncluded: prev.whatsIncluded?.filter(feature => feature !== featureToRemove) || []
+    }));
+  };
+
+  const addScreenshot = () => {
+    if (newScreenshotInput.trim() && !formData.screenshots?.includes(newScreenshotInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        screenshots: [...(prev.screenshots || []), newScreenshotInput.trim()]
+      }));
+      setNewScreenshotInput('');
+    }
+  };
+
+  const removeScreenshot = (screenshotToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      screenshots: prev.screenshots?.filter(screenshot => screenshot !== screenshotToRemove) || []
     }));
   };
 
@@ -862,6 +882,8 @@ const Marketplace: React.FC = () => {
       alert('Please fill in all required fields');
       return;
     }
+
+    console.log('Form data before sending:', JSON.stringify(formData, null, 2));
 
     const productData = {
       name: formData.name!,
@@ -873,9 +895,13 @@ const Marketplace: React.FC = () => {
       image: formData.image!,
       imageUrl: formData.imageUrl || '',
       bgColor: formData.bgColor!,
-      tags: formData.tags!,
-      category: formData.category!
+      tags: formData.tags || [],
+      category: formData.category || 'General',
+      whatsIncluded: formData.whatsIncluded || [],
+      screenshots: formData.screenshots || []
     };
+
+    console.log('Product data being sent:', JSON.stringify(productData, null, 2));
 
     if (editingProduct && editingProduct._id) {
       // Update existing product
@@ -954,11 +980,10 @@ const Marketplace: React.FC = () => {
       name: product.name,
       price: `$${product.price}`,
       billing: product.priceUnit,
-      category: product.category,
       description: product.description,
       rating: product.rating,
       reviews: product.reviews,
-      tags: product.tags
+      whatsIncluded: product.whatsIncluded || []
     };
     
     localStorage.setItem('selectedPlan', JSON.stringify(selectedPlan));
@@ -979,6 +1004,50 @@ const Marketplace: React.FC = () => {
   const handleCloseProductDetail = () => {
     setShowProductDetail(false);
     setSelectedProduct(null);
+  };
+
+  const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Check file size (limit to 10MB for screenshots)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Screenshot size should be less than 10MB');
+        return;
+      }
+      
+      setUploadingScreenshot(true);
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        
+        // Add the screenshot to the list
+        if (!formData.screenshots?.includes(result)) {
+          setFormData(prev => ({
+            ...prev,
+            screenshots: [...(prev.screenshots || []), result]
+          }));
+        }
+        
+        setUploadingScreenshot(false);
+        
+        // Reset the file input
+        e.target.value = '';
+      };
+      
+      reader.onerror = () => {
+        alert('Error reading file');
+        setUploadingScreenshot(false);
+      };
+      
+      reader.readAsDataURL(file);
+    }
   };
 
   if (isLoading) {
@@ -1025,20 +1094,6 @@ const Marketplace: React.FC = () => {
             Filters
           </FilterButton>
         </SearchAndFilters>
-
-        <CategoryFilter>
-          {categories.map(category => (
-            <FilterButton
-              key={category}
-              active={selectedCategory === category}
-              theme={theme}
-              onClick={() => setSelectedCategory(category)}
-            >
-              <FaTags />
-              {category}
-            </FilterButton>
-          ))}
-        </CategoryFilter>
 
         <ProductGrid>
           {filteredProducts.map(product => (
@@ -1089,15 +1144,6 @@ const Marketplace: React.FC = () => {
                   </CardRatingText>
                 </CardRatingContainer>
 
-                <TagContainer>
-                  {product.tags.slice(0, 3).map(tag => (
-                    <Tag key={tag} theme={theme}>{tag}</Tag>
-                  ))}
-                  {product.tags.length > 3 && (
-                    <Tag theme={theme}>+{product.tags.length - 3}</Tag>
-                  )}
-                </TagContainer>
-
                 <ActionButtons>
                   <LearnMoreButton theme={theme} onClick={() => handleLearnMore(product)}>
                     Learn More
@@ -1108,7 +1154,6 @@ const Marketplace: React.FC = () => {
               {/* Tooltip */}
               <Tooltip visible={hoveredProduct === product._id} theme={theme}>
                 <TooltipTitle theme={theme}>{product.name}</TooltipTitle>
-                <TooltipCategory theme={theme}>Category: {product.category}</TooltipCategory>
                 <TooltipDescription theme={theme}>{product.description}</TooltipDescription>
                 <TooltipRating>
                   <Rating rating={product.rating} />
@@ -1116,11 +1161,14 @@ const Marketplace: React.FC = () => {
                     {product.rating} ({product.reviews} reviews)
                   </RatingText>
                 </TooltipRating>
-                <TooltipTags>
-                  {product.tags.map(tag => (
-                    <TooltipTag key={tag} theme={theme}>{tag}</TooltipTag>
-                  ))}
-                </TooltipTags>
+                {(product as Product).whatsIncluded && (product as Product).whatsIncluded!.length > 0 && (
+                  <TooltipFeatures>
+                    <TooltipFeaturesTitle theme={theme}>What's Included:</TooltipFeaturesTitle>
+                    {(product as Product).whatsIncluded!.slice(0, 5).map((feature, index) => (
+                      <TooltipFeature key={index} theme={theme}>• {feature}</TooltipFeature>
+                    ))}
+                  </TooltipFeatures>
+                )}
               </Tooltip>
             </EnhancedProductCard>
           ))}
@@ -1167,10 +1215,6 @@ const Marketplace: React.FC = () => {
                 </ProductDetailImage>
 
                 <ProductDetailInfo>
-                  <ProductDetailCategory theme={theme}>
-                    {selectedProduct.category}
-                  </ProductDetailCategory>
-                  
                   <ProductDetailRating theme={theme}>
                     <Rating rating={selectedProduct.rating} />
                     <span style={{ fontSize: '16px', fontWeight: '600' }}>
@@ -1184,14 +1228,31 @@ const Marketplace: React.FC = () => {
                 {selectedProduct.description}
               </ProductDetailDescription>
 
-              <ProductDetailTags>
-                <ProductDetailTagsTitle theme={theme}>Tags</ProductDetailTagsTitle>
-                <ProductDetailTagsList>
-                  {selectedProduct.tags.map(tag => (
-                    <ProductDetailTag key={tag} theme={theme}>{tag}</ProductDetailTag>
-                  ))}
-                </ProductDetailTagsList>
-              </ProductDetailTags>
+              {selectedProduct.whatsIncluded && selectedProduct.whatsIncluded.length > 0 && (
+                <ProductDetailFeatures>
+                  <ProductDetailFeaturesTitle theme={theme}>What's Included</ProductDetailFeaturesTitle>
+                  <ProductDetailFeaturesList>
+                    {selectedProduct.whatsIncluded.map((feature, index) => (
+                      <ProductDetailFeature key={index} theme={theme}>
+                        • {feature}
+                      </ProductDetailFeature>
+                    ))}
+                  </ProductDetailFeaturesList>
+                </ProductDetailFeatures>
+              )}
+
+              {selectedProduct.screenshots && selectedProduct.screenshots.length > 0 && (
+                <ProductDetailScreenshots>
+                  <ProductDetailScreenshotsTitle theme={theme}>Screenshots</ProductDetailScreenshotsTitle>
+                  <ScreenshotsGallery>
+                    {selectedProduct.screenshots.map((screenshot, index) => (
+                      <ScreenshotGalleryItem key={index} theme={theme}>
+                        <img src={screenshot} alt={`${selectedProduct.name} screenshot ${index + 1}`} />
+                      </ScreenshotGalleryItem>
+                    ))}
+                  </ScreenshotsGallery>
+                </ProductDetailScreenshots>
+              )}
 
               <ProductDetailActions>
                 <CancelButton theme={theme} onClick={handleCloseProductDetail}>
@@ -1236,21 +1297,6 @@ const Marketplace: React.FC = () => {
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Describe the product features and benefits..."
                 />
-              </FormGroup>
-
-              <FormGroup>
-                <Label theme={theme}>Category</Label>
-                <Select
-                  theme={theme}
-                  value={formData.category || 'Safety & Wellness'}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
-                >
-                  {categories.filter(cat => cat !== 'All').map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </Select>
               </FormGroup>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
@@ -1364,8 +1410,12 @@ const Marketplace: React.FC = () => {
                   onChange={(e) => handleInputChange('bgColor', e.target.value)}
                   placeholder="Custom CSS background (gradient or solid color)"
                 />
-                <ColorPalette>
-                  {colorPalette.map((color, index) => (
+                <ColorPaletteToggle onClick={() => setShowColorPalette(!showColorPalette)}>
+                  <ColorPaletteToggleText>Choose from preset colors</ColorPaletteToggleText>
+                  <ColorPaletteToggleIcon expanded={showColorPalette}>▼</ColorPaletteToggleIcon>
+                </ColorPaletteToggle>
+                <ColorPalette expanded={showColorPalette}>
+                  {colorPalette.map((color: string, index: number) => (
                     <ColorOption
                       key={index}
                       color={color}
@@ -1379,27 +1429,79 @@ const Marketplace: React.FC = () => {
               </FormGroup>
 
               <FormGroup>
-                <Label theme={theme}>Tags</Label>
-                <TagInput>
-                  <TagInputField
+                <Label htmlFor="whats-included">What's Included</Label>
+                <FeatureInput>
+                  <FeatureInputField
                     theme={theme}
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    placeholder="Add a tag..."
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    value={newFeatureInput}
+                    onChange={(e) => setNewFeatureInput(e.target.value)}
+                    placeholder="Add a feature..."
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
                   />
-                  <AddTagButton theme={theme} type="button" onClick={addTag}>
+                  <AddFeatureButton theme={theme} type="button" onClick={addFeature}>
                     Add
-                  </AddTagButton>
-                </TagInput>
-                <TagsList>
-                  {formData.tags?.map(tag => (
-                    <EditableTag key={tag} theme={theme}>
-                      {tag}
-                      <button onClick={() => removeTag(tag)}>×</button>
-                    </EditableTag>
+                  </AddFeatureButton>
+                </FeatureInput>
+                <FeaturesList>
+                  {formData.whatsIncluded?.map((feature, index) => (
+                    <EditableFeature key={index} theme={theme}>
+                      {feature}
+                      <button onClick={() => removeFeature(feature)}>×</button>
+                    </EditableFeature>
                   ))}
-                </TagsList>
+                </FeaturesList>
+              </FormGroup>
+
+              <FormGroup>
+                <Label htmlFor="screenshots">Screenshots</Label>
+                <ScreenshotUploadSection theme={theme}>
+                  <ScreenshotUploadOptions>
+                    <UploadButton as="label" theme={theme} htmlFor="screenshot-upload">
+                      <FaUpload />
+                      {uploadingScreenshot ? 'Uploading...' : 'Upload Screenshot'}
+                    </UploadButton>
+                    <UploadSeparator theme={theme}>or</UploadSeparator>
+                    <ScreenshotUrlContainer>
+                      <ScreenshotInputField
+                        theme={theme}
+                        value={newScreenshotInput}
+                        onChange={(e) => setNewScreenshotInput(e.target.value)}
+                        placeholder="Add screenshot URL..."
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addScreenshot())}
+                      />
+                      <AddScreenshotButton theme={theme} type="button" onClick={addScreenshot}>
+                        Add URL
+                      </AddScreenshotButton>
+                    </ScreenshotUrlContainer>
+                  </ScreenshotUploadOptions>
+                  <FileInput
+                    id="screenshot-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotUpload}
+                    disabled={uploadingScreenshot}
+                  />
+                </ScreenshotUploadSection>
+                <ScreenshotsList>
+                  {formData.screenshots?.map((screenshot, index) => (
+                    <ScreenshotItem key={index} theme={theme}>
+                      <ScreenshotPreview>
+                        <img src={screenshot} alt={`Screenshot ${index + 1}`} />
+                      </ScreenshotPreview>
+                      <ScreenshotActions>
+                        <ScreenshotInfo>
+                          <ScreenshotLabel theme={theme}>Screenshot {index + 1}</ScreenshotLabel>
+                          <ScreenshotType theme={theme}>
+                            {screenshot.startsWith('data:') ? 'Uploaded Image' : 'External URL'}
+                          </ScreenshotType>
+                        </ScreenshotInfo>
+                        <RemoveScreenshotButton onClick={() => removeScreenshot(screenshot)}>
+                          Remove
+                        </RemoveScreenshotButton>
+                      </ScreenshotActions>
+                    </ScreenshotItem>
+                  ))}
+                </ScreenshotsList>
               </FormGroup>
 
               <ModalActions>
@@ -1498,26 +1600,23 @@ const TooltipRating = styled.div`
   margin-bottom: 8px;
 `;
 
-const TooltipCategory = styled.div`
+// Tooltip features components
+const TooltipFeatures = styled.div`
+  margin-top: 12px;
+`;
+
+const TooltipFeaturesTitle = styled.h5`
   font-size: 12px;
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  font-weight: 500;
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+  margin: 0 0 6px 0;
 `;
 
-const TooltipTags = styled.div`
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-`;
-
-const TooltipTag = styled.span`
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}15`};
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 500;
+const TooltipFeature = styled.div`
+  font-size: 11px;
+  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  line-height: 1.3;
+  margin-bottom: 2px;
 `;
 
 // Product Detail Modal components
@@ -1570,19 +1669,14 @@ const ProductDetailImage = styled.div<{ bgColor?: string; hasImage?: boolean }>`
   height: 150px;
   background: ${props => props.bgColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: ${props => props.hasImage ? '0' : '48px'};
-  font-weight: 700;
-  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 12px;
   }
 
   @media (max-width: 600px) {
@@ -1635,32 +1729,35 @@ const ProductDetailRating = styled.div`
   padding: 16px;
   background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}10`};
   border-radius: 12px;
+  flex-shrink: 0;
 `;
 
-const ProductDetailTags = styled.div`
+// Product detail features components
+const ProductDetailFeatures = styled.div`
   margin-bottom: 32px;
 `;
 
-const ProductDetailTagsTitle = styled.h4`
+const ProductDetailFeaturesTitle = styled.h4`
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 12px 0;
   color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
 `;
 
-const ProductDetailTagsList = styled.div`
+const ProductDetailFeaturesList = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
 `;
 
-const ProductDetailTag = styled.span`
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}15`};
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
+const ProductDetailFeature = styled.div`
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+  line-height: 1.4;
+  padding: 8px 16px;
+  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}10`};
+  border-radius: 8px;
+  border-left: 3px solid ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
 `;
 
 const ProductDetailActions = styled.div`
@@ -1710,4 +1807,331 @@ const CancelButton = styled.button`
     background: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
     color: white;
   }
+`;
+
+// Add styled components for What's Included feature
+const WhatsIncludedContainer = styled.div`
+  margin: 12px 0;
+`;
+
+const WhatsIncludedTitle = styled.h5`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+  margin: 0 0 6px 0;
+`;
+
+const WhatsIncludedList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const WhatsIncludedItem = styled.div`
+  font-size: 11px;
+  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  line-height: 1.3;
+`;
+
+// Feature input components for the form
+const FeatureInput = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+`;
+
+const FeatureInputField = styled.input`
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+
+  &:focus {
+    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+  }
+`;
+
+const AddFeatureButton = styled.button`
+  padding: 8px 16px;
+  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
+  }
+`;
+
+const FeaturesList = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+const EditableFeature = styled.div`
+  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}20`};
+  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  button {
+    background: none;
+    border: none;
+    color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+    cursor: pointer;
+    padding: 0;
+    font-size: 12px;
+    
+    &:hover {
+      color: #e74c3c;
+    }
+  }
+`;
+
+// Screenshot input components for the form
+const ScreenshotInput = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+`;
+
+const ScreenshotInputField = styled.input`
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+
+  &:focus {
+    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+  }
+`;
+
+const AddScreenshotButton = styled.button`
+  padding: 8px 16px;
+  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
+  }
+`;
+
+const ScreenshotsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const ScreenshotItem = styled.div`
+  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const ScreenshotPreview = styled.div`
+  width: 120px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  flex-shrink: 0;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+    height: 120px;
+  }
+`;
+
+const ScreenshotActions = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  gap: 12px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const ScreenshotInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+`;
+
+const ScreenshotLabel = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+`;
+
+const ScreenshotType = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  font-style: italic;
+`;
+
+const RemoveScreenshotButton = styled.button`
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  
+  &:hover {
+    background: #c0392b;
+  }
+`;
+
+// Product detail screenshots components
+const ProductDetailScreenshots = styled.div`
+  margin-bottom: 32px;
+`;
+
+const ProductDetailScreenshotsTitle = styled.h4`
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
+`;
+
+const ScreenshotsGallery = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ScreenshotGalleryItem = styled.div`
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    display: block;
+  }
+  
+  @media (max-width: 600px) {
+    img {
+      height: 200px;
+    }
+  }
+`;
+
+// Screenshot upload section components
+const ScreenshotUploadSection = styled.div`
+  border: 2px dashed ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  border-radius: 8px;
+  padding: 20px;
+  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
+    background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}05`};
+  }
+`;
+
+const ScreenshotUploadOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  
+  @media (max-width: 600px) {
+    gap: 12px;
+  }
+`;
+
+const UploadSeparator = styled.div`
+  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 60px;
+    height: 1px;
+    background: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
+  }
+  
+  &::before {
+    right: 100%;
+    margin-right: 10px;
+  }
+  
+  &::after {
+    left: 100%;
+    margin-left: 10px;
+  }
+`;
+
+const ScreenshotUrlContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 400px;
 `;
