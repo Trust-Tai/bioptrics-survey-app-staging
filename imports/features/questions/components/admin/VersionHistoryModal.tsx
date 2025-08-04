@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { FaEye, FaHistory, FaTimes, FaExchangeAlt, FaPencilAlt, FaSave, FaBan, FaUndo } from 'react-icons/fa';
 import { notificationManager } from '/imports/shared/components/GlobalNotification';
+import { useQuestionBuilderPanel } from '../../contexts/QuestionBuilderPanelContext';
 import VersionCompareModal from './VersionCompareModal';
 
 // Define interfaces
@@ -45,6 +46,8 @@ interface VersionHistoryModalProps {
   onClose: () => void;
   onRevert: (versionNumber: number) => Promise<void>;
   onUpdateVersionName?: (versionNumber: number, versionName: string) => Promise<void>;
+  onViewVersion?: (version: QuestionVersion) => void; // New prop for handling view version action
+  keepOpenOnView?: boolean; // New prop to control whether modal stays open when viewing a version
 }
 
 const modalOverlayStyle: React.CSSProperties = {
@@ -144,6 +147,8 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
   onClose,
   onRevert,
   onUpdateVersionName,
+  onViewVersion,
+  keepOpenOnView = true // Default to keeping the modal open when viewing a version
 }) => {
   // Helper function to prevent event propagation
   const preventPropagation = (e: React.MouseEvent) => {
@@ -189,24 +194,30 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
     }
   };
   
+  // Access the QuestionBuilderPanel context at the top level of the component
+  const questionBuilderPanel = useQuestionBuilderPanel();
+  
   const handleViewVersion = (version: QuestionVersion) => {
-    // Create a formatted list of changes
-    const changes = [];
+    // Add the current version number to the version data for comparison in the side panel
+    const versionWithCurrentVersion = {
+      ...version,
+      currentVersion: currentVersion,
+      questionId: versions[0]?.questionId || '' // Add questionId for revert functionality
+    };
     
-    // Add basic question details
-    changes.push(`Question Text: ${version.questionText}`);
-    changes.push(`Response Type: ${version.responseType}`);
-    
-    if (version.description) {
-      changes.push(`Description: ${version.description}`);
+    // If onViewVersion prop is provided, use it to open the side panel
+    if (onViewVersion) {
+      onViewVersion(versionWithCurrentVersion);
+      return;
     }
     
-    if (version.options && version.options.length > 0) {
-      changes.push(`Options: ${version.options.map(o => o.text).join(', ')}`);
-    }
+    // Use the context's openVersionPanel method to show the version in read-only mode
+    questionBuilderPanel.openVersionPanel(versionWithCurrentVersion);
     
-    // Show alert with version details
-    alert(`Version ${version.version} Details:\n\n${changes.join('\n\n')}`);
+    // Only close the modal if keepOpenOnView is false
+    if (!keepOpenOnView) {
+      onClose();
+    }
   };
   
   const handleRevertVersion = async (versionNumber: number) => {

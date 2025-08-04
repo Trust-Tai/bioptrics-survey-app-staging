@@ -5,7 +5,10 @@ interface QuestionBuilderPanelContextType {
   isOpen: boolean;
   questionId: string | undefined;
   surveyId: string | undefined;
+  readOnly: boolean;
+  versionData: any | undefined;
   openPanel: (questionId?: string, surveyId?: string) => void;
+  openVersionPanel: (versionData: any) => void;
   closePanel: () => void;
 }
 
@@ -19,22 +22,36 @@ export const QuestionBuilderPanelProvider: React.FC<QuestionBuilderPanelProvider
   const [isOpen, setIsOpen] = useState(false);
   const [questionId, setQuestionId] = useState<string | undefined>(undefined);
   const [surveyId, setSurveyId] = useState<string | undefined>(undefined);
+  const [readOnly, setReadOnly] = useState(false);
+  const [versionData, setVersionData] = useState<any | undefined>(undefined);
 
   const openPanel = (id?: string, sId?: string) => {
     setQuestionId(id);
     setSurveyId(sId);
+    setReadOnly(false);
+    setVersionData(undefined);
+    setIsOpen(true);
+  };
+
+  const openVersionPanel = (version: any) => {
+    setQuestionId(undefined);
+    setSurveyId(undefined);
+    setReadOnly(true);
+    setVersionData(version);
     setIsOpen(true);
   };
 
   const closePanel = () => {
-    // Immediately clear the question ID and close the panel
+    // Immediately clear all state and close the panel
     setQuestionId(undefined);
     setSurveyId(undefined);
+    setReadOnly(false);
+    setVersionData(undefined);
     setIsOpen(false);
   };
 
   return (
-    <QuestionBuilderPanelContext.Provider value={{ isOpen, questionId, surveyId, openPanel, closePanel }}>
+    <QuestionBuilderPanelContext.Provider value={{ isOpen, questionId, surveyId, readOnly, versionData, openPanel, openVersionPanel, closePanel }}>
       {children}
       <QuestionBuilderSidePanel 
         isOpen={isOpen} 
@@ -42,6 +59,8 @@ export const QuestionBuilderPanelProvider: React.FC<QuestionBuilderPanelProvider
         questionId={questionId}
         surveyId={surveyId}
         context={surveyId ? 'surveyBuilder' : 'questionBank'}
+        readOnly={readOnly}
+        versionData={versionData}
       />
     </QuestionBuilderPanelContext.Provider>
   );

@@ -86,6 +86,8 @@ interface QuestionBuilderSidePanelProps {
   onQuestionCreated?: (questionId: string) => void; // Callback for survey builder
   onQuestionSaved?: (questionId: string) => void; // General callback
   surveyId?: string; // ID of the survey when used in survey builder context
+  readOnly?: boolean; // Whether the panel is in read-only mode (for viewing history)
+  versionData?: any; // Version data to display when in read-only mode
 }
 
 // Side panel styles
@@ -151,8 +153,21 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   context = 'questionBank', // Default to questionBank context
   onQuestionCreated,
   onQuestionSaved,
-  surveyId // Add surveyId to the destructured props
+  surveyId, // Add surveyId to the destructured props
+  readOnly = false, // Whether the panel is in read-only mode
+  versionData = null // Version data to display when in read-only mode
 }) => {
+  // Log versionData to debug
+  console.log('Version Data in QuestionBuilderSidePanel:', versionData);
+  
+  // Debug log for version data structure
+  useEffect(() => {
+    if (readOnly && versionData) {
+      console.log('Version Data Structure:', Object.keys(versionData));
+      console.log('Question Text from Version Data:', versionData.questionText);
+    }
+  }, [readOnly, versionData]);
+  
   const panelRef = useRef<HTMLDivElement>(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'progress'; message: string; progress?: number } | null>(null);
@@ -790,86 +805,121 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         
         {/* Panel header */}
         <div style={sidePanelStyles.header as React.CSSProperties}>
-          <h2>{questionId ? 'Edit Question' : 'Create New Question'}</h2>
-<<<<<<< HEAD
+          <h2>{readOnly ? 'View Question Version' : (questionId ? 'Edit Question' : 'Create New Question')}</h2>
           
-          {/* Only show the toggle in survey builder context */}
-          {context === 'surveyBuilder' && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              marginTop: '10px', 
-              marginBottom: '10px',
-              padding: '8px',
-              background: '#f5f5f5',
-              borderRadius: '8px'
-            }}>
-              <label style={{ 
+          {readOnly && versionData ? (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  // Only enable revert if this is not the current version
+                  if (versionData.version !== versionData.currentVersion) {
+                    setVersionUpdateLoading(true);
+                    Meteor.call('questions.revertToVersion', versionData.questionId, versionData.version, (error: Error | null) => {
+                      setVersionUpdateLoading(false);
+                      if (error) {
+                        showErrorAlert(`Error reverting to version ${versionData.version}: ${error.message}`);
+                      } else {
+                        showSuccessAlert(`Successfully reverted to version ${versionData.version}`);
+                        onClose(); // Close the panel after successful revert
+                      }
+                    });
+                  }
+                }}
+                disabled={versionData.version === versionData.currentVersion || versionUpdateLoading}
+                style={{
+                  background: versionData.version === versionData.currentVersion ? '#e0e0e0' : '#552a47',
+                  color: versionData.version === versionData.currentVersion ? '#888' : '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: versionData.version === versionData.currentVersion ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+                title={versionData.version === versionData.currentVersion ? 'This is the current version' : 'Revert to this version'}
+              >
+                <FaHistory /> {versionUpdateLoading ? 'Reverting...' : 'Revert'}
+              </button>
+            </div>
+          ) : !readOnly && <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+
+             {/* Only show the toggle in survey builder context */}
+            {context === 'surveyBuilder' && (
+              <div style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                cursor: 'pointer',
-                userSelect: 'none',
-                fontSize: '14px',
-                color: '#444'
+                marginTop: '10px', 
+                marginBottom: '10px',
+                padding: '8px',
+                background: '#f5f5f5',
+                borderRadius: '8px'
               }}>
-                <div style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: '40px',
-                  height: '20px',
-                  marginRight: '10px'
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  fontSize: '14px',
+                  color: '#444'
                 }}>
-                  <input
-                    type="checkbox"
-                    checked={saveToQuestionBank}
-                    onChange={() => setSaveToQuestionBank(!saveToQuestionBank)}
-                    style={{
-                      opacity: 0,
-                      width: 0,
-                      height: 0
-                    }}
-                  />
-                  <span style={{
-                    position: 'absolute',
-                    cursor: 'pointer',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: saveToQuestionBank ? '#552a47' : '#ccc',
-                    transition: '.4s',
-                    borderRadius: '34px'
+                  <div style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '40px',
+                    height: '20px',
+                    marginRight: '10px'
                   }}>
+                    <input
+                      type="checkbox"
+                      checked={saveToQuestionBank}
+                      onChange={() => setSaveToQuestionBank(!saveToQuestionBank)}
+                      style={{
+                        opacity: 0,
+                        width: 0,
+                        height: 0
+                      }}
+                    />
                     <span style={{
                       position: 'absolute',
-                      content: '""',
-                      height: '16px',
-                      width: '16px',
-                      left: '2px',
-                      bottom: '2px',
-                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: saveToQuestionBank ? '#552a47' : '#ccc',
                       transition: '.4s',
-                      borderRadius: '50%',
-                      transform: saveToQuestionBank ? 'translateX(20px)' : 'translateX(0px)'
-                    }}></span>
+                      borderRadius: '34px'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        content: '""',
+                        height: '16px',
+                        width: '16px',
+                        left: '2px',
+                        bottom: '2px',
+                        backgroundColor: 'white',
+                        transition: '.4s',
+                        borderRadius: '50%',
+                        transform: saveToQuestionBank ? 'translateX(20px)' : 'translateX(0px)'
+                      }}></span>
+                    </span>
+                  </div>
+                  Save to Question Bank
+                  <span style={{ 
+                    marginLeft: '5px', 
+                    fontSize: '12px', 
+                    color: '#666',
+                    fontStyle: 'italic'
+                  }}>
+                    {saveToQuestionBank ? '(Available in all surveys)' : '(Only in this survey)'}
                   </span>
-                </div>
-                Save to Question Bank
-                <span style={{ 
-                  marginLeft: '5px', 
-                  fontSize: '12px', 
-                  color: '#666',
-                  fontStyle: 'italic'
-                }}>
-                  {saveToQuestionBank ? '(Available in all surveys)' : '(Only in this survey)'}
-                </span>
-              </label>
-            </div>
-          )}
-          
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-=======
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                </label>
+              </div>
+            )}
+
             {/* Version History Button - Only show for existing questions */}
             {questionId && editingDoc?.versions && editingDoc.versions.length > 0 && (
               <button
@@ -894,7 +944,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               </button>
             )}
             
->>>>>>> 8e9cf315c918932297af212900097c16ea3113c0
             {/* Save Draft button is hidden as requested */}
             
             {/* Publish Button - Saves, publishes, and closes panel */}
@@ -945,7 +994,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               </div>
             </div>
           </div>
-        </div>
+      
+    </div>
 
         {/* Alert message */}
         {alert && (
@@ -1024,22 +1074,37 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
             <div className="question-builder-section">
               <div className="form-group">
                 <label>Question Text <span className="required-asterisk">*</span></label>
-                <ReactQuill
-                  theme="snow"
-                  value={questions[0].question.text}
-                  onChange={(value) => {
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.text = value;
-                    setQuestions(updatedQuestions);
-                  }}
+                {/* Display HTML content directly when in read-only mode with version data */}
+                {readOnly && versionData ? (
+                  <div 
+                    className="read-only-question-text" 
+                    dangerouslySetInnerHTML={{ __html: versionData.questionText || '' }}
+                    style={{ 
+                      border: '1px solid #ccc', 
+                      borderRadius: '4px', 
+                      padding: '10px',
+                      minHeight: '100px'
+                    }}
+                  />
+                ) : (
+                  <ReactQuill
+                    theme="snow"
+                    value={questions[0].question.text}
+                    onChange={(value) => {
+                      if (readOnly) return;
+                      const updatedQuestions = [...questions];
+                      updatedQuestions[0].question.text = value;
+                      setQuestions(updatedQuestions);
+                    }}
                   modules={{
-                    toolbar: [
+                    toolbar: readOnly ? false : [
                       ['bold', 'italic', 'underline'],
                       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                       ['link'],
                       ['clean']
                     ]
                   }}
+                  readOnly={readOnly}
                 />
               </div>
               
@@ -1049,8 +1114,10 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               <div className="form-group">
                 <label>Question Type <span className="required-asterisk">*</span></label>
                 <select
-                  value={questions[0].question.answerType}
+                  disabled={readOnly}
+                  value={readOnly && versionData ? versionData.answerType : questions[0].question.answerType}
                   onChange={(e) => {
+                    if (readOnly) return;
                     const newAnswerType = e.target.value;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.answerType = newAnswerType;
@@ -1172,8 +1239,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               {/* Tag Builder */}
               <div className="form-group">
                 <TagBuilder 
-                  selectedTagIds={questions[0].question.labels || []} 
+                  selectedTagIds={readOnly && versionData ? (versionData.labels || []) : (questions[0].question.labels || [])} 
                   onTagChange={(labels) => {
+                    if (readOnly) return;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.labels = labels;
                     // Make sure to update both labels and tags fields for backward compatibility
@@ -1181,19 +1249,22 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     setQuestions(updatedQuestions);
                     console.log('Tags updated:', labels);
                   }}
+                  readOnly={readOnly}
                 />
               </div>
               
               {/* Folder Selector */}
               <div className="form-group">
                 <FolderSelector
-                  selectedFolderId={questions[0].question.folderId || null}
+                  selectedFolderId={readOnly && versionData ? (versionData.folderId || null) : (questions[0].question.folderId || null)}
                   onFolderChange={(folderId) => {
+                    if (readOnly) return;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.folderId = folderId;
                     setQuestions(updatedQuestions);
                     console.log('Folder updated:', folderId);
                   }}
+                  readOnly={readOnly}
                 />
               </div>
               
@@ -1203,12 +1274,14 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 <label>
                   <input
                     type="checkbox"
-                    checked={!!questions[0].question.required}
+                    checked={readOnly && versionData ? !!versionData.required : !!questions[0].question.required}
                     onChange={(e) => {
+                      if (readOnly) return;
                       const updatedQuestions = [...questions];
                       updatedQuestions[0].question.required = e.target.checked;
                       setQuestions(updatedQuestions);
                     }}
+                    disabled={readOnly}
                   />
                   Required Question
                 </label>
@@ -1228,10 +1301,10 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               <div className="form-group">
                 <label>Question Image</label>
                 <div className="image-upload-container">
-                  {questions[0].question.image ? (
+                  {(readOnly && versionData && versionData.image) || (!readOnly && questions[0].question.image) ? (
                     <div className="image-preview" style={{ position: 'relative' }}>
                       <img 
-                        src={questions[0].question.image} 
+                        src={readOnly && versionData ? versionData.image : questions[0].question.image} 
                         alt="Question" 
                         style={{ 
                           maxWidth: '100%', 
@@ -1241,128 +1314,135 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           borderRadius: '4px'
                         }} 
                       />
-                      <button
-                        className="remove-image-button"
+                       {!readOnly && (
+                        <button
+                          className="remove-image-button"
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            background: 'rgba(255, 255, 255, 0.8)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '5px',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            const updatedQuestions = [...questions];
+                            updatedQuestions[0].question.image = '';
+                            setQuestions(updatedQuestions);
+                            showSuccessAlert('Image removed successfully!');
+                          }}
+                        >
+                          <FaTimes />
+                        </button>
+                       )}
+                      </div>
+                    ) : (
+                      <div 
+                        className="image-upload-dropzone"
                         style={{
-                          position: 'absolute',
-                          top: '5px',
-                          right: '5px',
-                          background: 'rgba(255, 255, 255, 0.8)',
-                          border: 'none',
+                          border: '2px dashed #ccc',
                           borderRadius: '4px',
-                          padding: '5px 10px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          fontSize: '12px'
-                        }}
-                        onClick={() => {
-                          const updatedQuestions = [...questions];
-                          updatedQuestions[0].question.image = '';
-                          setQuestions(updatedQuestions);
-                          showSuccessAlert('Image removed successfully');
+                          padding: '20px',
+                          textAlign: 'center',
+                          cursor: readOnly ? 'default' : 'pointer',
+                          position: 'relative' // Add position relative to contain absolute positioned children
                         }}
                       >
-                        <FaTimes /> Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="image-upload" style={{
-                      border: '2px dashed #ccc',
-                      borderRadius: '4px',
-                      padding: '20px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      backgroundColor: '#f9f9f9',
-                      position: 'relative'
-                    }}>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: '100%',
-                          opacity: 0,
-                          cursor: 'pointer'
-                        }}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            // Show initial loading state with 0% progress
-                            showProgressAlert('Uploading image...', 0);
-                            
-                            // Create a FormData object to upload the file
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            
-                            // Convert FormData to base64 string for Meteor method
-                            const reader = new FileReader();
-                            reader.readAsDataURL(file);
-                            
-                            // Show progress during file reading
-                            reader.onprogress = (event) => {
-                              if (event.lengthComputable) {
-                                const progress = Math.round((event.loaded / event.total) * 50); // First 50% for reading
-                                showProgressAlert('Reading image...', progress);
-                              }
-                            };
-                            
-                            reader.onload = () => {
-                              const base64data = reader.result;
+                        {!readOnly && (
+                          <input
+                            type="file"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              opacity: 0,
+                              cursor: 'pointer',
+                              zIndex: 1 // Add z-index to ensure it's properly layered
+                            }}
+                            accept="image/jpeg,image/png,image/gif"
+                            onChange={(e) => {
+                              if (readOnly) return;
                               
-                              // Show 50% progress when starting upload to server
-                              showProgressAlert('Uploading to server...', 50);
-                              
-                              // Simulate upload progress (since Meteor.call doesn't provide progress events)
-                              let progressInterval = setInterval(() => {
-                                setAlert(prevAlert => {
-                                  if (prevAlert?.type === 'progress' && prevAlert.progress !== undefined) {
-                                    const newProgress = Math.min(prevAlert.progress + 5, 90); // Cap at 90% until complete
-                                    return { ...prevAlert, progress: newProgress };
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                // Show initial loading state with 0% progress
+                                showProgressAlert('Uploading image...', 0);
+                                
+                                // Create a FormData object to upload the file
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                
+                                // Convert FormData to base64 string for Meteor method
+                                const reader = new FileReader();
+                                reader.readAsDataURL(file);
+                                
+                                // Show progress during file reading
+                                reader.onprogress = (event) => {
+                                  if (event.lengthComputable) {
+                                    const progress = Math.round((event.loaded / event.total) * 50); // First 50% for reading
+                                    showProgressAlert('Reading image...', progress);
                                   }
-                                  return prevAlert;
-                                });
-                              }, 200);
-                              
-                              // Use Meteor method to upload the file
-                              Meteor.call('uploadQuestionImage', { file: base64data, name: file.name }, (error: Error, result: { url: string }) => {
-                                clearInterval(progressInterval);
+                                };
                                 
-                                if (error) {
-                                  console.error('Error uploading image:', error);
-                                  showErrorAlert(`Error uploading image: ${error.message || 'Unknown error'}`);
-                                  return;
-                                }
+                                reader.onload = () => {
+                                  const base64data = reader.result;
+                                  
+                                  // Show 50% progress when starting upload to server
+                                  showProgressAlert('Uploading to server...', 50);
+                                  
+                                  // Simulate upload progress (since Meteor.call doesn't provide progress events)
+                                  const progressInterval = setInterval(() => {
+                                    setAlert(prevAlert => {
+                                      if (prevAlert?.type === 'progress' && prevAlert.progress !== undefined) {
+                                        const newProgress = Math.min(prevAlert.progress + 5, 90); // Cap at 90% until complete
+                                        return { ...prevAlert, progress: newProgress };
+                                      }
+                                      return prevAlert;
+                                    });
+                                  }, 200);
+                                  
+                                  // Use Meteor method to upload the file
+                                  Meteor.call('uploadQuestionImage', { file: base64data, name: file.name }, (err: Error, result: { url: string }) => {
+                                    clearInterval(progressInterval);
+                                    
+                                    if (err) {
+                                      console.error('Error uploading image:', err);
+                                      showErrorAlert(`Error uploading image: ${err.message || 'Unknown error'}`);
+                                      return;
+                                    }
+                                    
+                                    // Show 100% progress briefly before success message
+                                    showProgressAlert('Upload complete!', 100);
+                                    
+                                    // Update question with the image URL
+                                    const updatedQuestions = [...questions];
+                                    updatedQuestions[0].question.image = result.url;
+                                    setQuestions(updatedQuestions);
+                                    
+                                    // Show success message after a brief delay
+                                    setTimeout(() => {
+                                      showSuccessAlert('Image uploaded successfully!');
+                                    }, 500);
+                                  });
+                                };
                                 
-                                // Show 100% progress briefly before success message
-                                showProgressAlert('Upload complete!', 100);
-                                
-                                // Update question with the image URL
-                                const updatedQuestions = [...questions];
-                                updatedQuestions[0].question.image = result.url;
-                                setQuestions(updatedQuestions);
-                                
-                                // Show success message after a brief delay
-                                setTimeout(() => {
-                                  showSuccessAlert('Image uploaded successfully!');
-                                }, 500);
-                              });
-                            };
-                            
-                            reader.onerror = (error) => {
-                              console.error('Error reading file:', error);
-                              showErrorAlert('Error reading file. Please try again.');
-                            };
-                          }
-                        }}
-                      />
-                      <FaCloudUploadAlt style={{ fontSize: '32px', color: '#888', marginBottom: '10px' }} />
-                      <p style={{ margin: '0', color: '#666' }}>Drag an image here or click to browse</p>
-                      <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#888' }}>Supported formats: JPG, PNG, GIF</p>
+                                reader.onerror = () => {
+                                  console.error('Error reading file');
+                                  showErrorAlert('Error reading file. Please try again.');
+                                };
+                              }
+                            }}
+                          />
+                        )}
+                        <FaCloudUploadAlt style={{ fontSize: '32px', color: '#888', marginBottom: '10px' }} />
+                        <p style={{ margin: '0', color: '#666' }}>{readOnly ? 'No image available' : 'Drag an image here or click to browse'}</p>
+                        {!readOnly && (
+                          <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#888' }}>Supported formats: JPG, PNG, GIF</p>
+                        )}
                     </div>
                   )}
                 </div>
@@ -1371,13 +1451,15 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               <div className="form-group">
                 <label>Feedback Collection</label>
                 <select
-                  value={questions[0].question.feedback || 'none'}
+                  value={readOnly && versionData ? versionData.feedback || 'none' : questions[0].question.feedback || 'none'}
                   onChange={(e) => {
+                    if (readOnly) return;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.feedback = e.target.value;
                     setQuestions(updatedQuestions);
                   }}
                   className="form-control"
+                  disabled={readOnly}
                 >
                   <option value="none">No Feedback</option>
                   <option value="optional">Optional Feedback</option>
@@ -1395,8 +1477,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                       type="number"
                       min="0"
                       max="60"
-                      value={Math.floor((questions[0].question.estimatedTimeSeconds || 30) / 60)}
+                      value={readOnly && versionData ? Math.floor((versionData.estimatedTimeSeconds || 30) / 60) : Math.floor((questions[0].question.estimatedTimeSeconds || 30) / 60)}
                       onChange={(e) => {
+                        if (readOnly) return;
                         const mins = parseInt(e.target.value);
                         if (!isNaN(mins) && mins >= 0) {
                           const secs = (questions[0].question.estimatedTimeSeconds || 30) % 60;
@@ -1408,6 +1491,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                       }}
                       className="form-control"
                       style={{ width: '70px' }}
+                      disabled={readOnly}
                     />
                     <span style={{ margin: '0 5px' }}>min</span>
                   </div>
@@ -1417,8 +1501,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                       type="number"
                       min="0"
                       max="59"
-                      value={(questions[0].question.estimatedTimeSeconds || 30) % 60}
+                      value={readOnly && versionData ? (versionData.estimatedTimeSeconds || 30) % 60 : (questions[0].question.estimatedTimeSeconds || 30) % 60}
                       onChange={(e) => {
+                        if (readOnly) return;
                         const secs = parseInt(e.target.value);
                         if (!isNaN(secs) && secs >= 0 && secs < 60) {
                           const mins = Math.floor((questions[0].question.estimatedTimeSeconds || 30) / 60);
@@ -1430,6 +1515,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                       }}
                       className="form-control"
                       style={{ width: '70px' }}
+                      disabled={readOnly}
                     />
                     <span style={{ margin: '0 5px' }}>sec</span>
                   </div>
@@ -1441,47 +1527,33 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               
               <div className="form-group toggle-group">
                 <ToggleSwitch
-                  checked={!!questions[0].question.reusable}
+                  checked={readOnly && versionData ? !!versionData.reusable : !!questions[0].question.reusable}
                   onChange={() => {
+                    if (readOnly) return;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.reusable = !updatedQuestions[0].question.reusable;
                     setQuestions(updatedQuestions);
                   }}
+                  disabled={readOnly}
                   label="Reusable Question (can be used in multiple surveys)"
                 />
               </div>
               
               <div className="form-group toggle-group">
                 <ToggleSwitch
-                  checked={questions[0].question.active === undefined ? true : !!questions[0].question.active}
+                  checked={readOnly && versionData ? (versionData.active === undefined ? true : !!versionData.active) : (questions[0].question.active === undefined ? true : !!questions[0].question.active)}
                   onChange={() => {
+                    if (readOnly) return;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.active = !updatedQuestions[0].question.active;
                     setQuestions(updatedQuestions);
                   }}
+                  disabled={readOnly}
                   label="Active Question"
                 />
               </div>
-              
-              <div className="form-group">
-                <label>Priority</label>
-                <select
-                  value={questions[0].question.priority || 0}
-                  onChange={(e) => {
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.priority = parseInt(e.target.value, 10);
-                    setQuestions(updatedQuestions);
-                  }}
-                  className="form-control"
-                >
-                  <option value="0">Normal</option>
-                  <option value="1">High</option>
-                  <option value="2">Critical</option>
-                </select>
               </div>
-            </div>
           </TabPanel>
-
 
         </Tabs>
       )}
@@ -1495,6 +1567,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           onClose={() => setShowVersionHistoryModal(false)}
           onRevert={handleRevertVersion}
           onUpdateVersionName={handleUpdateVersionName}
+          keepOpenOnView={true} /* Keep the modal open when viewing a version */
         />
       )}
     </div>,
