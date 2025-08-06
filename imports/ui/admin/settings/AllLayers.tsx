@@ -449,8 +449,8 @@ const FilterSection = styled.div`
   }
   
   .react-select-container .react-select__control--is-focused {
-    border-color: #552a47;
-    box-shadow: 0 0 0 1px #552a47;
+    border-color: transparent;
+    box-shadow: none;
     background-color: white;
   }
   
@@ -506,6 +506,16 @@ const FilterSection = styled.div`
   
   .react-select-container .react-select__input {
     color: #333;
+    box-shadow: none;
+    outline: none;
+    border: none;
+  }
+  
+  .react-select-container .react-select__input-container {
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
   }
 `;
 
