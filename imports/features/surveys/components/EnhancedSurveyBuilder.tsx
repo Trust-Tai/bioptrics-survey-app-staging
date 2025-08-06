@@ -402,22 +402,22 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     selected: boolean;
   }>>([{
     title: 'Total Responses',
-    subtitle: 'Questions answered',
+    subtitle: 'Total number of questions answered',
     icon: 'clipboard-check',
     selected: true
   }, {
     title: 'Unanswered Questions',
-    subtitle: 'Empty answer fields',
+    subtitle: 'Number of skipped or empty answers',
     icon: 'question-circle',
     selected: true
   }, {
     title: 'Completion',
-    subtitle: 'Survey completed',
+    subtitle: 'Text showing that the survey was completed',
     icon: 'check-circle',
     selected: true
   }, {
     title: 'Time Taken',
-    subtitle: 'Total duration',
+    subtitle: 'How long the user took to complete the survey',
     icon: 'clock',
     selected: true
   }]);
@@ -1268,19 +1268,19 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         const defaultBoxes = [
           {
             title: 'Total Responses',
-            subtitle: 'Questions answered',
+            subtitle: 'Total number of questions answered',
             icon: 'clipboard-check'
           }, {
             title: 'Unanswered Questions',
-            subtitle: 'Empty answer fields',
+            subtitle: 'Number of skipped or empty answers',
             icon: 'question-circle'
           }, {
             title: 'Completion',
-            subtitle: 'Survey completed',
+            subtitle: 'Text showing that the survey was completed',
             icon: 'check-circle'
           }, {
             title: 'Time Taken',
-            subtitle: 'Total duration',
+            subtitle: 'How long the user took to complete the survey',
             icon: 'clock'
           }
         ];
@@ -5187,9 +5187,82 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                       
                       {/* Thank You Boxes Configuration */}
                       <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#2d3748' }}>
-                        Survey Summary Stats (Optional)
-                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                          <label style={{ display: 'block', fontWeight: 600, color: '#2d3748' }}>
+                            Survey Summary Stats (Optional)
+                          </label>
+                          <div 
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              width: '20px', 
+                              height: '20px', 
+                              borderRadius: '50%', 
+                              backgroundColor: '#552a47', 
+                              cursor: 'pointer',
+                              position: 'relative',
+                              boxShadow: '0 2px 4px rgba(85, 42, 71, 0.2)',
+                              transition: 'all 0.2s ease',
+                              marginTop: '1px'
+                            }}
+                            onMouseEnter={(e) => {
+                              const tooltip = e.currentTarget.querySelector('.tooltip-content');
+                              if (tooltip) {
+                                tooltip.style.visibility = 'visible';
+                                tooltip.style.opacity = '1';
+                                tooltip.style.transform = 'translateX(-50%) translateY(0)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              const tooltip = e.currentTarget.querySelector('.tooltip-content');
+                              if (tooltip) {
+                                tooltip.style.visibility = 'hidden';
+                                tooltip.style.opacity = '0';
+                                tooltip.style.transform = 'translateX(-50%) translateY(5px)';
+                              }
+                            }}
+                          >
+                            <span style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>?</span>
+                            <div 
+                              className="tooltip-content"
+                              style={{ 
+                                position: 'absolute', 
+                                bottom: 'calc(100% + 10px)', 
+                                left: '50%', 
+                                transform: 'translateX(-50%) translateY(5px)', 
+                                backgroundColor: '#552a47', 
+                                color: 'white', 
+                                padding: '10px 14px', 
+                                borderRadius: '6px', 
+                                width: '280px', 
+                                fontSize: '13px', 
+                                lineHeight: '1.4',
+                                visibility: 'hidden', 
+                                opacity: 0, 
+                                transition: 'opacity 0.3s, visibility 0.3s, transform 0.3s', 
+                                zIndex: 999,
+                                pointerEvents: 'none',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                fontWeight: 400,
+                                letterSpacing: '0.2px',
+                                textAlign: 'left'
+                              }}
+                            >
+                              These are optional summary stats that participants will see on the final thank you screen after submitting a survey.
+                              <div style={{ 
+                                position: 'absolute', 
+                                top: '100%', 
+                                left: '50%', 
+                                transform: 'translateX(-50%)', 
+                                borderLeft: '8px solid transparent', 
+                                borderRight: '8px solid transparent', 
+                                borderTop: '8px solid #552a47',
+                                filter: 'drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1))'
+                              }}></div>
+                            </div>
+                          </div>
+                        </div>
                         <p style={{ marginBottom: '16px', color: '#4a5568', fontSize: '14px' }}>
                           Configure the statistics boxes that appear on the thank you screen.
                         </p>
