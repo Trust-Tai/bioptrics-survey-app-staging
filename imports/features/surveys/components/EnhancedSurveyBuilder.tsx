@@ -78,13 +78,13 @@ const steps = [
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
   { id: 'analyzeResults', label: 'Analyze Results', icon: 'FiBarChart2' },
-  { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
+  // { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   // { id: 'preview', label: 'Preview', icon: 'FiEye' },
   // { id: 'publish', label: 'Publish', icon: 'FiSend' },
   { id: 'collaboration', label: 'Collaboration', icon: 'FiUsers' },
   { id: 'settings', label: 'Settings', icon: 'FiSettings' },
-  { id: 'notifications', label: 'Notifications', icon: 'FiBell' },
+  // { id: 'notifications', label: 'Notifications', icon: 'FiBell' },
 ];
 
 // Spinner component for loading states
