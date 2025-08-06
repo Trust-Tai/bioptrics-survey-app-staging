@@ -347,9 +347,9 @@ const Footer = styled.footer<FooterProps>`
   padding: 1rem 0;
   text-align: center;
   font-size: 0.9rem;
-  color: #666;
-  border-top: 1px solid #eee;
-  background-color: #f9f9f9;
+  color: #fff;
+  border-top: 1px solid #333;
+  background-color: #552a47; /* Updated to match dark body layer */
   width: 100%;
   position: fixed;
   bottom: 0;
