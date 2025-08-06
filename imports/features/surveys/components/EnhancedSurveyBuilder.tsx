@@ -1403,9 +1403,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     );
   };
   
-  // Memoized select options
+  // Memoized select options - filter out already selected tags
   const selectOptions = React.useMemo(() => {
-    return prepareSelectOptions(availableTags);
+    // Filter out already selected tags from the available options
+    const options = prepareSelectOptions(availableTags);
+    // Return all options, filtering will be handled by hideSelectedOptions prop in CreatableSelect
+    return options;
   }, [availableTags]);
   
   // Effect to handle changes in availableTags (when tags are activated/deactivated)
@@ -3894,7 +3897,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                           name="surveyTags"
                           isMulti
                           closeMenuOnSelect={false}
-                          hideSelectedOptions={false}
+                          hideSelectedOptions={true}
                           options={selectOptions}
                           value={selectOptions.filter(option => selectedTags.includes(option.value))}
                           onChange={(selected) => {
@@ -5531,7 +5534,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             }}
                             placeholder="Enter email address"
                             style={{
-                              width: '100%',
+                              width: '93%',
                               padding: '8px 12px',
                               border: '1px solid #e0e0e0',
                               borderRadius: 6,
