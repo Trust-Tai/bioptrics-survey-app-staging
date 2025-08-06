@@ -404,7 +404,7 @@ const ModernSurveyPublic: React.FC = () => {
           )}
         </MainContent>
         <Footer>
-          © {new Date().getFullYear()} Powered By Bioptrics. All rights reserved.
+          © {new Date().getFullYear()} Made with ❤️ by Bioptrics — for bold teams building better workplaces.
         </Footer>
       </PageContainer>
     </SurveyThemeProvider>

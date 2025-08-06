@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { FaLayerGroup, FaPencilAlt, FaPlus, FaSpinner, FaToggleOff, FaToggleOn, FaTrash, FaTable, FaList, FaChevronDown, FaChevronRight, FaSave, FaTimes, FaFolder, FaArrowDown, FaChartBar, FaFont, FaHashtag, FaCheck, FaCalendar, FaSearch, FaFilter, FaChevronLeft, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -365,17 +365,20 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for better contrast */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 20px;
+  z-index: 9999; /* Significantly increased z-index to ensure modal appears above all elements */
+  width: 100vw; /* Ensure full width coverage */
+  height: 100vh; /* Ensure full height coverage */
 `;
 
 const ModalContent = styled.div`
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Enhanced shadow for better depth */
   max-width: 800px;
   width: 90%;
   max-height: 90vh;
@@ -384,6 +387,7 @@ const ModalContent = styled.div`
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  z-index: 10000; /* Even higher z-index than the overlay to ensure content is above everything */
 `;
 
 const ModalHeader = styled.div`
@@ -445,8 +449,8 @@ const FilterSection = styled.div`
   }
   
   .react-select-container .react-select__control--is-focused {
-    border-color: #552a47;
-    box-shadow: 0 0 0 1px #552a47;
+    border-color: transparent;
+    box-shadow: none;
     background-color: white;
   }
   
@@ -502,6 +506,16 @@ const FilterSection = styled.div`
   
   .react-select-container .react-select__input {
     color: #333;
+    box-shadow: none;
+    outline: none;
+    border: none;
+  }
+  
+  .react-select-container .react-select__input-container {
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
   }
 `;
 
@@ -551,22 +565,31 @@ const ErrorMessage = styled.div`
   margin-top: 0.5rem;
 `;
 
-const StatusMessage = styled.div<{ success?: boolean; error?: boolean }>`
+const StatusMessage = styled.div<{ success?: boolean; error?: boolean; warning?: boolean }>`
+  padding: 0.75rem 1rem;
   margin: 1rem 0;
-  padding: 1rem;
-  border-radius: 8px;
-  background: ${props => props.success ? '#e7f7ed' : props.error ? '#ffebee' : '#f5f5f5'};
-  color: ${props => props.success ? '#2e7d32' : props.error ? '#c62828' : '#555'};
-  border-left: 4px solid ${props => props.success ? '#2e7d32' : props.error ? '#c62828' : '#ddd'};
+  border-radius: 4px;
+  background-color: ${props => 
+    props.success ? '#e6f7e6' : 
+    props.error ? '#ffebee' : 
+    props.warning ? '#fff8e1' : 
+    '#e3f2fd'};
+  color: ${props => 
+    props.success ? '#2e7d32' : 
+    props.error ? '#c62828' : 
+    props.warning ? '#f57c00' : 
+    '#0d47a1'};
+  border-left: 4px solid ${props => 
+    props.success ? '#2e7d32' : 
+    props.error ? '#c62828' : 
+    props.warning ? '#f57c00' : 
+    '#0d47a1'};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `;
 
-// AllLayers Component
-// Helper function to strip HTML tags from text
-const stripHtmlTags = (html: string | undefined): string => {
-  if (!html) return 'Untitled Question';
-  return html.replace(/<[^>]*>/g, '');
-};
-
+// ... (rest of the code remains the same)
 const findQuestionsByTagId = (tagId: string | undefined): string[] => {
   if (!tagId) return [];
   // Use Questions collection directly instead of questions variable
@@ -624,8 +647,24 @@ const AllLayers = () => {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
+  // Auto-save state
+  const [hasChanges, setHasChanges] = useState<boolean>(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'unsaved' | 'saving' | 'saved' | ''>('');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Function to close the modal and reset form
   const closeModal = () => {
+    // If there are unsaved changes, auto-save before closing
+    if (hasChanges && autoSaveStatus !== 'saving') {
+      handleAutoSave(true);
+    }
+    
+    // Clear auto-save timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    
     setIsModalOpen(false);
     setLayer({
       name: '',
@@ -637,6 +676,8 @@ const AllLayers = () => {
       description: ''
     });
     setErrors({});
+    setHasChanges(false);
+    setAutoSaveStatus('');
   };
   
   // Tag form state
@@ -952,6 +993,119 @@ const AllLayers = () => {
   
 
   
+  // Auto-save function
+  const handleAutoSave = useCallback((isClosing = false) => {
+    // Don't auto-save if there are no changes or if the form is invalid
+    if (!hasChanges || !validateForm(false)) {
+      return;
+    }
+    
+    setAutoSaveStatus('saving');
+    
+    if (layer._id) {
+      // Update existing tag
+      const updatedLayer = {
+        id: layer.id,
+        name: layer.name || '',
+        location: layer.location || 'surveys',
+        active: layer.active !== undefined ? layer.active : true,
+        parentId: layer.parentId || undefined,
+        color: layer.color || '#552a47',
+        description: layer.description || '',
+        fields: layer.fields || []
+      };
+      
+      Meteor.call('layers.update', layer._id, updatedLayer, (error: Meteor.Error) => {
+        if (error) {
+          console.error('Error auto-saving tag:', error);
+          setAutoSaveStatus('unsaved');
+        } else {
+          console.log('Tag auto-saved successfully');
+          setAutoSaveStatus('saved');
+          setHasChanges(false);
+          
+          // Clear saved status after 3 seconds
+          setTimeout(() => {
+            if (autoSaveStatus === 'saved') {
+              setAutoSaveStatus('');
+            }
+          }, 3000);
+          
+          // If we're closing the modal, do it now that save is complete
+          if (isClosing) {
+            setIsModalOpen(false);
+          }
+        }
+      });
+    } else {
+      // Create new tag
+      const newLayer = {
+        ...layer
+      };
+      
+      Meteor.call('layers.create', newLayer, (error: Meteor.Error, result: string) => {
+        if (error) {
+          console.error('Error auto-saving tag:', error);
+          setAutoSaveStatus('unsaved');
+        } else {
+          console.log('Tag auto-saved successfully');
+          setAutoSaveStatus('saved');
+          setHasChanges(false);
+          
+          // Update the layer with the new ID
+          if (result) {
+            setLayer(prev => ({ ...prev, _id: result }));
+          }
+          
+          // Clear saved status after 3 seconds
+          setTimeout(() => {
+            if (autoSaveStatus === 'saved') {
+              setAutoSaveStatus('');
+            }
+          }, 3000);
+          
+          // If we're closing the modal, do it now that save is complete
+          if (isClosing) {
+            setIsModalOpen(false);
+          }
+        }
+      });
+    }
+  }, [layer, hasChanges, autoSaveStatus]);
+
+  // Setup debounced auto-save
+  useEffect(() => {
+    if (hasChanges) {
+      // Clear any existing timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      
+      // Set auto-save status to unsaved
+      setAutoSaveStatus('unsaved');
+      
+      // Set a new timer for auto-save
+      autoSaveTimerRef.current = setTimeout(() => {
+        handleAutoSave();
+      }, 3500); // 3.5 seconds delay for auto-save
+    }
+    
+    // Cleanup timer on unmount
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [layer, hasChanges, handleAutoSave]);
+
+  // Helper function to strip HTML tags
+  const stripHtmlTags = (html: string): string => {
+    if (!html) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  };
+
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -972,17 +1126,22 @@ const AllLayers = () => {
     } else {
       setLayer(prev => ({ ...prev, [name]: value }));
     }
+    
+    // Mark that we have changes to save
+    setHasChanges(true);
   };
   
   // Validate form
-  const validateForm = () => {
+  const validateForm = (updateErrors = true) => {
     const newErrors: { name?: string } = {};
     
     if (!layer.name) {
       newErrors.name = 'Tag name is required';
     }
     
-    setErrors(newErrors);
+    if (updateErrors) {
+      setErrors(newErrors);
+    }
     return Object.keys(newErrors).length === 0;
   };
   
@@ -1615,10 +1774,7 @@ const AllLayers = () => {
                   name="name"
                   type="text"
                   value={layer?.name || ''}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setLayer(prev => ({ ...prev, [name]: value }));
-                  }}
+                  onChange={handleInputChange}
                   style={{
                     width: '97%',
                   }}
@@ -1633,10 +1789,7 @@ const AllLayers = () => {
                   id="description"
                   name="description"
                   value={layer?.description || ''}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setLayer(prev => ({ ...prev, [name]: value }));
-                  }}
+                  onChange={handleInputChange}
                   placeholder="Enter tag description"
                   style={{
                     width: '97%',
@@ -1657,10 +1810,7 @@ const AllLayers = () => {
                   id="parentId"
                   name="parentId"
                   value={layer?.parentId || ''}
-                  onChange={(e) => {
-                    const { name, value } = e.target;
-                    setLayer(prev => ({ ...prev, [name]: value }));
-                  }}
+                  onChange={handleInputChange}
                   className="nested-tag-select"
                 >
                   <option value="">None (Top Level Tag)</option>
@@ -1687,10 +1837,7 @@ const AllLayers = () => {
                     name="color"
                     type="color"
                     value={layer?.color || '#552a47'}
-                    onChange={(e) => {
-                      const { name, value } = e.target;
-                      setLayer(prev => ({ ...prev, [name]: value }));
-                    }}
+                    onChange={handleInputChange}
                     style={{
                       width: '100px',
                       height: '36px',
@@ -1706,7 +1853,23 @@ const AllLayers = () => {
                   <Label htmlFor="active" style={{ margin: 0 }}>Status</Label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div 
-                      onClick={() => setLayer(prev => ({ ...prev, active: !prev.active }))} 
+                      onClick={() => {
+                        setLayer(prev => ({ ...prev, active: !prev.active }));
+                        setHasChanges(true);
+                        
+                        // Set auto-save status to unsaved
+                        setAutoSaveStatus('unsaved');
+                        
+                        // Clear any existing timer
+                        if (autoSaveTimerRef.current) {
+                          clearTimeout(autoSaveTimerRef.current);
+                        }
+                        
+                        // Set a new timer for auto-save
+                        autoSaveTimerRef.current = setTimeout(() => {
+                          handleAutoSave();
+                        }, 3500); // 3.5 seconds delay for auto-save
+                      }} 
                       style={{ 
                         cursor: 'pointer',
                         color: layer?.active ? '#4CAF50' : '#ccc'
@@ -1721,9 +1884,45 @@ const AllLayers = () => {
             </ModalBody>
             
             <ModalFooter>
+              {/* Auto-save status indicator */}
+              {autoSaveStatus && (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  marginRight: 'auto',
+                  fontSize: '0.9rem',
+                  color: autoSaveStatus === 'saved' ? '#2e7d32' : 
+                         autoSaveStatus === 'saving' ? '#0d47a1' : 
+                         '#f57c00'
+                }}>
+                  {autoSaveStatus === 'saving' && (
+                    <>
+                      <FaSpinner 
+                        size={14} 
+                        style={{ 
+                          marginRight: '0.5rem',
+                          animation: 'spin 1s linear infinite' 
+                        }} 
+                      />
+                      Saving...
+                    </>
+                  )}
+                  {autoSaveStatus === 'unsaved' && (
+                    <>
+                      <span style={{ color: '#f57c00' }}>Unsaved changes</span>
+                    </>
+                  )}
+                  {autoSaveStatus === 'saved' && (
+                    <>
+                      <FaCheck size={14} style={{ marginRight: '0.5rem' }} />
+                      Saved
+                    </>
+                  )}
+                </div>
+              )}
               <Button onClick={() => closeModal()}>Cancel</Button>
-              <Button primary onClick={handleSaveTag} disabled={status?.loading}>
-                {status.loading ? (
+              <Button primary onClick={handleSaveTag} disabled={status?.loading || autoSaveStatus === 'saving'}>
+                {status.loading || autoSaveStatus === 'saving' ? (
                   <>
                     <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
                     <span style={{ marginLeft: '0.5rem' }}>Saving...</span>

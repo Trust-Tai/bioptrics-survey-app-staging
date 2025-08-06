@@ -119,12 +119,14 @@ export async function saveQuestionsToDB(editId: string | null, questionVersion: 
       ...questionVersion,
       published: false
     });
+    return editId; // Return the existing ID
   } else {
     // Create new question
-    await Meteor.callAsync('questions.insert', {
+    const newId = await Meteor.callAsync('questions.insert', {
       ...questionVersion,
       published: false
     });
+    return newId; // Return the newly created ID
   }
 }
 

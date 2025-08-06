@@ -236,24 +236,50 @@ const ToggleButton = styled.button<ToggleButtonProps>`
   position: fixed;
   left: ${props => props.collapsed ? '1rem' : '245px'};
   top: 1rem;
-  background: #402C00;
-  border: none;
+  background: var(--color-primary, #552a47);
   color: white;
-  width: 40px;
-  height: 40px;
+  border: none;
   border-radius: 50%;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1001;
+  z-index: 1000;
   transition: left 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  display: none;
-  
-  @media (max-width: 1024px) {
-    display: flex;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  &:hover {
+    background: var(--color-primary-dark, #3d1e33);
   }
+`;
+
+interface FooterProps {
+  collapsed: boolean;
+}
+
+const Footer = styled.footer<FooterProps>`
+  padding: 1rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  border-top: 1px solid #eee;
+  background-color: #f9f9f9;
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin-left: ${props => props.collapsed ? '72px' : '264px'};
+  transition: margin-left 0.3s;
+  width: calc(100% - ${props => props.collapsed ? '72px' : '264px'});
+`;
+
+const HeartIcon = styled.span`
+  color: #e25555;
+  display: inline-block;
+  margin: 0 2px;
 `;
 
 interface MainContentProps {
@@ -261,14 +287,17 @@ interface MainContentProps {
 }
 
 const MainContent = styled.main<MainContentProps>`
-  padding: 2rem;
+  padding: 2rem 2rem 5rem 2rem;
   transition: margin-left 0.3s ease, width 0.3s ease;
   height: 100%;
-  
-  @media (max-width: 1024px) {
-    margin-left: 0;
-    width: 100%;
-  }
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 72px);
 `;
 
 /**
@@ -417,10 +446,13 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           })}
         </nav>
       </Sidebar>
-      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s' }}>
+      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', display: 'flex', flexDirection: 'column' }}>
         {/* Main Content */}
         <MainContent sidebarCollapsed={collapsed}>
-          {children}
+          <div style={{ flex: 1 }}>{children}</div>
+          <Footer collapsed={collapsed}>
+            Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.
+          </Footer>
         </MainContent>
       </div>
       

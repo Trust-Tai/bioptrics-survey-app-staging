@@ -993,7 +993,7 @@ const AllSurveys: React.FC = () => {
             </AddButton>
           </TitleRow>
           {/* Survey Statistics Summary */}
-          <SurveyStatsSummary />
+          {/* <SurveyStatsSummary /> */}
           
           <SearchContainer>
             <div style={{ display: 'flex', gap: 20 }}>
