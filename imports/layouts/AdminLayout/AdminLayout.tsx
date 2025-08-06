@@ -339,16 +339,54 @@ const ToggleButton = styled.button<ToggleButtonProps>`
   }
 `;
 
-const MainContent = styled.main<MainContentProps>`
-  padding: 2rem;
-  transition: margin-left 0.3s ease, width 0.3s ease;
-  height: 100%;
+interface FooterProps {
+  collapsed: boolean;
+}
+
+const Footer = styled.footer<FooterProps>`
+  padding: 1rem 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  border-top: 1px solid #eee;
+  background-color: #f9f9f9;
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const HeartIcon = styled.span`
+  color: #e25555;
+  display: inline-block;
+  margin: 0 0.2rem;
+  animation: heartbeat 1.5s ease-in-out infinite;
   
-  @media (max-width: 1024px) {
-    margin-left: 0;
-    width: 100%;
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
   }
 `;
+
+const MainContent = styled.main<MainContentProps>`
+  padding: 2rem 2rem 5rem 2rem;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 72px);
+`;
+
 
 /**
  * AdminLayout component that provides the admin dashboard shell with navigation
@@ -522,8 +560,11 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', width: 'calc(100% - 264px)' }}>
         {/* Main Content */}
         <MainContent sidebarCollapsed={collapsed}>
-          {children}
+          <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
+        <Footer collapsed={collapsed}>
+          Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.
+        </Footer>
       </div>
     </div>
   );
