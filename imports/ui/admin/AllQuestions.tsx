@@ -1099,12 +1099,7 @@ const AllQuestions: React.FC = () => {
               <FaPlus size={14} />
               New Question
             </Button>
-            <Button 
-              onClick={() => setShowImportModal(true)}
-            >
-              <FaFileImport size={14} />
-              Import
-            </Button>
+            
           </div>
         </TitleRow>
         
