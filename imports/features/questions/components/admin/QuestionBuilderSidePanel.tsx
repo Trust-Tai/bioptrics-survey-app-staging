@@ -1410,7 +1410,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               
               {/* Answer Options - Moved from Answer Options tab */}
               <div className="form-group answer-options-section">
-                <label>Answer Options</label>
                 {readOnly && versionData ? (
                   <div className="read-only-answer-options">
                     {/* For text-based question types, show a message instead of options */}
