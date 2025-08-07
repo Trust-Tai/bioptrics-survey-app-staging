@@ -99,25 +99,25 @@ const logThemeColors = (theme: any) => {
 };
 
 interface SidebarProps {
-  collapsed: boolean;
+  $collapsed: boolean;
   theme?: any;
 }
 
 interface NavItemProps {
   active: boolean;
-  collapsed: boolean;
+  $collapsed: boolean;
 }
 
 interface IconProps {
-  collapsed: boolean;
+  $collapsed: boolean;
 }
 
 interface LabelProps {
-  collapsed: boolean;
+  $collapsed: boolean;
 }
 
 interface ToggleButtonProps {
-  collapsed: boolean;
+  $collapsed: boolean;
 }
 
 interface MainContentProps {
@@ -183,7 +183,7 @@ const SubmenuInline = styled.ul`
 `;
 
 const Sidebar = styled.aside<SidebarProps>`
-  width: ${props => props.collapsed ? '72px' : '240px'};
+  width: ${({$collapsed}) => $collapsed ? '72px' : '240px'};
   background: var(--color-sidebar);
   color: var(--color-sidebar-text) !important;
   display: flex;
@@ -203,8 +203,8 @@ const Sidebar = styled.aside<SidebarProps>`
   background-clip: padding-box;
 
   @media (max-width: 1024px) {
-    width: ${props => props.collapsed ? '0' : '240px'};
-    transform: ${props => props.collapsed ? 'translateX(-100%)' : 'translateX(0)'};
+    width: ${({$collapsed}) => $collapsed ? '0' : '240px'};
+    transform: ${({$collapsed}) => $collapsed ? 'translateX(-100%)' : 'translateX(0)'};
     margin: 0;
     border-radius: 0 22px 22px 0;
     height: 100vh;
@@ -233,16 +233,16 @@ const NavItem = styled(Link)<NavItemProps & {theme?: any}>`
   align-items: center;
   color: var(--color-sidebar-text) !important;
   text-decoration: none;
-  padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
+  padding: ${({$collapsed}) => $collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
   font-family: 'Inter', sans-serif;
-  font-weight: ${props => props.active ? '700' : '500'};
+  font-weight: ${({active}) => active ? '700' : '500'};
   margin-bottom: 0.25rem;
   transition: background 0.2s, border-left 0.2s;
   position: relative;
-  justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid var(--color-primary)' : '4px solid transparent'};
-  background: ${props => props.active ? 'rgba(255,255,255,0.15)' : 'transparent'};
+  justify-content: ${({$collapsed}) => $collapsed ? 'center' : 'flex-start'};
+  border-left: ${({active}) => active ? '4px solid var(--color-primary)' : '4px solid transparent'};
+  background: ${({active}) => active ? 'rgba(255,255,255,0.15)' : 'transparent'};
   
   &:hover {
     background: rgba(255,255,255,0.1);
@@ -259,16 +259,16 @@ const NavButton = styled.button<NavItemProps & {theme?: any}>`
   align-items: center;
   color: var(--color-sidebar-text) !important;
   text-decoration: none;
-  padding: ${props => props.collapsed ? '14px 0' : '14px 24px'};
+  padding: ${({$collapsed}) => $collapsed ? '14px 0' : '14px 24px'};
   font-size: 16px;
   font-family: 'Inter', sans-serif;
-  font-weight: ${props => props.active ? '700' : '500'};
+  font-weight: ${({active}) => active ? '700' : '500'};
   margin-bottom: 0.25rem;
   transition: background 0.2s, border-left 0.2s;
   position: relative;
-  justify-content: ${props => props.collapsed ? 'center' : 'flex-start'};
-  border-left: ${props => props.active ? '4px solid var(--color-primary)' : '4px solid transparent'};
-  background: ${props => props.active ? 'rgba(255,255,255,0.15)' : 'transparent'};
+  justify-content: ${({$collapsed}) => $collapsed ? 'center' : 'flex-start'};
+  border-left: ${({active}) => active ? '4px solid var(--color-primary)' : '4px solid transparent'};
+  background: ${({active}) => active ? 'rgba(255,255,255,0.15)' : 'transparent'};
   width: 100%;
   border: none;
   cursor: pointer;
@@ -282,7 +282,7 @@ const NavButton = styled.button<NavItemProps & {theme?: any}>`
 
 const NavIcon = styled.div<IconProps & {theme?: any}>`
   font-size: 24px;
-  margin-right: ${props => props.collapsed ? '0' : '16px'};
+  margin-right: ${({$collapsed}) => $collapsed ? '0' : '16px'};
   display: flex;
   align-items: center;
   color: var(--color-sidebar-text, #ffffff) !important;
@@ -294,7 +294,7 @@ const NavIcon = styled.div<IconProps & {theme?: any}>`
 `;
 
 const NavLabel = styled.span<LabelProps>`
-  display: ${props => props.collapsed ? 'none' : 'block'};
+  display: ${({$collapsed}) => $collapsed ? 'none' : 'block'};
   white-space: nowrap;
   color: var(--color-sidebar-text) !important;
 `;
@@ -317,7 +317,7 @@ const Tooltip = styled.div`
 
 const ToggleButton = styled.button<ToggleButtonProps>`
   position: fixed;
-  left: ${props => props.collapsed ? '1rem' : '245px'};
+  left: ${({$collapsed}) => $collapsed ? '1rem' : '245px'};
   top: 1rem;
   background: #402C00;
   border: none;
@@ -465,7 +465,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar collapsed={collapsed} theme={colors}>
+      <Sidebar $collapsed={collapsed} theme={colors}>
         <Logo theme={colors}>
           <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>Admin</span>
         </Logo>
@@ -487,7 +487,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <NavItem
                   to={link.to}
                   active={isActive}
-                  collapsed={collapsed}
+                  $collapsed={collapsed}
                   theme={colors}
                   tabIndex={0}
                   aria-haspopup={hasSubmenu ? 'true' : undefined}
@@ -505,8 +505,8 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     }
                   }}
                 >
-                  <NavIcon collapsed={collapsed} theme={colors}>{React.createElement(link.icon)}</NavIcon>
-                  <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
+                  <NavIcon $collapsed={collapsed} theme={colors}>{React.createElement(link.icon)}</NavIcon>
+                  <NavLabel $collapsed={collapsed}>{link.label}</NavLabel>
                   {hasSubmenu && !collapsed && (
                     <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7, transform: hovered === idx ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
                       ▸
@@ -562,7 +562,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <MainContent sidebarCollapsed={collapsed}>
           <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
-        <Footer collapsed={collapsed}>
+        <Footer $collapsed={collapsed}>
           Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.
         </Footer>
       </div>

@@ -103,8 +103,8 @@ export const patchMeteorSubscriptions = () => {
     activeSubscriptions++;
     progressBar.start();
     
-    // Get the subscription handle
-    const handle = originalSubscribe.apply(this, args);
+    // Get the subscription handle - make sure to include the name as the first argument
+    const handle = originalSubscribe.apply(this, [name, ...args]);
     
     // Create a wrapper around the original handle
     const originalReady = handle.ready;

@@ -1495,7 +1495,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       return (
         <components.Option {...props}>
           <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: '#552a47', fontWeight: 'bold' }}>
-            ✨ Create this tag: "{data.label}"
+            Create this tag: "{data.label}"
           </div>
         </components.Option>
       );
