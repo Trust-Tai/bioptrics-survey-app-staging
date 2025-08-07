@@ -36,7 +36,6 @@ import CompletionTimeChart from '/imports/features/analytics/components/admin/Co
 import CompletionRateChart from '/imports/features/analytics/components/admin/CompletionRateChart';
 import FunnelChart from '/imports/features/analytics/components/admin/FunnelChart';
 import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
-import RealTimeAnalytics from '/imports/features/analytics/components/admin/RealTimeAnalytics';
 
 // Props interface for Analytics component
 interface AnalyticsProps {
@@ -1657,12 +1656,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           >
             Overview
           </Tab>
-          {/* <Tab
-            active={activeTab === 'realtime'}
-            onClick={() => setActiveTab('realtime')}
-          >
-            Real Time
-          </Tab>
+          {/* 
           <Tab
             active={activeTab === 'surveys'}
             onClick={() => setActiveTab('surveys')}
@@ -1840,49 +1834,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           </DashboardGrid>
         )}
 
-        {activeTab === 'realtime' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <ChartContainer>
-                <RealTimeAnalytics />
-              </ChartContainer>
-            </Card>
-          </DashboardGrid>
-        )}
-
-        {activeTab === 'themes' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Theme Analysis</CardTitle>
-              </CardHeader>
-              <ChartContainer>
-                <div>Detailed Theme Analysis Coming Soon</div>
-              </ChartContainer>
-            </Card>
-          </DashboardGrid>
-        )}
-
-        {activeTab === 'trends' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <ResponseTrendsChart title="Detailed Response Trends" />
-            </Card>
-          </DashboardGrid>
-        )}
-
-        {activeTab === 'insights' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Insights</CardTitle>
-              </CardHeader>
-              <ChartContainer>
-                <div>Insights Coming Soon</div>
-              </ChartContainer>
-            </Card>
-          </DashboardGrid>
-        )}
         
         {activeTab === 'responses' && (
           <DashboardGrid>
@@ -1906,48 +1857,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           </DashboardGrid>
         )}
         
-        {activeTab === 'completionSurvey' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Completion based Survey Analysis</CardTitle>
-                <CardIcon>
-                  <FiCheckCircle />
-                </CardIcon>
-              </CardHeader>
-              <ChartContainer>
-                <div style={{ padding: '20px 0' }}>
-                  {/* <h3>Survey Completion Analysis</h3>
-                  <p>This section provides detailed analytics on survey completion rates and patterns.</p> */}
-                  
-                  {/* Placeholder for completion rate chart */}
-                  <div style={{ marginTop: '20px', marginBottom: '30px' }}>
-                    <h4>Completion Rate by Survey</h4>
-                    <div style={{ height: '300px', background: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      {isLoading ? (
-                        <div>Loading chart data...</div>
-                      ) : (
-                        <div>Completion Rate Chart Coming Soon</div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Placeholder for completion time analysis */}
-                  <div style={{ marginTop: '30px' }}>
-                    <h4>Average Completion Time Analysis</h4>
-                    <div style={{ height: '300px', background: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      {isLoading ? (
-                        <div>Loading analysis data...</div>
-                      ) : (
-                        <div>Completion Time Analysis Coming Soon</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </ChartContainer>
-            </Card>
-          </DashboardGrid>
-        )}
+        
         
         {/* Response Rate Chart Modal */}
         {showResponseRateChart && (
