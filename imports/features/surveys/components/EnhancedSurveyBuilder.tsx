@@ -1815,12 +1815,19 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const navigationContext = React.useContext(UNSAFE_NavigationContext);
   
   // Function to update last user activity timestamp
+  // Only tracks activity without marking changes
   const updateUserActivity = () => {
     setLastUserActivity(Date.now());
   };
+  
+  // Function to track user activity that actually changes content
+  const trackContentChange = () => {
+    updateUserActivity();
+    triggerAutoSave(true); // There are actual changes
+  };
 
   // Function to trigger auto-save based on inactivity
-  const triggerAutoSave = () => {
+  const triggerAutoSave = (hasChanges = true) => {
     // Update user activity timestamp
     updateUserActivity();
     
@@ -1829,8 +1836,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       clearTimeout(autoSaveTimerRef.current);
     }
     
-    // Set unsaved changes flag
-    setHasUnsavedChanges(true);
+    // Only set unsaved changes flag if there are actual changes
+    // This prevents the indicator from appearing when there are no real changes
+    if (hasChanges) {
+      setHasUnsavedChanges(true);
+    }
     
     // Set a new timer for 5 seconds of inactivity before saving
     autoSaveTimerRef.current = setTimeout(() => {
@@ -1849,13 +1859,15 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       const tempLastSaved = lastSaved;
       
       // First mark as saving in progress
+      setSaving(true); // Show saving indicator
       setLastSaved(null); // Clear last saved timestamp to show saving in progress
-      setHasUnsavedChanges(true); // Ensure we show unsaved changes during save
+      // Don't set hasUnsavedChanges here - we want to preserve its current state during save
       
       // Ensure we have valid data before proceeding
       if (!survey || !survey._id) {
         console.log('Skipping auto-save: Survey not fully loaded');
         setLastSaved(tempLastSaved); // Restore previous timestamp
+        setSaving(false); // Reset saving indicator
         return false;
       }
       
@@ -1926,6 +1938,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       setTimeout(() => {
         // Reset unsaved changes flag
         setHasUnsavedChanges(false);
+        // Reset saving state
+        setSaving(false);
         
         // Only show alert for manual saves, not auto-saves
         if (!isAutoSave) {
@@ -1940,9 +1954,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       return true;
     } catch (error) {
       console.log('Silent save error:', error);
-      // Don't show error notification
-      // Don't reset saving state to avoid UI changes
-      // setSaving(false);
+      // Reset saving state on error
+      setSaving(false);
+      // Keep unsaved changes flag true since save failed
+      setHasUnsavedChanges(true);
       return false;
     }
   };
@@ -1951,18 +1966,52 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // This prevents auto-save for other survey elements like themes, questions, etc.
   const surveyTitleRef = useRef(survey?.title);
   const surveyDescriptionRef = useRef(survey?.description);
+  const hasCreatedSurveyRef = useRef(false);
   
+  // Effect to handle auto-save when title or description changes
   useEffect(() => {
-    // Only trigger auto-save if title or description has changed
-    if (survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current) {
-      console.log('Auto-saving due to title or description change');
-      triggerAutoSave();
+    // Check if we have content to save and we're not currently in a saving operation
+    const hasTitleOrDescription = survey?.title || survey?.description;
+    const hasContentChanged = survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current;
+    
+    if (!saving && hasContentChanged) {
+      console.log('Content changed - checking if we need to save');
       
-      // Update refs with current values
-      surveyTitleRef.current = survey?.title;
-      surveyDescriptionRef.current = survey?.description;
+      // For new surveys (no surveyId), immediately save when title or description is entered
+      // This ensures the survey is created in the backend right away
+      if (!surveyId && hasTitleOrDescription) {
+        console.log('New survey detected with title/description - saving immediately');
+        // Call silentSave directly for immediate save instead of using trackContentChange
+        silentSave(false).then(success => { // Use false for manual save to ensure it happens immediately
+          console.log('Initial survey creation result:', success ? 'success' : 'failed');
+          if (success) {
+            hasCreatedSurveyRef.current = true;
+          }
+        });
+      } else {
+        // For existing surveys, use normal auto-save flow
+        trackContentChange();
+      }
     }
-  }, [survey?.title, survey?.description]);
+    
+    // Always update refs with current values to prevent false change detection
+    surveyTitleRef.current = survey?.title;
+    surveyDescriptionRef.current = survey?.description;
+  }, [survey?.title, survey?.description, saving, surveyId]);
+  
+  // Additional effect to ensure survey is created when component mounts if we have content
+  useEffect(() => {
+    // If we have title/description but no surveyId, create the survey immediately
+    if (!surveyId && !hasCreatedSurveyRef.current && (survey?.title || survey?.description)) {
+      console.log('Initial render with content but no surveyId - creating survey');
+      silentSave(false).then(success => {
+        console.log('Survey creation on mount result:', success ? 'success' : 'failed');
+        if (success) {
+          hasCreatedSurveyRef.current = true;
+        }
+      });
+    }
+  }, []);
   
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
@@ -2042,7 +2091,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       if (surveyId) {
         await Meteor.callAsync('surveys.update', surveyId, surveyData);
         savedSurveyId = surveyId;
-        showSuccessAlert('Survey updated successfully!');
       } else {
         // Add creation date for new surveys
         const newSurveyData = {
@@ -2053,7 +2101,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         };
         
         savedSurveyId = await Meteor.callAsync('surveys.saveDraft', newSurveyData);
-        showSuccessAlert('Survey created successfully!');
         
         // Navigate to the edit page for the new survey
         navigate(`/admin/surveys/builder/${savedSurveyId}`);
@@ -2061,17 +2108,21 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       // Set the lastSaved timestamp to update the save status indicator
       const now = Date.now();
-      setLastSaved(now);
       
-      setSaving(false);
-      setHasUnsavedChanges(false);
-      
-      // Only show success message for manual saves, not auto-saves
-      if (!isAutoSave) {
-        showSuccessAlert('Survey saved successfully!');
-      }
-      
-      console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
+      // Use a slight delay to ensure state updates are processed in the correct order
+      // This helps React batch the updates properly
+      setTimeout(() => {
+        setLastSaved(now);
+        setSaving(false);
+        setHasUnsavedChanges(false);
+        
+        // Only show success message for manual saves, not auto-saves
+        // if (!isAutoSave) {
+        //   showSuccessAlert('Survey saved successfully!');
+        // }
+        
+        console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
+      }, 50);
       
       return true; // Return success
     } catch (error) {
@@ -2423,8 +2474,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const handleQuestionCreated = (questionId: string) => {
     console.log(`Question created/edited: ${questionId}`);
     refreshSurveyData();
-    setHasUnsavedChanges(true);
-    triggerAutoSave();
+    // Use trackContentChange instead of directly setting hasUnsavedChanges
+    trackContentChange();
   };
 
   // Handle closing the question builder
@@ -2465,8 +2516,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       };
     });
     
-    setHasUnsavedChanges(true);
-    triggerAutoSave();
+    // Use trackContentChange instead of directly setting hasUnsavedChanges
+    trackContentChange();
   };
   
   // Handle reordering questions within a section
@@ -2493,6 +2544,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       } else {
         console.log('Questions reordered successfully');
         refreshSurveyData();
+        // Mark as having changes that need to be saved
+        trackContentChange();
       }
     });
   };
@@ -2521,6 +2574,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       } else {
         console.log('No-section questions reordered successfully');
         refreshSurveyData();
+        // Mark as having changes that need to be saved
+        trackContentChange();
       }
     });
   };
@@ -2577,6 +2632,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       } else {
         console.log('Question moved to no-section area successfully');
         refreshSurveyData();
+        // Mark as having changes that need to be saved
+        trackContentChange();
       }
     });
   };
@@ -2633,6 +2690,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       } else {
         console.log('Question moved to section successfully');
         refreshSurveyData();
+        // Mark as having changes that need to be saved
+        trackContentChange();
       }
     });
   };
@@ -2689,6 +2748,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       } else {
         console.log('Question moved between sections successfully');
         refreshSurveyData();
+        // Mark as having changes that need to be saved
+        trackContentChange();
       }
     });
   };
@@ -2710,8 +2771,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Update the sections state
     setSections(updatedSections);
     
-    // Mark that we have unsaved changes
-    setHasUnsavedChanges(true);
+    // Mark that we have unsaved changes using our new approach
+    trackContentChange();
     
     // Save changes immediately instead of waiting for auto-save
     try {
@@ -3151,7 +3212,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             backgroundColor: alert.type === 'success' ? '#48bb78' : '#e53e3e',
             color: 'white',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 1100,
+            zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -3211,10 +3272,19 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                 alignItems: 'center',
                 gap: '8px',
                 fontSize: '14px',
-                color: hasUnsavedChanges ? '#e67e22' : '#2ecc71',
+                color: saving ? '#f39c12' : (hasUnsavedChanges ? '#e67e22' : '#2ecc71'),
                 marginRight: '8px'
               }}>
-                {hasUnsavedChanges ? (
+                {saving ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                      </path>
+                    </svg>
+                    <span>Saving...</span>
+                  </>
+                ) : hasUnsavedChanges ? (
                   <>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3495,11 +3565,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     key={step.id}
                     className={`survey-builder-step ${activeStep === step.id ? 'active' : ''}`}
                     onClick={() => {
-                      // If there are unsaved changes, trigger auto-save before changing tabs
-                      if (hasUnsavedChanges) {
-                        silentSave(true);
-                      }
-                      setActiveStep(step.id);
+                      // Always trigger auto-save before changing tabs
+                      // This ensures any changes are saved, even if hasUnsavedChanges is not set
+                      silentSave(true).then(() => {
+                        // Only change the tab after the save is complete
+                        setActiveStep(step.id);
+                      });
                     }}
                   >
                     <div className="survey-builder-step-label">
@@ -4008,12 +4079,44 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     <div className="form-actions">
                       <button 
                         className="btn btn-primary"
-                        onClick={() => {
-                          // If there are unsaved changes, trigger auto-save before changing tabs
-                          if (hasUnsavedChanges) {
-                            silentSave(true);
+                        onClick={async () => {
+                          handleSaveSurvey(false);
+                          silentSave(true).then(() => {
+                            // Only change the tab after the save is complete
+                            setActiveStep('sections');
+                          });
+                          // Always save the survey data before navigating, regardless of hasUnsavedChanges flag
+                          // This ensures the survey is always saved when clicking Save and Continue
+                          try {
+                            // Show saving indicator
+                            setSaving(true);
+                            
+                            // Wait for the save operation to complete
+                            const saveResult = await silentSave(false); // Use false to indicate this is not an auto-save
+                            
+                            if (saveResult) {
+                              // Explicitly update UI to show changes are saved
+                              // This ensures the save status is correctly reflected
+                              setHasUnsavedChanges(false);
+                              setLastSaved(Date.now());
+                              
+                              // Add a small delay before navigation to ensure UI updates are visible
+                              // This gives React time to render the "Changes saved" state
+                              setTimeout(() => {
+                                // Navigate to the next tab
+                                setActiveStep('sections');
+                              }, 300);
+                            } else {
+                              // If save failed, don't navigate
+                              setSaving(false);
+                            }
+                          } catch (error) {
+                            console.error('Error saving survey:', error);
+                            // Show error alert
+                            showErrorAlert(`Error saving survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                            // Reset saving state on error
+                            setSaving(false);
                           }
-                          setActiveStep('sections');
                         }}
                       >
                         Save and Continue
