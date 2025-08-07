@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Meteor } from 'meteor/meteor';
+import LoadingButton from '/imports/shared/components/LoadingButton';
 import { FiPlus, FiEdit2, FiTrash2, FiCopy, FiCheckCircle, FiX } from 'react-icons/fi';
 
 // Styled components
@@ -316,6 +317,10 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [currentTemplate, setCurrentTemplate] = useState(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<SectionTemplate>>({
     name: '',
     description: '',
@@ -418,6 +423,8 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    setIsSubmitting(true);
     
     if (isAdding) {
       const newTemplate: SectionTemplate = {
@@ -584,9 +591,14 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
               <CancelButton type="button" onClick={handleCancel}>
                 Cancel
               </CancelButton>
-              <SaveButton type="submit">
+              <LoadingButton 
+                type="submit"
+                variant="primary"
+                isLoading={isSubmitting}
+                loadingText="Saving..."
+              >
                 {isAdding ? 'Create Template' : 'Save Changes'}
-              </SaveButton>
+              </LoadingButton>
             </FormActions>
           </form>
         </FormContainer>

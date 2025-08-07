@@ -15,7 +15,7 @@ NProgress.configure({
 const nprogressCustomStyles = `
   #nprogress .bar {
     background: #552a47;
-    height: 3px;
+    height: 4px;
   }
   
   #nprogress .peg {
