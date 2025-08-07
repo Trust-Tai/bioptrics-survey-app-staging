@@ -191,18 +191,73 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({
     let questionText = 'Question not found';
     let sectionName = '';
     
-    // Try to find the question in the survey data
-    if (surveyData && surveyData.surveySections) {
+    // Early return if no survey data
+    if (!surveyData) return { questionText, sectionName };
+    
+    // Try multiple approaches to find the question
+    
+    // Approach 1: Check in surveySections (primary structure)
+    if (surveyData.surveySections && Array.isArray(surveyData.surveySections)) {
       const section = surveyData.surveySections.find((s: any) => s._id === sectionId);
       if (section) {
-        sectionName = section.title || 'Unnamed Section';
+        sectionName = section.title || section.name || 'Unnamed Section';
         
-        const question = section.questions.find((q: any) => q._id === questionId);
-        if (question) {
-          questionText = question.questionText || 'No question text';
+        if (section.questions && Array.isArray(section.questions)) {
+          const question = section.questions.find((q: any) => q._id === questionId);
+          if (question) {
+            questionText = question.questionText || question.text || 'No question text';
+            return { questionText, sectionName };
+          }
         }
       }
     }
+    
+    // Approach 2: Check in sections (alternative structure)
+    if (surveyData.sections && Array.isArray(surveyData.sections)) {
+      const section = surveyData.sections.find((s: any) => s._id === sectionId);
+      if (section) {
+        sectionName = section.title || section.name || 'Unnamed Section';
+        
+        if (section.questions && Array.isArray(section.questions)) {
+          const question = section.questions.find((q: any) => q._id === questionId);
+          if (question) {
+            questionText = question.questionText || question.text || 'No question text';
+            return { questionText, sectionName };
+          }
+        }
+      }
+    }
+    
+    // Approach 3: Check in direct questions array (for non-sectioned questions)
+    if (surveyData.questions && Array.isArray(surveyData.questions)) {
+      const question = surveyData.questions.find((q: any) => q._id === questionId);
+      if (question) {
+        questionText = question.questionText || question.text || 'No question text';
+        return { questionText, sectionName };
+      }
+    }
+    
+    // Approach 4: Check in sectionQuestions (used in EnhancedSurveyBuilder)
+    if (surveyData.sectionQuestions && Array.isArray(surveyData.sectionQuestions)) {
+      const question = surveyData.sectionQuestions.find((q: any) => q.id === questionId || q._id === questionId);
+      if (question) {
+        questionText = question.questionText || question.text || 'No question text';
+        
+        // Try to find section name if we have a sectionId
+        if (question.sectionId && (surveyData.sections || surveyData.surveySections)) {
+          const sections = surveyData.sections || surveyData.surveySections;
+          const section = sections.find((s: any) => s._id === question.sectionId || s.id === question.sectionId);
+          if (section) {
+            sectionName = section.title || section.name || 'Unnamed Section';
+          }
+        }
+        
+        return { questionText, sectionName };
+      }
+    }
+    
+    // If we still haven't found the question, log for debugging
+    console.log(`Question not found: ID=${questionId}, Section=${sectionId}`);
     
     return { questionText, sectionName };
   };

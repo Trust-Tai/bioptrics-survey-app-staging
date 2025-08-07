@@ -151,10 +151,31 @@ const calculateProgress = (responses: any[], survey: any): number => {
   if (!responses || !Array.isArray(responses) || responses.length === 0) return 0;
   
   const totalQuestions = getTotalQuestionCount(survey);
+  if (totalQuestions === 0) return 0;
+  
   // For incomplete responses, we count the number of answered questions
-  const answeredQuestions = responses.filter(response => 
-    response && (response.answer !== undefined || response.answers !== undefined)
-  ).length;
+  // Check if the answer/answers is not undefined, null, empty string, or empty array
+  const answeredQuestions = responses.filter(response => {
+    if (!response) return false;
+    
+    // Check for single answer field
+    if (response.answer !== undefined && response.answer !== null) {
+      // If it's a string, make sure it's not empty
+      if (typeof response.answer === 'string') {
+        return response.answer.trim() !== '';
+      }
+      return true; // Non-string answers are considered valid
+    }
+    
+    // Check for multiple answers field
+    if (Array.isArray(response.answers)) {
+      // Make sure the array is not empty and contains valid values
+      return response.answers.length > 0 && 
+             response.answers.some(ans => ans !== null && ans !== undefined && ans !== '');
+    }
+    
+    return false; // No valid answer found
+  }).length;
   
   return Math.min(Math.round((answeredQuestions / totalQuestions) * 100), 100);
 };
@@ -1042,9 +1063,95 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             // Use the selectedTags from the Tags tab for the Total Tags count
             const totalTags = selectedTags.length;
             
-            // Calculate completion rate
-            const completedCount = formattedResponses.filter(r => r.isComplete).length;
-            const completionRate = totalResponses > 0 ? Math.round((completedCount / totalResponses) * 100) : 0;
+            // Calculate completion rate based on actual answered questions across all responses
+            let totalQuestionsAcrossAllResponses = 0;
+            let totalAnsweredQuestions = 0;
+            
+            // Get the total number of questions in the survey
+            // Use a more robust method to count questions
+            let totalQuestionsInSurvey = 0;
+            
+            // Count questions in sections
+            if (survey.sections && Array.isArray(survey.sections)) {
+              survey.sections.forEach((section: any) => {
+                if (section.questions && Array.isArray(section.questions)) {
+                  totalQuestionsInSurvey += section.questions.length;
+                }
+              });
+            }
+            
+            // Count questions in surveySections
+            if (survey.surveySections && Array.isArray(survey.surveySections)) {
+              survey.surveySections.forEach((section: any) => {
+                if (section.questions && Array.isArray(section.questions)) {
+                  totalQuestionsInSurvey += section.questions.length;
+                }
+              });
+            }
+            
+            // Count direct questions
+            if (survey.questions && Array.isArray(survey.questions)) {
+              totalQuestionsInSurvey += survey.questions.length;
+            }
+            
+            // Count section questions
+            if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
+              // Group by sectionId to avoid double counting
+              const uniqueQuestionIds = new Set();
+              survey.sectionQuestions.forEach((q: any) => {
+                uniqueQuestionIds.add(q.id || q._id);
+              });
+              totalQuestionsInSurvey = Math.max(totalQuestionsInSurvey, uniqueQuestionIds.size);
+            }
+            
+            // Fallback to getTotalQuestionCount if we couldn't find any questions
+            if (totalQuestionsInSurvey === 0) {
+              totalQuestionsInSurvey = getTotalQuestionCount(survey);
+            }
+            
+            console.log(`Total questions in survey: ${totalQuestionsInSurvey}`);
+            
+            // For each response, count how many questions were actually answered
+            formattedResponses.forEach(response => {
+              // Each response should have answered all questions in the survey
+              totalQuestionsAcrossAllResponses += totalQuestionsInSurvey;
+              
+              // Count actually answered questions in this response
+              if (response.responses && Array.isArray(response.responses)) {
+                const answeredCount = response.responses.filter((r: any) => {
+                  if (!r) return false;
+                  
+                  // Check for single answer field
+                  if (r.answer !== undefined && r.answer !== null) {
+                    // If it's a string, make sure it's not empty
+                    if (typeof r.answer === 'string') {
+                      return r.answer.trim() !== '';
+                    }
+                    return true; // Non-string answers are considered valid
+                  }
+                  
+                  // Check for multiple answers field
+                  if (Array.isArray(r.answers)) {
+                    // Make sure the array is not empty and contains valid values
+                    return r.answers.length > 0 && 
+                           r.answers.some((ans: any) => ans !== null && ans !== undefined && ans !== '');
+                  }
+                  
+                  return false; // No valid answer found
+                }).length;
+                
+                totalAnsweredQuestions += answeredCount;
+              }
+            });
+            
+            console.log(`Total questions across all responses: ${totalQuestionsAcrossAllResponses}`);
+            console.log(`Total answered questions: ${totalAnsweredQuestions}`);
+            
+            // Calculate the actual completion rate based on answered questions
+            const completionRate = totalQuestionsAcrossAllResponses > 0 ? 
+              Math.round((totalAnsweredQuestions / totalQuestionsAcrossAllResponses) * 100) : 0;
+              
+            console.log(`Calculated completion rate: ${completionRate}%`);
             
             // Calculate average engagement
             const totalEngagement = formattedResponses.reduce((sum, r) => sum + (r.engagementScore || 0), 0);
