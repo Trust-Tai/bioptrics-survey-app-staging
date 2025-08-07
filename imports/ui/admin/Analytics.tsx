@@ -1657,7 +1657,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           >
             Overview
           </Tab>
-          <Tab
+          {/* <Tab
             active={activeTab === 'realtime'}
             onClick={() => setActiveTab('realtime')}
           >
@@ -1674,7 +1674,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
             onClick={() => setActiveTab('completionSurvey')}
           >
             Completion based Survey
-          </Tab>
+          </Tab> */}
           <Tab
             active={activeTab === 'questions'}
             onClick={() => setActiveTab('questions')}
@@ -1688,7 +1688,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
           >
             Responses
           </Tab>
-          <Tab
+          {/* <Tab
             active={activeTab === 'insights'}
             onClick={() => setActiveTab('insights')}
           >
@@ -1699,7 +1699,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
             onClick={() => setActiveTab('mavinai')}
           >
             Mavin AI
-          </Tab>
+          </Tab> */}
         </TabsContainer>
 
         {activeTab === 'overview' && (
@@ -1807,8 +1807,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
               </ChartContainer>
             </Card> */}
             
-            {/* Dropout Analysis Section */}
-            <Card cols={12}>
+            {/* Dropout Analysis Section */} 
+            {/* <Card cols={12}>
               <CardHeader>
                 <CardTitle>Dropout Analysis</CardTitle>
                 <CardIcon>
@@ -1823,7 +1823,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false })
                   <DropoutAnalysis />
                 </div>
               </ChartContainer>
-            </Card>
+            </Card> */}
             
             {/* Question Performance */}
             <Card cols={12}>
