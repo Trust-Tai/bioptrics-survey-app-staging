@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import DashboardBg from './DashboardBg';
@@ -6,8 +6,9 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
-import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar, FaEllipsisV, FaUndo } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar, FaEllipsisV, FaUndo, FaSpinner } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
+// Using FaSpinner for loading indicator
 import TermLabel from '../components/TermLabel';
 
 // Import our new components
@@ -493,7 +494,41 @@ const DropdownContainer = styled.div`
 const NoResultsText = styled.div`
   text-align: center;
   padding: 40px 0;
-  color: var(--color-accent);
+  color: var(--color-text-secondary);
+  font-size: 16px;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+`;
+
+const LoadingText = styled.div`
+  margin-top: 16px;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+`;
+
+// Simple loading spinner component
+const LoadingSpinner = ({ size = 24 }) => (
+  <FaSpinner 
+    style={{ 
+      fontSize: `${size}px`, 
+      animation: 'spin 1s linear infinite',
+      color: 'var(--color-primary)'
+    }} 
+  />
+);
+
+// Add global style for spinner animation
+const GlobalStyle = createGlobalStyle`
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 `;
 
 const Notification = styled.div<{ type: 'success' | 'error' }>`
@@ -724,9 +759,9 @@ const AllSurveys: React.FC = () => {
   // Get the current user ID
   const userId = Meteor.userId();
 
-  // Fetch surveys data - only get surveys owned by or shared with the current user
+  // Fetch surveys data - revert to original implementation for now to fix the empty surveys issue
   const { surveys, loading } = useTracker(() => {
-    // Use a more efficient subscription with limit and skip for pagination
+    // Use the original publication that we know works
     const handle = Meteor.subscribe('surveys.ownedAndCollaborated', {
       limit: 100, // Limit the initial load to improve performance
       fields: { // Only fetch the fields we need initially
@@ -763,6 +798,11 @@ const AllSurveys: React.FC = () => {
       loading: !handle.ready(),
       surveys: processedData
     };
+  }, []);
+
+  // Subscribe to all users to ensure we have their data for creator names
+  useTracker(() => {
+    Meteor.subscribe('allUsersBasic');
   }, []);
 
   // Define interface for survey data
@@ -803,11 +843,6 @@ const AllSurveys: React.FC = () => {
     isSharedWithMe: boolean;
   }
 
-  // Subscribe to all users to ensure we have their data for creator names
-  useTracker(() => {
-    Meteor.subscribe('allUsersBasic');
-  }, []);
-  
   // Process surveys for display with ownership and collaboration info
   const processedSurveys = useMemo(() => {
     // Create a map of user IDs to names for the creator column
@@ -823,8 +858,6 @@ const AllSurveys: React.FC = () => {
                            'Unknown User';
       }
     });
-    
-    console.log('User map:', userMap); // Debug: Log the user map
     
     return surveys.map((s: SurveyData) => {
       // Calculate sections and questions count
@@ -911,6 +944,7 @@ const AllSurveys: React.FC = () => {
 
   return (
     <AdminLayout>
+      <GlobalStyle />
       <CardStyles />
       <DashboardBg>
         {/* Delete Confirmation Modal */}
@@ -1053,9 +1087,14 @@ const AllSurveys: React.FC = () => {
               </NotificationCloseButton>
             </Notification>
           )}
-          {/* Survey List */}
-          {filtered.length === 0 && <NoResultsText>No {surveyLabelPlural.toLowerCase()} found.</NoResultsText>}
-          {paginated.length > 0 && (
+          {/* Loading State and Survey List */}
+          {loading ? (
+            <LoadingContainer>
+              <LoadingSpinner size={40} />
+            </LoadingContainer>
+          ) : filtered && filtered.length === 0 ? (
+            <NoResultsText>No {surveyLabelPlural.toLowerCase()} found.</NoResultsText>
+          ) : paginated.length > 0 && (
             view === 'grid' ? (
               <GridContainer>
                 {paginated.map((s) => (
