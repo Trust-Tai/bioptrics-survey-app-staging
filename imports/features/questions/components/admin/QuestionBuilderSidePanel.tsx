@@ -1164,7 +1164,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 onMouseOver={(e) => (e.currentTarget.style.background = '#e0e0e0')}
                 onMouseOut={(e) => (e.currentTarget.style.background = '#f0f0f0')}
               >
-                <FaHistory /> Version History
+                <FaHistory />
               </button>
             )}
             
