@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useQuestionBuilderPanel } from '../../features/questions/contexts/QuestionBuilderPanelContext';
-import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV, FaFolder } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV, FaFolder, FaSpinner } from 'react-icons/fa';
 import FolderTree from '../../features/questions/components/admin/FolderTree';
 import FolderModal from '../../features/questions/components/admin/FolderModal';
 import { Folders } from '../../features/questions/api/folders';
@@ -45,6 +45,15 @@ import QuestionStats from './components/QuestionStats';
 import QuestionListView from './components/QuestionListView';
 import QuestionTableView from './components/QuestionTableView';
 import ViewToggle from './components/ViewToggle';
+import { createGlobalStyle } from 'styled-components';
+
+// Add global style for spinner animation
+const GlobalStyle = createGlobalStyle`
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
 
 // Alert component for success and error messages
 interface AlertProps {
@@ -910,6 +919,7 @@ const AllQuestions: React.FC = () => {
   
   // Subscribe to Questions collection
   const { questions, loading } = useTracker(() => {
+    console.log('[AllQuestions] Subscribing to questions.all');
     const handle = Meteor.subscribe('questions.all');
     return {
       loading: !handle.ready(),
@@ -917,52 +927,47 @@ const AllQuestions: React.FC = () => {
       questions: Questions.find({}, { sort: { createdAt: -1 } }).fetch()
     };
   }, []);
-  
-  // Calculate question statistics
-  const questionStats = useMemo(() => {
-    if (!questions || questions.length === 0) {
-      return {
-        totalQuestions: 0,
-        avgQualityScore: 0,
-        totalTags: 0,
-        totalFolders: 0
-      };
-    }
-    
-    const totalQuestions = questions.length;
-    let totalScore = 0;
-    let scoredQuestions = 0;
-    
-    questions.forEach((q: any) => {
-      const latestVersion = getLatestVersion(q);
-      if (!latestVersion) return;
-      
-      // Add quality score if available
-      if (latestVersion.qualityScore) {
-        totalScore += latestVersion.qualityScore;
-        scoredQuestions++;
+
+  // Get question statistics from the new stats publication
+  const [stats, setStats] = useState({
+    totalQuestions: 0,
+    avgQualityScore: 0,
+    timestamp: new Date()
+  });
+
+  useEffect(() => {
+    console.log('Calling questions.getStats method...');
+    // Call the method to get stats
+    Meteor.call('questions.getStats', (error: any, result: any) => {
+      if (error) {
+        console.error('Error fetching question stats:', error);
+      } else {
+        console.log('Received stats from server:', result);
+        setStats(result);
       }
     });
     
-    // Get total tags count from Layers collection
-    // This matches the "Categories" count shown in the UI screenshot
-    const totalTags = layers ? layers.length : 0;
+    // Set up an interval to refresh stats periodically (optional)
+    const intervalId = setInterval(() => {
+      console.log('Refreshing stats...');
+      Meteor.call('questions.getStats', (error: any, result: any) => {
+        if (error) {
+          console.error('Error refreshing question stats:', error);
+        } else {
+          console.log('Received refreshed stats from server:', result);
+          setStats(result);
+        }
+      });
+    }, 60000); // Refresh every minute
     
-    // Get total folders count
-    const totalFolders = folders ? folders.length : 0;
-    
-    // Calculate average score (default to 4.5 if no scores available)
-    const avgQualityScore = scoredQuestions > 0 ? totalScore / scoredQuestions : 4.5;
-    
-    return {
-      totalQuestions,
-      avgQualityScore,
-      totalTags,
-      totalFolders
-    };
-  }, [questions, layers, folders]);
+    return () => clearInterval(intervalId);
+  }, []);
 
-  // Filter questions based on search and filters
+  // Get counts for tags and folders
+  const tagCount = layers ? layers.length : 0;
+  const folderCount = folders ? folders.length : 0;
+
+  // Memoize the filtered questions to avoid unnecessary re-renders
   const filteredQuestions = React.useMemo(() => {
     if (!questions) return [];
     
@@ -1080,6 +1085,7 @@ const AllQuestions: React.FC = () => {
   return (
     <AdminLayout>
       <DashboardBg>
+        <GlobalStyle />
         <Container>
           {alert && (
             <Alert 
@@ -1105,11 +1111,11 @@ const AllQuestions: React.FC = () => {
         
         {/* Question Statistics */}
         <QuestionStats 
-          totalQuestions={questionStats?.totalQuestions || 0}
-          avgQualityScore={questionStats?.avgQualityScore || 0}
-          totalTags={questionStats?.totalTags || 0}
-          totalFolders={questionStats?.totalFolders || 0}
-          isLoading={loading}
+          totalQuestions={stats.totalQuestions}
+          avgQualityScore={stats.avgQualityScore}
+          totalTags={tagCount}
+          totalFolders={folderCount}
+          isLoading={false}
         />
         
         <SearchFilterRow>
@@ -1214,7 +1220,11 @@ const AllQuestions: React.FC = () => {
         </div>
         
         {/* Questions View - Grid or List based on viewMode */}
-        {viewMode === 'grid' ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <FaSpinner size={40} style={{ color: 'var(--color-primary)', animation: 'spin 1s linear infinite' }} />
+          </div>
+        ) : viewMode === 'grid' ? (
           <QuestionsGrid>
             {filteredQuestions.map((doc: any) => {
               const latestVersion = getLatestVersion(doc);
@@ -1340,23 +1350,29 @@ const AllQuestions: React.FC = () => {
         ) : (
           /* Table View */
           <>
-            <QuestionTableView 
-              questions={filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
-              onPreview={(question) => {
-                setPreviewQuestion(question);
-                setPreviewOpen(true);
-              }}
-              onAnalytics={(question) => {
-                setQuestionForAnalytics(question);
-                setAnalyticsModalOpen(true);
-              }}
-              onEdit={(questionId) => openPanel(questionId)}
-              onDelete={(questionId) => {
-                setQuestionToDelete(questionId);
-                setShowDeleteConfirm(true);
-              }}
-              layerMap={layerMap}
-            />
+            {filteredQuestions.length > 0 ? (
+              <QuestionTableView 
+                questions={filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+                onPreview={(question) => {
+                  setPreviewQuestion(question);
+                  setPreviewOpen(true);
+                }}
+                onAnalytics={(question) => {
+                  setQuestionForAnalytics(question);
+                  setAnalyticsModalOpen(true);
+                }}
+                onEdit={(questionId) => openPanel(questionId)}
+                onDelete={(questionId) => {
+                  setQuestionToDelete(questionId);
+                  setShowDeleteConfirm(true);
+                }}
+                layerMap={layerMap}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: '#666' }}>
+                No questions found matching your criteria.
+              </div>
+            )}
             
             {/* Pagination Controls */}
             <PaginationContainer>
