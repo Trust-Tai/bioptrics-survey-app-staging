@@ -1898,7 +1898,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     triggerAutoSave(true); // There are actual changes
   };
 
-  // Function to trigger auto-save based on inactivity
+  const initialLoadCompleteRef = useRef(false);
+
+  // In the triggerAutoSave function, only show saving immediately if past initial load
   const triggerAutoSave = (hasChanges = true) => {
     // Update user activity timestamp
     updateUserActivity();
@@ -1911,6 +1913,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Only set unsaved changes flag if there are actual changes
     if (hasChanges) {
       setHasUnsavedChanges(true);
+      
+      // Only show saving immediately if we're past the initial load
+      if (initialLoadCompleteRef.current) {
+        setSaving(true); // Show saving indicator immediately when changes are made
+      }
       
       // Set a new timer for 5 seconds of inactivity before saving
       autoSaveTimerRef.current = setTimeout(() => {
@@ -1925,13 +1932,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // Only show saving indicator if there are actual changes to save
       if (hasUnsavedChanges) {
         setSaving(true); // Show saving indicator
-      }
-      
-      // Rest of the save logic...
-      
-      // After successful save:
-      if (hasUnsavedChanges) {
-        // Only update UI if there were actual changes
+        
+        // Call handleSaveSurvey to actually save the data
+        await handleSaveSurvey(isAutoSave);
+        
+        // After successful save:
         const now = Date.now();
         setLastSaved(now);
         
@@ -1946,12 +1951,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           setTimeout(() => {
             setShowSavedMessage(false);
           }, 2000);
-          
-          // Only show alert for manual saves, not auto-saves
-          if (!isAutoSave) {
-            setAlert({ type: 'success', message: 'Survey saved successfully!' });
-            setTimeout(() => setAlert(null), 3000);
-          }
         }, 10);
       } else {
         // If no changes, just reset states without showing UI indicators
@@ -1977,8 +1976,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   useEffect(() => {
     // Check if we have content to save and we're not currently in a saving operation
     const hasTitleOrDescription = survey?.title || survey?.description;
-    const hasContentChanged = survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current || JSON.stringify(survey?.demographics) !== JSON.stringify(demographicsRef.current) ||
-    JSON.stringify(survey?.selectedTags) !== JSON.stringify(tagsRef.current);
+    const hasContentChanged = survey?.title !== surveyTitleRef.current || 
+      survey?.description !== surveyDescriptionRef.current || 
+      JSON.stringify(survey?.demographics) !== JSON.stringify(demographicsRef.current) ||
+      JSON.stringify(survey?.selectedTags) !== JSON.stringify(tagsRef.current);
     
     if (!saving && hasContentChanged) {
       
@@ -2002,7 +2003,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     surveyDescriptionRef.current = survey?.description;
     demographicsRef.current = survey?.demographics;
     tagsRef.current = survey?.selectedTags;
-  }, [survey?.title, survey?.description, saving, surveyId]);
+
+    // Mark initial load as complete after the first run of this effect
+    initialLoadCompleteRef.current = true;
+  }, [survey?.title, survey?.description, selectedTags, saving, surveyId]);
   
   // Additional effect to ensure survey is created when component mounts if we have content
   useEffect(() => {
