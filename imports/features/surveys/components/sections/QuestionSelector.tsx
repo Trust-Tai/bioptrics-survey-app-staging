@@ -396,7 +396,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                       fontWeight: 500,
                       color: '#475569'
                     }}>
-                      Search Term
+                      Search Title
                     </label>
                   <div className="search-bar" style={{
                     display: 'flex',
@@ -404,14 +404,14 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     backgroundColor: '#ffffff',
                     border: '1px solid #e2e8f0',
                     borderRadius: '6px',
-                    padding: '0 12px',
+                    padding: '0',
                     flex: '2 1 auto',
                     height: '42px',
                     outline: 'none'
                   }}>
                     <input 
                       type="text"
-                      placeholder="Search questions by text or description..."
+                      placeholder="Search questions by title"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       autoFocus={false} /* Remove autofocus */
@@ -422,7 +422,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                         fontSize: '14px',
                         outline: 'none',
                         backgroundColor: 'transparent',
-                        height: '100%'
                       }}
                     />
                     {searchTerm && (

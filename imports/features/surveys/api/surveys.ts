@@ -197,6 +197,74 @@ if (Meteor.isServer) {
       fields: fields
     });
   });
+  
+  // Optimized publication that includes creator data directly with surveys
+  Meteor.publish('surveys.withCreatorData', function (options = {}) {
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    // Extract options with defaults
+    const limit = options.limit || 100;
+    const skip = options.skip || 0;
+    
+    // Find surveys where the user is either the owner or a collaborator
+    const surveys = Surveys.find({
+      $or: [
+        { createdBy: this.userId },
+        { 'collaborators.userId': this.userId }
+      ]
+    }, {
+      sort: { updatedAt: -1 },
+      limit: limit,
+      skip: skip,
+      // Only fetch the fields needed for the table/card view
+      fields: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        published: 1,
+        status: 1,
+        createdBy: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        sections: 1, // Needed for section count
+        responses: 1, // Needed for response stats
+        collaborators: 1, // Needed for sharing info
+        scheduledFor: 1
+      }
+    }).fetch();
+    
+    // Extract unique creator IDs (filter out undefined values)
+    const creatorIds = [...new Set(surveys.map(survey => survey.createdBy).filter(Boolean))];
+    
+    // Add survey documents to the publication
+    surveys.forEach(survey => {
+      // Cast survey to Record<string, unknown> to satisfy TypeScript
+      // Ensure survey._id is a string to fix the type error
+      const id = survey._id?.toString() || '';
+      this.added('surveys', id, survey as unknown as Record<string, unknown>);
+    });
+    
+    // Find and add only the necessary user data for creators
+    if (creatorIds.length > 0) {
+      Meteor.users.find(
+        { _id: { $in: creatorIds } },
+        { 
+          fields: { 
+            'profile.name': 1, 
+            'username': 1, 
+            'emails.address': 1 
+          } 
+        }
+      ).forEach(user => {
+        // Cast user to Record<string, unknown> to satisfy TypeScript
+        this.added('users', user._id, user as unknown as Record<string, unknown>);
+      });
+    }
+    
+    this.ready();
+  });
 
   // Preview: allow owner or admin to view the latest draft (published or not)
   Meteor.publish('surveys.preview', async function (encryptedToken) {
@@ -309,7 +377,7 @@ Meteor.methods({
     }
     
     // Process questions to ensure sectionId is properly handled
-    const processedQuestions = questions.map(q => {
+    const processedQuestions = questions.map((q: any) => {
       // If sectionId is explicitly undefined, convert to null for storage
       // This ensures the database properly recognizes it as having no section
       if (q.sectionId === undefined) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LoadingButton from '/imports/shared/components/LoadingButton';
 import { FiX, FiTrash2, FiImage, FiInfo, FiAlertCircle, FiHelpCircle } from 'react-icons/fi';
 import { SurveySectionItem } from '../../types';
 import styled from 'styled-components';
@@ -369,6 +370,8 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   section,
   onSave,
 }) => {
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formData, setFormData] = useState<Partial<SurveySectionItem> & { image?: string }>({
     name: '',
     description: '',
@@ -437,7 +440,12 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name) return;
+    if (!formData.name.trim()) {
+      setError('Section title is required');
+      return;
+    }
+    
+    setIsSubmitting(true);
     
     const sectionData: SurveySectionItem = {
       id: section?.id || `section_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -584,12 +592,14 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
             >
               Cancel
             </Button>
-            <Button 
+            <LoadingButton 
               type="submit"
-              primary
+              variant="primary"
+              isLoading={isSubmitting}
+              loadingText="Saving..."
             >
               Save Section
-            </Button>
+            </LoadingButton>
           </ModalFooter>
         </form>
       </ModalContent>

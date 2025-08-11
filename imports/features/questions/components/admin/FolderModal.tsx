@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import LoadingButton from '/imports/shared/components/LoadingButton';
 import { Folders, FolderDoc } from '../../../questions/api/folders';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -346,9 +347,14 @@ const FolderModal: React.FC<FolderModalProps> = ({
             <CancelButton type="button" onClick={onClose}>
               Cancel
             </CancelButton>
-            <SubmitButton type="submit" disabled={loading}>
-              {loading ? 'Saving...' : folder ? 'Update Folder' : 'Create Folder'}
-            </SubmitButton>
+            <LoadingButton 
+              type="submit" 
+              isLoading={loading} 
+              loadingText="Saving..."
+              variant="primary"
+            >
+              {folder ? 'Update Folder' : 'Create Folder'}
+            </LoadingButton>
           </ButtonGroup>
         </Form>
       </ModalContent>

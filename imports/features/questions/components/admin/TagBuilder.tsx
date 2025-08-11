@@ -255,7 +255,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
               ...base,
               maxHeight: '300px',
               backgroundColor: 'white',
-              padding: '4px',
+              padding: '0',
               width: '100%',
               maxWidth: '100%'
             }),

@@ -12,6 +12,7 @@ import TagBuilder from './TagBuilder';
 import FolderSelector from './FolderSelector';
 import ToggleSwitch from './ToggleSwitch';
 import VersionHistoryModal from './VersionHistoryModal';
+import LoadingButton from '/imports/shared/components/LoadingButton';
 
 // Import enhanced components
 import QuestionBuilderDndProvider from './QuestionBuilderDndProvider';
@@ -308,6 +309,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   
   // State for questions
   const [questions, setQuestions] = useState<QuestionSection[]>([getDefaultQuestion()]);
+  // State for tracking form submission loading
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   // Add state to track if data is fully loaded and ready to display
   const [dataLoaded, setDataLoaded] = useState(false);
   // State for save to question bank toggle (default to true)
@@ -654,9 +657,11 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   // Handle saving the question (manual save button)
   const handleSaveQuestion = async () => {
     try {
+      setIsSubmitting(true);
       const userId = Meteor.userId();
       if (!userId) {
         showErrorAlert('You must be logged in to save questions');
+        setIsSubmitting(false);
         return;
       }
 
@@ -733,6 +738,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       showSuccessAlert('Question saved successfully!');
       // Also show global notification that persists after panel closes
       notificationManager.success('Question saved successfully!');
+      setIsSubmitting(false);
       
       // Handle different contexts
       const savedQuestionId = result || currentQuestion._id || '';
@@ -755,15 +761,18 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
     } catch (error: any) {
       console.error('Error saving question:', error);
       showErrorAlert(`Error saving question: ${error.message || 'Unknown error'}`);
+      setIsSubmitting(false);
     }
   };
 
   // Handle publishing the question
   const handlePublishQuestion = async () => {
     try {
+      setIsSubmitting(true);
       const userId = Meteor.userId();
       if (!userId) {
         showErrorAlert('You must be logged in to publish questions');
+        setIsSubmitting(false);
         return;
       }
 
@@ -823,6 +832,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       showSuccessAlert('Question published successfully!');
       // Also show global notification that persists after panel closes
       notificationManager.success('Question published successfully!');
+      setIsSubmitting(false);
       
       // Handle different contexts similar to save function
       const publishedQuestionId = result || currentQuestion._id || '';
@@ -844,6 +854,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
     } catch (error: any) {
       console.error('Error publishing question:', error);
       showErrorAlert(`Error publishing question: ${error.message || 'Unknown error'}`);
+      setIsSubmitting(false);
     }
   };
 
@@ -1153,7 +1164,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 onMouseOver={(e) => (e.currentTarget.style.background = '#e0e0e0')}
                 onMouseOut={(e) => (e.currentTarget.style.background = '#f0f0f0')}
               >
-                <FaHistory /> Version History
+                <FaHistory />
               </button>
             )}
             
@@ -1161,32 +1172,18 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
             
             {/* Publish Button - Saves, publishes, and closes panel */}
             <div style={{ position: 'relative' }} title="Save, publish to question bank, and close panel">
-              <button
+              <LoadingButton
                 onClick={handlePublishQuestion}
-                style={{
-                  background: '#552a47', /* Brand color */
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '10px 20px',
-                  fontWeight: 600,
-                  fontSize: '16px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: isLoading ? 0.7 : 1,
-                }}
+                isLoading={isSubmitting}
+                loadingText={questionId ? 'Updating...' : 'Adding...'}
                 disabled={isLoading}
-                onMouseOver={(e) => !isLoading && (e.currentTarget.style.background = '#6e3a5d')} /* Darker shade for hover */
-                onMouseOut={(e) => !isLoading && (e.currentTarget.style.background = '#552a47')}
+                variant="primary"
+                size="medium"
               >
                 {questionId 
                   ? 'Update Question' 
                   : `Add ${context === 'surveyBuilder' && !saveToQuestionBank ? 'to Survey' : 'Question'}`}
-              </button>
+              </LoadingButton>
               <div style={{
                 position: 'absolute',
                 bottom: '-30px',
@@ -1410,7 +1407,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               
               {/* Answer Options - Moved from Answer Options tab */}
               <div className="form-group answer-options-section">
-                <label>Answer Options</label>
                 {readOnly && versionData ? (
                   <div className="read-only-answer-options">
                     {/* For text-based question types, show a message instead of options */}
