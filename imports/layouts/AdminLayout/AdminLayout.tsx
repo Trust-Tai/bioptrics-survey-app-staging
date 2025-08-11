@@ -401,13 +401,6 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   React.useEffect(() => {
     logThemeColors(colors);
   }, [colors]);
-
-  // Debug: Log theme colors every render
-  console.log('AdminLayout theme colors:', {
-    primary: colors.primary,
-    sidebar: colors.sidebar,
-    sidebarText: colors.sidebarText
-  });
   
   // Subscribe to layers collection and filter active tags by location
   const { surveyTags, questionTags, isLoading } = useTracker(() => {

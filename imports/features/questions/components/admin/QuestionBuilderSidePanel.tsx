@@ -158,9 +158,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   readOnly = false, // Whether the panel is in read-only mode
   versionData = null // Version data to display when in read-only mode
 }) => {
-  // Log versionData to debug
-  console.log('Version Data in QuestionBuilderSidePanel:', versionData);
-  
   // Debug log for version data structure
   useEffect(() => {
     if (readOnly && versionData) {

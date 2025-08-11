@@ -1969,13 +1969,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // This prevents auto-save for other survey elements like themes, questions, etc.
   const surveyTitleRef = useRef(survey?.title);
   const surveyDescriptionRef = useRef(survey?.description);
+  const demographicsRef = useRef(survey?.demographics);
+  const tagsRef = useRef(survey?.selectedTags);
   const hasCreatedSurveyRef = useRef(false);
   
   // Effect to handle auto-save when title or description changes
   useEffect(() => {
     // Check if we have content to save and we're not currently in a saving operation
     const hasTitleOrDescription = survey?.title || survey?.description;
-    const hasContentChanged = survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current;
+    const hasContentChanged = survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current || JSON.stringify(survey?.demographics) !== JSON.stringify(demographicsRef.current) ||
+    JSON.stringify(survey?.selectedTags) !== JSON.stringify(tagsRef.current);
     
     if (!saving && hasContentChanged) {
       
@@ -1997,6 +2000,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Always update refs with current values to prevent false change detection
     surveyTitleRef.current = survey?.title;
     surveyDescriptionRef.current = survey?.description;
+    demographicsRef.current = survey?.demographics;
+    tagsRef.current = survey?.selectedTags;
   }, [survey?.title, survey?.description, saving, surveyId]);
   
   // Additional effect to ensure survey is created when component mounts if we have content
@@ -4145,7 +4150,13 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     
                     <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
                       <button 
-                        onClick={() => setSelectedDemographics(demographicOptions.map(opt => opt.value))}
+                        onClick={() => {
+                          const allDemographics = demographicOptions.map(opt => opt.value);
+                          setSelectedDemographics(allDemographics);
+                          setSurvey({...survey, demographics: allDemographics});
+                          setHasUnsavedChanges(true);
+                          triggerAutoSave();
+                        }}
                         style={{
                           padding: '8px 16px',
                           background: '#f5edf3',
@@ -4161,7 +4172,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                         Select All
                       </button>
                       <button 
-                        onClick={() => setSelectedDemographics([])}
+                        onClick={() => {
+                          setSelectedDemographics([]);
+                          setSurvey({...survey, demographics: []});
+                          setHasUnsavedChanges(true);
+                          triggerAutoSave();
+                        }}
                         style={{
                           padding: '8px 16px',
                           background: '#f0f0f0',

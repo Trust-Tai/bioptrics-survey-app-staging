@@ -1779,6 +1779,7 @@ const AllLayers = () => {
                     width: '97%',
                   }}
                   placeholder="Enter tag name"
+                  autoComplete='off'
                 />
                 {errors?.name && <ErrorMessage>{errors.name}</ErrorMessage>}
               </FormGroup>
