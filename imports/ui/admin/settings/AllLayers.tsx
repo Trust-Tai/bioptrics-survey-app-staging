@@ -760,9 +760,6 @@ const AllLayers = () => {
       surveyCount: (tagUsage.get(layer._id) || { surveys: 0 }).surveys
     }));
     
-    console.log('Subscription ready:', isReady);
-    console.log('Layers found:', layersWithUsage.length);
-    
     return {
       layers: layersWithUsage,
       questions,
