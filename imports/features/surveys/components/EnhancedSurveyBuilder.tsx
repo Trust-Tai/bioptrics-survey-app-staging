@@ -459,10 +459,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   }, [surveyId]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  // Initialize all demographic options as selected by default for new surveys
-  const [selectedDemographics, setSelectedDemographics] = useState<string[]>(
-    !surveyId ? demographicOptions.map(opt => opt.value) : []
-  );
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
@@ -1313,14 +1309,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         setSurveyQuestions(validatedQuestions);
       }
       
-      // Initialize demographics if they exist in the survey
-      if (currentSurvey.selectedDemographics && Array.isArray(currentSurvey.selectedDemographics)) {
-        setSelectedDemographics(currentSurvey.selectedDemographics);
-      } else {
-        // For existing surveys without demographics, select all by default
-        setSelectedDemographics(demographicOptions.map(opt => opt.value));
-      }
-      
       // Initialize thank you screen fields if they exist in the survey
       if (currentSurvey.thankYouMessage) {
         setThankYouMessage(currentSurvey.thankYouMessage);
@@ -1968,7 +1956,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // This prevents auto-save for other survey elements like themes, questions, etc.
   const surveyTitleRef = useRef(survey?.title);
   const surveyDescriptionRef = useRef(survey?.description);
-  const demographicsRef = useRef(survey?.demographics);
   const tagsRef = useRef(survey?.selectedTags);
   const hasCreatedSurveyRef = useRef(false);
   
@@ -1978,8 +1965,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     const hasTitleOrDescription = survey?.title || survey?.description;
     const hasContentChanged = survey?.title !== surveyTitleRef.current || 
       survey?.description !== surveyDescriptionRef.current || 
-      JSON.stringify(survey?.demographics) !== JSON.stringify(demographicsRef.current) ||
-      JSON.stringify(survey?.selectedTags) !== JSON.stringify(tagsRef.current);
+      (survey?.selectedTags?.length || 0) !== (tagsRef.current?.length || 0) ||
+      survey?.selectedTags?.some((tag: string, i: number) => tag !== tagsRef.current?.[i]);
     
     if (!saving && hasContentChanged) {
       
@@ -2001,7 +1988,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Always update refs with current values to prevent false change detection
     surveyTitleRef.current = survey?.title;
     surveyDescriptionRef.current = survey?.description;
-    demographicsRef.current = survey?.demographics;
     tagsRef.current = survey?.selectedTags;
 
     // Mark initial load as complete after the first run of this effect
@@ -2078,7 +2064,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         })),
         sectionQuestions: surveyQuestions,
         // Include demographics, themes, categories, and tags
-        selectedDemographics,
         selectedTheme,
         selectedCategories,
         selectedTags,
@@ -2770,7 +2755,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           sectionId: String(q.sectionId || ''),
           order: Number(q.order || 0)
         })),
-        selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
         selectedTheme: survey.selectedTheme || '',
         selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
         selectedTags: Array.isArray(selectedTags) ? selectedTags : []
@@ -3378,8 +3362,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                               sectionQuestions: surveyQuestions,
                               selectedTheme: selectedTheme,
                               selectedTags: selectedTags,
-                              selectedCategories: selectedCategories,
-                              selectedDemographics: selectedDemographics
+                              selectedCategories: selectedCategories
                             };
                             
                             // Save to localStorage
@@ -4091,113 +4074,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   </div>
                   
                   
-                </div>
-              ) : activeStep === 'demographics' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Demographics Metrics</h2>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
-                      Select which demographic data to collect when users answer this survey. This information helps analyze survey results across different demographic groups.
-                    </p>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                      {demographicOptions.map(opt => {
-                        const isSelected = selectedDemographics.includes(opt.value);
-                        return (
-                          <div key={opt.value} style={{ marginBottom: 10 }}>
-                            <label style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 10, 
-                              cursor: 'pointer',
-                              padding: '10px 14px',
-                              borderRadius: 8,
-                              border: '1px solid #e0e0e0',
-                              background: isSelected ? '#f5edf3' : '#fff',
-                              transition: 'all 0.2s',
-                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.08)' : 'none'
-                            }}>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => {
-                                  const newDemographics = isSelected
-                                    ? selectedDemographics.filter(v => v !== opt.value)
-                                    : [...selectedDemographics, opt.value];
-                                  
-                                  setSelectedDemographics(newDemographics);
-                                  setSurvey({...survey, demographics: newDemographics});
-                                  setHasUnsavedChanges(true);
-                                  triggerAutoSave();
-                                }}
-                                style={{ 
-                                  width: 18, 
-                                  height: 18,
-                                  accentColor: '#552a47'
-                                }}
-                              />
-                              <span style={{ 
-                                fontWeight: isSelected ? 600 : 500, 
-                                fontSize: 15,
-                                color: isSelected ? '#552a47' : '#333'
-                              }}>
-                                {opt.label}
-                              </span>
-                            </label>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
-                      <button 
-                        onClick={() => {
-                          const allDemographics = demographicOptions.map(opt => opt.value);
-                          setSelectedDemographics(allDemographics);
-                          setSurvey({...survey, demographics: allDemographics});
-                          setHasUnsavedChanges(true);
-                          triggerAutoSave();
-                        }}
-                        style={{
-                          padding: '8px 16px',
-                          background: '#f5edf3',
-                          border: '1px solid #e5d6e2',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: '#552a47',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Select All
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedDemographics([]);
-                          setSurvey({...survey, demographics: []});
-                          setHasUnsavedChanges(true);
-                          triggerAutoSave();
-                        }}
-                        style={{
-                          padding: '8px 16px',
-                          background: '#f0f0f0',
-                          border: '1px solid #ddd',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: '#555',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
                 </div>
               ) : activeStep === 'responses' ? (
                 <div className="survey-builder-panel">
