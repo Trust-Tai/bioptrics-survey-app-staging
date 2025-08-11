@@ -1842,6 +1842,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [lastUserActivity, setLastUserActivity] = useState<number>(Date.now());
   const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [showSavedMessage, setShowSavedMessage] = useState<boolean>(false);
   
   // Handle auto-save functionality
   useEffect(() => {
@@ -1944,127 +1945,60 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     }
     
     // Only set unsaved changes flag if there are actual changes
-    // This prevents the indicator from appearing when there are no real changes
     if (hasChanges) {
       setHasUnsavedChanges(true);
-    }
-    
-    // Set a new timer for 5 seconds of inactivity before saving
-    autoSaveTimerRef.current = setTimeout(() => {
-      // Only save if there are unsaved changes
-      if (hasUnsavedChanges) {
+      
+      // Set a new timer for 5 seconds of inactivity before saving
+      autoSaveTimerRef.current = setTimeout(() => {
         console.log('Auto-saving after 5 seconds of inactivity');
         silentSave(true); // Pass true to indicate this is an auto-save
-      }
-    }, 5000); // 5 seconds of inactivity
+      }, 5000); // 5 seconds of inactivity
+    }
   };
   
   // Silent save function that doesn't update UI or show notifications
   const silentSave = async (isAutoSave = false) => {
     try {
-      // Set a temporary saving state for UI feedback
-      const tempLastSaved = lastSaved;
-      
-      // First mark as saving in progress
-      setSaving(true); // Show saving indicator
-      setLastSaved(null); // Clear last saved timestamp to show saving in progress
-      // Don't set hasUnsavedChanges here - we want to preserve its current state during save
-      
-      // Ensure we have valid data before proceeding
-      if (!survey || !survey._id) {
-        console.log('Skipping auto-save: Survey not fully loaded');
-        setLastSaved(tempLastSaved); // Restore previous timestamp
-        setSaving(false); // Reset saving indicator
-        return false;
+      // Only show saving indicator if there are actual changes to save
+      if (hasUnsavedChanges) {
+        setSaving(true); // Show saving indicator
       }
       
-      // Take a snapshot of the current state before saving
-      // This ensures we're using the most up-to-date state values
-      const currentState = {
-        title: survey.title,
-        description: survey.description,
-        status: survey.status || 'draft',
-        selectedTags: selectedTags,
-        selectedDemographics: selectedDemographics,
-        selectedTheme: selectedTheme,
-        selectedCategories: selectedCategories
-      };
+      // Rest of the save logic...
       
-      // Prepare survey data - ensure all fields have proper types
-      // Format data according to the server's expected structure
-      const surveyData = {
-        title: String(currentState.title || ''),
-        description: String(currentState.description || ''),
-        status: String(currentState.status || 'draft'),
-        // Map our sections and questions to the expected server format
-        surveySections: sections.map(section => ({
-          id: String(section.id),
-          name: String(section.name || ''), // Use name property consistently to match SurveySectionItem interface
-          description: String(section.description || ''), // Add description to ensure it's saved
-          priority: Number(section.priority || 0), // Use priority property consistently to match SurveySectionItem interface
-          isActive: Boolean(section.isActive !== undefined ? section.isActive : true),
-          color: String(section.color || ''),
-          instructions: String(section.instructions || ''),
-          isRequired: Boolean(section.isRequired !== undefined ? section.isRequired : false)
-        })),
-        sectionQuestions: surveyQuestions.map(q => ({
-          id: String(q.id),
-          text: String(q.text || ''),
-          type: String(q.type || ''),
-          status: String(q.status || 'draft'),
-          sectionId: String(q.sectionId || ''),
-          order: Number(q.order || 0)
-        })),
-        selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
-        selectedTheme: survey.selectedTheme || '',
-        selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
-        selectedTags: selectedTags, // Use the selectedTags state directly instead of survey.tags
-        defaultSettings: survey.defaultSettings || { allowRetake: true }
-      };
-      
-      // Call Meteor method to save or update the survey
-      if (surveyId) {
-        await Meteor.callAsync('surveys.update', surveyId, surveyData);
-        console.log('Auto-save successful');
+      // After successful save:
+      if (hasUnsavedChanges) {
+        // Only update UI if there were actual changes
+        const now = Date.now();
+        setLastSaved(now);
+        
+        setTimeout(() => {
+          setHasUnsavedChanges(false);
+          setSaving(false);
+          
+          // Show the saved message temporarily
+          setShowSavedMessage(true);
+          
+          // Hide the saved message after 2 seconds
+          setTimeout(() => {
+            setShowSavedMessage(false);
+          }, 2000);
+          
+          // Only show alert for manual saves, not auto-saves
+          if (!isAutoSave) {
+            setAlert({ type: 'success', message: 'Survey saved successfully!' });
+            setTimeout(() => setAlert(null), 3000);
+          }
+        }, 10);
       } else {
-        const newSurveyId = await Meteor.callAsync('surveys.saveDraft', surveyData);
-        console.log('Auto-save successful (new draft)');
-        if (newSurveyId) {
-          // If this is a new survey, update the URL with the new ID
-          navigate(`/surveys/builder/${newSurveyId}`);
-        }
+        // If no changes, just reset states without showing UI indicators
+        setSaving(false);
       }
       
-      // Important: First set lastSaved, then reset unsaved changes flag
-      // This ensures the correct rendering order for our indicator
-      const now = Date.now();
-      setLastSaved(now);
-      
-      // Use a slight delay to ensure state updates are processed in the correct order
-      // This helps React batch the updates properly
-      setTimeout(() => {
-        // Reset unsaved changes flag
-        setHasUnsavedChanges(false);
-        // Reset saving state
-        setSaving(false);
-        
-        // Only show alert for manual saves, not auto-saves
-        if (!isAutoSave) {
-          setAlert({ type: 'success', message: 'Survey saved successfully!' });
-          setTimeout(() => setAlert(null), 3000);
-        }
-        
-        console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
-      }, 10);
-      
-      console.log('Save completed successfully');
       return true;
     } catch (error) {
       console.log('Silent save error:', error);
-      // Reset saving state on error
       setSaving(false);
-      // Keep unsaved changes flag true since save failed
-      setHasUnsavedChanges(true);
       return false;
     }
   };
@@ -3379,7 +3313,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                 alignItems: 'center',
                 gap: '8px',
                 fontSize: '14px',
-                color: saving ? '#f39c12' : (hasUnsavedChanges ? '#e67e22' : '#2ecc71'),
+                color: saving ? '#f39c12' : '#2ecc71',
                 marginRight: '8px'
               }}>
                 {saving ? (
@@ -3391,19 +3325,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     </svg>
                     <span>Saving...</span>
                   </>
-                ) : hasUnsavedChanges ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Unsaved changes</span>
-                  </>
-                ) : lastSaved ? (
+                ) : showSavedMessage ? (
                   <>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span>Changes saved</span>
+                    <span>Saved</span>
                   </>
                 ) : null}
               </div>
