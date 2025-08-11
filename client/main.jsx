@@ -59,7 +59,6 @@ const FallbackComponent = () => (
 
 Meteor.startup(() => {
   try {
-    console.log('Starting Bioptrics Survey Application...');
     
     // Display loading indicator while React initializes
     const container = document.getElementById('react-target');
@@ -83,7 +82,6 @@ Meteor.startup(() => {
             </React.StrictMode>
           </ErrorBoundary>
         );
-        console.log('React application rendered successfully');
       } catch (innerError) {
         console.error('Error rendering React application:', innerError);
         container.innerHTML = `

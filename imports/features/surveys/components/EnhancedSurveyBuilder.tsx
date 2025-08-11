@@ -358,6 +358,55 @@ const ExpandButton = styled.button`
   }
 `;
 
+  // Styled components for response stats
+  const StatsContainer = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+  `;
+
+  const StatCard = styled.div`
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eee;
+`;
+
+const IconContainer = styled.div<{ color: string }>`
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: ${props => props.color + '15'};
+  color: ${props => props.color};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-right: 16px;
+`;
+
+const StatContent = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const StatValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+`;
+
+const StatLabel = styled.div`
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+`;
+
 interface EnhancedSurveyBuilderProps {
   surveyId?: string;
 }
@@ -492,35 +541,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const [newThemeHeadingFont, setNewThemeHeadingFont] = useState<string>('Inter');
   const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
   const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
-  
-  // Styled components for response stats
-  const StatsContainer = styled.div`
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-    width: 100%;
-  `;
 
-
-  const ExpandButton = styled.button`
-    display: flex;
-    align-items: center;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      background: #f1f5f9;
-      color: #334155;
-    }
-  `;
   
   // Helper function to get total question count in a survey
   const getTotalQuestionCount = (survey: any) => {
@@ -627,46 +648,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     
     return { questionText, sectionName };
   };
-  
-  const StatCard = styled.div`
-    background: #fff;
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eee;
-  `;
 
-  const IconContainer = styled.div<{ color: string }>`
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    background-color: ${props => props.color + '15'};
-    color: ${props => props.color};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    margin-right: 16px;
-  `;
-
-  const StatContent = styled.div`
-    display: flex;
-    flex-direction: column;
-  `;
-
-  const StatValue = styled.div`
-    font-size: 24px;
-    font-weight: 700;
-    color: #333;
-  `;
-
-  const StatLabel = styled.div`
-    font-size: 14px;
-    color: #666;
-    margin-top: 4px;
-  `;
 
   // Function to calculate engagement score based on response data
 
@@ -855,18 +837,39 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           setSurvey(result);
           setSections(result.sections || []);
           
-          // Load questions for this survey
-          Meteor.call('questions.getQuestionsBySurveyId', surveyId, (err: any, questions: any) => {
-            if (err) {
-              console.error('Error loading questions:', err);
-            } else {
-              setSurveyQuestions(questions);
-            }
+        // Replace the missing Meteor method call with a subscription to the questions.bySurvey publication
+        const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
+        if (questionsSub.ready()) {
+          // Fetch questions from the collection directly
+          const questionsFromDB = Questions.find({}).fetch();
+          
+          // Map QuestionDoc objects to QuestionItem objects
+          const mappedQuestions = questionsFromDB.map(question => {
+            // Find the latest version of the question
+            const latestVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+
+            // Determine status - explicitly use 'published' or 'draft' to match the union type
+            const status: 'published' | 'draft' = latestVersion?.isActive !== false ? 'published' : 'draft';
+            
+            return {
+              id: question._id || '',
+              _id: question._id,
+              text: latestVersion?.questionText || '',
+              type: latestVersion?.responseType || '',
+              status,
+              versions: question.versions,
+              currentVersion: question.currentVersion,
+              questionText: latestVersion?.questionText
+            };
           });
+          
+          setSurveyQuestions(mappedQuestions);
+        }
         }
       });
     }
   }, [surveyId]);
+
 
   // Load collaborators when the Collaboration tab is selected
   useEffect(() => {
@@ -6264,16 +6267,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
 }
 
 // Styled components for stats bar
-const StatsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  padding: 16px;
-  border: 1px solid #e2e8f0;
-`;
+// const StatsContainer = styled.div`
+//   display: grid;
+//   grid-template-columns: repeat(6, 1fr);
+//   gap: 16px;
+//   margin-bottom: 24px;
+//   background-color: #f8fafc;
+//   border-radius: 8px;
+//   padding: 16px;
+//   border: 1px solid #e2e8f0;
+// `;
 
 // const QuestionItem = styled.div`
 //   margin-bottom: 16px;
@@ -6292,41 +6295,5 @@ const StatsContainer = styled.div`
 //     border-color: #cbd5e1;
 //   }
 // `;
-
-const StatCard = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-`;
-
-const IconContainer = styled.div<{ color: string }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: ${props => props.color}15;
-  color: ${props => props.color};
-  font-size: 18px;
-`;
-
-const StatContent = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const StatValue = styled.div`
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
-`;
-
-const StatLabel = styled.div`
-  font-size: 12px;
-  color: #64748b;
-  white-space: nowrap;
-`;
 
 export default EnhancedSurveyBuilder;

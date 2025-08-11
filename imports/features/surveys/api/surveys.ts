@@ -353,8 +353,6 @@ Meteor.methods({
     if (!this.userId) throw new Meteor.Error('Not authorized');
     check(surveyId, String);
     
-    console.log(`Getting survey with ID: ${surveyId}`);
-    
     // Find the survey
     const survey = await Surveys.findOneAsync(surveyId);
     if (!survey) {
