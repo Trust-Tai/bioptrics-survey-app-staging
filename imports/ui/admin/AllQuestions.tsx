@@ -780,12 +780,12 @@ const AllQuestions: React.FC = () => {
   const [filterQuestionType, setFilterQuestionType] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
-  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Click outside handler to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      // If clicking outside any dropdown, close the open dropdown
+      if (openDropdown && !(event.target as Element).closest('.dropdown-container')) {
         setOpenDropdown(null);
       }
     };
@@ -1238,13 +1238,13 @@ const AllQuestions: React.FC = () => {
                 >
                   <QuestionHeader>
                     <div>
-                      {latestVersion.status === 'published' ? (
+                      {latestVersion.isActive !== false ? (
                         <StatusTag published>
-                          Published
+                          Active
                         </StatusTag>
                       ) : (
                         <StatusTag>
-                          Draft
+                          Inactive
                         </StatusTag>
                       )}
                       {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
@@ -1253,7 +1253,7 @@ const AllQuestions: React.FC = () => {
                         </QuestionType>
                       )}
                     </div>
-                    <HeaderActions onClick={(e) => e.stopPropagation()} ref={dropdownRef}>
+                    <HeaderActions onClick={(e) => e.stopPropagation()} className="dropdown-container">
                       <DropdownButton
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1280,8 +1280,8 @@ const AllQuestions: React.FC = () => {
                               setOpenDropdown(null);
                             }}
                           >
-                            <FaEye size={14} />
-                            Preview
+                            <FaChartLine size={14} />
+                            Analytics
                           </DropdownItem>
                           <DropdownItem
                             onClick={(e) => {

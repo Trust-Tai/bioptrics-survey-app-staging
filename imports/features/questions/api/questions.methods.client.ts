@@ -106,6 +106,8 @@ export function mapQuestionToVersion(q: Question, saveToQuestionBank: boolean = 
     feedbackPrompt: q.feedbackPrompt || '',
     // Estimated time
     estimatedTimeSeconds: q.estimatedTimeSeconds,
+    // Question status (active/inactive)
+    isActive: q.isActive !== undefined ? !!q.isActive : true,
     // Survey-specific question fields
     saveToQuestionBank: saveToQuestionBank,
     surveyId: !saveToQuestionBank ? surveyId : undefined,

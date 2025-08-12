@@ -177,16 +177,16 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
-  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Add state for sorting
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
-  // Handle click outside to close dropdown
+  // Click outside handler to close dropdown
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      // If clicking outside any dropdown, close the open dropdown
+      if (openDropdown && !(event.target as Element).closest('.dropdown-container')) {
         setOpenDropdown(null);
       }
     };
@@ -414,7 +414,7 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
               </TableCell>
               <TableCell>{updatedDate}</TableCell>
               <TableCell data-no-navigate="true">
-                <ActionContainer ref={dropdownRef} data-no-navigate="true">
+                <ActionContainer className="dropdown-container" data-no-navigate="true">
                   <DropdownButton 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -432,7 +432,7 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
                       e.stopPropagation();
                       e.preventDefault();
                     }}>
-                      <DropdownItem 
+                      {/* <DropdownItem 
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -442,7 +442,7 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
                         data-no-navigate="true"
                       >
                         Preview
-                      </DropdownItem>
+                      </DropdownItem> */}
                       
                       <DropdownItem 
                         onClick={(e) => {
