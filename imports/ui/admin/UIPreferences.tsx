@@ -13,8 +13,8 @@ const themePresets = [
       accent: '#A9A59D',
       background: '#f8f9fa',
       text: '#2e2e2e',
-      sidebar: '#542A46',
-      sidebarText: '#ffffff',
+      sidebar: 'transparent',
+      sidebarText: '#2c2c2c',
       error: '#d32f2f'
     }
   },

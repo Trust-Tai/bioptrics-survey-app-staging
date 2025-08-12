@@ -107,7 +107,6 @@ const Sidebar = styled.aside<SidebarProps>`
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 1.5px 6px rgba(0,0,0,0.08);
   border-radius: 22px;
   margin: 32px 0 32px 24px;
   position: fixed;
@@ -355,9 +354,6 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div style={{ display: 'flex' }}>
       <Sidebar collapsed={collapsed}>
-        <Logo>
-          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>Admin</span>
-        </Logo>
         <nav>
           {sidebarLinks.map((link, idx) => {
             const isActive = location.pathname.startsWith(link.to);
@@ -445,6 +441,13 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             );
           })}
         </nav>
+        <Logo>
+          <img 
+            src="/bioptrics_fixed_black.png" 
+            alt="Bioptrics Logo" 
+            style={{ maxWidth: '80%', height: 'auto' }} 
+          />
+        </Logo>
       </Sidebar>
       <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', display: 'flex', flexDirection: 'column' }}>
         {/* Main Content */}
