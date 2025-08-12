@@ -112,20 +112,16 @@ const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
 
 // Tag color definitions
 const QUE_TYPE_LABELS: Record<string, string> = {
-  short_text: 'Short Text',
-  long_text: 'Long Text',
-  free_text: 'Free Text',
-  multiple_choice: 'Multiple Choice',
-  checkbox: 'Checkbox',
+  radio: 'Single Choice (Radio)',
+  checkbox: 'Multiple Choice (Checkbox)',
   dropdown: 'Dropdown',
+  text: 'Short Text',
+  textarea: 'Long Text',
+  rating: 'Rating Scale',
   likert: 'Likert Scale',
-  quick_tabs: 'Quick Tabs',
-  scale: 'Scale',
-  singleSelect: 'Single Select',
-  multiSelect: 'Multi Select',
-  text: 'Text',
-  number: 'Number',
-  date: 'Date'
+  ranking: 'Ranking',
+  date: 'Date',
+  file: 'File Upload'
 };
 
 // Updated styled components to use theme variables

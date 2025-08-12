@@ -272,17 +272,25 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
   const getAnswerTypeLabel = (type: string) => {
     switch (type.toLowerCase()) {
       case 'checkbox':
-        return 'Checkbox';
+        return 'Multiple Choice (Checkbox)';
       case 'radio':
-        return 'Multiple Choice';
-      case 'select':
+        return 'Single Choice (Radio)';
+      case 'dropdown':
         return 'Dropdown';
       case 'text':
-        return 'Text';
+        return 'Short Text';
       case 'textarea':
         return 'Long Text';
-      case 'slider':
-        return 'Slider';
+      case 'rating':
+        return 'Rating Scale';
+      case 'likert':
+        return 'Likert Scale';
+      case 'ranking':
+        return 'Ranking';
+      case 'date':
+        return 'Date';
+      case 'file':
+        return 'File Upload';
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
