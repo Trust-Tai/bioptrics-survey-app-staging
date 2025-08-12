@@ -2302,11 +2302,134 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // Get context methods for question builder panel
   const { openPanel, closePanel } = useQuestionBuilderPanel();
   
-  // Handle creating a new question for a section
-  const handleCreateQuestion = (sectionId: string) => {
-    setCurrentSectionId(sectionId);
+  // Handle creating a new question for a section or for the survey as a whole
+  const handleCreateQuestion = (sectionId: string | null) => {
+    setCurrentSectionId(sectionId || '');
     // Use context's openPanel method instead of local state
-    openPanel(undefined, surveyId);
+    // Pass the onQuestionCreated callback as the third parameter
+    const onQuestionCreatedCallback = (questionId: string) => {
+      console.log('Question created with ID:', questionId, 'Adding to section:', sectionId);
+      // When a question is created, add it to the current section if sectionId is provided
+      if (survey && survey._id) {
+        try {
+          // Fetch the created question document
+          const questionDoc = Questions.findOne(questionId);
+          if (!questionDoc) {
+            console.error('Question not found with ID:', questionId);
+            return;
+          }
+          
+          // Get the latest version to extract the response type and text
+          const latestVersion = getLatestQuestionVersion(questionDoc);
+          
+          let newQuestion: QuestionItem;
+          
+          // Handle differently based on whether we have a section ID
+          if (sectionId) {
+            // Get the current count of questions in this section
+            const currentSectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
+            const newOrder = currentSectionQuestions.length;
+            
+            console.log('Adding question to section with order:', newOrder);
+            
+            // Create a properly typed QuestionItem for a section question
+            newQuestion = {
+              id: questionId,
+              sectionId: sectionId,
+              text: extractQuestionText(questionDoc),
+              type: latestVersion?.responseType || 'text',
+              status: 'published',
+              order: newOrder // Place at the end of the section
+            };
+          } else {
+            // This is a question without a section (global survey question)
+            // Get the current count of questions without a section
+            const currentGlobalQuestions = surveyQuestions.filter(q => !q.sectionId);
+            const newOrder = currentGlobalQuestions.length;
+            
+            console.log('Adding global question with order:', newOrder);
+            
+            // Create a properly typed QuestionItem for a global question
+            newQuestion = {
+              id: questionId,
+              sectionId: undefined, // No section - use undefined instead of null to match type
+              text: extractQuestionText(questionDoc),
+              type: latestVersion?.responseType || 'text',
+              status: 'published',
+              order: newOrder // Place at the end of global questions
+            };
+          }
+          
+          // Update survey questions - EXACTLY like handleSelectQuestions
+          console.log('Adding new question to surveyQuestions:', newQuestion);
+          setSurveyQuestions(prev => {
+            const updated = [...prev, newQuestion];
+            console.log('Updated surveyQuestions:', updated);
+            return updated;
+          });
+          
+          // Only create a section question object if we have a section ID
+          if (sectionId) {
+            // Create section question object for the database
+            const sectionQuestion = {
+              questionId: questionId,
+              sectionId: sectionId,
+              type: latestVersion?.responseType || 'text',
+              order: newQuestion.order // Use the order from newQuestion
+            };
+            console.log('Created sectionQuestion:', sectionQuestion);
+            
+            // Update the survey state to ensure changes are saved - EXACTLY like handleSelectQuestions
+            setSurvey((prevSurvey: any) => {
+              if (!prevSurvey) return prevSurvey;
+              
+              // Add to existing section questions
+              const updatedSectionQuestions = [
+                ...(prevSurvey.sectionQuestions || []),
+                sectionQuestion
+              ];
+              
+              console.log('Updated sectionQuestions:', updatedSectionQuestions);
+              
+              // Create updated survey with the new section question
+              return {
+                ...prevSurvey,
+                sectionQuestions: updatedSectionQuestions
+              };
+            });
+          } else {
+            // For questions without a section, we don't need to update sectionQuestions
+            // Just add the question to the survey's questions array if needed
+            console.log('Question created without a section - no sectionQuestion needed');
+          }
+          
+          // Trigger auto-save by setting hasChanges
+          console.log('Setting hasChanges to true');
+          // setHasChanges(true);
+          
+          // Show success notification
+          setAlert({
+            type: 'success',
+            message: 'Question created and added to section successfully!'
+          });
+          
+          // Clear the alert after 3 seconds
+          setTimeout(() => setAlert(null), 3000);
+        } catch (error) {
+          console.error('Error in onQuestionCreated callback:', error);
+          // Show error notification
+          setAlert({
+            type: 'error',
+            message: `Error adding question to section: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+          
+          // Clear the alert after 4 seconds
+          setTimeout(() => setAlert(null), 4000);
+        }
+      }
+    };
+    
+    openPanel(undefined, surveyId, onQuestionCreatedCallback);
   };
   
   // Refresh survey data after changes
@@ -5819,10 +5942,14 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           onClose={() => setShowQuestionBuilder(false)}
           context="surveyBuilder"
           surveyId={survey?._id}
-          onQuestionCreated={async (questionId: string) => {
+          onQuestionCreated={(questionId: string) => {
+            console.log('Checking if this questions shows up', questionId);
             // When a question is created, add it to the current section
             if (currentSectionId && survey && survey._id) {
               try {
+                console.log('Question created with ID:', questionId, 'Adding to section:', currentSectionId);
+                console.log('Current survey questions:', surveyQuestions);
+                
                 // Fetch the newly created question to get its details
                 const questionDoc = Questions.findOne(questionId);
                 if (!questionDoc) {
@@ -5833,58 +5960,101 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                 // Get the latest version to extract the response type and text
                 const latestVersion = getLatestQuestionVersion(questionDoc);
                 
+                // Get the current count of questions in this section
+                const currentSectionQuestions = surveyQuestions.filter(q => q.sectionId === currentSectionId);
+                const newOrder = currentSectionQuestions.length;
+                
+                console.log('Adding question to section with order:', newOrder);
+                
                 // Create a properly typed QuestionItem
                 const newQuestion: QuestionItem = {
                   id: questionId,
                   sectionId: currentSectionId,
-                  text: extractQuestionText(questionDoc), // Use helper function to get clean question text
+                  text: extractQuestionText(questionDoc),
                   type: latestVersion?.responseType || 'text',
-                  status: 'published'
+                  status: 'published',
+                  order: newOrder // Place at the end of the section
                 };
                 
-                // Add the question to the local state
-                setSurveyQuestions(prev => [...prev, newQuestion]);
+                // Update survey questions - EXACTLY like handleSelectQuestions
+                console.log('Adding new question to surveyQuestions:', newQuestion);
+                setSurveyQuestions(prev => {
+                  const updated = [...prev, newQuestion];
+                  console.log('Updated surveyQuestions:', updated);
+                  return updated;
+                });
                 
-                // Create the section question object for the database
+                // Create section question object for the database
                 const sectionQuestion = {
                   questionId: questionId,
                   sectionId: currentSectionId,
-                  type: latestVersion?.responseType || 'text'
+                  type: latestVersion?.responseType || 'text',
+                  order: newOrder
                 };
+                console.log('Created sectionQuestion:', sectionQuestion);
                 
-                // Get the current survey data
-                const currentSurveyData = Surveys.findOne(survey._id);
-                
-                if (currentSurveyData) {
-                  // Prepare the updated survey data with the new question
+                // Update the survey state to ensure changes are saved - EXACTLY like handleSelectQuestions
+                setSurvey((prevSurvey: any) => {
+                  if (!prevSurvey) return prevSurvey;
+                  
+                  // Add to existing section questions
                   const updatedSectionQuestions = [
-                    ...(currentSurveyData.sectionQuestions || []),
+                    ...(prevSurvey.sectionQuestions || []),
                     sectionQuestion
                   ];
                   
-                  // Update the survey in the database
-                  await Meteor.callAsync('surveys.update', survey._id, {
-                    sectionQuestions: updatedSectionQuestions
-                  });
+                  console.log('Updated sectionQuestions:', updatedSectionQuestions);
                   
-                  console.log('Added question to survey section:', {
-                    questionId,
-                    sectionId: currentSectionId,
-                    surveyId: survey._id
-                  });
-                }
+                  // Create updated survey with the new section question
+                  return {
+                    ...prevSurvey,
+                    sectionQuestions: updatedSectionQuestions
+                  };
+                });
+                
+                // Trigger auto-save by setting hasChanges
+                console.log('Setting hasChanges to true');
+                // setHasChanges(true);
                 
                 // Close the question builder
                 setShowQuestionBuilder(false);
                 
-                // Refresh the survey data to get the updated question information
-                refreshSurveyData();
+                // Show success notification
+                setAlert({
+                  type: 'success',
+                  message: 'Question created and added to section successfully!'
+                });
+                
+                // Clear the alert after 3 seconds
+                setTimeout(() => setAlert(null), 3000);
               } catch (error) {
                 console.error('Error adding question to section:', error);
+                
+                // Show error notification
+                setAlert({
+                  type: 'error',
+                  message: `Error adding question to section: ${error instanceof Error ? error.message : 'Unknown error'}`
+                });
+                
+                // Clear the alert after 4 seconds
+                setTimeout(() => setAlert(null), 4000);
               }
+            } else {
+              console.error('Cannot add question to section: Missing section ID or survey ID', {
+                currentSectionId,
+                surveyId: survey?._id
+              });
+              
+              // Show error notification
+              setAlert({
+                type: 'error',
+                message: 'Cannot add question to section: Missing section ID or survey ID'
+              });
+              
+              // Clear the alert after 4 seconds
+              setTimeout(() => setAlert(null), 4000);
             }
-          }
-        }
+          }}
         />
         
         {/* Section Editor Modal */}

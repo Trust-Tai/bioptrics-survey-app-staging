@@ -7,7 +7,8 @@ interface QuestionBuilderPanelContextType {
   surveyId: string | undefined;
   readOnly: boolean;
   versionData: any | undefined;
-  openPanel: (questionId?: string, surveyId?: string) => void;
+  onQuestionCreated?: (questionId: string) => void;
+  openPanel: (questionId?: string, surveyId?: string, onQuestionCreated?: (questionId: string) => void) => void;
   openVersionPanel: (versionData: any) => void;
   closePanel: () => void;
 }
@@ -24,12 +25,23 @@ export const QuestionBuilderPanelProvider: React.FC<QuestionBuilderPanelProvider
   const [surveyId, setSurveyId] = useState<string | undefined>(undefined);
   const [readOnly, setReadOnly] = useState(false);
   const [versionData, setVersionData] = useState<any | undefined>(undefined);
+  const [onQuestionCreated, setOnQuestionCreated] = useState<((questionId: string) => void) | undefined>(undefined);
 
-  const openPanel = (id?: string, sId?: string) => {
+  const openPanel = (id?: string, sId?: string, callback?: (questionId: string) => void) => {
     setQuestionId(id);
     setSurveyId(sId);
     setReadOnly(false);
     setVersionData(undefined);
+    
+    // Ensure callback is properly set
+    if (callback) {
+      console.log('Setting onQuestionCreated callback in context');
+      setOnQuestionCreated(() => callback); // Use function to ensure proper reference
+    } else {
+      console.log('No callback provided to openPanel');
+      setOnQuestionCreated(undefined);
+    }
+    
     setIsOpen(true);
   };
 
@@ -51,7 +63,7 @@ export const QuestionBuilderPanelProvider: React.FC<QuestionBuilderPanelProvider
   };
 
   return (
-    <QuestionBuilderPanelContext.Provider value={{ isOpen, questionId, surveyId, readOnly, versionData, openPanel, openVersionPanel, closePanel }}>
+    <QuestionBuilderPanelContext.Provider value={{ isOpen, questionId, surveyId, readOnly, versionData, onQuestionCreated, openPanel, openVersionPanel, closePanel }}>
       {children}
       <QuestionBuilderSidePanel 
         isOpen={isOpen} 
@@ -61,6 +73,7 @@ export const QuestionBuilderPanelProvider: React.FC<QuestionBuilderPanelProvider
         context={surveyId ? 'surveyBuilder' : 'questionBank'}
         readOnly={readOnly}
         versionData={versionData}
+        onQuestionCreated={onQuestionCreated}
       />
     </QuestionBuilderPanelContext.Provider>
   );

@@ -312,7 +312,7 @@ const ActiveTag = styled.span`
  * Question Builder Side Panel component
  * Wraps the existing question builder functionality in a side panel
  */
-export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({ 
+const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({ 
   isOpen, 
   onClose, 
   questionId, 
@@ -752,10 +752,17 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       // Handle different contexts
       const savedQuestionId = result || currentQuestion._id || '';
       
+      console.log('Question saved with context:', context);
+      console.log('onQuestionCreated is a function?', typeof onQuestionCreated === 'function');
+      
       if (context === 'surveyBuilder') {
+        console.log('In surveyBuilder context, calling onQuestionCreated with ID:', savedQuestionId);
         // For survey builder, call the onQuestionCreated callback with the question ID
         if (typeof onQuestionCreated === 'function') {
           onQuestionCreated(savedQuestionId);
+        } else {
+          console.error('onQuestionCreated is not a function in surveyBuilder context');
+          // Continue with panel close even if callback is not available
         }
         // Always close the panel in survey builder context
         onClose();
@@ -847,9 +854,14 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       const publishedQuestionId = result || currentQuestion._id || '';
       
       if (context === 'surveyBuilder') {
+        console.log('In surveyBuilder context, calling onQuestionCreated with ID:', publishedQuestionId);
+        console.log('onQuestionCreated is a function?', typeof onQuestionCreated === 'function');
         // For survey builder, call the onQuestionCreated callback with the question ID
         if (typeof onQuestionCreated === 'function') {
           onQuestionCreated(publishedQuestionId);
+        } else {
+          console.error('onQuestionCreated is not a function in surveyBuilder context');
+          // Continue with panel close even if callback is not available
         }
         // Always close the panel in survey builder context
         onClose();
@@ -1104,7 +1116,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
             {/* Publish Button - Saves, publishes, and closes panel */}
             <div style={{ position: 'relative' }} title="Save, publish to question bank, and close panel">
               <LoadingButton
-                onClick={handlePublishQuestion}
+                onClick={context === 'surveyBuilder' ? handleSaveQuestion : handlePublishQuestion}
                 isLoading={isSubmitting}
                 loadingText={questionId ? 'Updating...' : 'Adding...'}
                 disabled={isLoading}
