@@ -174,8 +174,10 @@ const SubmenuInline = styled.ul`
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${({$collapsed}) => $collapsed ? '72px' : '240px'};
-  background: var(--color-sidebar);
-  color: var(--color-sidebar-text) !important;
+  // background: var(--color-sidebar);
+  background: transparent;
+  // color: var(--color-sidebar-text) !important;
+  color: #2c2c2c;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;

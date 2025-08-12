@@ -79,7 +79,7 @@ const steps = [
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
   { id: 'analyzeResults', label: 'Analyze Results', icon: 'FiBarChart2' },
   // { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
-  { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
+  // { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
   // { id: 'preview', label: 'Preview', icon: 'FiEye' },
   // { id: 'publish', label: 'Publish', icon: 'FiSend' },
   { id: 'collaboration', label: 'Collaboration', icon: 'FiUsers' },
@@ -5822,23 +5822,33 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             // When a question is created, add it to the current section
             if (currentSectionId && survey && survey._id) {
               try {
-                // Add the newly created question to the section
+                // Fetch the newly created question to get its details
+                const questionDoc = Questions.findOne(questionId);
+                if (!questionDoc) {
+                  console.error('Could not find created question with ID:', questionId);
+                  return;
+                }
+                
+                // Get the latest version to extract the response type and text
+                const latestVersion = getLatestQuestionVersion(questionDoc);
+                
+                // Create a properly typed QuestionItem
                 const newQuestion: QuestionItem = {
                   id: questionId,
                   sectionId: currentSectionId,
-                  text: 'New Question', // This will be updated when we refresh
-                  type: 'text',
+                  text: extractQuestionText(questionDoc), // Use helper function to get clean question text
+                  type: latestVersion?.responseType || 'text',
                   status: 'published'
                 };
                 
                 // Add the question to the local state
-                setSurveyQuestions([...surveyQuestions, newQuestion]);
+                setSurveyQuestions(prev => [...prev, newQuestion]);
                 
                 // Create the section question object for the database
                 const sectionQuestion = {
                   questionId: questionId,
                   sectionId: currentSectionId,
-                  type: 'text'
+                  type: latestVersion?.responseType || 'text'
                 };
                 
                 // Get the current survey data
@@ -5855,6 +5865,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   await Meteor.callAsync('surveys.update', survey._id, {
                     sectionQuestions: updatedSectionQuestions
                   });
+                  
+                  console.log('Added question to survey section:', {
+                    questionId,
+                    sectionId: currentSectionId,
+                    surveyId: survey._id
+                  });
                 }
                 
                 // Close the question builder
@@ -5866,7 +5882,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                 console.error('Error adding question to section:', error);
               }
             }
-          }}
+          }
+        }
         />
         
         {/* Section Editor Modal */}

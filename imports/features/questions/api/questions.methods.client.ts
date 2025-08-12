@@ -110,7 +110,9 @@ export function mapQuestionToVersion(q: Question, saveToQuestionBank: boolean = 
     isActive: q.isActive !== undefined ? !!q.isActive : true,
     // Survey-specific question fields
     saveToQuestionBank: saveToQuestionBank,
-    surveyId: !saveToQuestionBank ? surveyId : undefined,
+    // Always include surveyId if it exists, regardless of saveToQuestionBank setting
+    // This ensures questions are associated with both the question bank and the current survey
+    surveyId: surveyId || undefined,
   };
 }
 
