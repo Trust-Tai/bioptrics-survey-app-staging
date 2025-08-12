@@ -148,7 +148,7 @@ a:hover:not([data-theme-ignore]) {
     --color-background: #ffffff;
     --color-text: #000000;
     --color-sidebar: #000000;
-    --color-sidebar-text: #ffffff;
+    --color-sidebar-text: #2c2c2c;
   }
 }
 
