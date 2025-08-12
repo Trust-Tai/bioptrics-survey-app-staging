@@ -3534,14 +3534,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     <div>
                      
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button 
-                        className="btn btn-secondary"
-                        onClick={handleAddSection}
-                      >
-                        <FiPlus /> Add Section
-                      </button>
-                    </div>
                   </div>
                   
                   <div 
@@ -3750,25 +3742,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                           <p>No questions added yet. Use the buttons below to add questions.</p>
                         </div>
                       )}
-                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '16px' }}>
-                        <div 
-                          className="survey-section-add-question"
-                          onClick={() => handleAddQuestion(null)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                        >
-                          <FiPlus size={16} /> Choose from Question Bank
-                        </div>
-                        <div 
-                          className="survey-section-add-question"
-                          onClick={() => handleCreateQuestion(null)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                        >
-                          <FiPlus size={16} /> Create Question
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Display sections */}
+                                          {/* Display sections */}
                     {sections.length > 0 ? (
                       <div>
                         <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Sections</h3>
@@ -3833,6 +3807,32 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                         <p>No sections added yet. Use the 'Add Section' button to create sections.</p>
                       </div>
                     )}
+                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '16px' }}>
+                       <div 
+                          className="survey-section-add-question"
+                          onClick={handleAddSection}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <FiPlus size={16} /> Add Section
+                        </div>
+                        <div 
+                          className="survey-section-add-question"
+                          onClick={() => handleAddQuestion(null)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <FiPlus size={16} /> Choose from Question Bank
+                        </div>
+                        <div 
+                          className="survey-section-add-question"
+                          onClick={() => handleCreateQuestion(null)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <FiPlus size={16} /> Create Question
+                        </div>
+                      </div>
+                    </div>
+                    
+
                   </div>
                 </div>
               )}
