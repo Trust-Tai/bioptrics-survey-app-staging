@@ -2403,9 +2403,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             console.log('Question created without a section - no sectionQuestion needed');
           }
           
-          // Trigger auto-save by setting hasChanges
-          console.log('Setting hasChanges to true');
-          // setHasChanges(true);
+          // Trigger auto-save by setting hasUnsavedChanges
+          console.log('Setting hasUnsavedChanges to true');
+          setHasUnsavedChanges(true);
           
           // Show success notification
           setAlert({
