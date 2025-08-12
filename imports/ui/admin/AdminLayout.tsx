@@ -102,8 +102,8 @@ const SubmenuItem = styled(Link)<{active?: boolean}>`
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${props => props.collapsed ? '72px' : '240px'};
-  background: var(--color-sidebar);
-  color: var(--color-sidebar-text, #fff);
+  background: transparent;
+  color: #2c2c2c;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;

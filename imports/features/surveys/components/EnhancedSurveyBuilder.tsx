@@ -5818,6 +5818,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           isOpen={showQuestionBuilder}
           onClose={() => setShowQuestionBuilder(false)}
           context="surveyBuilder"
+          surveyId={survey?._id}
           onQuestionCreated={async (questionId: string) => {
             // When a question is created, add it to the current section
             if (currentSectionId && survey && survey._id) {
