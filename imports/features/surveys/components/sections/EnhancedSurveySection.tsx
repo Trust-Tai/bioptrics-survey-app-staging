@@ -50,7 +50,12 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   
   // Filter questions that belong to this section
-  const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+  // Handle both string and undefined sectionId values
+  const sectionQuestions = questions.filter(q => {
+    // Convert empty string sectionId to undefined for comparison
+    const normalizedSectionId = q.sectionId === '' ? undefined : q.sectionId;
+    return normalizedSectionId === section.id;
+  });
   
   // Handle drag and drop for question reordering and cross-section movement
   const handleDragStart = (e: React.DragEvent, index: number, questionId: string) => {
