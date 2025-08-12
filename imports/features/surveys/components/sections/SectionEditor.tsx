@@ -460,6 +460,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
     };
     
     onSave(sectionData);
+    setIsSubmitting(false);
     onClose();
   };
   
