@@ -1812,7 +1812,13 @@ const AllLayers = () => {
                   className="nested-tag-select"
                 >
                   <option value="">None (Top Level Tag)</option>
-                  {/* Options would be rendered here */}
+                  {layers
+                    .filter(l => l._id !== layer?._id) // Prevent selecting self as parent
+                    .map(l => (
+                      <option key={l._id} value={l._id}>
+                        {l.name}
+                      </option>
+                    ))}
                 </Select>
               </FormGroup>
               
