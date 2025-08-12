@@ -437,6 +437,8 @@ const QuestionType = styled.div`
   font-weight: 600;
   background-color: var(--color-primary, #542A46);
   color: #ffffff;
+  white-space: nowrap;
+  min-width: fit-content;
 `;
 
 const QuestionContent = styled.div`
@@ -1233,7 +1235,7 @@ const AllQuestions: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <QuestionHeader>
-                    <div>
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                       {latestVersion.isActive !== false ? (
                         <StatusTag published>
                           Active
@@ -1249,7 +1251,10 @@ const AllQuestions: React.FC = () => {
                         </QuestionType>
                       )}
                     </div>
-                    <HeaderActions onClick={(e) => e.stopPropagation()} className="dropdown-container">
+                    <HeaderActions 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="dropdown-container"
+                      style={{ marginLeft: 'auto' }}>
                       <DropdownButton
                         onClick={(e) => {
                           e.stopPropagation();
