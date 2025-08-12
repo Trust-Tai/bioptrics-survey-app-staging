@@ -395,7 +395,9 @@ const UIPreferences: React.FC = () => {
       const root = document.documentElement;
       Object.entries(finalColors).forEach(([key, value]) => {
         if (key === 'sidebarText') {
-          root.style.setProperty(`--color-sidebar-text`, value);
+          root.style.setProperty(`--color-sidebar-text`, '#2c2c2c');
+        } if (key === 'sidebar') {
+          root.style.setProperty(`--color-sidebar`, 'transparent');
         } else {
           root.style.setProperty(`--color-${key}`, value);
         }
