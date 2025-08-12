@@ -427,7 +427,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
           points: currentVersionData.points || 1,
           // Settings fields
           reusable: !!currentVersionData.reusable,
-          active: currentVersionData.active === undefined ? true : !!currentVersionData.active,
+          isActive: currentVersionData.isActive === undefined ? true : !!currentVersionData.isActive,
           priority: currentVersionData.priority || 0,
           feedback: currentVersionData.feedback || 'none',
         },
@@ -552,7 +552,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         points: currentQuestion.points || 1,
         // Ensure settings fields are properly set
         reusable: !!currentQuestion.reusable,
-        active: currentQuestion.active === undefined ? true : !!currentQuestion.active,
+        isActive: currentQuestion.isActive === undefined ? true : !!currentQuestion.isActive,
         priority: currentQuestion.priority || 0,
         feedback: currentQuestion.feedback || 'none',
       };
@@ -684,7 +684,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         points: currentQuestion.points || 1,
         // Ensure settings fields are properly set
         reusable: !!currentQuestion.reusable,
-        active: currentQuestion.active === undefined ? true : !!currentQuestion.active,
+        isActive: currentQuestion.isActive === undefined ? true : !!currentQuestion.isActive,
         priority: currentQuestion.priority || 0,
         feedback: currentQuestion.feedback || 'none',
       };
@@ -779,7 +779,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         points: currentQuestion.points || 1,
         // Ensure settings fields are properly set
         reusable: !!currentQuestion.reusable,
-        active: currentQuestion.active === undefined ? true : !!currentQuestion.active,
+        isActive: currentQuestion.isActive === undefined ? true : !!currentQuestion.isActive,
         priority: currentQuestion.priority || 0,
         feedback: currentQuestion.feedback || 'none',
       };
@@ -1796,11 +1796,11 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               
               <div className="form-group toggle-group">
                 <ToggleSwitch
-                  checked={readOnly && versionData ? (versionData.active === undefined ? true : !!versionData.active) : (questions[0].question.active === undefined ? true : !!questions[0].question.active)}
+                  checked={readOnly && versionData ? (versionData.isActive === undefined ? true : !!versionData.isActive) : (questions[0].question.isActive === undefined ? true : !!questions[0].question.isActive)}
                   onChange={() => {
                     if (readOnly) return;
                     const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.active = !updatedQuestions[0].question.active;
+                    updatedQuestions[0].question.isActive = !updatedQuestions[0].question.isActive;
                     setQuestions(updatedQuestions);
                     // Trigger auto-save
                     debouncedAutoSave();

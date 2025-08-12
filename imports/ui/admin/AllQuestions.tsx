@@ -112,20 +112,16 @@ const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
 
 // Tag color definitions
 const QUE_TYPE_LABELS: Record<string, string> = {
-  short_text: 'Short Text',
-  long_text: 'Long Text',
-  free_text: 'Free Text',
-  multiple_choice: 'Multiple Choice',
-  checkbox: 'Checkbox',
+  radio: 'Single Choice (Radio)',
+  checkbox: 'Multiple Choice (Checkbox)',
   dropdown: 'Dropdown',
+  text: 'Short Text',
+  textarea: 'Long Text',
+  rating: 'Rating Scale',
   likert: 'Likert Scale',
-  quick_tabs: 'Quick Tabs',
-  scale: 'Scale',
-  singleSelect: 'Single Select',
-  multiSelect: 'Multi Select',
-  text: 'Text',
-  number: 'Number',
-  date: 'Date'
+  ranking: 'Ranking',
+  date: 'Date',
+  file: 'File Upload'
 };
 
 // Updated styled components to use theme variables
@@ -441,6 +437,8 @@ const QuestionType = styled.div`
   font-weight: 600;
   background-color: var(--color-primary, #542A46);
   color: #ffffff;
+  white-space: nowrap;
+  min-width: fit-content;
 `;
 
 const QuestionContent = styled.div`
@@ -780,12 +778,12 @@ const AllQuestions: React.FC = () => {
   const [filterQuestionType, setFilterQuestionType] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
-  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Click outside handler to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      // If clicking outside any dropdown, close the open dropdown
+      if (openDropdown && !(event.target as Element).closest('.dropdown-container')) {
         setOpenDropdown(null);
       }
     };
@@ -1237,14 +1235,14 @@ const AllQuestions: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <QuestionHeader>
-                    <div>
-                      {latestVersion.status === 'published' ? (
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      {latestVersion.isActive !== false ? (
                         <StatusTag published>
-                          Published
+                          Active
                         </StatusTag>
                       ) : (
                         <StatusTag>
-                          Draft
+                          Inactive
                         </StatusTag>
                       )}
                       {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
@@ -1253,7 +1251,10 @@ const AllQuestions: React.FC = () => {
                         </QuestionType>
                       )}
                     </div>
-                    <HeaderActions onClick={(e) => e.stopPropagation()} ref={dropdownRef}>
+                    <HeaderActions 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="dropdown-container"
+                      style={{ marginLeft: 'auto' }}>
                       <DropdownButton
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1280,8 +1281,8 @@ const AllQuestions: React.FC = () => {
                               setOpenDropdown(null);
                             }}
                           >
-                            <FaEye size={14} />
-                            Preview
+                            <FaChartLine size={14} />
+                            Analytics
                           </DropdownItem>
                           <DropdownItem
                             onClick={(e) => {
