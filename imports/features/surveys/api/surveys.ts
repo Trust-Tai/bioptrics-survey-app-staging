@@ -907,6 +907,48 @@ Meteor.methods({
    * @param surveyId - The ID of the survey to make public
    * @returns The updated survey document
    */
+  // Update survey status (active, inactive, draft, etc.)
+  async 'surveys.updateStatus'(surveyId: string, status: SurveyStatus) {
+    check(surveyId, String);
+    check(status, String);
+    
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to update a survey status');
+    }
+    
+    // Check if the survey exists
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    // Check if user has permission to update this survey
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const isOwner = survey.createdBy === this.userId;
+    const isAdmin = user?.roles?.includes('admin');
+    const isEditorCollaborator = survey.collaborators?.some(c => 
+      c.userId === this.userId && c.role === 'editor'
+    );
+    
+    if (!isAdmin && !isOwner && !isEditorCollaborator) {
+      throw new Meteor.Error('not-authorized', 'You do not have permission to update this survey status');
+    }
+    
+    // Update the survey status
+    await Surveys.updateAsync(
+      { _id: surveyId },
+      { 
+        $set: { 
+          status: status,
+          updatedAt: new Date() 
+        } 
+      }
+    );
+    
+    return await Surveys.findOneAsync(surveyId);
+  },
+  
   async 'surveys.makePublic'(surveyId: string) {
     check(surveyId, String);
     

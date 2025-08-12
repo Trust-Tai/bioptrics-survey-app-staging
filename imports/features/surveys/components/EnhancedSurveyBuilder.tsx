@@ -1503,6 +1503,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         return;
       }
       
+      // Update the survey status to active
+      await Meteor.callAsync('surveys.updateStatus', survey._id, 'active');
+      
       try {
         // Generate an encrypted token for the survey ID
         const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
