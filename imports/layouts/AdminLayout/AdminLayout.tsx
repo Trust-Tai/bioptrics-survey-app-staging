@@ -88,16 +88,6 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
-// Define a constant for theme debugging
-const DEBUG_THEME = process.env.NODE_ENV === 'development';
-
-// Show theme colors in console during development
-const logThemeColors = (theme: any) => {
-  if (DEBUG_THEME && theme) {
-    console.log('Current theme colors in sidebar:', theme);
-  }
-};
-
 interface SidebarProps {
   $collapsed: boolean;
   theme?: any;
@@ -396,18 +386,6 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { getTerminology } = useOrganization();
   const theme = useTheme();
   const colors = theme.colors || {};
-  
-  // Log theme colors in development mode
-  React.useEffect(() => {
-    logThemeColors(colors);
-  }, [colors]);
-
-  // Debug: Log theme colors every render
-  console.log('AdminLayout theme colors:', {
-    primary: colors.primary,
-    sidebar: colors.sidebar,
-    sidebarText: colors.sidebarText
-  });
   
   // Subscribe to layers collection and filter active tags by location
   const { surveyTags, questionTags, isLoading } = useTracker(() => {

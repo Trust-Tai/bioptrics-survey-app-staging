@@ -176,8 +176,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     // Fetch all questions with their tags
     const questionsWithTagsData = Questions.find({}).fetch();
     
-    console.log('All questions data:', questionsWithTagsData);
-    
     questionsWithTagsData.forEach(question => {
       // Get tags from the labels array in the versions object
       if (question._id && (question as any).versions && Array.isArray((question as any).versions) && (question as any).versions.length > 0) {
@@ -187,7 +185,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         // Check if the version has labels
         if (latestVersion && latestVersion.labels && Array.isArray(latestVersion.labels)) {
           const labels = latestVersion.labels;
-          console.log(`Question ${question._id} has labels:`, labels);
           
           // Store labels as tags using both _id and id to ensure we can retrieve them
           map.set(question._id, labels);
@@ -195,13 +192,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           // If the question has an id property that's different from _id, store under that too
           if ((question as any).id && (question as any).id !== question._id) {
             map.set((question as any).id, labels);
-            console.log(`Question has both _id: ${question._id} and id: ${(question as any).id}, storing labels under both`);
           }
-        } else {
-          console.log(`Question ${question._id} has no labels in the latest version`);
         }
-      } else {
-        console.log(`Question ${question._id} has no versions or versions property is missing`);
       }
     });
     

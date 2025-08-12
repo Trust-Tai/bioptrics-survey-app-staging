@@ -304,9 +304,6 @@ const LayerBuilder: React.FC = () => {
     const isReady = subscription.ready();
     const layers = Layers.find({}, { sort: { createdAt: -1 } }).fetch();
     
-    console.log('LayerBuilder - Subscription ready:', isReady);
-    console.log('LayerBuilder - Layers found:', layers.length);
-    
     return {
       layers,
       isLoading: !isReady

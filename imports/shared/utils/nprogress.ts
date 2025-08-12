@@ -1,61 +1,24 @@
-import NProgress from 'nprogress';
-import 'nprogress/nprogress.css';
+/**
+ * Empty progress bar utility (NProgress implementation removed)
+ * This file provides no-op methods to maintain API compatibility
+ */
 
-// Configure NProgress
-NProgress.configure({
-  minimum: 0.1,
-  easing: 'ease',
-  speed: 500,
-  showSpinner: false,
-  trickleSpeed: 200,
-  parent: 'body'
-});
+// Initialize with custom styles (no-op)
+const initialize = () => {};
 
-// Custom CSS for NProgress to be added to the document
-const nprogressCustomStyles = `
-  #nprogress .bar {
-    background: #552a47;
-    height: 4px;
-  }
-  
-  #nprogress .peg {
-    box-shadow: 0 0 10px #552a47, 0 0 5px #552a47;
-  }
-`;
+// Start the progress bar (no-op)
+const start = () => {};
 
-// Add custom styles to the document
-const addCustomStyles = () => {
-  const styleElement = document.createElement('style');
-  styleElement.textContent = nprogressCustomStyles;
-  document.head.appendChild(styleElement);
-};
+// Complete the progress bar (no-op)
+const done = () => {};
 
-// Initialize NProgress with custom styles
-const initialize = () => {
-  addCustomStyles();
-};
+// Set the progress to a specific percentage (no-op)
+const set = (progress: number) => {};
 
-// Start the progress bar
-const start = () => {
-  NProgress.start();
-};
+// Increment the progress by a small random amount (no-op)
+const inc = () => {};
 
-// Complete the progress bar
-const done = () => {
-  NProgress.done();
-};
-
-// Set the progress to a specific percentage (0-1)
-const set = (progress: number) => {
-  NProgress.set(progress);
-};
-
-// Increment the progress by a small random amount
-const inc = () => {
-  NProgress.inc();
-};
-
-// Export the NProgress utility
+// Export the empty utility
 const progressBar = {
   initialize,
   start,

@@ -358,6 +358,55 @@ const ExpandButton = styled.button`
   }
 `;
 
+  // Styled components for response stats
+  const StatsContainer = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+  `;
+
+  const StatCard = styled.div`
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eee;
+`;
+
+const IconContainer = styled.div<{ color: string }>`
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: ${props => props.color + '15'};
+  color: ${props => props.color};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-right: 16px;
+`;
+
+const StatContent = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const StatValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+`;
+
+const StatLabel = styled.div`
+  font-size: 14px;
+  color: #666;
+  margin-top: 4px;
+`;
+
 interface EnhancedSurveyBuilderProps {
   surveyId?: string;
 }
@@ -373,7 +422,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // This ensures we get both global questions and survey-specific questions for this survey
   useEffect(() => {
     if (surveyId) {
-      console.log(`Setting up initial subscription to questions.all with surveyId: ${surveyId}`);
       const subscription = Meteor.subscribe('questions.all', surveyId);
       
       return () => {
@@ -460,10 +508,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   }, [surveyId]);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  // Initialize all demographic options as selected by default for new surveys
-  const [selectedDemographics, setSelectedDemographics] = useState<string[]>(
-    !surveyId ? demographicOptions.map(opt => opt.value) : []
-  );
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
@@ -497,35 +541,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const [newThemeHeadingFont, setNewThemeHeadingFont] = useState<string>('Inter');
   const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
   const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
-  
-  // Styled components for response stats
-  const StatsContainer = styled.div`
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-    width: 100%;
-  `;
 
-
-  const ExpandButton = styled.button`
-    display: flex;
-    align-items: center;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      background: #f1f5f9;
-      color: #334155;
-    }
-  `;
   
   // Helper function to get total question count in a survey
   const getTotalQuestionCount = (survey: any) => {
@@ -632,46 +648,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     
     return { questionText, sectionName };
   };
-  
-  const StatCard = styled.div`
-    background: #fff;
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid #eee;
-  `;
 
-  const IconContainer = styled.div<{ color: string }>`
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    background-color: ${props => props.color + '15'};
-    color: ${props => props.color};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    margin-right: 16px;
-  `;
-
-  const StatContent = styled.div`
-    display: flex;
-    flex-direction: column;
-  `;
-
-  const StatValue = styled.div`
-    font-size: 24px;
-    font-weight: 700;
-    color: #333;
-  `;
-
-  const StatLabel = styled.div`
-    font-size: 14px;
-    color: #666;
-    margin-top: 4px;
-  `;
 
   // Function to calculate engagement score based on response data
 
@@ -860,18 +837,39 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           setSurvey(result);
           setSections(result.sections || []);
           
-          // Load questions for this survey
-          Meteor.call('questions.getQuestionsBySurveyId', surveyId, (err: any, questions: any) => {
-            if (err) {
-              console.error('Error loading questions:', err);
-            } else {
-              setSurveyQuestions(questions);
-            }
+        // Replace the missing Meteor method call with a subscription to the questions.bySurvey publication
+        const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
+        if (questionsSub.ready()) {
+          // Fetch questions from the collection directly
+          const questionsFromDB = Questions.find({}).fetch();
+          
+          // Map QuestionDoc objects to QuestionItem objects
+          const mappedQuestions = questionsFromDB.map(question => {
+            // Find the latest version of the question
+            const latestVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+
+            // Determine status - explicitly use 'published' or 'draft' to match the union type
+            const status: 'published' | 'draft' = latestVersion?.isActive !== false ? 'published' : 'draft';
+            
+            return {
+              id: question._id || '',
+              _id: question._id,
+              text: latestVersion?.questionText || '',
+              type: latestVersion?.responseType || '',
+              status,
+              versions: question.versions,
+              currentVersion: question.currentVersion,
+              questionText: latestVersion?.questionText
+            };
           });
+          
+          setSurveyQuestions(mappedQuestions);
+        }
         }
       });
     }
   }, [surveyId]);
+
 
   // Load collaborators when the Collaboration tab is selected
   useEffect(() => {
@@ -995,7 +993,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   useEffect(() => {
     if (activeStep === 'responses' && surveyId) {
       setIsLoadingResponses(true);
-      console.log('Loading responses for survey:', surveyId);
       
       // Create a combined subscription for both completed and incomplete responses
       const completedSubscription = Meteor.subscribe('surveyResponses.bySurvey', surveyId);
@@ -1010,14 +1007,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           try {
             // Fetch completed survey responses
             const completedResponses = SurveyResponses.find({ surveyId }).fetch();
-            console.log(`Found ${completedResponses.length} completed responses for survey ${surveyId}`);
             
             // Fetch incomplete responses for this survey
             const incompleteResponses = IncompleteSurveyResponses.find({ 
               surveyId,
               isCompleted: false
             }).fetch();
-            console.log(`Found ${incompleteResponses.length} incomplete responses for survey ${surveyId}`);
             
             // Format the responses for display
             const formattedResponses = [
@@ -1109,8 +1104,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               totalQuestionsInSurvey = getTotalQuestionCount(survey);
             }
             
-            console.log(`Total questions in survey: ${totalQuestionsInSurvey}`);
-            
             // For each response, count how many questions were actually answered
             formattedResponses.forEach(response => {
               // Each response should have answered all questions in the survey
@@ -1144,14 +1137,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               }
             });
             
-            console.log(`Total questions across all responses: ${totalQuestionsAcrossAllResponses}`);
-            console.log(`Total answered questions: ${totalAnsweredQuestions}`);
+            
             
             // Calculate the actual completion rate based on answered questions
             const completionRate = totalQuestionsAcrossAllResponses > 0 ? 
               Math.round((totalAnsweredQuestions / totalQuestionsAcrossAllResponses) * 100) : 0;
               
-            console.log(`Calculated completion rate: ${completionRate}%`);
             
             // Calculate average engagement
             const totalEngagement = formattedResponses.reduce((sum, r) => sum + (r.engagementScore || 0), 0);
@@ -1178,7 +1169,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             });
             
             setSurveyResponses(formattedResponses);
-            console.log('Set formatted responses:', formattedResponses.length);
             
             setIsLoadingResponses(false);
           } catch (error) {
@@ -1266,29 +1256,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       setSurvey(currentSurvey);
       
       // Initialize sections if they exist in the survey
-      console.log('Survey sections data:', { 
-        surveySections: currentSurvey.surveySections, 
-        sections: currentSurvey.sections 
-      });
+      
       
       if (currentSurvey.surveySections && Array.isArray(currentSurvey.surveySections)) {
-        console.log('Using surveySections:', currentSurvey.surveySections);
         setSections(currentSurvey.surveySections);
       } else if (currentSurvey.sections && Array.isArray(currentSurvey.sections)) {
-        console.log('Using sections:', currentSurvey.sections);
         setSections(currentSurvey.sections);
-      } else {
-        console.log('No sections found in survey data');
       }
-      
-      // Check if the survey is already published and set the public URL
-      console.log('Survey loaded:', currentSurvey);
-      console.log('Is survey published?', currentSurvey.published);
-      console.log('Survey share token:', currentSurvey.shareToken);
       
       // Check if the survey is published by either published flag or having a shareToken
       if (currentSurvey.published || currentSurvey.shareToken) {
-        console.log('Survey is published, generating public URL');
         setIsPublished(true);
         const loadPublicUrl = async () => {
           try {
@@ -1296,7 +1273,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', currentSurvey._id);
             const baseUrl = window.location.origin;
             const publicSurveyUrl = `${baseUrl}/public/${encryptedToken}`;
-            console.log('Generated public URL with encrypted token:', publicSurveyUrl);
             setPublicUrl(publicSurveyUrl);
           } catch (error) {
             console.error('Error generating encrypted token:', error);
@@ -1304,7 +1280,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             if (currentSurvey.shareToken) {
               const baseUrl = window.location.origin;
               const publicSurveyUrl = `${baseUrl}/public/${currentSurvey.shareToken}`;
-              console.log('Using fallback shareToken for URL:', publicSurveyUrl);
               setPublicUrl(publicSurveyUrl);
             }
           }
@@ -1314,12 +1289,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       }
       
       // Initialize questions if they exist in the survey
-      console.log('Survey questions data:', { 
-        sectionQuestions: currentSurvey.sectionQuestions 
-      });
+      
       
       if (currentSurvey.sectionQuestions && Array.isArray(currentSurvey.sectionQuestions)) {
-        console.log('Found section questions:', currentSurvey.sectionQuestions.length);
         // Make sure all required fields are present
         const validatedQuestions = currentSurvey.sectionQuestions.map((q: SectionQuestion) => {
           // Find the full question document to get the proper text
@@ -1335,20 +1307,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             order: q.order
           };
           
-          // For debugging
-          console.log(`Question ${q.id} text:`, questionItem.text);
-          
           return questionItem;
         });
         setSurveyQuestions(validatedQuestions);
-      }
-      
-      // Initialize demographics if they exist in the survey
-      if (currentSurvey.selectedDemographics && Array.isArray(currentSurvey.selectedDemographics)) {
-        setSelectedDemographics(currentSurvey.selectedDemographics);
-      } else {
-        // For existing surveys without demographics, select all by default
-        setSelectedDemographics(demographicOptions.map(opt => opt.value));
       }
       
       // Initialize thank you screen fields if they exist in the survey
@@ -1415,16 +1376,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       // Initialize tags if they exist in the survey
       if (currentSurvey.selectedTags && Array.isArray(currentSurvey.selectedTags)) {
-        console.log('Loading saved tags from survey:', currentSurvey.selectedTags);
         setSelectedTags(currentSurvey.selectedTags);
-        
-        // No need to manually update React Select as it's controlled by state
-        console.log('Tags will be displayed in React Select via state');
       }
       
       // Initialize thankYouMessage if it exists in the survey
       if (currentSurvey.thankYouMessage) {
-        console.log('Loading saved thank you message from survey');
         setThankYouMessage(currentSurvey.thankYouMessage);
       }
     }
@@ -1842,6 +1798,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [lastUserActivity, setLastUserActivity] = useState<number>(Date.now());
   const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [showSavedMessage, setShowSavedMessage] = useState<boolean>(false);
   
   // Handle auto-save functionality
   useEffect(() => {
@@ -1902,7 +1859,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // Only save if there are unsaved changes and user has been inactive for at least 5 seconds
       const inactiveTime = Date.now() - lastUserActivity;
       if (hasUnsavedChanges && inactiveTime > 5000) {
-        console.log('Periodic auto-save triggered');
         silentSave(true); // Pass true to indicate this is an auto-save
       }
     }, 120000); // 2 minutes
@@ -1933,7 +1889,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     triggerAutoSave(true); // There are actual changes
   };
 
-  // Function to trigger auto-save based on inactivity
+  const initialLoadCompleteRef = useRef(false);
+
+  // In the triggerAutoSave function, only show saving immediately if past initial load
   const triggerAutoSave = (hasChanges = true) => {
     // Update user activity timestamp
     updateUserActivity();
@@ -1944,127 +1902,55 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     }
     
     // Only set unsaved changes flag if there are actual changes
-    // This prevents the indicator from appearing when there are no real changes
     if (hasChanges) {
       setHasUnsavedChanges(true);
-    }
-    
-    // Set a new timer for 5 seconds of inactivity before saving
-    autoSaveTimerRef.current = setTimeout(() => {
-      // Only save if there are unsaved changes
-      if (hasUnsavedChanges) {
-        console.log('Auto-saving after 5 seconds of inactivity');
-        silentSave(true); // Pass true to indicate this is an auto-save
+      
+      // Only show saving immediately if we're past the initial load
+      if (initialLoadCompleteRef.current) {
+        setSaving(true); // Show saving indicator immediately when changes are made
       }
-    }, 5000); // 5 seconds of inactivity
+      
+      // Set a new timer for 5 seconds of inactivity before saving
+      autoSaveTimerRef.current = setTimeout(() => {
+        silentSave(true); // Pass true to indicate this is an auto-save
+      }, 5000); // 5 seconds of inactivity
+    }
   };
   
   // Silent save function that doesn't update UI or show notifications
   const silentSave = async (isAutoSave = false) => {
     try {
-      // Set a temporary saving state for UI feedback
-      const tempLastSaved = lastSaved;
-      
-      // First mark as saving in progress
-      setSaving(true); // Show saving indicator
-      setLastSaved(null); // Clear last saved timestamp to show saving in progress
-      // Don't set hasUnsavedChanges here - we want to preserve its current state during save
-      
-      // Ensure we have valid data before proceeding
-      if (!survey || !survey._id) {
-        console.log('Skipping auto-save: Survey not fully loaded');
-        setLastSaved(tempLastSaved); // Restore previous timestamp
-        setSaving(false); // Reset saving indicator
-        return false;
-      }
-      
-      // Take a snapshot of the current state before saving
-      // This ensures we're using the most up-to-date state values
-      const currentState = {
-        title: survey.title,
-        description: survey.description,
-        status: survey.status || 'draft',
-        selectedTags: selectedTags,
-        selectedDemographics: selectedDemographics,
-        selectedTheme: selectedTheme,
-        selectedCategories: selectedCategories
-      };
-      
-      // Prepare survey data - ensure all fields have proper types
-      // Format data according to the server's expected structure
-      const surveyData = {
-        title: String(currentState.title || ''),
-        description: String(currentState.description || ''),
-        status: String(currentState.status || 'draft'),
-        // Map our sections and questions to the expected server format
-        surveySections: sections.map(section => ({
-          id: String(section.id),
-          name: String(section.name || ''), // Use name property consistently to match SurveySectionItem interface
-          description: String(section.description || ''), // Add description to ensure it's saved
-          priority: Number(section.priority || 0), // Use priority property consistently to match SurveySectionItem interface
-          isActive: Boolean(section.isActive !== undefined ? section.isActive : true),
-          color: String(section.color || ''),
-          instructions: String(section.instructions || ''),
-          isRequired: Boolean(section.isRequired !== undefined ? section.isRequired : false)
-        })),
-        sectionQuestions: surveyQuestions.map(q => ({
-          id: String(q.id),
-          text: String(q.text || ''),
-          type: String(q.type || ''),
-          status: String(q.status || 'draft'),
-          sectionId: String(q.sectionId || ''),
-          order: Number(q.order || 0)
-        })),
-        selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
-        selectedTheme: survey.selectedTheme || '',
-        selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
-        selectedTags: selectedTags, // Use the selectedTags state directly instead of survey.tags
-        defaultSettings: survey.defaultSettings || { allowRetake: true }
-      };
-      
-      // Call Meteor method to save or update the survey
-      if (surveyId) {
-        await Meteor.callAsync('surveys.update', surveyId, surveyData);
-        console.log('Auto-save successful');
+      // Only show saving indicator if there are actual changes to save
+      if (hasUnsavedChanges) {
+        setSaving(true); // Show saving indicator
+        
+        // Call handleSaveSurvey to actually save the data
+        await handleSaveSurvey(isAutoSave);
+        
+        // After successful save:
+        const now = Date.now();
+        setLastSaved(now);
+        
+        setTimeout(() => {
+          setHasUnsavedChanges(false);
+          setSaving(false);
+          
+          // Show the saved message temporarily
+          setShowSavedMessage(true);
+          
+          // Hide the saved message after 2 seconds
+          setTimeout(() => {
+            setShowSavedMessage(false);
+          }, 2000);
+        }, 10);
       } else {
-        const newSurveyId = await Meteor.callAsync('surveys.saveDraft', surveyData);
-        console.log('Auto-save successful (new draft)');
-        if (newSurveyId) {
-          // If this is a new survey, update the URL with the new ID
-          navigate(`/surveys/builder/${newSurveyId}`);
-        }
+        // If no changes, just reset states without showing UI indicators
+        setSaving(false);
       }
       
-      // Important: First set lastSaved, then reset unsaved changes flag
-      // This ensures the correct rendering order for our indicator
-      const now = Date.now();
-      setLastSaved(now);
-      
-      // Use a slight delay to ensure state updates are processed in the correct order
-      // This helps React batch the updates properly
-      setTimeout(() => {
-        // Reset unsaved changes flag
-        setHasUnsavedChanges(false);
-        // Reset saving state
-        setSaving(false);
-        
-        // Only show alert for manual saves, not auto-saves
-        if (!isAutoSave) {
-          setAlert({ type: 'success', message: 'Survey saved successfully!' });
-          setTimeout(() => setAlert(null), 3000);
-        }
-        
-        console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
-      }, 10);
-      
-      console.log('Save completed successfully');
       return true;
     } catch (error) {
-      console.log('Silent save error:', error);
-      // Reset saving state on error
       setSaving(false);
-      // Keep unsaved changes flag true since save failed
-      setHasUnsavedChanges(true);
       return false;
     }
   };
@@ -2073,24 +1959,25 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // This prevents auto-save for other survey elements like themes, questions, etc.
   const surveyTitleRef = useRef(survey?.title);
   const surveyDescriptionRef = useRef(survey?.description);
+  const tagsRef = useRef(survey?.selectedTags);
   const hasCreatedSurveyRef = useRef(false);
   
   // Effect to handle auto-save when title or description changes
   useEffect(() => {
     // Check if we have content to save and we're not currently in a saving operation
     const hasTitleOrDescription = survey?.title || survey?.description;
-    const hasContentChanged = survey?.title !== surveyTitleRef.current || survey?.description !== surveyDescriptionRef.current;
+    const hasContentChanged = survey?.title !== surveyTitleRef.current || 
+      survey?.description !== surveyDescriptionRef.current || 
+      (survey?.selectedTags?.length || 0) !== (tagsRef.current?.length || 0) ||
+      survey?.selectedTags?.some((tag: string, i: number) => tag !== tagsRef.current?.[i]);
     
     if (!saving && hasContentChanged) {
-      console.log('Content changed - checking if we need to save');
       
       // For new surveys (no surveyId), immediately save when title or description is entered
       // This ensures the survey is created in the backend right away
       if (!surveyId && hasTitleOrDescription) {
-        console.log('New survey detected with title/description - saving immediately');
         // Call silentSave directly for immediate save instead of using trackContentChange
         silentSave(false).then(success => { // Use false for manual save to ensure it happens immediately
-          console.log('Initial survey creation result:', success ? 'success' : 'failed');
           if (success) {
             hasCreatedSurveyRef.current = true;
           }
@@ -2104,15 +1991,17 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Always update refs with current values to prevent false change detection
     surveyTitleRef.current = survey?.title;
     surveyDescriptionRef.current = survey?.description;
-  }, [survey?.title, survey?.description, saving, surveyId]);
+    tagsRef.current = survey?.selectedTags;
+
+    // Mark initial load as complete after the first run of this effect
+    initialLoadCompleteRef.current = true;
+  }, [survey?.title, survey?.description, selectedTags, saving, surveyId]);
   
   // Additional effect to ensure survey is created when component mounts if we have content
   useEffect(() => {
     // If we have title/description but no surveyId, create the survey immediately
     if (!surveyId && !hasCreatedSurveyRef.current && (survey?.title || survey?.description)) {
-      console.log('Initial render with content but no surveyId - creating survey');
       silentSave(false).then(success => {
-        console.log('Survey creation on mount result:', success ? 'success' : 'failed');
         if (success) {
           hasCreatedSurveyRef.current = true;
         }
@@ -2126,12 +2015,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       setSaving(true);
       
       // Prepare survey data for saving
-      // Log the current state of survey questions before saving
-      console.log('Saving survey with questions:', surveyQuestions);
       
       // Find the complete theme object based on selectedTheme ID
       const selectedThemeObject = selectedTheme ? surveyThemes.find((theme: any) => theme._id === selectedTheme) : null;
-      console.log('[EnhancedSurveyBuilder] Selected theme object:', selectedThemeObject);
       
       // Prepare default settings with theme information
       const defaultSettings = {
@@ -2181,17 +2067,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         })),
         sectionQuestions: surveyQuestions,
         // Include demographics, themes, categories, and tags
-        selectedDemographics,
         selectedTheme,
         selectedCategories,
         selectedTags,
         updatedAt: new Date(),
       };
-      
-      console.log('Saving survey data with sections and questions:', {
-        surveySections: sections,
-        sectionQuestions: surveyQuestions
-      });
       
       let savedSurveyId;
       
@@ -2227,8 +2107,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         // if (!isAutoSave) {
         //   showSuccessAlert('Survey saved successfully!');
         // }
-        
-        console.log('Save state updated: hasUnsavedChanges=false, lastSaved=', new Date(now).toLocaleTimeString());
       }, 50);
       
       return true; // Return success
@@ -2385,10 +2263,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     
     // First, ensure we're subscribed to the questions.all publication with the current surveyId
     // This ensures we get both global questions and survey-specific questions for this survey
-    console.log(`Subscribing to questions.all with surveyId: ${surveyId}`);
     Meteor.subscribe('questions.all', surveyId, {
       onReady: () => {
-        console.log('Subscription to questions.all is ready');
         
         // Now that we're subscribed, fetch the questions
         const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
@@ -2405,8 +2281,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           
           // Log question details for debugging
           const isSurveySpecific = latestVersion?.saveToQuestionBank === false;
-          console.log(`Question selector item: ${q._id} - ${questionItem.text} ${isSurveySpecific ? '(survey-specific)' : '(global)'} for survey: ${latestVersion?.surveyId || 'none'}`);
-          
           return questionItem;
         });
         
@@ -2430,7 +2304,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     setCurrentSectionId(sectionId);
     // Use context's openPanel method instead of local state
     openPanel(undefined, surveyId);
-    console.log(`Creating question for section ${sectionId} in survey ${surveyId}`);
   };
   
   // Refresh survey data after changes
@@ -2442,21 +2315,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Get all questions from the database using the updated publication
     // This will include both global questions and survey-specific questions for this survey
     const allQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
-    
-    console.log('Question counts:', {
-      total: allQuestions.length,
-      surveyId
-    });
-    
-    // Log the question IDs for debugging
-    allQuestions.forEach(q => {
-      if (q.versions && Array.isArray(q.versions) && q.versions.length > 0) {
-        const latestVersion = q.versions[q.versions.length - 1];
-        if (latestVersion.saveToQuestionBank === false && latestVersion.surveyId === surveyId) {
-          console.log('Found survey-specific question:', q._id, 'for survey:', surveyId);
-        }
-      }
-    });
     
     // Use all questions directly since the publication now handles the filtering
     
@@ -2505,7 +2363,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   
   // Handle selecting questions in the question selector
   const handleSelectQuestions = (questionIds: string[], sectionId: string) => {
-    console.log(`Adding questions to section ${sectionId}:`, questionIds);
     
     // Get currently selected questions for this section
     const currentSectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
@@ -2517,7 +2374,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     
     // Get all selected questions from the source
     const selectedQuestions = questionsSource.filter(q => questionIds.includes(q.id));
-    console.log('Selected questions:', selectedQuestions);
     
     // Create question items for ALL selected questions (not just new ones)
     // This ensures we have the complete set of questions for the section
@@ -2532,7 +2388,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         status: q.status || 'published'
       };
       
-      console.log(`Adding question to section: ${q.id} - ${q.text}`);
       return questionItem;
     });
     
@@ -2543,7 +2398,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       // Combine with the new section questions
       const updatedQuestions = [...otherSectionQuestions, ...sectionQuestionItems];
-      console.log('Updated survey questions:', updatedQuestions);
       return updatedQuestions;
     });
     
@@ -2562,7 +2416,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         sectionQuestions: [...otherSectionQuestions, ...sectionQuestionItems]
       };
       
-      console.log('Updated survey:', updatedSurvey);
       return updatedSurvey;
     });
     
@@ -2572,14 +2425,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   
   // Handle editing a question
   const handleEditQuestion = (questionId: string, sectionId: string | null) => {
-    console.log(`Editing question ${questionId} from section ${sectionId} in survey ${surveyId}`);
     // Use context's openPanel method instead of local state
     openPanel(questionId, surveyId);
   };
 
   // Handle question creation/edit completion
   const handleQuestionCreated = (questionId: string) => {
-    console.log(`Question created/edited: ${questionId}`);
     refreshSurveyData();
     // Use trackContentChange instead of directly setting hasUnsavedChanges
     trackContentChange();
@@ -2649,7 +2500,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         console.error('Error reordering questions:', error);
         showErrorAlert('Failed to reorder questions.');
       } else {
-        console.log('Questions reordered successfully');
         refreshSurveyData();
         // Mark as having changes that need to be saved
         trackContentChange();
@@ -2679,7 +2529,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         console.error('Error reordering no-section questions:', error);
         showErrorAlert('Failed to reorder questions.');
       } else {
-        console.log('No-section questions reordered successfully');
         refreshSurveyData();
         // Mark as having changes that need to be saved
         trackContentChange();
@@ -2737,7 +2586,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         console.error('Error moving question to no-section area:', error);
         showErrorAlert('Failed to move question.');
       } else {
-        console.log('Question moved to no-section area successfully');
         refreshSurveyData();
         // Mark as having changes that need to be saved
         trackContentChange();
@@ -2795,7 +2643,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         console.error('Error moving question to section:', error);
         showErrorAlert('Failed to move question.');
       } else {
-        console.log('Question moved to section successfully');
         refreshSurveyData();
         // Mark as having changes that need to be saved
         trackContentChange();
@@ -2853,7 +2700,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         console.error('Error moving question between sections:', error);
         showErrorAlert('Failed to move question.');
       } else {
-        console.log('Question moved between sections successfully');
         refreshSurveyData();
         // Mark as having changes that need to be saved
         trackContentChange();
@@ -2885,7 +2731,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     try {
       // Ensure we have valid data before proceeding
       if (!survey || !survey._id) {
-        console.log('Cannot save: Survey not fully loaded');
         return;
       }
       
@@ -2913,7 +2758,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           sectionId: String(q.sectionId || ''),
           order: Number(q.order || 0)
         })),
-        selectedDemographics: Array.isArray(survey.demographics) ? survey.demographics : [],
         selectedTheme: survey.selectedTheme || '',
         selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
         selectedTags: Array.isArray(selectedTags) ? selectedTags : []
@@ -2921,12 +2765,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       // Call the server method to update the survey
       await Meteor.callAsync('surveys.update', survey._id, surveyData);
-      console.log('Survey sections reordered and saved successfully');
       
       // Reset unsaved changes flag
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error('Error saving section reordering:', error);
     }
   };
   
@@ -3379,7 +3221,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                 alignItems: 'center',
                 gap: '8px',
                 fontSize: '14px',
-                color: saving ? '#f39c12' : (hasUnsavedChanges ? '#e67e22' : '#2ecc71'),
+                color: saving ? '#f39c12' : '#2ecc71',
                 marginRight: '8px'
               }}>
                 {saving ? (
@@ -3391,19 +3233,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     </svg>
                     <span>Saving...</span>
                   </>
-                ) : hasUnsavedChanges ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Unsaved changes</span>
-                  </>
-                ) : lastSaved ? (
+                ) : showSavedMessage ? (
                   <>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span>Changes saved</span>
+                    <span>Saved</span>
                   </>
                 ) : null}
               </div>
@@ -3530,8 +3365,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                               sectionQuestions: surveyQuestions,
                               selectedTheme: selectedTheme,
                               selectedTags: selectedTags,
-                              selectedCategories: selectedCategories,
-                              selectedDemographics: selectedDemographics
+                              selectedCategories: selectedCategories
                             };
                             
                             // Save to localStorage
@@ -4079,7 +3913,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                           options={selectOptions}
                           value={selectOptions.filter(option => selectedTags.includes(option.value))}
                           onChange={(selected) => {
-                            console.log('Tags: ', selected);
                             if (Array.isArray(selected)) {
                               setSelectedTags(selected.map(option => option.value));
                               triggerAutoSave(); // Trigger auto-save when tags change
@@ -4244,102 +4077,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   </div>
                   
                   
-                </div>
-              ) : activeStep === 'demographics' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Demographics Metrics</h2>
-                  </div>
-                  
-                  <div style={{ padding: 20 }}>
-                    <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
-                      Select which demographic data to collect when users answer this survey. This information helps analyze survey results across different demographic groups.
-                    </p>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                      {demographicOptions.map(opt => {
-                        const isSelected = selectedDemographics.includes(opt.value);
-                        return (
-                          <div key={opt.value} style={{ marginBottom: 10 }}>
-                            <label style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 10, 
-                              cursor: 'pointer',
-                              padding: '10px 14px',
-                              borderRadius: 8,
-                              border: '1px solid #e0e0e0',
-                              background: isSelected ? '#f5edf3' : '#fff',
-                              transition: 'all 0.2s',
-                              boxShadow: isSelected ? '0 2px 8px rgba(85, 42, 71, 0.08)' : 'none'
-                            }}>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => {
-                                  const newDemographics = isSelected
-                                    ? selectedDemographics.filter(v => v !== opt.value)
-                                    : [...selectedDemographics, opt.value];
-                                  
-                                  setSelectedDemographics(newDemographics);
-                                  setSurvey({...survey, demographics: newDemographics});
-                                  setHasUnsavedChanges(true);
-                                  triggerAutoSave();
-                                }}
-                                style={{ 
-                                  width: 18, 
-                                  height: 18,
-                                  accentColor: '#552a47'
-                                }}
-                              />
-                              <span style={{ 
-                                fontWeight: isSelected ? 600 : 500, 
-                                fontSize: 15,
-                                color: isSelected ? '#552a47' : '#333'
-                              }}>
-                                {opt.label}
-                              </span>
-                            </label>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
-                      <button 
-                        onClick={() => setSelectedDemographics(demographicOptions.map(opt => opt.value))}
-                        style={{
-                          padding: '8px 16px',
-                          background: '#f5edf3',
-                          border: '1px solid #e5d6e2',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: '#552a47',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Select All
-                      </button>
-                      <button 
-                        onClick={() => setSelectedDemographics([])}
-                        style={{
-                          padding: '8px 16px',
-                          background: '#f0f0f0',
-                          border: '1px solid #ddd',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: '#555',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
                 </div>
               ) : activeStep === 'responses' ? (
                 <div className="survey-builder-panel">
@@ -4530,7 +4267,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                                   const reader = new FileReader();
                                   reader.onload = (event) => {
                                     const result = event.target?.result as string;
-                                    console.log('Featured image loaded:', result ? 'Image data available' : 'No image data');
                                     setSurvey((prevSurvey) => {
                                       setHasUnsavedChanges(true);
                                       triggerAutoSave();
@@ -6116,8 +5852,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   await Meteor.callAsync('surveys.update', survey._id, {
                     sectionQuestions: updatedSectionQuestions
                   });
-                  
-                  console.log(`Question ${questionId} added to section ${currentSectionId} in the database`);
                 }
                 
                 // Close the question builder
@@ -6533,16 +6267,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
 }
 
 // Styled components for stats bar
-const StatsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  padding: 16px;
-  border: 1px solid #e2e8f0;
-`;
+// const StatsContainer = styled.div`
+//   display: grid;
+//   grid-template-columns: repeat(6, 1fr);
+//   gap: 16px;
+//   margin-bottom: 24px;
+//   background-color: #f8fafc;
+//   border-radius: 8px;
+//   padding: 16px;
+//   border: 1px solid #e2e8f0;
+// `;
 
 // const QuestionItem = styled.div`
 //   margin-bottom: 16px;
@@ -6561,41 +6295,5 @@ const StatsContainer = styled.div`
 //     border-color: #cbd5e1;
 //   }
 // `;
-
-const StatCard = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-`;
-
-const IconContainer = styled.div<{ color: string }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: ${props => props.color}15;
-  color: ${props => props.color};
-  font-size: 18px;
-`;
-
-const StatContent = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const StatValue = styled.div`
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
-`;
-
-const StatLabel = styled.div`
-  font-size: 12px;
-  color: #64748b;
-  white-space: nowrap;
-`;
 
 export default EnhancedSurveyBuilder;

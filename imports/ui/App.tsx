@@ -1,7 +1,6 @@
 import React from 'react';
-import { Navigate, Outlet, Routes, Route, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import GlobalNotification from '../shared/components/GlobalNotification';
-import ProgressBarProvider from '../shared/components/ProgressBarProvider';
 import { QuestionBuilderPanelProvider } from '../features/questions/contexts/QuestionBuilderPanelContext';
 import { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
@@ -108,8 +107,6 @@ function RequireAuth() {
   return <Outlet />;
 }
 
-// Wrapper for Section Intro, uses Meteor/react-meteor-data to fetch section info
-import { useParams } from 'react-router-dom';
 
 const SectionIntroWrapper: React.FC = () => {
   const navigate = useNavigate();
@@ -251,10 +248,8 @@ const App: React.FC = () => (
     <ThemeProvider>
       <OrganizationProvider>
         <QuestionBuilderPanelProvider>
-          <ProgressBarProvider>
-            <AppRoutes />
-            <GlobalNotification />
-          </ProgressBarProvider>
+          <AppRoutes />
+          <GlobalNotification />
         </QuestionBuilderPanelProvider>
       </OrganizationProvider>
     </ThemeProvider>

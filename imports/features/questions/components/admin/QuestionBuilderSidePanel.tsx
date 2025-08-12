@@ -158,9 +158,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   readOnly = false, // Whether the panel is in read-only mode
   versionData = null // Version data to display when in read-only mode
 }) => {
-  // Log versionData to debug
-  console.log('Version Data in QuestionBuilderSidePanel:', versionData);
-  
   // Debug log for version data structure
   useEffect(() => {
     if (readOnly && versionData) {
@@ -451,29 +448,15 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
     }
   };
   
-  // Log the editing document whenever it changes
-  useEffect(() => {
-    if (editingDoc) {
-      console.log('Editing document from collection:', editingDoc);
-    }
-  }, [editingDoc]);
-  
-  // Debug log when panel opens/closes or questionId changes
-  useEffect(() => {
-    console.log('Panel state changed:', { isOpen, questionId });
-  }, [isOpen, questionId]);
-  
   // Track loading state
   const isLoading = useTracker(() => {
     const loading = questionId && !questionSub.ready();
-    console.log('QuestionBuilderSidePanel loading state:', { questionId, isSubscriptionReady: questionSub.ready(), loading });
     return loading;
   }, [questionId, questionSub.ready()]);
   
   // Effect to reset when panel is closed
   useEffect(() => {
     if (!isOpen) {
-      console.log('Panel closed - resetting state');
       // Reset to default when panel is closed
       setQuestions([getDefaultQuestion()]);
       setActiveTabIndex(0);
