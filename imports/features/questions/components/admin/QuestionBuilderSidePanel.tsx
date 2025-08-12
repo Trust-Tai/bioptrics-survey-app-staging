@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { notificationManager } from '/imports/shared/components/GlobalNotification';
 import { createPortal } from 'react-dom';
 import { Meteor } from 'meteor/meteor';
@@ -7,6 +7,7 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import styled from 'styled-components';
 import { FaTimes, FaInfoCircle, FaCog, FaCloudUploadAlt, FaHistory, FaExclamationTriangle, FaSpinner, FaCheck } from 'react-icons/fa';
 import TagBuilder from './TagBuilder';
 import FolderSelector from './FolderSelector';
@@ -142,6 +143,170 @@ const sidePanelStyles = {
     paddingRight: '40px',
   }
 };
+
+// Define styled components used in this file
+const Container = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+`;
+
+const Card = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+  overflow: hidden;
+`;
+
+const CardMain = styled.div`
+  padding: 16px;
+`;
+
+const CardActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  border-top: 1px solid #eee;
+`;
+
+const ActionIcon = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 8px;
+  color: #552a47;
+  &:hover {
+    color: #7b3d68;
+  }
+`;
+
+const List = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const ModalBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const Modal = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+`;
+
+const ModalForm = styled.form`
+  padding: 16px;
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 100px;
+  margin-bottom: 16px;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 16px;
+`;
+
+const ChoiceRow = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+`;
+
+const ChoiceInput = styled.input`
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+`;
+
+const RemoveChoiceBtn = styled.button`
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  margin-left: 8px;
+`;
+
+const AddChoiceBtn = styled.button`
+  background: none;
+  border: 1px dashed #ddd;
+  padding: 8px;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 16px;
+  &:hover {
+    background: #f9f9f9;
+  }
+`;
+
+const SaveBtn = styled.button`
+  background: #552a47;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  &:hover {
+    background: #7b3d68;
+  }
+`;
+
+const TagRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const ActiveTag = styled.span`
+  background: #f4ebf1;
+  color: #552a47;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
 
 /**
  * Question Builder Side Panel component
@@ -312,12 +477,13 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
   const [dataLoaded, setDataLoaded] = useState(false);
   // State for save to question bank toggle (default to true)
   const [saveToQuestionBank, setSaveToQuestionBank] = useState(true);
+  // State for preview modal
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  // State for template modal
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  // State for save as template modal
+  const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
   
-  // Auto-save states
-  const [hasChanges, setHasChanges] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'unsaved' | 'saving' | 'saved' | null>(null);
-  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
-
   // Subscribe to the specific question data if in edit mode
   const questionSub = useTracker(() => {
     if (questionId) {
@@ -461,16 +627,8 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
       setQuestions([getDefaultQuestion()]);
       setActiveTabIndex(0);
       setDataLoaded(false); // Reset data loaded state
-      
-      // Clean up auto-save timer and status
-      if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-        setAutoSaveTimer(null);
-      }
-      setAutoSaveStatus(null);
-      setHasChanges(false);
     }
-  }, [isOpen, autoSaveTimer]);
+  }, [isOpen]);
 
   // Effect to load question data when editing or reset when creating new
   useEffect(() => {
@@ -505,138 +663,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
     
   }, [isOpen, questionId, editingDoc]);
 
-  // Handle auto-save with debounce
-  const handleAutoSave = useCallback(async (isClosing = false): Promise<string | null> => {
-    if (!hasChanges || readOnly) return null;
-    
-    setAutoSaveStatus('saving');
-    
-    try {
-      const userId = Meteor.userId();
-      if (!userId) {
-        console.error('User not logged in');
-        setAutoSaveStatus('unsaved');
-        return null;
-      }
-
-      // Get the current question data
-      const currentQuestion = questions[0].question;
-      
-      // Import the necessary functions
-      const { mapQuestionToVersion, saveQuestionsToDB } = await import('/imports/features/questions/api/questions.methods.client');
-      
-      // Extract correct answers from answer options if in assessment mode
-      let correctAnswers = currentQuestion.correctAnswers || [];
-      if (currentQuestion.isAssessment && ['radio', 'checkbox', 'dropdown'].includes(currentQuestion.answerType)) {
-        // Extract correct answers from the answer options
-        correctAnswers = (currentQuestion.answers || [])
-          .filter(answer => answer.isCorrect)
-          .map(answer => answer.text || answer.value);
-      }
-      
-      // Ensure all fields are properly set before mapping
-      const questionToSave = {
-        ...currentQuestion,
-        // Ensure required fields are properly set for TypeScript
-        text: currentQuestion.text || '',
-        description: currentQuestion.description || '',
-        answerType: currentQuestion.answerType || 'text',
-        answers: currentQuestion.answers || [],
-        required: !!currentQuestion.required,
-        image: currentQuestion.image || '',
-        // Ensure tags field is also populated for backward compatibility
-        tags: currentQuestion.labels || [],
-        // Ensure assessment mode fields are properly set
-        isAssessment: !!currentQuestion.isAssessment,
-        correctAnswers: correctAnswers,
-        points: currentQuestion.points || 1,
-        // Ensure settings fields are properly set
-        reusable: !!currentQuestion.reusable,
-        isActive: currentQuestion.isActive === undefined ? true : !!currentQuestion.isActive,
-        priority: currentQuestion.priority || 0,
-        feedback: currentQuestion.feedback || 'none',
-      };
-      
-      // Map the question to the version format expected by the API
-      // Use type assertion to handle the customFields type mismatch
-      const questionVersion = mapQuestionToVersion(questionToSave as any, saveToQuestionBank, surveyId, userId);
-      
-      // Check if we're trying to save a survey-specific question without a surveyId
-      if (!saveToQuestionBank && !surveyId) {
-        console.error('Cannot save survey-specific question without a surveyId');
-        setAutoSaveStatus('unsaved');
-        return null;
-      }
-      
-      // Save the question to the database
-      const questionId = currentQuestion._id || null;
-      const result = await saveQuestionsToDB(questionId, questionVersion);
-      
-      // Always update the question ID with the result
-      // This ensures we have the correct ID for both new and existing questions
-      if (result) {
-        const updatedQuestions = [...questions];
-        updatedQuestions[0].question._id = result;
-        setQuestions(updatedQuestions);
-        console.log('Updated question ID after save:', result);
-      }
-
-      // Update status to saved
-      setAutoSaveStatus('saved');
-      setHasChanges(false);
-      
-      // Clear saved status after 3 seconds
-      setTimeout(() => {
-        setAutoSaveStatus(null);
-      }, 3000);
-      
-      return result || currentQuestion._id || null;
-    } catch (error: any) {
-      console.error('Error auto-saving question:', error);
-      setAutoSaveStatus('unsaved');
-      return null;
-    }
-  }, [questions, hasChanges, saveToQuestionBank, surveyId, readOnly]);
-  
-  // Add CSS for spinner animation
-  useEffect(() => {
-    // Create a style element
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
-    
-    // Append to document head
-    document.head.appendChild(styleElement);
-    
-    // Clean up
-    return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, []);
-  
-  // Debounce function for auto-save
-  const debouncedAutoSave = useCallback(() => {
-    // Clear any existing timer
-    if (autoSaveTimer) {
-      clearTimeout(autoSaveTimer);
-    }
-    
-    // Set hasChanges to true to indicate unsaved changes
-    setHasChanges(true);
-    setAutoSaveStatus('unsaved');
-    
-    // Set a new timer for auto-save after 3.5 seconds
-    const timer = setTimeout(() => {
-      handleAutoSave();
-    }, 3500);
-    
-    setAutoSaveTimer(timer);
-  }, [autoSaveTimer, handleAutoSave]);
-  
   // Handle saving the question (manual save button)
   const handleSaveQuestion = async () => {
     try {
@@ -936,15 +962,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
         <button 
           style={sidePanelStyles.closeButton as React.CSSProperties} 
           onClick={() => {
-            // Auto-save before closing if there are unsaved changes
-            if (hasChanges && !readOnly) {
-              // Using void to explicitly indicate we're ignoring the Promise result
-              void handleAutoSave(true).then(() => {
-                onClose();
-              });
-            } else {
-              onClose();
-            }
+            onClose();
           }}
           aria-label="Close panel"
           onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
@@ -1025,35 +1043,7 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
               </button>
             </div>
           ) : !readOnly && <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center' }}>
-            {/* Auto-save status indicator */}
-            {autoSaveStatus && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '6px 12px',
-                borderRadius: '4px',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: autoSaveStatus === 'saved' ? '#2ecc71' : 
-                      autoSaveStatus === 'saving' ? '#f39c12' : 
-                      '#e74c3c',
-                background: autoSaveStatus === 'saved' ? 'rgba(46, 204, 113, 0.1)' : 
-                          autoSaveStatus === 'saving' ? 'rgba(243, 156, 18, 0.1)' : 
-                          'rgba(231, 76, 60, 0.1)',
-              }}>
-                {autoSaveStatus === 'unsaved' && <FaExclamationTriangle />}
-                {autoSaveStatus === 'saving' && <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />}
-                {autoSaveStatus === 'saved' && <FaCheck />}
-                <span>
-                  {autoSaveStatus === 'unsaved' && 'Unsaved changes'}
-                  {autoSaveStatus === 'saving' && 'Saving...'}
-                  {autoSaveStatus === 'saved' && 'Saved'}
-                </span>
-              </div>
-            )}
-
-             {/* Only show the toggle in survey builder context */}
+            {/* Only show the toggle in survey builder context */}
             {context === 'surveyBuilder' && (
               <div style={{ 
                 display: 'flex', 
@@ -1064,66 +1054,24 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                 background: '#f5f5f5',
                 borderRadius: '8px'
               }}>
-                <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  fontSize: '14px',
-                  color: '#444'
-                }}>
-                  <div style={{
-                    position: 'relative',
-                    display: 'inline-block',
-                    width: '40px',
-                    height: '20px',
-                    marginRight: '10px'
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={saveToQuestionBank}
-                      onChange={() => setSaveToQuestionBank(!saveToQuestionBank)}
-                      style={{
-                        opacity: 0,
-                        width: 0,
-                        height: 0
-                      }}
-                    />
-                    <span style={{
-                      position: 'absolute',
-                      cursor: 'pointer',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      backgroundColor: saveToQuestionBank ? '#552a47' : '#ccc',
-                      transition: '.4s',
-                      borderRadius: '34px'
-                    }}>
-                      <span style={{
-                        position: 'absolute',
-                        content: '""',
-                        height: '16px',
-                        width: '16px',
-                        left: '2px',
-                        bottom: '2px',
-                        backgroundColor: 'white',
-                        transition: '.4s',
-                        borderRadius: '50%',
-                        transform: saveToQuestionBank ? 'translateX(20px)' : 'translateX(0px)'
-                      }}></span>
-                    </span>
-                  </div>
-                  Save to Question Bank
-                  <span style={{ 
-                    marginLeft: '5px', 
-                    fontSize: '12px', 
-                    color: '#666',
-                    fontStyle: 'italic'
-                  }}>
-                    {saveToQuestionBank ? '(Available in all surveys)' : '(Only in this survey)'}
-                  </span>
-                </label>
+                <ToggleSwitch
+                  checked={saveToQuestionBank}
+                  onChange={() => setSaveToQuestionBank(!saveToQuestionBank)}
+                  disabled={readOnly}
+                  label={
+                    <>
+                      Save to Question Bank
+                      <span style={{ 
+                        marginLeft: '5px', 
+                        fontSize: '12px', 
+                        color: '#666',
+                        fontStyle: 'italic'
+                      }}>
+                        {saveToQuestionBank ? '(Available in all surveys)' : '(Only in this survey)'}
+                      </span>
+                    </>
+                  }
+                />
               </div>
             )}
 
@@ -1200,9 +1148,9 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
             background: alert.type === 'success' ? '#2ecc40' : '#e74c3c',
             color: '#fff',
             padding: '12px 28px',
-            borderRadius: 8,
-            fontWeight: 600,
-            fontSize: 16,
+            borderRadius: '8px',
+            fontWeight: '600',
+            fontSize: '16px',
             zIndex: 2000,
             boxShadow: '0 2px 12px #552a4733',
           }}>
@@ -1272,11 +1220,11 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                   <div 
                     className="read-only-question-text" 
                     dangerouslySetInnerHTML={{ __html: versionData.questionText || '' }}
-                    style={{ 
-                      border: '1px solid #ccc', 
-                      borderRadius: '4px', 
-                      padding: '10px',
-                      minHeight: '100px'
+                    style={{
+                      borderRadius: '8px', 
+                      padding: '10px', 
+                      backgroundColor: '#f8f9fa', 
+                      marginBottom: '10px' 
                     }}
                   />
                 ) : (
@@ -1288,18 +1236,18 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                       const updatedQuestions = [...questions];
                       updatedQuestions[0].question.text = value;
                       setQuestions(updatedQuestions);
-                      debouncedAutoSave();
                     }}
-                  modules={{
-                    toolbar: readOnly ? false : [
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['link'],
-                      ['clean']
-                    ]
-                  }}
-                  readOnly={readOnly}
-                />
+                    modules={{
+                      toolbar: readOnly ? false : [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                        ['clean']
+                      ]
+                    }}
+                    readOnly={readOnly}
+                  />
+                )}
               </div>
               
               {/* Description field removed as requested */}
@@ -1315,9 +1263,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     const newAnswerType = e.target.value;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.answerType = newAnswerType;
-                    
-                    // Trigger auto-save
-                    debouncedAutoSave();
                     
                     // Set default answers based on the question type
                     switch (newAnswerType) {
@@ -1439,8 +1384,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           answers
                         };
                         setQuestions(updatedQuestions);
-                        // Trigger auto-save
-                        debouncedAutoSave();
                       }}
                       isAssessment={questions[0].question.isAssessment || false}
                       onIsAssessmentChange={(isAssessment) => {
@@ -1450,8 +1393,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           isAssessment
                         };
                         setQuestions(updatedQuestions);
-                        // Trigger auto-save
-                        debouncedAutoSave();
                       }}
                       correctAnswers={questions[0].question.correctAnswers || []}
                       onCorrectAnswersChange={(correctAnswers) => {
@@ -1461,8 +1402,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           correctAnswers
                         };
                         setQuestions(updatedQuestions);
-                        // Trigger auto-save
-                        debouncedAutoSave();
                       }}
                       points={questions[0].question.points || 1}
                       onPointsChange={(points) => {
@@ -1472,8 +1411,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           points
                         };
                         setQuestions(updatedQuestions);
-                        // Trigger auto-save
-                        debouncedAutoSave();
                       }}
                     />
                   </QuestionBuilderDndProvider>
@@ -1492,8 +1429,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     updatedQuestions[0].question.tags = labels;
                     setQuestions(updatedQuestions);
                     console.log('Tags updated:', labels);
-                    // Trigger auto-save
-                    debouncedAutoSave();
                   }}
                   readOnly={readOnly}
                 />
@@ -1509,8 +1444,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     updatedQuestions[0].question.folderId = folderId;
                     setQuestions(updatedQuestions);
                     console.log('Folder updated:', folderId);
-                    // Trigger auto-save
-                    debouncedAutoSave();
                   }}
                   readOnly={readOnly}
                 />
@@ -1528,8 +1461,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                       const updatedQuestions = [...questions];
                       updatedQuestions[0].question.required = e.target.checked;
                       setQuestions(updatedQuestions);
-                      // Trigger auto-save
-                      debouncedAutoSave();
                     }}
                     disabled={readOnly}
                   />
@@ -1707,7 +1638,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.feedback = e.target.value;
                     setQuestions(updatedQuestions);
-                    debouncedAutoSave();
                   }}
                   className="form-control"
                   disabled={readOnly}
@@ -1738,7 +1668,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           const updatedQuestions = [...questions];
                           updatedQuestions[0].question.estimatedTimeSeconds = totalSecs;
                           setQuestions(updatedQuestions);
-                          debouncedAutoSave();
                         }
                       }}
                       className="form-control"
@@ -1763,7 +1692,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                           const updatedQuestions = [...questions];
                           updatedQuestions[0].question.estimatedTimeSeconds = totalSecs;
                           setQuestions(updatedQuestions);
-                          debouncedAutoSave();
                         }
                       }}
                       className="form-control"
@@ -1786,8 +1714,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.reusable = !updatedQuestions[0].question.reusable;
                     setQuestions(updatedQuestions);
-                    // Trigger auto-save
-                    debouncedAutoSave();
                   }}
                   disabled={readOnly}
                   label="Reusable Question (can be used in multiple surveys)"
@@ -1802,8 +1728,6 @@ export const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> =
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.isActive = !updatedQuestions[0].question.isActive;
                     setQuestions(updatedQuestions);
-                    // Trigger auto-save
-                    debouncedAutoSave();
                   }}
                   disabled={readOnly}
                   label="Active Question"
