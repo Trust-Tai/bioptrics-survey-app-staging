@@ -1629,7 +1629,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           closePreview();
         }
       }}>
-      
         <div ref={themePreviewContentRef} style={{
           backgroundColor: theme.backgroundColor || '#ffffff',
           borderRadius: 12,
