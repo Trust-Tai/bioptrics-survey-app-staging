@@ -647,24 +647,8 @@ const AllLayers = () => {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
-  // Auto-save state
-  const [hasChanges, setHasChanges] = useState<boolean>(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'unsaved' | 'saving' | 'saved' | ''>('');
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
   // Function to close the modal and reset form
   const closeModal = () => {
-    // If there are unsaved changes, auto-save before closing
-    if (hasChanges && autoSaveStatus !== 'saving') {
-      handleAutoSave(true);
-    }
-    
-    // Clear auto-save timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-      autoSaveTimerRef.current = null;
-    }
-    
     setIsModalOpen(false);
     setLayer({
       name: '',
@@ -676,8 +660,6 @@ const AllLayers = () => {
       description: ''
     });
     setErrors({});
-    setHasChanges(false);
-    setAutoSaveStatus('');
   };
   
   // Tag form state
@@ -988,113 +970,6 @@ const AllLayers = () => {
   
   // Close the modal function is already defined above
   
-
-  
-  // Auto-save function
-  const handleAutoSave = useCallback((isClosing = false) => {
-    // Don't auto-save if there are no changes or if the form is invalid
-    if (!hasChanges || !validateForm(false)) {
-      return;
-    }
-    
-    setAutoSaveStatus('saving');
-    
-    if (layer._id) {
-      // Update existing tag
-      const updatedLayer = {
-        id: layer.id,
-        name: layer.name || '',
-        location: layer.location || 'surveys',
-        active: layer.active !== undefined ? layer.active : true,
-        parentId: layer.parentId || undefined,
-        color: layer.color || '#552a47',
-        description: layer.description || '',
-        fields: layer.fields || []
-      };
-      
-      Meteor.call('layers.update', layer._id, updatedLayer, (error: Meteor.Error) => {
-        if (error) {
-          console.error('Error auto-saving tag:', error);
-          setAutoSaveStatus('unsaved');
-        } else {
-          console.log('Tag auto-saved successfully');
-          setAutoSaveStatus('saved');
-          setHasChanges(false);
-          
-          // Clear saved status after 3 seconds
-          setTimeout(() => {
-            if (autoSaveStatus === 'saved') {
-              setAutoSaveStatus('');
-            }
-          }, 3000);
-          
-          // If we're closing the modal, do it now that save is complete
-          if (isClosing) {
-            setIsModalOpen(false);
-          }
-        }
-      });
-    } else {
-      // Create new tag
-      const newLayer = {
-        ...layer
-      };
-      
-      Meteor.call('layers.create', newLayer, (error: Meteor.Error, result: string) => {
-        if (error) {
-          console.error('Error auto-saving tag:', error);
-          setAutoSaveStatus('unsaved');
-        } else {
-          console.log('Tag auto-saved successfully');
-          setAutoSaveStatus('saved');
-          setHasChanges(false);
-          
-          // Update the layer with the new ID
-          if (result) {
-            setLayer(prev => ({ ...prev, _id: result }));
-          }
-          
-          // Clear saved status after 3 seconds
-          setTimeout(() => {
-            if (autoSaveStatus === 'saved') {
-              setAutoSaveStatus('');
-            }
-          }, 3000);
-          
-          // If we're closing the modal, do it now that save is complete
-          if (isClosing) {
-            setIsModalOpen(false);
-          }
-        }
-      });
-    }
-  }, [layer, hasChanges, autoSaveStatus]);
-
-  // Setup debounced auto-save
-  useEffect(() => {
-    if (hasChanges) {
-      // Clear any existing timer
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-      
-      // Set auto-save status to unsaved
-      setAutoSaveStatus('unsaved');
-      
-      // Set a new timer for auto-save
-      autoSaveTimerRef.current = setTimeout(() => {
-        handleAutoSave();
-      }, 3500); // 3.5 seconds delay for auto-save
-    }
-    
-    // Cleanup timer on unmount
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, [layer, hasChanges, handleAutoSave]);
-
   // Helper function to strip HTML tags
   const stripHtmlTags = (html: string): string => {
     if (!html) return '';
@@ -1104,7 +979,7 @@ const AllLayers = () => {
   };
 
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
     // Clear validation error when field is edited
@@ -1123,9 +998,6 @@ const AllLayers = () => {
     } else {
       setLayer(prev => ({ ...prev, [name]: value }));
     }
-    
-    // Mark that we have changes to save
-    setHasChanges(true);
   };
   
   // Validate form
@@ -1327,8 +1199,7 @@ const AllLayers = () => {
       // Filter by selected surveys (multiple selection)
       const matchesSurvey = selectedSurveys.length === 0 || 
         (layer.surveyCount && layer.surveyCount > 0 && 
-         surveys.some(survey => 
-           selectedSurveys.includes(survey._id) && (
+         surveys.some(survey => survey._id && selectedSurveys.includes(survey._id) && (
              (survey.selectedTags && layer._id && survey.selectedTags.includes(layer._id)) || 
              (survey.templateTags && layer._id && survey.templateTags.includes(layer._id))
            )
@@ -1339,7 +1210,7 @@ const AllLayers = () => {
         (layer.questionCount && layer.questionCount > 0 && 
          questions.some(question => {
            const currentVersion = question.versions[question.currentVersion - 1];
-           return selectedQuestions.includes(question._id) && 
+           return question._id && selectedQuestions.includes(question._id) && 
              currentVersion && (
                (currentVersion.categoryTags && layer._id && currentVersion.categoryTags.includes(layer._id)) || 
                ((currentVersion as any).labels && layer._id && (currentVersion as any).labels.includes(layer._id))
@@ -1478,7 +1349,7 @@ const AllLayers = () => {
                     isMulti
                     components={{ DropdownIndicator: () => null, IndicatorSeparator: () => null }}
                     value={surveys
-                      .filter(survey => selectedSurveys.includes(survey._id))
+                      .filter(survey => survey._id && selectedSurveys.includes(survey._id))
                       .map(survey => ({ value: survey._id, label: survey.title || 'Untitled Survey' }))}
                     onChange={(selected) => {
                       const selectedValues = selected ? selected.map(option => option.value) : [];
@@ -1812,7 +1683,13 @@ const AllLayers = () => {
                   className="nested-tag-select"
                 >
                   <option value="">None (Top Level Tag)</option>
-                  {/* Options would be rendered here */}
+                  {layers
+                    .filter(l => l._id !== layer?._id) // Prevent selecting self as parent
+                    .map(l => (
+                      <option key={l._id} value={l._id}>
+                        {l.name}
+                      </option>
+                    ))}
                 </Select>
               </FormGroup>
               
@@ -1853,20 +1730,6 @@ const AllLayers = () => {
                     <div 
                       onClick={() => {
                         setLayer(prev => ({ ...prev, active: !prev.active }));
-                        setHasChanges(true);
-                        
-                        // Set auto-save status to unsaved
-                        setAutoSaveStatus('unsaved');
-                        
-                        // Clear any existing timer
-                        if (autoSaveTimerRef.current) {
-                          clearTimeout(autoSaveTimerRef.current);
-                        }
-                        
-                        // Set a new timer for auto-save
-                        autoSaveTimerRef.current = setTimeout(() => {
-                          handleAutoSave();
-                        }, 3500); // 3.5 seconds delay for auto-save
                       }} 
                       style={{ 
                         cursor: 'pointer',
@@ -1882,45 +1745,9 @@ const AllLayers = () => {
             </ModalBody>
             
             <ModalFooter>
-              {/* Auto-save status indicator */}
-              {autoSaveStatus && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  marginRight: 'auto',
-                  fontSize: '0.9rem',
-                  color: autoSaveStatus === 'saved' ? '#2e7d32' : 
-                         autoSaveStatus === 'saving' ? '#0d47a1' : 
-                         '#f57c00'
-                }}>
-                  {autoSaveStatus === 'saving' && (
-                    <>
-                      <FaSpinner 
-                        size={14} 
-                        style={{ 
-                          marginRight: '0.5rem',
-                          animation: 'spin 1s linear infinite' 
-                        }} 
-                      />
-                      Saving...
-                    </>
-                  )}
-                  {autoSaveStatus === 'unsaved' && (
-                    <>
-                      <span style={{ color: '#f57c00' }}>Unsaved changes</span>
-                    </>
-                  )}
-                  {autoSaveStatus === 'saved' && (
-                    <>
-                      <FaCheck size={14} style={{ marginRight: '0.5rem' }} />
-                      Saved
-                    </>
-                  )}
-                </div>
-              )}
               <Button onClick={() => closeModal()}>Cancel</Button>
-              <Button primary onClick={handleSaveTag} disabled={status?.loading || autoSaveStatus === 'saving'}>
-                {status.loading || autoSaveStatus === 'saving' ? (
+              <Button primary onClick={handleSaveTag} disabled={status?.loading}>
+                {status.loading ? (
                   <>
                     <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
                     <span style={{ marginLeft: '0.5rem' }}>Saving...</span>

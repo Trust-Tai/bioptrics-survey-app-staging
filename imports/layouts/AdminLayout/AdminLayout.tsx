@@ -174,12 +174,13 @@ const SubmenuInline = styled.ul`
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${({$collapsed}) => $collapsed ? '72px' : '240px'};
-  background: var(--color-sidebar);
-  color: var(--color-sidebar-text) !important;
+  // background: var(--color-sidebar);
+  background: transparent;
+  // color: var(--color-sidebar-text) !important;
+  color: #2c2c2c;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 1.5px 6px rgba(0,0,0,0.08);
   border-radius: 22px;
   margin: 32px 0 32px 24px;
   position: fixed;
@@ -208,7 +209,7 @@ const Sidebar = styled.aside<SidebarProps>`
 `;
 
 const Logo = styled.div<{theme?: any}>`
-  text-align: center;
+  margin-top: 1rem;
   margin-bottom: 2rem;
   padding: 0 1rem;
   color: var(--color-sidebar-text, #ffffff) !important;
@@ -444,9 +445,6 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div style={{ display: 'flex' }}>
       <Sidebar $collapsed={collapsed} theme={colors}>
-        <Logo theme={colors}>
-          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: 2 }}>Admin</span>
-        </Logo>
         <nav>
           {sidebarLinks.map((link, idx) => {
             const isActive = location.pathname.startsWith(link.to);
@@ -534,6 +532,13 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             );
           })}
         </nav>
+        <Logo theme={colors}>
+          <img 
+            src="/bioptrics_fixed_black.png" 
+            alt="Bioptrics Logo" 
+            style={{ width: '100%', height: 'auto' }} 
+          />
+        </Logo>
       </Sidebar>
       <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', width: 'calc(100% - 264px)' }}>
         {/* Main Content */}

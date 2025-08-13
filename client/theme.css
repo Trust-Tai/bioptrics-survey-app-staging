@@ -6,8 +6,8 @@
   --color-accent: #A9A59D;
   --color-background: #f8f9fa;
   --color-text: #2e2e2e;
-  --color-sidebar: #542A46;
-  --color-sidebar-text: #ffffff;
+  --color-sidebar: transparent;
+  --color-sidebar-text: #2c2c2c;
   --color-error: #d32f2f;
   
   /* Transitions for smooth theme changes */
@@ -148,7 +148,7 @@ a:hover:not([data-theme-ignore]) {
     --color-background: #ffffff;
     --color-text: #000000;
     --color-sidebar: #000000;
-    --color-sidebar-text: #ffffff;
+    --color-sidebar-text: #2c2c2c;
   }
 }
 

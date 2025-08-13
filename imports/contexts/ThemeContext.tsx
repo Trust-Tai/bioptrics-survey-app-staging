@@ -89,7 +89,7 @@ const applyCSSVariables = (colors: ThemeColors) => {
   root.style.setProperty('--color-background', colors.background);
   root.style.setProperty('--color-text', colors.text);
   root.style.setProperty('--color-sidebar', colors.sidebar);
-  root.style.setProperty('--color-sidebar-text', colors.sidebarText);
+  root.style.setProperty('--color-sidebar-text', '#2c2c2c');
   
   console.log('CSS Variables applied:', {
     primary: colors.primary,

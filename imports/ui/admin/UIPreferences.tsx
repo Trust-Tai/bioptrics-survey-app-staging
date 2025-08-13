@@ -13,8 +13,8 @@ const themePresets = [
       accent: '#A9A59D',
       background: '#f8f9fa',
       text: '#2e2e2e',
-      sidebar: '#542A46',
-      sidebarText: '#ffffff',
+      sidebar: 'transparent',
+      sidebarText: '#2c2c2c',
       error: '#d32f2f'
     }
   },
@@ -348,7 +348,9 @@ const UIPreferences: React.FC = () => {
         const root = document.documentElement;
         Object.entries(theme.colors).forEach(([key, value]) => {
           if (key === 'sidebarText') {
-            root.style.setProperty(`--color-sidebar-text`, value);
+            root.style.setProperty(`--color-sidebar-text`, '#2c2c2c');
+          } else if (key === 'sidebar') {
+            root.style.setProperty(`--color-sidebar`, 'transparent');
           } else {
             root.style.setProperty(`--color-${key}`, value);
           }
@@ -393,7 +395,9 @@ const UIPreferences: React.FC = () => {
       const root = document.documentElement;
       Object.entries(finalColors).forEach(([key, value]) => {
         if (key === 'sidebarText') {
-          root.style.setProperty(`--color-sidebar-text`, value);
+          root.style.setProperty(`--color-sidebar-text`, '#2c2c2c');
+        } if (key === 'sidebar') {
+          root.style.setProperty(`--color-sidebar`, 'transparent');
         } else {
           root.style.setProperty(`--color-${key}`, value);
         }
