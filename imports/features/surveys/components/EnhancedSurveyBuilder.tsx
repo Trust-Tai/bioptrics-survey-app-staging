@@ -1580,6 +1580,32 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     setPreviewTheme(null);
   };
 
+  // Reference for the theme preview modal content
+  const themePreviewContentRef = useRef<HTMLDivElement>(null);
+
+  // Effect to handle click outside theme preview
+  useEffect(() => {
+    function handleClickOutsideThemePreview(event: MouseEvent) {
+      if (
+        showPreview && 
+        themePreviewContentRef.current && 
+        !themePreviewContentRef.current.contains(event.target as Node)
+      ) {
+        closePreview();
+      }
+    }
+    
+    // Add event listener when preview is open
+    if (showPreview) {
+      document.addEventListener('mousedown', handleClickOutsideThemePreview);
+    }
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideThemePreview);
+    };
+  }, [showPreview]);
+
   // Theme preview component
   const ThemePreview = ({ theme }: { theme: any }) => {
     if (!theme) return null;
@@ -1596,8 +1622,15 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center'
+      }}
+      onClick={(e) => {
+        // Close when clicking on the overlay background
+        if (e.target === e.currentTarget) {
+          closePreview();
+        }
       }}>
-        <div style={{
+      
+        <div ref={themePreviewContentRef} style={{
           backgroundColor: theme.backgroundColor || '#ffffff',
           borderRadius: 12,
           padding: 20,
@@ -1607,7 +1640,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           overflow: 'auto',
           position: 'relative'
         }}>
-          <button 
+          {/* <button 
             onClick={closePreview}
             style={{
               position: 'absolute',
@@ -1628,7 +1661,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             }}
           >
             ×
-          </button>
+          </button> */}
           
           <div style={{
             backgroundColor: theme.primaryColor || theme.color || '#552a47',
@@ -1636,7 +1669,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             borderRadius: '8px 8px 0 0',
             marginBottom: '20px'
           }}>
-            <h2 style={{
+            <h2  onClick={closePreview} style={{
               color: '#fff',
               margin: 0,
               fontFamily: theme.headingFont || 'Inter, sans-serif'
@@ -1679,7 +1712,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               </div>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30 }}>
+            {/* <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30 }}>
               <button style={{
                 backgroundColor: 'transparent',
                 color: theme.primaryColor || theme.color || '#552a47',
@@ -1703,7 +1736,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               }}>
                 Next
               </button>
-            </div>
+            </div> */}
             
             <div style={{ marginTop: 30, borderTop: `1px solid ${theme.accentColor || theme.secondaryColor || '#ddd'}`, paddingTop: 20 }}>
               <h4 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Theme Properties</h4>
