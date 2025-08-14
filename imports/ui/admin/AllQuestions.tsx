@@ -426,6 +426,7 @@ const QuestionHeader = styled.div`
   align-items: center;
   width: 100%;
   margin-bottom: 16px;
+  position: relative;
 `;
 
 const QuestionType = styled.div`
@@ -1235,26 +1236,35 @@ const AllQuestions: React.FC = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <QuestionHeader>
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                      {latestVersion.isActive !== false ? (
-                        <StatusTag published>
-                          Active
-                        </StatusTag>
-                      ) : (
-                        <StatusTag>
-                          Inactive
-                        </StatusTag>
-                      )}
-                      {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
-                        <QuestionType>
-                          {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
-                        </QuestionType>
-                      )}
-                    </div>
-                    <HeaderActions 
-                      onClick={(e) => e.stopPropagation()} 
-                      className="dropdown-container"
-                      style={{ marginLeft: 'auto' }}>
+                    {/* Using a 3-column grid layout for consistent positioning */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', width: '100%', alignItems: 'center' }}>
+                      {/* Status on the left */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                        {latestVersion.isActive !== false ? (
+                          <StatusTag published>
+                            Active
+                          </StatusTag>
+                        ) : (
+                          <StatusTag>
+                            Inactive
+                          </StatusTag>
+                        )}
+                      </div>
+                      
+                      {/* Question type in the center */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {(QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType) && (
+                          <QuestionType>
+                            {QUE_TYPE_LABELS[latestVersion.responseType] || latestVersion.responseType}
+                          </QuestionType>
+                        )}
+                      </div>
+                      
+                      {/* Three dots menu on the right */}
+                      <HeaderActions 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="dropdown-container"
+                        style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <DropdownButton
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1308,6 +1318,7 @@ const AllQuestions: React.FC = () => {
                         </DropdownMenu>
                       )}
                     </HeaderActions>
+                    </div>
                   </QuestionHeader>
                   
                   <QuestionContent>

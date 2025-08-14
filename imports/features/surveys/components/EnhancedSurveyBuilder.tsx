@@ -835,7 +835,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           console.error('Error loading survey:', error);
         } else {
           setSurvey(result);
-          setSections(result.sections || []);
+          // Use surveySections instead of sections to match the server-side property name
+          setSections(result.surveySections || []);
           
         // Replace the missing Meteor method call with a subscription to the questions.bySurvey publication
         const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
@@ -1580,6 +1581,32 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     setPreviewTheme(null);
   };
 
+  // Reference for the theme preview modal content
+  const themePreviewContentRef = useRef<HTMLDivElement>(null);
+
+  // Effect to handle click outside theme preview
+  useEffect(() => {
+    function handleClickOutsideThemePreview(event: MouseEvent) {
+      if (
+        showPreview && 
+        themePreviewContentRef.current && 
+        !themePreviewContentRef.current.contains(event.target as Node)
+      ) {
+        closePreview();
+      }
+    }
+    
+    // Add event listener when preview is open
+    if (showPreview) {
+      document.addEventListener('mousedown', handleClickOutsideThemePreview);
+    }
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideThemePreview);
+    };
+  }, [showPreview]);
+
   // Theme preview component
   const ThemePreview = ({ theme }: { theme: any }) => {
     if (!theme) return null;
@@ -1596,8 +1623,14 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center'
+      }}
+      onClick={(e) => {
+        // Close when clicking on the overlay background
+        if (e.target === e.currentTarget) {
+          closePreview();
+        }
       }}>
-        <div style={{
+        <div ref={themePreviewContentRef} style={{
           backgroundColor: theme.backgroundColor || '#ffffff',
           borderRadius: 12,
           padding: 20,
@@ -1607,7 +1640,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           overflow: 'auto',
           position: 'relative'
         }}>
-          <button 
+          {/* <button 
             onClick={closePreview}
             style={{
               position: 'absolute',
@@ -1628,7 +1661,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             }}
           >
             ×
-          </button>
+          </button> */}
           
           <div style={{
             backgroundColor: theme.primaryColor || theme.color || '#552a47',
@@ -1636,7 +1669,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             borderRadius: '8px 8px 0 0',
             marginBottom: '20px'
           }}>
-            <h2 style={{
+            <h2  onClick={closePreview} style={{
               color: '#fff',
               margin: 0,
               fontFamily: theme.headingFont || 'Inter, sans-serif'
@@ -1679,7 +1712,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               </div>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30 }}>
+            {/* <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 30 }}>
               <button style={{
                 backgroundColor: 'transparent',
                 color: theme.primaryColor || theme.color || '#552a47',
@@ -1703,7 +1736,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               }}>
                 Next
               </button>
-            </div>
+            </div> */}
             
             <div style={{ marginTop: 30, borderTop: `1px solid ${theme.accentColor || theme.secondaryColor || '#ddd'}`, paddingTop: 20 }}>
               <h4 style={{ fontFamily: theme.headingFont || 'Inter, sans-serif' }}>Theme Properties</h4>
@@ -1928,31 +1961,26 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         setSaving(true); // Show saving indicator
         
         // Call handleSaveSurvey to actually save the data
-        await handleSaveSurvey(isAutoSave);
+        const saveResult = await handleSaveSurvey(isAutoSave);
         
         // After successful save:
-        const now = Date.now();
-        setLastSaved(now);
-        
-        setTimeout(() => {
+        if (saveResult) {
+          const now = Date.now();
+          setLastSaved(now);
           setHasUnsavedChanges(false);
-          setSaving(false);
-          
-          // Show the saved message temporarily
-          setShowSavedMessage(true);
-          
-          // Hide the saved message after 2 seconds
-          setTimeout(() => {
-            setShowSavedMessage(false);
-          }, 2000);
-        }, 10);
+        }
+        
+        // Always reset the saving indicator
+        setSaving(false);
+        
+        return saveResult;
       } else {
         // If no changes, just reset states without showing UI indicators
         setSaving(false);
+        return true; // No changes needed to be saved, so technically it's a success
       }
-      
-      return true;
     } catch (error) {
+      console.error('Error in silentSave:', error);
       setSaving(false);
       return false;
     }
@@ -2173,6 +2201,37 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     };
   }, [hasUnsavedChanges, location.pathname, navigationContext, navigate, handleSaveSurvey]);
   
+  // Add beforeunload event handler to save survey before page refresh
+  useEffect(() => {
+    // Handler for page refresh or close
+    const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        // Standard way to show a confirmation dialog before leaving
+        event.preventDefault();
+        
+        // Try to save the survey before unloading
+        try {
+          // Attempt to save the survey
+          await handleSaveSurvey(true);
+        } catch (error) {
+          console.error('Error saving survey before unload:', error);
+        }
+        
+        // Standard message (browsers may show their own message instead)
+        event.returnValue = 'Changes you made may not be saved.';
+        return event.returnValue;
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges, handleSaveSurvey]);
+  
   // Handle adding a new section
   const handleAddSection = () => {
     setCurrentSection(undefined);
@@ -2185,16 +2244,106 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     setShowSectionEditor(true);
   };
   
+  // Track section saving state with a ref to avoid race conditions
+  const isSavingSectionRef = useRef(false);
+
   // Handle saving a section
-  const handleSaveSection = (sectionData: SurveySectionItem) => {
-    if (currentSection) {
-      // Update existing section
-      setSections(prev => prev.map(s => 
-        s.id === sectionData.id ? sectionData : s
-      ));
-    } else {
-      // Add new section
-      setSections(prev => [...prev, sectionData]);
+  const handleSaveSection = async (sectionData: SurveySectionItem) => {
+    // Prevent multiple simultaneous save operations
+    if (isSavingSectionRef.current) {
+      console.log('Already saving a section, ignoring duplicate request');
+      return;
+    }
+    
+    console.log('Starting section save:', sectionData.id);
+    isSavingSectionRef.current = true;
+    
+    try {
+      // Show saving indicator immediately
+      setSaving(true);
+      
+      // Store the section data in a local variable to ensure it's not lost
+      const sectionToSave = { ...sectionData };
+      console.log('Section to save:', sectionToSave);
+      
+      // Update sections state first - use functional update to ensure we have the latest state
+      if (currentSection) {
+        // Update existing section
+        setSections(prevSections => {
+          console.log('Updating existing section:', sectionToSave.id);
+          return prevSections.map(s => s.id === sectionToSave.id ? sectionToSave : s);
+        });
+      } else {
+        // Add new section
+        setSections(prevSections => {
+          console.log('Adding new section:', sectionToSave.id);
+          return [...prevSections, sectionToSave];
+        });
+      }
+      
+      // Ensure React has processed the state update
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Prepare survey data for saving with the updated sections
+      const updatedSurveyData = {
+        ...survey,
+        // Use surveySections instead of sections to match the server-side property name
+        surveySections: [...sections, ...(currentSection ? [] : [sectionToSave])].map(section => ({
+          id: section.id,
+          name: section.name,
+          description: section.description,
+          isActive: section.isActive !== undefined ? section.isActive : true,
+          priority: section.priority,
+          color: section.color,
+          instructions: section.instructions,
+          isRequired: section.isRequired !== undefined ? section.isRequired : false
+        }))
+      };
+      
+      // Save the survey directly with the updated sections
+      console.log('Saving survey with updated sections...', updatedSurveyData.surveySections);
+      
+      // Call Meteor method directly to ensure the save happens
+      Meteor.call('surveys.update', survey._id, updatedSurveyData, (error: any, result: any) => {
+        if (error) {
+          console.error('Error saving section:', error);
+          showErrorAlert(`Failed to save section: ${error.message || 'Unknown error'}`);
+          setSaving(false);
+        } else {
+          console.log('Section saved successfully:', sectionToSave.id);
+          
+          // Update the survey object with the latest data
+          const updatedSurvey = Surveys.findOne(survey._id);
+          if (updatedSurvey) {
+            setSurvey(updatedSurvey);
+            
+            // Make sure sections state is updated with the server data
+            if (updatedSurvey.surveySections && Array.isArray(updatedSurvey.surveySections)) {
+              setSections(updatedSurvey.surveySections);
+            }
+          }
+          
+          // Show success message
+          setShowSavedMessage(true);
+          setTimeout(() => setShowSavedMessage(false), 2000);
+          
+          // Reset saving state
+          setSaving(false);
+          setHasUnsavedChanges(false);
+          
+          // Close the section editor and reset current section AFTER save completes
+          setShowSectionEditor(false);
+          setCurrentSection(undefined);
+        }
+        
+        // Allow saving sections again
+        isSavingSectionRef.current = false;
+      });
+    } catch (error) {
+      console.error('Error in section save process:', error);
+      showErrorAlert(`Failed to save section: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setSaving(false);
+      isSavingSectionRef.current = false;
     }
   };
   
@@ -2488,7 +2637,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   };
   
   // Handle selecting questions in the question selector
-  const handleSelectQuestions = (questionIds: string[], sectionId: string) => {
+  const handleSelectQuestions = async (questionIds: string[], sectionId: string) => {
     
     // Get currently selected questions for this section
     const currentSectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
@@ -2545,14 +2694,47 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       return updatedSurvey;
     });
     
-    // Close the question selector modal
-    setShowQuestionSelector(false);
+    // Set hasUnsavedChanges to true to ensure silentSave will actually save
+    setHasUnsavedChanges(true);
+    
+    // Show saving indicator
+    setSaving(true);
+    
+    try {
+      // Auto-save the survey silently after selecting questions
+      // This prevents loss of question selections if the user doesn't manually save
+      // Wait for save to complete before closing the question selector
+      await silentSave(true);
+      
+      // Show success message
+      setShowSavedMessage(true);
+      setTimeout(() => {
+        setShowSavedMessage(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Error saving questions:', error);
+      // Show error alert
+      showErrorAlert('Failed to save questions. Please try again.');
+    } finally {
+      // Hide saving indicator
+      setSaving(false);
+      
+      // Close the question selector modal
+      setShowQuestionSelector(false);
+    }
   };
   
   // Handle editing a question
   const handleEditQuestion = (questionId: string, sectionId: string | null) => {
-    // Use context's openPanel method instead of local state
-    openPanel(questionId, surveyId);
+    // Set hasUnsavedChanges to true to ensure silentSave will actually save
+    setHasUnsavedChanges(true);
+    
+    // Auto-save the survey silently before opening the question edit panel
+    // This prevents loss of question selections when editing without saving first
+    silentSave(true).then(() => {
+      // Use context's openPanel method instead of local state
+      openPanel(questionId, surveyId);
+    });
   };
 
   // Handle question creation/edit completion
@@ -3770,6 +3952,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             key={question.id}
                             className={`question-item ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
                             draggable
+                            onClick={() => handleEditQuestion(question.id, null)}
+                            style={{ cursor: 'pointer' }}
                             onDragStart={(e) => {
                               e.dataTransfer.setData('text/plain', JSON.stringify({
                                 questionId: question.id,
@@ -3815,7 +3999,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <div style={{ paddingRight: '8px', cursor: 'grab' }}>
+                              <div 
+                                style={{ paddingRight: '8px', cursor: 'grab' }}
+                                onClick={(e) => e.stopPropagation()} // Prevent triggering edit when clicking drag handle
+                              >
                                 <FiMove size={16} />
                               </div>
                               <div>
@@ -3827,7 +4014,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <button
-                                onClick={() => handleEditQuestion(question.id, null)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent triggering the container's onClick
+                                  handleEditQuestion(question.id, null);
+                                }}
                                 style={{
                                   background: 'none',
                                   border: 'none',
@@ -3839,7 +4029,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                                 <FiEdit2 />
                               </button>
                               <button
-                                onClick={() => handleRemoveQuestion(question.id, null)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent triggering the container's onClick
+                                  handleRemoveQuestion(question.id, null);
+                                }}
                                 style={{
                                   background: 'none',
                                   border: 'none',
