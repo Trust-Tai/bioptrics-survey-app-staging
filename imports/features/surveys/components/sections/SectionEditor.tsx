@@ -447,8 +447,12 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
     
     setIsSubmitting(true);
     
+    // Generate a unique ID for new sections using a more reliable method
+    const uniqueId = section?.id || `section_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    console.log('Generated section ID:', uniqueId);
+    
     const sectionData: SurveySectionItem = {
-      id: section?.id || `section_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      id: uniqueId,
       name: formData.name || '',
       description: formData.description || '',
       isActive: formData.isActive ?? true,
@@ -459,9 +463,11 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
       image: formData.image,
     };
     
+    // Call onSave with the section data
+    // The parent component will handle closing the editor after save completes
     onSave(sectionData);
     setIsSubmitting(false);
-    onClose();
+    // Don't call onClose() here - let the parent component control when to close
   };
   
   if (!isOpen) return null;
