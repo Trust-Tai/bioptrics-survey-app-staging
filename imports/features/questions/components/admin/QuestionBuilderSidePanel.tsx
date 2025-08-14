@@ -1147,10 +1147,9 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
               </div>
             </div>
           </div>
+        </div>
       
-    </div>
-
-        {/* Alert message */}
+      {/* Alert message */}
         {alert && (
           <div style={{
             position: 'absolute',

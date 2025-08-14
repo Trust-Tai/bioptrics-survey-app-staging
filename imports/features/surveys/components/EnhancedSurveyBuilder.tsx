@@ -1827,7 +1827,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     );
   };
 
-  // Auto-save timer reference
+  // Auto-save disabled via flag
+  const AUTO_SAVE_ENABLED = false;
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Track if there are unsaved changes
@@ -1890,12 +1891,14 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       document.addEventListener(event, handleUserActivity);
     });
     
-    // Set up periodic auto-save (every 2 minutes)
+    // Set up periodic auto-save (every 2 minutes) - disabled via flag
     const periodicSaveInterval = setInterval(() => {
-      // Only save if there are unsaved changes and user has been inactive for at least 5 seconds
-      const inactiveTime = Date.now() - lastUserActivity;
-      if (hasUnsavedChanges && inactiveTime > 5000) {
-        silentSave(true); // Pass true to indicate this is an auto-save
+      if (AUTO_SAVE_ENABLED) {
+        // Only save if there are unsaved changes and user has been inactive for at least 5 seconds
+        const inactiveTime = Date.now() - lastUserActivity;
+        if (hasUnsavedChanges && inactiveTime > 5000) {
+          silentSave(true); // Pass true to indicate this is an auto-save
+        }
       }
     }, 120000); // 2 minutes
     
@@ -1946,15 +1949,24 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         setSaving(true); // Show saving indicator immediately when changes are made
       }
       
-      // Set a new timer for 5 seconds of inactivity before saving
-      autoSaveTimerRef.current = setTimeout(() => {
-        silentSave(true); // Pass true to indicate this is an auto-save
-      }, 5000); // 5 seconds of inactivity
+      if (AUTO_SAVE_ENABLED) {
+        // Set a new timer for 5 seconds of inactivity before saving
+        autoSaveTimerRef.current = setTimeout(() => {
+          silentSave(true); // Pass true to indicate this is an auto-save
+        }, 5000); // 5 seconds of inactivity
+      } else {
+        // Auto-save disabled - just clear saving indicator
+        setSaving(false);
+      }
     }
   };
   
   // Silent save function that doesn't update UI or show notifications
   const silentSave = async (isAutoSave = false) => {
+    if (!AUTO_SAVE_ENABLED && isAutoSave) {
+      return true; // Skip auto-save when disabled
+    }
+    
     try {
       // Only show saving indicator if there are actual changes to save
       if (hasUnsavedChanges) {
