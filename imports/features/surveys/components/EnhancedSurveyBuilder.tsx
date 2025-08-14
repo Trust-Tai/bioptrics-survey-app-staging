@@ -3802,6 +3802,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             key={question.id}
                             className={`question-item ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
                             draggable
+                            onClick={() => handleEditQuestion(question.id, null)}
+                            style={{ cursor: 'pointer' }}
                             onDragStart={(e) => {
                               e.dataTransfer.setData('text/plain', JSON.stringify({
                                 questionId: question.id,
@@ -3847,7 +3849,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <div style={{ paddingRight: '8px', cursor: 'grab' }}>
+                              <div 
+                                style={{ paddingRight: '8px', cursor: 'grab' }}
+                                onClick={(e) => e.stopPropagation()} // Prevent triggering edit when clicking drag handle
+                              >
                                 <FiMove size={16} />
                               </div>
                               <div>
@@ -3859,7 +3864,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <button
-                                onClick={() => handleEditQuestion(question.id, null)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent triggering the container's onClick
+                                  handleEditQuestion(question.id, null);
+                                }}
                                 style={{
                                   background: 'none',
                                   border: 'none',
@@ -3871,7 +3879,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                                 <FiEdit2 />
                               </button>
                               <button
-                                onClick={() => handleRemoveQuestion(question.id, null)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent triggering the container's onClick
+                                  handleRemoveQuestion(question.id, null);
+                                }}
                                 style={{
                                   background: 'none',
                                   border: 'none',

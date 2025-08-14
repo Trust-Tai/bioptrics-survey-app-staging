@@ -216,6 +216,7 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   key={question.id}
                   className={`survey-section-question ${isDragging ? 'dragging' : ''} ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
                   draggable
+                  onClick={() => onEditQuestion(question.id, section.id)}
                   onDragStart={(e) => handleDragStart(e, index, question.id)}
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -224,8 +225,13 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   onDragLeave={handleQuestionDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <div className="survey-section-question-drag-handle" style={{ paddingTop: '3px', display: 'inline-flex', alignItems: 'center' }}>
+                  <div 
+                    className="survey-section-question-drag-handle" 
+                    style={{ paddingTop: '3px', display: 'inline-flex', alignItems: 'center' }}
+                    onClick={(e) => e.stopPropagation()} // Prevent triggering edit when clicking drag handle
+                  >
                     <FiMove size={16} />
                   </div>
                   <div className="survey-section-question-title">
@@ -234,7 +240,10 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                   <div className="survey-section-question-actions">
                     <button 
                       className="btn btn-icon btn-secondary"
-                      onClick={() => onEditQuestion(question.id, section.id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the container's onClick
+                        onEditQuestion(question.id, section.id);
+                      }}
                       style={{ 
                         display: 'inline-flex', 
                         alignItems: 'center', 
@@ -247,7 +256,10 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
                     </button>
                     <button 
                       className="btn btn-icon btn-secondary"
-                      onClick={() => onRemoveQuestion(question.id, section.id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the container's onClick
+                        onRemoveQuestion(question.id, section.id);
+                      }}
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Delete question"
                     >
