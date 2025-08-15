@@ -56,6 +56,7 @@ interface Survey {
     description: string;
   }>;
   expectationsTitle?: string;
+  startButtonLabel?: string;
 }
 
 interface ModernSurveyContentProps {

@@ -27,6 +27,7 @@ interface Survey {
     description: string;
   }>;
   expectationsTitle?: string;
+  startButtonLabel?: string;
 }
 
 interface SurveySection {
@@ -864,7 +865,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             // Continue with original onStart function
             onStart();
           }}>
-            Start Survey <FiArrowRight size={18} />
+{survey.startButtonLabel || 'Start Survey'} <FiArrowRight size={18} />
           </StartButton>
         </ButtonContainer>
       </ContentContainer>

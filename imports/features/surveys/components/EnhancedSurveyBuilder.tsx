@@ -2126,6 +2126,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         // Include expectations data
         expectations: survey?.expectations || [],
         expectationsTitle: survey?.expectationsTitle || '',
+        startButtonLabel: survey?.startButtonLabel || '',
         updatedAt: new Date(),
       };
       
@@ -4485,6 +4486,26 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                       >
                         <FiPlus size={16} /> Add Expectation
                       </button>
+                    </div>
+
+                    {/* Start Button Label Section */}
+                    <div className="form-group" style={{ marginTop: 30 }}>
+                      <label htmlFor="startButtonLabel">Start Button Label</label>
+                      <input
+                        type="text"
+                        id="startButtonLabel"
+                        className="form-control"
+                        value={survey?.startButtonLabel || ''}
+                        onChange={(e) => {
+                          setSurvey({...survey, startButtonLabel: e.target.value});
+                          setHasUnsavedChanges(true);
+                          triggerAutoSave();
+                        }}
+                        placeholder="Start Survey"
+                      />
+                      <small style={{ color: '#666', fontSize: 12, marginTop: 5, display: 'block' }}>
+                        This text will appear on the button that starts the survey. Default is "Start Survey".
+                      </small>
                     </div>
                   </div>
                     
