@@ -1254,13 +1254,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // Update survey state when data is ready
       // Ensure defaultSettings exists to prevent null reference errors
       if (!currentSurvey.defaultSettings) {
-        currentSurvey.defaultSettings = { allowRetake: true };
+        currentSurvey.defaultSettings = { allowRetake: true, allowAnonymous: true };
       }
       setSurvey(currentSurvey);
       
       // Initialize sections if they exist in the survey
-      
-      
       if (currentSurvey.surveySections && Array.isArray(currentSurvey.surveySections)) {
         setSections(currentSurvey.surveySections);
       } else if (currentSurvey.sections && Array.isArray(currentSurvey.sections)) {
@@ -4405,6 +4403,14 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   survey={survey}
                   onSurveyUpdate={(updatedSurvey) => {
                     setSurvey(updatedSurvey);
+                    // Sync sections state with the updated survey
+                    if (updatedSurvey.surveySections && Array.isArray(updatedSurvey.surveySections)) {
+                      setSections(updatedSurvey.surveySections);
+                    }
+                    // Sync sectionQuestions state with the updated survey
+                    if (updatedSurvey.sectionQuestions && Array.isArray(updatedSurvey.sectionQuestions)) {
+                      setSurveyQuestions(updatedSurvey.sectionQuestions);
+                    }
                     setHasUnsavedChanges(true);
                   }}
                   onHasUnsavedChanges={setHasUnsavedChanges}

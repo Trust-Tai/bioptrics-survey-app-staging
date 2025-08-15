@@ -24,13 +24,13 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   const { openPanel } = useQuestionBuilderPanel();
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
+  const [currentSectionId, setCurrentSectionId] = useState<string | undefined>(undefined);
   const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
   const [draggingQuestionId, setDraggingQuestionId] = useState<string | null>(null);
   const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
   const [sections, setSections] = useState<any[]>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
-  const [currentSectionId, setCurrentSectionId] = useState<string>('');
 
   // Helper function to extract clean question text
   const extractQuestionText = (question: any): string => {
@@ -227,41 +227,50 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   const handleSelectQuestions = (selectedQuestionIds: string[]) => {
     console.log('Selected question IDs:', selectedQuestionIds);
     
-    // Add selected questions to the survey
-    const newQuestions: QuestionItem[] = [];
-    const currentQuestionIds = Array.isArray(survey?.selectedQuestions) ? survey.selectedQuestions : [];
-    const questionsToAdd: string[] = [];
+    // Get questions that aren't already in the survey
+    const questionsToAdd = selectedQuestionIds.filter(id => 
+      !surveyQuestions.some(q => q.id === id)
+    );
     
-    selectedQuestionIds.forEach(questionId => {
-      // Skip if question is already in the survey
-      if (currentQuestionIds.includes(questionId)) {
-        return;
-      }
-      
-      const questionDoc = Questions.findOne(questionId);
+    if (questionsToAdd.length === 0) {
+      setShowQuestionSelector(false);
+      return;
+    }
+    
+    // Create question items for the new questions
+    const newQuestions: QuestionItem[] = questionsToAdd.map(id => {
+      const questionDoc = Questions.findOne(id);
       if (questionDoc) {
-        const latestVersion = getLatestQuestionVersion(questionDoc);
-        
-        const questionItem: QuestionItem = {
-          id: questionId,
+        return {
+          id: id,
           text: extractQuestionText(questionDoc),
-          type: latestVersion?.responseType || 'text',
-          status: 'published' as 'published'
+          type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
+          status: 'published' as const,
+          sectionId: currentSectionId || undefined // Assign to section if specified
         };
-        
-        newQuestions.push(questionItem);
-        questionsToAdd.push(questionId);
       }
-    });
+      return null;
+    }).filter(Boolean) as QuestionItem[];
     
-    // Update the survey questions list
+    // Add to survey questions
     setSurveyQuestions(prev => [...prev, ...newQuestions]);
     
-    // Update the survey with the new questions
-    if (survey && onSurveyUpdate && questionsToAdd.length > 0) {
+    // Update survey with new questions and section assignments
+    if (survey && onSurveyUpdate) {
       const updatedSurvey = {
         ...survey,
-        selectedQuestions: [...currentQuestionIds, ...questionsToAdd]
+        selectedQuestions: [...(survey.selectedQuestions || []), ...questionsToAdd],
+        sectionQuestions: [
+          ...(survey.sectionQuestions || []),
+          ...questionsToAdd.map((questionId, index) => ({
+            questionId: questionId,
+            sectionId: currentSectionId || undefined,
+            type: newQuestions[index]?.type || 'text',
+            order: currentSectionId ? 
+              getQuestionsForSection(currentSectionId).length + index : 
+              surveyQuestions.filter(q => !q.sectionId).length + index
+          }))
+        ]
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -401,17 +410,20 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
         setSurveyQuestions(prev => [...prev, newQuestion]);
 
-        // Update survey
+        // Update survey with the new question
         if (survey && onSurveyUpdate) {
           const updatedSurvey = {
             ...survey,
             selectedQuestions: [...(survey.selectedQuestions || []), questionId],
-            sectionQuestions: [...(survey.sectionQuestions || []), {
-              questionId: questionId,
-              sectionId: sectionId,
-              type: newQuestion.type,
-              order: getQuestionsForSection(sectionId).length
-            }]
+            sectionQuestions: [
+              ...(survey.sectionQuestions || []),
+              {
+                questionId: questionId,
+                sectionId: sectionId,
+                type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
+                order: getQuestionsForSection(sectionId).length
+              }
+            ]
           };
           onSurveyUpdate(updatedSurvey);
         }
@@ -428,7 +440,9 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Handle choosing from question bank for a specific section
   const handleChooseFromQuestionBankForSection = (sectionId: string) => {
-    Meteor.subscribe('questions.all', surveyId, {
+    setCurrentSectionId(sectionId);
+    
+    Meteor.subscribe('questions.all', {
       onReady: () => {
         const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
           const latestVersion = getLatestQuestionVersion(q);
@@ -440,7 +454,6 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           };
         });
         setQuestionSelectorItems(refreshedQuestions);
-        setCurrentSectionId(sectionId);
         setShowQuestionSelector(true);
       },
       onError: (error: any) => {
@@ -460,16 +473,23 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
               padding: 12px 16px;
               background-color: #fff;
               border-radius: 8px;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-              margin-bottom: 12px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
+              border: 1px solid #e2e8f0;
+              margin-bottom: 8px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              position: relative;
               transition: all 0.2s ease;
               cursor: pointer;
             }
             .question-item:hover {
               box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+            .question-item .question-actions {
+              opacity: 0;
+              transition: opacity 0.2s ease;
+              margin-left: auto;
+            }
+            .question-item:hover .question-actions {
+              opacity: 1;
             }
             .question-item.dragging {
               opacity: 0.5;
@@ -531,7 +551,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                       setDraggingQuestionId(null);
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
                       <div 
                         style={{
                           cursor: 'grab',
@@ -549,11 +569,49 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                       >
                         <FiMove size={16} />
                       </div>
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 500 }}>{question.text}</div>
                         <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                           {question.type}
                         </div>
+                      </div>
+                      <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditQuestion(question.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#6b7280',
+                            padding: '4px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                          title="Edit question"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteQuestion(question.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#dc2626',
+                            padding: '4px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                          title="Delete question"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -648,7 +706,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                           }}
                           style={{ marginBottom: '8px' }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
                             <div 
                               style={{
                                 cursor: 'grab',
@@ -666,11 +724,49 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                             >
                               <FiMove size={16} />
                             </div>
-                            <div>
+                            <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 500 }}>{question.text}</div>
                               <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                                 {question.type}
                               </div>
+                            </div>
+                            <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditQuestion(question.id);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Edit question"
+                              >
+                                <FiEdit2 size={14} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteQuestion(question.id);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#dc2626',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Delete question"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -758,7 +854,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         questions={questionSelectorItems}
         selectedQuestionIds={surveyQuestions.map(q => q.id)}
         onSelectQuestions={handleSelectQuestions}
-        sectionId={currentSectionId}
+        sectionId={currentSectionId || ''}
       />
 
       {/* Section Editor Modal */}
