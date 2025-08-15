@@ -154,7 +154,7 @@
 }
 
 .question-required-indicator {
-  color: var(--error-color);
+  color: var(--error-color, #ff0000);
   font-weight: 400;
   margin-left: 5px;
   font-size: 0.9em;
@@ -640,7 +640,7 @@
 
 /* Error Message */
 .error-message {
-  color: var(--error-color);
+  color: var(--error-color, #ff0000);
   font-size: 14px;
   margin-bottom: 16px;
 }

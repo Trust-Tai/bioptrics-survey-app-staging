@@ -121,10 +121,17 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       setSurveyQuestions([]);
       setSurveyOrder([]);
     }
-  }, [survey?.sectionQuestions]);
+  }, [survey?.sectionQuestions, survey?.selectedQuestions, survey?.surveySections]);
 
   // Build unified order for sections and questions
   const buildSurveyOrder = (questions: QuestionItem[], sections: any[]) => {
+    console.log('Building survey order with:', {
+      questionsCount: questions.length,
+      sectionsCount: sections.length,
+      existingSurveyOrder: survey?.surveyOrder,
+      surveyId: survey?._id
+    });
+    
     // Check if survey already has a saved order
     if (survey?.surveyOrder && Array.isArray(survey.surveyOrder)) {
       // Filter existing order to only include items that still exist
@@ -180,6 +187,43 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     });
     
     setSurveyOrder(order);
+    
+    console.log('Built survey order:', order);
+    
+    // Save the order to the survey if it's different from what's saved
+    if (JSON.stringify(order) !== JSON.stringify(survey?.surveyOrder || [])) {
+      console.log('Survey order changed, updating survey:', {
+        oldOrder: survey?.surveyOrder,
+        newOrder: order,
+        onSurveyUpdateExists: !!onSurveyUpdate
+      });
+      
+      const updatedSurvey = {
+        ...survey,
+        surveyOrder: order
+      };
+      
+      if (onSurveyUpdate) {
+        onSurveyUpdate(updatedSurvey);
+        console.log('Called onSurveyUpdate with updated survey order');
+        
+        // Also save directly to database to ensure survey order is persisted
+        if (survey?._id) {
+          console.log('Saving survey order directly to database...');
+          Meteor.call('surveys.update', survey._id, { surveyOrder: order }, (error: any) => {
+            if (error) {
+              console.error('Error saving survey order to database:', error);
+            } else {
+              console.log('Survey order successfully saved to database');
+            }
+          });
+        }
+      } else {
+        console.error('onSurveyUpdate callback is not available!');
+      }
+    } else {
+      console.log('Survey order unchanged, skipping update');
+    }
   };
 
   const handleCreateQuestion = () => {

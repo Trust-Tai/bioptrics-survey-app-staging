@@ -573,7 +573,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                   estimatedTime: `${minutes}`,
                   estimatedTimeSeconds: totalWithBuffer,
                   questionCount: questionDocs.length,
-                  sectionCount: result.sectionCount || 3
+                  sectionCount: result.sectionCount
                 });
                 
                 // Store in localStorage for potential use by other components

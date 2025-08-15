@@ -519,11 +519,50 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
       console.log('No sectionQuestions found, checking selectedQuestions for fallback');
     }
 
-    // Process selectedQuestions (questions without sections) - always process both sources
-    if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
+    // Process selectedQuestions (questions without sections) - handle both array and object formats
+    if (survey.selectedQuestions) {
       console.log('Processing selectedQuestions:', survey.selectedQuestions);
       
-      Object.entries(survey.selectedQuestions).forEach(([sectionId, sectionQuestions]) => {
+      // Handle array format (legacy format with just question IDs)
+      if (Array.isArray(survey.selectedQuestions)) {
+        console.log('selectedQuestions is an array, processing question IDs:', survey.selectedQuestions);
+        
+        // Find or create a default section for these questions
+        let targetSectionId = 'default-section';
+        const defaultSection = sortedSections.find(s => s.id === 'default-section');
+        if (!defaultSection && sortedSections.length > 0) {
+          targetSectionId = sortedSections[0].id;
+        }
+        
+        survey.selectedQuestions.forEach((questionId: string, index: number) => {
+          if (questionId && typeof questionId === 'string') {
+            console.log('Adding question from selectedQuestions array:', {
+              questionId,
+              targetSectionId,
+              index
+            });
+            
+            const targetSection = sortedSections.find(s => s.id === targetSectionId);
+            
+            allQuestions.push({
+              _id: questionId,
+              id: questionId,
+              text: 'Loading question...', // Will be loaded from database
+              type: 'text', // Default type, will be updated from database
+              sectionId: targetSectionId,
+              sectionName: targetSection?.name || 'Survey Questions',
+              options: [],
+              scale: undefined,
+              labels: [],
+              required: true,
+              order: index
+            });
+          }
+        });
+      }
+      // Handle object format (sections with question arrays)
+      else if (typeof survey.selectedQuestions === 'object') {
+        Object.entries(survey.selectedQuestions).forEach(([sectionId, sectionQuestions]) => {
         console.log(`Processing questions for section ID: ${sectionId}`);
         
         // Determine the target section ID
@@ -585,7 +624,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
             }
           });
         }
-      });
+        });
+      }
     }
     
     // Add site text questions if available
@@ -697,12 +737,34 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
         questionCount: allQuestions.filter(q => q.sectionId === section.id).length
       }))
     });
-// Calculate and store the total survey time for all questions
+    // Calculate and store the total survey time for all questions
     console.log('Calculating total time for all questions in survey');
     Meteor.call('getQuestionDocuments', allQuestions.map(q => q._id), (questionError: any, questionDocs: any) => {
       if (questionError) {
         console.error('Error fetching question documents:', questionError);
       } else if (questionDocs && questionDocs.length > 0) {
+        console.log('Received question documents from database:', questionDocs);
+        
+        // Update questions with actual data from database
+        const updatedQuestions = allQuestions.map(question => {
+          const questionDoc = questionDocs.find((doc: any) => doc._id === question._id);
+          if (questionDoc && questionDoc.currentVersion) {
+            const version = questionDoc.currentVersion;
+            return {
+              ...question,
+              text: version.questionText || version.text || question.text,
+              type: version.responseType || version.type || question.type,
+              options: version.options || question.options,
+              scale: version.scale || question.scale,
+              labels: version.labels || question.labels,
+              required: version.required !== undefined ? version.required : question.required
+            };
+          }
+          return question;
+        });
+        
+        console.log('Updated questions with database data:', updatedQuestions);
+        setQuestions(updatedQuestions);
         // Calculate total time directly from question documents
         const totalEstimatedSeconds = questionDocs.reduce((total: number, doc: any) => {
           const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
@@ -1192,10 +1254,61 @@ const handleRestart = () => {
       console.error('Error resetting timer data:', error);
     }
     
-    // Navigate to the first section or question
-    if (sections.length > 0) {
+    // Navigate based on the survey's question arrangement from Questions tab
+    console.log('Starting survey - checking question arrangement:', {
+      sectionsLength: sections.length,
+      questionsLength: questions.length,
+      surveyOrder: survey.surveyOrder,
+      sectionQuestions: survey.sectionQuestions,
+      selectedQuestions: survey.selectedQuestions,
+      availableSections: sections.map(s => ({ id: s.id, name: s.name })),
+      availableQuestions: questions.map(q => ({ id: q._id || q.id, text: q.text?.substring(0, 30) }))
+    });
+
+    // Check if we have a defined survey order from the Questions tab
+    if (survey.surveyOrder && survey.surveyOrder.length > 0) {
+      console.log('Using surveyOrder from Questions tab:', survey.surveyOrder);
+      const firstItem = survey.surveyOrder[0];
+      
+      if (firstItem.type === 'section') {
+        updateCurrentStep({ type: 'section', sectionId: firstItem.id });
+      } else if (firstItem.type === 'question') {
+        updateCurrentStep({ type: 'question', questionId: firstItem.id });
+      }
+    }
+    // Check if we have sectionQuestions (Questions tab arrangement)
+    else if (survey.sectionQuestions && survey.sectionQuestions.length > 0) {
+      console.log('Using sectionQuestions arrangement:', survey.sectionQuestions);
+      const firstQuestion = survey.sectionQuestions[0];
+      
+      // If the first question has a section, go to that section
+      if (firstQuestion.sectionId && sections.some(s => s.id === firstQuestion.sectionId)) {
+        updateCurrentStep({ type: 'section', sectionId: firstQuestion.sectionId });
+      } else {
+        // Go directly to the first question
+        updateCurrentStep({ type: 'question', questionId: firstQuestion.questionId || firstQuestion.id });
+      }
+    }
+    // Check if we have selectedQuestions (legacy format, questions without sections)
+    else if (survey.selectedQuestions && Array.isArray(survey.selectedQuestions) && survey.selectedQuestions.length > 0) {
+      console.log('Using selectedQuestions array:', survey.selectedQuestions);
+      // Go directly to the first question ID
+      updateCurrentStep({ type: 'question', questionId: survey.selectedQuestions[0] });
+    }
+    else if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object' && Object.keys(survey.selectedQuestions).length > 0) {
+      console.log('Using selectedQuestions object:', survey.selectedQuestions);
+      // Get the first question from the selectedQuestions object
+      const firstSectionQuestions = Object.values(survey.selectedQuestions)[0];
+      if (Array.isArray(firstSectionQuestions) && firstSectionQuestions.length > 0) {
+        updateCurrentStep({ type: 'question', questionId: firstSectionQuestions[0] });
+      }
+    }
+    // Fallback to original logic
+    else if (sections.length > 0) {
+      console.log('Fallback: Using first section');
       updateCurrentStep({ type: 'section', sectionId: sections[0].id });
     } else if (questions.length > 0) {
+      console.log('Fallback: Using first question');
       updateCurrentStep({ type: 'question', questionId: questions[0]._id || questions[0].id || '' });
     }
   };
@@ -2886,7 +2999,26 @@ const handleRestart = () => {
         
       case 'section':
         const currentSection = getCurrentSection();
-        if (!currentSection) return null;
+        console.log('Section rendering debug:', {
+          currentStepType: currentStep.type,
+          currentStepSectionId: currentStep.sectionId,
+          availableSections: sections.map(s => ({ id: s.id, name: s.name })),
+          foundSection: currentSection
+        });
+        
+        if (!currentSection) {
+          console.error('Section not found! Falling back to first question or welcome screen');
+          // Fallback: try to go to the first question instead
+          if (questions.length > 0) {
+            const firstQuestion = questions[0];
+            updateCurrentStep({ type: 'question', questionId: firstQuestion._id || firstQuestion.id || '' });
+            return null; // Will re-render with question
+          } else {
+            // No questions available, go back to welcome
+            updateCurrentStep({ type: 'welcome' });
+            return null; // Will re-render with welcome
+          }
+        }
         
         // Calculate total questions for this section
         const sectionQuestionsCount = getQuestionsCountForSection(currentSection.id);
