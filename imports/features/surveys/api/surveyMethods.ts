@@ -1460,8 +1460,33 @@ if (Meteor.isServer) {
           throw new Meteor.Error('not-found', 'Survey not found');
         }
         
-        // Count unique questions in the survey (avoid counting duplicates)
-        const uniqueQuestionIds = new Set(Object.keys(survey.selectedQuestions || {}));
+        // Collect unique question IDs from both sources
+        const uniqueQuestionIds = new Set();
+        
+        // From selectedQuestions (questions without sections)
+        if (survey.selectedQuestions) {
+          console.log('Found selectedQuestions:', survey.selectedQuestions.length);
+          survey.selectedQuestions.forEach((questionId: string) => {
+            uniqueQuestionIds.add(questionId);
+            console.log(`Added question ID from selectedQuestions: ${questionId}`);
+          });
+        } else {
+          console.log('No selectedQuestions found in survey');
+        }
+        
+        // From sectionQuestions (questions with sections)
+        if (survey.sectionQuestions) {
+          console.log('Found sectionQuestions:', survey.sectionQuestions.length);
+          survey.sectionQuestions.forEach((sectionQuestion: any) => {
+            if (sectionQuestion.questionId) {
+              uniqueQuestionIds.add(sectionQuestion.questionId);
+              console.log(`Added question ID from sectionQuestions: ${sectionQuestion.questionId}`);
+            }
+          });
+        } else {
+          console.log('No sectionQuestions found in survey');
+        }
+        
         const questionCount = uniqueQuestionIds.size + (survey.siteTextQuestions?.length || 0);
         
         // Get categories as sections
@@ -1472,49 +1497,48 @@ if (Meteor.isServer) {
         let questionsWithTimeData = 0;
         
         // Process all questions to get their estimated time
-        if (survey.selectedQuestions) {
-          const questionsByCategory: Record<string, Array<any>> = {};
-          
-          // Detailed logging for debugging
-          console.log(`Processing ${Object.keys(survey.selectedQuestions).length} questions for survey ${surveyId}`);
-          
-          for (const questionId of Object.keys(survey.selectedQuestions)) {
-            const question = await Questions.findOneAsync({ _id: questionId });
-            if (question && question.versions && question.versions.length > 0) {
-              // Get the current version of the question
-              const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+        const questionsByCategory: Record<string, Array<any>> = {};
+        
+        // Detailed logging for debugging
+        console.log(`Processing ${uniqueQuestionIds.size} unique questions for survey ${surveyId}`);
+        
+        // Process all unique question IDs
+        for (const questionId of Array.from(uniqueQuestionIds)) {
+          const question = await Questions.findOneAsync({ _id: questionId as string });
+          if (question && question.versions && question.versions.length > 0) {
+            // Get the current version of the question
+            const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+            
+            // Get the estimated time for this question
+            if (currentVersion) {
+              // Use estimatedTimeSeconds if available, otherwise use default (30 seconds)
+              // Make sure to convert to a number in case it's stored as a string
+              const questionTimeSeconds = currentVersion.estimatedTimeSeconds ? 
+                Number(currentVersion.estimatedTimeSeconds) : 30;
               
-              // Get the estimated time for this question
-              if (currentVersion) {
-                // Use estimatedTimeSeconds if available, otherwise use default (30 seconds)
-                // Make sure to convert to a number in case it's stored as a string
-                const questionTimeSeconds = currentVersion.estimatedTimeSeconds ? 
-                  Number(currentVersion.estimatedTimeSeconds) : 30;
-                
-                console.log(`Question ${questionId}: estimatedTimeSeconds = ${questionTimeSeconds} seconds`);
-                totalEstimatedTimeSeconds += questionTimeSeconds;
-                questionsWithTimeData++;
-                
-                // Process category data for sections
-                if (currentVersion.category) {
-                  const category = currentVersion.category;
-                  if (!questionsByCategory[category]) {
-                    questionsByCategory[category] = [];
-                  }
-                  questionsByCategory[category].push(question);
+              console.log(`Question ${questionId}: estimatedTimeSeconds = ${questionTimeSeconds} seconds`);
+              totalEstimatedTimeSeconds += questionTimeSeconds;
+              questionsWithTimeData++;
+              
+              // Process category data for sections
+              if (currentVersion.category) {
+                const category = currentVersion.category;
+                if (!questionsByCategory[category]) {
+                  questionsByCategory[category] = [];
                 }
+                questionsByCategory[category].push(question);
               }
             }
           }
-          
-          // Create sections from categories if we have category data
-          if (survey.selectedCategories && survey.selectedCategories.length > 0) {
-            sections = Object.keys(questionsByCategory).map(category => ({
-              title: category,
-              description: `${questionsByCategory[category].length} questions about ${category.toLowerCase()}`,
-              questionCount: questionsByCategory[category].length
-            }));
-          }
+        }
+        
+        // Create sections from categories if we have category data
+        if (survey.selectedCategories && survey.selectedCategories.length > 0) {
+          sections = Object.keys(questionsByCategory).map(category => ({
+            title: category,
+            description: `${questionsByCategory[category].length} questions about ${category.toLowerCase()}`,
+            questionCount: questionsByCategory[category].length
+          }));
         }
         
         // If no sections were created, use a default section

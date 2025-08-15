@@ -421,12 +421,12 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
       selectedQuestions: survey.selectedQuestions
     });
     
-    // Add section questions if available
+    // Add section questions if available (primary source)
     if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
       console.log('Processing sectionQuestions:', survey.sectionQuestions);
       
       survey.sectionQuestions.forEach(q => {
-        if (q && q.id) {
+        if (q && (q.questionId || q.id)) {
           // If no sectionId is specified or the section doesn't exist, assign to default section
           let targetSectionId = q.sectionId;
           
@@ -443,29 +443,34 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
           }
           
           console.log('Adding question to section:', {
-            questionId: q.id,
-            originalSectionId: q.sectionId,
-            assignedSectionId: targetSectionId,
-            text: q.text
+            questionId: q.questionId || q.id,
+            targetSectionId: targetSectionId
           });
           
-          allQuestions.push({
-            _id: q.id,
-            id: q.id,
-            text: q.text,
-            type: q.type,
+          const targetSection = sortedSections.find(s => s.id === targetSectionId);
+          
+          const questionData = {
+            _id: q.questionId || q.id,
+            id: q.questionId || q.id,
+            text: q.text || q.questionText || '',
+            type: q.type || 'text',
             sectionId: targetSectionId,
-            order: q.order || 0,
-            options: q.options,
+            sectionName: targetSection?.name || 'Default Section',
+            options: q.options || [],
             scale: q.scale,
-            labels: q.labels,
-            required: q.required
-          });
+            labels: q.labels || [],
+            required: q.required !== false, // Default to true unless explicitly false
+            order: q.order || 0
+          };
+          
+          allQuestions.push(questionData);
         }
       });
+    } else {
+      console.log('No sectionQuestions found, checking selectedQuestions for fallback');
     }
-    
-    // Add selected questions if available
+
+    // Process selectedQuestions (questions without sections) - always process both sources
     if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
       console.log('Processing selectedQuestions:', survey.selectedQuestions);
       

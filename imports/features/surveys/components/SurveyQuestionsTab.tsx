@@ -66,8 +66,25 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     }
 
     // Load questions
-    if (survey && survey.selectedQuestions && Array.isArray(survey.selectedQuestions)) {
-      const questionIds = survey.selectedQuestions;
+    if (survey && ((survey.selectedQuestions && Array.isArray(survey.selectedQuestions) && survey.selectedQuestions.length > 0) || 
+                   (survey.sectionQuestions && Array.isArray(survey.sectionQuestions) && survey.sectionQuestions.length > 0))) {
+      
+      // Combine question IDs from both sources
+      const allQuestionIds = new Set<string>();
+      
+      // Add from selectedQuestions (questions without sections)
+      if (survey.selectedQuestions) {
+        survey.selectedQuestions.forEach((id: string) => allQuestionIds.add(id));
+      }
+      
+      // Add from sectionQuestions (questions with sections)
+      if (survey.sectionQuestions) {
+        survey.sectionQuestions.forEach((sq: any) => {
+          if (sq.questionId) allQuestionIds.add(sq.questionId);
+        });
+      }
+      
+      const questionIds = Array.from(allQuestionIds);
       
       // Subscribe to get question details
       Meteor.subscribe('questions.all', surveyId, {
@@ -83,11 +100,15 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                 text: extractQuestionText(questionDoc),
                 type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
                 status: 'published' as const,
-                sectionId: sectionQuestion?.sectionId
+                sectionId: sectionQuestion?.sectionId,
+                order: sectionQuestion?.order || 0
               };
             }
             return null;
           }).filter(Boolean) as QuestionItem[];
+          
+          // Sort questions by their order
+          questions.sort((a, b) => (a.order || 0) - (b.order || 0));
           
           setSurveyQuestions(questions);
           
@@ -95,12 +116,12 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           buildSurveyOrder(questions, survey.surveySections || []);
         }
       });
-    } else if (!survey?.selectedQuestions || !Array.isArray(survey.selectedQuestions) || survey.selectedQuestions.length === 0) {
-      // Clear questions if survey has no selected questions
+    } else {
+      // Clear questions if survey has no questions
       setSurveyQuestions([]);
       setSurveyOrder([]);
     }
-  }, [survey?.selectedQuestions]);
+  }, [survey?.sectionQuestions]);
 
   // Build unified order for sections and questions
   const buildSurveyOrder = (questions: QuestionItem[], sections: any[]) => {

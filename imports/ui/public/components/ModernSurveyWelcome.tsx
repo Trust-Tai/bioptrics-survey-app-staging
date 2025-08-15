@@ -560,6 +560,8 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                   questionCount: result.questionCount || 8,
                   sectionCount: result.sectionCount || 3
                 });
+                // Mark time calculation as complete even with fallback data
+                setTimeCalculationComplete(true);
               } else if (questionDocs && questionDocs.length > 0) {
                 // Calculate total time directly from question documents
                 const totalEstimatedSeconds = questionDocs.reduce((total: number, doc: any) => {
@@ -609,6 +611,14 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
               setLoading(false);
             });
           } else {
+            // No question IDs found, use the metadata from server and mark calculation complete
+            setMetadata({
+              estimatedTime: result.estimatedTime || '3-5',
+              estimatedTimeSeconds: result.estimatedTimeSeconds || 180,
+              questionCount: result.questionCount || 8,
+              sectionCount: result.sectionCount || 3
+            });
+            setTimeCalculationComplete(true);
             setLoading(false);
           }
         } else {
@@ -668,15 +678,26 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
               <FaRegClock size={20} />
             </StatIcon>
             <StatValue>
-              {loading ? '...' : 
-                // Only show calculated time when calculation is complete
-                timeCalculationComplete && dynamicTimeData ? 
-                  // Use memoized value to prevent re-renders
-                  dynamicTimeData.minutes : 
-                  // Show loading indicator while calculation is in progress
-                  !timeCalculationComplete ? '...' :
-                  Math.ceil(metadata.estimatedTimeSeconds / 60)
-              }
+              {(() => {
+                console.log('Avg Minutes display logic - State values:', {
+                  loading,
+                  timeCalculationComplete,
+                  dynamicTimeData,
+                  'dynamicTimeData?.minutes': dynamicTimeData?.minutes,
+                  'metadata.estimatedTimeSeconds': metadata.estimatedTimeSeconds,
+                  'Math.ceil(metadata.estimatedTimeSeconds / 60)': Math.ceil(metadata.estimatedTimeSeconds / 60)
+                });
+                
+                if (loading) {
+                  console.log('Showing ... because loading is true');
+                  return '...';
+                }
+                
+                // Always prioritize metadata.estimatedTimeSeconds from getSurveyMetadata (combined sources)
+                const finalMinutes = Math.ceil(metadata.estimatedTimeSeconds / 60) || 0;
+                console.log('Final minutes from metadata:', finalMinutes);
+                return finalMinutes;
+              })()}
             </StatValue>
             <StatLabel>
               Avg Minutes
@@ -688,14 +709,27 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
               <FaRegCheckCircle size={20} />
             </StatIcon>
             <StatValue>
-              {loading ? '...' : 
-                // Only show calculated question count when calculation is complete
-                timeCalculationComplete && dynamicTimeData ? 
-                  dynamicTimeData.questionCount : 
-                  // Show loading indicator while calculation is in progress
-                  !timeCalculationComplete ? '...' :
-                  (totalQuestions || metadata.questionCount || survey.questionCount || 0)
-              }
+              {(() => {
+                console.log('Total Questions display logic - State values:', {
+                  loading,
+                  timeCalculationComplete,
+                  dynamicTimeData,
+                  'dynamicTimeData?.questionCount': dynamicTimeData?.questionCount,
+                  totalQuestions,
+                  'metadata.questionCount': metadata.questionCount,
+                  'survey.questionCount': survey.questionCount
+                });
+                
+                if (loading) {
+                  console.log('Showing ... because loading is true');
+                  return '...';
+                }
+                
+                // Always prioritize metadata.questionCount from getSurveyMetadata (combined sources)
+                const finalQuestionCount = metadata.questionCount || totalQuestions || survey.questionCount || 0;
+                console.log('Final question count:', finalQuestionCount);
+                return finalQuestionCount;
+              })()}
             </StatValue>
             <StatLabel>Total questions</StatLabel>
           </StatCard>
@@ -704,7 +738,27 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             <StatIcon color="#2c3e50">
               <FaRegListAlt size={20} />
             </StatIcon>
-            <StatValue>{loading ? '...' : (totalSections || sectionCount || 0)}</StatValue>
+            <StatValue>
+              {(() => {
+                console.log('Question Sections display logic - State values:', {
+                  loading,
+                  totalSections,
+                  sectionCount,
+                  'metadata.sectionCount': metadata.sectionCount,
+                  'survey.sectionCount': survey.sectionCount
+                });
+                
+                if (loading) {
+                  console.log('Showing ... because loading is true');
+                  return '...';
+                }
+                
+                // Always prioritize metadata.sectionCount from getSurveyMetadata (combined sources)
+                const finalSectionCount = metadata.sectionCount || totalSections || survey.sectionCount || 0;
+                console.log('Final section count:', finalSectionCount);
+                return finalSectionCount;
+              })()}
+            </StatValue>
             <StatLabel>Question sections</StatLabel>
           </StatCard>
           
