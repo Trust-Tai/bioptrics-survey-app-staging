@@ -33,6 +33,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | 'inside' | null>(null);
   const [dragType, setDragType] = useState<'question' | 'section' | null>(null);
   const [sections, setSections] = useState<any[]>([]);
+  const [surveyOrder, setSurveyOrder] = useState<Array<{type: 'question' | 'section', id: string, order: number}>>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
 
@@ -89,13 +90,76 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           }).filter(Boolean) as QuestionItem[];
           
           setSurveyQuestions(questions);
+          
+          // Build unified order array
+          buildSurveyOrder(questions, survey.surveySections || []);
         }
       });
     } else if (!survey?.selectedQuestions || !Array.isArray(survey.selectedQuestions) || survey.selectedQuestions.length === 0) {
       // Clear questions if survey has no selected questions
       setSurveyQuestions([]);
+      setSurveyOrder([]);
     }
   }, [survey?.selectedQuestions]);
+
+  // Build unified order for sections and questions
+  const buildSurveyOrder = (questions: QuestionItem[], sections: any[]) => {
+    // Check if survey already has a saved order
+    if (survey?.surveyOrder && Array.isArray(survey.surveyOrder)) {
+      // Filter existing order to only include items that still exist
+      const validOrder = survey.surveyOrder.filter((item: any) => {
+        if (item.type === 'question') {
+          return questions.some(q => q.id === item.id);
+        } else if (item.type === 'section') {
+          return sections.some(s => s.id === item.id);
+        }
+        return false;
+      });
+      
+      // Add any new items that aren't in the saved order
+      const existingIds = validOrder.map((item: any) => item.id);
+      let maxOrder = validOrder.length > 0 ? Math.max(...validOrder.map((item: any) => item.order)) : -1;
+      
+      // Add new questions
+      questions.forEach(q => {
+        if (!existingIds.includes(q.id)) {
+          validOrder.push({ type: 'question', id: q.id, order: ++maxOrder });
+        }
+      });
+      
+      // Add new sections
+      sections.forEach(s => {
+        if (!existingIds.includes(s.id)) {
+          validOrder.push({ type: 'section', id: s.id, order: ++maxOrder });
+        }
+      });
+      
+      setSurveyOrder(validOrder.sort((a: any, b: any) => a.order - b.order));
+      return;
+    }
+    
+    // Build default order if no saved order exists
+    const order: Array<{type: 'question' | 'section', id: string, order: number}> = [];
+    let currentOrder = 0;
+    
+    // Add questions without sections first
+    const noSectionQuestions = questions.filter(q => !q.sectionId);
+    noSectionQuestions.forEach(q => {
+      order.push({ type: 'question', id: q.id, order: currentOrder++ });
+    });
+    
+    // Add sections with their questions
+    sections.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).forEach(section => {
+      order.push({ type: 'section', id: section.id, order: currentOrder++ });
+      
+      const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+      sectionQuestions.forEach(q => {
+        order.push({ type: 'question', id: q.id, order: currentOrder++ });
+      });
+    });
+    
+    setSurveyOrder(order);
+  };
 
   const handleCreateQuestion = () => {
     const onQuestionCreatedCallback = (questionId: string) => {
@@ -134,7 +198,8 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             if (!currentQuestions.includes(questionId)) {
               const updatedSurvey = {
                 ...survey,
-                selectedQuestions: [...currentQuestions, questionId]
+                selectedQuestions: [...currentQuestions, questionId],
+                surveyOrder: surveyOrder
               };
               console.log('Updating survey with new question:', updatedSurvey.selectedQuestions);
               onSurveyUpdate(updatedSurvey);
@@ -216,7 +281,8 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       const currentQuestions = Array.isArray(survey.selectedQuestions) ? survey.selectedQuestions : [];
       const updatedSurvey = {
         ...survey,
-        selectedQuestions: currentQuestions.filter((id: string) => id !== questionId)
+        selectedQuestions: currentQuestions.filter((id: string) => id !== questionId),
+        surveyOrder: surveyOrder
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -266,15 +332,13 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         selectedQuestions: [...(survey.selectedQuestions || []), ...questionsToAdd],
         sectionQuestions: [
           ...(survey.sectionQuestions || []),
-          ...questionsToAdd.map((questionId, index) => ({
-            questionId: questionId,
-            sectionId: currentSectionId || undefined,
-            type: newQuestions[index]?.type || 'text',
-            order: currentSectionId ? 
-              getQuestionsForSection(currentSectionId).length + index : 
-              surveyQuestions.filter(q => !q.sectionId).length + index
+          ...questionsToAdd.map(questionId => ({
+            questionId,
+            sectionId: currentSectionId || null,
+            order: (survey.sectionQuestions || []).length + questionsToAdd.indexOf(questionId)
           }))
-        ]
+        ],
+        surveyOrder: surveyOrder
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -288,58 +352,94 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     setShowQuestionSelector(false);
   };
 
-  // Handle moving questions between sections or to/from no-section area
-  const handleMoveQuestion = (questionId: string, targetSectionId: string | undefined, targetIndex?: number) => {
-    const questionToMove = surveyQuestions.find(q => q.id === questionId);
-    if (!questionToMove) return;
-
-    // Remove question from current position
-    const otherQuestions = surveyQuestions.filter(q => q.id !== questionId);
+  // Handle moving items in the unified order
+  const handleMoveInOrder = (draggedType: 'question' | 'section', draggedId: string, targetOrder: number, newSectionId?: string) => {
+    // Remove dragged item from current position
+    const newOrder = surveyOrder.filter(item => !(item.type === draggedType && item.id === draggedId));
     
-    // Create updated question with new section assignment
-    const updatedQuestion = {
-      ...questionToMove,
-      sectionId: targetSectionId,
-      order: targetIndex !== undefined ? targetIndex : 
-        (targetSectionId ? getQuestionsForSection(targetSectionId).length : 
-         surveyQuestions.filter(q => !q.sectionId).length)
-    };
-
-    // Insert question at target position
-    let newQuestions;
-    if (targetIndex !== undefined) {
-      newQuestions = [...otherQuestions];
-      newQuestions.splice(targetIndex, 0, updatedQuestion);
+    // Adjust target order if needed
+    const adjustedTargetOrder = Math.min(targetOrder, newOrder.length);
+    
+    // Insert at new position
+    newOrder.splice(adjustedTargetOrder, 0, { type: draggedType, id: draggedId, order: adjustedTargetOrder });
+    
+    // Reorder all items
+    const reorderedItems = newOrder.map((item, index) => ({ ...item, order: index }));
+    setSurveyOrder(reorderedItems);
+    
+    // Update questions if it's a question being moved
+    if (draggedType === 'question') {
+      const updatedQuestions = surveyQuestions.map(q => 
+        q.id === draggedId ? { ...q, sectionId: newSectionId } : q
+      );
+      setSurveyQuestions(updatedQuestions);
+      
+      // Update survey data
+      if (survey && onSurveyUpdate) {
+        const updatedSurvey = {
+          ...survey,
+          selectedQuestions: updatedQuestions.map(q => q.id),
+          sectionQuestions: updatedQuestions.map((q, index) => ({
+            questionId: q.id,
+            sectionId: q.sectionId || null,
+            order: index
+          })),
+          surveyOrder: surveyOrder
+        };
+        onSurveyUpdate(updatedSurvey);
+      }
     } else {
-      newQuestions = [...otherQuestions, updatedQuestion];
+      // Update section order
+      const updatedSections = sections.map(s => {
+        const orderItem = reorderedItems.find(item => item.type === 'section' && item.id === s.id);
+        return orderItem ? { ...s, displayOrder: orderItem.order } : s;
+      });
+      setSections(updatedSections);
+      
+      if (survey && onSurveyUpdate) {
+        const updatedSurvey = {
+          ...survey,
+          surveySections: updatedSections,
+          surveyOrder: surveyOrder
+        };
+        onSurveyUpdate(updatedSurvey);
+      }
     }
-
-    setSurveyQuestions(newQuestions);
-
-    // Update survey data
-    if (survey && onSurveyUpdate) {
-      const updatedSurvey = {
-        ...survey,
-        selectedQuestions: newQuestions.map(q => q.id),
-        sectionQuestions: newQuestions.map((q, index) => ({
-          questionId: q.id,
-          sectionId: q.sectionId,
-          type: q.type,
-          order: index
-        }))
-      };
-      onSurveyUpdate(updatedSurvey);
-    }
-
+    
     if (onHasUnsavedChanges) {
       onHasUnsavedChanges(true);
     }
   };
 
-  // Handle moving sections
-  const handleMoveSection = (sectionId: string, targetIndex: number) => {
+  // Handle moving sections - improved to handle mixed ordering with questions
+  const handleMoveSection = (sectionId: string, targetIndex: number, insertAfterQuestion?: string) => {
     const sectionToMove = sections.find(s => s.id === sectionId);
     if (!sectionToMove) return;
+
+    // If inserting after a specific question, calculate the proper position
+    if (insertAfterQuestion) {
+      const questionIndex = surveyQuestions.findIndex(q => q.id === insertAfterQuestion);
+      if (questionIndex !== -1) {
+        const question = surveyQuestions[questionIndex];
+        if (question.sectionId) {
+          // Question is in a section, place after that section
+          const sectionIndex = sections.findIndex(s => s.id === question.sectionId);
+          targetIndex = sectionIndex + 1;
+        } else {
+          // Question is in no-section area, place section appropriately
+          const noSectionQuestions = surveyQuestions.filter(q => !q.sectionId);
+          const questionPositionInNoSection = noSectionQuestions.findIndex(q => q.id === insertAfterQuestion);
+          
+          // Count how many sections come before this question position
+          let sectionsBeforeQuestion = 0;
+          for (let i = 0; i <= questionPositionInNoSection; i++) {
+            // This is a simplified approach - in a real implementation you'd need
+            // to track the exact interleaved order of sections and questions
+          }
+          targetIndex = sectionsBeforeQuestion;
+        }
+      }
+    }
 
     const otherSections = sections.filter(s => s.id !== sectionId);
     const newSections = [...otherSections];
@@ -419,55 +519,55 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     setDragOverPosition(position);
   };
 
-  // Handle drop
+  // Handle drop with unified ordering logic
   const handleDrop = (e: React.DragEvent, targetType: 'question' | 'section', targetId: string) => {
     e.preventDefault();
     
     const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
     const { type: draggedType, id: draggedId } = dragData;
 
+    // Find target position in unified order
+    const targetOrderItem = surveyOrder.find(item => item.type === targetType && item.id === targetId);
+    if (!targetOrderItem) return;
+
+    let targetOrder = targetOrderItem.order;
+    let newSectionId: string | undefined;
+
     if (draggedType === 'question') {
       if (targetType === 'section') {
-        // Dropping question on section
         if (dragOverPosition === 'inside') {
           // Move question into section
-          handleMoveQuestion(draggedId, targetId);
+          newSectionId = targetId;
+          // Place after section header
+          targetOrder = targetOrderItem.order + 1;
+        } else if (dragOverPosition === 'before') {
+          // Place before section
+          newSectionId = undefined;
+          targetOrder = targetOrderItem.order;
         } else {
-          // Move question before/after section (to no-section area)
-          const targetSectionIndex = sections.findIndex(s => s.id === targetId);
-          const targetIndex = dragOverPosition === 'before' ? targetSectionIndex : targetSectionIndex + 1;
-          handleMoveQuestion(draggedId, undefined, targetIndex);
+          // Place after section (and its questions)
+          newSectionId = undefined;
+          // Find the last item in this section
+          const sectionQuestions = surveyOrder.filter(item => 
+            item.order > targetOrderItem.order && 
+            (surveyOrder.find(nextSection => nextSection.type === 'section' && nextSection.order > item.order)?.order || Infinity) > item.order
+          );
+          targetOrder = sectionQuestions.length > 0 ? 
+            Math.max(...sectionQuestions.map(q => q.order)) + 1 : 
+            targetOrderItem.order + 1;
         }
       } else {
         // Dropping question on question
         const targetQuestion = surveyQuestions.find(q => q.id === targetId);
-        if (targetQuestion) {
-          const targetIndex = surveyQuestions.findIndex(q => q.id === targetId);
-          const adjustedIndex = dragOverPosition === 'before' ? targetIndex : targetIndex + 1;
-          handleMoveQuestion(draggedId, targetQuestion.sectionId, adjustedIndex);
-        }
+        newSectionId = targetQuestion?.sectionId;
+        targetOrder = dragOverPosition === 'before' ? targetOrderItem.order : targetOrderItem.order + 1;
       }
-    } else if (draggedType === 'section') {
+    } else {
       // Dropping section
-      if (targetType === 'section') {
-        const targetIndex = sections.findIndex(s => s.id === targetId);
-        const adjustedIndex = dragOverPosition === 'before' ? targetIndex : targetIndex + 1;
-        handleMoveSection(draggedId, adjustedIndex);
-      } else {
-        // Dropping section on question - insert section before/after the question's position
-        const targetQuestion = surveyQuestions.find(q => q.id === targetId);
-        if (targetQuestion?.sectionId) {
-          const targetSectionIndex = sections.findIndex(s => s.id === targetQuestion.sectionId);
-          const adjustedIndex = dragOverPosition === 'before' ? targetSectionIndex : targetSectionIndex + 1;
-          handleMoveSection(draggedId, adjustedIndex);
-        } else {
-          // Question is in no-section area, place section at beginning or end
-          const targetIndex = dragOverPosition === 'before' ? 0 : sections.length;
-          handleMoveSection(draggedId, targetIndex);
-        }
-      }
+      targetOrder = dragOverPosition === 'before' ? targetOrderItem.order : targetOrderItem.order + 1;
     }
 
+    handleMoveInOrder(draggedType, draggedId, targetOrder, newSectionId);
     handleDragEnd();
   };
 
@@ -501,7 +601,8 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         ...survey,
         surveySections: currentSection 
           ? survey.surveySections?.map((s: any) => s.id === currentSection.id ? newSection : s) || [newSection]
-          : [...(survey.surveySections || []), newSection]
+          : [...(survey.surveySections || []), newSection],
+        surveyOrder: surveyOrder
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -536,10 +637,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         const updatedSurvey = {
           ...survey,
           surveySections: survey.surveySections?.filter((s: any) => s.id !== sectionId) || [],
-          selectedQuestions: survey.selectedQuestions?.filter((qId: string) => {
-            const question = surveyQuestions.find(q => q.id === qId);
-            return question?.sectionId !== sectionId;
-          }) || []
+          sectionQuestions: survey.sectionQuestions?.filter((sq: any) => {
+            return sq.sectionId !== sectionId;
+          }) || [],
+          surveyOrder: surveyOrder
         };
         onSurveyUpdate(updatedSurvey);
       }
@@ -601,10 +702,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                   {
                     questionId: questionId,
                     sectionId: sectionId,
-                    type: newQuestion.type,
-                    order: getQuestionsForSection(sectionId).length
+                    order: (survey.sectionQuestions || []).length
                   }
-                ]
+                ],
+                surveyOrder: surveyOrder
               };
               console.log('Updating survey with new question for section:', updatedSurvey.selectedQuestions);
               onSurveyUpdate(updatedSurvey);
@@ -728,6 +829,21 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
               border: 2px solid #28a745;
               background-color: rgba(40, 167, 69, 0.05);
             }
+            .drop-zone {
+              height: 4px;
+              background-color: transparent;
+              transition: all 0.2s ease;
+              margin: 2px 0;
+            }
+            .drop-zone.active {
+              height: 8px;
+              background-color: #007bff;
+              border-radius: 4px;
+              margin: 4px 0;
+            }
+            .drop-zone.section-target {
+              background-color: #28a745;
+            }
             .drag-handle {
               cursor: grab;
               color: #666;
@@ -744,253 +860,259 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           {(surveyQuestions.length > 0 || sections.length > 0) && (
             <div style={{ marginBottom: '20px' }}>
               <div>
-                {/* Render questions without sections first */}
-                {surveyQuestions.filter(q => !q.sectionId).map((question, index) => (
-                  <div 
-                    key={question.id}
-                    className={`question-item ${getDropZoneClasses('question', question.id)}`}
-                    onClick={() => handleEditQuestion(question.id)}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'question', question.id)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, 'question', question.id)}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                        setDragOverQuestionId(null);
-                        setDragOverPosition(null);
-                      }
-                    }}
-                    onDrop={(e) => handleDrop(e, 'question', question.id)}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-                      <div className="drag-handle">
-                        <FiMove size={16} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 500 }}>{question.text}</div>
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                          {question.type}
+                {/* Render items in unified order */}
+                {surveyOrder.map((orderItem, index) => {
+                  if (orderItem.type === 'question') {
+                    const question = surveyQuestions.find(q => q.id === orderItem.id);
+                    if (!question || question.sectionId) return null;
+                    
+                    return (
+                      <div 
+                        key={question.id}
+                        className={`question-item ${getDropZoneClasses('question', question.id)}`}
+                        onClick={() => handleEditQuestion(question.id)}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={(e) => handleDragOver(e, 'question', question.id)}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            setDragOverQuestionId(null);
+                            setDragOverPosition(null);
+                          }
+                        }}
+                        onDrop={(e) => handleDrop(e, 'question', question.id)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                          <div className="drag-handle">
+                            <FiMove size={16} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 500 }}>{question.text}</div>
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                              {question.type}
+                            </div>
+                          </div>
+                          <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditQuestion(question.id);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#6b7280',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                              title="Edit question"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteQuestion(question.id);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#dc2626',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                              title="Delete question"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditQuestion(question.id);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#6b7280',
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          title="Edit question"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteQuestion(question.id);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#dc2626',
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          title="Delete question"
-                        >
-                          <FiTrash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Render sections with their questions */}
-                {sections.map((section) => (
-                  <div 
-                    key={section.id} 
-                    className={`section-container ${getDropZoneClasses('section', section.id)}`}
-                    style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc' }}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, 'section', section.id)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, 'section', section.id)}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                        setDragOverSectionId(null);
-                        setDragOverPosition(null);
-                      }
-                    }}
-                    onDrop={(e) => handleDrop(e, 'section', section.id)}
-                  >
-                    {/* Section Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        <div className="drag-handle">
-                          <FiMove size={16} />
-                        </div>
-                        <div>
-                          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>{section.name}</h3>
-                          {section.description && (
-                            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>{section.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          onClick={() => handleEditSection(section)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#6b7280',
-                            padding: '4px'
-                          }}
-                          title="Edit section"
-                        >
-                          <FiEdit2 />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSection(section.id)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#6b7280',
-                            padding: '4px'
-                          }}
-                          title="Delete section"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Section Questions */}
-                    <div style={{ marginBottom: '16px' }}>
-                      {getQuestionsForSection(section.id).map((question, index) => (
-                        <div 
-                          key={question.id}
-                          className={`question-item ${getDropZoneClasses('question', question.id)}`}
-                          onClick={() => handleEditQuestion(question.id)}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, 'question', question.id)}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => handleDragOver(e, 'question', question.id)}
-                          onDragLeave={(e) => {
-                            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                              setDragOverQuestionId(null);
-                              setDragOverPosition(null);
-                            }
-                          }}
-                          onDrop={(e) => handleDrop(e, 'question', question.id)}
-                          style={{ marginBottom: '8px' }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                    );
+                  } else if (orderItem.type === 'section') {
+                    const section = sections.find(s => s.id === orderItem.id);
+                    if (!section) return null;
+                    
+                    return (
+                      <div 
+                        key={section.id} 
+                        className={`section-container ${getDropZoneClasses('section', section.id)}`}
+                        style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc' }}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, 'section', section.id)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={(e) => handleDragOver(e, 'section', section.id)}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            setDragOverSectionId(null);
+                            setDragOverPosition(null);
+                          }
+                        }}
+                        onDrop={(e) => handleDrop(e, 'section', section.id)}
+                      >
+                        {/* Section Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                             <div className="drag-handle">
                               <FiMove size={16} />
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 500 }}>{question.text}</div>
-                              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                {question.type}
-                              </div>
-                            </div>
-                            <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditQuestion(question.id);
-                                }}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: '#6b7280',
-                                  padding: '4px',
-                                  display: 'flex',
-                                  alignItems: 'center'
-                                }}
-                                title="Edit question"
-                              >
-                                <FiEdit2 size={14} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteQuestion(question.id);
-                                }}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: '#dc2626',
-                                  padding: '4px',
-                                  display: 'flex',
-                                  alignItems: 'center'
-                                }}
-                                title="Delete question"
-                              >
-                                <FiTrash2 size={14} />
-                              </button>
-                            </div>
+                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+                              {section.name}
+                            </h3>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button
+                              onClick={() => handleEditSection(section.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#6b7280',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                              title="Edit section"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSection(section.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#dc2626',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                              title="Delete section"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
                           </div>
                         </div>
-                      ))}
-                      
-                      {getQuestionsForSection(section.id).length === 0 && (
-                        <div style={{ 
-                          padding: '20px', 
-                          textAlign: 'center', 
-                          color: '#9ca3af', 
-                          fontSize: '14px',
-                          fontStyle: 'italic'
-                        }}>
-                          No questions in this section yet
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Section Action Buttons */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <div 
-                        className="survey-section-add-question"
-                        onClick={() => handleChooseFromQuestionBankForSection(section.id)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '6px',
-                          fontSize: '14px',
-                          padding: '8px 12px'
-                        }}
-                      >
-                        <FiPlus size={14} /> Choose from Question Bank
+                        {/* Section Questions */}
+                        <div style={{ paddingLeft: '24px' }}>
+                          {surveyQuestions.filter(q => q.sectionId === section.id).length > 0 ? (
+                            surveyQuestions
+                              .filter(q => q.sectionId === section.id)
+                              .map(question => (
+                                <div 
+                                  key={question.id}
+                                  className={`question-item ${getDropZoneClasses('question', question.id)}`}
+                                  onClick={() => handleEditQuestion(question.id)}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                                  onDragEnd={handleDragEnd}
+                                  onDragOver={(e) => handleDragOver(e, 'question', question.id)}
+                                  onDragLeave={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                      setDragOverQuestionId(null);
+                                      setDragOverPosition(null);
+                                    }
+                                  }}
+                                  onDrop={(e) => handleDrop(e, 'question', question.id)}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                                    <div className="drag-handle">
+                                      <FiMove size={16} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontWeight: 500 }}>{question.text}</div>
+                                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                        {question.type}
+                                      </div>
+                                    </div>
+                                    <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditQuestion(question.id);
+                                        }}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          color: '#6b7280',
+                                          padding: '4px',
+                                          display: 'flex',
+                                          alignItems: 'center'
+                                        }}
+                                        title="Edit question"
+                                      >
+                                        <FiEdit2 size={14} />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteQuestion(question.id);
+                                        }}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          color: '#dc2626',
+                                          padding: '4px',
+                                          display: 'flex',
+                                          alignItems: 'center'
+                                        }}
+                                        title="Delete question"
+                                      >
+                                        <FiTrash2 size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                          ) : (
+                            <div style={{ color: '#666', fontStyle: 'italic', padding: '16px 0' }}>
+                              No questions in this section yet
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Section Action Buttons */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' }}>
+                          <div 
+                            className="survey-section-add-question"
+                            onClick={() => handleChooseFromQuestionBankForSection(section.id)}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              fontSize: '14px',
+                              padding: '8px 12px'
+                            }}
+                          >
+                            <FiPlus size={14} /> Choose from Question Bank
+                          </div>
+                          <div 
+                            className="survey-section-add-question"
+                            onClick={() => handleCreateQuestionForSection(section.id)}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '6px',
+                              fontSize: '14px',
+                              padding: '8px 12px'
+                            }}
+                          >
+                            <FiPlus size={14} /> Create Question
+                          </div>
+                        </div>
                       </div>
-                      <div 
-                        className="survey-section-add-question"
-                        onClick={() => handleCreateQuestionForSection(section.id)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '6px',
-                          fontSize: '14px',
-                          padding: '8px 12px'
-                        }}
-                      >
-                        <FiPlus size={14} /> Create Question
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  }
+                  return null;
+                })}
               </div>
             </div>
           )}

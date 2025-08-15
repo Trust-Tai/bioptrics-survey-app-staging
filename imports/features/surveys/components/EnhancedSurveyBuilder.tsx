@@ -2092,6 +2092,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         description: survey?.description || '',
         logo: survey?.logo || '',
         image: survey?.image || '',
+        featuredImage: survey?.featuredImage || '',
         primaryColor: selectedThemeObject?.primaryColor || selectedThemeObject?.color || survey?.primaryColor || '#552a47',
         welcomeTitle: survey?.welcomeTitle || '',
         welcomeMessage: survey?.welcomeMessage || '',
@@ -4645,7 +4646,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                                       triggerAutoSave();
                                       return {
                                         ...prevSurvey,
-                                        image: result
+                                        featuredImage: result
                                       };
                                     });
                                   };
@@ -4674,10 +4675,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                               overflow: 'hidden',
                               textOverflow: 'ellipsis'
                             }}>
-                              {survey?.image ? 'Image selected' : 'No file selected'}
+                              {survey?.featuredImage ? 'Image selected' : 'No file selected'}
                             </span>
                           </div>
-                          {survey?.image && (
+                          {survey?.featuredImage && (
                             <div className="image-preview" style={{ 
                               padding: '8px', 
                               border: '1px solid #dee2e6', 
@@ -4686,7 +4687,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                               display: 'inline-block'
                             }}>
                               <img 
-                                src={survey.image} 
+                                src={survey.featuredImage} 
                                 alt="Featured Image Preview" 
                                 style={{ maxWidth: '180px', maxHeight: '120px' }} 
                               />

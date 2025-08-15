@@ -33,6 +33,7 @@ export interface SurveyDoc {
   description: string;
   logo?: string;
   image?: string;
+  featuredImage?: string;
   color?: string;
   layout?: 'multiStep' | 'allOnOnePage';
   selectedQuestions: Record<string, any>;
@@ -417,6 +418,7 @@ Meteor.methods({
       description: survey.description || '',
       logo: survey.logo,
       image: survey.image,
+      featuredImage: survey.featuredImage,
       color: survey.color,
       selectedQuestions: survey.selectedQuestions || {},
       siteTextQuestions: survey.siteTextQuestions || [],
@@ -454,6 +456,7 @@ Meteor.methods({
       description: customizations.description || template.description,
       logo: template.logo,
       image: template.image,
+      featuredImage: template.featuredImage,
       color: template.color,
       selectedQuestions: template.selectedQuestions,
       siteTextQuestions: template.siteTextQuestions,
@@ -552,6 +555,7 @@ Meteor.methods({
           description: survey.description || '',
           logo: survey.logo,
           image: survey.image,
+          featuredImage: survey.featuredImage,
           color: survey.color,
           selectedQuestions: survey.selectedQuestions || {},
           siteTextQuestions: survey.siteTextQuestions || [],
@@ -577,6 +581,7 @@ Meteor.methods({
         description: survey.description || '',
         logo: survey.logo,
         image: survey.image,
+        featuredImage: survey.featuredImage,
         color: survey.color,
         selectedQuestions: survey.selectedQuestions || {},
         siteTextQuestions: survey.siteTextQuestions || [],
@@ -638,6 +643,7 @@ Meteor.methods({
           description: survey.description || (existing ? existing.description : ''),
           logo: survey.logo !== undefined ? survey.logo : existing?.logo,
           image: survey.image !== undefined ? survey.image : existing?.image,
+          featuredImage: survey.featuredImage !== undefined ? survey.featuredImage : existing?.featuredImage,
           color: survey.color !== undefined ? survey.color : existing?.color,
           selectedQuestions: survey.selectedQuestions || (existing ? existing.selectedQuestions : {}),
           siteTextQuestions: survey.siteTextQuestions || (existing ? existing.siteTextQuestions : []),
@@ -670,6 +676,7 @@ Meteor.methods({
         description: survey.description || '',
         logo: survey.logo,
         image: survey.image,
+        featuredImage: survey.featuredImage,
         color: survey.color,
         selectedQuestions: survey.selectedQuestions || {},
         siteTextQuestions: survey.siteTextQuestions || [],
@@ -742,6 +749,7 @@ Meteor.methods({
         description: survey.description || existingSurvey.description,
         logo: survey.logo !== undefined ? survey.logo : existingSurvey.logo,
         image: survey.image !== undefined ? survey.image : existingSurvey.image,
+        featuredImage: survey.featuredImage !== undefined ? survey.featuredImage : existingSurvey.featuredImage,
         color: survey.color !== undefined ? survey.color : existingSurvey.color,
         selectedQuestions: survey.selectedQuestions || existingSurvey.selectedQuestions || {},
         siteTextQuestions: survey.siteTextQuestions || existingSurvey.siteTextQuestions || [],
