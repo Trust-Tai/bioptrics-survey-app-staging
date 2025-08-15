@@ -51,7 +51,9 @@ const NotificationContainer = styled.div`
 `;
 
 // Individual notification styling
-const NotificationItem = styled.div<{ type: NotificationType; isExiting: boolean }>`
+const NotificationItem = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isExiting'].includes(prop),
+})<{ type: NotificationType; isExiting: boolean }>`
   display: flex;
   align-items: flex-start;
   padding: 12px 16px;

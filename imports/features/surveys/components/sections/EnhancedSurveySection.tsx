@@ -210,8 +210,8 @@ const EnhancedSurveySection: React.FC<EnhancedSurveySectionProps> = ({
           )}
           
           <div className="survey-section-questions">
-            {sectionQuestions.length > 0 ? (
-              sectionQuestions.map((question, index) => (
+            {questions.length > 0 ? (
+              questions.map((question, index) => (
                 <div 
                   key={question.id}
                   className={`survey-section-question ${isDragging ? 'dragging' : ''} ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}

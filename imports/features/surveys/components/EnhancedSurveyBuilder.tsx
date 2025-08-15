@@ -18,6 +18,7 @@ import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } f
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
 import QuestionSelector from './sections/QuestionSelector';
+import SurveyQuestionsTab from './SurveyQuestionsTab';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import SectionEditor from './sections/SectionEditor';
@@ -72,6 +73,7 @@ import './EnhancedSurveyBuilder.css';
 // Define the steps for the survey builder
 const steps = [
   { id: 'welcome', label: 'Survey Basics', icon: 'FiHome' },
+  { id: 'questions', label: 'Survey Questions', icon: 'FiHelpCircle' },
   { id: 'sections', label: 'Questions', icon: 'FiLayers' },
   // { id: 'tags', label: 'Tags', icon: 'FiTag' },
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
@@ -2656,35 +2658,36 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     const currentSectionQuestionIds = currentSectionQuestions.map(q => q.id);
     
     // Find questions that need to be added (not already in the section)
+    const newQuestionIds = questionIds.filter(id => !currentSectionQuestionIds.includes(id));
+    
     // Use questionSelectorItems if available, otherwise fall back to allQuestions
     const questionsSource = questionSelectorItems.length > 0 ? questionSelectorItems : allQuestions;
     
-    // Get all selected questions from the source
-    const selectedQuestions = questionsSource.filter(q => questionIds.includes(q.id));
+    // Get only the NEW questions that need to be added
+    const newQuestions = questionsSource.filter(q => newQuestionIds.includes(q.id));
     
-    // Create question items for ALL selected questions (not just new ones)
-    // This ensures we have the complete set of questions for the section
-    const sectionQuestionItems = selectedQuestions.map((q, index) => {
+    // Create question items for the new questions only
+    const newSectionQuestionItems = newQuestions.map((q, index) => {
+      // Calculate the order based on existing questions in the section
+      const maxOrder = Math.max(-1, ...currentSectionQuestions.map(sq => sq.order || 0));
+      
       // Create a properly typed QuestionItem
       const questionItem: QuestionItem = {
         id: q.id,
         text: q.text,
         type: q.type,
         sectionId: sectionId,
-        order: index, // Reorder based on selection order
+        order: maxOrder + index + 1, // Append after existing questions
         status: q.status || 'published'
       };
       
       return questionItem;
     });
     
-    // Update survey questions - remove existing questions for this section and add the new set
+    // Update survey questions - add the new questions to existing ones
     setSurveyQuestions(prev => {
-      // Keep questions from other sections
-      const otherSectionQuestions = prev.filter(q => q.sectionId !== sectionId);
-      
-      // Combine with the new section questions
-      const updatedQuestions = [...otherSectionQuestions, ...sectionQuestionItems];
+      // Simply append the new questions to the existing array
+      const updatedQuestions = [...prev, ...newSectionQuestionItems];
       return updatedQuestions;
     });
     
@@ -2692,15 +2695,13 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     setSurvey((prevSurvey: any) => {
       if (!prevSurvey) return prevSurvey;
       
-      // Get questions from other sections
-      const otherSectionQuestions = prevSurvey.sectionQuestions?.filter((q: any) => 
-        q.sectionId !== sectionId
-      ) || [];
+      // Get existing section questions
+      const existingSectionQuestions = prevSurvey.sectionQuestions || [];
       
-      // Create updated survey with the new section questions
+      // Create updated survey with the new section questions appended
       const updatedSurvey = {
         ...prevSurvey,
-        sectionQuestions: [...otherSectionQuestions, ...sectionQuestionItems]
+        sectionQuestions: [...existingSectionQuestions, ...newSectionQuestionItems]
       };
       
       return updatedSurvey;
@@ -4354,7 +4355,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                           handleSaveSurvey(false);
                           silentSave(true).then(() => {
                             // Only change the tab after the save is complete
-                            setActiveStep('sections');
+                            setActiveStep('questions');
                           });
                           // Always save the survey data before navigating, regardless of hasUnsavedChanges flag
                           // This ensures the survey is always saved when clicking Save and Continue
@@ -4395,6 +4396,19 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     </div>
                   </div>
                 </div>
+              )}
+              
+              {/* Survey Questions Tab */}
+              {activeStep === 'questions' && (
+                <SurveyQuestionsTab
+                  surveyId={surveyId}
+                  survey={survey}
+                  onSurveyUpdate={(updatedSurvey) => {
+                    setSurvey(updatedSurvey);
+                    setHasUnsavedChanges(true);
+                  }}
+                  onHasUnsavedChanges={setHasUnsavedChanges}
+                />
               )}
               
               {/* Other steps would be implemented here */}
