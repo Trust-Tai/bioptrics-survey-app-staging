@@ -824,6 +824,13 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
             <div 
               className="survey-section-add-question"
+              onClick={handleAddSection}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <FiLayers size={16} /> Add Section
+            </div>
+            <div 
+              className="survey-section-add-question"
               onClick={handleChooseFromQuestionBank}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
@@ -836,13 +843,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             >
               <FiPlus size={16} /> Create Question
             </div>
-            <div 
-              className="survey-section-add-question"
-              onClick={handleAddSection}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <FiLayers size={16} /> Add Section
-            </div>
+            
           </div>
         </div>
       </div>
