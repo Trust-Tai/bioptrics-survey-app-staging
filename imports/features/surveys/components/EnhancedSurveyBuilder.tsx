@@ -73,8 +73,8 @@ import './EnhancedSurveyBuilder.css';
 // Define the steps for the survey builder
 const steps = [
   { id: 'welcome', label: 'Survey Basics', icon: 'FiHome' },
-  { id: 'questions', label: 'Survey Questions', icon: 'FiHelpCircle' },
-  { id: 'sections', label: 'Questions', icon: 'FiLayers' },
+  { id: 'questions', label: 'Questions', icon: 'FiHelpCircle' },
+  // { id: 'sections', label: 'Questions', icon: 'FiLayers' },
   // { id: 'tags', label: 'Tags', icon: 'FiTag' },
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
@@ -1294,13 +1294,15 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       if (currentSurvey.sectionQuestions && Array.isArray(currentSurvey.sectionQuestions)) {
         // Make sure all required fields are present
-        const validatedQuestions = currentSurvey.sectionQuestions.map((q: SectionQuestion) => {
+        const validatedQuestions = currentSurvey.sectionQuestions.map((q: any) => {
+          // Use questionId if available, fallback to id
+          const questionId = q.questionId || q.id;
           // Find the full question document to get the proper text
-          const fullQuestion = Questions.findOne(q.id);
+          const fullQuestion = Questions.findOne(questionId);
           
           // Create a properly typed QuestionItem with all required fields
           const questionItem: QuestionItem = {
-            id: q.id || '',
+            id: questionId || '',
             text: fullQuestion ? getQuestionText(fullQuestion) : (q.text || 'Untitled Question'),
             type: q.type || 'text',
             status: q.status === 'draft' ? 'draft' : 'published',
@@ -2108,7 +2110,14 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           instructions: section.instructions,
           isRequired: section.isRequired
         })),
-        sectionQuestions: surveyQuestions,
+        sectionQuestions: surveyQuestions.map(q => ({
+          questionId: q.id,
+          sectionId: q.sectionId,
+          type: q.type,
+          order: q.order,
+          status: q.status,
+          text: q.text
+        })),
         // Include demographics, themes, categories, and tags
         selectedTheme,
         selectedCategories,
