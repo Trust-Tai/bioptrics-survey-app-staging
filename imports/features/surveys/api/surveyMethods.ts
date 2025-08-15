@@ -1450,6 +1450,32 @@ if (Meteor.isServer) {
       }
     },
     
+    async 'clearSurveyQuestionData'(surveyId: string) {
+      console.log(`Clearing question data for survey ${surveyId}`);
+      
+      try {
+        const result = await Surveys.updateAsync(
+          { _id: surveyId },
+          {
+            $unset: {
+              questionCount: "",
+              sectionCount: "",
+              estimatedTime: "",
+              selectedQuestions: "",
+              sectionQuestions: "",
+              siteTextQuestions: ""
+            }
+          }
+        );
+        
+        console.log(`Cleared question data for survey ${surveyId}:`, result);
+        return { success: true, cleared: result };
+      } catch (error) {
+        console.error('Error clearing survey question data:', error);
+        throw new Meteor.Error('clear-failed', 'Failed to clear survey question data');
+      }
+    },
+    
     async 'getSurveyMetadata'(surveyId: string) {
       console.log(`getSurveyMetadata method called for survey ${surveyId}`);
       
@@ -1460,16 +1486,45 @@ if (Meteor.isServer) {
           throw new Meteor.Error('not-found', 'Survey not found');
         }
         
+        // Debug: Log the entire survey structure to see what's stored
+        console.log('DEBUG - Survey data structure:', {
+          surveyId: survey._id,
+          hasSelectedQuestions: !!survey.selectedQuestions,
+          selectedQuestionsType: typeof survey.selectedQuestions,
+          selectedQuestionsKeys: survey.selectedQuestions ? Object.keys(survey.selectedQuestions) : null,
+          selectedQuestionsValues: survey.selectedQuestions ? Object.values(survey.selectedQuestions) : null,
+          hasSectionQuestions: !!survey.sectionQuestions,
+          sectionQuestionsLength: survey.sectionQuestions ? survey.sectionQuestions.length : 0,
+          hasSiteTextQuestions: !!survey.siteTextQuestions,
+          siteTextQuestionsLength: survey.siteTextQuestions ? survey.siteTextQuestions.length : 0
+        });
+        
         // Collect unique question IDs from both sources
         const uniqueQuestionIds = new Set();
         
         // From selectedQuestions (questions without sections)
         if (survey.selectedQuestions) {
-          console.log('Found selectedQuestions:', survey.selectedQuestions.length);
-          survey.selectedQuestions.forEach((questionId: string) => {
-            uniqueQuestionIds.add(questionId);
-            console.log(`Added question ID from selectedQuestions: ${questionId}`);
-          });
+          // selectedQuestions is an object, not an array
+          if (Array.isArray(survey.selectedQuestions)) {
+            console.log('Found selectedQuestions array:', survey.selectedQuestions.length);
+            survey.selectedQuestions.forEach((questionId: string) => {
+              uniqueQuestionIds.add(questionId);
+              console.log(`Added question ID from selectedQuestions array: ${questionId}`);
+            });
+          } else if (typeof survey.selectedQuestions === 'object') {
+            // Handle selectedQuestions as object (section -> questions mapping)
+            const questionCount = Object.values(survey.selectedQuestions).reduce((total, sectionQuestions) => {
+              if (Array.isArray(sectionQuestions)) {
+                sectionQuestions.forEach((questionId: string) => {
+                  uniqueQuestionIds.add(questionId);
+                  console.log(`Added question ID from selectedQuestions object: ${questionId}`);
+                });
+                return total + sectionQuestions.length;
+              }
+              return total;
+            }, 0);
+            console.log('Found selectedQuestions object with', questionCount, 'questions');
+          }
         } else {
           console.log('No selectedQuestions found in survey');
         }
@@ -1488,6 +1543,13 @@ if (Meteor.isServer) {
         }
         
         const questionCount = uniqueQuestionIds.size + (survey.siteTextQuestions?.length || 0);
+        
+        console.log('DEBUG - Question count calculation:', {
+          'uniqueQuestionIds.size': uniqueQuestionIds.size,
+          'siteTextQuestions.length': survey.siteTextQuestions?.length || 0,
+          'final questionCount': questionCount,
+          'uniqueQuestionIds array': Array.from(uniqueQuestionIds)
+        });
         
         // Get categories as sections
         let sections: Array<{title: string; description: string; questionCount?: number}> = [];

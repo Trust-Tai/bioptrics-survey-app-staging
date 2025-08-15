@@ -122,6 +122,11 @@ export interface SurveyDoc {
   }>;
   expectationsTitle?: string;
   startButtonLabel?: string;
+  surveyOrder?: Array<{
+    type: 'question' | 'section';
+    id: string;
+    order: number;
+  }>;
   
   defaultSettings?: {
     allowAnonymous?: boolean;
@@ -784,6 +789,7 @@ Meteor.methods({
         expectations: survey.expectations !== undefined ? survey.expectations : existingSurvey.expectations,
         expectationsTitle: survey.expectationsTitle !== undefined ? survey.expectationsTitle : existingSurvey.expectationsTitle,
         startButtonLabel: survey.startButtonLabel !== undefined ? survey.startButtonLabel : existingSurvey.startButtonLabel,
+        surveyOrder: survey.surveyOrder || existingSurvey.surveyOrder || [],
         updatedAt: now,
       },
     });

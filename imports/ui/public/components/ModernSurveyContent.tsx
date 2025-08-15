@@ -45,18 +45,61 @@ interface Survey {
   image?: string;
   featuredImage?: string;
   color?: string;
-  selectedQuestions?: Record<string, any[]>;
-  siteTextQuestions?: any[];
-  shareToken?: string;
-  sectionQuestions?: any[];
+  layout?: 'stepByStep' | 'allOnOnePage';
+  selectedQuestions?: Record<string, string[]>;
+  sectionQuestions?: Array<{
+    questionId?: string;
+    id?: string;
+    text?: string;
+    questionText?: string;
+    type?: string;
+    sectionId?: string;
+    options?: any[];
+    scale?: any;
+    labels?: string[];
+    required?: boolean;
+    order?: number;
+  }>;
+  siteTextQuestions?: Array<{
+    value?: string;
+    id?: string;
+    text?: string;
+    required?: boolean;
+  }>;
   surveySections?: Section[];
-  layout?: 'multiStep' | 'allOnOnePage';
+  surveyOrder?: Array<{
+    type: 'question' | 'section';
+    id: string;
+    order: number;
+  }>;
+  shareToken?: string;
+  published?: boolean;
+  isTemplate?: boolean;
+  templateName?: string;
+  templateCategory?: string;
+  organizationId?: string;
+  createdBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  totalQuestions?: number;
+  estimatedTime?: string;
   expectations?: Array<{
     title: string;
     description: string;
   }>;
   expectationsTitle?: string;
   startButtonLabel?: string;
+}
+
+interface ExtendedSurvey extends Survey {
+  questionCount?: number;
+  sectionCount?: number;
+  demographics?: {
+    [key: string]: any;
+  }
+  allowRetake?: boolean;
+  retakeMode?: 'replace' | 'new';
+  estimatedTime?: string;
 }
 
 interface ModernSurveyContentProps {
@@ -578,26 +621,67 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
       });
     }
     
-    // Sort questions by section and order
-    // First, get the section order from our sorted sections
-    const sectionOrder = sortedSections.reduce((acc, section, index) => {
-      acc[section.id] = index;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    // Sort questions first by section order, then by question order within section
-    allQuestions.sort((a, b) => {
-      const aSectionOrder = sectionOrder[a.sectionId || ''] ?? 999;
-      const bSectionOrder = sectionOrder[b.sectionId || ''] ?? 999;
+    // Sort questions and sections according to surveyOrder if available
+    if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+      console.log('Using surveyOrder for question/section arrangement:', survey.surveyOrder);
       
-      // First sort by section order
-      if (aSectionOrder !== bSectionOrder) {
-        return aSectionOrder - bSectionOrder;
-      }
+      // Create a map of order positions for quick lookup
+      const orderMap = survey.surveyOrder.reduce((acc: Record<string, number>, item: { type: string; id: string }, index: number) => {
+        acc[`${item.type}-${item.id}`] = index;
+        return acc;
+      }, {} as Record<string, number>);
       
-      // Then sort by question order within the section
-      return (a.order || 0) - (b.order || 0);
-    });
+      // Sort questions based on surveyOrder
+      allQuestions.sort((a, b) => {
+        const aOrderKey = `question-${a.id}`;
+        const bOrderKey = `question-${b.id}`;
+        
+        const aOrder = orderMap[aOrderKey] ?? 999;
+        const bOrder = orderMap[bOrderKey] ?? 999;
+        
+        return aOrder - bOrder;
+      });
+      
+      // Also sort sections based on surveyOrder
+      const sortedSectionsByOrder = [...sortedSections].sort((a, b) => {
+        const aOrderKey = `section-${a.id}`;
+        const bOrderKey = `section-${b.id}`;
+        
+        const aOrder = orderMap[aOrderKey] ?? 999;
+        const bOrder = orderMap[bOrderKey] ?? 999;
+        
+        return aOrder - bOrder;
+      });
+      
+      setSections(sortedSectionsByOrder);
+      
+      console.log('Questions and sections sorted by surveyOrder:', {
+        questionsOrder: allQuestions.map(q => ({ id: q.id, text: q.text })),
+        sectionsOrder: sortedSectionsByOrder.map(s => ({ id: s.id, name: s.name }))
+      });
+    } else {
+      console.log('No surveyOrder found, using default section/question order');
+      
+      // Fallback to original sorting logic
+      const sectionOrder = sortedSections.reduce((acc, section, index) => {
+        acc[section.id] = index;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Sort questions first by section order, then by question order within section
+      allQuestions.sort((a, b) => {
+        const aSectionOrder = sectionOrder[a.sectionId || ''] ?? 999;
+        const bSectionOrder = sectionOrder[b.sectionId || ''] ?? 999;
+        
+        // First sort by section order
+        if (aSectionOrder !== bSectionOrder) {
+          return aSectionOrder - bSectionOrder;
+        }
+        
+        // Then sort by question order within the section
+        return (a.order || 0) - (b.order || 0);
+      });
+    }
     
     setQuestions(allQuestions);
     

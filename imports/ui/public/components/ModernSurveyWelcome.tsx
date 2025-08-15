@@ -457,10 +457,10 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
     questionCount: number;
     sectionCount: number;
   }>({ 
-    estimatedTime: '3-5',
-    estimatedTimeSeconds: 180, // Default 3 minutes in seconds
-    questionCount: 8,
-    sectionCount: 3
+    estimatedTime: '',
+    estimatedTimeSeconds: 0,
+    questionCount: 0,
+    sectionCount: 0
   });
   
   // State for dynamic time calculation from ModernSurveyContent
@@ -483,18 +483,14 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
         
         // Only process if this is for our survey
         if (surveyId === survey._id) {
-          console.log('Received time data from event:', timeData);
           
           // Check if we already have this data to prevent unnecessary re-renders
           if (!dynamicTimeData || 
               dynamicTimeData.timestamp !== timeData.timestamp ||
               dynamicTimeData.totalEstimatedSeconds !== timeData.totalEstimatedSeconds) {
             
-            console.log('Time data changed, updating state');
             setDynamicTimeData(timeData);
             setTimeCalculationComplete(true);
-          } else {
-            console.log('Time data unchanged, skipping update');
           }
         }
       };
@@ -519,7 +515,6 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
         
         if (storedTimeData) {
           const timeData = JSON.parse(storedTimeData);
-          console.log(`Found stored time data for survey ${survey._id}:`, timeData);
           
           // Check if the data is recent (within the last hour)
           const now = new Date().getTime();
@@ -532,10 +527,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
               setDynamicTimeData(timeData);
               // Mark time calculation as complete since we have valid data
               setTimeCalculationComplete(true);
-              console.log(`Using dynamic time data: ${timeData.totalEstimatedSeconds} seconds (${timeData.minutes} minutes)`);
             }, 100);
-          } else {
-            console.log('Stored time data is too old, will recalculate');
           }
         }
       } catch (error) {
@@ -548,42 +540,29 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   useEffect(() => {
     if (survey._id) {
       setLoading(true);
-      console.log('Fetching survey metadata for survey ID:', survey._id);
       
       // First get the survey metadata for basic info
       Meteor.call('getSurveyMetadata', survey._id, (error: any, result: any) => {
         if (error) {
-          console.error('Error fetching survey metadata:', error);
           setLoading(false);
         } else if (result) {
-          console.log('Received survey metadata:', result);
           
           // Get all question IDs from the survey
           if (result.questionIds && result.questionIds.length > 0) {
             // Now fetch all question documents to calculate time directly
             Meteor.call('getQuestionDocuments', result.questionIds, (questionError: any, questionDocs: any) => {
               if (questionError) {
-                console.error('Error fetching question documents:', questionError);
-                // Fall back to the metadata from server
-                setMetadata({
-                  estimatedTime: result.estimatedTime || '3-5',
-                  estimatedTimeSeconds: result.estimatedTimeSeconds || 180,
-                  questionCount: result.questionCount || 8,
-                  sectionCount: result.sectionCount || 3
-                });
                 // Mark time calculation as complete even with fallback data
                 setTimeCalculationComplete(true);
               } else if (questionDocs && questionDocs.length > 0) {
                 // Calculate total time directly from question documents
                 const totalEstimatedSeconds = questionDocs.reduce((total: number, doc: any) => {
                   const seconds = doc.currentVersion?.estimatedTimeSeconds || 30; // Default to 30 seconds
-                  console.log(`Question ${doc._id}: ${seconds} seconds`);
                   return total + seconds;
                 }, 0);
                 
                 // Add 30 seconds buffer for survey overhead (reading intro, etc.)
                 const totalWithBuffer = totalEstimatedSeconds + 30;
-                console.log('Total seconds with buffer:', totalWithBuffer);
                 
                 const minutes = Math.ceil(totalWithBuffer / 60);
                 
@@ -614,7 +593,6 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                   
                   // Mark time calculation as complete
                   setTimeCalculationComplete(true);
-                  console.log('Time calculation complete, updating UI...');
                 } catch (storageError) {
                   console.error('Error storing survey time data:', storageError);
                 }
@@ -623,12 +601,6 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
             });
           } else {
             // No question IDs found, use the metadata from server and mark calculation complete
-            setMetadata({
-              estimatedTime: result.estimatedTime || '3-5',
-              estimatedTimeSeconds: result.estimatedTimeSeconds || 180,
-              questionCount: result.questionCount || 8,
-              sectionCount: result.sectionCount || 3
-            });
             setTimeCalculationComplete(true);
             setLoading(false);
           }
@@ -645,21 +617,6 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
   const estimatedTime = survey.estimatedTime || metadata.estimatedTime;
   const questionCount = totalQuestions || survey.questionCount || metadata.questionCount;
   const sectionCount = totalSections || survey.sectionCount || metadata.sectionCount;
-  console.log("questionCount----", questionCount);
-  // Log values for debugging
-  console.log('ModernSurveyWelcome - Time calculation values:', {
-    'survey.estimatedTime': survey.estimatedTime,
-    'metadata.estimatedTime': metadata.estimatedTime,
-    'final estimatedTime': estimatedTime,
-    'totalQuestions prop': totalQuestions,
-    'survey.questionCount': survey.questionCount,
-    'metadata.questionCount': metadata.questionCount,
-    'final questionCount': questionCount,
-    'totalSections prop': totalSections,
-    'survey.sectionCount': survey.sectionCount,
-    'metadata.sectionCount': metadata.sectionCount,
-    'final sectionCount': sectionCount
-  });
   
   return (
     <WelcomeContainer>
@@ -682,105 +639,82 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
       <ContentContainer>
 
 
-        {/* Stats Cards */}
-        <StatsContainer>
-          <StatCard>
-            <StatIcon>
-              <FaRegClock size={20} />
-            </StatIcon>
-            <StatValue>
-              {(() => {
-                console.log('Avg Minutes display logic - State values:', {
-                  loading,
-                  timeCalculationComplete,
-                  dynamicTimeData,
-                  'dynamicTimeData?.minutes': dynamicTimeData?.minutes,
-                  'metadata.estimatedTimeSeconds': metadata.estimatedTimeSeconds,
-                  'Math.ceil(metadata.estimatedTimeSeconds / 60)': Math.ceil(metadata.estimatedTimeSeconds / 60)
-                });
-                
-                if (loading) {
-                  console.log('Showing ... because loading is true');
-                  return '...';
-                }
-                
-                // Always prioritize metadata.estimatedTimeSeconds from getSurveyMetadata (combined sources)
-                const finalMinutes = Math.ceil(metadata.estimatedTimeSeconds / 60) || 0;
-                console.log('Final minutes from metadata:', finalMinutes);
-                return finalMinutes;
-              })()}
-            </StatValue>
-            <StatLabel>
-              Avg Minutes
-            </StatLabel>
-          </StatCard>
+        {/* Stats Cards - Only show if survey has questions */}
+        {(() => {
+          // Check if survey has any questions
+          // Always show stats, even if values are 0
           
-          <StatCard>
-            <StatIcon>
-              <FaRegCheckCircle size={20} />
-            </StatIcon>
-            <StatValue>
-              {(() => {
-                console.log('Total Questions display logic - State values:', {
-                  loading,
-                  timeCalculationComplete,
-                  dynamicTimeData,
-                  'dynamicTimeData?.questionCount': dynamicTimeData?.questionCount,
-                  totalQuestions,
-                  'metadata.questionCount': metadata.questionCount,
-                  'survey.questionCount': survey.questionCount
-                });
-                
-                if (loading) {
-                  console.log('Showing ... because loading is true');
-                  return '...';
-                }
-                
-                // Always prioritize metadata.questionCount from getSurveyMetadata (combined sources)
-                const finalQuestionCount = metadata.questionCount || totalQuestions || survey.questionCount || 0;
-                console.log('Final question count:', finalQuestionCount);
-                return finalQuestionCount;
-              })()}
-            </StatValue>
-            <StatLabel>Total questions</StatLabel>
-          </StatCard>
+          if (loading) {
+            return null;
+          }
           
-          <StatCard>
-            <StatIcon color="#2c3e50">
-              <FaRegListAlt size={20} />
-            </StatIcon>
-            <StatValue>
-              {(() => {
-                console.log('Question Sections display logic - State values:', {
-                  loading,
-                  totalSections,
-                  sectionCount,
-                  'metadata.sectionCount': metadata.sectionCount,
-                  'survey.sectionCount': survey.sectionCount
-                });
-                
-                if (loading) {
-                  console.log('Showing ... because loading is true');
-                  return '...';
-                }
-                
-                // Always prioritize metadata.sectionCount from getSurveyMetadata (combined sources)
-                const finalSectionCount = metadata.sectionCount || totalSections || survey.sectionCount || 0;
-                console.log('Final section count:', finalSectionCount);
-                return finalSectionCount;
-              })()}
-            </StatValue>
-            <StatLabel>Question sections</StatLabel>
-          </StatCard>
-          
-          <StatCard>
-            <StatIcon color="#2c3e50">
-              <FaRegHeart size={20} />
-            </StatIcon>
-            <StatValue>100%</StatValue>
-            <StatLabel>Anonymous</StatLabel>
-          </StatCard>
-        </StatsContainer>
+          return (
+            <StatsContainer>
+              <StatCard>
+                <StatIcon>
+                  <FaRegClock size={20} />
+                </StatIcon>
+                <StatValue>
+                  {(() => {
+                    if (loading) {
+                      return '...';
+                    }
+                    
+                    // Show actual minutes, including 0
+                    const finalMinutes = Math.ceil(metadata.estimatedTimeSeconds / 60);
+                    return finalMinutes;
+                  })()}
+                </StatValue>
+                <StatLabel>
+                  Avg Minutes
+                </StatLabel>
+              </StatCard>
+              
+              <StatCard>
+                <StatIcon>
+                  <FaRegCheckCircle size={20} />
+                </StatIcon>
+                <StatValue>
+                  {(() => {
+                    if (loading) {
+                      return '...';
+                    }
+                    
+                    const finalQuestionCount = metadata.questionCount || totalQuestions || survey.questionCount || 0;
+                    return finalQuestionCount;
+                  })()}
+                </StatValue>
+                <StatLabel>Total questions</StatLabel>
+              </StatCard>
+              
+              <StatCard>
+                <StatIcon color="#2c3e50">
+                  <FaRegListAlt size={20} />
+                </StatIcon>
+                <StatValue>
+                  {(() => {
+                    if (loading) {
+                      return '...';
+                    }
+                    
+                    // Show actual section count, including 0
+                    const finalSectionCount = metadata.sectionCount || totalSections || survey.sectionCount || 0;
+                    return finalSectionCount;
+                  })()}
+                </StatValue>
+                <StatLabel>Question sections</StatLabel>
+              </StatCard>
+              
+              <StatCard>
+                <StatIcon color="#2c3e50">
+                  <FaRegHeart size={20} />
+                </StatIcon>
+                <StatValue>100%</StatValue>
+                <StatLabel>Anonymous</StatLabel>
+              </StatCard>
+            </StatsContainer>
+          );
+        })()}
 
         {/* Trusted by thousands of customers section */}
         <TrustedSection>
@@ -857,7 +791,6 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
               
               // Save updated progress back to localStorage
               localStorage.setItem(localStorageKey, JSON.stringify(updatedProgress));
-              console.log('Reset survey timer for new attempt');
             } catch (error) {
               console.error('Error resetting survey timer:', error);
             }
