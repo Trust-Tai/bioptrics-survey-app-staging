@@ -28,6 +28,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
   const [draggingQuestionId, setDraggingQuestionId] = useState<string | null>(null);
   const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
+  const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
+  const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | 'inside' | null>(null);
+  const [dragType, setDragType] = useState<'question' | 'section' | null>(null);
   const [sections, setSections] = useState<any[]>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
@@ -284,29 +288,187 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     setShowQuestionSelector(false);
   };
 
-  // Handle reordering questions via drag and drop
-  const handleReorderQuestions = (fromIndex: number, toIndex: number) => {
-    const reorderedQuestions = [...surveyQuestions];
-    const [movedQuestion] = reorderedQuestions.splice(fromIndex, 1);
-    reorderedQuestions.splice(toIndex, 0, movedQuestion);
+  // Handle moving questions between sections or to/from no-section area
+  const handleMoveQuestion = (questionId: string, targetSectionId: string | undefined, targetIndex?: number) => {
+    const questionToMove = surveyQuestions.find(q => q.id === questionId);
+    if (!questionToMove) return;
+
+    // Remove question from current position
+    const otherQuestions = surveyQuestions.filter(q => q.id !== questionId);
     
-    // Update local state
-    setSurveyQuestions(reorderedQuestions);
-    
-    // Update survey with new question order
+    // Create updated question with new section assignment
+    const updatedQuestion = {
+      ...questionToMove,
+      sectionId: targetSectionId,
+      order: targetIndex !== undefined ? targetIndex : 
+        (targetSectionId ? getQuestionsForSection(targetSectionId).length : 
+         surveyQuestions.filter(q => !q.sectionId).length)
+    };
+
+    // Insert question at target position
+    let newQuestions;
+    if (targetIndex !== undefined) {
+      newQuestions = [...otherQuestions];
+      newQuestions.splice(targetIndex, 0, updatedQuestion);
+    } else {
+      newQuestions = [...otherQuestions, updatedQuestion];
+    }
+
+    setSurveyQuestions(newQuestions);
+
+    // Update survey data
     if (survey && onSurveyUpdate) {
-      const reorderedQuestionIds = reorderedQuestions.map(q => q.id);
       const updatedSurvey = {
         ...survey,
-        selectedQuestions: reorderedQuestionIds
+        selectedQuestions: newQuestions.map(q => q.id),
+        sectionQuestions: newQuestions.map((q, index) => ({
+          questionId: q.id,
+          sectionId: q.sectionId,
+          type: q.type,
+          order: index
+        }))
       };
       onSurveyUpdate(updatedSurvey);
     }
-    
-    // Trigger unsaved changes
+
     if (onHasUnsavedChanges) {
       onHasUnsavedChanges(true);
     }
+  };
+
+  // Handle moving sections
+  const handleMoveSection = (sectionId: string, targetIndex: number) => {
+    const sectionToMove = sections.find(s => s.id === sectionId);
+    if (!sectionToMove) return;
+
+    const otherSections = sections.filter(s => s.id !== sectionId);
+    const newSections = [...otherSections];
+    newSections.splice(targetIndex, 0, { ...sectionToMove, displayOrder: targetIndex });
+
+    // Update display orders
+    const reorderedSections = newSections.map((section, index) => ({
+      ...section,
+      displayOrder: index
+    }));
+
+    setSections(reorderedSections);
+
+    // Update survey data
+    if (survey && onSurveyUpdate) {
+      const updatedSurvey = {
+        ...survey,
+        surveySections: reorderedSections
+      };
+      onSurveyUpdate(updatedSurvey);
+    }
+
+    if (onHasUnsavedChanges) {
+      onHasUnsavedChanges(true);
+    }
+  };
+
+  // Handle drag start
+  const handleDragStart = (e: React.DragEvent, type: 'question' | 'section', id: string) => {
+    setDragType(type);
+    if (type === 'question') {
+      setDraggingQuestionId(id);
+    } else {
+      setDraggingSectionId(id);
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type, id }));
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setDragType(null);
+    setDraggingQuestionId(null);
+    setDraggingSectionId(null);
+    setDragOverQuestionId(null);
+    setDragOverSectionId(null);
+    setDragOverPosition(null);
+  };
+
+  // Handle drag over with position detection
+  const handleDragOver = (e: React.DragEvent, targetType: 'question' | 'section', targetId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const height = rect.height;
+    
+    let position: 'before' | 'after' | 'inside';
+    
+    if (targetType === 'section') {
+      // For sections, determine if dropping before, inside, or after
+      if (y < height * 0.25) {
+        position = 'before';
+      } else if (y > height * 0.75) {
+        position = 'after';
+      } else {
+        position = 'inside';
+      }
+      setDragOverSectionId(targetId);
+    } else {
+      // For questions, determine if dropping before or after
+      position = y < height * 0.5 ? 'before' : 'after';
+      setDragOverQuestionId(targetId);
+    }
+    
+    setDragOverPosition(position);
+  };
+
+  // Handle drop
+  const handleDrop = (e: React.DragEvent, targetType: 'question' | 'section', targetId: string) => {
+    e.preventDefault();
+    
+    const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const { type: draggedType, id: draggedId } = dragData;
+
+    if (draggedType === 'question') {
+      if (targetType === 'section') {
+        // Dropping question on section
+        if (dragOverPosition === 'inside') {
+          // Move question into section
+          handleMoveQuestion(draggedId, targetId);
+        } else {
+          // Move question before/after section (to no-section area)
+          const targetSectionIndex = sections.findIndex(s => s.id === targetId);
+          const targetIndex = dragOverPosition === 'before' ? targetSectionIndex : targetSectionIndex + 1;
+          handleMoveQuestion(draggedId, undefined, targetIndex);
+        }
+      } else {
+        // Dropping question on question
+        const targetQuestion = surveyQuestions.find(q => q.id === targetId);
+        if (targetQuestion) {
+          const targetIndex = surveyQuestions.findIndex(q => q.id === targetId);
+          const adjustedIndex = dragOverPosition === 'before' ? targetIndex : targetIndex + 1;
+          handleMoveQuestion(draggedId, targetQuestion.sectionId, adjustedIndex);
+        }
+      }
+    } else if (draggedType === 'section') {
+      // Dropping section
+      if (targetType === 'section') {
+        const targetIndex = sections.findIndex(s => s.id === targetId);
+        const adjustedIndex = dragOverPosition === 'before' ? targetIndex : targetIndex + 1;
+        handleMoveSection(draggedId, adjustedIndex);
+      } else {
+        // Dropping section on question - insert section before/after the question's position
+        const targetQuestion = surveyQuestions.find(q => q.id === targetId);
+        if (targetQuestion?.sectionId) {
+          const targetSectionIndex = sections.findIndex(s => s.id === targetQuestion.sectionId);
+          const adjustedIndex = dragOverPosition === 'before' ? targetSectionIndex : targetSectionIndex + 1;
+          handleMoveSection(draggedId, adjustedIndex);
+        } else {
+          // Question is in no-section area, place section at beginning or end
+          const targetIndex = dragOverPosition === 'before' ? 0 : sections.length;
+          handleMoveSection(draggedId, targetIndex);
+        }
+      }
+    }
+
+    handleDragEnd();
   };
 
   // Handle adding a new section
@@ -487,11 +649,29 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     });
   };
 
+  // Get drop zone classes for visual feedback
+  const getDropZoneClasses = (type: 'question' | 'section', id: string) => {
+    const classes = [];
+    
+    if (type === 'question' && dragOverQuestionId === id) {
+      classes.push(`drag-over-${dragOverPosition}`);
+    } else if (type === 'section' && dragOverSectionId === id) {
+      classes.push(`drag-over-${dragOverPosition}`);
+    }
+    
+    if ((type === 'question' && draggingQuestionId === id) || 
+        (type === 'section' && draggingSectionId === id)) {
+      classes.push('dragging');
+    }
+    
+    return classes.join(' ');
+  };
+
   return (
     <div className="survey-builder-panel">
       <div className="survey-builder-panel-content">
         <div style={{ padding: '20px' }}>
-          {/* Add the same CSS styles as Questions tab */}
+          {/* Enhanced CSS styles for drag and drop */}
           <style>{`
             .question-item {
               padding: 12px 16px;
@@ -518,9 +698,45 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             .question-item.dragging {
               opacity: 0.5;
               transform: rotate(2deg);
+              z-index: 1000;
             }
-            .question-item.drag-over {
-              border-top: 2px solid #007bff;
+            .question-item.drag-over-before {
+              border-top: 3px solid #007bff;
+              margin-top: 8px;
+            }
+            .question-item.drag-over-after {
+              border-bottom: 3px solid #007bff;
+              margin-bottom: 8px;
+            }
+            .section-container {
+              transition: all 0.2s ease;
+            }
+            .section-container.dragging {
+              opacity: 0.5;
+              transform: rotate(1deg);
+              z-index: 1000;
+            }
+            .section-container.drag-over-before {
+              border-top: 3px solid #28a745;
+              margin-top: 8px;
+            }
+            .section-container.drag-over-after {
+              border-bottom: 3px solid #28a745;
+              margin-bottom: 8px;
+            }
+            .section-container.drag-over-inside {
+              border: 2px solid #28a745;
+              background-color: rgba(40, 167, 69, 0.05);
+            }
+            .drag-handle {
+              cursor: grab;
+              color: #666;
+              display: flex;
+              align-items: center;
+              padding: 4px;
+            }
+            .drag-handle:active {
+              cursor: grabbing;
             }
           `}</style>
 
@@ -532,65 +748,22 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                 {surveyQuestions.filter(q => !q.sectionId).map((question, index) => (
                   <div 
                     key={question.id}
-                    className={`question-item ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
+                    className={`question-item ${getDropZoneClasses('question', question.id)}`}
                     onClick={() => handleEditQuestion(question.id)}
                     draggable
-                    onDragStart={(e) => {
-                      setDraggingQuestionId(question.id);
-                      e.dataTransfer.effectAllowed = 'move';
-                      e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
-                      e.dataTransfer.setData('text/plain', question.id);
-                    }}
-                    onDragEnd={() => {
-                      setDraggingQuestionId(null);
-                      setDragOverQuestionId(null);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                      if (draggingQuestionId !== question.id) {
-                        setDragOverQuestionId(question.id);
-                      }
-                    }}
+                    onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOver(e, 'question', question.id)}
                     onDragLeave={(e) => {
-                      // Only clear drag over if we're leaving the element entirely
                       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                         setDragOverQuestionId(null);
+                        setDragOverPosition(null);
                       }
                     }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const draggedQuestionId = e.dataTransfer.getData('text/plain');
-                      
-                      if (draggedQuestionId && draggedQuestionId !== question.id) {
-                        const fromIndex = surveyQuestions.findIndex(q => q.id === draggedQuestionId);
-                        const toIndex = surveyQuestions.findIndex(q => q.id === question.id);
-                        
-                        if (fromIndex !== -1 && toIndex !== -1) {
-                          handleReorderQuestions(fromIndex, toIndex);
-                        }
-                      }
-                      
-                      setDragOverQuestionId(null);
-                      setDraggingQuestionId(null);
-                    }}
+                    onDrop={(e) => handleDrop(e, 'question', question.id)}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-                      <div 
-                        style={{
-                          cursor: 'grab',
-                          color: '#666',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '4px'
-                        }}
-                        onMouseDown={(e) => {
-                          e.currentTarget.style.cursor = 'grabbing';
-                        }}
-                        onMouseUp={(e) => {
-                          e.currentTarget.style.cursor = 'grab';
-                        }}
-                      >
+                      <div className="drag-handle">
                         <FiMove size={16} />
                       </div>
                       <div style={{ flex: 1 }}>
@@ -643,14 +816,34 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
                 {/* Render sections with their questions */}
                 {sections.map((section) => (
-                  <div key={section.id} style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc' }}>
+                  <div 
+                    key={section.id} 
+                    className={`section-container ${getDropZoneClasses('section', section.id)}`}
+                    style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc' }}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, 'section', section.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOver(e, 'section', section.id)}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        setDragOverSectionId(null);
+                        setDragOverPosition(null);
+                      }
+                    }}
+                    onDrop={(e) => handleDrop(e, 'section', section.id)}
+                  >
                     {/* Section Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>{section.name}</h3>
-                        {section.description && (
-                          <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>{section.description}</p>
-                        )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                        <div className="drag-handle">
+                          <FiMove size={16} />
+                        </div>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>{section.name}</h3>
+                          {section.description && (
+                            <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>{section.description}</p>
+                          )}
+                        </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
@@ -687,65 +880,23 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                       {getQuestionsForSection(section.id).map((question, index) => (
                         <div 
                           key={question.id}
-                          className={`question-item ${draggingQuestionId === question.id ? 'dragging' : ''} ${dragOverQuestionId === question.id ? 'drag-over' : ''}`}
+                          className={`question-item ${getDropZoneClasses('question', question.id)}`}
                           onClick={() => handleEditQuestion(question.id)}
                           draggable
-                          onDragStart={(e) => {
-                            setDraggingQuestionId(question.id);
-                            e.dataTransfer.effectAllowed = 'move';
-                            e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
-                            e.dataTransfer.setData('text/plain', question.id);
-                          }}
-                          onDragEnd={() => {
-                            setDraggingQuestionId(null);
-                            setDragOverQuestionId(null);
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                            if (draggingQuestionId !== question.id) {
-                              setDragOverQuestionId(question.id);
-                            }
-                          }}
+                          onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => handleDragOver(e, 'question', question.id)}
                           onDragLeave={(e) => {
                             if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                               setDragOverQuestionId(null);
+                              setDragOverPosition(null);
                             }
                           }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const draggedQuestionId = e.dataTransfer.getData('text/plain');
-                            
-                            if (draggedQuestionId && draggedQuestionId !== question.id) {
-                              const fromIndex = surveyQuestions.findIndex(q => q.id === draggedQuestionId);
-                              const toIndex = surveyQuestions.findIndex(q => q.id === question.id);
-                              
-                              if (fromIndex !== -1 && toIndex !== -1) {
-                                handleReorderQuestions(fromIndex, toIndex);
-                              }
-                            }
-                            
-                            setDragOverQuestionId(null);
-                            setDraggingQuestionId(null);
-                          }}
+                          onDrop={(e) => handleDrop(e, 'question', question.id)}
                           style={{ marginBottom: '8px' }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-                            <div 
-                              style={{
-                                cursor: 'grab',
-                                color: '#666',
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '4px'
-                              }}
-                              onMouseDown={(e) => {
-                                e.currentTarget.style.cursor = 'grabbing';
-                              }}
-                              onMouseUp={(e) => {
-                                e.currentTarget.style.cursor = 'grab';
-                              }}
-                            >
+                            <div className="drag-handle">
                               <FiMove size={16} />
                             </div>
                             <div style={{ flex: 1 }}>
