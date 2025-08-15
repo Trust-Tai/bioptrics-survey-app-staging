@@ -51,6 +51,11 @@ interface Survey {
   sectionQuestions?: any[];
   surveySections?: Section[];
   layout?: 'multiStep' | 'allOnOnePage';
+  expectations?: Array<{
+    title: string;
+    description: string;
+  }>;
+  expectationsTitle?: string;
 }
 
 interface ModernSurveyContentProps {

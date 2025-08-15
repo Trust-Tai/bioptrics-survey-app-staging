@@ -115,6 +115,13 @@ export interface SurveyDoc {
     icon: string;
   }>;
   
+  // Welcome screen expectations
+  expectations?: Array<{
+    title: string;
+    description: string;
+  }>;
+  expectationsTitle?: string;
+  
   defaultSettings?: {
     allowAnonymous?: boolean;
     requireLogin?: boolean;
@@ -772,6 +779,9 @@ Meteor.methods({
         thankYouBoxes: survey.thankYouBoxes || existingSurvey.thankYouBoxes || [],
         // Include layout setting
         layout: survey.layout !== undefined ? survey.layout : existingSurvey.layout,
+        // Include expectations data
+        expectations: survey.expectations !== undefined ? survey.expectations : existingSurvey.expectations,
+        expectationsTitle: survey.expectationsTitle !== undefined ? survey.expectationsTitle : existingSurvey.expectationsTitle,
         updatedAt: now,
       },
     });

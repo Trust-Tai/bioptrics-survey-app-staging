@@ -13,10 +13,20 @@ interface Survey {
   image?: string;
   featuredImage?: string;
   color?: string;
-  estimatedTime?: string;
+  selectedQuestions?: Record<string, any[]>;
+  siteTextQuestions?: any[];
+  shareToken?: string;
+  sectionQuestions?: any[];
+  surveySections?: SurveySection[];
+  layout?: 'multiStep' | 'allOnOnePage';
   questionCount?: number;
   sectionCount?: number;
   sections?: SurveySection[];
+  expectations?: Array<{
+    title: string;
+    description: string;
+  }>;
+  expectationsTitle?: string;
 }
 
 interface SurveySection {
@@ -808,35 +818,23 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
           </TrustedLogos>
         </TrustedSection>
 
-        {/* What to expect section */}
-        <ExpectationSection>
-          <ExpectationTitle>What to expect</ExpectationTitle>
-          <ExpectationList>
-            <ExpectationItem>
-              <ExpectationNumber>1</ExpectationNumber>
-              <ExpectationContent>
-                <h3>Overall Experience</h3>
-                <p>Share your general satisfaction and likelihood to recommend us</p>
-              </ExpectationContent>
-            </ExpectationItem>
-            
-            <ExpectationItem>
-              <ExpectationNumber>2</ExpectationNumber>
-              <ExpectationContent>
-                <h3>Service Quality</h3>
-                <p>Rate specific aspects like speed, staff helpfulness, and areas for improvement</p>
-              </ExpectationContent>
-            </ExpectationItem>
-            
-            <ExpectationItem>
-              <ExpectationNumber>3</ExpectationNumber>
-              <ExpectationContent>
-                <h3>Additional Feedback</h3>
-                <p>Optional comments and follow-up preferences</p>
-              </ExpectationContent>
-            </ExpectationItem>
-          </ExpectationList>
-        </ExpectationSection>
+        {/* What to expect section - Dynamic from survey data */}
+        {survey.expectations && survey.expectations.length > 0 && (
+          <ExpectationSection>
+            <ExpectationTitle>{survey.expectationsTitle || 'What to expect'}</ExpectationTitle>
+            <ExpectationList>
+              {survey.expectations.map((expectation: any, index: number) => (
+                <ExpectationItem key={index}>
+                  <ExpectationNumber>{index + 1}</ExpectationNumber>
+                  <ExpectationContent>
+                    <h3>{expectation.title}</h3>
+                    <p>{expectation.description}</p>
+                  </ExpectationContent>
+                </ExpectationItem>
+              ))}
+            </ExpectationList>
+          </ExpectationSection>
+        )}
 
         {/* Start Button */}
         <ButtonContainer>

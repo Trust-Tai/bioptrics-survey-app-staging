@@ -2123,6 +2123,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         selectedTheme,
         selectedCategories,
         selectedTags,
+        // Include expectations data
+        expectations: survey?.expectations || [],
+        expectationsTitle: survey?.expectationsTitle || '',
         updatedAt: new Date(),
       };
       
@@ -4236,7 +4239,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                         />
                       </div>
                     </div>
-                    <div style={{ padding: 20 }}>
+                    <div>
                     <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
                       Select tags to associate with this survey. Tags help with filtering and organizing surveys.
                     </p>
@@ -4351,6 +4354,137 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                             }).join(', ')
                           : 'No tags selected'}
                       </p>
+                    </div>
+
+                    {/* Expectations Section */}
+                    <div className="form-group" style={{ marginTop: 30 }}>
+                      <label htmlFor="expectationsTitle">Welcome Screen Expectations Title</label>
+                      <input
+                        type="text"
+                        id="expectationsTitle"
+                        className="form-control"
+                        value={survey?.expectationsTitle || ''}
+                        onChange={(e) => {
+                          setSurvey({...survey, expectationsTitle: e.target.value});
+                          setHasUnsavedChanges(true);
+                          triggerAutoSave();
+                        }}
+                        placeholder="What to expect"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Expectations List</label>
+                      <div style={{ marginBottom: 10 }}>
+                        {(survey?.expectations || []).map((expectation: any, index: number) => (
+                          <div key={index} style={{ 
+                            border: '1px solid #ddd', 
+                            borderRadius: 4, 
+                            padding: 15, 
+                            marginBottom: 10,
+                            backgroundColor: '#f9f9f9'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                              <strong>Expectation {index + 1}</strong>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newExpectations = [...(survey?.expectations || [])];
+                                  newExpectations.splice(index, 1);
+                                  setSurvey({...survey, expectations: newExpectations});
+                                  setHasUnsavedChanges(true);
+                                  triggerAutoSave();
+                                }}
+                                style={{
+                                  background: '#dc3545',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 3,
+                                  padding: '5px 10px',
+                                  cursor: 'pointer',
+                                  fontSize: 12
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <div style={{ marginBottom: 10 }}>
+                              <input
+                                type="text"
+                                placeholder="Expectation title"
+                                value={expectation.title || ''}
+                                onChange={(e) => {
+                                  const newExpectations = [...(survey?.expectations || [])];
+                                  newExpectations[index] = { ...expectation, title: e.target.value };
+                                  setSurvey({...survey, expectations: newExpectations});
+                                  setHasUnsavedChanges(true);
+                                  triggerAutoSave();
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: 8,
+                                  border: '1px solid #ccc',
+                                  borderRadius: 3
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <textarea
+                                placeholder="Expectation description"
+                                value={expectation.description || ''}
+                                onChange={(e) => {
+                                  const newExpectations = [...(survey?.expectations || [])];
+                                  newExpectations[index] = { ...expectation, description: e.target.value };
+                                  setSurvey({...survey, expectations: newExpectations});
+                                  setHasUnsavedChanges(true);
+                                  triggerAutoSave();
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: 8,
+                                  border: '1px solid #ccc',
+                                  borderRadius: 3,
+                                  minHeight: 60,
+                                  resize: 'vertical'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newExpectations = [...(survey?.expectations || []), { title: '', description: '' }];
+                          setSurvey({...survey, expectations: newExpectations});
+                          setHasUnsavedChanges(true);
+                          triggerAutoSave();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '12px',
+                          background: '#f5f5f5',
+                          border: '1px dashed #ccc',
+                          borderRadius: '6px',
+                          color: '#666',
+                          cursor: 'pointer',
+                          gap: '6px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f0f0f0';
+                          e.currentTarget.style.borderColor = '#999';
+                          e.currentTarget.style.color = '#552a47';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#f5f5f5';
+                          e.currentTarget.style.borderColor = '#ccc';
+                          e.currentTarget.style.color = '#666';
+                        }}
+                      >
+                        <FiPlus size={16} /> Add Expectation
+                      </button>
                     </div>
                   </div>
                     
