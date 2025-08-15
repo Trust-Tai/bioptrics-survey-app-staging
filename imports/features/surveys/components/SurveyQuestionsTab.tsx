@@ -397,42 +397,66 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   // Handle creating a question for a specific section
   const handleCreateQuestionForSection = (sectionId: string) => {
     const onQuestionCreatedCallback = (questionId: string) => {
-      // Add question to the section
-      const questionDoc = Questions.findOne(questionId);
-      if (questionDoc) {
-        const newQuestion: QuestionItem = {
-          id: questionId,
-          text: extractQuestionText(questionDoc),
-          type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
-          status: 'published',
-          sectionId: sectionId
-        };
-
-        setSurveyQuestions(prev => [...prev, newQuestion]);
-
-        // Update survey with the new question
-        if (survey && onSurveyUpdate) {
-          const updatedSurvey = {
-            ...survey,
-            selectedQuestions: [...(survey.selectedQuestions || []), questionId],
-            sectionQuestions: [
-              ...(survey.sectionQuestions || []),
-              {
-                questionId: questionId,
-                sectionId: sectionId,
-                type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
-                order: getQuestionsForSection(sectionId).length
-              }
-            ]
+      console.log('Question created for section with ID:', questionId, 'Section:', sectionId);
+      
+      // Add a small delay to ensure the question is saved to the database
+      setTimeout(() => {
+        const questionDoc = Questions.findOne(questionId);
+        if (questionDoc) {
+          const latestVersion = questionDoc.versions && questionDoc.versions.length > 0 
+            ? questionDoc.versions[questionDoc.versions.length - 1]
+            : questionDoc;
+          
+          const newQuestion: QuestionItem = {
+            id: questionId,
+            text: extractQuestionText(questionDoc),
+            type: (latestVersion as any)?.responseType || (questionDoc as any)?.responseType || 'text',
+            status: 'published' as 'published',
+            sectionId: sectionId
           };
-          onSurveyUpdate(updatedSurvey);
+          
+          console.log('Adding question to section:', newQuestion);
+          
+          // Add the question to the survey questions list immediately
+          setSurveyQuestions(prev => {
+            // Check if question already exists to avoid duplicates
+            if (prev.some(q => q.id === questionId)) {
+              return prev;
+            }
+            return [...prev, newQuestion];
+          });
+          
+          // Update survey with the new question
+          if (survey && onSurveyUpdate) {
+            const currentQuestions = Array.isArray(survey.selectedQuestions) ? survey.selectedQuestions : [];
+            // Check if question ID already exists to avoid duplicates
+            if (!currentQuestions.includes(questionId)) {
+              const updatedSurvey = {
+                ...survey,
+                selectedQuestions: [...currentQuestions, questionId],
+                sectionQuestions: [
+                  ...(survey.sectionQuestions || []),
+                  {
+                    questionId: questionId,
+                    sectionId: sectionId,
+                    type: newQuestion.type,
+                    order: getQuestionsForSection(sectionId).length
+                  }
+                ]
+              };
+              console.log('Updating survey with new question for section:', updatedSurvey.selectedQuestions);
+              onSurveyUpdate(updatedSurvey);
+            }
+          }
+          
+          // Trigger unsaved changes
+          if (onHasUnsavedChanges) {
+            onHasUnsavedChanges(true);
+          }
+        } else {
+          console.error('Question not found in database:', questionId);
         }
-
-        // Trigger unsaved changes
-        if (onHasUnsavedChanges) {
-          onHasUnsavedChanges(true);
-        }
-      }
+      }, 100); // Small delay to ensure database write is complete
     };
 
     openPanel(undefined, surveyId, onQuestionCreatedCallback);

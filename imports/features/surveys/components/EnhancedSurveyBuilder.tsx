@@ -4417,8 +4417,21 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                       setSections(updatedSurvey.surveySections);
                     }
                     // Sync sectionQuestions state with the updated survey
+                    // Convert sectionQuestions back to QuestionItem format for the builder
                     if (updatedSurvey.sectionQuestions && Array.isArray(updatedSurvey.sectionQuestions)) {
-                      setSurveyQuestions(updatedSurvey.sectionQuestions);
+                      const reconstructedQuestions: QuestionItem[] = updatedSurvey.sectionQuestions.map((sq: any) => {
+                        // Find the question document to get the text
+                        const questionDoc = Questions.findOne(sq.questionId);
+                        return {
+                          id: sq.questionId,
+                          text: questionDoc ? extractQuestionText(questionDoc) : 'Loading...',
+                          type: sq.type || 'text',
+                          status: 'published' as const,
+                          sectionId: sq.sectionId,
+                          order: sq.order
+                        };
+                      });
+                      setSurveyQuestions(reconstructedQuestions);
                     }
                     setHasUnsavedChanges(true);
                   }}
