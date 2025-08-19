@@ -1,7 +1,11 @@
 import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
+import { check, Match } from 'meteor/check';
 import { Random } from 'meteor/random';
-import { check } from 'meteor/check';
+import { Accounts } from 'meteor/accounts-base';
+import { findThemeIdByName } from '../../survey-themes/api/themeUtils';
+
+// Collaborator interface is defined below as an exported interface
 
 // Extend the User type to include roles
 declare module 'meteor/meteor' {
@@ -614,17 +618,702 @@ Meteor.methods({
         updatedAt: now,
         createdBy: this.userId,
       };
-      return await Surveys.insertAsync(doc);
+      try {
+        const _id = await Surveys.insertAsync(doc);
+        console.log(`Survey created successfully with ID: ${_id}`);
+        return { _id };
+      } catch (error) {
+        console.error('Error creating survey:', error);
+        throw new Meteor.Error('creation-failed', 'Failed to create survey');
+      }
     }
   },
 
-  // Publish survey and generate shareable token
+  // Import a survey from external data
+  async 'surveys.import'(importData: any) {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to import a survey');
+    }
+    
+    // Check if user has admin role or appropriate permissions
+    // This is a common cause of 'Access denied' errors
+    const currentUser = await Meteor.users.findOneAsync(this.userId);
+    if (!currentUser) {
+      throw new Meteor.Error('not-found', 'User not found');
+    }
+    
+    // Check if user has admin role
+    const isAdmin = currentUser.roles && Array.isArray(currentUser.roles) && currentUser.roles.includes('admin');
+    
+    // Allow any logged-in user to import surveys (remove this restriction)
+    // If you want to restrict to admins only, uncomment the following lines:
+    // if (!isAdmin) {
+    //   throw new Meteor.Error('permission-denied', 'You do not have permission to import surveys');
+    // }
+    
+    const now = new Date();
+    
+    try {
+      // Transform imported data to match application survey structure
+      const surveyDoc: Omit<SurveyDoc, '_id'> = {
+        title: importData.title || 'Imported Survey',
+        description: importData.description || '',
+        logo: importData.logo || null,
+        image: importData.image || null,
+        featuredImage: importData.featuredImage || null,
+        color: importData.color || '#552A47',
+        layout: importData.layout || 'multiStep',
+        // Required fields for SurveyDoc
+        selectedQuestions: {}, // Will be populated during question processing
+        siteTextQuestions: importData.siteTextQuestions || [],
+        siteTextQForm: importData.siteTextQForm || {},
+        selectedDemographics: importData.selectedDemographics || [],
+        published: false,
+        createdAt: now,
+        updatedAt: now,
+        createdBy: this.userId,
+        status: 'draft',
+        // Initialize optional fields
+        surveySections: [],
+        sectionQuestions: [],
+        
+        // Welcome screen expectations
+        expectations: importData.expectations || [],
+        expectationsTitle: importData.expectationsTitle || 'What to expect',
+        startButtonLabel: importData.startButtonLabel || 'Start Survey',
+        
+        // Thank you screen customization
+        thankYouMessage: importData.thankYouMessage || 'Thank you for completing the survey!',
+        thankYouTitle: importData.thankYouTitle || 'Thank You',
+        thankYouDetails: importData.thankYouDetails || '',
+        thankYouIcon: importData.thankYouIcon || '',
+        thankYouBoxes: importData.thankYouBoxes || [],
+        
+        // Survey order
+        surveyOrder: importData.surveyOrder || [],
+        defaultSettings: {
+          responseSettings: {
+            allowAnonymousResponses: importData.allowAnonymousResponses || false,
+            allowMultipleResponses: importData.allowMultipleResponses || false,
+            requireLogin: importData.requireLogin || false,
+            showProgressBar: importData.showProgressBar !== undefined ? importData.showProgressBar : true,
+            showQuestionNumbers: importData.showQuestionNumbers !== undefined ? importData.showQuestionNumbers : true,
+            shuffleQuestions: importData.shuffleQuestions || false,
+            shuffleSections: importData.shuffleSections || false,
+          },
+          collaborationSettings: {
+            allowCollaboration: importData.allowCollaboration || false,
+            // We'll process collaborators separately to ensure they're properly formatted
+            collaborators: [],
+          },
+          appearanceSettings: {
+            logo: importData.logo || '',
+            featureImage: importData.featureImage || '',
+            surveyLayout: importData.surveyLayout || 'standard',
+            theme: importData.theme || 'light',
+          },
+          thankYouScreen: {
+            enabled: importData.thankYouScreenEnabled || true,
+            title: importData.thankYouTitle || 'Thank you for your response!',
+            message: importData.thankYouMessage || 'Your response has been recorded.',
+            redirectUrl: importData.redirectUrl || '',
+            redirectDelay: importData.redirectDelay || 0,
+            showSummary: importData.showSummary || false,
+            summaryItems: importData.summaryItems || [],
+          },
+        },
+        
+        // Include themes, categories, and tags
+        // If selectedTheme is a name instead of an ID, look up the ID
+        selectedTheme: await (async () => {
+          // Check if selectedTheme is a string and might be a theme name
+          if (typeof importData.selectedTheme === 'string' && importData.selectedTheme) {
+            // Try to find theme ID by name
+            const themeId = await findThemeIdByName(importData.selectedTheme);
+            if (themeId) {
+              console.log(`Found theme ID ${themeId} for theme name "${importData.selectedTheme}"`); 
+              return themeId;
+            } else {
+              console.log(`Theme name "${importData.selectedTheme}" not found, using as-is`);
+              return importData.selectedTheme;
+            }
+          }
+          return importData.selectedTheme || null;
+        })(),
+        selectedCategories: importData.selectedCategories || [],
+        // We'll process tags separately to convert tag names to IDs
+        
+        // Additional fields
+        isActive: importData.isActive !== undefined ? importData.isActive : true,
+        priority: importData.priority || 0,
+        keywords: importData.keywords || [],
+        
+        // Initialize with empty sections array
+        surveySections: [],
+      };
+      
+      // Process sections if available
+      if (importData.sections && Array.isArray(importData.sections)) {
+        if (!surveyDoc.surveySections) {
+          surveyDoc.surveySections = [];
+        }
+        
+        // Map imported sections to survey sections
+        const mappedSections = importData.sections.map((section: any, index: number) => ({
+          id: Random.id(),
+          name: section.title || section.name || `Section ${index + 1}`,
+          description: section.description || '',
+          isActive: true,
+          priority: index,
+          icon: section.icon || '',
+          color: section.color || '',
+          instructions: section.instructions || '',
+          isRequired: section.isRequired || false,
+          timeLimit: section.timeLimit || 0,
+          questionIds: section.questionIds || [],
+          templateId: section.templateId || '',
+          customCss: section.customCss || '',
+          progressIndicator: section.progressIndicator !== undefined ? section.progressIndicator : true,
+        }));
+        
+        // Assign the mapped sections to surveyDoc.surveySections
+        surveyDoc.surveySections = mappedSections;
+      } else {
+        // Create a default section if none provided
+        surveyDoc.surveySections = [{
+          id: Random.id(),
+          name: 'Default Section',
+          description: 'Default section for imported survey',
+          isActive: true,
+          priority: 0,
+          progressIndicator: true
+        }];
+      }
+      
+      // Process questions if available
+      if (importData.questions && Array.isArray(importData.questions)) {
+        // Import Questions collection to check for existing questions
+        const { Questions } = require('../../../api/questions');
+        
+        // Create an array to hold all questions
+        const allQuestions: Array<{
+          id: string;
+          text: string;
+          type: string;
+          sectionId?: string;
+          order?: number;
+          options?: any[];
+          required?: boolean;
+          description?: string;
+          placeholder?: string;
+          defaultValue?: any;
+          validation?: any;
+        }> = [];
+        
+        // Initialize selectedQuestions as an object
+        surveyDoc.selectedQuestions = {};
+        
+        // Ensure surveySections exists
+        if (!surveyDoc.surveySections || surveyDoc.surveySections.length === 0) {
+          surveyDoc.surveySections = [{
+            id: Random.id(),
+            name: 'Default Section',
+            description: 'Default section for imported survey',
+            isActive: true,
+            priority: 0,
+            progressIndicator: true,
+            questionIds: []
+          }];
+        }
+        
+        const defaultSectionId = surveyDoc.surveySections[0].id;
+        
+        // Create a map to store questionIds for each section
+        const sectionQuestionIdsMap: Record<string, string[]> = {};
+        
+        // Initialize the map with empty arrays for each section
+        surveyDoc.surveySections.forEach((section) => {
+          sectionQuestionIdsMap[section.id] = [];
+        });
+        
+        // Create a map from imported section IDs to new section IDs
+        const sectionIdMap: Record<string, string> = {};
+        if (importData.sections && Array.isArray(importData.sections)) {
+          importData.sections.forEach((importedSection: any, index: number) => {
+            if (importedSection.id && surveyDoc.surveySections && surveyDoc.surveySections[index]) {
+              sectionIdMap[importedSection.id] = surveyDoc.surveySections[index].id;
+            }
+          });
+        }
+        
+        // Track reused and new questions
+        let reusedQuestions = 0;
+        let newQuestions = 0;
+        
+        // Process each question in the import data
+        for (let index = 0; index < importData.questions.length; index++) {
+          const question = importData.questions[index];
+          
+          // Extract question text and type for matching first
+          const questionText = question.text || question.title || `Question ${index + 1}`;
+          const questionType = question.type || 'text';
+          
+          // Map the imported sectionId to the new sectionId if available
+          let sectionId = question.sectionId;
+          
+          // Check if sectionId exists and is not empty
+          console.log(`Processing question "${questionText}" with original sectionId: ${sectionId || 'empty'}`); 
+          
+          if (sectionId && sectionId.trim() !== '') {
+            // If it exists in the map, use the mapped value
+            if (sectionIdMap[sectionId]) {
+              const originalSectionId = sectionId;
+              sectionId = sectionIdMap[sectionId];
+              console.log(`Mapped sectionId from ${originalSectionId} to ${sectionId}`);
+            } else {
+              // If it doesn't exist in the map but is a valid value, keep it as is
+              // This preserves any custom sectionId values
+              console.log(`Keeping original sectionId: ${sectionId} (not found in section map)`);
+            }
+          } else {
+            // If sectionId is empty, null, or undefined, keep it that way
+            // This ensures questions without sections remain outside of sections
+            sectionId = '';
+            console.log(`Setting empty sectionId for question "${questionText}" to ensure it appears outside sections`);
+          }
+          
+          // Try to find an existing question with the same text and type
+          // The issue is that we're looking for 'text' field but storing in 'questionText'
+          let existingQuestion = null;
+          try {
+            // First try to find by versions.questionText (where we actually store the text)
+            existingQuestion = await Questions.findOneAsync({
+              'versions.questionText': questionText,
+              'versions.responseType': questionType
+            });
+            
+            // If not found, try the old way as fallback
+            if (!existingQuestion) {
+              existingQuestion = await Questions.findOneAsync({
+                text: questionText,
+                type: questionType
+              });
+            }
+            
+            console.log(`Question search for "${questionText}" (${questionType}): ${existingQuestion ? 'Found existing' : 'Not found'}`);
+          } catch (error) {
+            console.error('Error searching for existing question:', error);
+          }
+          
+          let questionId;
+          
+          if (existingQuestion && existingQuestion._id) {
+            // Reuse the existing question
+            questionId = existingQuestion._id;
+            reusedQuestions++;
+            console.log(`Reusing existing question: "${questionText}" with ID: ${questionId}`);
+          } else {
+            // Create a new question with proper versioning structure
+            try {
+              // Prepare question version data
+              const questionVersion = {
+                questionText: questionText,
+                description: question.description || '',
+                responseType: question.responseType || questionType, // Use responseType if provided, otherwise fall back to type
+                options: question.options || [],
+                required: question.required !== undefined ? question.required : false,
+                image: question.image || '',
+                categoryTags: question.categoryTags || [],
+                surveyThemes: question.surveyThemes || [],
+                customFields: question.customFields || [],
+                labels: question.labels || [],
+                isAssessment: question.isAssessment || false,
+                correctAnswers: question.correctAnswers || [],
+                points: question.points || 1,
+                adminNotes: question.adminNotes || '',
+                language: question.language || 'en',
+                published: true,
+                updatedBy: this.userId || 'system',
+                collectFeedback: question.collectFeedback || false,
+                feedbackType: question.feedbackType || 'text',
+                feedbackPrompt: question.feedbackPrompt || '',
+                estimatedTimeSeconds: question.estimatedTimeSeconds || 30,
+                saveToQuestionBank: question.saveToQuestionBank !== undefined ? question.saveToQuestionBank : true,
+                version: 1,
+                updatedAt: new Date()
+              };
+              
+              // Prepare the complete question document with versioning
+              const newQuestionData = {
+                currentVersion: 1,
+                versions: [questionVersion],
+                createdAt: new Date(),
+                createdBy: this.userId || 'system'
+              };
+              
+              // Insert the new question
+              questionId = await Questions.insertAsync(newQuestionData);
+              newQuestions++;
+              console.log(`Created new question: "${questionText}" with ID: ${questionId}`);
+              console.log(`Question version structure:`, {
+                currentVersion: newQuestionData.currentVersion,
+                versionCount: newQuestionData.versions.length,
+                responseType: questionVersion.responseType,
+                questionText: questionVersion.questionText
+              });
+            } catch (error) {
+              console.error(`Error creating new question "${questionText}":`, error);
+              // Generate a random ID as fallback if insertion fails
+              questionId = Random.id();
+            }
+          }
+          
+          // Create the transformed question with the ID (either existing or new)
+          const transformedQuestion = {
+            id: questionId,
+            text: questionText,
+            title: questionText, // Add title field to match what UI expects
+            questionText: questionText, // Add questionText field for proper display
+            type: question.responseType || questionType, // Use responseType if provided, otherwise fall back to type
+            sectionId: sectionId,
+            order: index,
+            options: question.options || [],
+            required: question.required !== undefined ? question.required : false,
+            description: question.description || '',
+            placeholder: question.placeholder || '',
+            defaultValue: question.defaultValue || null,
+            validation: question.validation || null,
+            responseType: question.responseType || questionType, // Add responseType field
+          };
+          
+          // Log the transformed question structure
+          console.log(`Transformed question:`, {
+            id: transformedQuestion.id,
+            title: transformedQuestion.title,
+            questionText: transformedQuestion.questionText,
+            type: transformedQuestion.type,
+            responseType: transformedQuestion.responseType
+          });
+          
+          allQuestions.push(transformedQuestion);
+          
+          // Add the question ID to the corresponding section's questionIds array only if it has a valid sectionId
+          if (sectionId && sectionId.trim() !== '' && sectionQuestionIdsMap[sectionId]) {
+            sectionQuestionIdsMap[sectionId].push(transformedQuestion.id);
+            console.log(`Added question "${transformedQuestion.text}" to section ${sectionId}`);
+          } else {
+            console.log(`Question "${transformedQuestion.text}" will appear outside of any section`);
+          }
+          
+          // Add the question to the selectedQuestions object with its ID as the key
+          surveyDoc.selectedQuestions[transformedQuestion.id] = {
+            id: transformedQuestion.id,
+            text: transformedQuestion.text,
+            title: transformedQuestion.text, // Add title field to match what UI expects
+            questionText: transformedQuestion.text, // Add questionText field for proper display
+            type: transformedQuestion.type,
+            responseType: transformedQuestion.responseType, // Add responseType field
+            options: transformedQuestion.options,
+            required: transformedQuestion.required,
+            description: transformedQuestion.description,
+            placeholder: transformedQuestion.placeholder,
+            defaultValue: transformedQuestion.defaultValue,
+            validation: transformedQuestion.validation
+          };
+        }
+        
+        // Update each section's questionIds array with the new question IDs
+        surveyDoc.surveySections = surveyDoc.surveySections.map((section) => ({
+          ...section,
+          questionIds: sectionQuestionIdsMap[section.id] || [],
+          isActive: true // Ensure section is active
+        }));
+        
+        // Assign questions to sections and ensure each question has the proper format
+        surveyDoc.sectionQuestions = allQuestions.map(question => {
+          // Use type assertion to handle additional properties
+          const q = question as any;
+          const sectionQuestion = {
+            ...q,
+            questionText: q.questionText || q.text, // Ensure questionText field is set
+            title: q.title || q.text, // Ensure title field is set
+            responseType: q.responseType || q.type, // Ensure responseType field is set
+            // Ensure sectionId is properly preserved (empty string if it was empty)
+            sectionId: q.sectionId && q.sectionId.trim() !== '' ? q.sectionId : ''
+          };
+          
+          // Log the first few questions to verify structure
+          if (allQuestions.indexOf(question) < 3) {
+            console.log(`Section question ${allQuestions.indexOf(question) + 1}:`, {
+              id: sectionQuestion.id,
+              title: sectionQuestion.title,
+              questionText: sectionQuestion.questionText,
+              type: sectionQuestion.type,
+              responseType: sectionQuestion.responseType,
+              sectionId: sectionQuestion.sectionId || 'empty'
+            });
+          }
+          
+          return sectionQuestion;
+        });
+        
+        // Log a summary of questions with empty sectionId
+        const questionsWithoutSection = surveyDoc.sectionQuestions.filter(q => !q.sectionId || q.sectionId.trim() === '');
+        console.log(`Found ${questionsWithoutSection.length} questions with empty sectionId that will appear outside sections:`, 
+          questionsWithoutSection.map(q => (q as any).text || (q as any).questionText || 'Unnamed question').join(', '));
+        
+        // Ensure the section-question relationship is properly established
+        console.log('Section-Question mapping:');
+        surveyDoc.surveySections.forEach(section => {
+          const questionIds = section.questionIds || [];
+          console.log(`Section ${section.id} (${section.name}) has ${questionIds.length} questions:`, questionIds);
+        });
+        
+        console.log(`Processed ${Object.keys(surveyDoc.selectedQuestions).length} questions for survey import (${reusedQuestions} reused, ${newQuestions} new)`);
+      }
+      
+      // Override settings if provided
+      if (importData.settings) {
+        surveyDoc.defaultSettings = {
+          ...surveyDoc.defaultSettings,
+          ...importData.settings
+        };
+      }
+      
+      // Apply defaultSettings directly from the import data if available
+      if (importData.defaultSettings) {
+        surveyDoc.defaultSettings = {
+          ...surveyDoc.defaultSettings,
+          ...importData.defaultSettings
+        };
+        
+        // Ensure retake settings are properly applied
+        if (importData.defaultSettings.retakeSettings) {
+          if (!surveyDoc.defaultSettings.retakeSettings) {
+            surveyDoc.defaultSettings.retakeSettings = {};
+          }
+          surveyDoc.defaultSettings.retakeSettings = {
+            ...surveyDoc.defaultSettings.retakeSettings,
+            ...importData.defaultSettings.retakeSettings
+          };
+        }
+        
+        console.log('Applied survey retake settings:', {
+          allowRetake: surveyDoc.defaultSettings.allowRetake,
+          retakeSettings: surveyDoc.defaultSettings.retakeSettings
+        });
+      }
+      
+      // Process tags if available
+      if (importData.selectedTags && Array.isArray(importData.selectedTags)) {
+        try {
+          // Import from Layers to ensure it's available
+          const { Layers } = require('../../../api/layers');
+          
+          // Initialize selectedTags array
+          surveyDoc.selectedTags = [];
+          
+          // Track tag statistics
+          let existingTags = 0;
+          let newTags = 0;
+          
+          // For each tag name in the import data
+          for (const tagName of importData.selectedTags) {
+            // Look up the tag by name - case insensitive search
+            const tag = await Layers.findOneAsync({ 
+              name: { $regex: new RegExp('^' + tagName + '$', 'i') } 
+            });
+            
+            if (tag && tag._id) {
+              // If found, add the tag ID to the survey
+              surveyDoc.selectedTags.push(tag._id);
+              existingTags++;
+              console.log(`Using existing tag '${tagName}' with ID: ${tag._id}`);
+            } else {
+              console.log(`Tag '${tagName}' not found in the database, creating it...`);
+              
+              try {
+                // Create a new tag with all required fields
+                const tagId = `tag-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                const newTagData = {
+                  id: tagId,
+                  name: tagName,
+                  location: 'Surveys', // Set location to Surveys as required
+                  color: importData.color || 'rgb(85, 42, 71)', // Use survey color or default
+                  fields: [],
+                  customFields: [],
+                  active: true,
+                  createdAt: new Date(),
+                  createdBy: this.userId || 'system',
+                  description: '' // Empty description as per example
+                };
+                
+                // Log the tag data before insertion for debugging
+                console.log(`Attempting to create new tag with data:`, JSON.stringify(newTagData));
+                
+                // Insert the new tag
+                const newTagId = await Layers.insertAsync(newTagData);
+                console.log(`Created new tag '${tagName}' with ID: ${newTagId}`);
+                
+                // Add the new tag ID to the survey
+                if (newTagId) {
+                  surveyDoc.selectedTags.push(newTagId);
+                  newTags++;
+                }
+              } catch (createTagError: any) {
+                console.error(`Failed to create tag '${tagName}':`, createTagError);
+                console.error(`Error details: ${createTagError.message || 'Unknown error'}`);
+                
+                // Try to provide more specific error information
+                if (createTagError.code === 11000) {
+                  console.error('This appears to be a duplicate key error. The tag might already exist with a different case.');
+                  
+                  // Try to find the tag again with a more flexible search
+                  try {
+                    const existingTag = await Layers.findOneAsync({ 
+                      name: { $regex: new RegExp(tagName, 'i') } 
+                    });
+                    
+                    if (existingTag && existingTag._id) {
+                      console.log(`Found existing tag with similar name: '${existingTag.name}' (ID: ${existingTag._id})`);
+                      surveyDoc.selectedTags.push(existingTag._id);
+                      existingTags++;
+                    }
+                  } catch (secondaryError) {
+                    console.error('Failed in secondary tag lookup:', secondaryError);
+                  }
+                }
+              }
+            }
+          }
+          
+          console.log(`Processed ${surveyDoc.selectedTags.length} tags for survey import (${existingTags} existing, ${newTags} new)`);
+        } catch (tagError) {
+          console.error('Error processing tags during survey import:', tagError);
+          // Continue with import even if tag processing fails
+        }
+      } else {
+        // Initialize with empty array if no tags provided
+        surveyDoc.selectedTags = [];
+      }
+      
+      try {
+        // Add required fields for a valid survey
+        surveyDoc.published = false;
+        surveyDoc.createdAt = now;
+        surveyDoc.updatedAt = now;
+        surveyDoc.createdBy = this.userId;
+        
+        // Insert the survey as a draft
+        console.log('Inserting survey document:', JSON.stringify(surveyDoc));
+        const _id = await Surveys.insertAsync(surveyDoc);
+        
+        // Process collaborators if they exist in the import data
+        if (importData.collaborators && Array.isArray(importData.collaborators) && importData.collaborators.length > 0) {
+          console.log('Processing collaborators from import data:', importData.collaborators);
+          
+          // Process each collaborator
+          for (const collaborator of importData.collaborators) {
+            if (collaborator.email) {
+              try {
+                // Check if user exists
+                let collaboratorUser = await Meteor.users.findOneAsync({ 'emails.address': collaborator.email });
+                
+                // If user doesn't exist and we have permission to create users, create a new user
+                if (!collaboratorUser && isAdmin) {
+                  console.log(`Creating new user for collaborator: ${collaborator.email}`);
+                  
+                  try {
+                    // Generate a random password (user will need to reset it)
+                    const randomPassword = Random.id(10);
+                    
+                    // Create the user account
+                    const userId = Accounts.createUser({
+                      email: collaborator.email,
+                      password: randomPassword,
+                      profile: {
+                        name: collaborator.name || collaborator.email.split('@')[0] // Use provided name or part of email as name
+                      }
+                    });
+                    
+                    // Set the newly created user
+                    collaboratorUser = await Meteor.users.findOneAsync(userId);
+                    
+                    // Send enrollment email to set password
+                    if (collaboratorUser) {
+                      Accounts.sendEnrollmentEmail(userId);
+                      console.log(`Enrollment email sent to: ${collaborator.email}`);
+                    }
+                  } catch (userCreateError: any) {
+                    console.error(`Error creating user for ${collaborator.email}:`, userCreateError);
+                    // Continue with next collaborator if this one fails
+                    continue;
+                  }
+                }
+                
+                // If we have a valid user, add them as a collaborator
+                if (collaboratorUser) {
+                  const collaboratorRole = collaborator.role || 'viewer';
+                  
+                  // Add the collaborator to the survey
+                  await Surveys.updateAsync(
+                    { _id },
+                    { 
+                      $push: { 
+                        collaborators: {
+                          userId: collaboratorUser._id,
+                          email: collaborator.email,
+                          name: collaborator.name || collaboratorUser.profile?.name || collaborator.email.split('@')[0],
+                          role: collaboratorRole,
+                          addedAt: new Date(),
+                          addedBy: this.userId
+                        }
+                      },
+                      $set: { updatedAt: new Date() }
+                    }
+                  );
+                  
+                  console.log(`Added collaborator ${collaborator.email} with role ${collaboratorRole} to survey ${_id}`);
+                } else {
+                  console.log(`Could not add collaborator: ${collaborator.email} - User not found and could not be created`);
+                }
+              } catch (error: any) {
+                console.error(`Error processing collaborator ${collaborator.email}:`, error);
+              }
+            }
+          }
+        }
+        
+        console.log('Survey imported successfully with ID:', _id);
+        return { _id, success: true, message: 'Survey imported successfully!' };
+      } catch (error: any) {
+        console.error('Error importing survey:', error);
+        
+        // Handle specific error cases
+        if (error.error === 403) {
+          throw new Meteor.Error('permission-denied', 'You do not have permission to import surveys');
+        } else if (error.code === 11000) {
+          throw new Meteor.Error('duplicate-error', 'A survey with this title already exists');
+        } else {
+          throw new Meteor.Error('import-failed', `Failed to import survey: ${error.message || 'Unknown error'}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error in survey import:', error);
+      
+      // Return a more descriptive error
+      const errorMessage = error.reason || error.message || 'An unknown error occurred';
+      throw new Meteor.Error('import-error', `Error importing survey: ${errorMessage}`);
+    }
+  },
+  
   async 'surveys.publish'(survey: Partial<SurveyDoc>) {
     if (!this.userId) throw new Meteor.Error('Not authorized');
     const now = new Date();
     
-    // Fetch the existing survey from the DB
-    const existingRaw = survey._id && await Surveys.findOneAsync(survey._id);
+    // Find existing survey if we're updating
+    const existingRaw = survey._id ? await Surveys.findOneAsync(survey._id) : null;
     const existing: SurveyDoc | undefined = (typeof existingRaw === 'object' && existingRaw !== null ? existingRaw as SurveyDoc : undefined);
     
     // Check if user is authorized to publish this survey

@@ -1,0 +1,185 @@
+{
+  "title": "1 Sample Imported Survey",
+  "description": "This is a sample survey created for testing the import functionality",
+  "logo": "https://example.com/logo.png",
+  "image": "https://example.com/image.png",
+  "featuredImage": "https://example.com/featured-image.png",
+  "color": "#552A47",
+  "layout": "multiStep",
+  "selectedTheme": "Amber Glow",
+  "selectedTags": ["Test", "Import", "Survey"],
+  "expectations": [
+    {
+      "title": "Short Survey",
+      "description": "This survey will take approximately 5 minutes to complete"
+    },
+    {
+      "title": "Anonymous Responses",
+      "description": "Your responses will be kept anonymous"
+    },
+    {
+      "title": "Save Progress",
+      "description": "You can save your progress and return later"
+    }
+  ],
+  "expectationsTitle": "What to expect from this survey",
+  "startButtonLabel": "Begin Survey Now",
+  "thankYouMessage": "Thank you for completing our survey!",
+  "thankYouTitle": "Survey Completed",
+  "thankYouDetails": "Your responses have been recorded successfully.",
+  "thankYouIcon": "check-circle",
+  "thankYouBoxes": [
+    {
+      "title": "Total Responses",
+      "subtitle": "Total number of questions answered"
+    },
+    {
+      "title": "Unanswered Questions",
+      "subtitle": "Number of skipped or empty answers"
+    },
+    {
+      "title": "Completion",
+      "subtitle": "Text showing that the survey was completed"
+    },
+    {
+      "title": "Time Taken",
+      "subtitle": "How long the user took to complete the survey"
+    }
+  ],
+  "sections": [
+    {
+      "id": "basic-info-section",
+      "title": "Basic Information",
+      "description": "Please provide your basic information",
+      "instructions": "Fill out all fields below",
+      "isRequired": true,
+      "icon": "user",
+      "color": "#3498db",
+      "timeLimit": 300,
+      "progressIndicator": true
+    },
+    {
+      "id": "feedback-section",
+      "title": "Feedback",
+      "description": "Share your thoughts and opinions",
+      "instructions": "Please be honest with your feedback",
+      "isRequired": true,
+      "icon": "comment",
+      "color": "#2ecc71",
+      "timeLimit": 600,
+      "progressIndicator": true
+    }
+  ],
+  "questions": [
+    {
+      "text": "1. What is your full name?",
+      "type": "text",
+      "responseType": "shortText",
+      "sectionId": "basic-info-section",
+      "order": 1,
+      "description": "Please enter your legal name",
+      "required": true
+    },
+    {
+      "text": "2. What is your age?",
+      "type": "number",
+      "responseType": "number",
+      "sectionId": "basic-info-section",
+      "order": 2,
+      "validation": {
+        "min": 18,
+        "max": 120
+      },
+      "required": true
+    },
+    {
+      "text": "3. How would you rate our service?",
+      "type": "rating",
+      "responseType": "rating",
+      "sectionId": "feedback-section",
+      "order": 1,
+      "options": [
+        {"value": "1", "label": "Poor"},
+        {"value": "2", "label": "Fair"},
+        {"value": "3", "label": "Good"},
+        {"value": "4", "label": "Very Good"},
+        {"value": "5", "label": "Excellent"}
+      ],
+      "required": true
+    },
+    {
+      "text": "4. What improvements would you suggest?",
+      "type": "textarea",
+      "responseType": "longText",
+      "sectionId": "feedback-section",
+      "order": 2,
+      "placeholder": "Please share your thoughts here...",
+      "required": false
+    },
+    {
+      "text": "5. Which of our products do you use?",
+      "type": "checkbox",
+      "responseType": "multipleChoice",
+      "sectionId": "feedback-section",
+      "order": 3,
+      "options": [
+        {"value": "product1", "label": "Product A"},
+        {"value": "product2", "label": "Product B"},
+        {"value": "product3", "label": "Product C"},
+        {"value": "product4", "label": "Product D"}
+      ],
+      "required": true
+    },
+    {
+      "text": "6. When did you first use our service?",
+      "type": "date",
+      "responseType": "date",
+      "sectionId": "basic-info-section",
+      "order": 3,
+      "required": false
+    }
+  ],
+  "defaultSettings": {
+    "showProgressBar": true,
+    "allowSave": true,
+    "allowSkip": false,
+    "requireLogin": false,
+    "allowAnonymous": true,
+    "showThankYou": true,
+    "redirectUrl": "",
+    "thankYouMessage": "Thank you for your participation!",
+    "notificationEmails": ["admin@example.com", "manager@example.com"],
+    "autoPublish": false,
+    "recurringSchedule": false,
+    "recurringFrequency": "monthly",
+    "restrictAccess": false,
+    "allowRetake": false,
+    "responseSettings": {
+      "allowPartialResponses": true,
+      "notifyOnCompletion": true,
+      "storeResponseMetadata": true,
+      "responseExpiry": 90,
+      "responseLimit": 1000,
+      "preventDuplicateResponses": true
+    }
+  },
+  "collaborators": [
+  {
+    "userId": "user123",
+    "email": "user123@example.com",
+    "role": "editor",
+    "addedAt": "2023-04-15T10:30:00.000Z",
+    "addedBy": "admin456"
+  },
+  {
+    "userId": "user789",
+    "email": "user789@example.com",
+    "role": "viewer",
+    "addedAt": "2023-04-16T14:45:00.000Z",
+    "addedBy": "admin456"
+  }
+],
+  "isActive": true,
+  "priority": 0,
+  "keywords": ["sample", "test", "import"]
+}  
