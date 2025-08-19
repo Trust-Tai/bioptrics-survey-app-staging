@@ -1,0 +1,276 @@
+/* Custom Bootstrap Theme for Bioptrics Survey App */
+/* This file customizes Bootstrap variables to match the existing color scheme */
+
+/* Import Bootstrap CSS first */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Custom Bootstrap theme variables that match your existing theme */
+:root {
+  /* Your existing theme colors */
+  --color-primary: #542A46;
+  --color-secondary: #3B1D31;
+  --color-accent: #A9A59D;
+  --color-background: #f8f9fa;
+  --color-text: #2e2e2e;
+  --color-sidebar: #542A46;
+  --color-sidebar-text: #ffffff;
+  --color-error: #d32f2f;
+  
+  /* Bootstrap variable overrides */
+  --bs-primary: #542A46;
+  --bs-secondary: #3B1D31;
+  --bs-success: #28a745;
+  --bs-info: #17a2b8;
+  --bs-warning: #ffc107;
+  --bs-danger: #d32f2f;
+  --bs-light: #f8f9fa;
+  --bs-dark: #2e2e2e;
+  
+  /* Custom spacing and borders */
+  --bs-border-color: #A9A59D;
+  --bs-border-radius: 8px;
+  --bs-border-radius-sm: 4px;
+  --bs-border-radius-lg: 12px;
+  
+  /* Custom shadows */
+  --bs-box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+  --bs-box-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --bs-box-shadow-lg: 0 6px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Custom Bootstrap component overrides */
+
+/* Primary button styling to match your theme */
+.btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--color-secondary) !important;
+  border-color: var(--color-secondary) !important;
+  color: #fff !important;
+}
+
+/* Secondary button styling */
+.btn-secondary {
+  background-color: var(--color-secondary) !important;
+  border-color: var(--color-secondary) !important;
+  color: #fff !important;
+}
+
+.btn-outline-primary {
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+/* Card styling */
+.card {
+  border: 1px solid var(--color-accent);
+  border-radius: var(--bs-border-radius-lg);
+  box-shadow: var(--bs-box-shadow);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--bs-box-shadow-lg);
+  border-color: var(--color-primary);
+}
+
+/* Form controls */
+.form-control,
+.form-select {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(84, 42, 70, 0.25);
+}
+
+/* Input group styling */
+.input-group-text {
+  background-color: var(--color-background);
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+/* Badge styling */
+.badge.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.badge.bg-secondary {
+  background-color: var(--color-secondary) !important;
+}
+
+/* Alert styling */
+.alert-primary {
+  background-color: rgba(84, 42, 70, 0.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Modal styling */
+.modal-content {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border-radius: var(--bs-border-radius-lg);
+}
+
+.modal-header {
+  border-bottom-color: var(--color-accent);
+}
+
+.modal-footer {
+  border-top-color: var(--color-accent);
+}
+
+/* Pagination styling */
+.page-link {
+  color: var(--color-primary);
+  border-color: var(--color-accent);
+}
+
+.page-link:hover {
+  color: var(--color-secondary);
+  background-color: rgba(84, 42, 70, 0.1);
+  border-color: var(--color-primary);
+}
+
+.page-item.active .page-link {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Dropdown styling */
+.dropdown-menu {
+  background-color: var(--color-background);
+  border-color: var(--color-accent);
+}
+
+.dropdown-item {
+  color: var(--color-text);
+}
+
+.dropdown-item:hover {
+  background-color: rgba(84, 42, 70, 0.1);
+  color: var(--color-primary);
+}
+
+/* Custom utility classes */
+.text-primary-custom {
+  color: var(--color-primary) !important;
+}
+
+.text-secondary-custom {
+  color: var(--color-secondary) !important;
+}
+
+.bg-primary-custom {
+  background-color: var(--color-primary) !important;
+}
+
+.bg-secondary-custom {
+  background-color: var(--color-secondary) !important;
+}
+
+.border-primary-custom {
+  border-color: var(--color-primary) !important;
+}
+
+/* Rating stars styling */
+.text-warning {
+  color: #ffc107 !important;
+}
+
+/* Product card specific styling */
+.product-card {
+  transition: all 0.3s ease;
+  border: 1px solid var(--color-accent);
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-primary);
+}
+
+.product-image {
+  height: 120px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.product-image::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+}
+
+/* Action buttons in cards */
+.admin-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.product-card:hover .admin-actions {
+  opacity: 1;
+}
+
+.admin-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.admin-btn:hover {
+  transform: scale(1.1);
+}
+
+.admin-btn-edit {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.admin-btn-edit:hover {
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.admin-btn-delete {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.admin-btn-delete:hover {
+  background-color: #b71c1c;
+  color: white;
+}

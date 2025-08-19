@@ -2,7 +2,19 @@ import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import { 
+  Container, 
+  Row, 
+  Col, 
+  Card, 
+  Button, 
+  Form, 
+  InputGroup, 
+  Modal, 
+  Badge,
+  Alert,
+  Spinner
+} from 'react-bootstrap';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { Products, Product } from '/imports/api/products/products';
 import { useTheme } from '/imports/contexts/ThemeContext';
@@ -20,7 +32,8 @@ import {
   FaSave,
   FaTimes,
   FaUpload,
-  FaImage
+  FaImage,
+  FaCheck
 } from 'react-icons/fa';
 
 // Color palette constant
@@ -39,719 +52,20 @@ const colorPalette = [
   'linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%)'
 ];
 
-// Rating component
+// Rating component using Bootstrap styling
 const Rating: React.FC<{ rating: number }> = ({ rating }) => {
   return (
-    <StarContainer>
-      {[...Array(Math.floor(rating))].map((_, i) => <FaStar key={i} />)}
-      {rating % 1 !== 0 && <FaStarHalfAlt />}
-      {[...Array(5 - Math.floor(rating) - (rating % 1 !== 0 ? 1 : 0))].map((_, i) => <FaRegStar key={i} />)}
-    </StarContainer>
+    <div className="d-flex align-items-center gap-1">
+      {[...Array(Math.floor(rating))].map((_, i) => 
+        <FaStar key={i} className="text-warning" style={{ fontSize: '14px' }} />
+      )}
+      {rating % 1 !== 0 && <FaStarHalfAlt className="text-warning" style={{ fontSize: '14px' }} />}
+      {[...Array(5 - Math.floor(rating) - (rating % 1 !== 0 ? 1 : 0))].map((_, i) => 
+        <FaRegStar key={i} className="text-warning" style={{ fontSize: '14px' }} />
+      )}
+    </div>
   );
 };
-
-// Styled Components with theme integration
-const Container = styled.div`
-  padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const PageHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-`;
-
-const Title = styled.h1`
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const SearchAndFilters = styled.div`
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 24px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-`;
-
-const SearchBar = styled.div`
-  position: relative;
-  flex: 1;
- 
-  min-width: 280px;
-
-  @media (max-width: 768px) {
-    max-width: 100%;
-  }
-
-  svg {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-    font-size: 16px;
-    z-index: 1;
-  }
-
-  input {
-    width: 100%;
-    padding: 12px 16px 12px 48px;
-    border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-    border-radius: 8px;
-    font-size: 16px;
-    outline: none;
-    transition: border-color 0.2s;
-    background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-    color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-    box-sizing: border-box;
-
-    &:focus {
-      border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    }
-
-    &::placeholder {
-      color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-    }
-  }
-`;
-
-const FilterButton = styled.button<{ active?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: ${props => props.active 
-    ? (props.theme?.primaryColor || 'var(--color-primary)') 
-    : (props.theme?.backgroundColor || 'var(--color-background)')};
-  color: ${props => props.active 
-    ? '#fff' 
-    : (props.theme?.textColor || 'var(--color-text)')};
-  border: 1.5px solid ${props => props.active 
-    ? (props.theme?.primaryColor || 'var(--color-primary)') 
-    : (props.theme?.accentColor || 'var(--color-accent)')};
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 100px;
-
-  &:hover {
-    background: ${props => props.active 
-      ? (props.theme?.secondaryColor || 'var(--color-secondary)') 
-      : (props.theme?.accentColor || 'var(--color-accent)')};
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    color: ${props => props.active ? '#fff' : '#fff'};
-  }
-
-  svg {
-    font-size: 14px;
-  }
-
-  @media (max-width: 768px) {
-    justify-content: center;
-    min-width: 120px;
-  }
-`;
-
-const ProductGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 24px;
-
-  @media (min-width: 1200px) {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  }
-`;
-
-const ProductCard = styled.div`
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  border-radius: 12px;
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  border: 1px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  position: relative;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
-
-const AdminProductActions = styled.div`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 10;
-`;
-
-// Enhanced product card with admin functionality
-const EnhancedProductCard = styled(ProductCard)`
-  &:hover {
-    ${AdminProductActions} {
-      opacity: 1;
-    }
-  }
-`;
-
-const ProductImage = styled.div<{ bgColor?: string; hasImage?: boolean }>`
-  height: 120px;
-  background: ${props => props.bgColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: ${props => props.hasImage ? '0' : '36px'};
-  font-weight: 700;
-  position: relative;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, ${({ theme }) => theme.primaryColor || 'var(--color-primary)'}, ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'});
-  }
-`;
-
-const ProductContent = styled.div`
-  padding: 16px;
-`;
-
-const ProductHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  gap: 8px;
-`;
-
-const ProductTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  line-height: 1.3;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-`;
-
-const ProductPrice = styled.div`
-  text-align: right;
-  flex-shrink: 0;
-`;
-
-const Price = styled.span`
-  font-size: 18px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-`;
-
-const PriceUnit = styled.span`
-  font-size: 12px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  margin-left: 2px;
-`;
-
-// Add rating container for cards
-const CardRatingContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 8px 0 12px 0;
-`;
-
-const CardStarContainer = styled.div`
-  display: flex;
-  gap: 1px;
-
-  svg {
-    font-size: 14px;
-    color: #ffc107;
-  }
-`;
-
-const CardRatingText = styled.span`
-  font-size: 12px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  font-weight: 500;
-`;
-
-// Remove TagContainer and Tag styled components
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-`;
-
-const LearnMoreButton = styled.button`
-  width: 100%;
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 14px;
-
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-    transform: translateY(-1px);
-  }
-
-  svg {
-    font-size: 14px;
-  }
-`;
-
-const AdminButtons = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-`;
-
-const AdminButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  ${props => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background: ${props.theme?.primaryColor || 'var(--color-primary)'};
-          color: white;
-          &:hover { background: ${props.theme?.secondaryColor || 'var(--color-secondary)'}; }
-        `;
-      case 'danger':
-        return `
-          background: #e74c3c;
-          color: white;
-          &:hover { background: #c0392b; }
-        `;
-      default:
-        return `
-          background: ${props.theme?.backgroundColor || 'var(--color-background)'};
-          color: ${props.theme?.textColor || 'var(--color-text)'};
-          border: 1.5px solid ${props.theme?.accentColor || 'var(--color-accent)'};
-          &:hover { 
-            background: ${props.theme?.accentColor || 'var(--color-accent)'}; 
-            border-color: ${props.theme?.primaryColor || 'var(--color-primary)'}; 
-            color: white;
-          }
-        `;
-    }
-  }}
-`;
-
-const AdminActionButton = styled.button<{ variant?: 'edit' | 'delete' }>`
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 11;
-  
-  ${props => props.variant === 'delete' ? `
-    background: #e74c3c;
-    color: white;
-    &:hover { background: #c0392b; transform: scale(1.1); }
-  ` : `
-    background: ${props.theme?.primaryColor || 'var(--color-primary)'};
-    color: white;
-    &:hover { background: ${props.theme?.secondaryColor || 'var(--color-secondary)'}; transform: scale(1.1); }
-  `}
-`;
-
-const Modal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const ModalContent = styled.div`
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-`;
-
-const ModalTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  margin: 0;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-    color: white;
-  }
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 20px;
-`;
-
-const Label = styled.label`
-  display: block;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  margin-bottom: 8px;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-
-  &::placeholder {
-    color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-  min-height: 100px;
-  resize: vertical;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-
-  &::placeholder {
-    color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  }
-`;
-
-const Select = styled.select`
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
-
-const TagInput = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-`;
-
-const TagInputField = styled.input`
-  flex: 1;
-  padding: 8px 12px;
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
-
-const AddTagButton = styled.button`
-  padding: 8px 16px;
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-  }
-`;
-
-const TagsList = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
-
-const EditableTag = styled.div`
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}20`};
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  button {
-    background: none;
-    border: none;
-    color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    cursor: pointer;
-    padding: 0;
-    font-size: 12px;
-    
-    &:hover {
-      color: #e74c3c;
-    }
-  }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 32px;
-`;
-
-const ImageUploadSection = styled.div`
-  border: 2px dashed ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  padding: 24px;
-  text-align: center;
-  transition: all 0.2s;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}10`};
-  }
-`;
-
-const ImagePreview = styled.div`
-  width: 120px;
-  height: 80px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 0 auto 16px;
-  border: 2px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-`;
-
-const ColorPalette = styled.div<{ expanded: boolean }>`
-  display: ${props => props.expanded ? 'grid' : 'none'};
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  margin-top: 12px;
-  transition: all 0.3s ease;
-`;
-
-const ColorPaletteToggle = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 8px;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}05`};
-  }
-`;
-
-const ColorPaletteToggleText = styled.span`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ColorPaletteToggleIcon = styled.span<{ expanded: boolean }>`
-  font-size: 14px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  transform: ${props => props.expanded ? 'rotate(180deg)' : 'rotate(0deg)'};
-  transition: transform 0.3s ease;
-`;
-
-// Add missing styled components
-const UploadButton = styled.label`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const RemoveImageButton = styled.button`
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-left: 8px;
-  
-  &:hover {
-    background: #c0392b;
-  }
-`;
-
-const FileInput = styled.input`
-  display: none;
-`;
-
-const ColorOption = styled.div<{ color: string; selected: boolean }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: ${props => props.color};
-  cursor: pointer;
-  border: 3px solid ${props => props.selected 
-    ? (props.theme?.primaryColor || 'var(--color-primary)') 
-    : 'transparent'};
-  transition: all 0.2s;
-  
-  &:hover {
-    transform: scale(1.1);
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
 
 const Marketplace: React.FC = () => {
   const theme = useTheme();
@@ -771,7 +85,7 @@ const Marketplace: React.FC = () => {
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const [showColorPalette, setShowColorPalette] = useState(false);
   
-  // Form state - add whatsIncluded
+  // Form state
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
     description: '',
@@ -1064,115 +378,209 @@ const Marketplace: React.FC = () => {
 
   return (
     <AdminLayout>
-      <Container theme={theme}>
-        <PageHeader>
-          <Title theme={theme}>Survey Marketplace</Title>
-          <AdminButtons>
-            <AdminButton variant="primary" theme={theme} onClick={openAddModal}>
-              <FaPlus />
-              Add Product
-            </AdminButton>
-          </AdminButtons>
-        </PageHeader>
+      <Container>
+        <Row className="mb-4">
+          <Col>
+            <h1 className="fw-bold" style={{ color: theme.textColor || 'var(--color-text)' }}>
+              Survey Marketplace
+            </h1>
+          </Col>
+          <Col xs="auto">
+            <Button variant="primary" onClick={openAddModal}>
+              <FaPlus /> Add Product
+            </Button>
+          </Col>
+        </Row>
 
-        <SearchAndFilters>
-          <SearchBar theme={theme}>
-            <FaSearch />
-            <input
-              type="text"
-              placeholder="Search survey products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </SearchBar>
-          <FilterButton
-            active={showFilters}
-            theme={theme}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <FaFilter />
-            Filters
-          </FilterButton>
-        </SearchAndFilters>
+        <Row className="mb-4">
+          <Col>
+            <InputGroup>
+              <Form.Control
+                placeholder="Search survey products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ borderRadius: '8px 0 0 8px' }}
+              />
+              <Button variant="outline-secondary">
+                <FaSearch />
+              </Button>
+              <Button 
+                variant={showFilters ? 'primary' : 'outline-primary'} 
+                onClick={() => setShowFilters(!showFilters)}
+                className="d-flex align-items-center gap-2"
+                style={{ borderRadius: '0 8px 8px 0', marginLeft: '8px' }}
+              >
+                <FaFilter />
+                Filters
+              </Button>
+            </InputGroup>
+          </Col>
+        </Row>
 
-        <ProductGrid>
+        <Row>
           {filteredProducts.map(product => (
-            <EnhancedProductCard 
-              key={product._id} 
-              theme={theme}
-              onMouseEnter={() => setHoveredProduct(product._id!)}
-              onMouseLeave={() => setHoveredProduct(null)}
-            >
-              <AdminProductActions>
-                <AdminActionButton theme={theme} onClick={() => openEditModal(product)}>
-                  <FaEdit />
-                </AdminActionButton>
-                <AdminActionButton 
-                  variant="delete" 
-                  theme={theme}
-                  onClick={() => handleDelete(product._id!)}
+            <Col key={product._id} xs={12} sm={6} md={4} lg={3} className="mb-4">
+              <Card 
+                onMouseEnter={() => setHoveredProduct(product._id!)}
+                onMouseLeave={() => setHoveredProduct(null)}
+                style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}
+              >
+                {/* Edit and Delete buttons overlay */}
+                <div 
+                  className="position-absolute top-0 end-0 p-2" 
+                  style={{ 
+                    zIndex: 10,
+                    opacity: hoveredProduct === product._id ? 1 : 0,
+                    visibility: hoveredProduct === product._id ? 'visible' : 'hidden',
+                    transition: 'opacity 0.2s ease-in-out, visibility 0.2s ease-in-out'
+                  }}
                 >
-                  <FaTrash />
-                </AdminActionButton>
-              </AdminProductActions>
-              
-              <ProductImage bgColor={product.bgColor} hasImage={!!product.imageUrl} theme={theme}>
-                {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} />
-                ) : (
-                  product.image
-                )}
-              </ProductImage>
-              
-              <ProductContent>
-                <ProductHeader>
-                  <ProductTitle theme={theme}>{product.name}</ProductTitle>
-                  <ProductPrice>
-                    <Price theme={theme}>${product.price}</Price>
-                    <PriceUnit theme={theme}>{product.priceUnit}</PriceUnit>
-                  </ProductPrice>
-                </ProductHeader>
+                  <div className="d-flex gap-1">
+                    <Button 
+                      variant="outline-light"
+                      size="sm"
+                      onClick={() => openEditModal(product)}
+                      style={{ 
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        padding: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        border: '1px solid rgba(255, 255, 255, 0.5)',
+                        color: '#007bff'
+                      }}
+                    >
+                      <FaEdit size={12} />
+                    </Button>
+                    <Button 
+                      variant="outline-light"
+                      size="sm"
+                      onClick={() => handleDelete(product._id!)}
+                      style={{ 
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        padding: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        border: '1px solid rgba(255, 255, 255, 0.5)',
+                        color: '#dc3545'
+                      }}
+                    >
+                      <FaTrash size={12} />
+                    </Button>
+                  </div>
+                </div>
 
-                <CardRatingContainer>
-                  <CardStarContainer>
-                    {[...Array(Math.floor(product.rating))].map((_, i) => <FaStar key={i} />)}
-                    {product.rating % 1 !== 0 && <FaStarHalfAlt />}
-                    {[...Array(5 - Math.floor(product.rating) - (product.rating % 1 !== 0 ? 1 : 0))].map((_, i) => <FaRegStar key={i} />)}
-                  </CardStarContainer>
-                  <CardRatingText theme={theme}>
-                    {product.rating} ({product.reviews} reviews)
-                  </CardRatingText>
-                </CardRatingContainer>
+                <div style={{ 
+                  height: '150px', 
+                  background: product.bgColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative'
+                }}>
+                  {product.imageUrl ? (
+                    <Card.Img src={product.imageUrl} alt={product.name} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                  ) : (
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      fontSize: '24px',
+                      fontWeight: 700,
+                      color: '#fff'
+                    }}>
+                      {product.image}
+                    </div>
+                  )}
+                </div>
+                
+                <Card.Body>
+                  <Card.Title style={{ 
+                    fontSize: '16px', 
+                    fontWeight: 600, 
+                    color: theme.textColor || 'var(--color-text)',
+                    marginBottom: '8px'
+                  }}>
+                    {product.name}
+                  </Card.Title>
+                  <Card.Text style={{ 
+                    color: theme.accentColor || 'var(--color-accent)',
+                    marginBottom: '8px'
+                  }}>
+                    ${product.price} {product.priceUnit}
+                  </Card.Text>
 
-                <ActionButtons>
-                  <LearnMoreButton theme={theme} onClick={() => handleLearnMore(product)}>
-                    Learn More
-                  </LearnMoreButton>
-                </ActionButtons>
-              </ProductContent>
+                  <div className="d-flex align-items-center gap-2" style={{ marginBottom: '8px' }}>
+                    <div className="d-flex align-items-center gap-1">
+                      {[...Array(Math.floor(product.rating))].map((_, i) => 
+                        <FaStar key={i} className="text-warning" style={{ fontSize: '14px' }} />
+                      )}
+                      {product.rating % 1 !== 0 && <FaStarHalfAlt className="text-warning" style={{ fontSize: '14px' }} />}
+                      {[...Array(5 - Math.floor(product.rating) - (product.rating % 1 !== 0 ? 1 : 0))].map((_, i) => 
+                        <FaRegStar key={i} className="text-warning" style={{ fontSize: '14px' }} />
+                      )}
+                    </div>
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: theme.accentColor || 'var(--color-accent)',
+                      fontWeight: 500
+                    }}>
+                      ({product.reviews} reviews)
+                    </span>
+                  </div>
 
-              {/* Tooltip */}
-              <Tooltip visible={hoveredProduct === product._id} theme={theme}>
-                <TooltipTitle theme={theme}>{product.name}</TooltipTitle>
-                <TooltipDescription theme={theme}>{product.description}</TooltipDescription>
-                <TooltipRating>
-                  <Rating rating={product.rating} />
-                  <RatingText theme={theme}>
-                    {product.rating} ({product.reviews} reviews)
-                  </RatingText>
-                </TooltipRating>
-                {(product as Product).whatsIncluded && (product as Product).whatsIncluded!.length > 0 && (
-                  <TooltipFeatures>
-                    <TooltipFeaturesTitle theme={theme}>What's Included:</TooltipFeaturesTitle>
-                    {(product as Product).whatsIncluded!.slice(0, 5).map((feature, index) => (
-                      <TooltipFeature key={index} theme={theme}>• {feature}</TooltipFeature>
-                    ))}
-                  </TooltipFeatures>
-                )}
-              </Tooltip>
-            </EnhancedProductCard>
+                  <div className="d-flex gap-2">
+                    <Button 
+                      variant="primary" 
+                      onClick={() => handleLearnMore(product)} 
+                      className="flex-grow-1"
+                    >
+                      Learn More
+                    </Button>
+                  </div>
+                </Card.Body>
+
+                {/* Tooltip */}
+                <div 
+                  className={`position-absolute top-100 start-50 translate-middle-x bg-light border rounded-3 p-3 shadow ${hoveredProduct === product._id ? 'd-block' : 'd-none'}`}
+                  style={{ zIndex: 1000, width: '300px' }}
+                >
+                  <h6 className="text-dark" style={{ margin: 0 }}>
+                    {product.name}
+                  </h6>
+                  <div className="text-muted" style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    {product.description}
+                  </div>
+                  <div className="d-flex align-items-center gap-1" style={{ marginBottom: '8px' }}>
+                    <div className="d-flex align-items-center gap-1">
+                      {[...Array(Math.floor(product.rating))].map((_, i) => <FaStar key={i} className="text-warning" style={{ fontSize: '14px' }} />)}
+                      {product.rating % 1 !== 0 && <FaStarHalfAlt className="text-warning" style={{ fontSize: '14px' }} />}
+                      {[...Array(5 - Math.floor(product.rating) - (product.rating % 1 !== 0 ? 1 : 0))].map((_, i) => <FaRegStar key={i} className="text-warning" style={{ fontSize: '14px' }} />)}
+                    </div>
+                    <span className="text-muted" style={{ fontSize: '12px' }}>
+                      {product.rating} ({product.reviews} reviews)
+                    </span>
+                  </div>
+                  {(product as Product).whatsIncluded && (product as Product).whatsIncluded!.length > 0 && (
+                    <div>
+                      <strong className="text-dark" style={{ fontSize: '12px' }}>What's Included:</strong>
+                      <ul className="list-unstyled" style={{ margin: 0, paddingLeft: '1.2em', fontSize: '12px' }}>
+                        {(product as Product).whatsIncluded!.slice(0, 5).map((feature, index) => (
+                          <li key={index} className="text-muted">
+                            • {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </Col>
           ))}
-        </ProductGrid>
+        </Row>
 
         {filteredProducts.length === 0 && (
           <div style={{
@@ -1187,333 +595,466 @@ const Marketplace: React.FC = () => {
 
         {/* Product Detail Modal */}
         {showProductDetail && selectedProduct && (
-          <ProductDetailModal onClick={(e) => e.target === e.currentTarget && handleCloseProductDetail()}>
-            <ProductDetailContent theme={theme}>
-              <ProductDetailHeader>
-                <div>
-                  <ProductDetailTitle theme={theme}>{selectedProduct.name}</ProductDetailTitle>
-                  <ProductDetailPrice theme={theme}>
-                    ${selectedProduct.price}{selectedProduct.priceUnit}
-                  </ProductDetailPrice>
-                </div>
-                <CloseButton theme={theme} onClick={handleCloseProductDetail}>
-                  <FaTimes />
-                </CloseButton>
-              </ProductDetailHeader>
-
-              <ProductDetailImageSection>
-                <ProductDetailImage 
-                  bgColor={selectedProduct.bgColor} 
-                  hasImage={!!selectedProduct.imageUrl}
-                  theme={theme}
-                >
+          <Modal show={showProductDetail} onHide={handleCloseProductDetail} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>
+                {selectedProduct.name}
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <div className="text-center mb-3">
+                <div style={{ 
+                  width: '100%', 
+                  height: '200px', 
+                  background: selectedProduct.bgColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '12px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
                   {selectedProduct.imageUrl ? (
-                    <img src={selectedProduct.imageUrl} alt={selectedProduct.name} />
+                    <img src={selectedProduct.imageUrl} alt={selectedProduct.name} style={{ 
+                      objectFit: 'cover', 
+                      width: '100%', 
+                      height: '100%',
+                      borderRadius: '12px'
+                    }} />
                   ) : (
-                    selectedProduct.image
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      fontSize: '36px',
+                      fontWeight: 700,
+                      color: '#fff'
+                    }}>
+                      {selectedProduct.image}
+                    </div>
                   )}
-                </ProductDetailImage>
+                </div>
+              </div>
 
-                <ProductDetailInfo>
-                  <ProductDetailRating theme={theme}>
-                    <Rating rating={selectedProduct.rating} />
-                    <span style={{ fontSize: '16px', fontWeight: '600' }}>
-                      {selectedProduct.rating} out of 5 ({selectedProduct.reviews} reviews)
-                    </span>
-                  </ProductDetailRating>
-                </ProductDetailInfo>
-              </ProductDetailImageSection>
+              <div className="mb-3">
+                <strong>Description:</strong>
+                <p className="text-muted" style={{ marginBottom: '0' }}>
+                  {selectedProduct.description}
+                </p>
+              </div>
 
-              <ProductDetailDescription theme={theme}>
-                {selectedProduct.description}
-              </ProductDetailDescription>
+              <div className="mb-3">
+                <strong>Price:</strong>
+                <p className="text-muted" style={{ marginBottom: '0' }}>
+                  ${selectedProduct.price} {selectedProduct.priceUnit}
+                </p>
+              </div>
+
+              <div className="mb-3">
+                <strong>Rating:</strong>
+                <div className="d-flex align-items-center gap-1">
+                  <div className="d-flex align-items-center gap-1">
+                    {[...Array(Math.floor(selectedProduct.rating))].map((_, i) => <FaStar key={i} className="text-warning" style={{ fontSize: '16px' }} />)}
+                    {selectedProduct.rating % 1 !== 0 && <FaStarHalfAlt className="text-warning" style={{ fontSize: '16px' }} />}
+                    {[...Array(5 - Math.floor(selectedProduct.rating) - (selectedProduct.rating % 1 !== 0 ? 1 : 0))].map((_, i) => <FaRegStar key={i} className="text-warning" style={{ fontSize: '16px' }} />)}
+                  </div>
+                  <span className="text-muted" style={{ fontSize: '14px' }}>
+                    {selectedProduct.rating} out of 5 ({selectedProduct.reviews} reviews)
+                  </span>
+                </div>
+              </div>
 
               {selectedProduct.whatsIncluded && selectedProduct.whatsIncluded.length > 0 && (
-                <ProductDetailFeatures>
-                  <ProductDetailFeaturesTitle theme={theme}>What's Included</ProductDetailFeaturesTitle>
-                  <ProductDetailFeaturesList>
+                <div className="mb-3">
+                  <strong>What's Included:</strong>
+                  <ul className="list-unstyled" style={{ margin: 0, paddingLeft: '1.2em', fontSize: '14px' }}>
                     {selectedProduct.whatsIncluded.map((feature, index) => (
-                      <ProductDetailFeature key={index} theme={theme}>
+                      <li key={index} className="text-muted">
                         • {feature}
-                      </ProductDetailFeature>
+                      </li>
                     ))}
-                  </ProductDetailFeaturesList>
-                </ProductDetailFeatures>
+                  </ul>
+                </div>
               )}
 
               {selectedProduct.screenshots && selectedProduct.screenshots.length > 0 && (
-                <ProductDetailScreenshots>
-                  <ProductDetailScreenshotsTitle theme={theme}>Screenshots</ProductDetailScreenshotsTitle>
-                  <ScreenshotsGallery>
+                <div className="mb-3">
+                  <strong>Screenshots:</strong>
+                  <div className="d-flex flex-wrap gap-2" style={{ 
+                    maxHeight: '200px', 
+                    overflowY: 'auto',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    background: theme.backgroundColor || 'var(--color-background)',
+                    border: `1px solid ${theme.accentColor || 'var(--color-accent)'}`
+                  }}>
                     {selectedProduct.screenshots.map((screenshot, index) => (
-                      <ScreenshotGalleryItem key={index} theme={theme}>
-                        <img src={screenshot} alt={`${selectedProduct.name} screenshot ${index + 1}`} />
-                      </ScreenshotGalleryItem>
+                      <div key={index} style={{ 
+                        width: '100px', 
+                        height: '80px', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}>
+                        <img src={screenshot} alt={`${selectedProduct.name} screenshot ${index + 1}`} style={{ 
+                          objectFit: 'cover', 
+                          width: '100%', 
+                          height: '100%',
+                          borderRadius: '4px'
+                        }} />
+                      </div>
                     ))}
-                  </ScreenshotsGallery>
-                </ProductDetailScreenshots>
+                  </div>
+                </div>
               )}
-
-              <ProductDetailActions>
-                <CancelButton theme={theme} onClick={handleCloseProductDetail}>
-                  Cancel
-                </CancelButton>
-                <PurchaseButton theme={theme} onClick={() => handlePurchase(selectedProduct)}>
-                  Purchase
-                </PurchaseButton>
-              </ProductDetailActions>
-            </ProductDetailContent>
-          </ProductDetailModal>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleCloseProductDetail}>
+                Close
+              </Button>
+              <Button variant="primary" onClick={() => handlePurchase(selectedProduct)}>
+                Purchase
+              </Button>
+            </Modal.Footer>
+          </Modal>
         )}
 
         {/* Enhanced Add/Edit Product Modal */}
         {showModal && (
-          <Modal onClick={(e) => e.target === e.currentTarget && closeModal()}>
-            <ModalContent theme={theme}>
-              <ModalHeader>
-                <ModalTitle theme={theme}>
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
-                </ModalTitle>
-                <CloseButton theme={theme} onClick={closeModal}>
-                  <FaTimes />
-                </CloseButton>
-              </ModalHeader>
-
-              <FormGroup>
-                <Label theme={theme}>Product Name *</Label>
-                <Input
-                  theme={theme}
-                  value={formData.name || ''}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="e.g., Whole Person Safety Assessment"
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label theme={theme}>Description *</Label>
-                <TextArea
-                  theme={theme}
-                  value={formData.description || ''}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Describe the product features and benefits..."
-                />
-              </FormGroup>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                <FormGroup>
-                  <Label theme={theme}>Price</Label>
-                  <Input
-                    theme={theme}
-                    type="number"
-                    value={formData.price || ''}
-                    onChange={(e) => handleInputChange('price', parseInt(e.target.value) || 0)}
-                    placeholder="2499"
+          <Modal show={showModal} onHide={closeModal} centered>
+            <Modal.Header closeButton>
+              <Modal.Title>
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Product Name *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.name || ''}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="e.g., Whole Person Safety Assessment"
+                    required
                   />
-                </FormGroup>
+                </Form.Group>
 
-                <FormGroup>
-                  <Label theme={theme}>Price Unit</Label>
-                  <Select
-                    theme={theme}
-                    value={formData.priceUnit || '/month'}
-                    onChange={(e) => handleInputChange('priceUnit', e.target.value)}
-                  >
-                    <option value="/month">Per Month</option>
-                    <option value="/year">Per Year</option>
-                    <option value="/quarter">Per Quarter</option>
-                    <option value="">One-time</option>
-                  </Select>
-                </FormGroup>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <FormGroup>
-                  <Label theme={theme}>Rating</Label>
-                  <Input
-                    theme={theme}
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    value={formData.rating || ''}
-                    onChange={(e) => handleInputChange('rating', parseFloat(e.target.value) || 0)}
-                    placeholder="4.5"
+                <Form.Group className="mb-3">
+                  <Form.Label>Description *</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    value={formData.description || ''}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Describe the product features and benefits..."
+                    rows={3}
+                    required
                   />
-                </FormGroup>
+                </Form.Group>
 
-                <FormGroup>
-                  <Label theme={theme}>Number of Reviews</Label>
-                  <Input
-                    theme={theme}
-                    type="number"
-                    value={formData.reviews || ''}
-                    onChange={(e) => handleInputChange('reviews', parseInt(e.target.value) || 0)}
-                    placeholder="142"
-                  />
-                </FormGroup>
-              </div>
+                <Row className="mb-3">
+                  <Col>
+                    <Form.Group>
+                      <Form.Label>Price</Form.Label>
+                      <Form.Control
+                        type="number"
+                        value={formData.price || ''}
+                        onChange={(e) => handleInputChange('price', parseInt(e.target.value) || 0)}
+                        placeholder="2499"
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col>
+                    <Form.Group>
+                      <Form.Label>Price Unit</Form.Label>
+                      <Form.Select
+                        value={formData.priceUnit || '/month'}
+                        onChange={(e) => handleInputChange('priceUnit', e.target.value)}
+                      >
+                        <option value="/month">Per Month</option>
+                        <option value="/year">Per Year</option>
+                        <option value="/quarter">Per Quarter</option>
+                        <option value="">One-time</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
 
-              <FormGroup>
-                <Label theme={theme}>Product Image</Label>
-                <ImageUploadSection theme={theme}>
-                  {imagePreview ? (
-                    <div>
-                      <ImagePreview theme={theme}>
-                        <img src={imagePreview} alt="Preview" />
-                      </ImagePreview>
-                      <div>
-                        <UploadButton theme={theme} htmlFor="image-upload">
-                          <FaUpload />
-                          Change Image
-                        </UploadButton>
-                        <RemoveImageButton onClick={removeImage}>
-                          Remove Image
-                        </RemoveImageButton>
+                <Row className="mb-3">
+                  <Col>
+                    <Form.Group>
+                      <Form.Label>Rating</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="5"
+                        value={formData.rating || ''}
+                        onChange={(e) => handleInputChange('rating', parseFloat(e.target.value) || 0)}
+                        placeholder="4.5"
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col>
+                    <Form.Group>
+                      <Form.Label>Number of Reviews</Form.Label>
+                      <Form.Control
+                        type="number"
+                        value={formData.reviews || ''}
+                        onChange={(e) => handleInputChange('reviews', parseInt(e.target.value) || 0)}
+                        placeholder="142"
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Product Image</Form.Label>
+                  <div>
+                    {imagePreview ? (
+                      <div className="mb-3">
+                        <img src={imagePreview} alt="Preview" style={{ 
+                          width: '100%', 
+                          height: 'auto', 
+                          borderRadius: '8px',
+                          border: `2px solid ${theme.accentColor || 'var(--color-accent)'}`
+                        }} />
+                        <div className="d-flex gap-2">
+                          <Button variant="primary" onClick={() => document.getElementById('image-upload')?.click()}>
+                            <FaUpload /> Change Image
+                          </Button>
+                          <Button variant="danger" onClick={removeImage}>
+                            Remove Image
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <FaImage size={24} color={theme.accentColor || 'var(--color-accent)'} style={{ marginBottom: 8 }} />
-                      <p style={{ margin: 0, color: theme.accentColor || 'var(--color-accent)', fontSize: 14 }}>
-                        Upload an image or use initials with background color
-                      </p>
-                      <UploadButton theme={theme} htmlFor="image-upload" style={{ marginTop: 12 }}>
-                        <FaUpload />
-                        Upload Image
-                      </UploadButton>
+                    ) : (
+                      <div className="text-center">
+                        <FaImage size={48} color={theme.accentColor || 'var(--color-accent)'} className="mb-2" />
+                        <p className="text-muted" style={{ marginBottom: '12px' }}>
+                          Upload an image or use initials with background color
+                        </p>
+                        <Button variant="primary" onClick={() => document.getElementById('image-upload')?.click()}>
+                          <FaUpload /> Upload Image
+                        </Button>
+                      </div>
+                    )}
+                    <Form.Control
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Image Text (Initials)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.image || ''}
+                    onChange={(e) => handleInputChange('image', e.target.value)}
+                    placeholder="WPS (displayed when no image is uploaded)"
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Background Color</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.bgColor || ''}
+                    onChange={(e) => handleInputChange('bgColor', e.target.value)}
+                    placeholder="Custom CSS background (gradient or solid color)"
+                  />
+                  <div className="d-flex align-items-center gap-2" style={{ marginTop: '8px' }}>
+                    <Button 
+                      variant="outline-secondary" 
+                      onClick={() => setShowColorPalette(!showColorPalette)}
+                      style={{ 
+                        borderRadius: '8px',
+                        flex: 1
+                      }}
+                    >
+                      Choose from preset colors
+                    </Button>
+                    <Button 
+                      variant="primary" 
+                      onClick={() => selectColor(formData.bgColor!)}
+                      style={{ 
+                        borderRadius: '8px',
+                        display: showColorPalette ? 'inline-flex' : 'none',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <FaCheck /> Select Color
+                    </Button>
+                  </div>
+                  {showColorPalette && (
+                    <div className="d-flex flex-wrap gap-2" style={{ marginTop: '8px' }}>
+                      {colorPalette.map((color: string, index: number) => (
+                        <div
+                          key={index}
+                          style={{ 
+                            width: '40px', 
+                            height: '40px', 
+                            borderRadius: '8px', 
+                            background: color,
+                            cursor: 'pointer',
+                            border: `3px solid ${formData.bgColor === color ? (theme.primaryColor || 'var(--color-primary)') : 'transparent'}`,
+                            transition: 'all 0.2s'
+                          }}
+                          onClick={() => selectColor(color)}
+                          title={color}
+                        />
+                      ))}
                     </div>
                   )}
-                  <FileInput
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                </ImageUploadSection>
-              </FormGroup>
+                </Form.Group>
 
-              <FormGroup>
-                <Label theme={theme}>Image Text (Initials)</Label>
-                <Input
-                  theme={theme}
-                  value={formData.image || ''}
-                  onChange={(e) => handleInputChange('image', e.target.value)}
-                  placeholder="WPS (displayed when no image is uploaded)"
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label theme={theme}>Background Color</Label>
-                <Input
-                  theme={theme}
-                  value={formData.bgColor || ''}
-                  onChange={(e) => handleInputChange('bgColor', e.target.value)}
-                  placeholder="Custom CSS background (gradient or solid color)"
-                />
-                <ColorPaletteToggle onClick={() => setShowColorPalette(!showColorPalette)}>
-                  <ColorPaletteToggleText>Choose from preset colors</ColorPaletteToggleText>
-                  <ColorPaletteToggleIcon expanded={showColorPalette}>▼</ColorPaletteToggleIcon>
-                </ColorPaletteToggle>
-                <ColorPalette expanded={showColorPalette}>
-                  {colorPalette.map((color: string, index: number) => (
-                    <ColorOption
-                      key={index}
-                      color={color}
-                      selected={formData.bgColor === color}
-                      theme={theme}
-                      onClick={() => selectColor(color)}
-                      title={color}
+                <Form.Group className="mb-3">
+                  <Form.Label>What's Included</Form.Label>
+                  <div className="d-flex gap-2">
+                    <Form.Control
+                      type="text"
+                      value={newFeatureInput}
+                      onChange={(e) => setNewFeatureInput(e.target.value)}
+                      placeholder="Add a feature..."
+                      style={{ flex: 1 }}
                     />
-                  ))}
-                </ColorPalette>
-              </FormGroup>
+                    <Button 
+                      variant="primary" 
+                      onClick={addFeature}
+                      style={{ 
+                        flexShrink: 0,
+                        display: newFeatureInput.trim() ? 'inline-flex' : 'none',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <FaPlus /> Add
+                    </Button>
+                  </div>
+                  <div className="d-flex flex-wrap gap-2" style={{ marginTop: '8px' }}>
+                    {formData.whatsIncluded?.map((feature, index) => (
+                      <div key={index} className="badge bg-light text-dark border" style={{ 
+                        padding: '8px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        {feature}
+                        <button 
+                          onClick={() => removeFeature(feature)} 
+                          style={{ 
+                            background: 'none',
+                            border: 'none',
+                            color: theme.primaryColor || 'var(--color-primary)',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </Form.Group>
 
-              <FormGroup>
-                <Label htmlFor="whats-included">What's Included</Label>
-                <FeatureInput>
-                  <FeatureInputField
-                    theme={theme}
-                    value={newFeatureInput}
-                    onChange={(e) => setNewFeatureInput(e.target.value)}
-                    placeholder="Add a feature..."
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                  />
-                  <AddFeatureButton theme={theme} type="button" onClick={addFeature}>
-                    Add
-                  </AddFeatureButton>
-                </FeatureInput>
-                <FeaturesList>
-                  {formData.whatsIncluded?.map((feature, index) => (
-                    <EditableFeature key={index} theme={theme}>
-                      {feature}
-                      <button onClick={() => removeFeature(feature)}>×</button>
-                    </EditableFeature>
-                  ))}
-                </FeaturesList>
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="screenshots">Screenshots</Label>
-                <ScreenshotUploadSection theme={theme}>
-                  <ScreenshotUploadOptions>
-                    <UploadButton as="label" theme={theme} htmlFor="screenshot-upload">
-                      <FaUpload />
-                      {uploadingScreenshot ? 'Uploading...' : 'Upload Screenshot'}
-                    </UploadButton>
-                    <UploadSeparator theme={theme}>or</UploadSeparator>
-                    <ScreenshotUrlContainer>
-                      <ScreenshotInputField
-                        theme={theme}
-                        value={newScreenshotInput}
-                        onChange={(e) => setNewScreenshotInput(e.target.value)}
-                        placeholder="Add screenshot URL..."
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addScreenshot())}
-                      />
-                      <AddScreenshotButton theme={theme} type="button" onClick={addScreenshot}>
-                        Add URL
-                      </AddScreenshotButton>
-                    </ScreenshotUrlContainer>
-                  </ScreenshotUploadOptions>
-                  <FileInput
-                    id="screenshot-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleScreenshotUpload}
-                    disabled={uploadingScreenshot}
-                  />
-                </ScreenshotUploadSection>
-                <ScreenshotsList>
-                  {formData.screenshots?.map((screenshot, index) => (
-                    <ScreenshotItem key={index} theme={theme}>
-                      <ScreenshotPreview>
-                        <img src={screenshot} alt={`Screenshot ${index + 1}`} />
-                      </ScreenshotPreview>
-                      <ScreenshotActions>
-                        <ScreenshotInfo>
-                          <ScreenshotLabel theme={theme}>Screenshot {index + 1}</ScreenshotLabel>
-                          <ScreenshotType theme={theme}>
-                            {screenshot.startsWith('data:') ? 'Uploaded Image' : 'External URL'}
-                          </ScreenshotType>
-                        </ScreenshotInfo>
-                        <RemoveScreenshotButton onClick={() => removeScreenshot(screenshot)}>
-                          Remove
-                        </RemoveScreenshotButton>
-                      </ScreenshotActions>
-                    </ScreenshotItem>
-                  ))}
-                </ScreenshotsList>
-              </FormGroup>
-
-              <ModalActions>
-                <AdminButton theme={theme} onClick={closeModal}>
-                  Cancel
-                </AdminButton>
-                <AdminButton variant="primary" theme={theme} onClick={handleSave}>
-                  <FaSave />
-                  {editingProduct ? 'Update Product' : 'Add Product'}
-                </AdminButton>
-              </ModalActions>
-            </ModalContent>
+                <Form.Group className="mb-3">
+                  <Form.Label>Screenshots</Form.Label>
+                  <div className="d-flex flex-column gap-2">
+                    <div className="d-flex gap-2">
+                      <Button 
+                        variant="primary" 
+                        onClick={() => document.getElementById('screenshot-upload')?.click()}
+                        disabled={uploadingScreenshot}
+                        style={{ 
+                          flex: 1,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <FaUpload />
+                        {uploadingScreenshot ? 'Uploading...' : 'Upload Screenshot'}
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        onClick={addScreenshot}
+                        style={{ 
+                          flexShrink: 0,
+                          display: newScreenshotInput.trim() ? 'inline-flex' : 'none',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <FaPlus /> Add URL
+                      </Button>
+                    </div>
+                    <Form.Control
+                      id="screenshot-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleScreenshotUpload}
+                      disabled={uploadingScreenshot}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="d-flex flex-wrap gap-2" style={{ 
+                      maxHeight: '200px', 
+                      overflowY: 'auto',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: theme.backgroundColor || 'var(--color-background)',
+                      border: `1px solid ${theme.accentColor || 'var(--color-accent)'}`
+                    }}>
+                      {formData.screenshots?.map((screenshot, index) => (
+                        <div key={index} style={{ 
+                          width: '100px', 
+                          height: '80px', 
+                          borderRadius: '4px', 
+                          overflow: 'hidden',
+                          position: 'relative'
+                        }}>
+                          <img src={screenshot} alt={`Screenshot ${index + 1}`} style={{ 
+                            objectFit: 'cover', 
+                            width: '100%', 
+                            height: '100%',
+                            borderRadius: '4px'
+                          }} />
+                          <div className="position-absolute top-0 end-0 p-1">
+                            <Button 
+                              variant="danger" 
+                              size="sm" 
+                              onClick={() => removeScreenshot(screenshot)}
+                              style={{ 
+                                borderRadius: '50%',
+                                width: '24px',
+                                height: '24px',
+                                padding: 0,
+                                minWidth: 0
+                              }}
+                            >
+                              &times;
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Form.Group>
+              </Form>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSave}>
+                <FaSave /> {editingProduct ? 'Update Product' : 'Add Product'}
+              </Button>
+            </Modal.Footer>
           </Modal>
         )}
       </Container>
@@ -1522,616 +1063,3 @@ const Marketplace: React.FC = () => {
 };
 
 export default Marketplace;
-
-// Additional styled components for tooltip functionality
-const RatingContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 16px 0;
-`;
-
-const StarContainer = styled.div`
-  display: flex;
-  gap: 2px;
-
-  svg {
-    font-size: 16px;
-    color: #ffc107;
-  }
-`;
-
-const RatingText = styled.span`
-  font-size: 14px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-`;
-
-// Tooltip styled components
-const Tooltip = styled.div<{ visible: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  border: 2px solid ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  width: 300px;
-  opacity: ${props => props.visible ? 1 : 0};
-  visibility: ${props => props.visible ? 'visible' : 'hidden'};
-  transition: all 0.3s ease;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  margin-top: 8px;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 8px solid ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
-
-const TooltipTitle = styled.h4`
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const TooltipDescription = styled.p`
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  line-height: 1.4;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-`;
-
-const TooltipRating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-`;
-
-// Tooltip features components
-const TooltipFeatures = styled.div`
-  margin-top: 12px;
-`;
-
-const TooltipFeaturesTitle = styled.h5`
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  margin: 0 0 6px 0;
-`;
-
-const TooltipFeature = styled.div`
-  font-size: 11px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  line-height: 1.3;
-  margin-bottom: 2px;
-`;
-
-// Product Detail Modal components
-const ProductDetailModal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const ProductDetailContent = styled.div`
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 700px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ProductDetailHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-  gap: 16px;
-`;
-
-const ProductDetailImageSection = styled.div`
-  display: flex;
-  gap: 24px;
-  margin-bottom: 24px;
-  align-items: flex-start;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 16px;
-  }
-`;
-
-const ProductDetailImage = styled.div<{ bgColor?: string; hasImage?: boolean }>`
-  width: 200px;
-  height: 150px;
-  background: ${props => props.bgColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  border: 2px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  @media (max-width: 600px) {
-    width: 100%;
-    height: 200px;
-  }
-`;
-
-const ProductDetailInfo = styled.div`
-  flex: 1;
-`;
-
-const ProductDetailTitle = styled.h2`
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ProductDetailPrice = styled.div`
-  font-size: 24px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  margin-bottom: 16px;
-`;
-
-const ProductDetailCategory = styled.div`
-  display: inline-block;
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}20`};
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 16px;
-`;
-
-const ProductDetailDescription = styled.p`
-  font-size: 16px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  margin-bottom: 24px;
-`;
-
-const ProductDetailRating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding: 16px;
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}10`};
-  border-radius: 12px;
-  flex-shrink: 0;
-`;
-
-// Product detail features components
-const ProductDetailFeatures = styled.div`
-  margin-bottom: 32px;
-`;
-
-const ProductDetailFeaturesTitle = styled.h4`
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ProductDetailFeaturesList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const ProductDetailFeature = styled.div`
-  font-size: 14px;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  line-height: 1.4;
-  padding: 8px 16px;
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}10`};
-  border-radius: 8px;
-  border-left: 3px solid ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-`;
-
-const ProductDetailActions = styled.div`
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  padding-top: 24px;
-  border-top: 1px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 12px;
-  }
-`;
-
-const PurchaseButton = styled.button`
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 16px;
-  min-width: 120px;
-
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-    transform: translateY(-1px);
-  }
-`;
-
-const CancelButton = styled.button`
-  background: transparent;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  border: 2px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 16px;
-  min-width: 120px;
-
-  &:hover {
-    background: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-    color: white;
-  }
-`;
-
-// Add styled components for What's Included feature
-const WhatsIncludedContainer = styled.div`
-  margin: 12px 0;
-`;
-
-const WhatsIncludedTitle = styled.h5`
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-  margin: 0 0 6px 0;
-`;
-
-const WhatsIncludedList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const WhatsIncludedItem = styled.div`
-  font-size: 11px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  line-height: 1.3;
-`;
-
-// Feature input components for the form
-const FeatureInput = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-`;
-
-const FeatureInputField = styled.input`
-  flex: 1;
-  padding: 8px 12px;
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
-
-const AddFeatureButton = styled.button`
-  padding: 8px 16px;
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-  }
-`;
-
-const FeaturesList = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
-
-const EditableFeature = styled.div`
-  background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}20`};
-  color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  button {
-    background: none;
-    border: none;
-    color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    cursor: pointer;
-    padding: 0;
-    font-size: 12px;
-    
-    &:hover {
-      color: #e74c3c;
-    }
-  }
-`;
-
-// Screenshot input components for the form
-const ScreenshotInput = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-`;
-
-const ScreenshotInputField = styled.input`
-  flex: 1;
-  padding: 8px 12px;
-  border: 1.5px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  }
-`;
-
-const AddScreenshotButton = styled.button`
-  padding: 8px 16px;
-  background: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${({ theme }) => theme.secondaryColor || 'var(--color-secondary)'};
-  }
-`;
-
-const ScreenshotsList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const ScreenshotItem = styled.div`
-  background: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  padding: 12px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const ScreenshotPreview = styled.div`
-  width: 120px;
-  height: 80px;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  flex-shrink: 0;
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  @media (max-width: 600px) {
-    width: 100%;
-    height: 120px;
-  }
-`;
-
-const ScreenshotActions = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex: 1;
-  gap: 12px;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: stretch;
-  }
-`;
-
-const ScreenshotInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-`;
-
-const ScreenshotLabel = styled.span`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ScreenshotType = styled.span`
-  font-size: 12px;
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  font-style: italic;
-`;
-
-const RemoveScreenshotButton = styled.button`
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 12px;
-  
-  &:hover {
-    background: #c0392b;
-  }
-`;
-
-// Product detail screenshots components
-const ProductDetailScreenshots = styled.div`
-  margin-bottom: 32px;
-`;
-
-const ProductDetailScreenshotsTitle = styled.h4`
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: ${({ theme }) => theme.textColor || 'var(--color-text)'};
-`;
-
-const ScreenshotsGallery = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ScreenshotGalleryItem = styled.div`
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  transition: all 0.3s ease;
-  cursor: pointer;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  }
-  
-  img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    display: block;
-  }
-  
-  @media (max-width: 600px) {
-    img {
-      height: 200px;
-    }
-  }
-`;
-
-// Screenshot upload section components
-const ScreenshotUploadSection = styled.div`
-  border: 2px dashed ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  border-radius: 8px;
-  padding: 20px;
-  background-color: ${({ theme }) => theme.backgroundColor || 'var(--color-background)'};
-  transition: all 0.2s;
-  
-  &:hover {
-    border-color: ${({ theme }) => theme.primaryColor || 'var(--color-primary)'};
-    background: ${({ theme }) => `${theme.primaryColor || 'var(--color-primary)'}05`};
-  }
-`;
-
-const ScreenshotUploadOptions = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-  
-  @media (max-width: 600px) {
-    gap: 12px;
-  }
-`;
-
-const UploadSeparator = styled.div`
-  color: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  font-size: 14px;
-  font-weight: 500;
-  position: relative;
-  
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 60px;
-    height: 1px;
-    background: ${({ theme }) => theme.accentColor || 'var(--color-accent)'};
-  }
-  
-  &::before {
-    right: 100%;
-    margin-right: 10px;
-  }
-  
-  &::after {
-    left: 100%;
-    margin-left: 10px;
-  }
-`;
-
-const ScreenshotUrlContainer = styled.div`
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  max-width: 400px;
-`;
