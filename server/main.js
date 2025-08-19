@@ -40,6 +40,8 @@ import '../imports/features/questions/api/questionTemplates';
 import '../imports/api/layers';
 // Import Tag Items API
 import '../imports/api/tagItems';
+// Import Onboarding Steps API
+import { seedOnboardingSteps } from '../imports/api/onboardingSteps';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();
@@ -89,6 +91,9 @@ Meteor.startup(async () => {
       console.error('Error creating sample incomplete survey response:', error);
     }
   }
+
+  // --- ONBOARDING STEPS SEEDING ---
+  await seedOnboardingSteps();
 
   // --- ADMIN USER CREATION ---
   const adminEmail = 'tayeshobajo@gmail.com';

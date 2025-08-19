@@ -6,6 +6,7 @@ import { Meteor } from 'meteor/meteor';
 import { Layers } from '/imports/api/layers';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 import { TermLabel } from '/imports/shared/components';
+import { OnboardingToggle, OnboardingPanel, useOnboardingSession } from '/imports/features/onboarding';
 import { 
   FaChartPie, 
   FaDatabase, 
@@ -383,6 +384,11 @@ const MainContent = styled.main<MainContentProps>`
  * AdminLayout component that provides the admin dashboard shell with navigation
  */
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Render counter for debugging
+  const renderCount = React.useRef(0);
+  renderCount.current += 1;
+  console.log('AdminLayout render #', renderCount.current);
+  
   // Get organization settings for customized terminology
   const { getTerminology } = useOrganization();
   const theme = useTheme();
@@ -426,6 +432,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   // Add expandedMenus state for submenu toggling
   const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
+  
+  // Use onboarding session hook (no provider needed)
+  const { enabled: onboardingEnabled } = useOnboardingSession();
   
   // Ensure the Question Bank submenu is expanded when on any of its pages
   React.useEffect(() => {
@@ -532,6 +541,8 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             );
           })}
         </nav>
+        {/* Onboarding Toggle */}
+        <OnboardingToggle collapsed={collapsed} />
         <Logo theme={colors}>
           <img 
             src="/bioptrics_fixed_black.png" 
@@ -543,6 +554,8 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', width: 'calc(100% - 264px)' }}>
         {/* Main Content */}
         <MainContent sidebarCollapsed={collapsed}>
+          {/* Onboarding Panel - Shows when toggle is enabled */}
+          {onboardingEnabled && <OnboardingPanel collapsed={collapsed} />}
           <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
         <Footer $collapsed={collapsed}>
