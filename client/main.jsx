@@ -7,6 +7,9 @@ import App from '/imports/ui/App';
 // Import dynamic import fix to ensure correct domain is used in production
 import '/imports/startup/client/dynamicImportFix';
 
+// Import Bootstrap CSS first for proper styling
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends React.Component {
   constructor(props) {

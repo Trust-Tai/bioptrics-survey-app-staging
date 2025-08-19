@@ -1,3 +1,6 @@
+/* Import our custom Bootstrap theme instead of the default */
+@import './bootstrap-theme.css';
+
 body {
   padding: 10px;
   font-family: sans-serif;
