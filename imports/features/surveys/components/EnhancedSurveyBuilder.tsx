@@ -2144,10 +2144,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           status: 'draft',
         };
         
-        savedSurveyId = await Meteor.callAsync('surveys.saveDraft', newSurveyData);
+        const result = await Meteor.callAsync('surveys.saveDraft', newSurveyData);
+        savedSurveyId = result._id;
         
-        // Navigate to the edit page for the new survey
-        navigate(`/admin/surveys/builder/${savedSurveyId}`);
+        if (savedSurveyId) {
+          console.log(`Survey created with ID: ${savedSurveyId}`);
+          // Navigate to the edit page for the new survey
+          navigate(`/admin/surveys/builder/${savedSurveyId}`);
+        } else {
+          throw new Error('Failed to create survey - no ID returned');
+        }
       }
       
       // Set the lastSaved timestamp to update the save status indicator

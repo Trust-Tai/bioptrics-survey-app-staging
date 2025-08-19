@@ -6,7 +6,8 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
-import { FaEdit, FaTrash, FaEye, FaTasks, FaSearch, FaPlus, FaCopy, FaExternalLinkAlt, FaClock, FaChartBar, FaEllipsisV, FaUndo, FaSpinner } from 'react-icons/fa';
+import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
+import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 // Using FaSpinner for loading indicator
 import TermLabel from '../components/TermLabel';
@@ -719,7 +720,8 @@ const AllSurveys: React.FC = () => {
   const [showResponsesModal, setShowResponsesModal] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('list');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  
+  const [showImportPanel, setShowImportPanel] = useState(false);
+
   // Functions for handling survey actions
   const onEdit = (id: string, title: string) => {
     console.log('Editing survey:', id);
@@ -1017,14 +1019,23 @@ const AllSurveys: React.FC = () => {
         <Container>
           <TitleRow>
             <Title>All {surveyLabelPlural}</Title>
-            <AddButton
-              onClick={() => {
-                window.location.href = '/admin/surveys/builder';
-              }}
-            >
-              <FaPlus style={{ fontSize: 14 }} />
-              <span style={{ marginLeft: 6 }}>Add Survey</span>
-            </AddButton>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <AddButton
+                onClick={() => {
+                  window.location.href = '/admin/surveys/builder';
+                }}
+              >
+                <FaPlus style={{ fontSize: 14 }} />
+                <span style={{ marginLeft: 6 }}>Add Survey</span>
+              </AddButton>
+              <AddButton
+                onClick={() => setShowImportPanel(true)}
+                style={{ backgroundColor: '#4a6fa5' }}
+              >
+                <FaFileImport style={{ fontSize: 14 }} />
+                <span style={{ marginLeft: 6 }}>Import</span>
+              </AddButton>
+            </div>
           </TitleRow>
           {/* Survey Statistics Summary */}
           {/* <SurveyStatsSummary /> */}
@@ -1490,6 +1501,37 @@ const AllSurveys: React.FC = () => {
         onClose={() => setResponsesModal({ ...responsesModal, isOpen: false })}
         surveyId={responsesModal.surveyId}
         surveyTitle={responsesModal.surveyTitle}
+      />
+      
+      {/* Survey Import Side Panel */}
+      <SurveyImportSidePanel
+        isOpen={showImportPanel}
+        onClose={() => setShowImportPanel(false)}
+        onImportSuccess={(surveyId) => {
+          setShowImportPanel(false);
+          setNotification({ type: 'success', message: 'Survey imported successfully!' });
+          // Stay on the All Surveys page instead of redirecting
+          // Refresh surveys data to show the newly imported survey
+          Meteor.subscribe('surveys.ownedAndCollaborated', {
+            limit: 100,
+            fields: {
+              _id: 1,
+              title: 1,
+              description: 1,
+              published: 1,
+              status: 1,
+              createdBy: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              sections: 1,
+              responses: 1,
+              collaborators: 1,
+              surveySections: 1,
+              sectionQuestions: 1,
+              scheduledFor: 1
+            }
+          });
+        }}
       />
     </AdminLayout>
   );

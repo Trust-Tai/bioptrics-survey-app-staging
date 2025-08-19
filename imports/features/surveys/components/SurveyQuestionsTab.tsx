@@ -33,7 +33,14 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | 'inside' | null>(null);
   const [dragType, setDragType] = useState<'question' | 'section' | null>(null);
   const [sections, setSections] = useState<any[]>([]);
-  const [surveyOrder, setSurveyOrder] = useState<Array<{type: 'question' | 'section', id: string, order: number}>>([]);
+  // Define SurveyOrderItem type to fix TypeScript errors
+  type SurveyOrderItem = {
+    type: 'question' | 'section';
+    id: string;
+    order: number;
+  };
+  
+  const [surveyOrder, setSurveyOrder] = useState<Array<SurveyOrderItem>>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
 
@@ -58,6 +65,9 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       .trim();
   };
 
+  // Add loading state to track subscription status
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
+
   // Load existing survey questions and sections when component mounts or survey changes
   useEffect(() => {
     // Load sections
@@ -66,42 +76,74 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     }
 
     // Load questions
-    if (survey && ((survey.selectedQuestions && Array.isArray(survey.selectedQuestions) && survey.selectedQuestions.length > 0) || 
+    if (survey && ((survey.selectedQuestions) || 
                    (survey.sectionQuestions && Array.isArray(survey.sectionQuestions) && survey.sectionQuestions.length > 0))) {
+      
+      // Set loading state to true when starting to load questions
+      setIsQuestionsLoading(true);
+      console.log('Starting to load questions for survey:', survey._id);
       
       // Combine question IDs from both sources
       const allQuestionIds = new Set<string>();
       
       // Add from selectedQuestions (questions without sections)
       if (survey.selectedQuestions) {
-        survey.selectedQuestions.forEach((id: string) => allQuestionIds.add(id));
+        // Handle both array and object formats for selectedQuestions
+        if (Array.isArray(survey.selectedQuestions)) {
+          survey.selectedQuestions.forEach((id: string) => allQuestionIds.add(id));
+        } else if (typeof survey.selectedQuestions === 'object') {
+          // If it's an object, use the keys as question IDs
+          Object.keys(survey.selectedQuestions).forEach(id => allQuestionIds.add(id));
+        }
       }
       
       // Add from sectionQuestions (questions with sections)
       if (survey.sectionQuestions) {
         survey.sectionQuestions.forEach((sq: any) => {
           if (sq.questionId) allQuestionIds.add(sq.questionId);
+          // Also add the question ID directly if it exists
+          if (sq.id) allQuestionIds.add(sq.id);
         });
       }
       
       const questionIds = Array.from(allQuestionIds);
+      console.log(`Found ${questionIds.length} question IDs to load`);
       
       // Subscribe to get question details
-      Meteor.subscribe('questions.all', surveyId, {
+      const subscription = Meteor.subscribe('questions.all', surveyId, {
         onReady: () => {
+          console.log('Question subscription ready, loading question data');
           const questions = questionIds.map((id: string) => {
             const questionDoc = Questions.findOne(id);
             if (questionDoc) {
               // Check if this question belongs to a section
-              const sectionQuestion = survey.sectionQuestions?.find((sq: any) => sq.questionId === id);
+              // First check in sectionQuestions array
+              let sectionId = null;
+              let order = 0;
+              
+              if (survey.sectionQuestions) {
+                // Try to find by questionId first (standard format)
+                const sectionQuestion = survey.sectionQuestions.find((sq: any) => sq.questionId === id);
+                if (sectionQuestion) {
+                  sectionId = sectionQuestion.sectionId;
+                  order = sectionQuestion.order || 0;
+                } else {
+                  // Then try to find by id (sometimes used in imports)
+                  const altSectionQuestion = survey.sectionQuestions.find((sq: any) => sq.id === id);
+                  if (altSectionQuestion) {
+                    sectionId = altSectionQuestion.sectionId;
+                    order = altSectionQuestion.order || 0;
+                  }
+                }
+              }
               
               return {
                 id: id,
                 text: extractQuestionText(questionDoc),
                 type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
                 status: 'published' as const,
-                sectionId: sectionQuestion?.sectionId,
-                order: sectionQuestion?.order || 0
+                sectionId: sectionId,
+                order: order
               };
             }
             return null;
@@ -110,91 +152,175 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           // Sort questions by their order
           questions.sort((a, b) => (a.order || 0) - (b.order || 0));
           
+          console.log(`Loaded ${questions.length} questions, with ${questions.filter(q => q.sectionId).length} assigned to sections`);
           setSurveyQuestions(questions);
           
-          // Build unified order array
+          // Build unified order array after questions are loaded
           buildSurveyOrder(questions, survey.surveySections || []);
+          
+          // Set loading state to false when questions are loaded
+          setIsQuestionsLoading(false);
         }
       });
+      
+      // Cleanup function to handle component unmount
+      return () => {
+        subscription.stop();
+      };
     } else {
       // Clear questions if survey has no questions
       setSurveyQuestions([]);
       setSurveyOrder([]);
+      setIsQuestionsLoading(false);
     }
-  }, [survey?.sectionQuestions, survey?.selectedQuestions, survey?.surveySections]);
+  }, [survey?.sectionQuestions, survey?.selectedQuestions, survey?.surveySections, survey?._id]);
 
   // Build unified order for sections and questions
   const buildSurveyOrder = (questions: QuestionItem[], sections: any[]) => {
     console.log('Building survey order with:', {
       questionsCount: questions.length,
       sectionsCount: sections.length,
-      existingSurveyOrder: survey?.surveyOrder,
+      existingSurveyOrder: survey?.surveyOrder ? survey.surveyOrder.length : 0,
       surveyId: survey?._id
     });
     
-    // Check if survey already has a saved order
-    if (survey?.surveyOrder && Array.isArray(survey.surveyOrder)) {
-      // Filter existing order to only include items that still exist
-      const validOrder = survey.surveyOrder.filter((item: any) => {
-        if (item.type === 'question') {
-          return questions.some(q => q.id === item.id);
-        } else if (item.type === 'section') {
-          return sections.some(s => s.id === item.id);
-        }
+    // Log section-question relationships for debugging
+    console.log('Section-Question relationships:');
+    sections.forEach(section => {
+      const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+      console.log(`Section ${section.id} (${section.name}): ${sectionQuestions.length} questions`);
+    });
+    
+    // Check for questions without sections
+    const unassignedQuestions = questions.filter(q => !q.sectionId);
+    console.log(`Questions without sections: ${unassignedQuestions.length}`);
+    
+    if (survey?.surveyOrder) {
+      // Filter out invalid items from the saved order
+      const validOrder = survey.surveyOrder.filter((item: SurveyOrderItem) => {
+        if (item.type === 'question') return questions.some(q => q.id === item.id);
+        if (item.type === 'section') return sections.some(s => s.id === item.id);
         return false;
       });
       
-      // Add any new items that aren't in the saved order
-      const existingIds = validOrder.map((item: any) => item.id);
-      let maxOrder = validOrder.length > 0 ? Math.max(...validOrder.map((item: any) => item.order)) : -1;
+      // Add new questions and sections that are not in the saved order
+      const existingQuestionIds = validOrder
+        .filter((item: SurveyOrderItem) => item.type === 'question')
+        .map((item: SurveyOrderItem) => item.id);
+      
+      const existingSectionIds = validOrder
+        .filter((item: SurveyOrderItem) => item.type === 'section')
+        .map((item: SurveyOrderItem) => item.id);
       
       // Add new questions
-      questions.forEach(q => {
-        if (!existingIds.includes(q.id)) {
-          validOrder.push({ type: 'question', id: q.id, order: ++maxOrder });
-        }
+      const newQuestions = questions.filter(q => !existingQuestionIds.includes(q.id));
+      let maxOrder = validOrder.length > 0 ? Math.max(...validOrder.map((item: SurveyOrderItem) => item.order)) : 0;
+      
+      // Log new questions being added to order
+      if (newQuestions.length > 0) {
+        console.log(`Adding ${newQuestions.length} new questions to survey order`);
+      }
+      
+      newQuestions.forEach(q => {
+        validOrder.push({
+          id: q.id,
+          type: 'question',
+          order: ++maxOrder
+        });
       });
       
       // Add new sections
-      sections.forEach(s => {
-        if (!existingIds.includes(s.id)) {
-          validOrder.push({ type: 'section', id: s.id, order: ++maxOrder });
-        }
+      const newSections = sections.filter(s => !existingSectionIds.includes(s.id));
+      
+      // Log new sections being added to order
+      if (newSections.length > 0) {
+        console.log(`Adding ${newSections.length} new sections to survey order`);
+      }
+      
+      newSections.forEach(s => {
+        validOrder.push({
+          id: s.id,
+          type: 'section',
+          order: ++maxOrder
+        });
+        
+        // For new sections, also add their questions right after them
+        const sectionQuestions = questions.filter(q => q.sectionId === s.id);
+        sectionQuestions.forEach(q => {
+          // Only add if not already in the order
+          if (!existingQuestionIds.includes(q.id)) {
+            validOrder.push({
+              id: q.id,
+              type: 'question',
+              order: ++maxOrder
+            });
+          }
+        });
       });
       
-      setSurveyOrder(validOrder.sort((a: any, b: any) => a.order - b.order));
+      // Sort by order
+      const sortedOrder = validOrder.sort((a: SurveyOrderItem, b: SurveyOrderItem) => a.order - b.order);
+      setSurveyOrder(sortedOrder);
+      
+      // Always update the order after import to ensure consistency
+      if (survey._id) {
+        console.log('Updating survey order in database to ensure consistency');
+        Meteor.call('surveys.update', survey._id, { surveyOrder: sortedOrder }, (error: any) => {
+          if (error) {
+            console.error('Error updating survey order:', error);
+          } else {
+            console.log('Survey order updated in database');
+          }
+        });
+      }
+      
       return;
     }
     
-    // Build default order if no saved order exists
-    const order: Array<{type: 'question' | 'section', id: string, order: number}> = [];
-    let currentOrder = 0;
+    // If no saved order, build a default order
+    const order: SurveyOrderItem[] = [];
+    let orderIndex = 0;
     
-    // Add questions without sections first
-    const noSectionQuestions = questions.filter(q => !q.sectionId);
-    noSectionQuestions.forEach(q => {
-      order.push({ type: 'question', id: q.id, order: currentOrder++ });
+    // First add questions without sections
+    const standAloneQuestions = questions.filter(q => !q.sectionId);
+    standAloneQuestions.forEach((q: QuestionItem) => {
+      order.push({
+        id: q.id,
+        type: 'question',
+        order: orderIndex++
+      });
     });
     
-    // Add sections with their questions
-    sections.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).forEach(section => {
-      order.push({ type: 'section', id: section.id, order: currentOrder++ });
+    // Then add sections and their questions
+    sections.forEach(section => {
+      // Add the section
+      order.push({
+        id: section.id,
+        type: 'section',
+        order: orderIndex++
+      });
       
+      // Add questions for this section
       const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+      sectionQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
+      
       sectionQuestions.forEach(q => {
-        order.push({ type: 'question', id: q.id, order: currentOrder++ });
+        order.push({
+          id: q.id,
+          type: 'question',
+          order: orderIndex++
+        });
       });
     });
     
     setSurveyOrder(order);
+    console.log(`Built new survey order with ${order.length} items (${standAloneQuestions.length} standalone questions, ${sections.length} sections)`);
     
-    console.log('Built survey order:', order);
-    
-    // Save the order to the survey if it's different from what's saved
-    if (JSON.stringify(order) !== JSON.stringify(survey?.surveyOrder || [])) {
+    // If the order has changed from what's saved in the survey, update it
+    if (survey && (!survey.surveyOrder || JSON.stringify(survey.surveyOrder) !== JSON.stringify(order))) {
       console.log('Survey order changed, updating survey:', {
-        oldOrder: survey?.surveyOrder,
-        newOrder: order,
+        oldOrderLength: survey?.surveyOrder?.length || 0,
+        newOrderLength: order.length,
         onSurveyUpdateExists: !!onSurveyUpdate
       });
       
@@ -209,12 +335,11 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         
         // Also save directly to database to ensure survey order is persisted
         if (survey?._id) {
-          console.log('Saving survey order directly to database...');
           Meteor.call('surveys.update', survey._id, { surveyOrder: order }, (error: any) => {
             if (error) {
-              console.error('Error saving survey order to database:', error);
+              console.error('Error updating survey order:', error);
             } else {
-              console.log('Survey order successfully saved to database');
+              console.log('Survey order updated in database');
             }
           });
         }
