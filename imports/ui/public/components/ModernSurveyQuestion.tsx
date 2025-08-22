@@ -8,6 +8,7 @@ interface Question {
   _id: string;
   id?: string;
   text: string;
+  description?: string;
   responseType?: string;
   type?: string; // Added type field which is used in some questions
   sectionId?: string;
@@ -18,10 +19,12 @@ interface Question {
   required?: boolean;
   order?: number;
   currentVersion?: number;
+  image?: string; // Added image field for question images
   versions?: {
     responseType?: string;
     options?: string[] | { label: string; value: string }[];
     questionText?: string;
+    image?: string; // Added image field for question version images
     [key: string]: any;
   }[];
 }
@@ -952,10 +955,26 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             
             {/* Question column */}
             <div className="question-column">
+              
+              
+              {question.image && (
+                <div className="question-image-container" style={{ marginBottom: '20px' }}>
+                  <img 
+                    src={question.image} 
+                    alt="Question illustration" 
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '300px', 
+                      display: 'block',
+                      margin: '0 auto',
+                      borderRadius: '8px'
+                    }} 
+                  />
+                </div>
+              )}
               <h2 className="question-title">
                 <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
               </h2>
-              
               <div className="question-card">
                 {question.required && <span className="question-required-indicator">(required)</span>}
                 
@@ -1005,10 +1024,26 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
         ) : (
           // Full-width centered layout when no document is present
           <div className="full-width-content">
-            <h2 className="question-title">
+           
+            
+            {question.image && (
+              <div className="question-image-container" style={{ marginBottom: '20px' }}>
+                <img 
+                  src={question.image} 
+                  alt="Question illustration" 
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '300px', 
+                    display: 'block',
+                    margin: '0 auto',
+                    borderRadius: '8px'
+                  }} 
+                />
+              </div>
+            )}
+             <h2 className="question-title">
               <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
             </h2>
-            
             <div className="question-card">
               {question.required && <span className="question-required-indicator">(required)</span>}
               

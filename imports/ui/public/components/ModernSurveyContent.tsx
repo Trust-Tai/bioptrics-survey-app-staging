@@ -21,6 +21,9 @@ interface Question {
   labels?: string[];
   required?: boolean;
   order?: number;
+  image?: string;
+  versions?: any[];
+  currentVersion?: number;
 }
 
 interface Section {
@@ -525,7 +528,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
             scale: q.scale,
             labels: q.labels || [],
             required: q.required !== false, // Default to true unless explicitly false
-            order: q.order || 0
+            order: q.order || 0,
+            image: q.image || ''
           };
           
           allQuestions.push(questionData);
@@ -571,7 +575,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
               scale: undefined,
               labels: [],
               required: true,
-              order: index
+              order: index,
+              image: ''
             });
           }
         });
@@ -635,7 +640,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
                 options: questionData.options,
                 scale: questionData.scale,
                 labels: questionData.labels,
-                required: questionData.required
+                required: questionData.required,
+                image: questionData.image || ''
               });
             }
           });
@@ -671,7 +677,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
             sectionId: targetSectionId,
             sectionName: defaultSection?.name || 'Survey Questions',
             order: index,
-            required: q.required
+            required: q.required,
+            image: q.image || ''
           });
         }
       });
@@ -773,7 +780,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
               options: version.options || question.options,
               scale: version.scale || question.scale,
               labels: version.labels || question.labels,
-              required: version.required !== undefined ? version.required : question.required
+              required: version.required !== undefined ? version.required : question.required,
+              image: version.image || question.image || ''
             };
           }
           return question;
