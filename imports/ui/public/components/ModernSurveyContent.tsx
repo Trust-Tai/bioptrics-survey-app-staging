@@ -31,6 +31,9 @@ interface Section {
   priority?: number;
   color?: string;
   image?: string;
+  document?: string;
+  documentName?: string;
+  documentType?: string;
   questionCount?: number;
   requiredQuestionCount?: number;
   estimatedTime?: string;
@@ -439,14 +442,27 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
         name: 'Survey Questions',
         description: 'Please answer the following questions',
         isActive: true,
-        priority: 0
+        priority: 0,
+        document: undefined,
+        documentName: undefined,
+        documentType: undefined
       };
       
       surveySection.push(defaultSection);
     }
     
+    // Ensure all sections have document fields
+    const sectionsWithDocumentFields = surveySection.map(section => ({
+      ...section,
+      document: section.document || undefined,
+      documentName: section.documentName || undefined,
+      documentType: section.documentType || undefined
+    }));
+    
+    console.log('Sections with document fields:', sectionsWithDocumentFields);
+    
     // Sort sections by priority if available, otherwise keep original order
-    const sortedSections = [...surveySection].sort((a, b) => {
+    const sortedSections = [...sectionsWithDocumentFields].sort((a, b) => {
       // If both have priority, sort by priority
       if (a.priority !== undefined && b.priority !== undefined) {
         return a.priority - b.priority;
@@ -3089,7 +3105,10 @@ const handleRestart = () => {
                 const updatedSection = {
                   ...currentSection,
                   estimatedTime: `${sectionMinutes}`,
-                  questionCount: sectionQuestionDocs.length
+                  questionCount: sectionQuestionDocs.length,
+                  document: currentSection.document,
+                  documentName: currentSection.documentName,
+                  documentType: currentSection.documentType
                 };
                 
                 // Re-render with updated section data - only once when calculation is complete
@@ -3406,6 +3425,14 @@ const handleRestart = () => {
           isLastQuestionInSurvey
         });
         
+        // Debug document props
+        console.log('Question Section:', questionSection);
+        console.log('Document Props:', {
+          sectionDocument: questionSection?.document,
+          documentName: questionSection?.documentName,
+          documentType: questionSection?.documentType
+        });
+        
         return (
           <ModernSurveyQuestion
             question={mappedQuestion}
@@ -3419,6 +3446,10 @@ const handleRestart = () => {
             backgroundImage={survey.featuredImage}
             sectionName={questionSection?.name || 'Survey'}
             sectionDescription={questionSection?.description || 'Please provide your feedback'}
+            sectionDocument={questionSection?.document}
+            documentName={questionSection?.documentName}
+            documentType={questionSection?.documentType}
+            hideNavigation={false}
           />
         );
         
