@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LoadingButton from '/imports/shared/components/LoadingButton';
-import { FiX, FiTrash2, FiImage, FiInfo, FiAlertCircle, FiHelpCircle } from 'react-icons/fi';
+import { FiX, FiTrash2, FiImage, FiInfo, FiAlertCircle, FiHelpCircle, FiFile } from 'react-icons/fi';
 import { SurveySectionItem } from '../../types';
 import styled from 'styled-components';
 
@@ -372,7 +372,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [formData, setFormData] = useState<Partial<SurveySectionItem> & { image?: string }>({
+  const [formData, setFormData] = useState<Partial<SurveySectionItem> & { image?: string, document?: string, documentName?: string, documentType?: string }>({
     name: '',
     description: '',
     isActive: true,
@@ -380,6 +380,9 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
     color: '#552a47',
     priority: 0,
     image: undefined,
+    document: undefined,
+    documentName: undefined,
+    documentType: undefined,
   });
   
   // Reset form data when the modal opens with a new section
@@ -394,6 +397,9 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
         priority: section.priority || 0,
         instructions: section.instructions || '',
         image: section.image || undefined,
+        document: section.document || undefined,
+        documentName: section.documentName || undefined,
+        documentType: section.documentType || undefined,
       });
     } else {
       setFormData({
@@ -405,6 +411,9 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
         priority: 0,
         instructions: '',
         image: undefined,
+        document: undefined,
+        documentName: undefined,
+        documentType: undefined,
       });
     }
   }, [section, isOpen]);
@@ -421,10 +430,31 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
         const reader = new FileReader();
-        reader.onloadend = () => {
-          setFormData(prev => ({ ...prev, image: reader.result as string }));
-        };
-        reader.readAsDataURL(file);
+        
+        if (name === 'image') {
+          reader.onloadend = () => {
+            setFormData(prev => ({ ...prev, image: reader.result as string }));
+          };
+          reader.readAsDataURL(file);
+        } else if (name === 'document') {
+          // Check if file is PDF or Doc
+          const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+          if (!validTypes.includes(file.type)) {
+            setError('Only PDF and Word documents (.pdf, .doc, .docx) are allowed');
+            return;
+          }
+          
+          reader.onloadend = () => {
+            setFormData(prev => ({ 
+              ...prev, 
+              document: reader.result as string,
+              documentName: file.name,
+              documentType: file.type
+            }));
+          };
+          reader.readAsDataURL(file);
+          setError(null);
+        }
       }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -434,6 +464,16 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   // Handle image deletion
   const handleDeleteImage = () => {
     setFormData(prev => ({ ...prev, image: undefined }));
+  };
+  
+  // Handle document deletion
+  const handleDeleteDocument = () => {
+    setFormData(prev => ({ 
+      ...prev, 
+      document: undefined,
+      documentName: undefined,
+      documentType: undefined
+    }));
   };
   
   // Handle form submission
@@ -461,6 +501,9 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
       priority: formData.priority ?? 0,
       instructions: formData.instructions || '',
       image: formData.image,
+      document: formData.document,
+      documentName: formData.documentName,
+      documentType: formData.documentType,
     };
     
     // Call onSave with the section data
@@ -564,6 +607,62 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
                 Recommended size: 800x600px. The image will be used as the section background.
               </HelpText>
             </ImageUploadContainer>
+          </FormGroup>
+          
+          <FormGroup>
+            <FormLabel>
+              <FiFile size={16} />
+              Section Document
+            </FormLabel>
+            <ImageUploadContainer>
+              {!formData.document ? (
+                <ImageUploadInput htmlFor="document-upload">
+                  <FiFile />
+                  <span>Click to upload a document</span>
+                  <span style={{ fontSize: '12px', opacity: 0.7 }}>PDF or Word (.pdf, .doc, .docx)</span>
+                  <input
+                    id="document-upload"
+                    type="file"
+                    name="document"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleInputChange}
+                    style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', overflow: 'hidden' }}
+                  />
+                </ImageUploadInput>
+              ) : (
+                <ImagePreviewContainer>
+                  <div style={{ padding: '20px', background: '#f5f5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <FiFile size={24} />
+                    <div>
+                      <div style={{ fontWeight: 'bold' }}>{formData.documentName}</div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        {formData.documentType === 'application/pdf' ? 'PDF Document' : 
+                         formData.documentType === 'application/msword' ? 'Word Document (.doc)' : 
+                         formData.documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'Word Document (.docx)' : 
+                         'Document'}
+                      </div>
+                    </div>
+                  </div>
+                  <DeleteImageButton
+                    type="button"
+                    onClick={handleDeleteDocument}
+                    aria-label="Delete document"
+                  >
+                    <FiTrash2 size={16} />
+                  </DeleteImageButton>
+                </ImagePreviewContainer>
+              )}
+              <HelpText>
+                <FiInfo size={14} />
+                Upload a PDF or Word document to provide additional information for this section.
+              </HelpText>
+            </ImageUploadContainer>
+            {error && (
+              <div style={{ color: '#d9534f', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FiAlertCircle size={14} />
+                {error}
+              </div>
+            )}
           </FormGroup>
           
           {/* Display Order field - hidden but still functional */}

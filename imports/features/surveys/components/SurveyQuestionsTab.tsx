@@ -262,18 +262,18 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       const sortedOrder = validOrder.sort((a: SurveyOrderItem, b: SurveyOrderItem) => a.order - b.order);
       setSurveyOrder(sortedOrder);
       
-      // Always update the order after import to ensure consistency
-      if (survey._id) {
-        console.log('Updating survey order in database to ensure consistency');
-        Meteor.call('surveys.update', survey._id, { surveyOrder: sortedOrder }, (error: any) => {
-          if (error) {
-            console.error('Error updating survey order:', error);
-          } else {
-            console.log('Survey order updated in database');
-          }
-        });
+      // Check if the order has actually changed before updating
+      const hasOrderChanged = !survey.surveyOrder || 
+        JSON.stringify(sortedOrder.map(item => ({ id: item.id, type: item.type }))) !== 
+        JSON.stringify(survey.surveyOrder.map((item: SurveyOrderItem) => ({ id: item.id, type: item.type })));
+      
+      if (hasOrderChanged) {
+        console.log('Survey order has changed, will update via onSurveyUpdate');
+      } else {
+        console.log('Survey order unchanged, skipping update');
       }
       
+      // We'll update via onSurveyUpdate in the common code path below if needed
       return;
     }
     
@@ -317,7 +317,12 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     console.log(`Built new survey order with ${order.length} items (${standAloneQuestions.length} standalone questions, ${sections.length} sections)`);
     
     // If the order has changed from what's saved in the survey, update it
-    if (survey && (!survey.surveyOrder || JSON.stringify(survey.surveyOrder) !== JSON.stringify(order))) {
+    // Compare only the id and type fields to avoid false positives from order changes
+    const hasOrderChanged = !survey.surveyOrder || 
+      JSON.stringify(order.map(item => ({ id: item.id, type: item.type }))) !== 
+      JSON.stringify(survey.surveyOrder.map((item: SurveyOrderItem) => ({ id: item.id, type: item.type })));
+    
+    if (survey && hasOrderChanged) {
       console.log('Survey order changed, updating survey:', {
         oldOrderLength: survey?.surveyOrder?.length || 0,
         newOrderLength: order.length,
@@ -769,13 +774,37 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Handle saving a section
   const handleSaveSection = (sectionData: any) => {
+    console.log('Saving section with data:', sectionData);
+    console.log('Document fields in sectionData:', {
+      document: sectionData.document ? 'exists (length: ' + sectionData.document.length + ')' : 'missing',
+      documentName: sectionData.documentName,
+      documentType: sectionData.documentType
+    });
+    
+    // Create a new section object with all necessary fields
     const newSection = {
       id: sectionData.id || `section_${Date.now()}`,
       name: sectionData.name,
       description: sectionData.description || '',
       displayOrder: sections.length,
       createdAt: new Date(),
+      isActive: sectionData.isActive !== undefined ? sectionData.isActive : true,
+      isRequired: sectionData.isRequired !== undefined ? sectionData.isRequired : false,
+      color: sectionData.color || '#552a47',
+      priority: sectionData.priority || 0,
+      instructions: sectionData.instructions || '',
+      // Explicitly include document fields
+      image: sectionData.image,
+      document: sectionData.document,
+      documentName: sectionData.documentName,
+      documentType: sectionData.documentType,
     };
+    
+    console.log('Created newSection with document fields:', {
+      document: newSection.document ? 'exists (length: ' + newSection.document.length + ')' : 'missing',
+      documentName: newSection.documentName,
+      documentType: newSection.documentType
+    });
 
     if (currentSection) {
       // Update existing section
@@ -787,13 +816,54 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
     // Update survey with new sections
     if (survey && onSurveyUpdate) {
+      // Create a proper updated sections array that preserves all fields including document data
+      let updatedSections;
+      
+      if (currentSection) {
+        // Update existing section
+        updatedSections = (survey.surveySections || []).map((s: any) => {
+          if (s.id === currentSection.id) {
+            // Make sure we preserve all fields from the new section
+            return {
+              ...newSection,
+              id: currentSection.id,
+              // Explicitly include document fields to ensure they're not lost
+              document: newSection.document,
+              documentName: newSection.documentName,
+              documentType: newSection.documentType
+            };
+          }
+          return s;
+        });
+      } else {
+        // Add new section
+        updatedSections = [...(survey.surveySections || []), newSection];
+      }
+      
+      // Log the document data in the updated sections array
+      const updatedSection = updatedSections.find((s: any) => s.id === newSection.id);
+      console.log('Updated sections array with document fields for section', newSection.id, ':', {
+        document: updatedSection?.document ? 'exists (length: ' + updatedSection.document.length + ')' : 'missing',
+        documentName: updatedSection?.documentName,
+        documentType: updatedSection?.documentType
+      });
+      
+      // Create the updated survey object
       const updatedSurvey = {
         ...survey,
-        surveySections: currentSection 
-          ? survey.surveySections?.map((s: any) => s.id === currentSection.id ? newSection : s) || [newSection]
-          : [...(survey.surveySections || []), newSection],
+        surveySections: updatedSections,
         surveyOrder: surveyOrder
       };
+      
+      // Log the document data in the updated survey object
+      const sectionInSurvey = updatedSurvey.surveySections?.find((s: any) => s.id === newSection.id);
+      console.log('Updated survey object with document fields for section', newSection.id, ':', {
+        document: sectionInSurvey?.document ? 'exists (length: ' + sectionInSurvey.document.length + ')' : 'missing',
+        documentName: sectionInSurvey?.documentName,
+        documentType: sectionInSurvey?.documentType
+      });
+      
+      // Update the survey
       onSurveyUpdate(updatedSurvey);
     }
 
@@ -809,7 +879,47 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Handle editing a section
   const handleEditSection = (section: any) => {
-    setCurrentSection(section);
+    console.log('Editing section with data:', section);
+    console.log('Document fields in passed section:', {
+      document: section.document ? 'exists' : 'missing',
+      documentName: section.documentName,
+      documentType: section.documentType
+    });
+    
+    // First try to find the complete section data from the survey.surveySections array
+    // This is the most reliable source as it contains data from the database
+    let fullSectionData;
+    if (survey && survey.surveySections && Array.isArray(survey.surveySections)) {
+      fullSectionData = survey.surveySections.find((s: any) => s.id === section.id);
+      if (fullSectionData) {
+        console.log('Found full section data from survey.surveySections with document fields:', {
+          document: fullSectionData.document ? 'exists' : 'missing',
+          documentName: fullSectionData.documentName,
+          documentType: fullSectionData.documentType
+        });
+      }
+    }
+    
+    // If not found in survey.surveySections, try the local sections state
+    if (!fullSectionData) {
+      fullSectionData = sections.find(s => s.id === section.id);
+      if (fullSectionData) {
+        console.log('Found full section data from local sections with document fields:', {
+          document: fullSectionData.document ? 'exists' : 'missing',
+          documentName: fullSectionData.documentName,
+          documentType: fullSectionData.documentType
+        });
+      }
+    }
+    
+    // Use the full section data if found, otherwise use the passed section
+    if (fullSectionData) {
+      setCurrentSection(fullSectionData);
+    } else {
+      console.log('No full section data found, using passed section');
+      setCurrentSection(section);
+    }
+    
     setShowSectionEditor(true);
   };
 
@@ -839,6 +949,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       if (onHasUnsavedChanges) {
         onHasUnsavedChanges(true);
       }
+
+      // Close editor
+      setShowSectionEditor(false);
+      setCurrentSection(undefined);
     }
   };
 
@@ -1157,7 +1271,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                           </div>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <button
-                              onClick={() => handleEditSection(section.id)}
+                              onClick={() => handleEditSection(section)}
                               style={{
                                 background: 'none',
                                 border: 'none',

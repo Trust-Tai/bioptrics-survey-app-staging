@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { FiFileText, FiImage } from 'react-icons/fi';
 import { SurveySectionItem } from '/imports/features/surveys/types';
 
 const PreviewContainer = styled.div`
@@ -43,6 +44,46 @@ const PreviewContent = styled.div`
   margin-bottom: 24px;
 `;
 
+const AttachmentContainer = styled.div`
+  margin-bottom: 16px;
+`;
+
+const AttachmentItem = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  gap: 10px;
+`;
+
+const AttachmentIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #eee;
+  border-radius: 4px;
+  color: #552a47;
+`;
+
+const AttachmentDetails = styled.div`
+  flex: 1;
+`;
+
+const AttachmentName = styled.div`
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+`;
+
+const AttachmentType = styled.div`
+  font-size: 12px;
+  color: #777;
+`;
+
 const PreviewPlaceholder = styled.div`
   background: #f5f5f5;
   padding: 32px;
@@ -78,6 +119,41 @@ export const SectionPreview: React.FC<SectionPreviewProps> = ({ section, totalSe
       
       {section.instructions && (
         <PreviewInstructions dangerouslySetInnerHTML={{ __html: section.instructions }} />
+      )}
+      
+      {/* Display document or image if available */}
+      {(section.document || section.image) && (
+        <AttachmentContainer>
+          <h4 style={{ marginBottom: '12px', fontSize: '16px' }}>Attachments</h4>
+          
+          {section.document && (
+            <AttachmentItem>
+              <AttachmentIcon>
+                <FiFileText size={24} />
+              </AttachmentIcon>
+              <AttachmentDetails>
+                <AttachmentName>{section.documentName || 'Document'}</AttachmentName>
+                <AttachmentType>{section.documentType || 'PDF/Document'}</AttachmentType>
+              </AttachmentDetails>
+            </AttachmentItem>
+          )}
+          
+          {section.image && (
+            <AttachmentItem>
+              <AttachmentIcon>
+                <FiImage size={24} />
+              </AttachmentIcon>
+              <AttachmentDetails>
+                <AttachmentName>Section Image</AttachmentName>
+                <img 
+                  src={section.image} 
+                  alt="Section Image" 
+                  style={{ maxWidth: '100%', maxHeight: '200px', marginTop: '8px', borderRadius: '4px' }} 
+                />
+              </AttachmentDetails>
+            </AttachmentItem>
+          )}
+        </AttachmentContainer>
       )}
       
       <PreviewContent>

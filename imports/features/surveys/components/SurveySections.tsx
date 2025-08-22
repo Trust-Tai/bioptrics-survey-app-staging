@@ -429,7 +429,12 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
       feedback: template.feedback || {
         enabled: false,
         type: 'both'
-      }
+      },
+      // Include document fields from template if available
+      image: template.image,
+      document: template.document,
+      documentName: template.documentName,
+      documentType: template.documentType
     };
     
     onSectionsChange([...sections, newSectionFromTemplate]);
@@ -459,7 +464,12 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
         color: newSection.color || '#552a47',
         instructions: newSection.instructions,
         isRequired: newSection.isRequired,
-        progressIndicator: newSection.progressIndicator
+        progressIndicator: newSection.progressIndicator,
+        // Include document fields
+        image: newSection.image,
+        document: newSection.document,
+        documentName: newSection.documentName,
+        documentType: newSection.documentType
       };
       onSectionsChange([...sections, sectionToAdd]);
       setNewSection({
@@ -492,7 +502,12 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
       skipLogic: section.skipLogic,
       layout: section.layout,
       theme: section.theme,
-      feedback: section.feedback
+      feedback: section.feedback,
+      // Include document fields when duplicating
+      image: section.image,
+      document: section.document,
+      documentName: section.documentName,
+      documentType: section.documentType
     };
     onSectionsChange([...sections, newSection]);
   };

@@ -94,6 +94,7 @@ if (typeof Questions.attachSchema === 'function') {
     'versions.$.lastUsedAt': { type: Date, optional: true },
     'versions.$.priority': { type: SimpleSchema.Integer, optional: true },
     'versions.$.isActive': { type: Boolean, optional: true },
+    'versions.$.image': { type: String, optional: true },
     // Assessment mode fields
     'versions.$.isAssessment': { type: Boolean, optional: true },
     'versions.$.correctAnswers': { type: Array, optional: true },
@@ -160,7 +161,8 @@ if (Meteor.isServer) {
         'versions.updatedAt': 1,
         'versions.surveyThemes': 1,
         'versions.saveToQuestionBank': 1,
-        'versions.surveyId': 1
+        'versions.surveyId': 1,
+        'versions.image': 1
       }
     });
   });

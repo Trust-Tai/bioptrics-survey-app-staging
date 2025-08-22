@@ -25,6 +25,10 @@ export interface SectionTemplate {
   };
   skipLogic?: any;
   feedback?: any;
+  image?: string;
+  document?: string;
+  documentName?: string;
+  documentType?: string;
 }
 
 export interface SurveySectionItem {
@@ -54,6 +58,10 @@ export interface SurveySectionItem {
     fontFamily?: string;
   };
   feedback?: any;
+  image?: string;
+  document?: string;
+  documentName?: string;
+  documentType?: string;
 }
 
 export interface QuestionItem {

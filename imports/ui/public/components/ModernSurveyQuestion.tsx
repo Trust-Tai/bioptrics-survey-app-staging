@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import styled from 'styled-components';
 import { FiArrowRight, FiArrowLeft, FiCheck, FiInfo, FiEdit, FiList, FiBarChart2, FiCalendar, FiUpload, FiAlignLeft, FiChevronDown } from 'react-icons/fi';
 import './ModernSurveyQuestion.css';
 import '../components/ModernSurvey.css';
@@ -7,6 +8,7 @@ interface Question {
   _id: string;
   id?: string;
   text: string;
+  description?: string;
   responseType?: string;
   type?: string; // Added type field which is used in some questions
   sectionId?: string;
@@ -17,17 +19,19 @@ interface Question {
   required?: boolean;
   order?: number;
   currentVersion?: number;
+  image?: string; // Added image field for question images
   versions?: {
     responseType?: string;
     options?: string[] | { label: string; value: string }[];
     questionText?: string;
+    image?: string; // Added image field for question version images
     [key: string]: any;
   }[];
 }
 
 interface ModernSurveyQuestionProps {
   question: Question;
-  progress: string;
+  progress?: string;
   onAnswer: (answer: any, saveOnly?: boolean) => void;
   onBack: () => void;
   value?: any;
@@ -38,11 +42,11 @@ interface ModernSurveyQuestionProps {
   sectionName?: string;
   sectionDescription?: string;
   hideNavigation?: boolean;
+  // Document related props
+  sectionDocument?: string;
+  documentName?: string;
+  documentType?: string;
 }
-
-
-
-
 
 const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   question,
@@ -53,7 +57,10 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   color = '#2c3e50',
   isLastQuestion = false,
   onSubmit,
-  hideNavigation = false
+  hideNavigation = false,
+  sectionDocument,
+  documentName,
+  documentType
 }) => {
   const [answer, setAnswer] = useState<any>(value || '');
   const [error, setError] = useState<string | null>(null);
@@ -208,9 +215,6 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       setIsTyping(false);
     }
     
-    // Call the onAnswer callback with the current answer
-    onAnswer(answer);
-    
     // Log whether this is the last question for debugging
     console.log('CRITICAL - Question button click info:', {
       isLastQuestion,
@@ -220,9 +224,9 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       currentAnswer: answer
     });
     
-    // CRITICAL FIX: Always save the answer first, regardless of whether this is the last question
-    console.log('Saving answer before continuing:', answer);
-    onAnswer(answer);
+    // Call onAnswer with saveOnly=false to trigger navigation to the next question
+    console.log('Saving answer and continuing to next question:', answer);
+    onAnswer(answer, false);
     
     // Add a small delay to ensure the answer is saved before submitting
     setTimeout(() => {
@@ -624,6 +628,83 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     return 'text';
   };
 
+  // Define the possible question types as a type for better type safety
+  type QuestionType = 
+    'rating' 
+    | 'single_choice' 
+    | 'multiple_choice' 
+    | 'long_text' 
+    | 'text' 
+    | 'dropdown'
+    | 'date'
+    | 'file';
+  
+  // Determine actual question type based on question properties and type
+  const getActualQuestionType = (): QuestionType => {
+    // SPECIAL CASE: If we've flagged this question as a dropdown in the useEffect
+    if ((question as any)._forceDropdown) {
+      console.log('FORCE DROPDOWN FLAG DETECTED - Returning dropdown type');
+      return 'dropdown';
+    }
+    
+    // DIRECT VERSION CHECK: Check versions array first for dropdown type
+    if (Array.isArray(question.versions) && question.versions.length > 0) {
+      const versionIndex = question.currentVersion !== undefined ? 
+        Math.min(question.currentVersion, question.versions.length - 1) : 0;
+      const versionData = question.versions[versionIndex];
+      
+      if (versionData && versionData.responseType) {
+        const versionType = versionData.responseType.toLowerCase();
+        console.log('Checking version responseType directly:', versionType);
+        
+        if (versionType === 'dropdown' || versionType === 'select') {
+          console.log('DROPDOWN DETECTED in version - returning dropdown type');
+          return 'dropdown';
+        }
+      }
+    }
+    
+    // Get responseType using our helper function that handles the complex structure
+    const responseType = getResponseType().toLowerCase();
+    console.log('Standard type detection with responseType:', responseType);
+    
+    // Check for dropdown types
+    if (responseType.includes('dropdown') || responseType === 'select') {
+      console.log('Standard dropdown detection - returning dropdown type');
+      return 'dropdown';
+    }
+    
+    // Check for other types
+    if (responseType === 'date') {
+      return 'date';
+    }
+    if (responseType === 'file') {
+      return 'file';
+    }
+    if (responseType === 'rating' || responseType === 'likert' || responseType === 'likert_scale' || responseType === 'scale') {
+      return 'rating';
+    }
+    if (responseType === 'radio' || responseType === 'choice') {
+      return 'single_choice';
+    }
+    if (responseType === 'checkbox' || responseType.includes('multiple') || responseType === 'multiple-choice') {
+      return 'multiple_choice';
+    }
+    if (responseType === 'textarea' || responseType === 'long_text') {
+      return 'long_text';
+    }
+    
+    // Check if the question has options but no specific type
+    // If it has options, it might be a dropdown
+    if (question.options && question.options.length > 0) {
+      console.log('Question has options but no specific type, defaulting to dropdown');
+      return 'dropdown';
+    }
+    
+    // Default to text if no specific type is found
+    return 'text';
+  };
+
   // Render the appropriate input based on question type
   const renderQuestionInput = () => {
     // CRITICAL: Check if we've flagged this as a dropdown in useEffect
@@ -692,10 +773,13 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     switch (actualType) {
       case 'rating':
         return renderRatingScale();
+      
+      case 'single_choice':
+        return renderRadioOptions();
         
       case 'text':
         return renderTextInput();
-      
+        
       case 'long_text':
         return renderTextInput();
       
@@ -705,12 +789,9 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       
       case 'date':
         return renderDateInput();
-      
+        
       case 'file':
         return renderFileUpload();
-      
-      case 'single_choice':
-        return renderRadioOptions();
         
       case 'multiple_choice':
         return renderCheckboxOptions();
@@ -725,75 +806,6 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
         }
         return renderTextInput();
     }
-  };
-
-  // Define the possible question types as a type for better type safety
-  type QuestionType = 'dropdown' | 'date' | 'file' | 'rating' | 'single_choice' | 'multiple_choice' | 'long_text' | 'text';
-  
-  // Determine actual question type based on question properties and type
-  const getActualQuestionType = (): QuestionType => {
-    // SPECIAL CASE: If we've flagged this question as a dropdown in the useEffect
-    if ((question as any)._forceDropdown) {
-      console.log('FORCE DROPDOWN FLAG DETECTED - Returning dropdown type');
-      return 'dropdown';
-    }
-    
-    // DIRECT VERSION CHECK: Check versions array first for dropdown type
-    if (Array.isArray(question.versions) && question.versions.length > 0) {
-      const versionIndex = question.currentVersion !== undefined ? 
-        Math.min(question.currentVersion, question.versions.length - 1) : 0;
-      const versionData = question.versions[versionIndex];
-      
-      if (versionData && versionData.responseType) {
-        const versionType = versionData.responseType.toLowerCase();
-        console.log('Checking version responseType directly:', versionType);
-        
-        if (versionType === 'dropdown' || versionType === 'select') {
-          console.log('DROPDOWN DETECTED in version - returning dropdown type');
-          return 'dropdown';
-        }
-      }
-    }
-    
-    // Get responseType using our helper function that handles the complex structure
-    const responseType = getResponseType().toLowerCase();
-    console.log('Standard type detection with responseType:', responseType);
-    
-    // Check for dropdown types
-    if (responseType.includes('dropdown') || responseType === 'select') {
-      console.log('Standard dropdown detection - returning dropdown type');
-      return 'dropdown';
-    }
-    
-    // Check for other types
-    if (responseType === 'date') {
-      return 'date';
-    }
-    if (responseType === 'file') {
-      return 'file';
-    }
-    if (responseType === 'rating' || responseType === 'likert' || responseType === 'likert_scale' || responseType === 'scale') {
-      return 'rating';
-    }
-    if (responseType === 'radio' || responseType === 'choice') {
-      return 'single_choice';
-    }
-    if (responseType === 'checkbox' || responseType.includes('multiple') || responseType === 'multiple-choice') {
-      return 'multiple_choice';
-    }
-    if (responseType === 'textarea' || responseType === 'long_text') {
-      return 'long_text';
-    }
-    
-    // Check if the question has options but no specific type
-    // If it has options, it might be a dropdown
-    if (question.options && question.options.length > 0) {
-      console.log('Question has options but no specific type, defaulting to dropdown');
-      return 'dropdown';
-    }
-    
-    // Default to text if no specific type is found
-    return 'text';
   };
   
   // Determine if the question should use a textarea instead of a text input
@@ -859,79 +871,225 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     };
   }, []);
 
+  // Function to render document viewer
+  const renderDocumentViewer = () => {
+    if (!sectionDocument) return null;
+    
+    // Get the file extension from documentType or documentName
+    const fileType = documentType || 
+      (documentName ? documentName.split('.').pop()?.toLowerCase() : '');
+    
+    // Create a URL for the document
+    const documentUrl = sectionDocument;
+    
+    // Determine if we can embed this document type
+    const isPdf = fileType === 'pdf' || documentType === 'application/pdf';
+    const isWord = fileType === 'doc' || fileType === 'docx' || 
+      documentType === 'application/msword' || 
+      documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+    return (
+      <div className="document-viewer">
+        <div className="document-header">
+          <h3 className="document-title">Section Document</h3>
+        </div>
+        <div className="document-content">
+          {isPdf ? (
+            <iframe 
+              src={`${documentUrl}#toolbar=0&navpanes=0`} 
+              className="document-iframe"
+              title="PDF Document"
+            />
+          ) : isWord ? (
+            // For Word documents, use Office Online viewer if available, otherwise show download link
+            <iframe 
+              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`}
+              className="document-iframe"
+              title="Word Document"
+            />
+          ) : (
+            // Fallback for other document types
+            <div className="document-fallback">
+              <p>Document preview not available</p>
+              <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="document-download-link">
+                Download {documentName || 'Document'}
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Progress bar is now using CSS classes from ModernSurveyQuestion.css
+
   return (
     <>
       {/* Progress bar - conditionally rendered based on hideNavigation prop */}
       {!hideNavigation && (
-        <div className="survey-header">
-          <div className="progress-container">
-            <div className="progress-info">
-              <div className="question-count">Question {currentQuestion} of {totalQuestions}</div>
-              <div className="remaining-count">{remainingQuestions} remaining</div>
-            </div>
-            <div className="progress-bar-wrapper">
-              <div 
-                className="progress-bar-fill" 
-                style={{ width: `${progressPercentage}%`, backgroundColor: color }}
-              ></div>
-            </div>
-            <div className="completion-percentage">{progressPercentage}% Complete</div>
+        <div className="progress-container">
+          <div className="progress-info">
+            <div className="question-count">{progress || ''}</div>
+          </div>
+          <div className="progress-bar-wrapper">
+            <div 
+              className="progress-bar-fill" 
+              style={{ 
+                width: progress ? progress.split(' of ')[0].replace('Question ', '') / progress.split(' of ')[1] * 100 + '%' : '0%',
+                backgroundColor: color
+              }}
+            ></div>
           </div>
         </div>
       )}
       
-      <div className="question-container modern-survey-container">
-        <h2 className="question-title">
-          <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
-        </h2>
-        
-        <div className="question-card">
-          
-        {question.required && <span className="question-required-indicator">(required)</span>}
-        
-          <div className="answer-options">
-            {renderQuestionInput()}
-          </div>
-          
-          
-          
-          {error && <div className="error-message">{error}</div>}
-          
-          {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
-          {!hideNavigation && (
-            <div className="button-container">
-              <button 
-                className="button button-back" 
-                onClick={() => {
-                  // Save the answer before going back but don't trigger navigation or submission
-                  console.log('Saving answer before going back:', answer);
-                  // Use saveOnly=true to prevent navigation or submission logic
-                  const saveOnly = true;
-                  // Only call onAnswer if there's an answer to save
-                  if (answer) {
-                    onAnswer(answer, saveOnly);
-                  }
-                  // Then go back
-                  onBack();
-                }}
-              >
-                <FiArrowLeft size={18} />
-                Back
-              </button>
-              
-              <button 
-                className="button button-continue"
-                onClick={handleContinue}
-                disabled={question.required && !isAnswerValid()}
-                style={{backgroundColor: color}}
-                data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
-              >
-                {isLastQuestion ? 'Submit' : 'Continue'}
-                <FiArrowRight size={18} />
-              </button>
+      <div className={`question-container modern-survey-container ${sectionDocument ? 'with-document' : ''}`}>
+        {/* Conditional layout based on whether document is present */}
+        {sectionDocument ? (
+          // Two-column layout when document is present
+          <div className="survey-content-wrapper">
+            {/* Document column */}
+            <div className="document-column">
+              {renderDocumentViewer()}
             </div>
-          )}
-        </div>
+            
+            {/* Question column */}
+            <div className="question-column">
+              
+              
+              {question.image && (
+                <div className="question-image-container" style={{ marginBottom: '20px' }}>
+                  <img 
+                    src={question.image} 
+                    alt="Question illustration" 
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '300px', 
+                      display: 'block',
+                      margin: '0 auto',
+                      borderRadius: '8px'
+                    }} 
+                  />
+                </div>
+              )}
+              <h2 className="question-title">
+                <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
+              </h2>
+              <div className="question-card">
+                {question.required && <span className="question-required-indicator">(required)</span>}
+                
+                <div className="answer-options">
+                  {renderQuestionInput()}
+                </div>
+              </div>
+              
+              {error && <div className="error-message">{error}</div>}
+              
+              {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
+              {!hideNavigation && (
+                <div className="button-container">
+                  <button 
+                    className="button button-back" 
+                    onClick={() => {
+                      // Save the answer before going back but don't trigger navigation or submission
+                      console.log('Saving answer before going back:', answer);
+                      // Use saveOnly=true to prevent navigation or submission logic
+                      const saveOnly = true;
+                      // Only call onAnswer if there's an answer to save
+                      if (answer) {
+                        onAnswer(answer, saveOnly);
+                      }
+                      // Then go back
+                      onBack();
+                    }}
+                  >
+                    <FiArrowLeft size={18} />
+                    Back
+                  </button>
+                  
+                  <button 
+                    className="button button-continue"
+                    onClick={handleContinue}
+                    disabled={question.required && !isAnswerValid()}
+                    style={{backgroundColor: color}}
+                    data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
+                  >
+                    {isLastQuestion ? 'Submit' : 'Continue'}
+                    <FiArrowRight size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // Full-width centered layout when no document is present
+          <div className="full-width-content">
+           
+            
+            {question.image && (
+              <div className="question-image-container" style={{ marginBottom: '20px' }}>
+                <img 
+                  src={question.image} 
+                  alt="Question illustration" 
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '300px', 
+                    display: 'block',
+                    margin: '0 auto',
+                    borderRadius: '8px'
+                  }} 
+                />
+              </div>
+            )}
+             <h2 className="question-title">
+              <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
+            </h2>
+            <div className="question-card">
+              {question.required && <span className="question-required-indicator">(required)</span>}
+              
+              <div className="answer-options">
+                {renderQuestionInput()}
+              </div>
+            </div>
+            
+            {error && <div className="error-message">{error}</div>}
+            
+            {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
+            {!hideNavigation && (
+              <div className="button-container">
+                <button 
+                  className="button button-back" 
+                  onClick={() => {
+                    // Save the answer before going back but don't trigger navigation or submission
+                    console.log('Saving answer before going back:', answer);
+                    // Use saveOnly=true to prevent navigation or submission logic
+                    const saveOnly = true;
+                    // Only call onAnswer if there's an answer to save
+                    if (answer) {
+                      onAnswer(answer, saveOnly);
+                    }
+                    // Then go back
+                    onBack();
+                  }}
+                >
+                  <FiArrowLeft size={18} />
+                  Back
+                </button>
+                
+                <button 
+                  className="button button-continue"
+                  onClick={handleContinue}
+                  disabled={question.required && !isAnswerValid()}
+                  style={{backgroundColor: color}}
+                  data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
+                >
+                  {isLastQuestion ? 'Submit' : 'Continue'}
+                  <FiArrowRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

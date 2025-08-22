@@ -2109,7 +2109,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           priority: section.priority,
           color: section.color,
           instructions: section.instructions,
-          isRequired: section.isRequired
+          isRequired: section.isRequired,
+          // Include image and document fields
+          image: section.image,
+          document: section.document,
+          documentName: section.documentName,
+          documentType: section.documentType
         })),
         sectionQuestions: surveyQuestions.map(q => ({
           questionId: q.id,
@@ -2328,7 +2333,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           priority: section.priority,
           color: section.color,
           instructions: section.instructions,
-          isRequired: section.isRequired !== undefined ? section.isRequired : false
+          isRequired: section.isRequired !== undefined ? section.isRequired : false,
+          // Include image and document fields
+          image: section.image,
+          document: section.document,
+          documentName: section.documentName,
+          documentType: section.documentType
         }))
       };
       
