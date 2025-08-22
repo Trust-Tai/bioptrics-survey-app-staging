@@ -671,6 +671,13 @@
   color: var(--primary-color, #2c3e50);
 }
 
+/* Increase max-width for question container when document is present */
+.modern-survey-container.with-document {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Two-column layout styles for document and question */
 .modern-survey-container.with-document .survey-content-wrapper {
   display: flex;
@@ -678,18 +685,21 @@
   gap: 30px;
   align-items: flex-start;
   margin-top: 20px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .document-column {
-  flex: 1;
-  max-width: 50%;
+  flex: 1.2;
+  max-width: 55%;
   position: sticky;
   top: 20px;
 }
 
 .question-column {
   flex: 1;
-  max-width: 50%;
+  max-width: 45%;
 }
 
 /* Full-width centered layout styles when no document is present */

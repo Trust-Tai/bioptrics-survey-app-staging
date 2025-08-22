@@ -627,14 +627,14 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
 
   // Define the possible question types as a type for better type safety
   type QuestionType = 
-    | 'date' 
-    | 'file' 
-    | 'rating' 
+    'rating' 
     | 'single_choice' 
     | 'multiple_choice' 
     | 'long_text' 
     | 'text' 
-    | 'dropdown';
+    | 'dropdown'
+    | 'date'
+    | 'file';
   
   // Determine actual question type based on question properties and type
   const getActualQuestionType = (): QuestionType => {
@@ -770,10 +770,13 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     switch (actualType) {
       case 'rating':
         return renderRatingScale();
+      
+      case 'single_choice':
+        return renderRadioOptions();
         
       case 'text':
         return renderTextInput();
-      
+        
       case 'long_text':
         return renderTextInput();
       
@@ -783,12 +786,9 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       
       case 'date':
         return renderDateInput();
-      
+        
       case 'file':
         return renderFileUpload();
-      
-      case 'single_choice':
-        return renderRadioOptions();
         
       case 'multiple_choice':
         return renderCheckboxOptions();
@@ -888,7 +888,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     return (
       <div className="document-viewer">
         <div className="document-header">
-          <h3 className="document-title">{documentName || 'Section Document'}</h3>
+          <h3 className="document-title">Section Document</h3>
         </div>
         <div className="document-content">
           {isPdf ? (
@@ -918,39 +918,26 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     );
   };
 
-  // Styled components for progress bar
-  const ProgressContainer = styled.div`
-    width: 100%;
-    padding: 10px 20px;
-    margin-bottom: 20px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
-  `;
-
-  const ProgressBar = styled.div`
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  `;
-
-  const ProgressText = styled.div`
-    font-size: 14px;
-    color: #495057;
-    font-weight: 500;
-  `;
+  // Progress bar is now using CSS classes from ModernSurveyQuestion.css
 
   return (
     <>
       {/* Progress bar - conditionally rendered based on hideNavigation prop */}
       {!hideNavigation && (
-        <ProgressContainer>
-          <ProgressBar>
-            <ProgressText>
-              {progress || ''}
-            </ProgressText>
-          </ProgressBar>
-        </ProgressContainer>
+        <div className="progress-container">
+          <div className="progress-info">
+            <div className="question-count">{progress || ''}</div>
+          </div>
+          <div className="progress-bar-wrapper">
+            <div 
+              className="progress-bar-fill" 
+              style={{ 
+                width: progress ? progress.split(' of ')[0].replace('Question ', '') / progress.split(' of ')[1] * 100 + '%' : '0%',
+                backgroundColor: color
+              }}
+            ></div>
+          </div>
+        </div>
       )}
       
       <div className={`question-container modern-survey-container ${sectionDocument ? 'with-document' : ''}`}>
