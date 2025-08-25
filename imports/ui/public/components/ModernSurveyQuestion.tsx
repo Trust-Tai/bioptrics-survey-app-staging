@@ -770,6 +770,8 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     };
   }, []);
 
+  const [wordViewerError, setWordViewerError] = useState(false);
+
   const renderDocumentViewer = () => {
     if (!sectionDocument) return null;
     
@@ -778,10 +780,67 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     
     const documentUrl = sectionDocument;
     
+    // Create a fully qualified URL for the document
+    const fullDocumentUrl = documentUrl.startsWith('http') ? documentUrl : window.location.origin + documentUrl;
+    
+    // Check if we're on localhost
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
     const isPdf = fileType === 'pdf' || documentType === 'application/pdf';
     const isWord = fileType === 'doc' || fileType === 'docx' || 
       documentType === 'application/msword' || 
       documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+    // Render Word document download UI
+    const renderWordDownloadUI = () => (
+      <div className="word-document-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
+        backgroundColor: '#f9f9f9',
+        borderRadius: '4px',
+        minHeight: '300px'
+      }}>
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#2b579a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2b579a' }}>{documentName || 'Word Document'}</h4>
+        <p style={{ margin: '0 0 20px 0', textAlign: 'center' }}>
+          {isLocalhost ? 
+            'Microsoft Office Online viewer is not supported on localhost.' : 
+            'Word document preview is not available.'}<br />
+          Please download the document to view it.
+        </p>
+        <a 
+          href={documentUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{
+            display: 'inline-block',
+            padding: '10px 20px',
+            backgroundColor: '#2b579a',
+            color: 'white',
+            borderRadius: '4px',
+            textDecoration: 'none',
+            fontWeight: 'bold',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'background-color 0.2s ease'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3f6f'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2b579a'}
+        >
+          Download {documentName || 'Document'}
+        </a>
+      </div>
+    );
     
     return (
       <div className="document-viewer">
@@ -796,11 +855,36 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
               title="PDF Document"
             />
           ) : isWord ? (
-            <iframe 
-              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`}
-              className="document-iframe"
-              title="Word Document"
-            />
+            isLocalhost || wordViewerError ? (
+              renderWordDownloadUI()
+            ) : (
+              <>
+                <iframe 
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullDocumentUrl)}`}
+                  className="document-iframe"
+                  title="Word Document"
+                  onError={() => setWordViewerError(true)}
+                />
+                <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '10px' }}>
+                  <a 
+                    href={documentUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style={{
+                      display: 'inline-block',
+                      padding: '8px 16px',
+                      backgroundColor: '#2b579a',
+                      color: 'white',
+                      borderRadius: '4px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Download {documentName || 'Document'}
+                  </a>
+                </div>
+              </>
+            )
           ) : (
             <div className="document-fallback">
               <p>Document preview not available</p>

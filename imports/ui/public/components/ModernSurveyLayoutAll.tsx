@@ -815,83 +815,160 @@ const ModernSurveyLayoutAll: React.FC<ModernSurveyLayoutAllProps> = ({
                               (sectionId === 'unsectioned' ? 'Please answer these general questions.' : '');
               
               // Function to render document viewer
+              const [wordViewerError, setWordViewerError] = useState(false);
+              
               const renderDocumentViewer = () => {
                 if (!section?.document) return null;
                 
                 const documentUrl = section.document;
                 const documentName = section.documentName || 'Document';
-                const fileType = section.documentType || 
-                  (documentName ? documentName.split('.').pop()?.toLowerCase() : '');
-                
+                const fileType = section.documentType || (documentName ? documentName.split('.').pop()?.toLowerCase() : '');
                 const isPdf = fileType === 'pdf' || section.documentType === 'application/pdf';
-                const isWord = fileType === 'doc' || fileType === 'docx' || 
-                  section.documentType === 'application/msword' || 
-                  section.documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                const isWord = fileType === 'doc' || fileType === 'docx' || section.documentType === 'application/msword' || section.documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                
+                // Create a fully qualified URL for the document
+                const fullDocumentUrl = documentUrl.startsWith('http') ? documentUrl : window.location.origin + documentUrl;
+                
+                // Check if we're on localhost
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                
+                // Render Word document download UI
+                const renderWordDownloadUI = () => (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '40px 20px',
+                    backgroundColor: '#f9f9f9',
+                    minHeight: '300px'
+                  }}>
+                    <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#2b579a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                      </svg>
+                    </div>
+                    <h4 style={{ margin: '0 0 10px 0', color: '#2b579a' }}>{documentName}</h4>
+                    <p style={{ margin: '0 0 20px 0', textAlign: 'center' }}>
+                      {isLocalhost ? 
+                        'Microsoft Office Online viewer is not supported on localhost.' : 
+                        'Word document preview is not available.'}<br />
+                      Please download the document to view it.
+                    </p>
+                    <a 
+                      href={documentUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-block',
+                        padding: '10px 20px',
+                        backgroundColor: '#2b579a',
+                        color: 'white',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3f6f'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2b579a'}
+                    >
+                      Download {documentName}
+                    </a>
+                  </div>
+                );
                 
                 return (
                   <div className="document-viewer" style={{
-                    marginTop: '20px',
-                    marginBottom: '28px',
-                    border: '1px solid #eee',
-                    borderRadius: '8px',
+                    margin: '20px 0',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
                     overflow: 'hidden'
                   }}>
-                    <div className="document-header" style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid #eee',
+                    <div style={{
+                      padding: '10px 15px',
+                      borderBottom: '1px solid #ddd',
                       backgroundColor: '#f9f9f9'
                     }}>
-                      <h3 className="document-title" style={{
-                        margin: 0,
-                        fontSize: '1.1rem',
-                        fontWeight: '500',
-                        color: '#333'
-                      }}>Section Document</h3>
+                      <h3 style={{ margin: 0 }}>Section Document</h3>
                     </div>
-                    <div className="document-content" style={{
-                      height: '700px',
-                      overflow: 'auto'
-                    }}>
-                      {isPdf ? (
-                        <iframe 
-                          src={`${documentUrl}#toolbar=0&navpanes=0`} 
-                          style={{
-                            width: '100%',
-                            height: '700px',
-                            border: 'none'
-                          }}
-                          title="PDF Document"
-                        />
-                      ) : isWord ? (
-                        <iframe 
-                          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`}
-                          style={{
-                            width: '100%',
-                            height: '700px',
-                            border: 'none'
-                          }}
-                          title="Word Document"
-                        />
+                    {isPdf ? (
+                      <iframe 
+                        src={`${documentUrl}#toolbar=0&navpanes=0`} 
+                        style={{
+                          width: '100%',
+                          height: '700px',
+                          border: 'none'
+                        }}
+                        title="PDF Document"
+                      />
+                    ) : isWord ? (
+                      isLocalhost || wordViewerError ? (
+                        renderWordDownloadUI()
                       ) : (
-                        <div style={{
-                          padding: '20px',
-                          textAlign: 'center'
-                        }}>
-                          <p>Document preview not available</p>
-                          <a href={documentUrl} target="_blank" rel="noopener noreferrer" style={{
+                        <>
+                          <iframe 
+                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullDocumentUrl)}`}
+                            style={{
+                              width: '100%',
+                              height: '700px',
+                              border: 'none'
+                            }}
+                            title="Word Document"
+                            onError={() => setWordViewerError(true)}
+                          />
+                          <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '10px' }}>
+                            <a 
+                              href={documentUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-block',
+                                padding: '8px 16px',
+                                backgroundColor: '#2b579a',
+                                color: 'white',
+                                borderRadius: '4px',
+                                textDecoration: 'none',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              Download {documentName}
+                            </a>
+                          </div>
+                        </>
+                      )
+                    ) : (
+                      <div style={{
+                        padding: '20px',
+                        textAlign: 'center'
+                      }}>
+                        <p>Document preview not available</p>
+                        <a 
+                          href={documentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{
                             display: 'inline-block',
-                            padding: '8px 16px',
-                            backgroundColor: survey?.color || '#552a47',
-                            color: '#fff',
+                            padding: '10px 20px',
+                            backgroundColor: '#2b579a',
+                            color: 'white',
                             borderRadius: '4px',
                             textDecoration: 'none',
-                            marginTop: '10px'
-                          }}>
-                            Download {documentName}
-                          </a>
-                        </div>
-                      )}
-                    </div>
+                            fontWeight: 'bold',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            transition: 'background-color 0.2s ease'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e3f6f'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2b579a'}
+                        >
+                          Download {documentName}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 );
               };
