@@ -840,34 +840,43 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           // Use surveySections instead of sections to match the server-side property name
           setSections(result.surveySections || []);
           
-        // Replace the missing Meteor method call with a subscription to the questions.bySurvey publication
-        const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
-        if (questionsSub.ready()) {
-          // Fetch questions from the collection directly
-          const questionsFromDB = Questions.find({}).fetch();
-          
-          // Map QuestionDoc objects to QuestionItem objects
-          const mappedQuestions = questionsFromDB.map(question => {
-            // Find the latest version of the question
-            const latestVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
-
-            // Determine status - explicitly use 'published' or 'draft' to match the union type
-            const status: 'published' | 'draft' = latestVersion?.isActive !== false ? 'published' : 'draft';
+          // Set surveyOrder state from the loaded survey data
+          console.log('Loading surveyOrder from survey data:', result.surveyOrder);
+          if (result.surveyOrder && Array.isArray(result.surveyOrder)) {
+            setSurveyOrder(result.surveyOrder);
+          } else {
+            console.warn('No surveyOrder found in loaded survey data, initializing empty array');
+            setSurveyOrder([]);
+          }
+        
+          // Replace the missing Meteor method call with a subscription to the questions.bySurvey publication
+          const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
+          if (questionsSub.ready()) {
+            // Fetch questions from the collection directly
+            const questionsFromDB = Questions.find({}).fetch();
             
-            return {
-              id: question._id || '',
-              _id: question._id,
-              text: latestVersion?.questionText || '',
-              type: latestVersion?.responseType || '',
-              status,
-              versions: question.versions,
-              currentVersion: question.currentVersion,
-              questionText: latestVersion?.questionText
-            };
-          });
-          
-          setSurveyQuestions(mappedQuestions);
-        }
+            // Map QuestionDoc objects to QuestionItem objects
+            const mappedQuestions = questionsFromDB.map(question => {
+              // Find the latest version of the question
+              const latestVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+
+              // Determine status - explicitly use 'published' or 'draft' to match the union type
+              const status: 'published' | 'draft' = latestVersion?.isActive !== false ? 'published' : 'draft';
+              
+              return {
+                id: question._id || '',
+                _id: question._id,
+                text: latestVersion?.questionText || '',
+                type: latestVersion?.responseType || '',
+                status,
+                versions: question.versions,
+                currentVersion: question.currentVersion,
+                questionText: latestVersion?.questionText
+              };
+            });
+            
+            setSurveyQuestions(mappedQuestions);
+          }
         }
       });
     }
@@ -2061,6 +2070,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       // Prepare survey data for saving
       
+      // Debug log to track surveyOrder before saving
+      console.log('surveyOrder before saving:', survey.surveyOrder);
+      
       // Find the complete theme object based on selectedTheme ID
       const selectedThemeObject = selectedTheme ? surveyThemes.find((theme: any) => theme._id === selectedTheme) : null;
       
@@ -2080,10 +2092,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           textColor: selectedThemeObject.textColor || '#333',
           headingFont: selectedThemeObject.headingFont || 'Inter, sans-serif',
           bodyFont: selectedThemeObject.bodyFont || 'Inter, sans-serif'
-        } : null,
-        // Also store themeId directly for easier access
-        themeId: selectedTheme || ''
-        // Empty string for themeId will make the app use the default theme
+        } : null
       };
       
       const surveyData = {
@@ -2124,6 +2133,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           status: q.status,
           text: q.text
         })),
+        // Explicitly include surveyOrder to ensure it's saved with the survey
+        // Use the current surveyOrder from the survey state to ensure all questions are included
+        surveyOrder: survey.surveyOrder || [],
         // Include demographics, themes, categories, and tags
         selectedTheme,
         selectedCategories,
@@ -2138,6 +2150,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       let savedSurveyId;
       
       if (surveyId) {
+        // Update existing survey
         await Meteor.callAsync('surveys.update', surveyId, surveyData);
         savedSurveyId = surveyId;
       } else {
@@ -2146,7 +2159,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           ...surveyData,
           createdAt: new Date(),
           createdBy: Meteor.userId() || 'anonymous',
-          status: 'draft',
+          status: 'draft'
         };
         
         const result = await Meteor.callAsync('surveys.saveDraft', newSurveyData);
@@ -2163,6 +2176,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       // Set the lastSaved timestamp to update the save status indicator
       const now = Date.now();
+      
+      // Debug log to track surveyOrder after saving
+      console.log('Survey saved successfully with ID:', savedSurveyId);
+      console.log('surveyOrder after saving:', survey.surveyOrder);
       
       // Use a slight delay to ensure state updates are processed in the correct order
       // This helps React batch the updates properly
@@ -3123,7 +3140,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   
   // Get questions that belong to a specific section
   const getQuestionsForSection = (sectionId: string) => {
-    return surveyQuestions.filter(q => q.sectionId === sectionId);
+    return surveyQuestions
+      .filter(q => q.sectionId === sectionId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   };
   
   // Get questions that are currently selected for a section
@@ -4583,11 +4602,24 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   surveyId={surveyId}
                   survey={survey}
                   onSurveyUpdate={(updatedSurvey) => {
-                    setSurvey(updatedSurvey);
+                    // Debug log to track incoming surveyOrder from child component
+                    console.log('Received surveyOrder in onSurveyUpdate:', updatedSurvey.surveyOrder);
+                    
+                    // Preserve the surveyOrder from the updated survey
+                    const surveyWithOrder = {
+                      ...updatedSurvey,
+                      // Ensure surveyOrder is preserved and included in the survey object
+                      surveyOrder: updatedSurvey.surveyOrder || []
+                    };
+                    
+                    // Update the survey state with the complete data including surveyOrder
+                    setSurvey(surveyWithOrder);
+                    
                     // Sync sections state with the updated survey
                     if (updatedSurvey.surveySections && Array.isArray(updatedSurvey.surveySections)) {
                       setSections(updatedSurvey.surveySections);
                     }
+                    
                     // Sync sectionQuestions state with the updated survey
                     // Convert sectionQuestions back to QuestionItem format for the builder
                     if (updatedSurvey.sectionQuestions && Array.isArray(updatedSurvey.sectionQuestions)) {
@@ -4605,7 +4637,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                       });
                       setSurveyQuestions(reconstructedQuestions);
                     }
+                    
+                    // Mark that we have unsaved changes
                     setHasUnsavedChanges(true);
+                    
+                    // Log the updated survey data for debugging
+                    console.log('Updated survey with order:', surveyWithOrder);
                   }}
                   onHasUnsavedChanges={setHasUnsavedChanges}
                 />

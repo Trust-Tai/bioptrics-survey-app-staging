@@ -2256,6 +2256,11 @@ const handleRestart = () => {
       }
     });
     
+    // Sort questions by order property within each section
+    Object.keys(questionsBySection).forEach(sectionId => {
+      questionsBySection[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+    
     return questionsBySection;
   };
   
