@@ -7,6 +7,8 @@ import ModernSurveyQuestion from './ModernSurveyQuestion';
 import ModernSurveyThankYou from './ModernSurveyThankYou';
 import ModernSurveyProgress from './ModernSurveyProgress';
 import DeviceTracker from './DeviceTracker';
+import ModernSurveyLayoutAll from './ModernSurveyLayoutAll';
+import '/client/enhanced-survey.css';
 
 // Types
 interface Question {
@@ -30,6 +32,7 @@ interface Section {
   id: string;
   name: string;
   description: string;
+  title?: string; // Added to make compatible with SurveySection
   isActive?: boolean;
   priority?: number;
   color?: string;
@@ -72,7 +75,7 @@ interface Survey {
     text?: string;
     required?: boolean;
   }>;
-  surveySections?: Section[];
+  surveySections?: (Section & { title: string })[]; // Ensure title is required
   surveyOrder?: Array<{
     type: 'question' | 'section';
     id: string;
@@ -122,12 +125,19 @@ const ContentContainer = styled.div`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px;
   font-family: var(--body-font, 'Inter, sans-serif');
   color: var(--text-color, #333333);
+  background-color: var(--background-color, #ffffff);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow, 0 2px 10px rgba(0, 0, 0, 0.05));
   
   @media (min-width: 768px) {
     padding: 40px;
+  }
+  
+  @media (min-width: 992px) {
+    padding: 48px;
   }
 `;
 
@@ -2281,576 +2291,9 @@ const handleRestart = () => {
     }
   }, [survey?.layout, questions, sections]);
   
-  // Render all questions on one page for the allOnOnePage layout, but show only one section at a time
-  const renderAllQuestionsOnOnePage = () => {
-    console.log('Rendering section-by-section for allOnOnePage layout');
-    
-    // Group questions by section
-    const questionsBySection = getQuestionsBySection();
-    
-    // Get filtered section IDs (only sections with questions)
-    const filteredSectionIds = getFilteredSectionIds();
-    
-    // Defensive check for questions and sections
-    if (!questions || !Array.isArray(questions) || !filteredSectionIds || filteredSectionIds.length === 0) {
-      console.log('No questions available or questions is not an array');
-      return (
-        <div className="all-on-one-page-container">
-          <div className="survey-header" style={{ marginBottom: '30px' }}>
-            <h1 style={{ color: survey && survey.color ? survey.color : '#552a47', marginBottom: '10px' }}>
-              {survey && survey.title ? survey.title : 'Survey'}
-            </h1>
-            {survey && survey.description && <p>{survey.description}</p>}
-          </div>
-          <p>No questions available in this survey.</p>
-        </div>
-      );
-    }
-    
-    // Get the current section ID (with defensive checks)
-    const currentSectionIndex_safe = currentSectionIndex >= 0 && currentSectionIndex < filteredSectionIds.length ? currentSectionIndex : 0;
-    const currentSectionId = filteredSectionIds[currentSectionIndex_safe];
-    // Get section questions with defensive checks
-    const sectionQuestions = currentSectionId && questionsBySection[currentSectionId] ? questionsBySection[currentSectionId] : [];
-    
-    // Find the section object with defensive checks
-    const currentSection = sections && Array.isArray(sections) && currentSectionId ? 
-      sections.find(s => s && s.id === currentSectionId) : undefined;
-    
-    // Calculate progress (with defensive checks)
-    const sectionProgress = `${(currentSectionIndex_safe + 1)} of ${filteredSectionIds ? filteredSectionIds.length : 1}`;
-    const isFirstSection = currentSectionIndex_safe === 0;
-    const isLastSection = filteredSectionIds && currentSectionIndex_safe === filteredSectionIds.length - 1;
-    
-    // Navigation functions (with defensive checks)
-    const goToPreviousSection = () => {
-      if (currentSectionIndex > 0 && filteredSectionIds && filteredSectionIds.length > 0) {
-        setCurrentSectionIndex(currentSectionIndex - 1);
-        // Scroll to top of the section
-        try {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-          console.error('Error scrolling to top:', error);
-        }
-      }
-    };
-    
-    const goToNextSection = () => {
-      if (filteredSectionIds && currentSectionIndex < filteredSectionIds.length - 1) {
-        setCurrentSectionIndex(currentSectionIndex + 1);
-        // Scroll to top of the section
-        try {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-          console.error('Error scrolling to top:', error);
-        }
-      }
-    };
-    
-    // Prepare the content to render based on the current state
-    const surveyHeader = (
-      <div className="survey-header" style={{ marginBottom: '30px' }}>
-        <h1 style={{ color: survey && survey.color ? survey.color : '#552a47', marginBottom: '10px' }}>
-          {survey && survey.title ? survey.title : 'Survey'}
-        </h1>
-        {survey && survey.description && <p>{survey.description}</p>}
-      </div>
-    );
-    
-    // If no questions or sections, return early with just the header
-    if (!filteredSectionIds || filteredSectionIds.length === 0) {
-      return (
-        <div className="all-on-one-page-container">
-          {surveyHeader}
-          <p>No questions available in this survey.</p>
-        </div>
-      );
-    }
-    
-    // Variables are already declared above, no need to redeclare them
-    
-    // Prepare section header based on current section
-    let sectionHeader;
-    if (currentSection) {
-      sectionHeader = (
-        <div className="section-header" style={{ marginBottom: '20px' }}>
-          <h2 style={{ color: survey && survey.color ? survey.color : '#552a47' }}>
-            {currentSection.name || 'Section'}
-          </h2>
-          {currentSection.description && <p>{currentSection.description}</p>}
-        </div>
-      );
-    } else if (currentSectionId === 'unsectioned') {
-      sectionHeader = (
-        <div className="section-header" style={{ marginBottom: '20px' }}>
-          <h2 style={{ color: survey && survey.color ? survey.color : '#552a47' }}>General Questions</h2>
-          <p>Please answer these general questions.</p>
-        </div>
-      );
-    } else {
-      sectionHeader = null;
-    }
-    
-    // Prepare section questions
-    const sectionQuestionsContent = Array.isArray(sectionQuestions) ? (
-      sectionQuestions.map((question, index) => {
-        // Skip null/undefined questions
-        if (!question) return null;
-        
-        try {
-          // Map backend question type to frontend display type with defensive checks
-          const questionType = question.type || 'text';
-          const mappedQuestion = {
-            ...question,
-            type: mapQuestionType(questionType),
-            options: processQuestionOptions(question),
-            _forceDropdown: (questionType && typeof questionType === 'string' && 
-                          (questionType.toLowerCase() === 'dropdown' || 
-                            questionType.toLowerCase() === 'select')) || 
-                          ((question as any).responseType && 
-                            typeof (question as any).responseType === 'string' && 
-                            ((question as any).responseType?.toLowerCase() === 'dropdown' ||
-                            (question as any).responseType?.toLowerCase() === 'select'))
-          };
-          
-          const questionId = question._id || question.id || `question_${index}`;
-          const sectionName = currentSection ? currentSection.name || 'Section' : 
-                            (currentSectionId === 'unsectioned' ? 'General Questions' : 'Survey');
-          const sectionDesc = currentSection ? currentSection.description || '' : 
-                            (currentSectionId === 'unsectioned' ? 'Please answer these general questions.' : '');
-          
-          return (
-            <div key={questionId} className="question-container" style={{ marginBottom: '10px' }}>
-              <ModernSurveyQuestion
-                question={mappedQuestion}
-                progress="" // No progress indicator in all-on-one-page mode
-                onAnswer={(answer, saveOnly = true) => handleQuestionAnswer(questionId, answer, saveOnly)}
-                onBack={() => {}} // No back navigation in all-on-one-page mode
-                value={responses && responses[questionId] ? responses[questionId] : undefined}
-                color={survey && survey.color ? survey.color : '#552a47'}
-                isLastQuestion={false} // No questions are "last" in all-on-one-page mode
-                onSubmit={() => {}} // Individual questions don't submit in all-on-one-page mode
-                backgroundImage={survey && survey.featuredImage ? survey.featuredImage : undefined}
-                sectionName={sectionName}
-                sectionDescription={sectionDesc}
-                hideNavigation={true} // Hide navigation in all questions for all-on-one-page mode
-              />
-            </div>
-          );
-        } catch (error) {
-          console.error('Error rendering question:', error, question);
-          return null; // Skip rendering this question if there's an error
-        }
-      })
-    ) : (
-      <p>No questions available in this section.</p>
-    );
-    
-    // Prepare navigation buttons
-    const navigationButtons = (
-      <div className="section-navigation" style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        marginTop: '30px',
-        marginBottom: '20px'
-      }}>
-        {/* Previous Section button (hidden on first section) */}
-        <div>
-          {!isFirstSection && (
-            <button 
-              onClick={goToPreviousSection}
-              style={{
-                backgroundColor: '#f5f5f5',
-                color: '#333333',
-                padding: '10px 20px',
-                fontSize: '14px',
-                border: '1px solid #dddddd',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              ← Previous Section
-            </button>
-          )}
-        </div>
-        
-        {/* Back button - always visible */}
-        <div>
-          <button 
-            onClick={() => updateCurrentStep({ type: 'welcome' })}
-            style={{
-              backgroundColor: '#f5f5f5',
-              color: '#333333',
-              padding: '10px 20px',
-              fontSize: '14px',
-              border: '1px solid #dddddd',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Back
-          </button>
-        </div>
-        
-        {/* Next Section or Submit button */}
-        <div>
-          {isLastSection ? (
-            <button 
-              onClick={handleAllOnOnePageSubmit}
-              style={{
-                backgroundColor: survey && survey.color ? survey.color : '#552a47',
-                color: '#ffffff',
-                padding: '12px 30px',
-                fontSize: '16px',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              Submit Survey
-            </button>
-          ) : (
-            <button 
-              onClick={goToNextSection}
-              style={{
-                backgroundColor: survey && survey.color ? survey.color : '#552a47',
-                color: '#ffffff',
-                padding: '10px 20px',
-                fontSize: '14px',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Next Section →
-            </button>
-          )}
-        </div>
-      </div>
-    );
-    
-    // Return the complete UI
-    return (
-      <div className="all-on-one-page-container">
-        {surveyHeader}
-        
-        {/* Section progress indicator */}
-        <div className="section-progress" style={{ marginBottom: '20px', textAlign: 'center' }}>
-          <span style={{ fontWeight: 'bold' }}>Section {sectionProgress}</span>
-        </div>
-        
-        {/* Current section */}
-        <div className="survey-section" style={{ marginBottom: '20px' }}>
-          {sectionHeader}
-          
-          <div className="section-questions">
-            {sectionQuestionsContent}
-          </div>
-        </div>
-        
-        {navigationButtons}
-      </div>
-    );
-  };
-  
-  // Handle submission for the all-on-one-page layout
-  const handleAllOnOnePageSubmit = async () => {
-    console.log('handleAllOnOnePageSubmit called - preparing to submit all-on-one-page survey');
-    
-    // Record the end time for the survey session
-    const endTime = new Date();
-    const elapsedTime = Math.round((endTime.getTime() - sessionStartTime.getTime()) / 1000);
-    console.log(`Survey completed in ${elapsedTime} seconds (${Math.floor(elapsedTime / 60)} minutes and ${elapsedTime % 60} seconds)`);
-    
-    // Save the end time to localStorage for the thank you page to access
-    try {
-      const progressKey = getProgressStorageKey();
-      const savedData = localStorage.getItem(progressKey);
-      
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        localStorage.setItem(progressKey, JSON.stringify({
-          ...parsedData,
-          endTime: endTime
-        }));
-        console.log('Saved survey end time to localStorage');
-      }
-    } catch (error) {
-      console.error('Error saving end time to localStorage:', error);
-    }
-    
-    // Set the submitted flag early to prevent any new incomplete responses
-    setIsSubmitted(true);
-    console.log('Setting isSubmitted flag to true to prevent new incomplete responses');
-    
-    if (isPreviewMode) {
-      // In preview mode, just show thank you
-      console.log('Preview mode detected - skipping server submission and showing thank you screen');
-      updateCurrentStep({ type: 'thank-you' });
-      return;
-    }
-    
-    // Collect all responses from the form
-    // This is different from the step-by-step flow because we need to collect
-    // responses from the DOM for all questions at once
-    const allQuestions = [...questions];
-    
-    // Ensure we have all questions from the survey object directly
-    if (survey.sectionQuestions && Array.isArray(survey.sectionQuestions)) {
-      survey.sectionQuestions.forEach(q => {
-        const questionId = q._id || q.id;
-        if (!allQuestions.some(existingQ => (existingQ._id === questionId || existingQ.id === questionId))) {
-          allQuestions.push(q);
-        }
-      });
-    }
-    
-    // Also check selectedQuestions if available
-    if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object') {
-      Object.values(survey.selectedQuestions).flat().forEach(q => {
-        const questionId = q._id || q.id;
-        if (!allQuestions.some(existingQ => (existingQ._id === questionId || existingQ.id === questionId))) {
-          allQuestions.push(q);
-        }
-      });
-    }
-    
-    console.log(`Total questions found: ${allQuestions.length}`);
-    
-    // Create a complete list of responses for ALL questions in the survey
-    interface FormattedResponse {
-      questionId: string;
-      answer: string | string[] | Record<string, any>;
-      sectionId: string;
-    }
-    
-    const formattedResponses: FormattedResponse[] = [];
-    
-    // Process each question in the survey
-    allQuestions.forEach(question => {
-      const questionId = (question._id || question.id || '') as string;
-      if (!questionId) return; // Skip questions without ID
-      
-      // Get the answer for this question from our responses state
-      let answer = responses[questionId];
-      
-      // If no answer in state, check localStorage as a backup
-      if (answer === undefined) {
-        try {
-          const savedResponsesStr = localStorage.getItem('survey_progress_' + survey._id);
-          if (savedResponsesStr) {
-            const savedData = JSON.parse(savedResponsesStr);
-            if (savedData && savedData.responses && savedData.responses[questionId]) {
-              answer = savedData.responses[questionId];
-              console.log(`Found answer in localStorage for question: ${questionId}`);
-            }
-          }
-        } catch (e) {
-          console.error('Error checking localStorage for response:', e);
-        }
-      }
-      
-      // For all-on-one-page layout, we need to check the DOM for answers that might not be in state
-      if (answer === undefined) {
-        // Try to find the answer in the DOM based on question type
-        const questionType = question.type?.toLowerCase() || '';
-        
-        if (questionType.includes('scale') || questionType.includes('likert')) {
-          // For scale questions, find the selected button within this question's container
-          const questionContainer = document.querySelector(`[data-question-id="${questionId}"]`);
-          if (questionContainer) {
-            const selectedButton = questionContainer.querySelector('.scale-button.selected');
-            if (selectedButton) {
-              answer = (selectedButton as HTMLElement)?.textContent?.trim();
-              console.log(`Found scale answer in DOM for question ${questionId}:`, answer);
-            }
-          }
-        } else if (questionType.includes('choice') || questionType === 'radio') {
-          // For choice questions, find the selected option
-          const checkedInput = document.querySelector(`input[name="${questionId}"]:checked`) as HTMLInputElement;
-          if (checkedInput) {
-            answer = checkedInput.value;
-            console.log(`Found choice answer in DOM for question ${questionId}:`, answer);
-          } else {
-            // Try to find selected option button
-            const questionContainer = document.querySelector(`[data-question-id="${questionId}"]`);
-            if (questionContainer) {
-              const selectedOption = questionContainer.querySelector('.option-button.selected');
-              if (selectedOption) {
-                answer = (selectedOption as HTMLElement)?.textContent?.trim();
-                console.log(`Found option button answer in DOM for question ${questionId}:`, answer);
-              }
-            }
-          }
-        } else if (questionType.includes('text') || questionType.includes('textarea')) {
-          // For text questions, find the input or textarea
-          const input = document.querySelector(`input[name="${questionId}"]`) as HTMLInputElement;
-          const textarea = document.querySelector(`textarea[name="${questionId}"]`) as HTMLTextAreaElement;
-          
-          if (input) {
-            answer = input.value;
-            console.log(`Found text input answer in DOM for question ${questionId}:`, answer);
-          } else if (textarea) {
-            answer = textarea.value;
-            console.log(`Found textarea answer in DOM for question ${questionId}:`, answer);
-          }
-        } else if (questionType.includes('dropdown') || questionType.includes('select')) {
-          // For dropdown questions, find the select element
-          const select = document.querySelector(`select[name="${questionId}"]`) as HTMLSelectElement;
-          if (select) {
-            answer = select.value;
-            console.log(`Found dropdown answer in DOM for question ${questionId}:`, answer);
-          }
-        } else if (questionType.includes('checkbox')) {
-          // For checkbox questions, find all checked inputs
-          const checkedInputs = document.querySelectorAll(`input[name="${questionId}"]:checked`) as NodeListOf<HTMLInputElement>;
-          if (checkedInputs.length > 0) {
-            answer = Array.from(checkedInputs).map(input => input.value);
-            console.log(`Found checkbox answers in DOM for question ${questionId}:`, answer);
-          }
-        }
-      }
-      
-      // If we have an answer for this question, add it to our formatted responses
-      if (answer !== undefined) {
-        formattedResponses.push({
-          questionId,
-          answer,
-          sectionId: question.sectionId || '' // Provide empty string as fallback if sectionId is undefined
-        });
-        console.log(`Added response for question: ${questionId}, text: ${question.text?.substring(0, 30)}`);
-      } else {
-        console.log(`No response found for question: ${questionId}, text: ${question.text?.substring(0, 30)}`);
-      }
-    });
-    
-    // Prepare the survey response data
-    const now = new Date();
-    const startTime = sessionStartTime;
-    
-    const surveyResponse = {
-      surveyId: survey._id,
-      respondentId: token,
-      responses: formattedResponses,
-      startTime: startTime,
-      endTime: now,
-      completionTimeSeconds: Math.round((now.getTime() - startTime.getTime()) / 1000),
-      userAgent: navigator.userAgent,
-      timestamp: now
-    };
-    
-    console.log('Submitting survey response:', {
-      surveyId: survey._id,
-      respondentId: token,
-      responseCount: formattedResponses.length,
-      completionTimeSeconds: surveyResponse.completionTimeSeconds
-    });
-    
-    // Submit the survey response to the server
-    Meteor.call('surveyResponses.insert', surveyResponse, (error: any, result: any) => {
-      if (error) {
-        console.error('Error submitting survey response:', error);
-      } else {
-        console.log('Survey response submitted successfully:', result);
-        
-        // Mark any incomplete responses as completed
-        const progressKey = getProgressStorageKey();
-        const savedData = localStorage.getItem(progressKey);
-        
-        if (savedData) {
-          try {
-            const parsedData = JSON.parse(savedData);
-            const responseId = parsedData.responseId;
-            
-            if (responseId) {
-              console.log(`Marking incomplete response as completed: ${responseId}`);
-              
-              // Mark as completed in the database
-              Meteor.call('incompleteSurveyResponses.markAsCompleted', responseId, (markError: any, markResult: any) => {
-                if (markError) {
-                  console.error('Error marking incomplete response as completed:', markError);
-                } else {
-                  console.log('Incomplete response marked as completed:', markResult);
-                  
-                  // Schedule removal after a delay
-                  scheduleRemoval(responseId);
-                }
-              });
-              
-              // Try removal by surveyId and respondentId as a backup
-              const surveyId = survey._id;
-              const respondentId = token;
-              
-              // Schedule removal by attributes
-              setTimeout(() => {
-                removeByAttributes();
-              }, 3000);
-            }
-            
-            // Helper function to schedule removal after delay
-            function scheduleRemoval(id: string) {
-              console.log(`Scheduling removal of ${id} after delay`);
-              // Clear localStorage now that we've marked as completed
-              clearLocalStorage();
-              // Schedule actual removal
-              setTimeout(() => {
-                console.log(`Now removing completed response: ${id}`);
-                Meteor.call('incompleteSurveyResponses.removeCompleted', id, (removeError: any, removeResult: boolean) => {
-                  if (removeError) {
-                    console.error('Error removing after delay:', removeError);
-                  } else {
-                    console.log(`Delayed removal result: ${removeResult ? 'Success' : 'Failed'}`);
-                  }
-                });
-              }, 3000); // 3 seconds delay
-            }
-            
-            // Helper function to remove by surveyId and respondentId
-            function removeByAttributes() {
-              console.log(`Removing by surveyId: ${surveyId} and respondentId: ${respondentId}`);
-              Meteor.call('incompleteSurveyResponses.removeBySurveyAndRespondent', surveyId, respondentId, (attrError: any, attrResult: boolean) => {
-                if (attrError) {
-                  console.error('Error removing by attributes:', attrError);
-                } else {
-                  console.log(`Removal by attributes result: ${attrResult ? 'Success' : 'Failed'}`);
-                }
-              });
-            }
-            
-            // Helper function to clear localStorage
-            function clearLocalStorage() {
-              try {
-                localStorage.removeItem(`survey_progress_${surveyId}`);
-                localStorage.removeItem(`last_answered_question_${surveyId}`);
-                localStorage.removeItem(getProgressStorageKey());
-                console.log(`Cleared localStorage items for survey: ${surveyId}`);
-              } catch (error) {
-                console.error('Error clearing localStorage:', error);
-              }
-            }
-          } catch (error) {
-            console.error('Error parsing saved data:', error);
-          }
-        }
-        
-        // Clear the progress from localStorage
-        localStorage.removeItem(progressKey);
-      }
-      
-      // Show thank you screen regardless of submission success/failure
-      console.log(error ? 'Showing thank you screen despite submission error' : 'Survey successfully submitted - showing thank you screen');
-      updateCurrentStep({ type: 'thank-you' });
-      
-      // Clear saved progress since survey is complete
-      try {
-        localStorage.removeItem(getProgressStorageKey());
-        console.log('Cleared saved progress after completion');
-      } catch (e) {
-        console.error('Error clearing saved progress:', e);
-      }
-    });
-  };
+  // The renderAllQuestionsOnOnePage function has been moved to ModernSurveyLayoutAll.tsx
+
+  // The handleAllOnOnePageSubmit function has been moved to ModernSurveyLayoutAll.tsx
 
   // Calculate the estimated time to complete the survey based on total question count
   // If sectionId is provided, calculate time only for that section
@@ -2977,8 +2420,31 @@ const handleRestart = () => {
   const renderContent = () => {
     // Check if we should render all questions on one page
     if (survey.layout === 'allOnOnePage' && currentStep.type === 'welcome') {
-      console.log('Rendering all questions on one page layout');
-      return renderAllQuestionsOnOnePage();
+      console.log('Rendering all questions on one page layout using ModernSurveyLayoutAll component');
+      return (
+        <ModernSurveyLayoutAll
+          survey={survey}
+          token={token}
+          questions={questions}
+          sections={sections}
+          responses={responses}
+          currentSectionIndex={currentSectionIndex}
+          setCurrentSectionIndex={setCurrentSectionIndex}
+          sessionStartTime={sessionStartTime}
+          isPreviewMode={isPreviewMode}
+          isSubmitted={isSubmitted}
+          setIsSubmitted={setIsSubmitted}
+          updateCurrentStep={updateCurrentStep}
+          handleQuestionAnswer={handleQuestionAnswer}
+          getProgressStorageKey={getProgressStorageKey}
+          mapQuestionType={mapQuestionType}
+          processQuestionOptions={processQuestionOptions}
+          calculateEstimatedTime={calculateEstimatedTime}
+          getQuestionsBySection={getQuestionsBySection}
+          getFilteredSectionIds={getFilteredSectionIds}
+          getQuestionsForSection={getQuestionsForSection}
+        />
+      );
     }
     
     // Otherwise, proceed with the standard step-by-step flow
@@ -2995,13 +2461,21 @@ const handleRestart = () => {
         // Create a modified survey object with the dynamic estimated time
         // We ensure the estimatedTime property is set to our dynamic calculation
         // This will override any static value that might be in the database
+        // Map sections to ensure they have the required 'title' property
+        const mappedSections = survey.surveySections?.map(section => ({
+          ...section,
+          title: section.title || section.name // Use title if it exists, otherwise use name
+        }));
+        
         const surveyWithDynamicTime = {
           ...survey,
           estimatedTime: dynamicEstimatedTime,
           // Also update questionCount to ensure consistency
           questionCount: totalQuestions,
           // And sectionCount for completeness
-          sectionCount: totalSections
+          sectionCount: totalSections,
+          // Ensure sections have the required title property
+          surveySections: mappedSections
         };
         
         console.log('Welcome screen data with dynamic time calculation:', {
