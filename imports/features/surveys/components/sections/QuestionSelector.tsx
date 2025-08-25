@@ -663,7 +663,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                           flexWrap: 'wrap',
                           gap: '8px',
                           marginTop: '4px'
-                        }}>
+                         }}>
                           <div className="question-type" style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -673,7 +673,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                             backgroundColor: '#f1f5f9',
                             padding: '3px 8px',
                             borderRadius: '4px'
-                          }}>
+                           }}>
                             {question.type === 'multipleChoice' && <FiList size={12} />}
                             {question.type === 'text' && <FiType size={12} />}
                             {question.type === 'rating' && <FiStar size={12} />}
@@ -687,14 +687,14 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                           {(() => {
                             // Debug info
                             const questionId = question.id || '';
-                            console.log(`Checking tags for question: ${questionId}`);
-                            console.log(`Tags from map using id:`, questionsWithTags.get(questionId));
+                            // console.log(`Checking tags for question: ${questionId}`);
+                            // console.log(`Tags from map using id:`, questionsWithTags.get(questionId));
                             
                             // Get tags for this question
                             const tags = questionsWithTags.get(questionId);
                             
                             if (tags && tags.length > 0) {
-                              console.log(`Found tags for question ${questionId}:`, tags);
+                              // console.log(`Found tags for question ${questionId}:`, tags);
                               return tags.map((tagId: string) => {
                                 // Find the layer with this ID
                                 const tagObj = allTags.find((tag: Layer) => tag && tag._id === tagId);
@@ -703,7 +703,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                                 const tagName = tagObj ? tagObj.name : 
                                   (allTags.find((tag: Layer) => tag && tag.name === tagId) ? tagId : 'Unknown');
                                 
-                                console.log(`Tag ${tagId} maps to:`, tagObj || tagName);
+                                // console.log(`Tag ${tagId} maps to:`, tagObj || tagName);
                                 
                                 return (
                                   <div key={tagId} className="question-tag" style={{
@@ -722,10 +722,10 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                                 );
                               });
                             } else {
-                              console.log(`No tags found for question ${questionId}`);
+                              // console.log(`No tags found for question ${questionId}`);
                               return null;
                             }
-                          })()
+                          })()}
                         </div>
                       </div>
                     </div>

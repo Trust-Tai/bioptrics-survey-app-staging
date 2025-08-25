@@ -387,7 +387,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Render counter for debugging
   const renderCount = React.useRef(0);
   renderCount.current += 1;
-  console.log('AdminLayout render #', renderCount.current);
+  // console.log('AdminLayout render #', renderCount.current);
   
   // Get organization settings for customized terminology
   const { getTerminology } = useOrganization();
