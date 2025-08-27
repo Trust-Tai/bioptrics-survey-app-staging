@@ -3571,6 +3571,118 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               <h1 className="survey-builder-title">
                 {survey?.title || 'Untitled Survey'}
               </h1>
+              {/* Display survey URL when available */}
+              {publicUrl && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '4px',
+                  fontSize: '14px',
+                  color: '#555'
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {publicUrl}
+                  </span>
+                  {/* Copy URL icon */}
+                  <div
+                    onClick={() => {
+                      navigator.clipboard.writeText(publicUrl);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                      showSuccessAlert('URL copied to clipboard!');
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.2s ease'
+                    }}
+                    title="Copy URL"
+                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f0f0f0'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  {/* Preview icon */}
+                  <div
+                    onClick={() => {
+                      if (!survey?._id) {
+                        showErrorAlert('Please save the survey first before previewing.');
+                        return;
+                      }
+                      
+                      // Save current draft to localStorage
+                      try {
+                        // Get the token (either encrypted or share token)
+                        const getToken = async () => {
+                          try {
+                            // Try to generate an encrypted token for the survey
+                            const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
+                            return encryptedToken;
+                          } catch (error) {
+                            console.error('Error generating encrypted token for preview:', error);
+                            // Fallback to shareToken if available
+                            if (survey.shareToken) {
+                              return survey.shareToken;
+                            }
+                            throw new Error('Could not generate token for preview');
+                          }
+                        };
+                        
+                        getToken().then(token => {
+                          // Prepare survey data for preview
+                          const previewData = {
+                            ...survey,
+                            sections: sections,
+                            sectionQuestions: surveyQuestions,
+                            selectedTheme: selectedTheme,
+                            selectedTags: selectedTags,
+                            selectedCategories: selectedCategories
+                          };
+                          
+                          // Save to localStorage
+                          localStorage.setItem(`survey-preview-${token}`, JSON.stringify(previewData));
+                          
+                          // Open preview in new tab
+                          const baseUrl = window.location.origin;
+                          const previewUrl = `${baseUrl}/public/${token}?status=preview`;
+                          window.open(previewUrl, '_blank');
+                        }).catch(error => {
+                          showErrorAlert(`Error preparing preview: ${error.message}`);
+                        });
+                      } catch (error) {
+                        showErrorAlert(`Error preparing preview: ${error.message}`);
+                      }
+                    }}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.2s ease'
+                    }}
+                    title="Preview Survey"
+                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f0f0f0'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              )}
               {/* <p style={{ color: '#666' }}>
                 {survey?.description || 'No description'}
               </p> */}
@@ -3698,85 +3810,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                       overflow: 'hidden'
                     }}
                   >
-                    {/* Preview Button */}
-                    <div 
-                      onClick={() => {
-                        setShowActionDropdown(false);
-                        if (!survey?._id) {
-                          showErrorAlert('Please save the survey first before previewing.');
-                          return;
-                        }
-                        
-                        // Save current draft to localStorage
-                        try {
-                          // Get the token (either encrypted or share token)
-                          const getToken = async () => {
-                            try {
-                              // Try to generate an encrypted token for the survey
-                              const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', survey._id);
-                              return encryptedToken;
-                            } catch (error) {
-                              console.error('Error generating encrypted token for preview:', error);
-                              // Fallback to shareToken if available
-                              if (survey.shareToken) {
-                                return survey.shareToken;
-                              }
-                              throw new Error('Could not generate token for preview');
-                            }
-                          };
-                          
-                          getToken().then(token => {
-                            // Prepare survey data for preview
-                            const previewData = {
-                              ...survey,
-                              sections: sections,
-                              sectionQuestions: surveyQuestions,
-                              selectedTheme: selectedTheme,
-                              selectedTags: selectedTags,
-                              selectedCategories: selectedCategories
-                            };
-                            
-                            // Save to localStorage
-                            localStorage.setItem(`survey-preview-${token}`, JSON.stringify(previewData));
-                            
-                            // Open preview in new tab
-                            const baseUrl = window.location.origin;
-                            const previewUrl = `${baseUrl}/public/${token}?status=preview`;
-                            window.open(previewUrl, '_blank');
-                          }).catch(error => {
-                            showErrorAlert(`Error preparing preview: ${error.message}`);
-                          });
-                        } catch (error) {
-                          showErrorAlert(`Error preparing preview: ${error.message}`);
-                        }
-                      }}
-                      className="dropdown-item"
-                      style={{
-                        padding: '12px 16px',
-                        cursor: !survey?._id ? 'not-allowed' : 'pointer',
-                        opacity: !survey?._id ? 0.7 : 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'background-color 0.2s ease',
-                        color: '#000000'
-                      }}
-                      onMouseOver={(e) => {
-                        if (survey?._id) {
-                          e.currentTarget.style.backgroundColor = '#f8f9fa';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fff';
-                      }}
-                    >
-                      Preview
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto' }}>
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                          <polyline points="15 3 21 3 21 9"></polyline>
-                          <line x1="10" y1="14" x2="21" y2="3"></line>
-                        </svg>
-                    </div>
+                    
                     
                     {/* Publish Button */}
                     <div 
@@ -3806,37 +3840,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     >
                       {isPublished ? 'Publish Again' : 'Publish'}
                     </div>
-                    
-                    {/* Copy URL Button - Only shows when publicUrl is available */}
-                    {publicUrl && (
-                      <div 
-                        onClick={() => {
-                          setShowActionDropdown(false);
-                          navigator.clipboard.writeText(publicUrl);
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 2000);
-                          showSuccessAlert('URL copied to clipboard!');
-                        }}
-                        className="dropdown-item"
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          transition: 'background-color 0.2s ease',
-                          color: '#000000'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f8f9fa';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#fff';
-                        }}
-                      >
-                        Copy Link
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
