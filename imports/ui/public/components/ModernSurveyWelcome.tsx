@@ -240,17 +240,20 @@ const SurveyDescription = styled.p`
 
 
 const StatsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 16px;
   margin: 32px 0;
+  width: 100%;
   
   @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
+    justify-content: center;
   }
   
   @media (max-width: 480px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
   }
 `;
 
@@ -265,6 +268,19 @@ const StatCard = styled.div`
   text-align: center;
   border: 1px solid #f0f0f0;
   color: var(--text-color, #333);
+  flex: 1;
+  min-width: 200px;
+  
+  @media (max-width: 768px) {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 150px;
+  }
+  
+  @media (max-width: 480px) {
+    flex: 1 1 100%;
+    min-width: 250px;
+    max-width: 300px;
+  }
 `;
 
 const StatIcon = styled.div`
@@ -687,23 +703,24 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                 <StatLabel>Total questions</StatLabel>
               </StatCard>
               
-              <StatCard>
-                <StatIcon color="#2c3e50">
-                  <FaRegListAlt size={20} />
-                </StatIcon>
-                <StatValue>
-                  {(() => {
-                    if (loading) {
-                      return '...';
-                    }
-                    
-                    // Show actual section count, including 0
-                    const finalSectionCount = metadata.sectionCount || totalSections || survey.sectionCount || 0;
-                    return finalSectionCount;
-                  })()}
-                </StatValue>
-                <StatLabel>Question sections</StatLabel>
-              </StatCard>
+              {(() => {
+                // Only show section card if there are actual sections
+                const finalSectionCount = metadata.sectionCount || totalSections || survey.sectionCount || 0;
+                console.log('Total Sections ---- ', metadata.sectionCount, totalSections, survey.sectionCount);
+                
+                if (finalSectionCount > 0) {
+                  return (
+                    <StatCard>
+                      <StatIcon color="#2c3e50">
+                        <FaRegListAlt size={20} />
+                      </StatIcon>
+                      <StatValue>{finalSectionCount}</StatValue>
+                      <StatLabel>Question sections</StatLabel>
+                    </StatCard>
+                  );
+                }
+                return null;
+              })()}
               
               <StatCard>
                 <StatIcon color="#2c3e50">

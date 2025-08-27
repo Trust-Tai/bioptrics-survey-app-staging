@@ -1595,15 +1595,22 @@ if (Meteor.isServer) {
         }
         
         // Create sections from categories if we have category data
+        let actualSectionCount = 0;
         if (survey.selectedCategories && survey.selectedCategories.length > 0) {
           sections = Object.keys(questionsByCategory).map(category => ({
             title: category,
             description: `${questionsByCategory[category].length} questions about ${category.toLowerCase()}`,
             questionCount: questionsByCategory[category].length
           }));
+          actualSectionCount = sections.length;
         }
         
-        // If no sections were created, use a default section
+        // Check if survey has actual surveySections defined
+        if (survey.surveySections && survey.surveySections.length > 0) {
+          actualSectionCount = survey.surveySections.length;
+        }
+        
+        // If no sections were created, use a default section for display purposes only
         if (sections.length === 0) {
           sections = [{
             title: 'Survey Questions',
@@ -1658,7 +1665,7 @@ if (Meteor.isServer) {
         
         return {
           questionCount,
-          sectionCount: sections.length,
+          sectionCount: actualSectionCount, // Use actual section count, not fallback sections
           sections,
           estimatedTime: estimatedTimeRange,
           estimatedTimeSeconds: totalEstimatedTimeSeconds,
