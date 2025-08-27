@@ -520,6 +520,27 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     // Add to survey questions
     setSurveyQuestions(prev => [...prev, ...newQuestions]);
     
+    // Update surveyOrder with new questions
+    const updatedSurveyOrder = [...surveyOrder];
+    let maxOrder = updatedSurveyOrder.length > 0 ? 
+      Math.max(...updatedSurveyOrder.map(item => item.order)) : 0;
+    
+    // Add new questions to the order
+    newQuestions.forEach(question => {
+      // If the question is assigned to a section, don't add it to the main order
+      // It will be shown within its section
+      if (!question.sectionId) {
+        updatedSurveyOrder.push({
+          id: question.id,
+          type: 'question',
+          order: ++maxOrder
+        });
+      }
+    });
+    
+    // Update the state with the new order
+    setSurveyOrder(updatedSurveyOrder);
+    
     // Update survey with new questions and section assignments
     if (survey && onSurveyUpdate) {
       const updatedSurvey = {
@@ -533,7 +554,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             order: (survey.sectionQuestions || []).length + questionsToAdd.indexOf(questionId)
           }))
         ],
-        surveyOrder: surveyOrder
+        surveyOrder: updatedSurveyOrder // Use the updated survey order
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -958,7 +979,9 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Get questions for a specific section
   const getQuestionsForSection = (sectionId: string) => {
-    return surveyQuestions.filter(q => q.sectionId === sectionId);
+    return surveyQuestions
+      .filter(q => q.sectionId === sectionId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort by order property
   };
 
   // Handle creating a question for a specific section
@@ -1308,6 +1331,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                           {surveyQuestions.filter(q => q.sectionId === section.id).length > 0 ? (
                             surveyQuestions
                               .filter(q => q.sectionId === section.id)
+                              .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order property
                               .map(question => (
                                 <div 
                                   key={question.id}

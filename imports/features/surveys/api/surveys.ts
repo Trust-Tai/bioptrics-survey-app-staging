@@ -690,7 +690,7 @@ Meteor.methods({
         thankYouIcon: importData.thankYouIcon || '',
         thankYouBoxes: importData.thankYouBoxes || [],
         
-        // Survey order
+        // Survey order - either use provided order or build it from questions and sections
         surveyOrder: importData.surveyOrder || [],
         defaultSettings: {
           responseSettings: {
@@ -977,7 +977,8 @@ Meteor.methods({
             questionText: questionText, // Add questionText field for proper display
             type: question.responseType || questionType, // Use responseType if provided, otherwise fall back to type
             sectionId: sectionId,
-            order: index,
+            // Use the order property from the imported question if available, otherwise use the index
+            order: question.order !== undefined ? question.order : index,
             options: question.options || [],
             required: question.required !== undefined ? question.required : false,
             description: question.description || '',
@@ -1069,6 +1070,49 @@ Meteor.methods({
           const questionIds = section.questionIds || [];
           console.log(`Section ${section.id} (${section.name}) has ${questionIds.length} questions:`, questionIds);
         });
+        
+        // Build surveyOrder array if not provided in importData
+        if (!importData.surveyOrder || importData.surveyOrder.length === 0) {
+          console.log('Building surveyOrder array from imported questions and sections');
+          const builtSurveyOrder = [];
+          let orderIndex = 0;
+          
+          // First add standalone questions (questions without a section)
+          const standaloneQuestions = surveyDoc.sectionQuestions.filter(q => !q.sectionId || q.sectionId.trim() === '');
+          standaloneQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
+          
+          standaloneQuestions.forEach(question => {
+            builtSurveyOrder.push({
+              id: question.id,
+              type: 'question',
+              order: orderIndex++
+            });
+          });
+          
+          // Then add sections and their questions
+          surveyDoc.surveySections.forEach(section => {
+            builtSurveyOrder.push({
+              id: section.id,
+              type: 'section',
+              order: orderIndex++
+            });
+            
+            // Get questions for this section and sort them by their order property
+            const sectionQuestions = surveyDoc.sectionQuestions.filter(q => q.sectionId === section.id);
+            sectionQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            sectionQuestions.forEach(question => {
+              builtSurveyOrder.push({
+                id: question.id,
+                type: 'question',
+                order: orderIndex++
+              });
+            });
+          });
+          
+          surveyDoc.surveyOrder = builtSurveyOrder;
+          console.log(`Built surveyOrder with ${builtSurveyOrder.length} items`);
+        }
         
         console.log(`Processed ${Object.keys(surveyDoc.selectedQuestions).length} questions for survey import (${reusedQuestions} reused, ${newQuestions} new)`);
       }
