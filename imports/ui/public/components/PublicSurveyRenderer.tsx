@@ -65,6 +65,9 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [responses, setResponses] = useState<Record<string, any>>({});
+  const [currentResponseId, setCurrentResponseId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Enhanced setResponses that also saves progress
   const updateResponses = (newResponses: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
@@ -75,8 +78,6 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
       return updatedResponses;
     });
   };
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
 
   // Generate unique storage key for this survey
   const storageKey = `survey_progress_${survey._id}`;
@@ -179,6 +180,10 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
   // Handle starting the survey
   const handleStart = () => {
     console.log('Starting survey - navigating to first question');
+    
+    // Reset session start time when starting the survey
+    setSessionStartTime(new Date());
+    console.log('Session start time reset:', new Date());
     
     if (questions.length === 0) {
       console.warn('No questions available, going to thank you screen');
@@ -733,6 +738,8 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
 
   // Handle navigation between questions
   const handleNext = () => {
+    setError(null);
+    
     if (currentStep.type === 'question' && typeof currentStep.questionIndex === 'number') {
       const currentQuestion = questions[currentStep.questionIndex];
       
@@ -741,9 +748,6 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
         setError('This question requires an answer');
         return;
       }
-      
-      // Clear any existing error
-      setError('');
       
       const nextIndex = currentStep.questionIndex + 1;
       
@@ -770,13 +774,63 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
           questionIndex: nextIndex
         });
       } else {
-        // Survey completed - clear progress and go to thank you
-        clearProgress();
-        updateCurrentStep({ type: 'thank-you' });
+        // Survey completed - save responses to the server and go to thank you
+        // Transform responses from object format to array format expected by the server
+        const responsesArray = Object.entries(responses).map(([questionId, answer]) => {
+          // Extract section ID if it exists in the question ID (format: sectionId:questionId)
+          let sectionId;
+          let actualQuestionId = questionId;
+          
+          if (questionId.includes(':')) {
+            const parts = questionId.split(':');
+            sectionId = parts[0];
+            actualQuestionId = parts[1];
+          }
+          
+          return {
+            questionId: actualQuestionId,
+            sectionId: sectionId,
+            answer: answer
+          };
+        });
+        
+        const submissionData = {
+          surveyId: survey._id,
+          responses: responsesArray,
+          metadata: {
+            token: token,
+            completedAt: new Date(),
+            startedAt: sessionStartTime,
+            timeSpent: new Date().getTime() - sessionStartTime.getTime(),
+            isPreview: isPreviewMode
+          }
+        };
+        
+        // Call the server method to save responses
+        Meteor.call('surveyResponses.submit', submissionData, (error: Meteor.Error | null, responseId: string) => {
+          if (error) {
+            console.error('Error submitting survey:', error);
+            setError('Failed to submit survey. Please try again.');
+          } else {
+            console.log('Survey submitted successfully with responseId:', responseId);
+            // Store the responseId for the thank you screen
+            setCurrentResponseId(responseId);
+            // Clear progress and go to thank you
+            clearProgress();
+            updateCurrentStep({ type: 'thank-you' });
+          }
+        });
       }
+    } else if (currentStep.type === 'welcome') {
+      // Move from welcome to first question
+      updateCurrentStep({
+        type: 'question',
+        questionIndex: 0
+      });
     }
   };
 
+  // Handle going back to previous question
   const handlePrevious = () => {
     if (currentStep.type === 'question' && typeof currentStep.questionIndex === 'number') {
       const prevIndex = currentStep.questionIndex - 1;
@@ -1025,10 +1079,16 @@ const PublicSurveyRenderer: React.FC<PublicSurveyRendererProps> = ({
   }
 
   if (currentStep.type === 'thank-you') {
+    // Calculate the time spent on the survey in seconds
+    const timeSpentSeconds = Math.round((new Date().getTime() - sessionStartTime.getTime()) / 1000);
+    console.log('Time spent on survey (seconds):', timeSpentSeconds);
+    
     return (
       <ModernSurveyThankYou
         survey={survey}
         onRestart={handleRestart}
+        responseId={currentResponseId}
+        completionTime={timeSpentSeconds}
       />
     );
   }

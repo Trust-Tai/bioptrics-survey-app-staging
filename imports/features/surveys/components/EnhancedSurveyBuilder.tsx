@@ -473,7 +473,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     icon: string;
     selected: boolean;
   }>>([{
-    title: 'Total Responses',
+    title: 'Total Questions Answered',
     subtitle: 'Total number of questions answered',
     icon: 'clipboard-check',
     selected: true
