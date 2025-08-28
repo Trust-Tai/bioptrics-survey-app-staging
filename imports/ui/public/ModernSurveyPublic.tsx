@@ -5,7 +5,7 @@ import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
-import ModernSurveyContent from './components/ModernSurveyContent';
+import PublicSurveyRenderer from './components/PublicSurveyRenderer';
 import ModernSurveyLoader from './components/ModernSurveyLoader';
 import ModernSurveyError from './components/ModernSurveyError';
 import SurveyThemeProvider from './SurveyThemeProvider';
@@ -386,12 +386,10 @@ const ModernSurveyPublic: React.FC = () => {
           </HeaderContent>
         </Header>
         <MainContent>
-          <ModernSurveyContent 
+          <PublicSurveyRenderer 
             survey={surveyData} 
             isPreviewMode={isPreviewMode} 
             token={token || ''}
-            onQuestionChange={handleQuestionChange}
-            onSectionChange={handleSectionChange}
           />
           {/* Add real-time analytics tracker (invisible component) */}
           {!isPreviewMode && surveyData._id && (
