@@ -382,7 +382,7 @@ const Marketplace: React.FC = () => {
         <Row className="mb-4">
           <Col>
             <h1 className="fw-bold" style={{ color: theme.textColor || 'var(--color-text)' }}>
-              Survey Marketplace
+              Marketplace
             </h1>
           </Col>
           <Col xs="auto">
@@ -419,11 +419,16 @@ const Marketplace: React.FC = () => {
 
         <Row>
           {filteredProducts.map(product => (
-            <Col key={product._id} xs={12} sm={6} md={4} lg={3} className="mb-4">
+            <Col key={product._id} xs={12} sm={6} md={4} lg={3} xl={3} className="mb-4">
               <Card 
                 onMouseEnter={() => setHoveredProduct(product._id!)}
                 onMouseLeave={() => setHoveredProduct(null)}
-                style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}
+                style={{ 
+                  position: 'relative', 
+                  borderRadius: '12px', 
+                  overflow: 'hidden',
+                  height: '100%' // Ensure cards have consistent height
+                }}
               >
                 {/* Edit and Delete buttons overlay */}
                 <div 

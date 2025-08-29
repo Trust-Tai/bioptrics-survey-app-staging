@@ -41,51 +41,11 @@ interface SidebarLink {
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []): SidebarLink[] => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard}, 
-  // submenu: [
-    // { to: '/admin/surveys/all', label: `Manage ${getTerminology('surveyLabel')}s` },
-    // { to: '/admin/surveys/builder', label: 'Create Survey' },
-    // { to: '/admin/surveys/theme', label: 'Theme' },
-    // Dynamically add survey tags as submenu items
-    // ...(surveyTags.map(tag => ({ 
-    //   to: `/admin/surveys/tag/${tag._id}`, 
-    //   label: `${tag.name}`,
-    //   isTag: true
-    // })))
-  // ] },
   { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase},
-  // , submenu: [
-    // { to: '/admin/questions/all', label: `All ${getTerminology('questionLabel')}s` },
-    // { to: '/admin/questions/builder', label: `${getTerminology('questionLabel')} Builder` },
-    // Dynamically add question tags as submenu items
-    // ...(questionTags.map(tag => ({ 
-    //   to: `/admin/questions/tag/${tag._id}`, 
-    //   label: `${tag.name}`,
-    //   isTag: true
-    // })))
-  // ] },
   { to: '/admin/tags/manage', label: 'Tags', icon: FaTag },
   { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie},
-  //  submenu: [
-    // { to: '/admin/analytics/dashboard', label: 'Dashboard' },
-    // { to: '/admin/analytics/compare-cohorts', label: 'Compare Cohorts' },
-    // { to: '/admin/analytics/export-reports', label: 'Export Reports' },
-  // ] },
   { to: '/admin/marketplace', label: 'Marketplace', icon: FaStore},
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding},
-  //  submenu: [
-  //   { to: '/admin/org-setup/participants', label: `${getTerminology('participantLabel')}s` },
-  //   { to: '/admin/org-setup/users', label: 'Users', submenu: [
-  //     { to: '/admin/org-setup/users/all', label: 'All Users' },
-  //     { to: '/admin/org-setup/users/add', label: 'Add New' },
-  //   ] },
-  //   { to: '/admin/org-setup/settings', label: 'Settings', submenu: [
-  //     { to: '/admin/org-setup/settings/password', label: 'Change Password' },
-  //     { to: '/admin/org-setup/settings/timezone', label: 'Choose Time Zone' },
-  //     { to: '/admin/org-setup/settings/ui-preferences', label: 'UI Preferences' },
-  //   ] },
-  //   { to: '/admin/org-setup/roles', label: 'Permissions / Roles' },
-  //   { to: '/admin/org-setup/branding', label: 'Branding / Custom Fields' },
-  // ] },
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
 
