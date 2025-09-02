@@ -3,6 +3,7 @@ import styled, { ThemeProvider } from 'styled-components';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { FaFileExport, FaFilePdf, FaFileExcel, FaFileCsv } from 'react-icons/fa';
 import { useTheme } from '/imports/contexts/ThemeContext';
+import { generateSurveyReportPDF } from './SurveyReportPDF';
 
 const StyledButton = styled.button`
   padding: 8px 16px;
@@ -210,15 +211,21 @@ const AnalyticsExportReports: React.FC = () => {
   ];
 
   const handleExport = (): void => {
-    // This would be replaced with actual export functionality
+    // Log export parameters
     console.log('Exporting report:', {
       type: reportType,
       dateRange,
       format
     });
     
-    // Mock export success message
-    alert(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report is being generated in ${format.toUpperCase()} format. It will be available for download shortly.`);
+    // Handle different export formats
+    if (format === 'pdf') {
+      // Call the PDF generation function
+      generateSurveyReportPDF();
+    } else {
+      // For other formats (to be implemented)
+      alert(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report is being generated in ${format.toUpperCase()} format. It will be available for download shortly.`);
+    }
   };
 
   return (
