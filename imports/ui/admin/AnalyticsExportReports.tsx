@@ -5,6 +5,8 @@ import { FaFileExport, FaFilePdf, FaFileExcel, FaFileCsv } from 'react-icons/fa'
 import { useTheme } from '/imports/contexts/ThemeContext';
 import { generateSurveyReportPDF, SurveyReportData } from './SurveyReportPDF';
 import { SurveyReportService } from '/imports/api/surveys/services/SurveyReportService';
+import { Surveys, SurveyDoc } from '/imports/features/surveys/api/surveys';
+import { useTracker } from 'meteor/react-meteor-data';
 
 const StyledButton = styled.button`
   padding: 8px 16px;
@@ -198,6 +200,17 @@ const AnalyticsExportReports: React.FC = () => {
   const [format, setFormat] = useState('pdf');
   const [loading, setLoading] = useState<boolean>(false);
   const [reportData, setReportData] = useState<SurveyReportData | null>(null);
+  const [selectedSurveyId, setSelectedSurveyId] = useState<string>('all');
+
+  // Fetch surveys from the database
+  const { surveys, surveysLoading } = useTracker(() => {
+    const handle = Meteor.subscribe('surveys.all');
+    const surveyData = Surveys.find({}, { sort: { title: 1 } }).fetch();
+    return {
+      surveys: surveyData,
+      surveysLoading: !handle.ready(),
+    };
+  }, []);
   
   // This would be replaced with actual data from your Meteor collections
   const reportTypes = [
@@ -218,14 +231,18 @@ const AnalyticsExportReports: React.FC = () => {
     console.log('Exporting report:', {
       type: reportType,
       dateRange,
-      format
+      format,
+      surveyId: selectedSurveyId
     });
     
     setLoading(true);
     
     try {
-      // Fetch report data from the service
-      const data = await SurveyReportService.getAllResponsesData();
+      // Fetch report data from the service with the selected survey ID
+      // If 'all' is selected, pass null to fetch all surveys
+      const surveyIdFilter = selectedSurveyId === 'all' ? null : selectedSurveyId;
+      console.log('Using survey filter:', surveyIdFilter);
+      const data = await SurveyReportService.getAllResponsesData(surveyIdFilter);
       
       // Handle different export formats
       if (format === 'pdf') {
@@ -285,6 +302,21 @@ const AnalyticsExportReports: React.FC = () => {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateRange({ ...dateRange, end: e.target.value ? new Date(e.target.value) : null })}
                     />
                   </div>
+                </FormGroup>
+                
+                <FormGroup>
+                  <label>Survey</label>
+                  <StyledSelect
+                    value={selectedSurveyId}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedSurveyId(e.target.value)}
+                  >
+                    <option value="all">All Surveys</option>
+                    {surveys.map((survey: SurveyDoc) => (
+                      <option key={survey._id} value={survey._id}>
+                        {survey.title}
+                      </option>
+                    ))}
+                  </StyledSelect>
                 </FormGroup>
                 
                 <FormGroup>

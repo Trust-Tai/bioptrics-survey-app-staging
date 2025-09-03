@@ -6,12 +6,15 @@ import { Meteor } from 'meteor/meteor';
 export class SurveyReportService {
   /**
    * Get all survey responses data for reporting
+   * @param surveyId Optional survey ID to filter responses by specific survey
    */
-  static async getAllResponsesData() {
+  static async getAllResponsesData(surveyId?: string | null) {
     try {
-      console.log('SurveyReportService: Calling surveys.getAllResponsesData method');
+      // Convert null to undefined for Meteor method call
+      const surveyIdParam = surveyId === null ? undefined : surveyId;
+      console.log('SurveyReportService: Calling surveys.getAllResponsesData method', surveyIdParam ? `for survey ID: ${surveyIdParam}` : 'for all surveys');
       return new Promise((resolve, reject) => {
-        Meteor.call('surveys.getAllResponsesData', (error: Meteor.Error | undefined, result: any) => {
+        Meteor.call('surveys.getAllResponsesData', surveyIdParam, (error: Meteor.Error | undefined, result: any) => {
           if (error) {
             console.error('Error fetching survey report data:', error);
             reject(error);

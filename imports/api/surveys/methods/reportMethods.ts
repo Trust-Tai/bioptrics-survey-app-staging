@@ -3,6 +3,27 @@ import { SurveyResponses } from '../../../features/surveys/api/surveyResponses';
 import { Questions } from '../../../features/questions/api/questions';
 import { TagItems } from '../../../api/tagItems';
 import { Layers } from '../../../api/layers';
+import { Surveys } from '../../../features/surveys/api/surveys';
+
+// Define interfaces for collection documents
+interface TagItem {
+  _id: string;
+  name: string;
+  description?: string;
+  parentId?: string;
+}
+
+interface Layer {
+  _id: string;
+  name: string;
+}
+
+interface Question {
+  _id: string;
+  title: string;
+  description?: string;
+  versions?: any[];
+}
 
 // Define interfaces for the report data structure
 interface ReportData {
@@ -102,19 +123,42 @@ interface Tag {
 Meteor.methods({
   /**
    * Get all survey responses data
+   * @param surveyId Optional survey ID to filter responses by specific survey
    */
-  async 'surveys.getAllResponsesData'() {
+  async 'surveys.getAllResponsesData'(surveyId?: string) {
     // Ensure user is logged in and has admin rights
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', 'You must be logged in to access this data');
     }
 
     try {
-      console.log('Fetching survey responses data...');
-      const responses = await SurveyResponses.find({}).fetchAsync() as unknown as SurveyResponse[];
-      const allQuestions = await Questions.find({}).fetchAsync();
-      const tags = await TagItems.find({}).fetchAsync();
-      const layers = await Layers.find({}).fetchAsync();
+      console.log('Fetching survey responses data...', surveyId ? `for survey ID: ${surveyId}` : 'for all surveys');
+      console.log('Survey ID received:', surveyId, typeof surveyId);
+      // Filter responses by surveyId if provided and not 'all'
+      const responseFilter = (surveyId && surveyId !== 'all') ? { surveyId } : {};
+      console.log('Using response filter:', JSON.stringify(responseFilter));
+      const responses = await SurveyResponses.find(responseFilter).fetchAsync() as unknown as SurveyResponse[];
+      
+      // If filtering by survey, get the survey title for the report
+      let surveyTitle = 'All Surveys';
+      if (surveyId && surveyId !== 'all') {
+        try {
+          const survey = await Surveys.findOneAsync({ _id: surveyId });
+          if (survey && survey.title) {
+            surveyTitle = survey.title;
+            console.log(`Found survey title: ${surveyTitle} for ID: ${surveyId}`);
+          } else {
+            console.log(`Survey not found or has no title for ID: ${surveyId}`);
+          }
+        } catch (err) {
+          console.error('Error fetching survey:', err);
+        }
+      } else {
+        console.log('Using default title: All Surveys');
+      }
+      const allQuestions = await Questions.find({}).fetchAsync() as unknown as Question[];
+      const tags = await TagItems.find({}).fetchAsync() as unknown as TagItem[];
+      const layers = await Layers.find({}).fetchAsync() as unknown as Layer[];
 
       // Extract all question IDs that have responses
       const questionIdsWithResponses = new Set<string>();
@@ -220,14 +264,16 @@ Meteor.methods({
       
       // Transform the data into a structure suitable for the report
       const reportData = {
-        reportTitle: "Survey Report",
-        reportSubtitle: "Comprehensive Analysis",
-        description: "This report provides an analysis of all survey responses.",
+        reportTitle: surveyId ? `Survey Report: ${surveyTitle}` : "Survey Report",
+        reportSubtitle: surveyId ? `Response Analysis for ${surveyTitle}` : "Comprehensive Analysis",
+        description: "This report provides an analysis of survey responses.",
         date: new Date().toLocaleDateString(),
         logoUrl: "/bioptrics_fixed_black.png",
         totalRespondents: responses.length,
         parentTags: processTagsAndResponses(responses, tags, questions, layers)
       };
+      
+      console.log('Generated report data with title:', reportData.reportTitle);
       
       return reportData;
     } catch (error: unknown) {
@@ -242,7 +288,7 @@ Meteor.methods({
 /**
  * Process tags and responses to create the report structure
  */
-function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], questions: Question[], layers: any[]): ParentTag[] {
+function processTagsAndResponses(responses: SurveyResponse[], tags: TagItem[], questions: Question[], layers: Layer[]): ParentTag[] {
   // Group tags by parent/child relationship
   const parentTags = tags.filter(tag => !tag.parentId);
   const childTagsByParentId: Record<string, Tag[]> = {};
