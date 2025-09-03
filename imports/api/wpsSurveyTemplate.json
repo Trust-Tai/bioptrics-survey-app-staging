@@ -1,0 +1,68 @@
+{
+  "title": "New WPS Survey",
+  "description": "Whole Person Safety Survey",
+  "selectedTags": ["Import", "WPS", "Whole Person Safety"],
+  "expectationsTitle": "What to expect from this survey",
+  "expectations": [
+    {
+      "title": "Short Survey",
+      "description": "This survey will take approximately 5 minutes to complete"
+    },
+    {
+      "title": "Anonymous Responses",
+      "description": "Your responses will be kept anonymous"
+    },
+    {
+      "title": "Save Progress",
+      "description": "You can save your progress and return later"
+    }
+  ],
+  "startButtonLabel": "Begin Survey Now",
+  "sections": [],
+  "questions": [],
+  "logo": "https://example.com/logo.png",
+  "image": "https://example.com/image.png",
+  "featuredImage": "https://example.com/featured-image.png",
+  "layout": "multiStep",
+  "layoutNote": "multiStep | allOnOnePage", 
+  "selectedTheme": "Arctic Blue",
+  "thankYouMessage": "Thank you for completing our survey!",
+  "thankYouTitle": "Survey Completed",
+  "thankYouDetails": "Your responses have been recorded successfully",
+  "thankYouIcon": "",
+  "thankYouBoxes": [
+    {
+      "title": "Total Responses",
+      "subtitle": "Total number of questions answered"
+    },
+    {
+      "title": "Unanswered Questions",
+      "subtitle": "Number of skipped or empty answers"
+    },
+    {
+      "title": "Completion",
+      "subtitle": "Text showing that the survey was completed"
+    },
+    {
+      "title": "Time Taken",
+      "subtitle": "How long the user took to complete the survey"
+    }
+  ],
+  "collaborators": [
+  {
+    "email": "shobajotaye@gmail.com",
+    "name" : "Shobajo Taye",
+    "role": "editor"
+     },
+  {
+    "email": "user789@example.com",
+    "name" : "user 789",
+    "role": "viewer"
+  }
+],
+"defaultSettings": {
+    "allowRetake": true,
+    "retakeMode": "replace",
+    "note": "new | replace"
+  }
+}
