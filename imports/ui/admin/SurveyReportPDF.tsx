@@ -1,108 +1,7 @@
 import React from 'react';
 import { ReportData, ParentTag, ChildTag, QuestionReport, OptionReport } from './SurveyReportPDFTypes';
 
-// Mock data for static design
-const mockData = {
-  reportTitle: "Survey Report",
-  reportSubtitle: "Comprehensive Analysis",
-  description: "This report provides an analysis of survey responses, organized by tags and questions.",
-  date: new Date().toLocaleDateString(),
-  logoUrl: "/bioptrics_fixed_black.png", // Using existing logo from public folder
-  totalRespondents: 324, // Total number of survey respondents
-  parentTags: [
-    {
-      id: "pt1",
-      name: "Leadership and Accountability",
-      description: "Actions, behaviors, and strategies employed by individuals in leadership roles to actively promote, guide and sustain a safe and inclusive work environment.",
-      childTags: [
-        {
-          id: "ct1",
-          name: "Communication Effectiveness",
-          description: "Measures how effectively leadership communicates expectations and feedback.",
-          questions: [
-            {
-              id: "q1",
-              title: "How frequently do you engage in conversations with your team members to understand their challenges while discussing accountability?",
-              description: "This question assesses the frequency and quality of accountability discussions.",
-              responseOverview: "100% Positive from HLT Responses, 79% Positive from Workforce Responses",
-              respondents: 324,
-              options: [
-                { label: "Very Frequently", count: 105, percentage: 32, color: "#689F38" },
-                { label: "Frequently", count: 72, percentage: 22, color: "#AFD259" },
-                { label: "Sometimes", count: 85, percentage: 26, color: "#FFC107" },
-                { label: "Rarely", count: 42, percentage: 13, color: "#FF9800" },
-                { label: "Never", count: 20, percentage: 7, color: "#F44336" }
-              ]
-            },
-            {
-              id: "q2",
-              title: "How well do you think your direct supervisor balances holding team members accountable with showing empathy?",
-              description: "This question evaluates leadership's ability to balance accountability with empathy.",
-              responseOverview: "79% Positive, 12% Neutral, 5% Unfavorable, 4% DNC",
-              respondents: 312,
-              options: [
-                { label: "Very Well", count: 98, percentage: 31, color: "#689F38" },
-                { label: "Well", count: 149, percentage: 48, color: "#AFD259" },
-                { label: "Neutral", count: 37, percentage: 12, color: "#FFC107" },
-                { label: "Poorly", count: 16, percentage: 5, color: "#FF9800" },
-                { label: "Very Poorly", count: 12, percentage: 4, color: "#F44336" }
-              ]
-            }
-          ]
-        },
-        {
-          id: "ct2",
-          name: "Psychological Safety",
-          description: "Measures the level of psychological safety within teams.",
-          questions: [
-            {
-              id: "q3",
-              title: "I feel psychologically safe to speak up about workplace concerns.",
-              description: "This question assesses the psychological safety climate in the workplace.",
-              responseOverview: "56% Agree/Strongly Agree, 27% Neutral, 17% Disagree/Strongly Disagree",
-              respondents: 324,
-              options: [
-                { label: "Strongly Agree", count: 110, percentage: 34, color: "#689F38" },
-                { label: "Agree", count: 72, percentage: 22, color: "#AFD259" },
-                { label: "Neutral", count: 87, percentage: 27, color: "#FFC107" },
-                { label: "Disagree", count: 42, percentage: 13, color: "#FF9800" },
-                { label: "Strongly Disagree", count: 13, percentage: 4, color: "#F44336" }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: "pt2",
-      name: "Workplace Culture",
-      description: "The shared values, beliefs, attitudes and behaviors that characterize the workplace environment.",
-      childTags: [
-        {
-          id: "ct3",
-          name: "Inclusion",
-          description: "Measures how inclusive the workplace is for all employees.",
-          questions: [
-            {
-              id: "q4",
-              title: "I feel included and valued as a member of my team.",
-              description: "This question evaluates the sense of belonging and value in the team.",
-              responseOverview: "68% Agree/Strongly Agree, 22% Neutral, 10% Disagree/Strongly Disagree",
-              respondents: 320,
-              options: [
-                { label: "Strongly Agree", count: 96, percentage: 30, color: "#689F38" },
-                { label: "Agree", count: 122, percentage: 38, color: "#AFD259" },
-                { label: "Neutral", count: 70, percentage: 22, color: "#FFC107" },
-                { label: "Disagree", count: 22, percentage: 7, color: "#FF9800" },
-                { label: "Strongly Disagree", count: 10, percentage: 3, color: "#F44336" }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-};
+// No mock data needed - using real data from server
 
 // CSS styles for the PDF preview component
 const styles = {
@@ -112,7 +11,27 @@ const styles = {
     maxWidth: '800px',
     margin: '0 auto',
     padding: '20px',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ffffff',
+  },
+  logo: {
+    width: '150px',
+    marginBottom: '20px',
+  },
+  coverContent: {
+    textAlign: 'center' as const,
+    marginBottom: '40px',
+  },
+  coverFooter: {
+    marginTop: '40px',
+    textAlign: 'center' as const,
+  },
+  header: {
+    marginBottom: '20px',
+    borderBottom: '1px solid #eee',
+    paddingBottom: '10px',
+  },
+  parentTag: {
+    marginBottom: '30px',
   },
   section: {
     margin: '10px 0',
@@ -242,6 +161,11 @@ const styles = {
     marginBottom: '10px',
     fontStyle: 'italic',
   },
+  categories: {
+    fontSize: '13px',
+    color: '#666',
+    marginBottom: '8px',
+  },
   chartContainer: {
     marginTop: '15px',
     marginBottom: '15px',
@@ -351,6 +275,7 @@ export interface SurveyReportData {
         description: string;
         responseOverview: string;
         respondents: number;
+        categoryTags?: string[];
         options: Array<{
           label: string;
           count: number;
@@ -376,7 +301,7 @@ export const SurveyReportPDFPreview: React.FC<SurveyReportPreviewProps> = ({ rep
       console.log(`Parent tag ${i+1}: ${parentTag.name}, child tags: ${parentTag.childTags?.length || 0}`);
       
       if (parentTag.childTags?.length > 0) {
-        parentTag.childTags.forEach((childTag, j) => {
+        parentTag.childTags.forEach((childTag: any, j: number) => {
           console.log(`  Child tag ${j+1}: ${childTag.name}, questions: ${childTag.questions?.length || 0}`);
           
           if (childTag.questions?.length > 0) {
@@ -388,25 +313,25 @@ export const SurveyReportPDFPreview: React.FC<SurveyReportPreviewProps> = ({ rep
       }
     });
   }
-  // Use provided data or fallback to mock data
-  const data = reportData || mockData;
+  // Use provided data
+  const data = reportData as ReportData;
   return (
     <div id="survey-report" style={styles.container}>
       {/* Cover Page */}
       <div style={styles.coverPage}>
         <div style={styles.accentBar}></div>
         
-        <div style={styles.coverHeader}>
-          <img style={styles.logo} src={data.logoUrl} alt="Company Logo" />
+        <div>
+          <img style={{width: '150px', marginBottom: '20px'}} src={data.logoUrl} alt="Company Logo" />
         </div>
         
-        <div style={styles.coverContent}>
+        <div style={{textAlign: 'center', marginBottom: '40px'}}>
           <h1 style={styles.reportTitle}>{data.reportTitle}</h1>
           <h2 style={styles.reportSubtitle}>{data.reportSubtitle}</h2>
           <p style={styles.reportDescription}>{data.description}</p>
         </div>
         
-        <div style={styles.coverFooter}>
+        <div style={{marginTop: '40px', textAlign: 'center'}}>
           <p style={styles.footerText}>Generated Date: {data.date}</p>
         </div>
         
@@ -414,33 +339,50 @@ export const SurveyReportPDFPreview: React.FC<SurveyReportPreviewProps> = ({ rep
       </div>
       
       {/* Content Pages - Tags & Questions */}
-      {data.parentTags.map((parentTag, parentIndex) => (
+      {data.parentTags.map((parentTag: ParentTag, parentIndex: number) => (
         <div key={parentTag.id} style={styles.contentPage}>
-          <div style={styles.header}>
-            <h3>Survey Analysis - Tags & Questions</h3>
+          <div style={{marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px'}}>
           </div>
           
-          <div style={styles.parentTag}>
+          <div style={{marginBottom: '30px'}}>
             <div style={styles.parentTagHeader}>
               <h3 style={styles.parentTagTitle}>{parentTag.name}</h3>
               <p style={styles.parentTagDescription}>{parentTag.description}</p>
             </div>
             
-            {parentTag.childTags.map((childTag) => (
+            {parentTag.childTags.map((childTag: any) => (
               <div key={childTag.id} style={styles.childTag}>
                 <h4 style={styles.childTagTitle}>{childTag.name}</h4>
                 <p style={styles.childTagDescription}>{childTag.description}</p>
                 
-                {childTag.questions.map(question => (
+                {childTag.questions.map((question: any) => {
+                  console.log(`QUESTION ID IN PDF: ${question.id}`);
+                  console.log(`FULL QUESTION OBJECT:`, JSON.stringify(question, null, 2));
+                  console.log(`categoryTags type: ${typeof question.categoryTags}`);
+                  console.log(`categoryTags value:`, question.categoryTags);
+                  console.log(`options type: ${typeof question.options}`);
+                  console.log(`options value:`, question.options);
+                  return (
                   <div key={question.id} style={styles.question}>
                     <h5 style={styles.questionTitle}>{question.title}</h5>
                     <p style={styles.questionDescription}>{question.description}</p>
+                    {/* Debug categoryTags */}
+                    <>{console.log(`Rendering question ${question.id} with categoryTags:`, question.categoryTags)}</>
+                    
+                    {/* Force display of categories */}
+                    <p style={{...styles.categories, fontWeight: 'bold', color: '#333', marginBottom: '10px'}}>
+                      Categories: <span style={{color: '#0066cc'}}>
+                        {Array.isArray(question.categoryTags) && question.categoryTags.length > 0 
+                          ? question.categoryTags.join(', ') 
+                          : 'None'}
+                      </span>
+                    </p>
                     <p style={styles.respondentCount}>({question.respondents} of {data.totalRespondents} respondents answered this question)</p>
                     <p style={styles.responseOverview}>Response Overview: {question.responseOverview}</p>
                     
                     <div style={styles.chartContainer}>
                       <div style={styles.barChart}>
-                        {question.options.map((option, optionIndex) => (
+                        {question.options.map((option: any, optionIndex: number) => (
                           <div key={`option-${question.id}-${optionIndex}`} style={styles.barContainer}>
                             <div style={styles.barWrapper}>
                               <div style={{ ...styles.bar, height: `${option.percentage}%`, backgroundColor: option.color }}></div>
@@ -452,7 +394,7 @@ export const SurveyReportPDFPreview: React.FC<SurveyReportPreviewProps> = ({ rep
                       </div>
                     </div>
                   </div>
-                ))}
+                );})}
               </div>
             ))}
           </div>
@@ -484,7 +426,7 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
       console.log(`Parent tag ${i+1}: ${parentTag.name}, child tags: ${parentTag.childTags?.length || 0}`);
       
       if (parentTag.childTags?.length > 0) {
-        parentTag.childTags.forEach((childTag, j) => {
+        parentTag.childTags.forEach((childTag: any, j: number) => {
           console.log(`  Child tag ${j+1}: ${childTag.name}, questions: ${childTag.questions?.length || 0}`);
           
           if (childTag.questions?.length > 0) {
@@ -582,7 +524,6 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
         }
         .content-page {
           position: relative;
-          padding-top: 40px;
           min-height: 90vh;
           box-sizing: border-box;
         }
@@ -618,22 +559,7 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
         }
         .question {
           margin-left: 20px;
-          margin-bottom: 15px;
-          padding: 10px;
-          border: 1px solid #eee;
-          border-radius: 5px;
-        }
-        .question-title {
-          font-size: 14px;
-          font-weight: bold;
-          margin: 0 0 5px;
-        }
-        .question-description {
-          font-size: 12px;
-          color: #666;
-          margin: 0 0 5px;
-        }
-        .response-overview {
+          margin-bottom: 25px;
           font-size: 12px;
           font-style: italic;
           color: #46223b;
@@ -664,77 +590,105 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
               font-size: 12px;
               color: #666;
             }
-            .chart-container {
-              margin-top: 15px;
-              margin-bottom: 15px;
-              display: flex;
-              justify-content: space-around;
-              align-items: flex-end;
-              height: 250px;
+            .question-title {
+              font-size: 18px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              color: #333;
+              border-bottom: 1px solid #e0e0e0;
+              padding-bottom: 8px;
             }
-            .bar-chart {
-              display: flex;
-              flex-direction: row;
-              gap: 10px;
-              margin-bottom: 15px;
-              height: 100%;
-              align-items: flex-end;
-              width: 100%;
-              justify-content: center;
+            .question-description {
+              font-size: 14px;
+              color: #555;
+              margin-bottom: 8px;
             }
-            .bar-container {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              height: 100%;
-              position: relative;
-              flex: 1;
-              max-width: 80px;
-              min-width: 50px;
+            .categories {
+              font-size: 13px;
+              color: #666;
+              margin-bottom: 8px;
             }
-            .bar-label {
-              width: 100%;
-              font-size: 11px;
-              text-align: center;
-              padding-top: 5px;
-              color: #333333;
-              word-wrap: break-word;
-              overflow-wrap: break-word;
-              height: 40px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
+            .categories::before {
+              content: 'Categories: ';
+              font-weight: bold;
             }
-            .bar-wrapper {
-              width: 40px;
-              height: 80%;
-              background-color: transparent;
-              position: relative;
-              display: flex;
-              align-items: flex-end;
+            .response-overview {
+              font-size: 14px;
+              font-weight: bold;
+              color: #333;
+              margin-top: 10px;
+              margin-bottom: 10px;
             }
-            .bar {
-              width: 100%;
-              position: absolute;
-              left: 0;
-              bottom: 0;
-              border-top-left-radius: 3px;
-              border-top-right-radius: 3px;
-            }
-            .bar-value {
-              font-size: 10px;
-              text-align: center;
-              margin-top: 5px;
-              margin-bottom: 5px;
-              color: #333333;
-              width: 100%;
-              height: 20px;
+            .response-overview::before {
+              content: 'Response Overview: ';
+              font-weight: normal;
+              color: #666;
             }
             .respondent-count {
               font-size: 12px;
-              color: #666666;
-              margin-bottom: 10px;
+              color: #777;
               font-style: italic;
+              margin-bottom: 5px;
+            }
+            .chart-container {
+              margin-top: 25px;
+              margin-bottom: 30px;
+              background: #f8f9fa;
+              border-radius: 12px;
+              padding: 20px;
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            }
+            .bar-chart {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+              margin-top: 15px;
+            }
+            .bar-container {
+              display: flex;
+              width: 100%;
+              margin-bottom: 8px;
+              border: 1px dotted #999;
+              border-radius: 4px;
+              padding: 8px;
+              background-color: #f9f9f9;
+            }
+            .bar-label {
+              font-size: 12px;
+              color: #333;
+              width: 25%;
+              padding-right: 10px;
+              font-weight: bold;
+            }
+            .bar-wrapper {
+              flex-grow: 1;
+              height: 25px;
+              background-color: #f0f0f0;
+              border: 1px solid #ddd;
+              position: relative;
+              border-radius: 11px;
+              overflow: hidden;
+              max-width: 70%;
+            }
+            .bar {
+              height: 100%;
+              position: absolute;
+              left: 0;
+              top: 0;
+              background-color: #6495ED;
+              border-right: 1px solid #5a86d6;
+              border-radius: 10px;
+            }
+            .bar-value {
+              position: absolute;
+              right: -40px;
+              top: 50%;
+              transform: translateY(-50%);
+              font-size: 12px;
+              color: #333;
+              z-index: 1;
+              width: 40px;
+              text-align: left;
             }
           </style>
         </head>
@@ -761,7 +715,6 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
           ${reportData.parentTags.map((parentTag, parentIndex) => `
             <div class="page-break"></div>
             <div class="content-page">
-              <h3 style="margin-bottom: 20px;">Survey Analysis - Tags & Questions</h3>
               
               <div>
                 <div class="parent-tag-header">
@@ -778,20 +731,52 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
                       <div class="question">
                         <h5 class="question-title">${question.title}</h5>
                         <p class="question-description">${question.description}</p>
+                        <p class="categories" style="font-weight: bold; color: #333; margin-bottom: 10px;"><span style="color:#552a47;">${Array.isArray(question.categoryTags) && question.categoryTags.length > 0 ? question.categoryTags.join(', ') : 'None'}</span></p>
                         <p class="respondent-count">(${question.respondents} of ${reportData.totalRespondents} respondents answered this question)</p>
                         <p class="response-overview">${question.responseOverview}</p>
                         
                         <div class="chart-container">
                           <div class="bar-chart">
-                            ${question.options.map(option => `
-                              <div class="bar-container">
-                                <div class="bar-wrapper">
-                                  <div class="bar" style="height: ${option.percentage > 0 ? option.percentage : 2}%; background-color: ${option.percentage > 0 ? option.color : '#cccccc'}; ${option.percentage === 0 ? 'border: 1px dashed #999; box-sizing: border-box;' : ''}"></div>
+                            ${(() => {
+                              // Find the highest percentage to determine which option gets the green color
+                              const highestPercentage = Math.max(...question.options.map(opt => opt.percentage));
+                              
+                              return question.options.map((option, index) => {
+                                // Color based on option position (from reference image)
+                                let color;
+                                if (index === 0) {
+                                  color = '#78b04a'; // Green (Very Frequently)
+                                } else if (index === 1) {
+                                  color = '#a7d16c'; // Light green (Frequently)
+                                } else if (index === 2) {
+                                  color = '#f9c74f'; // Yellow (Sometimes)
+                                } else if (index === 3) {
+                                  color = '#e07a5f'; // Orange (Rarely)
+                                } else if (index === 4) {
+                                  color = '#e63946'; // Red (Never)
+                                } else {
+                                  // For any additional options
+                                  color = '#6495ED'; // Blue
+                                }
+                                
+                                // For zero percentage, use light gray
+                                if (option.percentage === 0) {
+                                  color = '#E0E0E0'; // Gray
+                                }
+                                
+                                return `
+                                <div class="bar-container" style="${option.percentage === 0 ? 'background-color: #f5f5f5;' : ''}">
+                                  <div class="bar-label">${option.label}</div>
+                                  <div class="bar-wrapper">
+                                    <div class="bar" style="width: ${option.percentage > 0 ? option.percentage : 2}%; ${option.percentage === 0 ? 'background-color: #e0e0e0; border-right: 1px dashed #ccc;' : `background-color: ${color}; border-right: 1px solid ${color};`}">
+                                      ${option.percentage > 0 ? `<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: white; font-size: 11px; font-weight: bold;">${option.percentage}%</span>` : ''}
+                                    </div>
+                                    <div class="bar-value" style="${option.percentage === 0 ? 'color: #777;' : ''}">${option.count}</div>
+                                  </div>
                                 </div>
-                                <div class="bar-value" style="${option.percentage === 0 ? 'color: #777777; font-style: italic;' : ''}">${option.count} (${option.percentage}%)</div>
-                                <div class="bar-label">${option.label}</div>
-                              </div>
-                            `).join('')}
+                                `;
+                              }).join('');
+                            })()}
                           </div>
                         </div>
                       </div>

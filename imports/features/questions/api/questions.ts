@@ -23,6 +23,7 @@ export interface QuestionVersion {
   language?: string;
   surveyThemes?: string[];
   categoryTags?: string[];
+  labels?: string[];
   organizationId?: string;
   isReusable?: boolean;
   usageCount?: number;

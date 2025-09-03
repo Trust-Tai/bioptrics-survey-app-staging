@@ -1430,6 +1430,41 @@ const handleRestart = () => {
     const currentQuestion = questions.find(q => q._id === questionId || q.id === questionId);
     if (!currentQuestion) return;
     
+    // Check if we should use surveyOrder for navigation
+    if (survey.surveyOrder && survey.surveyOrder.length > 0) {
+      console.log('Using surveyOrder for navigation');
+      
+      // Find the current item in surveyOrder
+      const currentItemIndex = survey.surveyOrder.findIndex(
+        item => item.type === 'question' && item.id === (currentQuestion._id || currentQuestion.id)
+      );
+      
+      console.log('Current item index in surveyOrder:', currentItemIndex);
+      
+      if (currentItemIndex !== -1 && currentItemIndex < survey.surveyOrder.length - 1) {
+        // There is a next item in the surveyOrder
+        const nextItem = survey.surveyOrder[currentItemIndex + 1];
+        console.log('Next item in surveyOrder:', nextItem);
+        
+        if (nextItem.type === 'section') {
+          // Navigate to the next section
+          updateCurrentStep({ type: 'section', sectionId: nextItem.id });
+        } else if (nextItem.type === 'question') {
+          // Navigate to the next question
+          updateCurrentStep({ type: 'question', questionId: nextItem.id });
+        }
+        return;
+      } else if (currentItemIndex === survey.surveyOrder.length - 1) {
+        // This is the last item in surveyOrder, go to thank you screen
+        console.log('Last item in surveyOrder, going to thank you screen');
+        updateCurrentStep({ type: 'thank-you' });
+        return;
+      }
+    }
+    
+    // Fallback to section-based navigation if surveyOrder is not available or item not found
+    console.log('Falling back to section-based navigation');
+    
     // Get all questions for the current section
     const sectionQuestions = getQuestionsForSection(currentQuestion.sectionId || '');
     
@@ -2845,9 +2880,37 @@ const handleRestart = () => {
         
         // Determine if this is the last question in the entire survey
         // This is critical for showing the Submit button
-        // Force isLastQuestionInSurvey to true for the last question in the last section
-        // This ensures the Submit button is displayed
-        const isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
+        let isLastQuestionInSurvey = false;
+        
+        // First check if we should use surveyOrder to determine if this is the last question
+        if (survey.surveyOrder && survey.surveyOrder.length > 0) {
+          // Find the current item in surveyOrder
+          const currentItemIndex = survey.surveyOrder.findIndex(
+            item => item.type === 'question' && item.id === (currentQuestion._id || currentQuestion.id)
+          );
+          
+          // Check if this is the last item in surveyOrder or if the next items are only sections
+          // (which would make this the last question)
+          if (currentItemIndex !== -1) {
+            // Check if this is the last item
+            if (currentItemIndex === survey.surveyOrder.length - 1) {
+              isLastQuestionInSurvey = true;
+            } else {
+              // Check if there are any more questions after this one
+              const hasMoreQuestions = survey.surveyOrder.slice(currentItemIndex + 1).some(item => item.type === 'question');
+              isLastQuestionInSurvey = !hasMoreQuestions;
+            }
+          }
+          
+          console.log('Last question determination using surveyOrder:', {
+            currentItemIndex,
+            isLastQuestionInSurvey,
+            surveyOrderLength: survey.surveyOrder.length
+          });
+        } else {
+          // Fallback to section-based logic if surveyOrder is not available
+          isLastQuestionInSurvey = isLastQuestionInSection && isLastSection;
+        }
         
         // Log detailed information about the last question detection
         console.log('Last question detection in renderContent:', {

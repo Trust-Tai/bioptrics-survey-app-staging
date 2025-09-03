@@ -2,6 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import { SurveyResponses } from '../../../features/surveys/api/surveyResponses';
 import { Questions } from '../../../features/questions/api/questions';
 import { TagItems } from '../../../api/tagItems';
+import { Layers } from '../../../api/layers';
 
 // Define interfaces for the report data structure
 interface ReportData {
@@ -73,16 +74,19 @@ interface SurveyResponse {
 }
 
 interface Question {
-  _id?: string;
-  tags?: string[];
-  currentVersion?: number;
-  versions?: Array<{
-    version: number;
-    questionText: string;
-    description?: string;
-    responseType: string;
-    options?: string[] | { min: number; max: number; step: number; };
-  }>;
+  _id: string;
+  currentVersion: number;
+  versions: QuestionVersion[];
+}
+
+interface QuestionVersion {
+  version: number;
+  questionText: string;
+  description: string;
+  responseType: string;
+  options?: string[] | { min: number; max: number; step: number };
+  categoryTags?: string[];
+  labels?: string[];
 }
 
 interface Tag {
@@ -110,6 +114,7 @@ Meteor.methods({
       const responses = await SurveyResponses.find({}).fetchAsync() as unknown as SurveyResponse[];
       const allQuestions = await Questions.find({}).fetchAsync();
       const tags = await TagItems.find({}).fetchAsync();
+      const layers = await Layers.find({}).fetchAsync();
 
       // Extract all question IDs that have responses
       const questionIdsWithResponses = new Set<string>();
@@ -221,7 +226,7 @@ Meteor.methods({
         date: new Date().toLocaleDateString(),
         logoUrl: "/bioptrics_fixed_black.png",
         totalRespondents: responses.length,
-        parentTags: processTagsAndResponses(responses, tags, questions)
+        parentTags: processTagsAndResponses(responses, tags, questions, layers)
       };
       
       return reportData;
@@ -237,7 +242,7 @@ Meteor.methods({
 /**
  * Process tags and responses to create the report structure
  */
-function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], questions: Question[]): ParentTag[] {
+function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], questions: Question[], layers: any[]): ParentTag[] {
   // Group tags by parent/child relationship
   const parentTags = tags.filter(tag => !tag.parentId);
   const childTagsByParentId: Record<string, Tag[]> = {};
@@ -272,7 +277,7 @@ function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], quest
       const childTagId = childTag._id || '';
       console.log(`Processing child tag: ${childTag.name} (ID: ${childTagId})`);
       const tagQuestions = questions.filter(q => 
-        q.tags && childTagId && q.tags.includes(childTagId)
+        q._id && q.versions && q.versions.length > 0 && q.versions[q.versions.length - 1].labels && q.versions[q.versions.length - 1].labels.includes(childTagId)
       );
       console.log(`Found ${tagQuestions.length} questions for child tag ${childTag.name}`);
       
@@ -388,14 +393,51 @@ function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], quest
           console.log(`WARNING: No options processed for question ${question._id}`);
         }
         
-        return {
+        // Extract label IDs from the current version
+        console.log(`QUESTION ID IN SERVER: ${question._id}`);
+        console.log(`Question current version: ${JSON.stringify(currentVersion, null, 2)}`);
+        const labelIds = currentVersion.labels || [];
+        console.log(`Label IDs for question ${question._id}: ${JSON.stringify(labelIds)}`);
+        if (!labelIds.length) {
+          console.log(`WARNING: No labels found for question ${question._id}`);
+        }
+        
+        // Resolve label IDs to tag names from layers collection
+        console.log(`Resolving ${labelIds.length} label IDs to tag names`);
+        console.log(`Available layers: ${layers.length}`);
+        if (layers.length > 0) {
+          console.log(`Sample layer: ${JSON.stringify(layers[0])}`);
+        }
+        
+        const categoryTags = labelIds.map(labelId => {
+          // Direct match on _id which is what labels contain
+          const layer = layers.find(layer => layer._id === labelId);
+          console.log(`Looking for layer with _id ${labelId}: ${layer ? 'Found' : 'Not found'}`);
+          if (layer) {
+            console.log(`Layer found: ${JSON.stringify(layer)}`);
+            return layer.name;
+          }
+          return null;
+        }).filter(Boolean) as string[];
+        
+        console.log(`Question ${question._id} has labels: ${labelIds.join(', ')} resolved to tags: ${categoryTags.join(', ')}`);
+        
+        // Create the question object with explicit property names
+        const questionObj = {
           id: question._id || '',
           title: currentVersion.questionText,
           description: currentVersion.description || '',
           responseOverview: generateResponseOverview(options),
           respondents: respondentCount,
-          options
+          options,
+          categoryTags: categoryTags
         };
+        
+        // Log the final object to verify categoryTags is included
+        console.log(`Final question object for ${question._id}:`, JSON.stringify(questionObj));
+        console.log(`categoryTags in final object: ${questionObj.categoryTags}`);
+        
+        return questionObj;
       }).filter(q => q !== null); // Remove null entries
       
       // Log the processed questions for this child tag
@@ -470,9 +512,20 @@ function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], quest
         question.versions.find(v => v.version === question.currentVersion);
       
       if (!currentVersion) {
-        console.error(`Untagged question ${question._id} has no current version`);
+        console.log(`Question ${question._id} has no current version`);
         return null;
       }
+
+      // Extract label IDs from the current version
+      const labelIds = currentVersion.labels || [];
+      
+      // Resolve label IDs to tag names from layers collection
+      const categoryTags = labelIds.map(labelId => {
+        const layer = layers.find(layer => layer._id === labelId);
+        return layer ? layer.name : null;
+      }).filter(Boolean) as string[];
+      
+      console.log(`Question ${question._id} has labels: ${labelIds.join(', ')} resolved to tags: ${categoryTags.join(', ')}`);
       
       // Find responses for this question
       const questionResponses = responses.filter(r => 
@@ -568,7 +621,8 @@ function processTagsAndResponses(responses: SurveyResponse[], tags: Tag[], quest
         description: currentVersion.description || '',
         responseOverview: generateResponseOverview(options),
         respondents: respondentCount,
-        options
+        options,
+        categoryTags // Add the categoryTags property to the returned object
       };
     }).filter(q => q !== null); // Remove null entries
     

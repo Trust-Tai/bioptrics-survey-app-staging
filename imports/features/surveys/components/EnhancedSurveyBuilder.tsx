@@ -2599,21 +2599,51 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               
               console.log('Updated sectionQuestions:', updatedSectionQuestions);
               
-              // Create updated survey with the new section question
+              // CRITICAL FIX: Update surveyOrder to include the new question
+              const updatedSurveyOrder = [...(prevSurvey.surveyOrder || [])];
+              
+              // Add the new question to surveyOrder
+              updatedSurveyOrder.push({
+                type: 'question',
+                id: questionId,
+                order: newQuestion.order
+              });
+              
+              console.log('Updated surveyOrder with new question:', updatedSurveyOrder);
+              
+              // Create updated survey with the new section question and updated surveyOrder
               return {
                 ...prevSurvey,
-                sectionQuestions: updatedSectionQuestions
+                sectionQuestions: updatedSectionQuestions,
+                surveyOrder: updatedSurveyOrder
               };
             });
           } else {
-            // For questions without a section, we don't need to update sectionQuestions
-            // Just add the question to the survey's questions array if needed
-            console.log('Question created without a section - no sectionQuestion needed');
+            // For questions without a section, we still need to update surveyOrder
+            setSurvey((prevSurvey: any) => {
+              if (!prevSurvey) return prevSurvey;
+              
+              // CRITICAL FIX: Update surveyOrder to include the new global question
+              const updatedSurveyOrder = [...(prevSurvey.surveyOrder || [])];
+              
+              // Add the new question to surveyOrder
+              updatedSurveyOrder.push({
+                type: 'question',
+                id: questionId,
+                order: newQuestion.order
+              });
+              
+              console.log('Updated surveyOrder with new global question:', updatedSurveyOrder);
+              
+              // Create updated survey with updated surveyOrder
+              return {
+                ...prevSurvey,
+                surveyOrder: updatedSurveyOrder
+              };
+            });
+            
+            console.log('Question created without a section - updated surveyOrder only');
           }
-          
-          // Trigger auto-save by setting hasUnsavedChanges
-          console.log('Setting hasUnsavedChanges to true');
-          setHasUnsavedChanges(true);
           
           // Show success notification
           setAlert({

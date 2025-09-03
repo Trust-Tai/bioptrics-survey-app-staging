@@ -30,6 +30,7 @@ export interface QuestionReport {
   responseOverview: string;
   respondents: number;
   options: OptionReport[];
+  categoryTags?: string[];
 }
 
 export interface OptionReport {

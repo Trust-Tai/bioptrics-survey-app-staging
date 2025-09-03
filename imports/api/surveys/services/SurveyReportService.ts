@@ -39,6 +39,7 @@ export class SurveyReportService {
                   console.log('First question title:', firstQuestion.title);
                   console.log('First question options:', firstQuestion.options ? firstQuestion.options.length : 0);
                   console.log('First question option details:', firstQuestion.options ? JSON.stringify(firstQuestion.options[0]) : 'No options');
+                  console.log('First question categoryTags:', firstQuestion.categoryTags ? JSON.stringify(firstQuestion.categoryTags) : 'No category tags');
                 } else {
                   console.log('WARNING: No questions found in the first child tag');
                 }
