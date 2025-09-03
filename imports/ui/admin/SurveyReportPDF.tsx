@@ -1,4 +1,5 @@
 import React from 'react';
+import { ReportData, ParentTag, ChildTag, QuestionReport, OptionReport } from './SurveyReportPDFTypes';
 
 // Mock data for static design
 const mockData = {
@@ -141,18 +142,18 @@ const styles = {
   reportTitle: {
     fontSize: '32px',
     color: '#552a47',
-    textAlign: 'center',
+    textAlign: 'center' as const,
     marginBottom: '10px',
   },
   reportSubtitle: {
     fontSize: '20px',
     color: '#46223b',
-    textAlign: 'center',
+    textAlign: 'center' as const,
     marginBottom: '20px',
   },
   reportDescription: {
     fontSize: '14px',
-    textAlign: 'center',
+    textAlign: 'center' as const,
     maxWidth: '500px',
     margin: '0 auto 40px',
   },
@@ -272,11 +273,11 @@ const styles = {
   barLabel: {
     width: '100%',
     fontSize: '11px',
-    textAlign: 'center',
+    textAlign: 'center' as const,
     paddingTop: '5px',
     color: '#333333',
-    wordWrap: 'break-word',
-    overflowWrap: 'break-word',
+    wordWrap: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
     height: '40px',
     display: 'flex',
     alignItems: 'center',
@@ -300,7 +301,7 @@ const styles = {
   },
   barValue: {
     fontSize: '10px',
-    textAlign: 'center',
+    textAlign: 'center' as const,
     marginTop: '5px',
     marginBottom: '5px',
     color: '#333333',
@@ -308,7 +309,7 @@ const styles = {
     height: '20px',
   },
   pageNumber: {
-    textAlign: 'center',
+    textAlign: 'center' as const,
     fontSize: '12px',
     color: '#666666',
     marginTop: '20px',
@@ -328,8 +329,67 @@ const styles = {
   }
 };
 
-// HTML-based Survey Report Preview Component
-const SurveyReportPreview: React.FC = () => {
+// Define interface for report data
+export interface SurveyReportData {
+  reportTitle: string;
+  reportSubtitle: string;
+  description: string;
+  date: string;
+  logoUrl: string;
+  totalRespondents: number;
+  parentTags: Array<{
+    id: string;
+    name: string;
+    description: string;
+    childTags: Array<{
+      id: string;
+      name: string;
+      description: string;
+      questions: Array<{
+        id: string;
+        title: string;
+        description: string;
+        responseOverview: string;
+        respondents: number;
+        options: Array<{
+          label: string;
+          count: number;
+          percentage: number;
+          color: string;
+        }>;
+      }>;
+    }>;
+  }>;
+}
+
+interface SurveyReportPreviewProps {
+  reportData?: SurveyReportData;
+}
+
+export const SurveyReportPDFPreview: React.FC<SurveyReportPreviewProps> = ({ reportData }) => {
+  // Debug logging for report data structure
+  console.log('SurveyReportPDF received data:', reportData);
+  console.log('Parent tags count:', reportData?.parentTags?.length || 0);
+  
+  if (reportData?.parentTags && reportData.parentTags.length > 0) {
+    reportData.parentTags.forEach((parentTag: any, i: number) => {
+      console.log(`Parent tag ${i+1}: ${parentTag.name}, child tags: ${parentTag.childTags?.length || 0}`);
+      
+      if (parentTag.childTags?.length > 0) {
+        parentTag.childTags.forEach((childTag, j) => {
+          console.log(`  Child tag ${j+1}: ${childTag.name}, questions: ${childTag.questions?.length || 0}`);
+          
+          if (childTag.questions?.length > 0) {
+            console.log(`    First question: ${childTag.questions[0].title}, options: ${childTag.questions[0].options?.length || 0}`);
+          } else {
+            console.log('    No questions in this child tag');
+          }
+        });
+      }
+    });
+  }
+  // Use provided data or fallback to mock data
+  const data = reportData || mockData;
   return (
     <div id="survey-report" style={styles.container}>
       {/* Cover Page */}
@@ -337,24 +397,24 @@ const SurveyReportPreview: React.FC = () => {
         <div style={styles.accentBar}></div>
         
         <div style={styles.coverHeader}>
-          <img style={styles.logo} src={mockData.logoUrl} alt="Company Logo" />
+          <img style={styles.logo} src={data.logoUrl} alt="Company Logo" />
         </div>
         
         <div style={styles.coverContent}>
-          <h1 style={styles.title}>{mockData.reportTitle}</h1>
-          <h2 style={styles.subtitle}>{mockData.reportSubtitle}</h2>
-          <p style={styles.description}>{mockData.description}</p>
+          <h1 style={styles.reportTitle}>{data.reportTitle}</h1>
+          <h2 style={styles.reportSubtitle}>{data.reportSubtitle}</h2>
+          <p style={styles.reportDescription}>{data.description}</p>
         </div>
         
         <div style={styles.coverFooter}>
-          <p style={styles.footerText}>Generated Date: {mockData.date}</p>
+          <p style={styles.footerText}>Generated Date: {data.date}</p>
         </div>
         
         <div style={styles.pageNumber}>1</div>
       </div>
       
       {/* Content Pages - Tags & Questions */}
-      {mockData.parentTags.map((parentTag, parentIndex) => (
+      {data.parentTags.map((parentTag, parentIndex) => (
         <div key={parentTag.id} style={styles.contentPage}>
           <div style={styles.header}>
             <h3>Survey Analysis - Tags & Questions</h3>
@@ -375,7 +435,7 @@ const SurveyReportPreview: React.FC = () => {
                   <div key={question.id} style={styles.question}>
                     <h5 style={styles.questionTitle}>{question.title}</h5>
                     <p style={styles.questionDescription}>{question.description}</p>
-                    <p style={styles.respondentCount}>({question.respondents} of {mockData.totalRespondents} respondents answered this question)</p>
+                    <p style={styles.respondentCount}>({question.respondents} of {data.totalRespondents} respondents answered this question)</p>
                     <p style={styles.responseOverview}>Response Overview: {question.responseOverview}</p>
                     
                     <div style={styles.chartContainer}>
@@ -404,7 +464,7 @@ const SurveyReportPreview: React.FC = () => {
       <div style={styles.buttonContainer}>
         <button 
           style={styles.button} 
-          onClick={() => generateSurveyReportPDF()}
+          onClick={() => generateSurveyReportPDF(data)}
         >
           Download PDF
         </button>
@@ -414,7 +474,29 @@ const SurveyReportPreview: React.FC = () => {
 };
 
 // Function to generate and print the report
-export const generateSurveyReportPDF = (reportData?: any) => {
+export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
+  // Debug logging for report data structure
+  console.log('generateSurveyReportPDF received data:', reportData);
+  console.log('Parent tags count:', reportData?.parentTags?.length || 0);
+  
+  if (reportData?.parentTags && reportData.parentTags.length > 0) {
+    reportData.parentTags.forEach((parentTag: any, i: number) => {
+      console.log(`Parent tag ${i+1}: ${parentTag.name}, child tags: ${parentTag.childTags?.length || 0}`);
+      
+      if (parentTag.childTags?.length > 0) {
+        parentTag.childTags.forEach((childTag, j) => {
+          console.log(`  Child tag ${j+1}: ${childTag.name}, questions: ${childTag.questions?.length || 0}`);
+          
+          if (childTag.questions?.length > 0) {
+            console.log(`    First question: ${childTag.questions[0].title}, options: ${childTag.questions[0].options?.length || 0}`);
+          } else {
+            console.log('    No questions in this child tag');
+          }
+        });
+      }
+    });
+  }
+  
   try {
     // Create a hidden iframe in the same page
     let printFrame = document.getElementById('pdf-print-frame') as HTMLIFrameElement;
@@ -493,13 +575,10 @@ export const generateSurveyReportPDF = (reportData?: any) => {
         }
         .date-display {
           position: absolute;
-          top: 20px;
-          right: 20px;
+          top: 10px;
+          right: 10px;
           font-size: 12px;
           color: #666;
-          margin: 0;
-          padding: 5px;
-          background-color: rgba(255, 255, 255, 0.8);
         }
         .content-page {
           position: relative;
@@ -665,21 +744,21 @@ export const generateSurveyReportPDF = (reportData?: any) => {
             <div>
               <div class="accent-bar"></div>
               <div style="text-align: center; margin-bottom: 40px;">
-                <img src="${mockData.logoUrl}" alt="Company Logo" style="width: 150px;" />
+                <img src="${reportData.logoUrl}" alt="Company Logo" style="width: 150px;" />
               </div>
               
-              <h1 class="report-title">${mockData.reportTitle}</h1>
-              <h2 class="report-subtitle">${mockData.reportSubtitle}</h2>
-              <p class="report-description">${mockData.description}</p>
+              <h1 class="report-title">${reportData.reportTitle}</h1>
+              <h2 class="report-subtitle">${reportData.reportSubtitle}</h2>
+              <p class="report-description">${reportData.description}</p>
             </div>
             
             <div class="footer">
-              <p class="footer-text">Generated Date: ${mockData.date}</p>
+              <p class="footer-text">Generated Date: ${reportData.date}</p>
             </div>
           </div>
           
           <!-- Content Pages - No blank page -->
-          ${mockData.parentTags.map((parentTag, parentIndex) => `
+          ${reportData.parentTags.map((parentTag, parentIndex) => `
             <div class="page-break"></div>
             <div class="content-page">
               <h3 style="margin-bottom: 20px;">Survey Analysis - Tags & Questions</h3>
@@ -690,16 +769,16 @@ export const generateSurveyReportPDF = (reportData?: any) => {
                   <p class="parent-tag-description">${parentTag.description}</p>
                 </div>
                 
-                ${parentTag.childTags.map(childTag => `
+                ${parentTag.childTags && parentTag.childTags.length > 0 ? parentTag.childTags.map(childTag => `
                   <div class="child-tag">
                     <h4 class="child-tag-title">${childTag.name}</h4>
                     <p class="child-tag-description">${childTag.description}</p>
                     
-                    ${childTag.questions.map(question => `
+                    ${childTag.questions && childTag.questions.length > 0 ? childTag.questions.map(question => `
                       <div class="question">
                         <h5 class="question-title">${question.title}</h5>
                         <p class="question-description">${question.description}</p>
-                        <p class="respondent-count">(${question.respondents} of ${mockData.totalRespondents} respondents answered this question)</p>
+                        <p class="respondent-count">(${question.respondents} of ${reportData.totalRespondents} respondents answered this question)</p>
                         <p class="response-overview">${question.responseOverview}</p>
                         
                         <div class="chart-container">
@@ -707,18 +786,18 @@ export const generateSurveyReportPDF = (reportData?: any) => {
                             ${question.options.map(option => `
                               <div class="bar-container">
                                 <div class="bar-wrapper">
-                                  <div class="bar" style="height: ${option.percentage}%; background-color: ${option.color};"></div>
+                                  <div class="bar" style="height: ${option.percentage > 0 ? option.percentage : 2}%; background-color: ${option.percentage > 0 ? option.color : '#cccccc'}; ${option.percentage === 0 ? 'border: 1px dashed #999; box-sizing: border-box;' : ''}"></div>
                                 </div>
-                                <div class="bar-value">${option.count} (${option.percentage}%)</div>
+                                <div class="bar-value" style="${option.percentage === 0 ? 'color: #777777; font-style: italic;' : ''}">${option.count} (${option.percentage}%)</div>
                                 <div class="bar-label">${option.label}</div>
                               </div>
                             `).join('')}
                           </div>
                         </div>
                       </div>
-                    `).join('')}
+                    `).join('') : '<p>No questions available for this tag.</p>'}
                   </div>
-                `).join('')}
+                `).join('') : '<p>No child tags available for this parent tag.</p>'}
               </div>
             </div>
           `).join('')}
@@ -748,8 +827,5 @@ export const generateSurveyReportPDF = (reportData?: any) => {
 };
 
 // Export components
-export default {
-  generateSurveyReportPDF,
-  SurveyReportPreview
-};
+export default SurveyReportPDFPreview;
 

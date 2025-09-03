@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { ThemeProvider } from 'styled-components';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { FaFileExport, FaFilePdf, FaFileExcel, FaFileCsv } from 'react-icons/fa';
 import { useTheme } from '/imports/contexts/ThemeContext';
-import { generateSurveyReportPDF } from './SurveyReportPDF';
+import { generateSurveyReportPDF, SurveyReportData } from './SurveyReportPDF';
+import { SurveyReportService } from '/imports/api/surveys/services/SurveyReportService';
 
 const StyledButton = styled.button`
   padding: 8px 16px;
@@ -195,6 +196,8 @@ const AnalyticsExportReports: React.FC = () => {
   const [reportType, setReportType] = useState('summary');
   const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({ start: null, end: null });
   const [format, setFormat] = useState('pdf');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [reportData, setReportData] = useState<SurveyReportData | null>(null);
   
   // This would be replaced with actual data from your Meteor collections
   const reportTypes = [
@@ -210,7 +213,7 @@ const AnalyticsExportReports: React.FC = () => {
     { value: 'csv', label: 'CSV', icon: FaFileCsv, color: '#3498db' }
   ];
 
-  const handleExport = (): void => {
+  const handleExport = async (): Promise<void> => {
     // Log export parameters
     console.log('Exporting report:', {
       type: reportType,
@@ -218,13 +221,25 @@ const AnalyticsExportReports: React.FC = () => {
       format
     });
     
-    // Handle different export formats
-    if (format === 'pdf') {
-      // Call the PDF generation function
-      generateSurveyReportPDF();
-    } else {
-      // For other formats (to be implemented)
-      alert(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report is being generated in ${format.toUpperCase()} format. It will be available for download shortly.`);
+    setLoading(true);
+    
+    try {
+      // Fetch report data from the service
+      const data = await SurveyReportService.getAllResponsesData();
+      
+      // Handle different export formats
+      if (format === 'pdf') {
+        // Call the PDF generation function with the fetched data
+        generateSurveyReportPDF(data as SurveyReportData);
+      } else {
+        // For other formats (to be implemented)
+        alert(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report is being generated in ${format.toUpperCase()} format. It will be available for download shortly.`);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('There was an error generating the report. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -306,7 +321,9 @@ const AnalyticsExportReports: React.FC = () => {
                 </FormatOptionContainer>
                 
                 <ButtonContainer>
-                  <StyledButton onClick={handleExport}>Generate Report</StyledButton>
+                  <StyledButton onClick={handleExport} disabled={loading}>
+                    {loading ? 'Generating...' : 'Generate Report'}
+                  </StyledButton>
                 </ButtonContainer>
               </FormatContainer>
             </StyledCard>
