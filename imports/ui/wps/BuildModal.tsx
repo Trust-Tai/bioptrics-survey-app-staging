@@ -626,7 +626,7 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
             disabled={wpsids.length === 0 || isLoading}
             onClick={handleBuildAndImport}
           >
-            Build and Import
+            Import
           </Button>
         </Modal.Footer>
       </div>

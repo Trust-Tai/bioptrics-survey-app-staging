@@ -193,62 +193,74 @@ const ContentContainer = styled.div`
 const StatsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  gap: 20px;
+  margin: 40px 0;
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
   
   @media (max-width: 768px) {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
+    gap: 16px;
   }
   
-  @media (max-width: 640px) {
+  @media (max-width: 480px) {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 16px;
   }
 `;
 
 const StatCard = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 2rem 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  text-align: center;
-  border: 1px solid #f1f5f9;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 24px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  color: #333;
+  transition: all 0.2s ease;
   
   &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   }
 `;
 
-const StatIcon = styled.div`
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-color: rgba(85, 42, 71, 0.1);
-  color: #552A47;
-  display: inline-flex;
+const StatIcon = styled.div<{ primaryColor?: string }>`
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background-color: ${props => props.primaryColor ? `${props.primaryColor}20` : 'var(--primary-color-light, #f3e8ff)'};
+  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1rem auto;
+  margin-bottom: 16px;
+  font-size: 40px;
+  align-self: flex-end;
+
+  svg {
+    width: 40px;
+    height: 40px;
+  }
 `;
 
-const StatValue = styled.div`
-  font-size: 2.5rem;
+const StatValue = styled.div<{ primaryColor?: string }>`
+  font-size: 32px;
   font-weight: 700;
-  color: #552A47;
-  margin: 0.5rem 0;
+  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  margin-bottom: 8px;
+  line-height: 1;
   font-family: 'Inter', sans-serif;
 `;
 
 const StatLabel = styled.div`
   font-size: 14px;
+  color: #6b7280;
   font-weight: 500;
-  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-family: 'Inter', sans-serif;
@@ -648,7 +660,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   };
 
   const sectionImage = section.image || image || null;
-  const effectiveColor = '#552A47'; // Using the specified primary color
+  const effectiveColor = survey?.primaryColor || color || '#552A47'; // Using dynamic color from props
 
   return (
     <SectionContainer>
@@ -665,10 +677,14 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
         
         <StatsContainer>
           <StatCard>
-            <StatIcon>
-              <FiClock size={24} />
+            <StatIcon primaryColor={effectiveColor}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="34" fill="none" viewBox="0 0 40 34">
+                <path fill="currentColor" d="M28.274 21.376a.656.656 0 0 1-.426-.154l-4.954-4.013a.69.69 0 0 1-.25-.53V5.585a.68.68 0 0 1 1.36 0v10.774l4.7 3.809a.68.68 0 0 1-.453 1.209h.023ZM16.503 24.099H8.925a.68.68 0 0 1 0-1.359h7.578a.68.68 0 0 1 0 1.359ZM13.429 16.807H.679a.68.68 0 0 1 0-1.359h12.75a.68.68 0 0 1 0 1.359ZM8.576 9.434h-4.53a.68.68 0 1 1 0-1.359h4.53a.68.68 0 0 1 0 1.359ZM23.324 29.587a.68.68 0 0 1-.68-.679v-.136a.68.68 0 0 1 1.36 0v.136a.68.68 0 0 1-.68.68ZM35.98 17.36h-.137a.68.68 0 0 1 0-1.359h.136a.679.679 0 1 1 0 1.359Z"/>
+                <path fill="currentColor" d="M7.484 19.56a.675.675 0 0 1-.67-.583 16.118 16.118 0 0 1-.15-2.297.68.68 0 1 1 1.36 0c0 .705.048 1.408.144 2.106a.68.68 0 0 1-.598.766l-.086.009ZM23.322 33.351a16.535 16.535 0 0 1-11.997-5.095.68.68 0 0 1 .978-.933 15.166 15.166 0 0 0 11.019 4.67 15.314 15.314 0 0 0 7.115-28.87A15.313 15.313 0 0 0 9.594 9.887a.68.68 0 0 1-1.218-.607A16.676 16.676 0 1 1 23.322 33.35ZM5.095 24.099H3.86a.68.68 0 0 1 0-1.359h1.236a.68.68 0 0 1 0 1.359Z"/>
+                <path fill="currentColor" d="M8.102 12.233a.683.683 0 0 1-.612-.974l.942-1.97a.68.68 0 0 1 1.228.584l-.942 1.975a.684.684 0 0 1-.616.385Z"/>
+              </svg>
             </StatIcon>
-            <StatValue>
+            <StatValue primaryColor={effectiveColor}>
               {localDynamicTimeData ? 
                 localDynamicTimeData.minutes : 
                 metadata.estimatedTime}
@@ -679,20 +695,30 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
           </StatCard>
           
           <StatCard>
-            <StatIcon>
-              <FiCheckCircle size={24} />
+            <StatIcon primaryColor={effectiveColor}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 40 40">
+                <mask id="a" width="40" height="40" x="0" y="0" maskUnits="userSpaceOnUse" style={{maskType: 'luminance'}}>
+                  <path fill="#fff" d="M0 0h40v40H0V0Z"/>
+                </mask>
+                <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeMiterlimit="10" strokeWidth="1.172" mask="url(#a)">
+                  <path d="M13.905 8.124c-3.66 2.41-6.01 6.147-6.01 10.343 0 7.27 7.056 13.163 15.76 13.163 2.6 0 5.053-.526 7.215-1.458M39.298 20.078a11.13 11.13 0 0 0 .117-1.611c0-7.27-7.056-13.163-15.76-13.163-2.797 0-5.425.609-7.702 1.676"/>
+                  <path d="M27.059 31.32s2.833 2.318 7.835 3.096c.785.122 1.38-.755 1.047-1.53l-1.933-4.5.002.003c2.181-1.589 3.834-3.672 4.708-6.04M33.509 22.509l-1.972-7.075c-.167-.6-1.016-.6-1.183 0l-1.971 7.075M29.059 20.078h3.77M16.554 22.512a2.047 2.047 0 0 1-2.046-2.047v-3.438a2.047 2.047 0 0 1 4.093 0v3.438c0 1.13-.916 2.047-2.047 2.047ZM17.14 20.633l1.885 1.879M24.822 16.224c0 .686-1.243 1.955-1.243 1.955s-1.243-1.269-1.243-1.955a1.243 1.243 0 1 1 2.486 0ZM25.865 18.959s-.48.952-.794 1.629c-1.232 2.659-3.164 2.162-3.401.984-.284-1.405 1.911-3.393 1.911-3.393l2.678 4.33M14.406 32.458a12.68 12.68 0 0 0 4.213-1.515M8.894 13.851C4.098 15.002.59 18.692.59 23.068c0 2.884 1.524 5.47 3.937 7.228l.001-.002-1.408 3.278c-.243.565.19 1.204.763 1.115 3.636-.566 5.698-2.247 5.708-2.255.799.147 1.629.225 2.48.225"/>
+                </g>
+              </svg>
             </StatIcon>
-            <StatValue>
+            <StatValue primaryColor={effectiveColor}>
               {metadata.questionCount}
             </StatValue>
             <StatLabel>Total Questions</StatLabel>
           </StatCard>
           
           <StatCard>
-            <StatIcon>
-              <FiStar size={24} />
+            <StatIcon primaryColor={effectiveColor}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 40 40">
+                <path fill="currentColor" d="M37.362 0H2.638A2.652 2.652 0 0 0 0 2.638v25.447h1.702V2.638c0-.51.426-.936.936-.936h10.128v35.234h1.702V14.468h11.064v11.064H15.83v1.702h9.702v11.064H2.638a.945.945 0 0 1-.936-.936v-7.575H0v7.575A2.652 2.652 0 0 0 2.638 40h34.724A2.652 2.652 0 0 0 40 37.362V8.51h-1.702v17.02H27.234V14.469h9.787v-1.702h-9.787V1.702h10.128c.51 0 .936.426.936.936v4.17H40v-4.17A2.652 2.652 0 0 0 37.362 0Zm.936 27.234v10.128c0 .51-.426.936-.936.936H27.234V27.234h11.064ZM25.532 12.766H14.468V1.702h11.064v11.064Z"/>
+              </svg>
             </StatIcon>
-            <StatValue>
+            <StatValue primaryColor={effectiveColor}>
               {metadata.requiredQuestionCount}
             </StatValue>
             <StatLabel>Required Questions</StatLabel>
