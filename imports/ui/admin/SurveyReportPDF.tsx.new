@@ -1,0 +1,383 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Meteor } from 'meteor/meteor';
+import { useTracker } from 'meteor/react-meteor-data';
+import { Surveys } from '../../api/surveys/surveys';
+import { SurveyDoc } from '../../api/surveys/surveys';
+import { Loading } from '../components/Loading';
+import { generateSurveyReport } from '../../api/surveys/methods/reportMethods';
+import { ReportData } from '../../api/surveys/types/reportTypes';
+
+interface SurveyReportPDFPreviewProps {
+  surveyId?: string;
+  reportData?: ReportData;
+}
+
+const SurveyReportPDFPreview: React.FC<SurveyReportPDFPreviewProps> = ({ surveyId, reportData: propReportData }) => {
+  const { id } = useParams<{ id: string }>();
+  const effectiveId = surveyId || id;
+  const [isLoading, setIsLoading] = useState(true);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const printFrameRef = useRef<HTMLIFrameElement>(null);
+
+  const { survey, isLoadingSurvey } = useTracker(() => {
+    const subscription = Meteor.subscribe('surveys.single', effectiveId);
+    const survey = Surveys.findOne(effectiveId) as SurveyDoc;
+    return {
+      survey,
+      isLoadingSurvey: !subscription.ready(),
+    };
+  }, [effectiveId]);
+
+  useEffect(() => {
+    if (propReportData) {
+      setReportData(propReportData);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isLoadingSurvey && survey) {
+      Meteor.call('surveys.generateReport', effectiveId, (error: Error, result: ReportData) => {
+        if (error) {
+          console.error('Error generating report:', error);
+          setIsLoading(false);
+        } else {
+          setReportData(result);
+          setIsLoading(false);
+        }
+      });
+    }
+  }, [effectiveId, isLoadingSurvey, survey, propReportData]);
+
+  useEffect(() => {
+    if (!isLoading && reportData) {
+      setTimeout(() => {
+        generatePDF(reportData);
+      }, 500);
+    }
+  }, [isLoading, reportData]);
+
+  if (isLoading || isLoadingSurvey) {
+    return <Loading />;
+  }
+
+  if (!reportData) {
+    return <div>Error loading report data</div>;
+  }
+
+  return (
+    <div style={{ display: 'none' }}>
+      <iframe ref={printFrameRef} style={{ width: '100%', height: '100vh', border: 'none' }} />
+    </div>
+  );
+};
+
+const generatePDF = (reportData: ReportData) => {
+  try {
+    // Create an iframe for printing
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    // Define print styles
+    const printStyles = `
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+      
+      body {
+        font-family: 'Poppins', sans-serif;
+        color: #333;
+        line-height: 1.5;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .cover-page {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 40px;
+      }
+      .content-page {
+        padding: 40px;
+      }
+      .accent-bar {
+        height: 8px;
+        background: linear-gradient(90deg, #4158D0 0%, #C850C0 50%, #FFCC70 100%);
+        margin-bottom: 40px;
+        border-radius: 4px;
+      }
+      .report-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #333;
+        margin: 0 0 10px;
+      }
+      .report-subtitle {
+        font-size: 18px;
+        font-weight: 500;
+        color: #666;
+        margin: 0 0 20px;
+      }
+      .report-description {
+        font-size: 14px;
+        color: #666;
+        margin: 0;
+      }
+      .footer {
+        margin-top: 40px;
+      }
+      .footer-text {
+        font-size: 12px;
+        color: #999;
+        text-align: center;
+      }
+      .parent-tag-header {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #4158D0;
+      }
+      .parent-tag-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 5px;
+      }
+      .parent-tag-description {
+        font-size: 12px;
+        margin: 5px 0 0;
+      }
+      .child-tag {
+        margin-left: 20px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: rgba(248, 248, 252, 0.8);
+        border-left: 3px solid #4158D0;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .child-tag-title {
+        font-size: 16px;
+        color: #4158D0;
+        margin: 0 0 5px;
+        font-weight: 600;
+      }
+      .child-tag-description {
+        font-size: 12px;
+        margin: 0 0 10px;
+      }
+      .question {
+        margin-left: 20px;
+        margin-bottom: 25px;
+        padding: 20px;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+      }
+      .question-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 10px;
+        color: #333;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 8px;
+      }
+      .question-description {
+        font-size: 13px;
+        color: #666;
+        margin: 0 0 10px;
+      }
+      .response-overview {
+        font-size: 13px;
+        font-style: italic;
+        color: #4158D0;
+        margin: 10px 0;
+        font-weight: 500;
+      }
+    `;
+    
+    // Generate the HTML content for the report
+    const reportContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Survey Report</title>
+          <style>
+            ${printStyles}
+            @page {
+              margin: 0.5in;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+            .date-display {
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              font-size: 12px;
+              color: #666;
+            }
+            .chart-container {
+              margin-top: 30px;
+              margin-bottom: 40px;
+              background: rgba(255, 255, 255, 0.8);
+              border-radius: 16px;
+              padding: 20px;
+              box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+              backdrop-filter: blur(4px);
+              border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+            .bar-chart {
+              display: flex;
+              flex-direction: column;
+              gap: 16px;
+              margin-top: 25px;
+            }
+            .bar-container {
+              display: flex;
+              align-items: center;
+              width: 100%;
+              position: relative;
+              padding: 8px 0;
+            }
+            .bar-label {
+              font-size: 12px;
+              font-weight: 500;
+              color: #333333;
+              width: 25%;
+              text-align: right;
+              padding-right: 15px;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+            }
+            .bar-wrapper {
+              flex-grow: 1;
+              height: 24px;
+              background-color: rgba(240, 240, 240, 0.5);
+              border-radius: 12px;
+              position: relative;
+              overflow: hidden;
+              box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .bar {
+              height: 100%;
+              position: absolute;
+              left: 0;
+              top: 0;
+              border-radius: 12px;
+              transition: width 0.5s ease-in-out;
+            }
+            .bar-value {
+              position: absolute;
+              right: 10px;
+              top: 50%;
+              transform: translateY(-50%);
+              font-size: 12px;
+              font-weight: 700;
+              color: #333333;
+              text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.8);
+            }
+            .respondent-count {
+              font-size: 12px;
+              color: #666666;
+              margin-bottom: 10px;
+              font-style: italic;
+            }
+          </style>
+        </head>
+        <body>
+          <!-- Cover Page -->
+          <div class="cover-page">
+            <div>
+              <div class="accent-bar"></div>
+              <div style="text-align: center; margin-bottom: 40px;">
+                <img src="${reportData.logoUrl}" alt="Company Logo" style="width: 150px;" />
+              </div>
+              
+              <h1 class="report-title">${reportData.reportTitle}</h1>
+              <h2 class="report-subtitle">${reportData.reportSubtitle}</h2>
+              <p class="report-description">${reportData.description}</p>
+            </div>
+            
+            <div class="footer">
+              <p class="footer-text">Generated Date: ${reportData.date}</p>
+            </div>
+          </div>
+          
+          <!-- Content Pages - No blank page -->
+          ${reportData.parentTags.map((parentTag, parentIndex) => `
+            <div class="page-break"></div>
+            <div class="content-page">
+              <h3 style="margin-bottom: 20px;">Survey Analysis - Tags & Questions</h3>
+              
+              <div>
+                <div class="parent-tag-header">
+                  <h3 class="parent-tag-title">${parentTag.name}</h3>
+                  <p class="parent-tag-description">${parentTag.description}</p>
+                </div>
+                
+                ${parentTag.childTags && parentTag.childTags.length > 0 ? parentTag.childTags.map(childTag => `
+                  <div class="child-tag">
+                    <h4 class="child-tag-title">${childTag.name}</h4>
+                    <p class="child-tag-description">${childTag.description}</p>
+                    
+                    ${childTag.questions && childTag.questions.length > 0 ? childTag.questions.map(question => `
+                      <div class="question">
+                        <h5 class="question-title">${question.title}</h5>
+                        <p class="question-description">${question.description}</p>
+                        <p class="respondent-count">(${question.respondents} of ${reportData.totalRespondents} respondents answered this question)</p>
+                        <p class="response-overview">${question.responseOverview}</p>
+                        
+                        <div class="chart-container">
+                          <div class="bar-chart">
+                            ${question.options.map(option => `
+                              <div class="bar-container">
+                                <div class="bar-label">${option.label}</div>
+                                <div class="bar-wrapper">
+                                  <div class="bar" style="width: ${option.percentage > 0 ? option.percentage : 2}%; background-image: ${option.percentage > 0 ? 'linear-gradient(to right, #4158D0, #C850C0)' : 'none'}; background-color: ${option.percentage > 0 ? 'transparent' : '#f0f0f0'}; ${option.percentage === 0 ? 'border: 1px dashed #999; box-sizing: border-box;' : ''}"></div>
+                                  <div class="bar-value" style="${option.percentage === 0 ? 'color: #777777; font-style: italic;' : ''}">${option.count} (${option.percentage}%)</div>
+                                </div>
+                              </div>
+                            `).join('')}
+                          </div>
+                        </div>
+                      </div>
+                    `).join('') : '<p>No questions available for this tag.</p>'}
+                  </div>
+                `).join('') : '<p>No child tags available for this parent tag.</p>'}
+              </div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+    
+    // Get the iframe's document
+    const frameDoc = printFrame.contentDocument || printFrame.contentWindow?.document;
+    
+    if (frameDoc) {
+      // Write the content to the iframe
+      frameDoc.open();
+      frameDoc.write(reportContent);
+      frameDoc.close();
+      
+      // Wait for content to load before printing
+      printFrame.onload = () => {
+        // Print immediately without waiting
+        printFrame.contentWindow?.print();
+      };
+    }
+  } catch (error) {
+    console.error('Error generating report:', error);
+    // Log error but don't show alert to user
+  }
+};
+
+// Export components
+export default SurveyReportPDFPreview;

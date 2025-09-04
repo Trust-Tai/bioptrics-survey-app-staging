@@ -42,6 +42,8 @@ import '../imports/api/layers';
 import '../imports/api/tagItems';
 // Import Onboarding Steps API
 import { seedOnboardingSteps } from '../imports/api/onboardingSteps';
+// Import Survey Report Methods
+import '../imports/api/surveys/methods/reportMethods';
 // Import migration methods
 import '../scripts/migrate-survey-questions';
 
