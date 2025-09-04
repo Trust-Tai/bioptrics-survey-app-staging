@@ -721,12 +721,24 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       documentType: newSection.documentType
     });
 
+    // Update surveyOrder array (single source of truth) for new sections
+    let updatedSurveyOrder = [...surveyOrder];
+    
     if (currentSection) {
       // Update existing section
       setSections(prev => prev.map(s => s.id === currentSection.id ? { ...newSection, id: currentSection.id } : s));
     } else {
       // Add new section
       setSections(prev => [...prev, newSection]);
+      
+      // Add new section to surveyOrder array
+      const newOrderItem = {
+        id: newSection.id,
+        type: 'section' as const,
+        order: surveyOrder.length
+      };
+      updatedSurveyOrder = [...surveyOrder, newOrderItem];
+      setSurveyOrder(updatedSurveyOrder);
     }
 
     // Update survey with new sections
@@ -763,11 +775,11 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         documentType: updatedSection?.documentType
       });
       
-      // Create the updated survey object
+      // Create the updated survey object with updated surveyOrder
       const updatedSurvey = {
         ...survey,
         surveySections: updatedSections,
-        surveyOrder: surveyOrder
+        surveyOrder: updatedSurveyOrder
       };
       
       // Log the document data in the updated survey object
