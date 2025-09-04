@@ -142,24 +142,25 @@ const WelcomeHeaderContent = styled.div`
 `;
 
 const WelcomeHeaderImage = styled.div`
-  flex: 1;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  margin: 2rem 0;
+  max-width: 600px;
   
   img {
     width: 100%;
-    height: 500px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 300px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     object-fit: cover;
   }
   
   @media (max-width: 768px) {
-    margin-top: 1.5rem;
-    justify-content: center;
+    margin: 1.5rem 0;
     
     img {
-      height: 300px;
+      height: 200px;
+      max-width: 100%;
     }
   }
 `;
@@ -723,15 +724,15 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
       <MainContentWrapper>
         <MainContent>
           <WelcomeHeader>
-            <WelcomeHeaderContent style={{ flex: featuredImage ? 1 : 'auto', maxWidth: featuredImage ? '60%' : '100%' }}>
+            <WelcomeHeaderContent>
               <h1>{survey.title || 'Customer Experience Survey'}</h1>
+              {featuredImage && (
+                <WelcomeHeaderImage>
+                  <img src={featuredImage} alt="Survey featured image" />
+                </WelcomeHeaderImage>
+              )}
               <p dangerouslySetInnerHTML={{ __html: survey.description || 'Help us understand your experience and improve our services. Your feedback matters and takes just a few minutes to complete.' }} />
             </WelcomeHeaderContent>
-            {featuredImage && (
-              <WelcomeHeaderImage>
-                <img src={featuredImage} alt="Survey featured image" />
-              </WelcomeHeaderImage>
-            )}
           </WelcomeHeader>
         <ContentContainer>
 
