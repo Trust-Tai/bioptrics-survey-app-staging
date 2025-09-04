@@ -340,7 +340,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         
         // Also save directly to database to ensure survey order is persisted
         if (survey?._id) {
-          Meteor.call('surveys.update', survey._id, { surveyOrder: order }, (error: any) => {
+          Meteor.call('surveys.updateSurveyOrder', survey._id, order, (error: any) => {
             if (error) {
               console.error('Error updating survey order:', error);
             } else {
