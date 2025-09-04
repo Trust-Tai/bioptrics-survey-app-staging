@@ -365,10 +365,10 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   
   // Hide header and remove padding from main div
   useEffect(() => {
-    // Hide the header
+    // Show the header
     const header = document.querySelector('header') as HTMLElement;
     if (header) {
-      header.style.display = 'none';
+      header.style.display = 'block';
     }
     
     // Remove padding from main div

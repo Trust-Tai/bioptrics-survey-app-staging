@@ -2847,28 +2847,43 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   
   // Handle reordering questions within a section
   const handleReorderQuestion = (sectionId: string, oldIndex: number, newIndex: number) => {
-    // Get questions for the section
-    const sectionQuestions = surveyQuestions.filter(q => q.sectionId === sectionId);
+    if (!survey?.surveyOrder) {
+      console.error('Survey order not found');
+      return;
+    }
     
-    // Reorder the questions
-    const reorderedQuestions = [...sectionQuestions];
-    const [movedQuestion] = reorderedQuestions.splice(oldIndex, 1);
-    reorderedQuestions.splice(newIndex, 0, movedQuestion);
+    // Get current survey order
+    const currentOrder = [...survey.surveyOrder];
     
-    // Update the order property for each question
-    const updatedQuestions = reorderedQuestions.map((q, index) => ({
-      ...q,
-      order: index
-    }));
+    // Find questions in this section
+    const sectionQuestionIds = currentOrder
+      .filter(item => item.type === 'question')
+      .map(item => item.id)
+      .filter(id => {
+        const question = surveyQuestions.find(q => q.id === id);
+        return question?.sectionId === sectionId;
+      });
     
-    // Update the questions in the database
-    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+    // Reorder the question IDs
+    const [movedQuestionId] = sectionQuestionIds.splice(oldIndex, 1);
+    sectionQuestionIds.splice(newIndex, 0, movedQuestionId);
+    
+    // Rebuild survey order with new question positions
+    const updatedOrder = currentOrder.map(item => {
+      if (item.type === 'question' && sectionQuestionIds.includes(item.id)) {
+        const newIndex = sectionQuestionIds.indexOf(item.id);
+        return { ...item, order: newIndex };
+      }
+      return item;
+    });
+    
+    // Update survey order in database
+    Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
       if (error) {
         console.error('Error reordering questions:', error);
         showErrorAlert('Failed to reorder questions.');
       } else {
         refreshSurveyData();
-        // Mark as having changes that need to be saved
         trackContentChange();
       }
     });
@@ -2876,28 +2891,43 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
 
   // Handle reordering questions in the no-section area
   const handleReorderNoSectionQuestion = (oldIndex: number, newIndex: number) => {
-    // Get questions for the no-section area
-    const noSectionQuestions = surveyQuestions.filter(q => !q.sectionId);
+    if (!survey?.surveyOrder) {
+      console.error('Survey order not found');
+      return;
+    }
     
-    // Reorder the questions
-    const reorderedQuestions = [...noSectionQuestions];
-    const [movedQuestion] = reorderedQuestions.splice(oldIndex, 1);
-    reorderedQuestions.splice(newIndex, 0, movedQuestion);
+    // Get current survey order
+    const currentOrder = [...survey.surveyOrder];
     
-    // Update the order property for each question
-    const updatedQuestions = reorderedQuestions.map((q, index) => ({
-      ...q,
-      order: index
-    }));
+    // Find questions with no section
+    const noSectionQuestionIds = currentOrder
+      .filter(item => item.type === 'question')
+      .map(item => item.id)
+      .filter(id => {
+        const question = surveyQuestions.find(q => q.id === id);
+        return !question?.sectionId;
+      });
     
-    // Update the questions in the database
-    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
+    // Reorder the question IDs
+    const [movedQuestionId] = noSectionQuestionIds.splice(oldIndex, 1);
+    noSectionQuestionIds.splice(newIndex, 0, movedQuestionId);
+    
+    // Rebuild survey order with new question positions
+    const updatedOrder = currentOrder.map(item => {
+      if (item.type === 'question' && noSectionQuestionIds.includes(item.id)) {
+        const newIndex = noSectionQuestionIds.indexOf(item.id);
+        return { ...item, order: newIndex };
+      }
+      return item;
+    });
+    
+    // Update survey order in database
+    Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
       if (error) {
         console.error('Error reordering no-section questions:', error);
         showErrorAlert('Failed to reorder questions.');
       } else {
         refreshSurveyData();
-        // Mark as having changes that need to be saved
         trackContentChange();
       }
     });
@@ -2947,17 +2977,25 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       updatedQuestions = [...otherQuestions, updatedQuestion];
     }
 
-    // Update the questions in the database
-    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
-      if (error) {
-        console.error('Error moving question to no-section area:', error);
-        showErrorAlert('Failed to move question.');
-      } else {
-        refreshSurveyData();
-        // Mark as having changes that need to be saved
-        trackContentChange();
-      }
-    });
+    // Update survey order in database
+    if (survey?.surveyOrder) {
+      const updatedOrder = survey.surveyOrder.map(item => {
+        if (item.type === 'question' && item.id === questionId) {
+          return { ...item, order: targetIndex >= 0 ? targetIndex : survey.surveyOrder.length };
+        }
+        return item;
+      });
+      
+      Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
+        if (error) {
+          console.error('Error moving question to no-section area:', error);
+          showErrorAlert('Failed to move question.');
+        } else {
+          refreshSurveyData();
+          trackContentChange();
+        }
+      });
+    }
   };
 
   // Handle moving a question from the no-section area to a section
@@ -3004,17 +3042,25 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       updatedQuestions = [...otherQuestions, updatedQuestion];
     }
 
-    // Update the questions in the database
-    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
-      if (error) {
-        console.error('Error moving question to section:', error);
-        showErrorAlert('Failed to move question.');
-      } else {
-        refreshSurveyData();
-        // Mark as having changes that need to be saved
-        trackContentChange();
-      }
-    });
+    // Update survey order in database
+    if (survey?.surveyOrder) {
+      const updatedOrder = survey.surveyOrder.map(item => {
+        if (item.type === 'question' && item.id === questionId) {
+          return { ...item, order: targetIndex >= 0 ? targetIndex : survey.surveyOrder.length };
+        }
+        return item;
+      });
+      
+      Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
+        if (error) {
+          console.error('Error moving question to section:', error);
+          showErrorAlert('Failed to move question.');
+        } else {
+          refreshSurveyData();
+          trackContentChange();
+        }
+      });
+    }
   };
   
   // Handle moving a question between sections
@@ -3061,17 +3107,25 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       updatedQuestions = [...otherQuestions, updatedQuestion];
     }
 
-    // Update the questions in the database
-    Meteor.call('surveys.updateQuestions', surveyId, updatedQuestions, (error: any) => {
-      if (error) {
-        console.error('Error moving question between sections:', error);
-        showErrorAlert('Failed to move question.');
-      } else {
-        refreshSurveyData();
-        // Mark as having changes that need to be saved
-        trackContentChange();
-      }
-    });
+    // Update survey order in database
+    if (survey?.surveyOrder) {
+      const updatedOrder = survey.surveyOrder.map(item => {
+        if (item.type === 'question' && item.id === questionId) {
+          return { ...item, order: targetIndex >= 0 ? targetIndex : survey.surveyOrder.length };
+        }
+        return item;
+      });
+      
+      Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
+        if (error) {
+          console.error('Error moving question between sections:', error);
+          showErrorAlert('Failed to move question.');
+        } else {
+          refreshSurveyData();
+          trackContentChange();
+        }
+      });
+    }
   };
 
   // Handle reordering sections
@@ -4468,7 +4522,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                                 }}
                               />
                             </div>
-                            <div>
+                            <div style={{ marginBottom: 10 }}>
                               <textarea
                                 placeholder="Expectation description"
                                 value={expectation.description || ''}
@@ -4489,13 +4543,125 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                                 }}
                               />
                             </div>
+                            <div>
+                              <div style={{ marginBottom: 8 }}>
+                                <label style={{ 
+                                  display: 'block', 
+                                  marginBottom: '6px', 
+                                  fontWeight: 500,
+                                  fontSize: '13px',
+                                  color: '#495057'
+                                }}>
+                                  Icon/Image (optional)
+                                </label>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '10px'
+                                }}>
+                                  <input
+                                    type="file"
+                                    id={`expectationImage-${index}`}
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                          const newExpectations = [...(survey?.expectations || [])];
+                                          newExpectations[index] = { ...expectation, image: event.target?.result as string };
+                                          setSurvey({...survey, expectations: newExpectations});
+                                          setHasUnsavedChanges(true);
+                                          triggerAutoSave();
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                    accept="image/*"
+                                  />
+                                  <label 
+                                    htmlFor={`expectationImage-${index}`} 
+                                    style={{ 
+                                      backgroundColor: '#552a47', 
+                                      color: '#ffffff',
+                                      padding: '6px 12px',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      fontWeight: 500,
+                                      display: 'inline-block',
+                                      margin: 0
+                                    }}
+                                  >
+                                    Choose Image
+                                  </label>
+                                  <span style={{ 
+                                    fontSize: '12px', 
+                                    color: '#6c757d',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}>
+                                    {expectation.image ? 'Image selected' : 'No file selected'}
+                                  </span>
+                                  {expectation.image && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newExpectations = [...(survey?.expectations || [])];
+                                        newExpectations[index] = { ...expectation, image: '' };
+                                        setSurvey({...survey, expectations: newExpectations});
+                                        setHasUnsavedChanges(true);
+                                        triggerAutoSave();
+                                      }}
+                                      style={{
+                                        backgroundColor: '#dc3545',
+                                        color: '#ffffff',
+                                        padding: '4px 8px',
+                                        borderRadius: '3px',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '11px',
+                                        fontWeight: 500
+                                      }}
+                                    >
+                                      Remove
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              {expectation.image && (
+                                <div style={{ 
+                                  padding: '6px', 
+                                  border: '1px solid #dee2e6', 
+                                  borderRadius: '4px',
+                                  backgroundColor: '#ffffff',
+                                  display: 'inline-block',
+                                  marginTop: '6px'
+                                }}>
+                                  <img 
+                                    src={expectation.image} 
+                                    alt="Preview" 
+                                    style={{ 
+                                      maxWidth: 48, 
+                                      maxHeight: 48, 
+                                      borderRadius: 4,
+                                      objectFit: 'cover'
+                                    }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
                       <button
                         type="button"
                         onClick={() => {
-                          const newExpectations = [...(survey?.expectations || []), { title: '', description: '' }];
+                          const newExpectations = [...(survey?.expectations || []), { title: '', description: '', image: '' }];
                           setSurvey({...survey, expectations: newExpectations});
                           setHasUnsavedChanges(true);
                           triggerAutoSave();

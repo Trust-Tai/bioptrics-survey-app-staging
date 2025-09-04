@@ -5,7 +5,9 @@ import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
-import PublicSurveyRenderer from './components/PublicSurveyRenderer';
+
+import SimpleSurveyContent from './components/SimpleSurveyContent';
+
 import ModernSurveyLoader from './components/ModernSurveyLoader';
 import ModernSurveyError from './components/ModernSurveyError';
 import SurveyThemeProvider from './SurveyThemeProvider';
@@ -20,11 +22,20 @@ interface Survey {
   image?: string;
   featuredImage?: string;
   color?: string;
-  selectedQuestions?: Record<string, any[]>;
-  siteTextQuestions?: any[];
+  layout?: 'stepByStep' | 'allOnOnePage';
+  surveyOrder?: Array<{
+    type: 'question' | 'section';
+    id: string;
+    order: number;
+  }>;
+  surveySections?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    title?: string;
+  }>;
   shareToken?: string;
-  sectionQuestions?: any[];
-  surveySections?: any[];
+  published?: boolean;
 }
 
 const PageContainer = styled.div`
@@ -34,13 +45,14 @@ const PageContainer = styled.div`
   flex-direction: column;
   font-family: var(--body-font, 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif');
   color: var(--text-color, #333333);
+  width: 100%;
+  overflow-x: hidden;
 `;
 
 const Header = styled.header`
   padding: 20px 40px;
   display: flex;
   justify-content: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   
   @media (max-width: 768px) {
     padding: 16px;
@@ -63,11 +75,11 @@ const Logo = styled.img`
 const MainContent = styled.main`
   flex: 1;
   display: flex;
-  justify-content: center;
-  padding: 40px 20px;
+  width: 100%;
+  padding: 0;
   
   @media (max-width: 768px) {
-    padding: 20px 16px;
+    padding: 0;
   }
 `;
 
@@ -386,7 +398,9 @@ const ModernSurveyPublic: React.FC = () => {
           </HeaderContent>
         </Header>
         <MainContent>
-          <PublicSurveyRenderer 
+
+          <SimpleSurveyContent 
+
             survey={surveyData} 
             isPreviewMode={isPreviewMode} 
             token={token || ''}
@@ -401,9 +415,6 @@ const ModernSurveyPublic: React.FC = () => {
             />
           )}
         </MainContent>
-        <Footer>
-          © {new Date().getFullYear()} Made with ❤️ by Bioptrics — for bold teams building better workplaces.
-        </Footer>
       </PageContainer>
     </SurveyThemeProvider>
   );

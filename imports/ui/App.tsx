@@ -60,6 +60,8 @@ import QuestionTemplatesPage from '../pages/admin/QuestionTemplatesPage';
 import AccountDetails from '../pages/admin/AccountDetails';
 import Billing from '../pages/admin/Billing';
 import Subscription from '../pages/admin/Subscription';
+import WpsBuilderPage from './admin/WpsBuilderPage';
+import MigrationPanel from './admin/MigrationPanel';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -238,6 +240,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/account-details" element={<AccountDetails />} />
         <Route path="/admin/billing" element={<Billing />} />
         <Route path="/admin/subscription" element={<Subscription />} />
+        <Route path="/admin/marketplace/wps-builder" element={<WpsBuilderPage />} />
+        <Route path="/admin/migration" element={<MigrationPanel />} />
       </Route>
     </Routes>
   );
