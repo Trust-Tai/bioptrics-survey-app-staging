@@ -424,35 +424,39 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     getTimeData();
   }, [dynamicTimeData, section]);
   
-  // Simple direct count from section data
+  // Get actual question count from survey data
   useEffect(() => {
-    console.log('ModernSurveySection - Debug data:', {
-      sectionId: section.id,
-      sectionQuestionCount: section.questionCount,
-      totalQuestionsProp: totalQuestions,
-      requiredQuestionCountProp: requiredQuestionCount,
-      sectionRequiredCount: section.requiredQuestionCount
+    if (!surveyId || !section.id) {
+      setLoading(false);
+      return;
+    }
+
+    // Use the Meteor method to get actual question count from surveyOrder
+    Meteor.call('getSectionQuestionsFromSurveyOrder', surveyId, section.id, (error: any, result: any) => {
+      if (error) {
+        console.error('Error fetching section questions:', error);
+        // Fallback to props if available
+        const questionCount = section.questionCount || totalQuestions || 0;
+        const requiredCount = section.requiredQuestionCount || requiredQuestionCount || questionCount;
+        const estimatedMinutes = Math.max(1, Math.ceil(questionCount * 0.5));
+        
+        setMetadata({
+          questionCount: questionCount,
+          requiredQuestionCount: requiredCount,
+          estimatedTime: estimatedMinutes.toString()
+        });
+      } else if (result) {
+        console.log(`Section ${section.id} has ${result.totalQuestions} questions from surveyOrder`);
+        setMetadata({
+          questionCount: result.totalQuestions,
+          requiredQuestionCount: result.requiredQuestions,
+          estimatedTime: result.estimatedTime
+        });
+      }
+      
+      setLoading(false);
     });
-    
-    // Use the section's own questionCount if available, or count from totalQuestions prop
-    const questionCount = section.questionCount || totalQuestions || 5; // Default to 5 for testing
-    const requiredCount = section.requiredQuestionCount || requiredQuestionCount || questionCount;
-    const estimatedMinutes = Math.max(1, Math.ceil(questionCount * 0.5)); // 30 seconds per question
-    
-    console.log('ModernSurveySection - Calculated values:', {
-      questionCount,
-      requiredCount,
-      estimatedMinutes
-    });
-    
-    setMetadata({
-      questionCount: questionCount,
-      requiredQuestionCount: requiredCount,
-      estimatedTime: estimatedMinutes.toString()
-    });
-    
-    setLoading(false);
-  }, [section.questionCount, totalQuestions, section.requiredQuestionCount, requiredQuestionCount]);
+  }, [surveyId, section.id, section.questionCount, totalQuestions, section.requiredQuestionCount, requiredQuestionCount]);
   
   // Add a direct script to access the Processing sectionQuestions array from the console
   useEffect(() => {
