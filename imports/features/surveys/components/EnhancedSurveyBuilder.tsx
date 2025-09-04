@@ -2611,6 +2611,33 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
             console.log('Question created without a section - no sectionQuestion needed');
           }
           
+          // Update surveyOrder array - this is the single source of truth for ordering
+          if (survey?.surveyOrder) {
+            const currentOrder = [...survey.surveyOrder];
+            
+            // Create new order item for the created question
+            const newOrderItem = {
+              id: questionId,
+              type: 'question' as const,
+              order: currentOrder.length // Append to end of current order
+            };
+            
+            // Update the surveyOrder array
+            const updatedOrder = [...currentOrder, newOrderItem];
+            
+            // Call the API to update the survey order
+            Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
+              if (error) {
+                console.error('Error updating survey order for new question:', error);
+                showErrorAlert('Failed to update question order.');
+              } else {
+                console.log('Survey order updated successfully for new question');
+                // Refresh survey data to reflect the changes
+                refreshSurveyData();
+              }
+            });
+          }
+          
           // Trigger auto-save by setting hasUnsavedChanges
           console.log('Setting hasUnsavedChanges to true');
           setHasUnsavedChanges(true);
@@ -2751,6 +2778,33 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       
       return updatedSurvey;
     });
+    
+    // Update surveyOrder array - this is the single source of truth for ordering
+    if (survey?.surveyOrder && newQuestionIds.length > 0) {
+      const currentOrder = [...survey.surveyOrder];
+      
+      // Create new order items for the selected questions
+      const newOrderItems = newQuestionIds.map((questionId, index) => ({
+        id: questionId,
+        type: 'question' as const,
+        order: currentOrder.length + index // Append to end of current order
+      }));
+      
+      // Update the surveyOrder array
+      const updatedOrder = [...currentOrder, ...newOrderItems];
+      
+      // Call the API to update the survey order
+      Meteor.call('surveys.updateSurveyOrder', surveyId, updatedOrder, (error: any) => {
+        if (error) {
+          console.error('Error updating survey order:', error);
+          showErrorAlert('Failed to update question order.');
+        } else {
+          console.log('Survey order updated successfully');
+          // Refresh survey data to reflect the changes
+          refreshSurveyData();
+        }
+      });
+    }
     
     // Set hasUnsavedChanges to true to ensure silentSave will actually save
     setHasUnsavedChanges(true);
