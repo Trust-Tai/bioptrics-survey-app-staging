@@ -45,7 +45,7 @@ const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[]
   { to: '/admin/tags/manage', label: 'Tags', icon: FaTag },
   { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie},
   { to: '/admin/marketplace', label: 'Marketplace', icon: FaStore},
-  { to: '/admin/migration', label: 'Migration', icon: FaCog},
+  // { to: '/admin/migration', label: 'Migration', icon: FaCog},
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding},
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
