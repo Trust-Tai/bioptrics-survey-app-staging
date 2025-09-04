@@ -2072,7 +2072,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // Prepare survey data for saving
       
       // Debug log to track surveyOrder before saving
+      console.log('=== SAVE DEBUG ===');
       console.log('surveyOrder before saving:', survey.surveyOrder);
+      console.log('sectionQuestions before saving:', surveyQuestions);
+      console.log('sections before saving:', sections);
       
       // Find the complete theme object based on selectedTheme ID
       const selectedThemeObject = selectedTheme ? surveyThemes.find((theme: any) => theme._id === selectedTheme) : null;
@@ -2126,14 +2129,18 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           documentName: section.documentName,
           documentType: section.documentType
         })),
-        sectionQuestions: surveyQuestions.map(q => ({
-          questionId: q.id,
-          sectionId: q.sectionId,
-          type: q.type,
-          order: q.order,
-          status: q.status,
-          text: q.text
-        })),
+        sectionQuestions: surveyQuestions.map(q => {
+          const mappedQuestion = {
+            id: q.id,
+            sectionId: q.sectionId,
+            type: q.type,
+            order: q.order,
+            status: q.status,
+            text: q.text
+          };
+          console.log('Mapping question for save:', mappedQuestion);
+          return mappedQuestion;
+        }),
         // Explicitly include surveyOrder to ensure it's saved with the survey
         // Use the current surveyOrder from the survey state to ensure all questions are included
         surveyOrder: survey.surveyOrder || [],
@@ -2179,8 +2186,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       const now = Date.now();
       
       // Debug log to track surveyOrder after saving
+      console.log('=== SAVE COMPLETE ===');
       console.log('Survey saved successfully with ID:', savedSurveyId);
-      console.log('surveyOrder after saving:', survey.surveyOrder);
+      console.log('surveyOrder sent to server:', surveyData.surveyOrder);
+      console.log('sectionQuestions sent to server:', surveyData.sectionQuestions);
       
       // Use a slight delay to ensure state updates are processed in the correct order
       // This helps React batch the updates properly
@@ -4885,9 +4894,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     if (updatedSurvey.sectionQuestions && Array.isArray(updatedSurvey.sectionQuestions)) {
                       const reconstructedQuestions: QuestionItem[] = updatedSurvey.sectionQuestions.map((sq: any) => {
                         // Find the question document to get the text
-                        const questionDoc = Questions.findOne(sq.questionId);
+                        const questionDoc = Questions.findOne(sq.id || sq.questionId);
                         return {
-                          id: sq.questionId,
+                          id: sq.id || sq.questionId,
                           text: questionDoc ? extractQuestionText(questionDoc) : 'Loading...',
                           type: sq.type || 'text',
                           status: 'published' as const,
@@ -4896,6 +4905,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                         };
                       });
                       setSurveyQuestions(reconstructedQuestions);
+                    }
+                    
+                    // Sync surveyOrder state with the updated survey
+                    if (updatedSurvey.surveyOrder && Array.isArray(updatedSurvey.surveyOrder)) {
+                      setSurveyOrder(updatedSurvey.surveyOrder);
                     }
                     
                     // Mark that we have unsaved changes

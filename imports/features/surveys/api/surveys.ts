@@ -1497,6 +1497,8 @@ Meteor.methods({
         selectedDemographics: survey.selectedDemographics || existingSurvey.selectedDemographics || [],
         // Include survey sections (questions are managed via surveyOrder only)
         surveySections: survey.surveySections || existingSurvey.surveySections || [],
+        // Include section questions to preserve section assignments
+        sectionQuestions: survey.sectionQuestions || existingSurvey.sectionQuestions || [],
         // Include default settings
         defaultSettings: survey.defaultSettings || existingSurvey.defaultSettings || {},
         // Include themes, categories, and tags
