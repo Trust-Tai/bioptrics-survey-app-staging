@@ -1814,6 +1814,52 @@ if (Meteor.isServer) {
       }
     },
     
+    async 'getSectionQuestionsFromSurveyOrder'(surveyId: string, sectionId: string) {
+      console.log(`getSectionQuestionsFromSurveyOrder method called for section ${sectionId} of survey ${surveyId}`);
+      
+      try {
+        // Find the survey
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        if (!survey) {
+          throw new Meteor.Error('not-found', 'Survey not found');
+        }
+        
+        // Use surveyOrder as single source of truth
+        if (!survey.surveyOrder || !Array.isArray(survey.surveyOrder)) {
+          console.log('No surveyOrder found for survey:', surveyId);
+          return {
+            totalQuestions: 0,
+            requiredQuestions: 0,
+            estimatedTime: '~2'
+          };
+        }
+        
+        // Count questions in surveyOrder that belong to this section
+        const sectionQuestions = survey.surveyOrder.filter((item: any) => 
+          item.type === 'question' && item.sectionId === sectionId
+        );
+        
+        // Count required questions (assuming all questions in surveyOrder are required by default)
+        const requiredQuestions = sectionQuestions.length;
+        
+        // Calculate estimated time (assuming 30 seconds per question)
+        const estimatedSeconds = sectionQuestions.length * 30;
+        const estimatedMinutes = Math.ceil(estimatedSeconds / 60);
+        
+        console.log(`Found ${sectionQuestions.length} questions for section ${sectionId} from surveyOrder`);
+        
+        return {
+          totalQuestions: sectionQuestions.length,
+          requiredQuestions: requiredQuestions,
+          estimatedTime: estimatedMinutes.toString()
+        };
+        
+      } catch (error) {
+        console.error('Error in getSectionQuestionsFromSurveyOrder:', error);
+        throw new Meteor.Error('server-error', 'Failed to get section questions from surveyOrder');
+      }
+    },
+
     async 'getSectionMetadata'(surveyId: string, sectionId: string) {
       console.log(`getSectionMetadata method called for section ${sectionId} of survey ${surveyId}`);
       

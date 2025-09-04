@@ -64,6 +64,8 @@ const QuestionContentColumn = styled.div`
   flex: 0 0 70%;
   display: flex;
   flex-direction: column;
+  max-width: 500px;
+  margin: 50px auto;
   
   @media (max-width: 768px) {
     flex: 1;
@@ -98,7 +100,7 @@ const ProgressIndicator = styled.div`
   display: flex;
   gap: 4px;
   margin-bottom: 2rem;
-  padding: 0 2rem;
+  padding: 0;
   
   @media (max-width: 768px) {
     padding: 0 1rem;
@@ -107,7 +109,7 @@ const ProgressIndicator = styled.div`
 `;
 
 const ProgressSegment = styled.div<{ isActive: boolean; isCompleted: boolean; color?: string }>`
-  flex: 1;
+  width: ${props => props.isActive ? '80px' : '26px'};
   height: 4px;
   border-radius: 2px;
   background-color: ${props => {
@@ -124,6 +126,7 @@ const ProgressSegment = styled.div<{ isActive: boolean; isCompleted: boolean; co
   
   @media (max-width: 768px) {
     height: 3px;
+    width: ${props => props.isActive ? '60px' : '20px'};
   }
 `;
 
@@ -197,6 +200,11 @@ interface Survey {
     order?: number;
   }>;
   selectedQuestions?: Record<string, any[]>;
+  surveyOrder?: Array<{
+    type: 'question' | 'section';
+    id: string;
+    order: number;
+  }>;
 }
 
 interface ModernSurveyQuestionProps {
@@ -241,61 +249,49 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   };
   
   useEffect(() => {
-    console.log('Question:', question);
-    console.log('Question responseType:', question.responseType);
-    
-    console.log('DETAILED QUESTION INSPECTION:');
-    console.log('- _id:', question._id);
-    console.log('- text:', question.text);
-    console.log('- responseType:', question.responseType);
-    console.log('- type:', question.type);
-    console.log('- options:', question.options);
-    
-    if (Array.isArray(question.versions) && question.versions.length > 0) {
-      console.log('VERSIONS ARRAY FOUND:');
-      question.versions.forEach((version, index) => {
-        console.log(`VERSION ${index}:`, version);
-        console.log(`- responseType:`, version.responseType);
-        console.log(`- questionText:`, version.questionText);
-        console.log(`- options:`, version.options);
-      });
-      
-      const versionIndex = question.currentVersion !== undefined ? 
-        Math.min(question.currentVersion, question.versions.length - 1) : 0;
-      const versionData = question.versions[versionIndex];
-      
-      if (versionData && versionData.responseType === 'dropdown') {
-        console.log('CRITICAL: DROPDOWN FOUND IN VERSIONS ARRAY - This should render as dropdown');
-        (question as any)._forceDropdown = true;
-      }
-    }
-    
-    if (question.responseType === 'dropdown' || 
-        (question.responseType && question.responseType.toLowerCase().includes('dropdown'))) {
-      console.log('DROPDOWN QUESTION DETECTED - This should render as a dropdown select');
-    }
+    console.log('USEEFFECT SYNC - Question changed or value prop changed:', {
+      questionId: question._id,
+      valueProp: value,
+      currentAnswer: answer,
+      actualType: getActualQuestionType()
+    });
     
     const actualType = getActualQuestionType();
-    console.log('Actual question type:', actualType);
-    console.log('Will render:', actualType === 'dropdown' ? 'dropdown select' : 'other component');
     
+    // Only sync from prop to state on initial load or question change
+    // Don't sync when user is actively selecting options
     if (actualType === 'multiple_choice') {
       if (value === '' || value === null || value === undefined) {
-        setAnswer([]);
+        // Only set empty array if answer is not already set
+        if (!Array.isArray(answer) || answer.length === 0) {
+          setAnswer([]);
+        }
       } else if (!Array.isArray(value)) {
         try {
           const parsed = typeof value === 'string' ? JSON.parse(value) : [value];
-          setAnswer(Array.isArray(parsed) ? parsed : [value]);
+          const newAnswer = Array.isArray(parsed) ? parsed : [value];
+          // Only update if significantly different to prevent clearing user selections
+          if (JSON.stringify(newAnswer) !== JSON.stringify(answer)) {
+            setAnswer(newAnswer);
+          }
         } catch (e) {
-          setAnswer([value]);
+          if (JSON.stringify([value]) !== JSON.stringify(answer)) {
+            setAnswer([value]);
+          }
         }
       } else {
-        setAnswer(value);
+        if (JSON.stringify(value) !== JSON.stringify(answer)) {
+          setAnswer(value);
+        }
       }
     } else {
-      setAnswer(value || '');
+      // For single-choice questions, only update if value is truly different
+      if (value !== answer) {
+        console.log('SYNC: Updating answer from', answer, 'to', value);
+        setAnswer(value || '');
+      }
     }
-  }, [value, question._id]);
+  }, [value, question._id]); // Removed 'answer' from dependencies to prevent loops
   
   let currentQuestion = 1;
   let totalQuestions = 1;
@@ -361,7 +357,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       setIsTyping(false);
     }
     
-    console.log('CRITICAL - Question button click info:', {
+    console.log('CRITICAL - Continue button clicked - this should trigger navigation:', {
       isLastQuestion,
       hasSubmitHandler: !!onSubmit,
       questionText: question.text?.substring(0, 30),
@@ -369,6 +365,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       currentAnswer: answer
     });
     
+    // Continue button should trigger navigation, so saveOnly = false
     onAnswer(answer, false);
     
     setTimeout(() => {
@@ -395,7 +392,10 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <div
               key={value}
               className={`scale-option ${answer === value.toString() ? 'selected' : ''}`}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Scale option clicked:', value, 'calling onAnswer with saveOnly: true');
                 setAnswer(value.toString());
                 onAnswer(value.toString(), true);
               }}
@@ -410,6 +410,11 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             </div>
           ))}
         </ScaleButtonsContainer>
+        {answer && (
+          <div className="selected-answer-display">
+            Selected: {answer}
+          </div>
+        )}
         {answer && (
           <div className="selected-answer-display">
             <span>Your answer: <strong>{answer}</strong></span>
@@ -433,7 +438,25 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
           const label = isObjectOptions ? (option as any).label : option as string;
           
           return (
-            <OptionButton key={index} isSelected={answer === value}>
+            <OptionButton 
+              key={index} 
+              isSelected={answer === value}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('RADIO OPTION CLICKED - INVESTIGATION:', {
+                  value,
+                  currentAnswer: answer,
+                  saveOnlyFlag: true,
+                  timestamp: new Date().toISOString()
+                });
+                setAnswer(value);
+                console.log('CALLING onAnswer with saveOnly=true');
+                console.trace('Call stack for onAnswer');
+                onAnswer(value, true); // saveOnly = true to prevent auto-navigation
+                console.log('onAnswer call completed');
+              }}
+            >
               <div className="option-checkmark" style={answer === value ? {borderColor: color, backgroundColor: color} : {}}>
                 {answer === value && <FiCheck size={14} color="white" />}
               </div>
@@ -441,6 +464,13 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             </OptionButton>
           );
         })}
+        {answer && (
+          <div className="selected-answer-display">
+            Selected: {isObjectOptions ? 
+              (question.options?.find((opt: any) => (opt.value || opt.label) === answer) as any)?.label || answer : 
+              answer}
+          </div>
+        )}
       </OptionsContainer>
     );
   };
@@ -476,7 +506,11 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <OptionButton 
               key={index} 
               isSelected={isSelected}
-              onClick={() => handleCheckboxChange(value)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCheckboxChange(value);
+              }}
             >
               <div 
                 className={`option-checkmark checkbox ${isSelected ? 'selected' : ''}`} 
@@ -495,16 +529,25 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   const renderDateInput = () => {
     return (
       <div className="date-input-container">
-        <input
-          type="date"
-          className="question-input"
-          value={answer || ''}
-          onChange={(e) => {
-            setAnswer(e.target.value);
-            onAnswer(e.target.value, true);
-          }}
-          style={{borderColor: answer ? color : '#d1d5db'}}
-        />
+        <div>
+          <textarea
+            placeholder="Type your detailed answer here..."
+            className="textarea-input"
+            rows={4}
+            value={answer || ''}
+            onChange={(e) => {
+              setAnswer(e.target.value);
+              onAnswer(e.target.value, true);
+            }}
+            style={{borderColor: answer ? color : '#d1d5db'}}
+          >
+          </textarea>
+          {answer && answer.trim() && (
+            <div className="selected-answer-display">
+              Your answer: {answer.length > 100 ? answer.substring(0, 100) + '...' : answer}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -522,7 +565,8 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     return (
       <div className="dropdown-container">
         <div className="select-wrapper">
-          <DropdownSelect
+          <select
+            className="dropdown-select"
             value={answer || ''}
             onChange={(e) => {
               setAnswer(e.target.value);
@@ -530,26 +574,25 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             }}
             style={{borderColor: answer ? color : '#d1d5db'}}
           >
-            {question.options.map((option, index) => {
-              const value = isObjectOptions ? (option as any).value || (option as any).label : option;
-              const label = isObjectOptions ? (option as any).label : option;
-              if (label === 'Select an option...') {
-                return (
-                  <option key={index} value="">
-                    {label}
-                  </option>
-                );
-              }
+            <option value="" disabled>Select an option...</option>
+            {question.options?.map((option, index) => {
+              const value = isObjectOptions ? (option as any).value || (option as any).label : option as string;
+              const label = isObjectOptions ? (option as any).label : option as string;
+              
               return (
                 <option key={index} value={value}>
                   {label}
                 </option>
               );
             })}
-          </DropdownSelect>
-          <DropdownIcon>
-            <FiChevronDown size={16} />
-          </DropdownIcon>
+          </select>
+          {answer && (
+            <div className="selected-answer-display">
+              Selected: {isObjectOptions ? 
+                (question.options?.find((opt: any) => (opt.value || opt.label) === answer) as any)?.label || answer : 
+                answer}
+            </div>
+          )}
         </div>
         {answer && (
           <div className="selected-answer-display">
@@ -593,17 +636,25 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
           {ratingOptions.map((value) => (
             <div
               key={value}
-              className={`rating-option ${answer === value.toString() ? 'selected' : ''}`}
-              onClick={() => {
+              className={`rating-option-circle ${answer === value.toString() ? 'selected' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Rating option clicked:', value, 'calling onAnswer with saveOnly: true');
                 setAnswer(value.toString());
                 onAnswer(value.toString(), true);
               }}
-              style={answer === value.toString() ? {backgroundColor: color} : {}}
+              style={answer === value.toString() ? {backgroundColor: color, borderColor: color} : {}}
             >
               {value}
             </div>
           ))}
         </div>
+        {answer && (
+          <div className="selected-rating-value">
+            Selected: {answer}
+          </div>
+        )}
       </div>
     );
   };
@@ -888,124 +939,125 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   const questionTypeInfo = getQuestionTypeInfo();
 
   const getSmartQuestionCount = () => {
-    // After migration, use only sectionQuestions format
+    // Use surveyOrder as the primary source of truth for pagination
+    if (survey?.surveyOrder && survey.surveyOrder.length > 0) {
+      console.log('Using surveyOrder for pagination:', survey.surveyOrder);
+      
+      const currentQuestionId = question._id || question.id;
+      const currentSectionId = question.sectionId;
+      
+      if (currentSectionId) {
+        // We're in a section - count only questions in this section based on surveyOrder
+        const sectionItems = survey.surveyOrder.filter((item: { type: string; id: string; order: number }) => {
+          if (item.type === 'section' && item.id === currentSectionId) return true;
+          if (item.type === 'question') {
+            // Check if this question belongs to the current section
+            const questionInSection = survey.sectionQuestions?.find(sq => 
+              (sq.id === item.id || sq._id === item.id) && sq.sectionId === currentSectionId
+            );
+            return !!questionInSection;
+          }
+          return false;
+        });
+        
+        const sectionQuestions = sectionItems.filter((item: { type: string; id: string; order: number }) => item.type === 'question');
+        const currentIndex = sectionQuestions.findIndex((item: { type: string; id: string; order: number }) => item.id === currentQuestionId);
+        
+        console.log('Section pagination:', {
+          sectionId: currentSectionId,
+          sectionQuestions: sectionQuestions.length,
+          currentIndex: currentIndex,
+          currentQuestionId
+        });
+        
+        return {
+          current: Math.max(1, currentIndex + 1),
+          total: sectionQuestions.length
+        };
+      } else {
+        // We're outside sections - use surveyOrder to find unsectioned questions
+        const questionItems = survey.surveyOrder.filter((item: { type: string; id: string; order: number }) => item.type === 'question');
+        const unsectionedQuestions = questionItems.filter((item: { type: string; id: string; order: number }) => {
+          const questionData = survey.sectionQuestions?.find(sq => 
+            sq.id === item.id || sq._id === item.id
+          );
+          return !questionData?.sectionId;
+        });
+        
+        const currentIndex = unsectionedQuestions.findIndex((item: { type: string; id: string; order: number }) => item.id === currentQuestionId);
+        
+        console.log('Unsectioned pagination:', {
+          totalQuestions: questionItems.length,
+          unsectionedQuestions: unsectionedQuestions.length,
+          currentIndex: currentIndex,
+          currentQuestionId
+        });
+        
+        return {
+          current: Math.max(1, currentIndex + 1),
+          total: unsectionedQuestions.length
+        };
+      }
+    }
+    
+    // Fallback to sectionQuestions format
     const allQuestions = survey?.sectionQuestions || [];
     
-    console.log('Question count debug:', {
-      totalQuestionsFound: allQuestions.length,
-      currentQuestionId: question._id || question.id,
-      currentSectionId: question.sectionId
-    });
-    
-    // If we have survey data with questions
     if (allQuestions.length > 0) {
       const currentSectionId = question.sectionId;
       
       if (currentSectionId) {
-        // We're in a section - count only questions in this section and reset pagination
         const sectionQuestions = allQuestions.filter((q: any) => q.sectionId === currentSectionId);
-        const currentQuestionIndex = sectionQuestions.findIndex((q: any) => q._id === question._id || q.id === question.id);
-        
-        console.log('Section context:', {
-          sectionId: currentSectionId,
-          sectionQuestions: sectionQuestions.length,
-          currentIndex: currentQuestionIndex
-        });
+        const currentQuestionIndex = sectionQuestions.findIndex((q: any) => 
+          q._id === question._id || q.id === question.id || q._id === question.id
+        );
         
         return {
           current: Math.max(1, currentQuestionIndex + 1),
           total: sectionQuestions.length
         };
       } else {
-        // We're outside sections - find all consecutive unsectioned questions from the start
-        let unsectionedQuestions: any[] = [];
-        let currentPos = 0;
-        
-        console.log('All questions in survey:', allQuestions.map((q, index) => ({
-          index: index,
-          id: q._id || q.id || `question_${index}`,
-          sectionId: q.sectionId,
-          text: q.text?.substring(0, 50) + '...'
-        })));
-        
-        // Get all questions that appear before any section starts
-        for (let i = 0; i < allQuestions.length; i++) {
-          const q = allQuestions[i];
-          
-          console.log(`Question ${i + 1}:`, {
-            id: q._id || q.id,
-            sectionId: q.sectionId,
-            hasSection: !!q.sectionId,
-            text: q.text?.substring(0, 30) + '...'
-          });
-          
-          if (!q.sectionId || q.sectionId === null) {
-            // This is an unsectioned question
-            unsectionedQuestions.push(q);
-            console.log(`Added unsectioned question ${unsectionedQuestions.length}:`, q._id || q.id);
-            
-            // Match by ID if available, otherwise by text content
-            const questionMatch = (q._id && question._id && q._id === question._id) ||
-                                 (q.id && question.id && q.id === question.id) ||
-                                 (q.text && question.text && q.text === question.text);
-            
-            if (questionMatch) {
-              currentPos = unsectionedQuestions.length;
-              console.log(`Found current question at position ${currentPos} by ${q._id || q.id ? 'ID' : 'text'} match`);
-            }
-          } else {
-            // Hit a sectioned question - stop counting unsectioned questions
-            console.log(`Hit sectioned question, stopping count at ${unsectionedQuestions.length} unsectioned questions`);
-            break;
-          }
-        }
-        
-        console.log('Unsectioned context final:', {
-          unsectionedCount: unsectionedQuestions.length,
-          currentPos: currentPos,
-          questionId: question._id || question.id,
-          allUnsectionedIds: unsectionedQuestions.map(q => q._id || q.id)
-        });
+        const unsectionedQuestions = allQuestions.filter((q: any) => !q.sectionId);
+        const currentQuestionIndex = unsectionedQuestions.findIndex((q: any) => 
+          q._id === question._id || q.id === question.id || q._id === question.id
+        );
         
         return {
-          current: Math.max(1, currentPos),
+          current: Math.max(1, currentQuestionIndex + 1),
           total: unsectionedQuestions.length
         };
       }
     }
     
-    // Fallback to original logic - ensure we have valid values
-    console.log('Fallback context:', { currentQuestion, totalQuestions });
+    // Final fallback to original progress string parsing
+    console.log('Using fallback pagination from progress string:', progress);
     return {
       current: Math.max(1, currentQuestion || 1),
-      total: totalQuestions || 1
+      total: Math.max(1, totalQuestions || 1)
     };
   };
 
   const renderProgressIndicator = () => {
     const { current, total } = getSmartQuestionCount();
     
-    console.log('Progress Indicator Debug:', { 
+    console.log('Progress Indicator:', { 
       current, 
       total, 
       questionId: question._id || question.id, 
       sectionId: question.sectionId,
-      surveyData: survey ? {
-        hasSurveySections: !!survey.surveySections,
-        hasSectionQuestions: !!survey.sectionQuestions,
-        sectionsCount: survey.surveySections?.length,
-        questionsCount: survey.sectionQuestions?.length
-      } : 'No survey data'
+      hasValidData: total > 1
     });
     
-    if (!total || total <= 1) return null;
+    // Only show progress indicator if there are multiple questions
+    if (!total || total <= 1) {
+      console.log('Not showing progress indicator: total =', total);
+      return null;
+    }
     
     const segments = [];
     for (let i = 1; i <= total; i++) {
       const isActive = i === current;
       const isCompleted = i < current;
-      
-      console.log(`Segment ${i}:`, { isActive, isCompleted, current });
       
       segments.push(
         <ProgressSegment
@@ -1175,18 +1227,15 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
 
   return (
     <>
-      {renderProgressIndicator()}
-      
       <TwoColumnLayout>
         <QuestionContentColumn>
+          {renderProgressIndicator()}
+          
           <QuestionText>
             <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
-            {question.required && <span className="question-required-indicator" aria-label="required question">*</span>}
           </QuestionText>
           
           <div className="question-card">
-            {question.required && <span className="question-required-indicator" aria-label="required field">Required</span>}
-            
             <div className="answer-options">
               {renderQuestionInput()}
             </div>
@@ -1222,7 +1271,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
                 }}
               >
                 <FiArrowLeft size={18} />
-                Back
+                Previous
               </button>
               
               <button 
@@ -1232,7 +1281,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
                 style={{backgroundColor: color}}
                 data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
               >
-                {isLastQuestion ? 'Submit' : 'Continue'}
+                {isLastQuestion ? 'Submit' : 'Next Question'}
                 <FiArrowRight size={18} />
               </button>
             </div>

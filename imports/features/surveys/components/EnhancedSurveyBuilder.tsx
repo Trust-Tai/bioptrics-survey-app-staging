@@ -509,7 +509,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       setActiveStep('welcome');
     }
   }, [surveyId]);
-  const [saving, setSaving] = useState(false);
+  const [isLoadingState, setIsLoadingState] = useState(false);
+  const [showRemoveLogoConfirm, setShowRemoveLogoConfirm] = useState(false);
+  const [showRemoveFeaturedImageConfirm, setShowRemoveFeaturedImageConfirm] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -1848,6 +1850,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const [lastUserActivity, setLastUserActivity] = useState<number>(Date.now());
   const [lastSaved, setLastSaved] = useState<number | null>(null);
   const [showSavedMessage, setShowSavedMessage] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
   
   // Handle auto-save functionality
   useEffect(() => {
@@ -5874,13 +5877,36 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                               border: '1px solid #dee2e6', 
                               borderRadius: '4px',
                               backgroundColor: '#ffffff',
-                              display: 'inline-block'
+                              display: 'inline-block',
+                              position: 'relative'
                             }}>
                               <img 
                                 src={survey.logo} 
                                 alt="Logo Preview" 
                                 style={{ maxWidth: '180px', maxHeight: '80px' }} 
                               />
+                              <button
+                                onClick={() => setShowRemoveLogoConfirm(true)}
+                                style={{
+                                  position: 'absolute',
+                                  top: '4px',
+                                  right: '4px',
+                                  background: '#dc3545',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: '24px',
+                                  height: '24px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'white',
+                                  fontSize: '12px'
+                                }}
+                                title="Remove logo"
+                              >
+                                <FiX />
+                              </button>
                             </div>
                           )}
                         </div>
@@ -5960,13 +5986,36 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                               border: '1px solid #dee2e6', 
                               borderRadius: '4px',
                               backgroundColor: '#ffffff',
-                              display: 'inline-block'
+                              display: 'inline-block',
+                              position: 'relative'
                             }}>
                               <img 
                                 src={survey.featuredImage} 
                                 alt="Featured Image Preview" 
                                 style={{ maxWidth: '180px', maxHeight: '120px' }} 
                               />
+                              <button
+                                onClick={() => setShowRemoveFeaturedImageConfirm(true)}
+                                style={{
+                                  position: 'absolute',
+                                  top: '4px',
+                                  right: '4px',
+                                  background: '#dc3545',
+                                  border: 'none',
+                                  borderRadius: '50%',
+                                  width: '24px',
+                                  height: '24px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  color: 'white',
+                                  fontSize: '12px'
+                                }}
+                                title="Remove featured image"
+                              >
+                                <FiX />
+                              </button>
                             </div>
                           )}
                         </div>
@@ -7974,6 +8023,138 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         
         {/* Theme preview modal */}
         {showPreview && previewTheme && <ThemePreview theme={previewTheme} />}
+        
+        {/* Remove Logo Confirmation Modal */}
+        {showRemoveLogoConfirm && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '8px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>
+                Remove Logo
+              </h3>
+              <p style={{ margin: '0 0 24px 0', color: '#666', lineHeight: 1.5 }}>
+                Are you sure you want to remove the survey logo? This action cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowRemoveLogoConfirm(false)}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setSurvey({...survey, logo: null});
+                    setHasUnsavedChanges(true);
+                    triggerAutoSave();
+                    setShowRemoveLogoConfirm(false);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Remove Featured Image Confirmation Modal */}
+        {showRemoveFeaturedImageConfirm && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '8px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>
+                Remove Featured Image
+              </h3>
+              <p style={{ margin: '0 0 24px 0', color: '#666', lineHeight: 1.5 }}>
+                Are you sure you want to remove the featured image? This action cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowRemoveFeaturedImageConfirm(false)}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setSurvey({...survey, featuredImage: null});
+                    setHasUnsavedChanges(true);
+                    triggerAutoSave();
+                    setShowRemoveFeaturedImageConfirm(false);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Question Builder Side Panel is now managed by QuestionBuilderPanelContext provider */}
       </DashboardBg>

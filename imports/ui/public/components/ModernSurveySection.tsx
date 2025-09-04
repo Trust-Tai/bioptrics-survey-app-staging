@@ -52,11 +52,11 @@ const SectionContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: var(--background-color, #f9f9ff);
+  min-height: 100vh;
   padding: 0;
   margin: 0;
   animation: fadeIn 0.5s ease-out;
-  font-family: var(--body-font, 'Inter, sans-serif');
+  font-family: 'Inter', sans-serif;
   
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
@@ -65,145 +65,93 @@ const SectionContainer = styled.div`
 `;
 
 const SectionCard = styled.div<{ color?: string }>`
-  background: var(--card-background, transparent);
-  border-radius: 0;
+  background: transparent;
   width: 100%;
-  max-width: 100%;
-  margin: 0;
+  max-width: 800px;
+  margin: 0 auto;
   position: relative;
-  overflow: hidden;
-  // display: flex;
-  // flex-direction: row;
+  padding: 3rem 2rem;
   
   @media (max-width: 768px) {
-    flex-direction: column;
+    padding: 2rem 1rem;
   }
 `;
 
-const SectionHeader = styled.div`
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  background-color: transparent;
-  padding: 0;
-  margin: 0;
-`;
-
-const SectionNumberBadge = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background-color: var(--primary-color, #2c3e50);
-  color: var(--button-text, white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 20px;
-  margin-right: 1rem;
-  flex-shrink: 0;
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  z-index: 10;
-`;
-
-const HeaderContent = styled.div`
-  flex: 1;
-  padding: 3rem 3rem 2rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  
-  @media (max-width: 768px) {
-    padding: 2rem;
-  }
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 2.5rem;
+const SectionTitle = styled.h1`
+  font-size: 3rem;
   font-weight: 700;
-  margin: 0 0 1rem 0rem;
-  color: var(--primary-color, #1f2937);
+  margin: 0 0 2rem 0;
+  color: #552A47;
   line-height: 1.2;
-  font-family: var(--heading-font, 'Inter, sans-serif');
+  font-family: 'Inter', sans-serif;
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+`;
+
+const SectionImageContainer = styled.div`
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 2rem auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  
+  img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+  }
+  
+  @media (max-width: 768px) {
+    height: 200px;
+    margin-bottom: 1.5rem;
+    
+    img {
+      height: 200px;
+    }
+  }
 `;
 
 const SectionDescription = styled.p`
   font-size: 1.125rem;
   line-height: 1.6;
-  color: var(--text-color, #4b5563);
-  margin: 0 0 1.5rem;
+  color: #4b5563;
+  margin: 0 0 3rem 0;
+  text-align: center;
   max-width: 600px;
-  font-family: var(--body-font, 'Inter, sans-serif');
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 3rem;
+  font-family: 'Inter', sans-serif;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-top: 2rem;
   width: 100%;
-  flex-wrap: wrap;
   gap: 1rem;
-`;
-
-const BackButton = styled.button`
-  background: transparent;
-  color: var(--text-color, #4b5563);
-  border: 2px solid var(--primary-color, #e5e7eb);
-  border-radius: var(--button-radius, 50px);
-  padding: 0.75rem 1.5rem;
-  font-size: 16px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  min-width: 160px;
-  justify-content: center;
-  font-family: var(--body-font, 'Inter, sans-serif');
   
-  &:hover {
-    background: var(--primary-color, #f9fafb);
-    color: var(--button-text, #ffffff);
-    border-color: var(--primary-color, #9ca3af);
-  }
-`;
-
-const ContinueButton = styled.button`
-  background-color: var(--button-background, var(--primary-color, #2c3e50));
-  color: var(--button-text, white);
-  border: none;
-  border-radius: var(--button-radius, 30px);
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  transition: all 0.3s ease;
-  margin-right: 12px;
-  font-family: var(--body-font, 'Inter, sans-serif');
-  
-  &:hover {
-    background-color: var(--button-hover, #1a2533);
-    transform: translateY(-2px);
-  }
-  
-  svg {
-    margin-left: 8px;
+  @media (max-width: 640px) {
+    flex-direction: column;
   }
 `;
 
 const StartSectionButton = styled.button`
-  background: var(--button-background, var(--primary-color, #2c3e50));
-  color: var(--button-text, white);
+  background: #552A47;
+  color: white;
   border: none;
-  border-radius: var(--button-radius, 50px);
-  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  padding: 1rem 2rem;
   font-size: 16px;
   font-weight: 600;
   display: flex;
@@ -212,18 +160,22 @@ const StartSectionButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  min-width: 160px;
+  min-width: 180px;
   justify-content: center;
-  font-family: var(--body-font, 'Inter, sans-serif');
+  font-family: 'Inter', sans-serif;
   
   &:hover {
-    background: var(--button-hover, #1e2a36);
+    background: #3d1e32;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 25px rgba(85, 42, 71, 0.3);
   }
   
   &:active {
     transform: translateY(0);
+  }
+  
+  svg {
+    margin-left: 4px;
   }
 `;
 
@@ -232,7 +184,6 @@ const ContentContainer = styled.div`
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  background-color: #f9f9ff;
   
   @media (max-width: 768px) {
     padding: 1.5rem;
@@ -243,59 +194,64 @@ const StatsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
   
   @media (max-width: 768px) {
     grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
   }
   
   @media (max-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @media (max-width: 480px) {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 `;
 
 const StatCard = styled.div`
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   text-align: center;
-  height: 100%;
-  display: block;
+  border: 1px solid #f1f5f9;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
 `;
 
 const StatIcon = styled.div`
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background-color: var(--primary-color, rgba(124, 58, 237, 0.1));
-  color: #ffffff;
+  background-color: rgba(85, 42, 71, 0.1);
+  color: #552A47;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 0.75rem auto;
+  margin: 0 auto 1rem auto;
 `;
 
 const StatValue = styled.div`
-  font-size: 24px;
+  font-size: 2.5rem;
   font-weight: 700;
-  color: var(--heading-color, #111827);
+  color: #552A47;
   margin: 0.5rem 0;
-  width: 100%;
-  text-align: center;
-  font-family: var(--heading-font, 'Inter, sans-serif');
+  font-family: 'Inter', sans-serif;
 `;
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: var(--text-color, #6b7280);
-  width: 100%;
-  text-align: center;
-  font-family: var(--body-font, 'Inter, sans-serif');
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
 `;
 
 const ImageContainer = styled.div`
@@ -468,86 +424,39 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     getTimeData();
   }, [dynamicTimeData, section]);
   
-  // Initialize with section data immediately to avoid showing '...'
+  // Get actual question count from survey data
   useEffect(() => {
-    // Set initial values from section props to avoid showing '...'
-    // Use the requiredQuestionCount prop if available, otherwise fall back to section data
-    const initialRequiredCount = requiredQuestionCount !== undefined ? 
-      requiredQuestionCount : 
-      (section.requiredQuestionCount || 0);
-      
-    console.log('Initial required question count:', {
-      fromProp: requiredQuestionCount,
-      fromSection: section.requiredQuestionCount,
-      finalValue: initialRequiredCount
-    });
-    
-    setMetadata({
-      questionCount: section.questionCount || 0,
-      requiredQuestionCount: initialRequiredCount,
-      estimatedTime: section.estimatedTime || '~2'
-    });
-    
-    // Then fetch the actual data
-    if (surveyId && section.id) {
+    if (!surveyId || !section.id) {
+      setLoading(false);
+      return;
+    }
 
-      
-      // First try to get sectionQuestions directly from client-side cache if available
-      try {
-        // Access the client-side cache for sectionQuestions
-        const trackerData = localStorage.getItem('DeviceTracker');
-        if (trackerData) {
-          const parsedData = JSON.parse(trackerData);
-          if (parsedData && parsedData.sectionQuestions && 
-              parsedData.sectionQuestions.length > 0 && 
-              parsedData.sectionQuestions[0].sectionId === section.id) {
-            
-
-            const questionCount = parsedData.sectionQuestions[0].questions.length;
-            const requiredQuestions = parsedData.sectionQuestions[0].questions.filter(
-              (q: any) => q.required === true
-            ).length;
-            console.log('Get required questions count:---', requiredQuestions);
-            setMetadata(prev => ({
-              ...prev,
-              questionCount: questionCount,
-              requiredQuestionCount: requiredQuestions
-            }));
-            
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Error accessing client-side cache:', e);
+    // Use the Meteor method to get actual question count from surveyOrder
+    Meteor.call('getSectionQuestionsFromSurveyOrder', surveyId, section.id, (error: any, result: any) => {
+      if (error) {
+        console.error('Error fetching section questions:', error);
+        // Fallback to props if available
+        const questionCount = section.questionCount || totalQuestions || 0;
+        const requiredCount = section.requiredQuestionCount || requiredQuestionCount || questionCount;
+        const estimatedMinutes = Math.max(1, Math.ceil(questionCount * 0.5));
+        
+        setMetadata({
+          questionCount: questionCount,
+          requiredQuestionCount: requiredCount,
+          estimatedTime: estimatedMinutes.toString()
+        });
+      } else if (result) {
+        console.log(`Section ${section.id} has ${result.totalQuestions} questions from surveyOrder`);
+        setMetadata({
+          questionCount: result.totalQuestions,
+          requiredQuestionCount: result.requiredQuestions,
+          estimatedTime: result.estimatedTime
+        });
       }
       
-      // If client-side cache doesn't have the data, fall back to Meteor method
-      Meteor.call('getSectionMetadata', surveyId, section.id, (error: any, result: any) => {
-        if (error) {
-          console.error('Error fetching section metadata:', error);
-          // Even on error, we should set loading to false
-          setLoading(false);
-          return;
-        }
-        
-
-        if (result) {
-          setMetadata({
-            questionCount: result.questionCount || section.questionCount || 0,
-            requiredQuestionCount: result.requiredQuestionCount || section.requiredQuestionCount || 0,
-            estimatedTime: result.estimatedTime || '~2'
-          });
-        }
-        
-        // Always set loading to false
-        setLoading(false);
-      });
-    } else {
-      // If no surveyId or section.id, set loading to false immediately
       setLoading(false);
-    }
-  }, [surveyId, section.id, section.questionCount, section.requiredQuestionCount, section.estimatedTime]);
+    });
+  }, [surveyId, section.id, section.questionCount, totalQuestions, section.requiredQuestionCount, requiredQuestionCount]);
   
   // Add a direct script to access the Processing sectionQuestions array from the console
   useEffect(() => {
@@ -739,86 +648,62 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   };
 
   const sectionImage = section.image || image || null;
-  const effectiveColor = '#7c3aed'; // Using purple from the reference image
+  const effectiveColor = '#552A47'; // Using the specified primary color
 
   return (
     <SectionContainer>
-        <SectionCard>
-        <SectionHeader>
-          <HeaderContent style={{ flex: sectionImage ? 1 : 'auto', maxWidth: sectionImage ? '60%' : '100%' }}>
-            {/* <SectionNumberBadge>{section.index || sectionIndex}</SectionNumberBadge> */}
-            <SectionTitle>{section.name}</SectionTitle>
-            {renderDescription()}
-          </HeaderContent>
-          
-          {sectionImage && (
-            <ImageContainer>
-              <img src={sectionImage} alt={section.name} />
-              <ImageNumberBadge>{section.index || sectionIndex}</ImageNumberBadge>
-            </ImageContainer>
-          )}
-        </SectionHeader>
+      <SectionCard>
+        <SectionTitle>{section.name}</SectionTitle>
         
-        <ContentContainer>
-          <StatsContainer>
-            <StatCard>
-              <StatIcon>
-                <FiClock size={24} />
-              </StatIcon>
-              <StatValue>
-                {localDynamicTimeData ? 
-                  // Show minutes from dynamic data
-                  localDynamicTimeData.minutes : 
-                  // Fallback to metadata
-                  metadata.estimatedTime}
-              </StatValue>
-              <StatLabel>
-                Avg Minutes
-              </StatLabel>
-            </StatCard>
-            
-            <StatCard>
-              <StatIcon>
-                <FiCheckCircle size={24} />
-              </StatIcon>
-              <StatValue>{totalQuestions || metadata.questionCount}</StatValue>
-              <StatLabel>Total questions</StatLabel>
-            </StatCard>
-            
-            <StatCard>
-              <StatIcon>
-                <FiStar size={24} />
-              </StatIcon>
-              <StatValue>
-                {(() => {
-                  // Use prop first, then metadata as fallback
-                  const displayCount = requiredQuestionCount !== undefined ? 
-                    requiredQuestionCount : 
-                    metadata.requiredQuestionCount;
-                  
-                  console.log('Displaying required question count:', {
-                    fromProp: requiredQuestionCount,
-                    fromMetadata: metadata.requiredQuestionCount,
-                    finalValue: displayCount
-                  });
-                  
-                  return displayCount;
-                })()}
-              </StatValue>
-              <StatLabel>Required questions</StatLabel>
-            </StatCard>
-          </StatsContainer>
+        {sectionImage && (
+          <SectionImageContainer>
+            <img src={sectionImage} alt={section.name} />
+          </SectionImageContainer>
+        )}
+        
+        {renderDescription()}
+        
+        <StatsContainer>
+          <StatCard>
+            <StatIcon>
+              <FiClock size={24} />
+            </StatIcon>
+            <StatValue>
+              {localDynamicTimeData ? 
+                localDynamicTimeData.minutes : 
+                metadata.estimatedTime}
+            </StatValue>
+            <StatLabel>
+              Average Minutes
+            </StatLabel>
+          </StatCard>
           
-          <ButtonContainer>
-            <BackButton onClick={onBack}>
-              <FiArrowLeft /> Back
-            </BackButton>
-            
-            <StartSectionButton onClick={onContinue}>
-              Start Section <FiArrowRight />
-            </StartSectionButton>
-          </ButtonContainer>
-        </ContentContainer>
+          <StatCard>
+            <StatIcon>
+              <FiCheckCircle size={24} />
+            </StatIcon>
+            <StatValue>
+              {metadata.questionCount}
+            </StatValue>
+            <StatLabel>Total Questions</StatLabel>
+          </StatCard>
+          
+          <StatCard>
+            <StatIcon>
+              <FiStar size={24} />
+            </StatIcon>
+            <StatValue>
+              {metadata.requiredQuestionCount}
+            </StatValue>
+            <StatLabel>Required Questions</StatLabel>
+          </StatCard>
+        </StatsContainer>
+        
+        <ButtonContainer>
+          <StartSectionButton onClick={onContinue}>
+            Start Section <FiArrowRight />
+          </StartSectionButton>
+        </ButtonContainer>
       </SectionCard>
     </SectionContainer>
   );

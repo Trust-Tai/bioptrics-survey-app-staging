@@ -912,15 +912,11 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
     const section = sections.find(s => s.id === sectionId);
     const sectionName = section?.name || 'Unknown Section';
     
-
-    // Keep questions in their original order - surveyOrder handles the sorting
-    const sortedQuestions = [...filteredQuestions];
-
-    
     console.log(`Getting questions for section: ${sectionName} (${sectionId})`);
     console.log(`Found ${sortedQuestions.length} questions in section`);
     
     // Log each question ID for debugging
+    const questionIds = sortedQuestions.map(q => q._id || q.id);
     questionIds.forEach((id, index) => {
       console.log(`Question ${index + 1}: ${id}`);
     });
@@ -1571,7 +1567,16 @@ const handleRestart = () => {
   
   // Handle answering a question and potentially navigating to the next question
   const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {
-    console.log(`Question ${questionId} answered:`, answer, 'saveOnly:', saveOnly);
+    console.log('=== HANDLE QUESTION ANSWER INVESTIGATION ===');
+    console.log('Parameters received:', {
+      questionId,
+      answer,
+      saveOnly,
+      saveOnlyType: typeof saveOnly,
+      saveOnlyStrictEqual: saveOnly === true,
+      saveOnlyLooseEqual: saveOnly == true,
+      timestamp: new Date().toISOString()
+    });
     
     // Save the answer
     setResponses(prev => ({
@@ -1579,11 +1584,14 @@ const handleRestart = () => {
       [questionId]: answer
     }));
     
-    // If saveOnly is true, don't navigate to the next question
-    if (saveOnly) {
-      console.log('Save only mode - not navigating to next question');
+    // CRITICAL: Always check saveOnly flag first - if true, NEVER navigate
+    if (saveOnly === true) {
+      console.log('SAVE ONLY MODE - BLOCKING NAVIGATION - RETURNING EARLY');
       return;
     }
+    
+    console.log('NAVIGATION MODE - saveOnly is false, proceeding with navigation');
+    console.log('About to start navigation logic...');
     
     // Find the current question
     const currentQuestion = questions.find(q => q._id === questionId || q.id === questionId);
@@ -3695,7 +3703,10 @@ const handleRestart = () => {
           <ModernSurveyQuestion
             question={mappedQuestion}
             progress={questionProgress}
-            onAnswer={(answer, saveOnly) => handleQuestionAnswer(currentQuestion._id || currentQuestion.id || '', answer, saveOnly)}
+            onAnswer={(answer, saveOnly) => {
+              console.log('PARENT onAnswer called with:', { answer, saveOnly, questionId: currentQuestion._id || currentQuestion.id || '' });
+              handleQuestionAnswer(currentQuestion._id || currentQuestion.id || '', answer, saveOnly);
+            }}
             onBack={handleBack}
             onNext={handleNextQuestion}
             value={responses[currentQuestion._id || currentQuestion.id || '']}
