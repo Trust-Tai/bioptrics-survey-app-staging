@@ -65,7 +65,7 @@ const QuestionContentColumn = styled.div`
   display: flex;
   flex-direction: column;
   max-width: 500px;
-  margin: auto;
+  margin: 50px auto;
   
   @media (max-width: 768px) {
     flex: 1;
@@ -249,61 +249,49 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   };
   
   useEffect(() => {
-    console.log('Question:', question);
-    console.log('Question responseType:', question.responseType);
-    
-    console.log('DETAILED QUESTION INSPECTION:');
-    console.log('- _id:', question._id);
-    console.log('- text:', question.text);
-    console.log('- responseType:', question.responseType);
-    console.log('- type:', question.type);
-    console.log('- options:', question.options);
-    
-    if (Array.isArray(question.versions) && question.versions.length > 0) {
-      console.log('VERSIONS ARRAY FOUND:');
-      question.versions.forEach((version, index) => {
-        console.log(`VERSION ${index}:`, version);
-        console.log(`- responseType:`, version.responseType);
-        console.log(`- questionText:`, version.questionText);
-        console.log(`- options:`, version.options);
-      });
-      
-      const versionIndex = question.currentVersion !== undefined ? 
-        Math.min(question.currentVersion, question.versions.length - 1) : 0;
-      const versionData = question.versions[versionIndex];
-      
-      if (versionData && versionData.responseType === 'dropdown') {
-        console.log('CRITICAL: DROPDOWN FOUND IN VERSIONS ARRAY - This should render as dropdown');
-        (question as any)._forceDropdown = true;
-      }
-    }
-    
-    if (question.responseType === 'dropdown' || 
-        (question.responseType && question.responseType.toLowerCase().includes('dropdown'))) {
-      console.log('DROPDOWN QUESTION DETECTED - This should render as a dropdown select');
-    }
+    console.log('USEEFFECT SYNC - Question changed or value prop changed:', {
+      questionId: question._id,
+      valueProp: value,
+      currentAnswer: answer,
+      actualType: getActualQuestionType()
+    });
     
     const actualType = getActualQuestionType();
-    console.log('Actual question type:', actualType);
-    console.log('Will render:', actualType === 'dropdown' ? 'dropdown select' : 'other component');
     
+    // Only sync from prop to state on initial load or question change
+    // Don't sync when user is actively selecting options
     if (actualType === 'multiple_choice') {
       if (value === '' || value === null || value === undefined) {
-        setAnswer([]);
+        // Only set empty array if answer is not already set
+        if (!Array.isArray(answer) || answer.length === 0) {
+          setAnswer([]);
+        }
       } else if (!Array.isArray(value)) {
         try {
           const parsed = typeof value === 'string' ? JSON.parse(value) : [value];
-          setAnswer(Array.isArray(parsed) ? parsed : [value]);
+          const newAnswer = Array.isArray(parsed) ? parsed : [value];
+          // Only update if significantly different to prevent clearing user selections
+          if (JSON.stringify(newAnswer) !== JSON.stringify(answer)) {
+            setAnswer(newAnswer);
+          }
         } catch (e) {
-          setAnswer([value]);
+          if (JSON.stringify([value]) !== JSON.stringify(answer)) {
+            setAnswer([value]);
+          }
         }
       } else {
-        setAnswer(value);
+        if (JSON.stringify(value) !== JSON.stringify(answer)) {
+          setAnswer(value);
+        }
       }
     } else {
-      setAnswer(value || '');
+      // For single-choice questions, only update if value is truly different
+      if (value !== answer) {
+        console.log('SYNC: Updating answer from', answer, 'to', value);
+        setAnswer(value || '');
+      }
     }
-  }, [value, question._id]);
+  }, [value, question._id]); // Removed 'answer' from dependencies to prevent loops
   
   let currentQuestion = 1;
   let totalQuestions = 1;
@@ -369,7 +357,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       setIsTyping(false);
     }
     
-    console.log('CRITICAL - Question button click info:', {
+    console.log('CRITICAL - Continue button clicked - this should trigger navigation:', {
       isLastQuestion,
       hasSubmitHandler: !!onSubmit,
       questionText: question.text?.substring(0, 30),
@@ -377,6 +365,7 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
       currentAnswer: answer
     });
     
+    // Continue button should trigger navigation, so saveOnly = false
     onAnswer(answer, false);
     
     setTimeout(() => {
@@ -403,7 +392,10 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <div
               key={value}
               className={`scale-option ${answer === value.toString() ? 'selected' : ''}`}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Scale option clicked:', value, 'calling onAnswer with saveOnly: true');
                 setAnswer(value.toString());
                 onAnswer(value.toString(), true);
               }}
@@ -418,6 +410,11 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             </div>
           ))}
         </ScaleButtonsContainer>
+        {answer && (
+          <div className="selected-answer-display">
+            Selected: {answer}
+          </div>
+        )}
         {answer && (
           <div className="selected-answer-display">
             <span>Your answer: <strong>{answer}</strong></span>
@@ -444,9 +441,20 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <OptionButton 
               key={index} 
               isSelected={answer === value}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('RADIO OPTION CLICKED - INVESTIGATION:', {
+                  value,
+                  currentAnswer: answer,
+                  saveOnlyFlag: true,
+                  timestamp: new Date().toISOString()
+                });
                 setAnswer(value);
+                console.log('CALLING onAnswer with saveOnly=true');
+                console.trace('Call stack for onAnswer');
                 onAnswer(value, true); // saveOnly = true to prevent auto-navigation
+                console.log('onAnswer call completed');
               }}
             >
               <div className="option-checkmark" style={answer === value ? {borderColor: color, backgroundColor: color} : {}}>
@@ -456,6 +464,13 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             </OptionButton>
           );
         })}
+        {answer && (
+          <div className="selected-answer-display">
+            Selected: {isObjectOptions ? 
+              (question.options?.find((opt: any) => (opt.value || opt.label) === answer) as any)?.label || answer : 
+              answer}
+          </div>
+        )}
       </OptionsContainer>
     );
   };
@@ -491,7 +506,11 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <OptionButton 
               key={index} 
               isSelected={isSelected}
-              onClick={() => handleCheckboxChange(value)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCheckboxChange(value);
+              }}
             >
               <div 
                 className={`option-checkmark checkbox ${isSelected ? 'selected' : ''}`} 
@@ -510,16 +529,25 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   const renderDateInput = () => {
     return (
       <div className="date-input-container">
-        <input
-          type="date"
-          className="question-input"
-          value={answer || ''}
-          onChange={(e) => {
-            setAnswer(e.target.value);
-            onAnswer(e.target.value, true);
-          }}
-          style={{borderColor: answer ? color : '#d1d5db'}}
-        />
+        <div>
+          <textarea
+            placeholder="Type your detailed answer here..."
+            className="textarea-input"
+            rows={4}
+            value={answer || ''}
+            onChange={(e) => {
+              setAnswer(e.target.value);
+              onAnswer(e.target.value, true);
+            }}
+            style={{borderColor: answer ? color : '#d1d5db'}}
+          >
+          </textarea>
+          {answer && answer.trim() && (
+            <div className="selected-answer-display">
+              Your answer: {answer.length > 100 ? answer.substring(0, 100) + '...' : answer}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -537,7 +565,8 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
     return (
       <div className="dropdown-container">
         <div className="select-wrapper">
-          <DropdownSelect
+          <select
+            className="dropdown-select"
             value={answer || ''}
             onChange={(e) => {
               setAnswer(e.target.value);
@@ -545,26 +574,25 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             }}
             style={{borderColor: answer ? color : '#d1d5db'}}
           >
-            {question.options.map((option, index) => {
-              const value = isObjectOptions ? (option as any).value || (option as any).label : option;
-              const label = isObjectOptions ? (option as any).label : option;
-              if (label === 'Select an option...') {
-                return (
-                  <option key={index} value="">
-                    {label}
-                  </option>
-                );
-              }
+            <option value="" disabled>Select an option...</option>
+            {question.options?.map((option, index) => {
+              const value = isObjectOptions ? (option as any).value || (option as any).label : option as string;
+              const label = isObjectOptions ? (option as any).label : option as string;
+              
               return (
                 <option key={index} value={value}>
                   {label}
                 </option>
               );
             })}
-          </DropdownSelect>
-          <DropdownIcon>
-            <FiChevronDown size={16} />
-          </DropdownIcon>
+          </select>
+          {answer && (
+            <div className="selected-answer-display">
+              Selected: {isObjectOptions ? 
+                (question.options?.find((opt: any) => (opt.value || opt.label) === answer) as any)?.label || answer : 
+                answer}
+            </div>
+          )}
         </div>
         {answer && (
           <div className="selected-answer-display">
@@ -609,7 +637,10 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
             <div
               key={value}
               className={`rating-option-circle ${answer === value.toString() ? 'selected' : ''}`}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Rating option clicked:', value, 'calling onAnswer with saveOnly: true');
                 setAnswer(value.toString());
                 onAnswer(value.toString(), true);
               }}
