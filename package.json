@@ -49,6 +49,7 @@
     "react-router-dom": "^6.30.0",
     "react-select": "^5.10.1",
     "react-tabs": "^6.1.0",
+    "react-toastify": "^11.0.5",
     "recharts": "^2.15.3",
     "simpl-schema": "^3.4.6",
     "styled-components": "^6.1.19",

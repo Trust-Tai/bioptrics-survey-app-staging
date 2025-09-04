@@ -115,6 +115,7 @@ export interface SurveyDoc {
     title: string;
     subtitle: string;
     icon: string;
+    selected?: boolean;
   }>;
   
   // Welcome screen expectations
@@ -681,7 +682,11 @@ Meteor.methods({
         thankYouTitle: importData.thankYouTitle || 'Thank You',
         thankYouDetails: importData.thankYouDetails || '',
         thankYouIcon: importData.thankYouIcon || '',
-        thankYouBoxes: importData.thankYouBoxes || [],
+        // Set all thankYouBoxes as selected by default
+        thankYouBoxes: (importData.thankYouBoxes || []).map((box: {title: string; subtitle: string; icon: string; selected?: boolean}) => ({
+          ...box,
+          selected: box.selected !== undefined ? box.selected : true
+        })),
         
         // Survey order - either use provided order or build it from questions and sections
         surveyOrder: importData.surveyOrder || [],
@@ -1091,21 +1096,50 @@ Meteor.methods({
               order: orderIndex++
             });
             
-            // Add questions for this section from selectedQuestions
-            if (surveyDoc.selectedQuestions && surveyDoc.selectedQuestions[section.id]) {
-              const sectionQuestions = surveyDoc.selectedQuestions[section.id];
-              sectionQuestions.forEach((question: any) => {
-                builtSurveyOrder.push({
-                  type: 'question',
-                  id: question.id || question._id,
-                  order: orderIndex++
-                });
+            // Find questions that belong to this section using sectionId
+            const sectionQuestions = surveyDoc.sectionQuestions?.filter(q => q.sectionId === section.id) || [];
+            
+            // Sort questions by their order property
+            sectionQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            // Add each question that belongs to this section
+            sectionQuestions.forEach(question => {
+              builtSurveyOrder.push({
+                type: 'question',
+                id: question.id,
+                order: orderIndex++
               });
-            }
+            });
           });
           
           surveyDoc.surveyOrder = builtSurveyOrder;
           console.log(`Built surveyOrder with ${builtSurveyOrder.length} items`);
+          
+          // Log thankYouBoxes to verify they are set as selected
+          console.log('ThankYouBoxes configuration:');
+          if (surveyDoc.thankYouBoxes && surveyDoc.thankYouBoxes.length > 0) {
+            surveyDoc.thankYouBoxes.forEach((box, index) => {
+              console.log(`Box ${index + 1}: ${box.title} - Selected: ${box.selected}`);
+            });
+          } else {
+            console.log('No thankYouBoxes defined');
+          }
+          
+          // Log the structure to verify
+          console.log('Survey order structure:');
+          builtSurveyOrder.forEach(item => {
+            if (item.type === 'section') {
+              const section = surveyDoc.surveySections?.find(s => s.id === item.id);
+              console.log(`Section: ${section?.name || item.id} (order: ${item.order})`);
+            } else {
+              const question = surveyDoc.sectionQuestions?.find(q => q.id === item.id);
+              const sectionId = question?.sectionId;
+              const sectionName = sectionId ? 
+                (surveyDoc.surveySections?.find(s => s.id === sectionId)?.name || sectionId) : 
+                'No section';
+              console.log(`  Question: ${(question as any)?.text || item.id} (order: ${item.order}, section: ${sectionName})`);
+            }
+          });
         }
         
         console.log(`Processed ${Object.keys(surveyDoc.selectedQuestions).length} questions for survey import (${reusedQuestions} reused, ${newQuestions} new)`);
