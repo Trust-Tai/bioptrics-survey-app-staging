@@ -176,30 +176,12 @@
 }
 
 .question-card {
-  background: white;
   border-radius: 16px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
-  padding: 36px;
+  padding-top: 36px;
   position: relative;
   overflow: hidden;
   margin-bottom: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
   transition: box-shadow 0.3s ease;
-}
-
-.question-card:hover {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
-}
-
-.question-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background-color: var(--primary-color);
-  border-radius: 3px 3px 0 0;
 }
 
 .question-type-indicator {
@@ -537,8 +519,54 @@
 .rating-options {
   display: flex;
   justify-content: space-between;
-  margin: 24px 0;
+  margin: 0;
   gap: 12px;
+}
+
+.rating-option-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background-color: white;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.rating-option-circle:hover {
+  border-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.rating-option-circle.selected {
+  color: white;
+  border-width: 2px;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.selected-rating-value {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  padding: 8px 16px;
+  background-color: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .rating-option {
@@ -632,17 +660,15 @@
 .button-back {
   background-color: transparent;
   color: var(--text-color, #4b5563);
-  border: 1px solid var(--primary-color, #d1d5db) !important;
-  border-radius: var(--button-radius, 30px);
+  border: none !important;
   font-weight: 500;
+  box-shadow: none;
+  padding: 0;
 }
 
 .button-back:hover {
-  background-color: rgba(59, 130, 246, 0.05);
   color: var(--text-color, #4b5563);
-  border-color: var(--primary-color, #3b82f6) !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .button-continue {
@@ -804,7 +830,7 @@
 .document-content {
   padding: 0;
   flex: 1;
-  min-height: 500px;
+  min-height: 600px;
   display: flex;
   flex-direction: column;
 }
