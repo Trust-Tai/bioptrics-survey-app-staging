@@ -938,6 +938,7 @@ Meteor.methods({
                 feedbackPrompt: question.feedbackPrompt || '',
                 estimatedTimeSeconds: question.estimatedTimeSeconds || 30,
                 saveToQuestionBank: question.saveToQuestionBank !== undefined ? question.saveToQuestionBank : true,
+                creationSource: 'imported', // Set creation source for imported questions
                 version: 1,
                 updatedAt: new Date()
               };

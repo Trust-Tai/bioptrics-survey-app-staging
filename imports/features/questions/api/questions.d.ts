@@ -23,6 +23,7 @@ export interface QuestionVersion {
   updatedBy: string;
   language?: string;
   surveyThemes?: string[];
+  creationSource?: string; // 'manual' or 'imported'
 }
 
 export interface QuestionDoc {

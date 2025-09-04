@@ -73,6 +73,8 @@ export interface QuestionVersion {
   collectFeedback?: boolean;
   feedbackType?: 'text' | 'rating' | 'file';
   feedbackPrompt?: string;
+  // Creation source tracking
+  creationSource?: string; // 'manual' or 'imported'
 }
 
 // Helper to map QuestionBuilder state to QuestionVersion
@@ -108,6 +110,8 @@ export function mapQuestionToVersion(q: Question, saveToQuestionBank: boolean = 
     estimatedTimeSeconds: q.estimatedTimeSeconds,
     // Question status (active/inactive)
     isActive: q.isActive !== undefined ? !!q.isActive : true,
+    // Creation source tracking
+    creationSource: 'manual',
     // Survey-specific question fields
     saveToQuestionBank: saveToQuestionBank,
     // Always include surveyId if it exists, regardless of saveToQuestionBank setting
