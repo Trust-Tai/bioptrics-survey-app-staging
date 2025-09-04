@@ -39,10 +39,9 @@ export interface SurveyDoc {
   image?: string;
   featuredImage?: string;
   color?: string;
-  layout?: 'multiStep' | 'allOnOnePage';
-  selectedQuestions: Record<string, any>;
-  siteTextQuestions: Array<any>;
-  siteTextQForm: any;
+  layout?: 'multiStep'  // Questions data (ordering managed via surveyOrder only)
+  selectedQuestions?: Record<string, any[]>;
+  siteTextQuestions?: any[];
   selectedDemographics: string[];
   selectedTheme?: string;
   selectedCategories?: string[];
@@ -82,7 +81,6 @@ export interface SurveyDoc {
     name: string;
     description?: string;
     isActive: boolean;
-    priority: number;
     icon?: string;
     color?: string;
     instructions?: string;
@@ -123,6 +121,7 @@ export interface SurveyDoc {
   expectations?: Array<{
     title: string;
     description: string;
+    image?: string;
   }>;
   expectationsTitle?: string;
   startButtonLabel?: string;
@@ -332,7 +331,9 @@ if (Meteor.isServer) {
     const user = await Meteor.users.findOneAsync(this.userId);
     const isOwner = surveyDoc.createdBy === this.userId;
     const isAdmin = user?.roles?.includes('admin');
-    const isCollaborator = surveyDoc.collaborators?.some(c => c.userId === this.userId);
+    const isCollaborator = surveyDoc.collaborators?.some(c => 
+      c.userId === this.userId
+    );
     
     if (!isOwner && !isAdmin && !isCollaborator) {
       return this.ready();
@@ -380,11 +381,11 @@ Meteor.methods({
     return survey;
   },
   
-  // Update questions in a survey (used for drag-and-drop functionality)
-  async 'surveys.updateQuestions'(surveyId: string, questions: any[]) {
+  // Update survey order (unified ordering system)
+  async 'surveys.updateSurveyOrder'(surveyId: string, surveyOrder: Array<{type: 'question' | 'section'; id: string; order: number;}>) {
     if (!this.userId) throw new Meteor.Error('Not authorized');
     check(surveyId, String);
-    check(questions, Array);
+    check(surveyOrder, Array);
     
     // Find the survey to update
     const survey = await Surveys.findOneAsync(surveyId);
@@ -392,24 +393,14 @@ Meteor.methods({
       throw new Meteor.Error('not-found', 'Survey not found');
     }
     
-    // Process questions to ensure sectionId is properly handled
-    const processedQuestions = questions.map((q: any) => {
-      // If sectionId is explicitly undefined, convert to null for storage
-      // This ensures the database properly recognizes it as having no section
-      if (q.sectionId === undefined) {
-        return { ...q, sectionId: null };
-      }
-      return q;
-    });
+    console.log('Updating survey order:', surveyOrder);
     
-    console.log('Updating questions with processed data:', processedQuestions);
-    
-    // Update the survey with the processed questions
+    // Update the survey with the new order
     const result = await Surveys.updateAsync(
       { _id: surveyId },
       { 
         $set: { 
-          sectionQuestions: processedQuestions,
+          surveyOrder: surveyOrder,
           updatedAt: new Date()
         } 
       }
@@ -417,6 +408,8 @@ Meteor.methods({
     
     return result;
   },
+
+  // REMOVED: Legacy method completely eliminated to enforce single source of truth
   
   // Create a survey template
   async 'surveys.saveAsTemplate'(survey: Partial<SurveyDoc>, templateDetails: { name: string, category: string, description: string, tags: string[] }) {
@@ -765,7 +758,7 @@ Meteor.methods({
           name: section.title || section.name || `Section ${index + 1}`,
           description: section.description || '',
           isActive: true,
-          priority: index,
+          // Priority removed - order managed via surveyOrder only
           icon: section.icon || '',
           color: section.color || '',
           instructions: section.instructions || '',
@@ -821,7 +814,7 @@ Meteor.methods({
             name: 'Default Section',
             description: 'Default section for imported survey',
             isActive: true,
-            priority: 0,
+            // Priority removed - order managed via surveyOrder only
             progressIndicator: true,
             questionIds: []
           }];
@@ -1074,7 +1067,7 @@ Meteor.methods({
         // Build surveyOrder array if not provided in importData
         if (!importData.surveyOrder || importData.surveyOrder.length === 0) {
           console.log('Building surveyOrder array from imported questions and sections');
-          const builtSurveyOrder = [];
+          const builtSurveyOrder: Array<{type: 'question' | 'section'; id: string; order: number;}> = [];
           let orderIndex = 0;
           
           // First add standalone questions (questions without a section)
@@ -1090,24 +1083,25 @@ Meteor.methods({
           });
           
           // Then add sections and their questions
-          surveyDoc.surveySections.forEach(section => {
+          surveyDoc.surveySections.forEach((section: any) => {
+            // Add the section itself
             builtSurveyOrder.push({
-              id: section.id,
               type: 'section',
+              id: section.id,
               order: orderIndex++
             });
             
-            // Get questions for this section and sort them by their order property
-            const sectionQuestions = surveyDoc.sectionQuestions.filter(q => q.sectionId === section.id);
-            sectionQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
-            
-            sectionQuestions.forEach(question => {
-              builtSurveyOrder.push({
-                id: question.id,
-                type: 'question',
-                order: orderIndex++
+            // Add questions for this section from selectedQuestions
+            if (surveyDoc.selectedQuestions && surveyDoc.selectedQuestions[section.id]) {
+              const sectionQuestions = surveyDoc.selectedQuestions[section.id];
+              sectionQuestions.forEach((question: any) => {
+                builtSurveyOrder.push({
+                  type: 'question',
+                  id: question.id || question._id,
+                  order: orderIndex++
+                });
               });
-            });
+            }
           });
           
           surveyDoc.surveyOrder = builtSurveyOrder;
@@ -1501,9 +1495,8 @@ Meteor.methods({
         siteTextQuestions: survey.siteTextQuestions || existingSurvey.siteTextQuestions || [],
         siteTextQForm: survey.siteTextQForm || existingSurvey.siteTextQForm || {},
         selectedDemographics: survey.selectedDemographics || existingSurvey.selectedDemographics || [],
-        // Include survey sections and section questions
+        // Include survey sections (questions are managed via surveyOrder only)
         surveySections: survey.surveySections || existingSurvey.surveySections || [],
-        sectionQuestions: survey.sectionQuestions || existingSurvey.sectionQuestions || [],
         // Include default settings
         defaultSettings: survey.defaultSettings || existingSurvey.defaultSettings || {},
         // Include themes, categories, and tags

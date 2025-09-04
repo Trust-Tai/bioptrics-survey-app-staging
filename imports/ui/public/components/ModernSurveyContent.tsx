@@ -34,7 +34,6 @@ interface Section {
   description: string;
   title?: string; // Added to make compatible with SurveySection
   isActive?: boolean;
-  priority?: number;
   color?: string;
   image?: string;
   document?: string;
@@ -453,9 +452,9 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
       const defaultSection = {
         id: 'default-section',
         name: 'Survey Questions',
+        title: 'Survey Questions',
         description: 'Please answer the following questions',
         isActive: true,
-        priority: 0,
         document: undefined,
         documentName: undefined,
         documentType: undefined
@@ -474,18 +473,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
     
     console.log('Sections with document fields:', sectionsWithDocumentFields);
     
-    // Sort sections by priority if available, otherwise keep original order
-    const sortedSections = [...sectionsWithDocumentFields].sort((a, b) => {
-      // If both have priority, sort by priority
-      if (a.priority !== undefined && b.priority !== undefined) {
-        return a.priority - b.priority;
-      }
-      // If only one has priority, prioritize that one
-      if (a.priority !== undefined) return -1;
-      if (b.priority !== undefined) return 1;
-      // Otherwise keep original order
-      return 0;
-    });
+    // Keep sections in their original order - surveyOrder will handle sorting later
+    const sortedSections = [...sectionsWithDocumentFields];
     
     console.log('Sorted sections:', sortedSections);
     setSections(sortedSections);
@@ -751,8 +740,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
           return aSectionOrder - bSectionOrder;
         }
         
-        // Then sort by question order within the section
-        return (a.order || 0) - (b.order || 0);
+        // Keep original order within section - surveyOrder will handle final sorting
+        return 0;
       });
     }
     
@@ -862,8 +851,8 @@ const ModernSurveyContent: React.FC<ModernSurveyContentProps & {
     // Filter questions that belong to this section
     const filteredQuestions = questions.filter(question => question.sectionId === sectionId);
     
-    // Sort questions by their order property
-    const sortedQuestions = [...filteredQuestions].sort((a, b) => (a.order || 0) - (b.order || 0));
+    // Keep questions in their original order - surveyOrder handles the sorting
+    const sortedQuestions = [...filteredQuestions];
     
     // Get section name for better logging
     const sectionName = sections.find(s => s.id === sectionId)?.name || 'Unknown Section';
@@ -1305,13 +1294,30 @@ const handleRestart = () => {
       const firstItem = survey.surveyOrder[0];
       
       if (firstItem.type === 'section') {
-        updateCurrentStep({ type: 'section', sectionId: firstItem.id });
+        // Verify the section exists before navigating
+        const sectionExists = sections.some(s => s.id === firstItem.id);
+        if (sectionExists) {
+          console.log('Navigating to first section:', firstItem.id);
+          updateCurrentStep({ type: 'section', sectionId: firstItem.id });
+        } else {
+          console.warn('Section not found in sections array:', firstItem.id);
+          // Fall through to next logic
+        }
       } else if (firstItem.type === 'question') {
-        updateCurrentStep({ type: 'question', questionId: firstItem.id });
+        // Verify the question exists before navigating
+        const questionExists = questions.some(q => q._id === firstItem.id || q.id === firstItem.id);
+        if (questionExists) {
+          console.log('Navigating to first question:', firstItem.id);
+          updateCurrentStep({ type: 'question', questionId: firstItem.id });
+        } else {
+          console.warn('Question not found in questions array:', firstItem.id);
+          // Fall through to next logic
+        }
       }
+      return; // Exit early if surveyOrder was processed
     }
     // Check if we have sectionQuestions (Questions tab arrangement)
-    else if (survey.sectionQuestions && survey.sectionQuestions.length > 0) {
+    if (survey.sectionQuestions && survey.sectionQuestions.length > 0) {
       console.log('Using sectionQuestions arrangement:', survey.sectionQuestions);
       const firstQuestion = survey.sectionQuestions[0];
       
@@ -1324,12 +1330,12 @@ const handleRestart = () => {
       }
     }
     // Check if we have selectedQuestions (legacy format, questions without sections)
-    else if (survey.selectedQuestions && Array.isArray(survey.selectedQuestions) && survey.selectedQuestions.length > 0) {
+    if (survey.selectedQuestions && Array.isArray(survey.selectedQuestions) && survey.selectedQuestions.length > 0) {
       console.log('Using selectedQuestions array:', survey.selectedQuestions);
       // Go directly to the first question ID
       updateCurrentStep({ type: 'question', questionId: survey.selectedQuestions[0] });
     }
-    else if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object' && Object.keys(survey.selectedQuestions).length > 0) {
+    if (survey.selectedQuestions && typeof survey.selectedQuestions === 'object' && Object.keys(survey.selectedQuestions).length > 0) {
       console.log('Using selectedQuestions object:', survey.selectedQuestions);
       // Get the first question from the selectedQuestions object
       const firstSectionQuestions = Object.values(survey.selectedQuestions)[0];
@@ -1338,10 +1344,11 @@ const handleRestart = () => {
       }
     }
     // Fallback to original logic
-    else if (sections.length > 0) {
+    if (sections.length > 0) {
       console.log('Fallback: Using first section');
       updateCurrentStep({ type: 'section', sectionId: sections[0].id });
-    } else if (questions.length > 0) {
+    } 
+    if (questions.length > 0) {
       console.log('Fallback: Using first question');
       updateCurrentStep({ type: 'question', questionId: questions[0]._id || questions[0].id || '' });
     }
@@ -2291,10 +2298,8 @@ const handleRestart = () => {
       }
     });
     
-    // Sort questions by order property within each section
-    Object.keys(questionsBySection).forEach(sectionId => {
-      questionsBySection[sectionId].sort((a, b) => (a.order || 0) - (b.order || 0));
-    });
+    // Questions are already sorted by surveyOrder in the main processing logic
+    // No additional sorting needed here
     
     return questionsBySection;
   };
@@ -2545,16 +2550,29 @@ const handleRestart = () => {
         });
         
         if (!currentSection) {
-          console.error('Section not found! Falling back to first question or welcome screen');
-          // Fallback: try to go to the first question instead
+          console.error('Section not found! Available sections:', sections.map(s => ({ id: s.id, name: s.name })));
+          console.error('Requested section ID:', currentStep.sectionId);
+          
+          // Try to find questions for this section ID anyway
+          const sectionQuestions = getQuestionsForSection(currentStep.sectionId || '');
+          if (sectionQuestions.length > 0) {
+            console.log('Found questions for missing section, going to first question');
+            const firstQuestion = sectionQuestions[0];
+            updateCurrentStep({ type: 'question', questionId: firstQuestion._id || firstQuestion.id || '' });
+            return null;
+          }
+          
+          // Fallback: try to go to the first available question
           if (questions.length > 0) {
+            console.log('Falling back to first available question');
             const firstQuestion = questions[0];
             updateCurrentStep({ type: 'question', questionId: firstQuestion._id || firstQuestion.id || '' });
-            return null; // Will re-render with question
+            return null;
           } else {
             // No questions available, go back to welcome
+            console.log('No questions found, returning to welcome');
             updateCurrentStep({ type: 'welcome' });
-            return null; // Will re-render with welcome
+            return null;
           }
         }
         
