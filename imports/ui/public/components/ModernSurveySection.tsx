@@ -18,8 +18,18 @@ interface Section {
   index?: number;
 }
 
+interface Survey {
+  _id: string;
+  title: string;
+  description?: string;
+  logo?: string;
+  image?: string;
+  primaryColor?: string;
+}
+
 interface ModernSurveySectionProps {
   section: Section;
+  survey?: Survey;
   onContinue: () => void;
   onBack: () => void;
   color?: string;
@@ -379,42 +389,21 @@ const hexToRgb = (hex: string): string => {
   }
 };
 
-const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({ 
-  section, 
-  onContinue, 
+const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
+  section,
+  survey,
+  onContinue,
   onBack,
   color,
   image,
   surveyTitle,
   surveyDescription,
   surveyId,
-  sectionIndex = 1,
+  sectionIndex,
   totalQuestions,
   requiredQuestionCount,
-  dynamicTimeData: propDynamicTimeData
+  dynamicTimeData
 }) => {
-  // Add CSS to hide header and remove padding
-  useEffect(() => {
-    // Add a style tag to hide the header
-    const style = document.createElement('style');
-    style.textContent = `
-      header {
-        display: none !important;
-      }
-      main {
-        padding: 0 !important;
-      }
-      .content-container {
-        padding: 0 !important;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    // Clean up function to remove the style when component unmounts
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
   const [loading, setLoading] = useState<boolean>(true);
   const [metadata, setMetadata] = useState<{
     questionCount: number;
@@ -423,7 +412,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
   }>({ questionCount: 0, requiredQuestionCount: 0, estimatedTime: '~2' });
   
   // State for dynamic time calculation from ModernSurveyContent
-  const [dynamicTimeData, setDynamicTimeData] = useState<{
+  const [localDynamicTimeData, setLocalDynamicTimeData] = useState<{
     totalEstimatedSeconds: number;
     minutes: number;
     timestamp: number;
@@ -435,12 +424,12 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     // Function to get time data
     const getTimeData = () => {
       // First try to use prop data
-      if (propDynamicTimeData) {
-        console.log(`Using dynamic time data from props for section ${section.id}: ${propDynamicTimeData.minutes} minutes`);
-        setDynamicTimeData({
-          totalEstimatedSeconds: propDynamicTimeData.totalEstimatedSeconds,
-          minutes: propDynamicTimeData.minutes,
-          timestamp: propDynamicTimeData.timestamp
+      if (dynamicTimeData) {
+        console.log(`Using dynamic time data from props for section ${section.id}: ${dynamicTimeData.minutes} minutes`);
+        setLocalDynamicTimeData({
+          totalEstimatedSeconds: dynamicTimeData.totalEstimatedSeconds,
+          minutes: dynamicTimeData.minutes,
+          timestamp: dynamicTimeData.timestamp
         });
         return true;
       }
@@ -460,7 +449,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
             
             if (isRecent && timeData.sectionId === section.id) {
               console.log(`Found stable time data in localStorage for section ${section.id}: ${timeData.minutes} minutes`);
-              setDynamicTimeData({
+              setLocalDynamicTimeData({
                 totalEstimatedSeconds: timeData.totalEstimatedSeconds,
                 minutes: timeData.minutes,
                 timestamp: timeData.timestamp
@@ -477,7 +466,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
     
     // Get time data once on component mount
     getTimeData();
-  }, [propDynamicTimeData, section]);
+  }, [dynamicTimeData, section]);
   
   // Initialize with section data immediately to avoid showing '...'
   useEffect(() => {
@@ -754,7 +743,7 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
 
   return (
     <SectionContainer>
-      <SectionCard>
+        <SectionCard>
         <SectionHeader>
           <HeaderContent style={{ flex: sectionImage ? 1 : 'auto', maxWidth: sectionImage ? '60%' : '100%' }}>
             {/* <SectionNumberBadge>{section.index || sectionIndex}</SectionNumberBadge> */}
@@ -777,9 +766,9 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
                 <FiClock size={24} />
               </StatIcon>
               <StatValue>
-                {dynamicTimeData ? 
+                {localDynamicTimeData ? 
                   // Show minutes from dynamic data
-                  dynamicTimeData.minutes : 
+                  localDynamicTimeData.minutes : 
                   // Fallback to metadata
                   metadata.estimatedTime}
               </StatValue>

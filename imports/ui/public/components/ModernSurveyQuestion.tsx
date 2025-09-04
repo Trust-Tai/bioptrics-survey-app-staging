@@ -38,6 +38,104 @@ const QuestionText = styled.h2`
   line-height: 1.4;
 `;
 
+
+const QuestionContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background-color, #f9f9ff);
+  font-family: var(--body-font, 'Inter, sans-serif');
+`;
+
+const TwoColumnLayout = styled.div`
+  display: flex;
+  flex: 1;
+  gap: 2rem;
+  padding: 2rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+`;
+
+const QuestionContentColumn = styled.div`
+  flex: 0 0 70%;
+  display: flex;
+  flex-direction: column;
+  
+  @media (max-width: 768px) {
+    flex: 1;
+  }
+`;
+
+const QuestionImageColumn = styled.div`
+  flex: 0 0 30%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  
+  @media (max-width: 768px) {
+    flex: none;
+    order: -1;
+  }
+`;
+
+const QuestionImageContainer = styled.div`
+  width: 100%;
+  max-width: 400px;
+  
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const ProgressIndicator = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-bottom: 2rem;
+  padding: 0 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 0 1rem;
+    gap: 2px;
+  }
+`;
+
+const ProgressSegment = styled.div<{ isActive: boolean; isCompleted: boolean; color?: string }>`
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background-color: ${props => {
+    if (props.isActive) return props.color || '#2c3e50';
+    if (props.isCompleted) return props.color || '#2c3e50';
+    return '#e0e0e0';
+  }};
+  opacity: ${props => {
+    if (props.isActive) return 1;
+    if (props.isCompleted) return 0.7;
+    return 0.3;
+  }};
+  transition: all 0.3s ease;
+  
+  @media (max-width: 768px) {
+    height: 3px;
+  }
+`;
+
+const DropdownIcon = styled.div`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #666;
+`;
+
 interface Question {
   _id: string;
   id?: string;
@@ -63,8 +161,47 @@ interface Question {
   }[];
 }
 
+interface Survey {
+  _id: string;
+  title: string;
+  description?: string;
+  logo?: string;
+  color?: string;
+  surveySections?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    isActive: boolean;
+    icon?: string;
+    color?: string;
+    instructions?: string;
+    isRequired?: boolean;
+    visibilityCondition?: {
+      dependsOnSectionId?: string;
+      dependsOnQuestionId?: string;
+      condition: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan';
+      value: any;
+    };
+    timeLimit?: number;
+    questionIds?: string[];
+    templateId?: string;
+    customCss?: string;
+    progressIndicator?: boolean;
+  }>;
+  sectionQuestions?: Array<{
+    id: string;
+    _id?: string;
+    text: string;
+    type: string;
+    sectionId?: string;
+    order?: number;
+  }>;
+  selectedQuestions?: Record<string, any[]>;
+}
+
 interface ModernSurveyQuestionProps {
   question: Question;
+  survey?: Survey;
   progress?: string;
   onAnswer: (answer: any, saveOnly?: boolean) => void;
   onBack: () => void;
@@ -83,6 +220,7 @@ interface ModernSurveyQuestionProps {
 
 const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   question,
+  survey,
   progress,
   onAnswer,
   onBack,
@@ -749,10 +887,147 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   
   const questionTypeInfo = getQuestionTypeInfo();
 
+  const getSmartQuestionCount = () => {
+    // After migration, use only sectionQuestions format
+    const allQuestions = survey?.sectionQuestions || [];
+    
+    console.log('Question count debug:', {
+      totalQuestionsFound: allQuestions.length,
+      currentQuestionId: question._id || question.id,
+      currentSectionId: question.sectionId
+    });
+    
+    // If we have survey data with questions
+    if (allQuestions.length > 0) {
+      const currentSectionId = question.sectionId;
+      
+      if (currentSectionId) {
+        // We're in a section - count only questions in this section and reset pagination
+        const sectionQuestions = allQuestions.filter((q: any) => q.sectionId === currentSectionId);
+        const currentQuestionIndex = sectionQuestions.findIndex((q: any) => q._id === question._id || q.id === question.id);
+        
+        console.log('Section context:', {
+          sectionId: currentSectionId,
+          sectionQuestions: sectionQuestions.length,
+          currentIndex: currentQuestionIndex
+        });
+        
+        return {
+          current: Math.max(1, currentQuestionIndex + 1),
+          total: sectionQuestions.length
+        };
+      } else {
+        // We're outside sections - find all consecutive unsectioned questions from the start
+        let unsectionedQuestions: any[] = [];
+        let currentPos = 0;
+        
+        console.log('All questions in survey:', allQuestions.map((q, index) => ({
+          index: index,
+          id: q._id || q.id || `question_${index}`,
+          sectionId: q.sectionId,
+          text: q.text?.substring(0, 50) + '...'
+        })));
+        
+        // Get all questions that appear before any section starts
+        for (let i = 0; i < allQuestions.length; i++) {
+          const q = allQuestions[i];
+          
+          console.log(`Question ${i + 1}:`, {
+            id: q._id || q.id,
+            sectionId: q.sectionId,
+            hasSection: !!q.sectionId,
+            text: q.text?.substring(0, 30) + '...'
+          });
+          
+          if (!q.sectionId || q.sectionId === null) {
+            // This is an unsectioned question
+            unsectionedQuestions.push(q);
+            console.log(`Added unsectioned question ${unsectionedQuestions.length}:`, q._id || q.id);
+            
+            // Match by ID if available, otherwise by text content
+            const questionMatch = (q._id && question._id && q._id === question._id) ||
+                                 (q.id && question.id && q.id === question.id) ||
+                                 (q.text && question.text && q.text === question.text);
+            
+            if (questionMatch) {
+              currentPos = unsectionedQuestions.length;
+              console.log(`Found current question at position ${currentPos} by ${q._id || q.id ? 'ID' : 'text'} match`);
+            }
+          } else {
+            // Hit a sectioned question - stop counting unsectioned questions
+            console.log(`Hit sectioned question, stopping count at ${unsectionedQuestions.length} unsectioned questions`);
+            break;
+          }
+        }
+        
+        console.log('Unsectioned context final:', {
+          unsectionedCount: unsectionedQuestions.length,
+          currentPos: currentPos,
+          questionId: question._id || question.id,
+          allUnsectionedIds: unsectionedQuestions.map(q => q._id || q.id)
+        });
+        
+        return {
+          current: Math.max(1, currentPos),
+          total: unsectionedQuestions.length
+        };
+      }
+    }
+    
+    // Fallback to original logic - ensure we have valid values
+    console.log('Fallback context:', { currentQuestion, totalQuestions });
+    return {
+      current: Math.max(1, currentQuestion || 1),
+      total: totalQuestions || 1
+    };
+  };
+
+  const renderProgressIndicator = () => {
+    const { current, total } = getSmartQuestionCount();
+    
+    console.log('Progress Indicator Debug:', { 
+      current, 
+      total, 
+      questionId: question._id || question.id, 
+      sectionId: question.sectionId,
+      surveyData: survey ? {
+        hasSurveySections: !!survey.surveySections,
+        hasSectionQuestions: !!survey.sectionQuestions,
+        sectionsCount: survey.surveySections?.length,
+        questionsCount: survey.sectionQuestions?.length
+      } : 'No survey data'
+    });
+    
+    if (!total || total <= 1) return null;
+    
+    const segments = [];
+    for (let i = 1; i <= total; i++) {
+      const isActive = i === current;
+      const isCompleted = i < current;
+      
+      console.log(`Segment ${i}:`, { isActive, isCompleted, current });
+      
+      segments.push(
+        <ProgressSegment
+          key={i}
+          isActive={isActive}
+          isCompleted={isCompleted}
+          color={color}
+        />
+      );
+    }
+    
+    return (
+      <ProgressIndicator>
+        {segments}
+      </ProgressIndicator>
+    );
+  };
+
   useEffect(() => {
     const header = document.querySelector('header') as HTMLElement;
     if (header) {
-      header.style.display = 'none';
+      header.style.display = 'block';
     }
     
     const mainDiv = document.querySelector('div#react-target') as HTMLElement;
@@ -900,185 +1175,81 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
 
   return (
     <>
-      {!hideNavigation && (
-        <div className="progress-container">
-          <div className="progress-info">
-            <div className="question-count">{progress || ''}</div>
-          </div>
-          <div className="progress-bar-wrapper">
-            <div 
-              className="progress-bar-fill" 
-              style={{ 
-                width: progress ? progress.split(' of ')[0].replace('Question ', '') / progress.split(' of ')[1] * 100 + '%' : '0%',
-                backgroundColor: color
-              }}
-            ></div>
-          </div>
-        </div>
-      )}
+      {renderProgressIndicator()}
       
-      <div className={`question-container modern-survey-container ${sectionDocument ? 'with-document' : ''}`}>
-        {sectionDocument ? (
-          <div className="survey-content-wrapper">
-            <div className="document-column">
-              {renderDocumentViewer()}
-            </div>
+      <TwoColumnLayout>
+        <QuestionContentColumn>
+          <QuestionText>
+            <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
+            {question.required && <span className="question-required-indicator" aria-label="required question">*</span>}
+          </QuestionText>
+          
+          <div className="question-card">
+            {question.required && <span className="question-required-indicator" aria-label="required field">Required</span>}
             
-            <div className="question-column">
-              {question.image && (
-                <div className="question-image-container" style={{ marginBottom: '20px' }}>
-                  <img 
-                    src={question.image} 
-                    alt="Question illustration" 
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '300px', 
-                      display: 'block',
-                      margin: '0 auto',
-                      borderRadius: '8px'
-                    }} 
-                  />
-                </div>
-              )}
-              <QuestionText>
-                <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
-                {question.required && <span className="question-required-indicator" aria-label="required question">*</span>}
-              </QuestionText>
-              <div className="question-card">
-                {question.required && <span className="question-required-indicator" aria-label="required field">Required</span>}
-                
-                <div className="answer-options">
-                  {renderQuestionInput()}
-                </div>
-              </div>
-              
-              {error && (
-                <div className="error-message" role="alert">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
-                  {error}
-                </div>
-              )}
-              
-              {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
-              {!hideNavigation && (
-                <div className="button-container">
-                  <button 
-                    className="button button-back" 
-                    onClick={() => {
-                      // Save the answer before going back but don't trigger navigation or submission
-                      console.log('Saving answer before going back:', answer);
-                      // Use saveOnly=true to prevent navigation or submission logic
-                      const saveOnly = true;
-                      // Only call onAnswer if there's an answer to save
-                      if (answer) {
-                        onAnswer(answer, saveOnly);
-                      }
-                      // Then go back
-                      onBack();
-                    }}
-                  >
-                    <FiArrowLeft size={18} />
-                    Back
-                  </button>
-                  
-                  <button 
-                    className="button button-continue"
-                    onClick={handleContinue}
-                    disabled={question.required && !isAnswerValid()}
-                    style={{backgroundColor: color}}
-                    data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
-                  >
-                    {isLastQuestion ? 'Submit' : 'Continue'}
-                    <FiArrowRight size={18} />
-                  </button>
-                </div>
-              )}
+            <div className="answer-options">
+              {renderQuestionInput()}
             </div>
           </div>
-        ) : (
-          // Full-width centered layout when no document is present
-          <div className="full-width-content">
-           
-            
-            {question.image && (
-              <div className="question-image-container" style={{ marginBottom: '20px' }}>
-                <img 
-                  src={question.image} 
-                  alt="Question illustration" 
-                  style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '300px', 
-                    display: 'block',
-                    margin: '0 auto',
-                    borderRadius: '8px'
-                  }} 
-                />
-              </div>
-            )}
-             <QuestionText>
-              <span dangerouslySetInnerHTML={createMarkup(question.text)}></span>
-              {question.required && <span className="question-required-indicator" aria-label="required question">*</span>}
-            </QuestionText>
-            <div className="question-card">
-              {question.required && <span className="question-required-indicator" aria-label="required field">Required</span>}
-              
-              <div className="answer-options">
-                {renderQuestionInput()}
-              </div>
+          
+          {error && (
+            <div className="error-message" role="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              {error}
             </div>
-            
-            {error && (
-              <div className="error-message" role="alert">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-                {error}
-              </div>
-            )}
-            
-            {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
-            {!hideNavigation && (
-              <div className="button-container">
-                <button 
-                  className="button button-back" 
-                  onClick={() => {
-                    // Save the answer before going back but don't trigger navigation or submission
-                    console.log('Saving answer before going back:', answer);
-                    // Use saveOnly=true to prevent navigation or submission logic
-                    const saveOnly = true;
-                    // Only call onAnswer if there's an answer to save
-                    if (answer) {
-                      onAnswer(answer, saveOnly);
-                    }
-                    // Then go back
-                    onBack();
-                  }}
-                >
-                  <FiArrowLeft size={18} />
-                  Back
-                </button>
-                
-                <button 
-                  className="button button-continue"
-                  onClick={handleContinue}
-                  disabled={question.required && !isAnswerValid()}
-                  style={{backgroundColor: color}}
-                  data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
-                >
-                  {isLastQuestion ? 'Submit' : 'Continue'}
-                  <FiArrowRight size={18} />
-                </button>
-              </div>
-            )}
-          </div>
+          )}
+          
+          {/* Navigation buttons - conditionally rendered based on hideNavigation prop */}
+          {!hideNavigation && (
+            <div className="button-container">
+              <button 
+                className="button button-back" 
+                onClick={() => {
+                  // Save the answer before going back but don't trigger navigation or submission
+                  console.log('Saving answer before going back:', answer);
+                  // Use saveOnly=true to prevent navigation or submission logic
+                  const saveOnly = true;
+                  // Only call onAnswer if there's an answer to save
+                  if (answer) {
+                    onAnswer(answer, saveOnly);
+                  }
+                  // Then go back
+                  onBack();
+                }}
+              >
+                <FiArrowLeft size={18} />
+                Back
+              </button>
+              
+              <button 
+                className="button button-continue"
+                onClick={handleContinue}
+                disabled={question.required && !isAnswerValid()}
+                style={{backgroundColor: color}}
+                data-testid={isLastQuestion ? 'submit-button' : 'continue-button'}
+              >
+                {isLastQuestion ? 'Submit' : 'Continue'}
+                <FiArrowRight size={18} />
+              </button>
+            </div>
+          )}
+        </QuestionContentColumn>
+
+        {question.image && (
+          <QuestionImageColumn>
+            <QuestionImageContainer>
+              <img 
+                src={question.image} 
+                alt="Question illustration"
+              />
+            </QuestionImageContainer>
+          </QuestionImageColumn>
         )}
-      </div>
+      </TwoColumnLayout>
     </>
   );
 };
