@@ -1595,15 +1595,22 @@ if (Meteor.isServer) {
         }
         
         // Create sections from categories if we have category data
+        let actualSectionCount = 0;
         if (survey.selectedCategories && survey.selectedCategories.length > 0) {
           sections = Object.keys(questionsByCategory).map(category => ({
             title: category,
             description: `${questionsByCategory[category].length} questions about ${category.toLowerCase()}`,
             questionCount: questionsByCategory[category].length
           }));
+          actualSectionCount = sections.length;
         }
         
-        // If no sections were created, use a default section
+        // Check if survey has actual surveySections defined
+        if (survey.surveySections && survey.surveySections.length > 0) {
+          actualSectionCount = survey.surveySections.length;
+        }
+        
+        // If no sections were created, use a default section for display purposes only
         if (sections.length === 0) {
           sections = [{
             title: 'Survey Questions',
@@ -1658,7 +1665,7 @@ if (Meteor.isServer) {
         
         return {
           questionCount,
-          sectionCount: sections.length,
+          sectionCount: actualSectionCount, // Use actual section count, not fallback sections
           sections,
           estimatedTime: estimatedTimeRange,
           estimatedTimeSeconds: totalEstimatedTimeSeconds,
@@ -1668,6 +1675,117 @@ if (Meteor.isServer) {
         console.error('Error getting survey metadata:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         throw new Meteor.Error('db-error', `Error getting survey metadata: ${errorMessage}`);
+      }
+    },
+    
+    // Method to get ordered questions for public survey display
+    async 'surveys.getOrderedQuestions'(surveyId: string) {
+      console.log(`Getting ordered questions for survey ${surveyId}`);
+      
+      try {
+        // Find the survey
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        if (!survey) {
+          throw new Meteor.Error('not-found', 'Survey not found');
+        }
+        
+        console.log('Survey found:', {
+          surveyId: survey._id,
+          hasSurveyOrder: !!survey.surveyOrder,
+          surveyOrderLength: survey.surveyOrder?.length || 0
+        });
+        
+        // Get the survey order - this is the master ordering from the Questions tab
+        const surveyOrder = survey.surveyOrder || [];
+        
+        // Collect all question IDs from the survey order
+        const questionIds = surveyOrder
+          .filter((item: any) => item.type === 'question')
+          .map((item: any) => item.id);
+          
+        console.log('Question IDs from survey order:', questionIds);
+        
+        // Fetch all question documents
+        const questions = await Questions.find({ _id: { $in: questionIds } }).fetchAsync();
+        console.log(`Fetched ${questions.length} question documents`);
+        
+        // Create a map for quick lookup
+        const questionMap = new Map();
+        questions.forEach(q => {
+          questionMap.set(q._id, q);
+        });
+        
+        // Build ordered questions array following the surveyOrder
+        const orderedQuestions: any[] = [];
+        const sections: any[] = [];
+        
+        for (const orderItem of surveyOrder) {
+          if (orderItem.type === 'section') {
+            // Get section info from survey.surveySections
+            const section = survey.surveySections?.find((s: any) => s.id === orderItem.id);
+            if (section) {
+              sections.push({
+                id: section.id,
+                name: section.name,
+                description: section.description,
+                order: orderItem.order,
+                questions: [] // Will be populated with questions that belong to this section
+              });
+            }
+          } else if (orderItem.type === 'question') {
+            const question = questionMap.get(orderItem.id);
+            if (question) {
+              // Get the current version of the question
+              const currentVersion = question.versions?.find((v: any) => v.version === question.currentVersion) || question.versions?.[0];
+              
+              if (currentVersion) {
+                // Check if this question has a section assignment
+                // Look for sectionId in the survey's sectionQuestions array
+                const sectionQuestion = survey.sectionQuestions?.find((sq: any) => sq.questionId === orderItem.id);
+                const questionSectionId = sectionQuestion?.sectionId || null;
+                
+                const orderedQuestion = {
+                  _id: question._id,
+                  id: orderItem.id,
+                  order: orderItem.order,
+                  sectionId: questionSectionId,
+                  questionText: currentVersion.questionText,
+                  responseType: currentVersion.responseType,
+                  options: currentVersion.options || [],
+                  isRequired: currentVersion.isRequired || false,
+                  estimatedTimeSeconds: currentVersion.estimatedTimeSeconds || 30,
+                  category: currentVersion.category,
+                  version: question.currentVersion
+                };
+                
+                orderedQuestions.push(orderedQuestion);
+                
+                // If question belongs to a section, add it to that section's questions array
+                if (questionSectionId) {
+                  const section = sections.find(s => s.id === questionSectionId);
+                  if (section) {
+                    section.questions.push(orderedQuestion);
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        console.log(`Built ordered questions array with ${orderedQuestions.length} questions and ${sections.length} sections`);
+        
+        return {
+          questions: orderedQuestions,
+          sections: sections,
+          totalQuestions: orderedQuestions.length,
+          totalSections: sections.length,
+          surveyOrder: surveyOrder
+        };
+        
+      } catch (error: unknown) {
+        console.error('Error getting ordered questions:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error getting ordered questions: ${errorMessage}`);
       }
     },
     

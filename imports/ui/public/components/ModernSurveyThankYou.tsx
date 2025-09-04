@@ -40,6 +40,7 @@ interface ModernSurveyThankYouProps {
   responses?: number;
   completionTime?: number; // in seconds
   averageRating?: number;
+  responseId?: string | null; // ID of the current survey response
 }
 
 // Helper function to format time in minutes and seconds
@@ -250,7 +251,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   onRestart,
   responses: propResponses,
   completionTime: propCompletionTime,
-  averageRating = 4
+  averageRating = 4,
+  responseId: propResponseId
 }) => {
   // Get the current survey response data
   const [currentResponseData, setCurrentResponseData] = useState<{
@@ -292,8 +294,8 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
     const currentSurveyId = survey._id;
     console.log('Current survey ID:', currentSurveyId);
     
-    // Check if we have a current response ID from the tracker
-    const currentResponseId = surveyResponse?._id;
+    // Use the response ID from props if available, otherwise use the one from the tracker
+    const currentResponseId = propResponseId || surveyResponse?._id;
     console.log('Current response ID:', currentResponseId || 'none');
     
     // Use the combined method to get all survey data at once
@@ -307,13 +309,17 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
       }
       
       console.log('Received survey response data:', result);
+      console.log('Response count from server:', result.responseCount);
       
       // Update state with all values
-      setCurrentResponseData({
+      const updatedData = {
         responseCount: result.responseCount || 0,
         completionTime: result.completionTime || 0,
         unansweredQuestions: result.unansweredQuestions || 0
-      });
+      };
+      
+      console.log('Updating state with response data:', updatedData);
+      setCurrentResponseData(updatedData);
       
       // Set the total question count
       setTotalQuestionCount(result.questionCount || 0);
@@ -327,7 +333,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   
   // Use props values if provided, otherwise use the data from the current response
   const displayTotalResponses = propResponses !== undefined ? propResponses : 
-                               (currentResponseData.responseCount || (survey.questionCount || 9));
+                               (currentResponseData.responseCount || 0); // Don't fallback to questionCount or hardcoded 9
   
   // For completion time, use prop if provided, otherwise use the actual completion time
   const surveyTime = propCompletionTime !== undefined ? propCompletionTime : 
@@ -423,7 +429,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
         {survey.thankYouBoxes && survey.thankYouBoxes.length > 0 ? (
           // Render custom thank you boxes from survey data that are selected
           survey.thankYouBoxes
-            .filter(box => box.selected !== false) // Show by default if selected is undefined
+            .filter(box => box.selected === true) // Only show boxes that are explicitly selected
             .map((box, index) => {
               // Find the original index in the full array for correct icon mapping
               const originalIndex = survey.thankYouBoxes!.findIndex(b => 
@@ -441,7 +447,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
                   </StatIcon>
                   <StatContent>
                     <StatValue>
-                      {originalIndex === 0 ? displayTotalResponses : 
+                      {originalIndex === 0 ? answeredQuestions : 
                        originalIndex === 1 ? (currentResponseData.unansweredQuestions || 0) : 
                        originalIndex === 2 ? `${completionPercentage}%` : 
                        formatTime(surveyTime)}
@@ -460,9 +466,9 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
                 <FiCheckSquare size={20} />
               </StatIcon>
               <StatContent>
-                <StatValue>{displayTotalResponses}</StatValue>
-                <StatLabel>Total Responses</StatLabel>
-                <StatSublabel>Questions answered</StatSublabel>
+                <StatValue>{answeredQuestions}</StatValue>
+                <StatLabel>Total Questions Answered</StatLabel>
+                <StatSublabel>Number of questions with responses</StatSublabel>
               </StatContent>
             </StatCard>
             

@@ -42,6 +42,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   
   const [surveyOrder, setSurveyOrder] = useState<Array<SurveyOrderItem>>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    questionId: string;
+    position: { x: number; y: number };
+  } | null>(null);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
 
   // Helper function to extract clean question text
@@ -75,286 +79,82 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       setSections(survey.surveySections);
     }
 
-    // Load questions
-    if (survey && ((survey.selectedQuestions) || 
-                   (survey.sectionQuestions && Array.isArray(survey.sectionQuestions) && survey.sectionQuestions.length > 0))) {
+    // Load surveyOrder - this is now the single source of truth
+    if (survey && survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+      console.log('Loading survey from surveyOrder:', survey.surveyOrder);
+      setSurveyOrder(survey.surveyOrder);
       
-      // Set loading state to true when starting to load questions
-      setIsQuestionsLoading(true);
-      console.log('Starting to load questions for survey:', survey._id);
+      // Extract question IDs from surveyOrder
+      const questionIds = survey.surveyOrder
+        .filter((item: any) => item.type === 'question')
+        .map((item: any) => item.id);
       
-      // Combine question IDs from both sources
-      const allQuestionIds = new Set<string>();
-      
-      // Add from selectedQuestions (questions without sections)
-      if (survey.selectedQuestions) {
-        // Handle both array and object formats for selectedQuestions
-        if (Array.isArray(survey.selectedQuestions)) {
-          survey.selectedQuestions.forEach((id: string) => allQuestionIds.add(id));
-        } else if (typeof survey.selectedQuestions === 'object') {
-          // If it's an object, use the keys as question IDs
-          Object.keys(survey.selectedQuestions).forEach(id => allQuestionIds.add(id));
-        }
-      }
-      
-      // Add from sectionQuestions (questions with sections)
-      if (survey.sectionQuestions) {
-        survey.sectionQuestions.forEach((sq: any) => {
-          if (sq.questionId) allQuestionIds.add(sq.questionId);
-          // Also add the question ID directly if it exists
-          if (sq.id) allQuestionIds.add(sq.id);
-        });
-      }
-      
-      const questionIds = Array.from(allQuestionIds);
-      console.log(`Found ${questionIds.length} question IDs to load`);
-      
-      // Subscribe to get question details
-      const subscription = Meteor.subscribe('questions.all', surveyId, {
-        onReady: () => {
-          console.log('Question subscription ready, loading question data');
-          const questions = questionIds.map((id: string) => {
-            const questionDoc = Questions.findOne(id);
-            if (questionDoc) {
-              // Check if this question belongs to a section
-              // First check in sectionQuestions array
-              let sectionId = null;
-              let order = 0;
-              
-              if (survey.sectionQuestions) {
-                // Try to find by questionId first (standard format)
-                const sectionQuestion = survey.sectionQuestions.find((sq: any) => sq.questionId === id);
-                if (sectionQuestion) {
-                  sectionId = sectionQuestion.sectionId;
-                  order = sectionQuestion.order || 0;
-                } else {
-                  // Then try to find by id (sometimes used in imports)
-                  const altSectionQuestion = survey.sectionQuestions.find((sq: any) => sq.id === id);
-                  if (altSectionQuestion) {
-                    sectionId = altSectionQuestion.sectionId;
-                    order = altSectionQuestion.order || 0;
+      if (questionIds.length > 0) {
+        setIsQuestionsLoading(true);
+        console.log(`Found ${questionIds.length} question IDs in surveyOrder`);
+        
+        // Subscribe to get question details
+        const subscription = Meteor.subscribe('questions.all', surveyId, {
+          onReady: () => {
+            console.log('Question subscription ready, loading question data from surveyOrder');
+            const questions = questionIds.map((id: string) => {
+              const questionDoc = Questions.findOne(id);
+              if (questionDoc) {
+                // Get section assignment from sectionQuestions if available
+                let sectionId = null;
+                let order = 0;
+                
+                if (survey.sectionQuestions) {
+                  const sectionQuestion = survey.sectionQuestions.find((sq: any) => 
+                    sq.questionId === id || sq.id === id
+                  );
+                  if (sectionQuestion) {
+                    sectionId = sectionQuestion.sectionId;
+                    order = sectionQuestion.order || 0;
                   }
                 }
+                
+                // Get order from surveyOrder
+                const orderItem = survey.surveyOrder.find((item: any) => 
+                  item.type === 'question' && item.id === id
+                );
+                
+                return {
+                  id: id,
+                  text: extractQuestionText(questionDoc),
+                  type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
+                  status: 'published' as const,
+                  sectionId: sectionId,
+                  order: orderItem?.order || order
+                };
               }
-              
-              return {
-                id: id,
-                text: extractQuestionText(questionDoc),
-                type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
-                status: 'published' as const,
-                sectionId: sectionId,
-                order: order
-              };
-            }
-            return null;
-          }).filter(Boolean) as QuestionItem[];
-          
-          // Sort questions by their order
-          questions.sort((a, b) => (a.order || 0) - (b.order || 0));
-          
-          console.log(`Loaded ${questions.length} questions, with ${questions.filter(q => q.sectionId).length} assigned to sections`);
-          setSurveyQuestions(questions);
-          
-          // Build unified order array after questions are loaded
-          buildSurveyOrder(questions, survey.surveySections || []);
-          
-          // Set loading state to false when questions are loaded
-          setIsQuestionsLoading(false);
-        }
-      });
-      
-      // Cleanup function to handle component unmount
-      return () => {
-        subscription.stop();
-      };
+              return null;
+            }).filter(Boolean) as QuestionItem[];
+            
+            // Sort questions by their order in surveyOrder
+            questions.sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+            console.log(`Loaded ${questions.length} questions from surveyOrder`);
+            setSurveyQuestions(questions);
+            setIsQuestionsLoading(false);
+          }
+        });
+        
+        return () => {
+          subscription.stop();
+        };
+      } else {
+        setSurveyQuestions([]);
+        setIsQuestionsLoading(false);
+      }
     } else {
-      // Clear questions if survey has no questions
+      // Clear questions if survey has no surveyOrder
       setSurveyQuestions([]);
       setSurveyOrder([]);
       setIsQuestionsLoading(false);
     }
-  }, [survey?.sectionQuestions, survey?.selectedQuestions, survey?.surveySections, survey?._id]);
+  }, [survey?.surveyOrder, survey?.surveySections, survey?.sectionQuestions, survey?._id]);
 
-  // Build unified order for sections and questions
-  const buildSurveyOrder = (questions: QuestionItem[], sections: any[]) => {
-    console.log('Building survey order with:', {
-      questionsCount: questions.length,
-      sectionsCount: sections.length,
-      existingSurveyOrder: survey?.surveyOrder ? survey.surveyOrder.length : 0,
-      surveyId: survey?._id
-    });
-    
-    // Log section-question relationships for debugging
-    console.log('Section-Question relationships:');
-    sections.forEach(section => {
-      const sectionQuestions = questions.filter(q => q.sectionId === section.id);
-      console.log(`Section ${section.id} (${section.name}): ${sectionQuestions.length} questions`);
-    });
-    
-    // Check for questions without sections
-    const unassignedQuestions = questions.filter(q => !q.sectionId);
-    console.log(`Questions without sections: ${unassignedQuestions.length}`);
-    
-    if (survey?.surveyOrder) {
-      // Filter out invalid items from the saved order
-      const validOrder = survey.surveyOrder.filter((item: SurveyOrderItem) => {
-        if (item.type === 'question') return questions.some(q => q.id === item.id);
-        if (item.type === 'section') return sections.some(s => s.id === item.id);
-        return false;
-      });
-      
-      // Add new questions and sections that are not in the saved order
-      const existingQuestionIds = validOrder
-        .filter((item: SurveyOrderItem) => item.type === 'question')
-        .map((item: SurveyOrderItem) => item.id);
-      
-      const existingSectionIds = validOrder
-        .filter((item: SurveyOrderItem) => item.type === 'section')
-        .map((item: SurveyOrderItem) => item.id);
-      
-      // Add new questions
-      const newQuestions = questions.filter(q => !existingQuestionIds.includes(q.id));
-      let maxOrder = validOrder.length > 0 ? Math.max(...validOrder.map((item: SurveyOrderItem) => item.order)) : 0;
-      
-      // Log new questions being added to order
-      if (newQuestions.length > 0) {
-        console.log(`Adding ${newQuestions.length} new questions to survey order`);
-      }
-      
-      newQuestions.forEach(q => {
-        validOrder.push({
-          id: q.id,
-          type: 'question',
-          order: ++maxOrder
-        });
-      });
-      
-      // Add new sections
-      const newSections = sections.filter(s => !existingSectionIds.includes(s.id));
-      
-      // Log new sections being added to order
-      if (newSections.length > 0) {
-        console.log(`Adding ${newSections.length} new sections to survey order`);
-      }
-      
-      newSections.forEach(s => {
-        validOrder.push({
-          id: s.id,
-          type: 'section',
-          order: ++maxOrder
-        });
-        
-        // For new sections, also add their questions right after them
-        const sectionQuestions = questions.filter(q => q.sectionId === s.id);
-        sectionQuestions.forEach(q => {
-          // Only add if not already in the order
-          if (!existingQuestionIds.includes(q.id)) {
-            validOrder.push({
-              id: q.id,
-              type: 'question',
-              order: ++maxOrder
-            });
-          }
-        });
-      });
-      
-      // Sort by order
-      const sortedOrder = validOrder.sort((a: SurveyOrderItem, b: SurveyOrderItem) => a.order - b.order);
-      setSurveyOrder(sortedOrder);
-      
-      // Check if the order has actually changed before updating
-      const hasOrderChanged = !survey.surveyOrder || 
-        JSON.stringify(sortedOrder.map(item => ({ id: item.id, type: item.type }))) !== 
-        JSON.stringify(survey.surveyOrder.map((item: SurveyOrderItem) => ({ id: item.id, type: item.type })));
-      
-      if (hasOrderChanged) {
-        console.log('Survey order has changed, will update via onSurveyUpdate');
-      } else {
-        console.log('Survey order unchanged, skipping update');
-      }
-      
-      // We'll update via onSurveyUpdate in the common code path below if needed
-      return;
-    }
-    
-    // If no saved order, build a default order
-    const order: SurveyOrderItem[] = [];
-    let orderIndex = 0;
-    
-    // First add questions without sections
-    const standAloneQuestions = questions.filter(q => !q.sectionId);
-    standAloneQuestions.forEach((q: QuestionItem) => {
-      order.push({
-        id: q.id,
-        type: 'question',
-        order: orderIndex++
-      });
-    });
-    
-    // Then add sections and their questions
-    sections.forEach(section => {
-      // Add the section
-      order.push({
-        id: section.id,
-        type: 'section',
-        order: orderIndex++
-      });
-      
-      // Add questions for this section
-      const sectionQuestions = questions.filter(q => q.sectionId === section.id);
-      sectionQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
-      
-      sectionQuestions.forEach(q => {
-        order.push({
-          id: q.id,
-          type: 'question',
-          order: orderIndex++
-        });
-      });
-    });
-    
-    setSurveyOrder(order);
-    console.log(`Built new survey order with ${order.length} items (${standAloneQuestions.length} standalone questions, ${sections.length} sections)`);
-    
-    // If the order has changed from what's saved in the survey, update it
-    // Compare only the id and type fields to avoid false positives from order changes
-    const hasOrderChanged = !survey.surveyOrder || 
-      JSON.stringify(order.map(item => ({ id: item.id, type: item.type }))) !== 
-      JSON.stringify(survey.surveyOrder.map((item: SurveyOrderItem) => ({ id: item.id, type: item.type })));
-    
-    if (survey && hasOrderChanged) {
-      console.log('Survey order changed, updating survey:', {
-        oldOrderLength: survey?.surveyOrder?.length || 0,
-        newOrderLength: order.length,
-        onSurveyUpdateExists: !!onSurveyUpdate
-      });
-      
-      const updatedSurvey = {
-        ...survey,
-        surveyOrder: order
-      };
-      
-      if (onSurveyUpdate) {
-        onSurveyUpdate(updatedSurvey);
-        console.log('Called onSurveyUpdate with updated survey order');
-        
-        // Also save directly to database to ensure survey order is persisted
-        if (survey?._id) {
-          Meteor.call('surveys.updateSurveyOrder', survey._id, order, (error: any) => {
-            if (error) {
-              console.error('Error updating survey order:', error);
-            } else {
-              console.log('Survey order updated in database');
-            }
-          });
-        }
-      } else {
-        console.error('onSurveyUpdate callback is not available!');
-      }
-    } else {
-      console.log('Survey order unchanged, skipping update');
-    }
-  };
 
   const handleCreateQuestion = () => {
     const onQuestionCreatedCallback = (questionId: string) => {
@@ -386,17 +186,37 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             return [...prev, newQuestion];
           });
           
+          // Update surveyOrder - this is the single source of truth
+          const updatedSurveyOrder = [...surveyOrder];
+          const maxOrder = updatedSurveyOrder.length > 0 ? 
+            Math.max(...updatedSurveyOrder.map(item => item.order)) : 0;
+          
+          updatedSurveyOrder.push({
+            id: questionId,
+            type: 'question',
+            order: maxOrder + 1
+          });
+          
+          setSurveyOrder(updatedSurveyOrder);
+          
           // Update the survey with the new question
           if (survey && onSurveyUpdate) {
-            const currentQuestions = Array.isArray(survey.selectedQuestions) ? survey.selectedQuestions : [];
+            const currentSectionQuestions = Array.isArray(survey.sectionQuestions) ? survey.sectionQuestions : [];
             // Check if question ID already exists to avoid duplicates
-            if (!currentQuestions.includes(questionId)) {
+            if (!currentSectionQuestions.some((q: any) => q.questionId === questionId || q.id === questionId)) {
+              const newSectionQuestion = {
+                questionId: questionId,
+                sectionId: null, // null for unsectioned questions
+                type: newQuestion.type,
+                order: currentSectionQuestions.length
+              };
+              
               const updatedSurvey = {
                 ...survey,
-                selectedQuestions: [...currentQuestions, questionId],
-                surveyOrder: surveyOrder
+                sectionQuestions: [...currentSectionQuestions, newSectionQuestion],
+                surveyOrder: updatedSurveyOrder // Use surveyOrder as single source of truth
               };
-              console.log('Updating survey with new question:', updatedSurvey.selectedQuestions);
+              console.log('Updating survey with new question and surveyOrder:', updatedSurvey);
               onSurveyUpdate(updatedSurvey);
             }
           }
@@ -465,19 +285,95 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   const handleEditQuestion = (questionId: string) => {
     console.log('Edit question:', questionId);
-    // TODO: Implement edit question functionality
+    
+    // Find the question to edit
+    const questionToEdit = surveyQuestions.find(q => q.id === questionId);
+    if (!questionToEdit) {
+      console.error('Question not found:', questionId);
+      return;
+    }
+    
+    // Create callback to handle question updates
+    const onQuestionUpdatedCallback = (updatedQuestionId: string) => {
+      console.log('Question updated:', updatedQuestionId);
+      
+      // Refresh the question data from the database
+      const questionDoc = Questions.findOne(updatedQuestionId);
+      if (questionDoc) {
+        const updatedQuestion: QuestionItem = {
+          id: updatedQuestionId,
+          text: extractQuestionText(questionDoc),
+          type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
+          status: 'published' as const,
+          sectionId: questionToEdit.sectionId,
+          order: questionToEdit.order
+        };
+        
+        // Update the question in local state
+        setSurveyQuestions(prev => 
+          prev.map(q => q.id === updatedQuestionId ? updatedQuestion : q)
+        );
+        
+        // Update survey with updated sectionQuestions
+        if (survey && onSurveyUpdate) {
+          const currentSectionQuestions = Array.isArray(survey.sectionQuestions) ? survey.sectionQuestions : [];
+          const updatedSectionQuestions = currentSectionQuestions.map((q: any) => 
+            q.id === updatedQuestionId ? {
+              ...q,
+              text: updatedQuestion.text,
+              type: updatedQuestion.type
+            } : q
+          );
+          
+          const updatedSurvey = {
+            ...survey,
+            sectionQuestions: updatedSectionQuestions,
+            surveyOrder: surveyOrder
+          };
+          onSurveyUpdate(updatedSurvey);
+        }
+        
+        // Trigger unsaved changes
+        if (onHasUnsavedChanges) {
+          onHasUnsavedChanges(true);
+        }
+      }
+    };
+    
+    // Open the question builder panel for editing
+    openPanel(questionId, surveyId, onQuestionUpdatedCallback);
   };
 
-  const handleDeleteQuestion = (questionId: string) => {
+  const handleDeleteQuestion = (questionId: string, event?: React.MouseEvent) => {
+    if (event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setDeleteConfirmation({
+        questionId,
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.top
+        }
+      });
+    }
+  };
+
+  const confirmDeleteQuestion = (questionId: string) => {
+    // Remove question from local state
     setSurveyQuestions(prev => prev.filter(q => q.id !== questionId));
+    
+    // Remove question from surveyOrder array (single source of truth)
+    const updatedSurveyOrder = surveyOrder.filter(item => 
+      !(item.type === 'question' && item.id === questionId)
+    );
+    setSurveyOrder(updatedSurveyOrder);
     
     // Update the survey to remove the question
     if (survey && onSurveyUpdate) {
-      const currentQuestions = Array.isArray(survey.selectedQuestions) ? survey.selectedQuestions : [];
+      const currentSectionQuestions = Array.isArray(survey.sectionQuestions) ? survey.sectionQuestions : [];
       const updatedSurvey = {
         ...survey,
-        selectedQuestions: currentQuestions.filter((id: string) => id !== questionId),
-        surveyOrder: surveyOrder
+        sectionQuestions: currentSectionQuestions.filter((q: any) => q.id !== questionId),
+        surveyOrder: updatedSurveyOrder
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -486,11 +382,14 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     if (onHasUnsavedChanges) {
       onHasUnsavedChanges(true);
     }
+    
+    // Close confirmation popup
+    setDeleteConfirmation(null);
   };
 
   // Handle selecting questions from the Question Selector modal
-  const handleSelectQuestions = (selectedQuestionIds: string[]) => {
-    console.log('Selected question IDs:', selectedQuestionIds);
+  const handleSelectQuestions = (selectedQuestionIds: string[], sectionId: string) => {
+    console.log('Selected question IDs:', selectedQuestionIds, 'for section:', sectionId);
     
     // Get questions that aren't already in the survey
     const questionsToAdd = selectedQuestionIds.filter(id => 
@@ -511,7 +410,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           text: extractQuestionText(questionDoc),
           type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
           status: 'published' as const,
-          sectionId: currentSectionId || undefined // Assign to section if specified
+          sectionId: sectionId || undefined
         };
       }
       return null;
@@ -520,41 +419,36 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     // Add to survey questions
     setSurveyQuestions(prev => [...prev, ...newQuestions]);
     
-    // Update surveyOrder with new questions
+    // Update surveyOrder with new questions - this is the single source of truth
     const updatedSurveyOrder = [...surveyOrder];
     let maxOrder = updatedSurveyOrder.length > 0 ? 
       Math.max(...updatedSurveyOrder.map(item => item.order)) : 0;
     
     // Add new questions to the order
     newQuestions.forEach(question => {
-      // If the question is assigned to a section, don't add it to the main order
-      // It will be shown within its section
-      if (!question.sectionId) {
-        updatedSurveyOrder.push({
-          id: question.id,
-          type: 'question',
-          order: ++maxOrder
-        });
-      }
+      updatedSurveyOrder.push({
+        id: question.id,
+        type: 'question',
+        order: ++maxOrder
+      });
     });
     
     // Update the state with the new order
     setSurveyOrder(updatedSurveyOrder);
     
-    // Update survey with new questions and section assignments
+    // Update survey with new questions and surveyOrder
     if (survey && onSurveyUpdate) {
       const updatedSurvey = {
         ...survey,
-        selectedQuestions: [...(survey.selectedQuestions || []), ...questionsToAdd],
         sectionQuestions: [
           ...(survey.sectionQuestions || []),
           ...questionsToAdd.map(questionId => ({
             questionId,
-            sectionId: currentSectionId || null,
+            sectionId: sectionId || null,
             order: (survey.sectionQuestions || []).length + questionsToAdd.indexOf(questionId)
           }))
         ],
-        surveyOrder: updatedSurveyOrder // Use the updated survey order
+        surveyOrder: updatedSurveyOrder // Use surveyOrder as single source of truth
       };
       onSurveyUpdate(updatedSurvey);
     }
@@ -827,12 +721,24 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       documentType: newSection.documentType
     });
 
+    // Update surveyOrder array (single source of truth) for new sections
+    let updatedSurveyOrder = [...surveyOrder];
+    
     if (currentSection) {
       // Update existing section
       setSections(prev => prev.map(s => s.id === currentSection.id ? { ...newSection, id: currentSection.id } : s));
     } else {
       // Add new section
       setSections(prev => [...prev, newSection]);
+      
+      // Add new section to surveyOrder array
+      const newOrderItem = {
+        id: newSection.id,
+        type: 'section' as const,
+        order: surveyOrder.length
+      };
+      updatedSurveyOrder = [...surveyOrder, newOrderItem];
+      setSurveyOrder(updatedSurveyOrder);
     }
 
     // Update survey with new sections
@@ -869,11 +775,11 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         documentType: updatedSection?.documentType
       });
       
-      // Create the updated survey object
+      // Create the updated survey object with updated surveyOrder
       const updatedSurvey = {
         ...survey,
         surveySections: updatedSections,
-        surveyOrder: surveyOrder
+        surveyOrder: updatedSurveyOrder
       };
       
       // Log the document data in the updated survey object
@@ -1242,7 +1148,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteQuestion(question.id);
+                                handleDeleteQuestion(question.id, e);
                               }}
                               style={{
                                 background: 'none',
@@ -1381,7 +1287,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleDeleteQuestion(question.id);
+                                          handleDeleteQuestion(question.id, e);
                                         }}
                                         style={{
                                           background: 'none',
@@ -1490,6 +1396,73 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         section={currentSection}
         onSave={handleSaveSection}
       />
+
+      {/* Delete Confirmation Popup */}
+      {deleteConfirmation && (
+        <>
+          {/* Backdrop */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'transparent',
+              zIndex: 999
+            }}
+            onClick={() => setDeleteConfirmation(null)}
+          />
+          {/* Confirmation Popup */}
+          <div
+            style={{
+              position: 'fixed',
+              left: deleteConfirmation.position.x - 100,
+              top: deleteConfirmation.position.y - 80,
+              backgroundColor: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              padding: '12px',
+              zIndex: 1000,
+              minWidth: '200px'
+            }}
+          >
+            <div style={{ marginBottom: '12px', fontSize: '14px', fontWeight: 500 }}>
+              Delete this question?
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteConfirmation(null)}
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmDeleteQuestion(deleteConfirmation.questionId)}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

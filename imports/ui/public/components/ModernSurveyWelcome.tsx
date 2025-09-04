@@ -93,8 +93,10 @@ const WelcomeHeader = styled.div`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  margin: 0;
   padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -325,6 +327,7 @@ const SurveyDescription = styled.p`
 
 
 const StatsContainer = styled.div`
+
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
@@ -333,6 +336,7 @@ const StatsContainer = styled.div`
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
     gap: 16px;
+
   }
 `;
 
@@ -343,6 +347,7 @@ const StatCard = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+
   align-items: flex-start;
   text-align: left;
   border: 1px solid #e5e7eb;
@@ -352,6 +357,7 @@ const StatCard = styled.div`
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transform: translateY(-2px);
+
   }
 `;
 
@@ -803,6 +809,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                 <StatLabel>Total Questions</StatLabel>
               </StatCard>
               
+
               <StatCard>
                 <StatIcon primaryColor={effectiveColor}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 40 40">
@@ -822,6 +829,7 @@ const ModernSurveyWelcome: React.FC<ModernSurveyWelcomeProps> = ({ survey, onSta
                 </StatValue>
                 <StatLabel>Question Sections</StatLabel>
               </StatCard>
+
               
               <StatCard>
                 <StatIcon primaryColor={effectiveColor}>
