@@ -42,6 +42,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   
   const [surveyOrder, setSurveyOrder] = useState<Array<SurveyOrderItem>>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    questionId: string;
+    position: { x: number; y: number };
+  } | null>(null);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
 
   // Helper function to extract clean question text
@@ -340,11 +344,20 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     openPanel(questionId, surveyId, onQuestionUpdatedCallback);
   };
 
-  const handleDeleteQuestion = (questionId: string) => {
-    if (!window.confirm('Are you sure you want to delete this question?')) {
-      return;
+  const handleDeleteQuestion = (questionId: string, event?: React.MouseEvent) => {
+    if (event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setDeleteConfirmation({
+        questionId,
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.top
+        }
+      });
     }
-    
+  };
+
+  const confirmDeleteQuestion = (questionId: string) => {
     // Remove question from local state
     setSurveyQuestions(prev => prev.filter(q => q.id !== questionId));
     
@@ -369,6 +382,9 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     if (onHasUnsavedChanges) {
       onHasUnsavedChanges(true);
     }
+    
+    // Close confirmation popup
+    setDeleteConfirmation(null);
   };
 
   // Handle selecting questions from the Question Selector modal
@@ -1120,7 +1136,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteQuestion(question.id);
+                                handleDeleteQuestion(question.id, e);
                               }}
                               style={{
                                 background: 'none',
@@ -1259,7 +1275,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleDeleteQuestion(question.id);
+                                          handleDeleteQuestion(question.id, e);
                                         }}
                                         style={{
                                           background: 'none',
@@ -1368,6 +1384,73 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         section={currentSection}
         onSave={handleSaveSection}
       />
+
+      {/* Delete Confirmation Popup */}
+      {deleteConfirmation && (
+        <>
+          {/* Backdrop */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'transparent',
+              zIndex: 999
+            }}
+            onClick={() => setDeleteConfirmation(null)}
+          />
+          {/* Confirmation Popup */}
+          <div
+            style={{
+              position: 'fixed',
+              left: deleteConfirmation.position.x - 100,
+              top: deleteConfirmation.position.y - 80,
+              backgroundColor: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              padding: '12px',
+              zIndex: 1000,
+              minWidth: '200px'
+            }}
+          >
+            <div style={{ marginBottom: '12px', fontSize: '14px', fontWeight: 500 }}>
+              Delete this question?
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteConfirmation(null)}
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmDeleteQuestion(deleteConfirmation.questionId)}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
