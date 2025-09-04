@@ -322,6 +322,7 @@ const SimpleSurveyContent: React.FC<SimpleSurveyContentProps> = ({
               ...currentSection,
               description: currentSection.description || ''
             }}
+            survey={survey}
             onContinue={handleSectionContinue}
             onBack={handleBack}
             surveyId={survey._id}
@@ -339,6 +340,7 @@ const SimpleSurveyContent: React.FC<SimpleSurveyContentProps> = ({
         return (
           <ModernSurveyQuestion
             question={currentQuestion}
+            survey={survey}
             onAnswer={(answer) => handleQuestionAnswer(currentQuestion._id, answer)}
             onBack={handleBack}
           />

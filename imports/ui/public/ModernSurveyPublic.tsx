@@ -51,7 +51,6 @@ const Header = styled.header`
   padding: 20px 40px;
   display: flex;
   justify-content: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   
   @media (max-width: 768px) {
     padding: 16px;

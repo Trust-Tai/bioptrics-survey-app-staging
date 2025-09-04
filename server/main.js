@@ -44,6 +44,8 @@ import '../imports/api/tagItems';
 import { seedOnboardingSteps } from '../imports/api/onboardingSteps';
 // Import Survey Report Methods
 import '../imports/api/surveys/methods/reportMethods';
+// Import migration methods
+import '../scripts/migrate-survey-questions';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

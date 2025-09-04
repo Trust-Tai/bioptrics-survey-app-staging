@@ -183,6 +183,7 @@ const MainContent = styled.div`
   flex-direction: column;
   min-height: 100vh;
   padding-top: 100px;
+  padding-bottom: 100px;
   
   @media (max-width: 768px) {
     width: 100%;
