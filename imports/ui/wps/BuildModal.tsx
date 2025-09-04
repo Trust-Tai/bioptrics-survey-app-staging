@@ -3,11 +3,16 @@ import { wpsQuestions } from '../../api/wpsQuestionBank';
 import { Modal, Button } from 'react-bootstrap';
 import { buildJSONExport } from '/imports/utils/wpsExport';
 import wpsSurveyTemplate from '/imports/api/wpsSurveyTemplate.json';
+import { Meteor } from 'meteor/meteor';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { FaCheckCircle } from 'react-icons/fa';
 
 interface BuildModalProps {
   show: boolean;
   onHide: () => void;
   wpsids: string[];
+  onImportSuccess?: () => void; // New prop for refreshing surveys list
 }
 // Helper to extract unique indicators and their descriptions from questionsByWPSID
 function getUniqueIndicatorsWithDescriptions(
@@ -194,9 +199,55 @@ function downloadJSON(data: any, filename: string) {
   }, 0);
 }
 
-const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids }) => {
+// Helper function to build JSON for import
+function buildJSONForImport(questions: { question: string; standard: string }[], title: string) {
+  const { standardsSet, questionsSet } = buildJSONExport(questions);
+  const survey = JSON.parse(JSON.stringify(wpsSurveyTemplate));
+  survey.title = title;
+  survey.sections = standardsSet;
+  survey.questions = questionsSet;
+  return survey;
+}
+
+// Success Modal Component
+const SuccessModal: React.FC<{ 
+  show: boolean; 
+  onHide: () => void; 
+  surveyCount: number;
+  onViewSurveys: () => void;
+}> = ({ show, onHide, surveyCount, onViewSurveys }) => {
+  return (
+    <Modal show={show} onHide={onHide} centered backdrop="static">
+      <Modal.Body style={{ padding: '2rem', textAlign: 'center' }}>
+        <div style={{ marginBottom: '1.5rem', color: '#2a8c5f' }}>
+          <FaCheckCircle size={60} />
+        </div>
+        <h4 style={{ marginBottom: '1rem' }}>Success!</h4>
+        <p style={{ fontSize: '16px', marginBottom: '1.5rem' }}>
+          {surveyCount === 1 
+            ? 'Your survey has been successfully built and imported.' 
+            : `${surveyCount} surveys have been successfully built and imported.`}
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          <Button variant="secondary" onClick={onHide}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={onViewSurveys}>
+            View All Surveys
+          </Button>
+        </div>
+      </Modal.Body>
+    </Modal>
+  );
+};
+
+const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportSuccess }) => {
+  const navigate = useNavigate();
   // Temporary data structure for questions and indicators
   const [questionsByWPSID, setQuestionsByWPSID] = useState<Record<string, { leader: string | undefined, workforce: string | undefined, standard: string | undefined, indicator?: string | undefined }>>({});
+  // Success modal state
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [importedSurveyCount, setImportedSurveyCount] = useState(0);
   // On modal load, collect questions for selected WPSIDs
   useEffect(() => {
     if (!show || !wpsids.length) {
@@ -222,9 +273,17 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids }) => {
   const [filter, setFilter] = useState<'Workforce' | 'Leaders' | 'Both'>('Workforce');
   // Survey title input
   const [customTitle, setCustomTitle] = useState<string>('');
+  // Loading state for buttons
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleRadioChange = (value: 'Workforce' | 'Leaders' | 'Both') => {
     setFilter(value);
+  };
+  
+  // Handler for navigating to All Surveys page
+  const handleViewAllSurveys = () => {
+    navigate('/admin/surveys/all');
+    onHide();
   };
   
 
@@ -384,6 +443,113 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids }) => {
       buildAndDownloadSurveyWithTitle(workforceQuestions, 'wps-survey-workforce.json', title);
     }
   };
+  
+  // Handle Build and Import functionality
+  const handleBuildAndImport = () => {
+    setIsLoading(true);
+    // Prepare arrays for each group
+    const leaderQuestions: { question: string; standard: string }[] = [];
+    const workforceQuestions: { question: string; standard: string }[] = [];
+    
+    Object.values(questionsByWPSID).forEach(q => {
+      if (q.leader && q.standard) {
+        leaderQuestions.push({ question: q.leader, standard: q.standard });
+      }
+      if (q.workforce && q.standard) {
+        workforceQuestions.push({ question: q.workforce, standard: q.standard });
+      }
+    });
+    
+    const baseTitle = (customTitle && customTitle.trim()) || (wpsSurveyTemplate.title || 'New WPS Survey');
+    
+    if (filter === 'Both') {
+      // Import both surveys
+      const leadersTitle = `${baseTitle} (Leaders)`;
+      const workforceTitle = `${baseTitle} (Workforce)`;
+      
+      // Generate Leader survey
+      const leaderSurvey = buildJSONForImport(leaderQuestions, leadersTitle);
+      // Generate Workforce survey
+      const workforceSurvey = buildJSONForImport(workforceQuestions, workforceTitle);
+      
+      // Track completion of both imports
+      let completedImports = 0;
+      let successfulImports = 0;
+      
+      // Import leader survey
+      Meteor.call('surveys.import', leaderSurvey, (leaderError: any, leaderResult: any) => {
+        completedImports++;
+        if (!leaderError && leaderResult && leaderResult.success) {
+          successfulImports++;
+        }
+        
+        // Import workforce survey
+        Meteor.call('surveys.import', workforceSurvey, (workforceError: any, workforceResult: any) => {
+          completedImports++;
+          if (!workforceError && workforceResult && workforceResult.success) {
+            successfulImports++;
+          }
+          
+          // Both imports are complete, check results
+          if (completedImports === 2) {
+            if (successfulImports === 2) {
+              // Both imports successful
+              toast.success('Surveys built and imported successfully!');
+              setImportedSurveyCount(2);
+              setShowSuccessModal(true);
+              if (onImportSuccess) {
+                onImportSuccess();
+              }
+            } else {
+              toast.error('Failed to import one or more surveys');
+              setShowSuccessModal(true);
+            }
+            setIsLoading(false);
+          }
+        });
+      });
+    } else if (filter === 'Leaders') {
+      const title = `${baseTitle} (Leaders)`;
+      const survey = buildJSONForImport(leaderQuestions, title);
+      
+      Meteor.call('surveys.import', survey, (error: any, result: any) => {
+        setIsLoading(false);
+        if (error) {
+          console.error('Error importing survey:', error);
+          toast.error(`Error: ${error.message || 'Unknown error'}`);
+        } else if (result && result.success) {
+          toast.success('Survey built and imported successfully!');
+          setImportedSurveyCount(1);
+          setShowSuccessModal(true);
+          if (onImportSuccess) {
+            onImportSuccess();
+          }
+        } else {
+          toast.error('Failed to import survey');
+        }
+      });
+    } else if (filter === 'Workforce') {
+      const title = `${baseTitle} (Workforce)`;
+      const survey = buildJSONForImport(workforceQuestions, title);
+      
+      Meteor.call('surveys.import', survey, (error: any, result: any) => {
+        setIsLoading(false);
+        if (error) {
+          console.error('Error importing survey:', error);
+          toast.error(`Error: ${error.message || 'Unknown error'}`);
+        } else if (result && result.success) {
+          toast.success('Survey built and imported successfully!');
+          setImportedSurveyCount(1);
+          setShowSuccessModal(true);
+          if (onImportSuccess) {
+            onImportSuccess();
+          }
+        } else {
+          toast.error('Failed to import survey');
+        }
+      });
+    }
+  };
 
   // Helper to build with explicit title
   function buildAndDownloadSurveyWithTitle(
@@ -400,10 +566,23 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids }) => {
   }
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg" dialogClassName="wps-builder-modal">
-      <div style={{ borderBottom: 'none' }}>
-        <Modal.Header closeButton style={{ borderBottom: 'none' }} />
-      </div>
+    <>
+      {/* Success Modal */}
+      <SuccessModal 
+        show={showSuccessModal} 
+        onHide={() => {
+          setShowSuccessModal(false);
+          onHide();
+        }} 
+        surveyCount={importedSurveyCount} 
+        onViewSurveys={handleViewAllSurveys} 
+      />
+      
+      {/* Main Modal */}
+      <Modal show={show && !showSuccessModal} onHide={onHide} centered size="lg" dialogClassName="wps-builder-modal">
+        <div style={{ borderBottom: 'none' }}>
+          <Modal.Header closeButton style={{ borderBottom: 'none' }} />
+        </div>
       <Modal.Body style={{ padding: '2rem 2.5rem' }}>
         <style>{`
           .wps-builder-modal #survey-title-input::placeholder { color: #bfc3cc; opacity: 1; }
@@ -436,14 +615,23 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids }) => {
           <Button
             variant="primary"
             style={{ minWidth: 90, marginLeft: 12 }}
-            disabled={wpsids.length === 0}
+            disabled={wpsids.length === 0 || isLoading}
             onClick={confirmHandler}
           >
             Build
           </Button>
+          <Button
+            variant="primary"
+            style={{ minWidth: 120, marginLeft: 12 }}
+            disabled={wpsids.length === 0 || isLoading}
+            onClick={handleBuildAndImport}
+          >
+            Build and Import
+          </Button>
         </Modal.Footer>
       </div>
     </Modal>
+    </>
   );
 };
 
