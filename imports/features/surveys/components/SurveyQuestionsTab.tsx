@@ -46,6 +46,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     questionId: string;
     position: { x: number; y: number };
   } | null>(null);
+  const [deleteSectionConfirmation, setDeleteSectionConfirmation] = useState<{
+    sectionId: string;
+    position: { x: number; y: number };
+  } | null>(null);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
 
   // Helper function to extract clean question text
@@ -851,36 +855,54 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   };
 
   // Handle deleting a section
-  const handleDeleteSection = (sectionId: string) => {
-    if (window.confirm('Are you sure you want to delete this section? This will remove all questions assigned to this section.')) {
-      // Remove section
-      setSections(prev => prev.filter(s => s.id !== sectionId));
-      
-      // Remove questions associated with this section
-      setSurveyQuestions(prev => prev.filter(q => q.sectionId !== sectionId));
-      
-      // Update survey
-      if (survey && onSurveyUpdate) {
-        const updatedSurvey = {
-          ...survey,
-          surveySections: survey.surveySections?.filter((s: any) => s.id !== sectionId) || [],
-          sectionQuestions: survey.sectionQuestions?.filter((sq: any) => {
-            return sq.sectionId !== sectionId;
-          }) || [],
-          surveyOrder: surveyOrder
-        };
-        onSurveyUpdate(updatedSurvey);
-      }
-
-      // Trigger unsaved changes
-      if (onHasUnsavedChanges) {
-        onHasUnsavedChanges(true);
-      }
-
-      // Close editor
-      setShowSectionEditor(false);
-      setCurrentSection(undefined);
+  const handleDeleteSection = (sectionId: string, event?: React.MouseEvent) => {
+    if (event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setDeleteSectionConfirmation({
+        sectionId,
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.top
+        }
+      });
     }
+  };
+
+  const confirmDeleteSection = (sectionId: string) => {
+    // Remove section from local state
+    setSections(prev => prev.filter(s => s.id !== sectionId));
+    
+    // Remove questions associated with this section
+    setSurveyQuestions(prev => prev.filter(q => q.sectionId !== sectionId));
+    
+    // Remove section from surveyOrder array (single source of truth)
+    const updatedSurveyOrder = surveyOrder.filter(item => 
+      !(item.type === 'section' && item.id === sectionId)
+    );
+    setSurveyOrder(updatedSurveyOrder);
+    
+    // Update survey
+    if (survey && onSurveyUpdate) {
+      const updatedSurvey = {
+        ...survey,
+        surveySections: survey.surveySections?.filter((s: any) => s.id !== sectionId) || [],
+        sectionQuestions: survey.sectionQuestions?.filter((sq: any) => {
+          return sq.sectionId !== sectionId;
+        }) || [],
+        surveyOrder: updatedSurveyOrder
+      };
+      onSurveyUpdate(updatedSurvey);
+    }
+
+    // Trigger unsaved changes
+    if (onHasUnsavedChanges) {
+      onHasUnsavedChanges(true);
+    }
+
+    // Close editor and confirmation popup
+    setShowSectionEditor(false);
+    setCurrentSection(undefined);
+    setDeleteSectionConfirmation(null);
   };
 
   // Get questions for a specific section
@@ -922,27 +944,34 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             return [...prev, newQuestion];
           });
           
+          // Update surveyOrder array (single source of truth)
+          const updatedSurveyOrder = [...surveyOrder];
+          const newOrderItem = {
+            id: questionId,
+            type: 'question' as const,
+            order: surveyOrder.length
+          };
+          updatedSurveyOrder.push(newOrderItem);
+          setSurveyOrder(updatedSurveyOrder);
+          
           // Update survey with the new question
           if (survey && onSurveyUpdate) {
-            const currentQuestions = Array.isArray(survey.selectedQuestions) ? survey.selectedQuestions : [];
-            // Check if question ID already exists to avoid duplicates
-            if (!currentQuestions.includes(questionId)) {
-              const updatedSurvey = {
-                ...survey,
-                selectedQuestions: [...currentQuestions, questionId],
-                sectionQuestions: [
-                  ...(survey.sectionQuestions || []),
-                  {
-                    questionId: questionId,
-                    sectionId: sectionId,
-                    order: (survey.sectionQuestions || []).length
-                  }
-                ],
-                surveyOrder: surveyOrder
-              };
-              console.log('Updating survey with new question for section:', updatedSurvey.selectedQuestions);
-              onSurveyUpdate(updatedSurvey);
-            }
+            const updatedSurvey = {
+              ...survey,
+              sectionQuestions: [
+                ...(survey.sectionQuestions || []),
+                {
+                  id: questionId,
+                  text: newQuestion.text,
+                  type: newQuestion.type,
+                  sectionId: sectionId,
+                  order: (survey.sectionQuestions || []).length
+                }
+              ],
+              surveyOrder: updatedSurveyOrder
+            };
+            console.log('Updating survey with new question for section:', updatedSurvey);
+            onSurveyUpdate(updatedSurvey);
           }
           
           // Trigger unsaved changes
@@ -1215,7 +1244,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                               <FiEdit2 size={14} />
                             </button>
                             <button
-                              onClick={() => handleDeleteSection(section.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSection(section.id, e);
+                              }}
                               style={{
                                 background: 'none',
                                 border: 'none',
@@ -1397,7 +1429,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         onSave={handleSaveSection}
       />
 
-      {/* Delete Confirmation Popup */}
+      {/* Delete Question Confirmation Popup */}
       {deleteConfirmation && (
         <>
           {/* Backdrop */}
@@ -1447,6 +1479,76 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
               </button>
               <button
                 onClick={() => confirmDeleteQuestion(deleteConfirmation.questionId)}
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delete Section Confirmation Popup */}
+      {deleteSectionConfirmation && (
+        <>
+          {/* Backdrop */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'transparent',
+              zIndex: 999
+            }}
+            onClick={() => setDeleteSectionConfirmation(null)}
+          />
+          {/* Confirmation Popup */}
+          <div
+            style={{
+              position: 'fixed',
+              left: deleteSectionConfirmation.position.x - 125,
+              top: deleteSectionConfirmation.position.y - 100,
+              backgroundColor: 'white',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              padding: '12px',
+              zIndex: 1000,
+              minWidth: '250px'
+            }}
+          >
+            <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
+              Delete this section?
+            </div>
+            <div style={{ marginBottom: '12px', fontSize: '12px', color: '#666' }}>
+              This will also remove all questions in this section.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteSectionConfirmation(null)}
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmDeleteSection(deleteSectionConfirmation.sectionId)}
                 style={{
                   padding: '6px 12px',
                   border: 'none',
