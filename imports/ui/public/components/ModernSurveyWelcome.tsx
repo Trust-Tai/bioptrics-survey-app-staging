@@ -205,15 +205,20 @@ const ContentContainer = styled.div`
 `;
 
 const ExpectationSidebar = styled.div<{ primaryColor?: string }>`
+  position: fixed;
+  top: 0;
+  right: 0;
   width: 30%;
-  min-height: 100vh;
+  height: 100vh;
   background-color: ${props => props.primaryColor || '#552a47'};
   display: flex;
   flex-direction: column;
+  z-index: 5;
   
   @media (max-width: 768px) {
+    position: relative;
     width: 100%;
-    min-height: auto;
+    height: auto;
     order: -1;
   }
 `;
