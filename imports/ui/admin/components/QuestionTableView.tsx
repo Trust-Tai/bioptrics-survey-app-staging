@@ -390,15 +390,18 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
             ...(latestVersion.labels || []),
             ...(latestVersion.categoryTags || [])
           ].filter(Boolean).slice(0, 3);
+          // Check if question is imported and should be non-editable
+          const isImported = latestVersion.creationSource === 'imported';
           
           return (
             <TableRow 
               key={question._id} 
               data-no-navigate="true"
-              onClick={() => onEdit(question._id)}
+              onClick={isImported ? undefined : () => onEdit(question._id)}
+              style={{ cursor: isImported ? 'not-allowed' : 'pointer' }}
             >
               <TableCell>
-                {questionText.length > 100 ? `${questionText.substring(0, 100)}...` : questionText}
+                  {questionText.length > 100 ? `${questionText.substring(0, 100)}...` : questionText}
               </TableCell>
               <TableCell>
                 <TypeBadge>
@@ -464,17 +467,32 @@ const QuestionTableView: React.FC<QuestionTableViewProps> = ({
                         Analytics
                       </DropdownItem>
                       
-                      <DropdownItem 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          onEdit(question._id);
-                          setOpenDropdown(null);
-                        }}
-                        data-no-navigate="true"
-                      >
-                        Edit
-                      </DropdownItem>
+                      {!isImported && (
+                        <DropdownItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            onEdit(question._id);
+                            setOpenDropdown(null);
+                          }}
+                          data-no-navigate="true"
+                        >
+                          Edit
+                        </DropdownItem>
+                      )}
+                      {isImported && (
+                        <DropdownItem 
+                          style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setOpenDropdown(null);
+                          }}
+                          data-no-navigate="true"
+                        >
+                          Cannot Edit (Imported)
+                        </DropdownItem>
+                      )}
                       
                       <DropdownItem 
                         onClick={(e) => {

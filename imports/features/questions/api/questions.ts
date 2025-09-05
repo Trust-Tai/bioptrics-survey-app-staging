@@ -165,7 +165,8 @@ if (Meteor.isServer) {
         'versions.surveyThemes': 1,
         'versions.saveToQuestionBank': 1,
         'versions.surveyId': 1,
-        'versions.image': 1
+        'versions.image': 1,
+        'versions.creationSource': 1
       }
     });
   });

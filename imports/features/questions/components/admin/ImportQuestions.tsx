@@ -379,7 +379,8 @@ const ImportQuestions: React.FC<ImportQuestionsProps> = ({ onImportComplete, org
           ...(question.categoryTags || []), 
           ...(question.surveyThemes || [])
         ],
-        customFields: question.customFields
+        customFields: question.customFields,
+        creationSource: 'imported' // Set creationSource to 'imported' for all imported questions
       };
       
       return {

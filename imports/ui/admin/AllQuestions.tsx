@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useQuestionBuilderPanel } from '../../features/questions/contexts/QuestionBuilderPanelContext';
-import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV, FaFolder, FaSpinner } from 'react-icons/fa';
+import { FaPlus, FaFilter, FaEye, FaEdit, FaTrash, FaFileAlt, FaCheckCircle, FaFileImport, FaTimes, FaChartLine, FaChartPie, FaDownload, FaUsers, FaComments, FaPercentage, FaStar, FaList, FaThLarge, FaEllipsisV, FaFolder, FaSpinner, FaLock } from 'react-icons/fa';
 import FolderTree from '../../features/questions/components/admin/FolderTree';
 import FolderModal from '../../features/questions/components/admin/FolderModal';
 import { Folders } from '../../features/questions/api/folders';
@@ -1228,12 +1228,14 @@ const AllQuestions: React.FC = () => {
             {filteredQuestions.map((doc: any) => {
               const latestVersion = getLatestVersion(doc);
               if (!latestVersion) return null;
-            
+              // Check if question is imported and should be non-editable
+              const isImported = latestVersion.creationSource === 'imported';
+              
               return (
                 <QuestionCard 
                   key={doc._id} 
-                  onClick={() => openPanel(doc._id)}
-                  style={{ cursor: 'pointer' }}
+                  onClick={isImported ? undefined : () => openPanel(doc._id)}
+                  style={{ cursor: isImported ? 'not-allowed' : 'pointer' }}
                 >
                   <QuestionHeader>
                     {/* Using a 3-column grid layout for consistent positioning */}
@@ -1294,16 +1296,30 @@ const AllQuestions: React.FC = () => {
                             <FaChartLine size={14} />
                             Analytics
                           </DropdownItem>
-                          <DropdownItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openPanel(doc._id);
-                              setOpenDropdown(null);
-                            }}
-                          >
-                            <FaEdit size={14} />
-                            Edit
-                          </DropdownItem>
+                          {!isImported && (
+                            <DropdownItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPanel(doc._id);
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <FaEdit size={14} />
+                              Edit
+                            </DropdownItem>
+                          )}
+                          {isImported && (
+                            <DropdownItem
+                              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              <FaLock size={14} />
+                              Cannot Edit (Imported)
+                            </DropdownItem>
+                          )}
                           <DropdownItem
                             className="delete"
                             onClick={(e) => {
@@ -1322,7 +1338,7 @@ const AllQuestions: React.FC = () => {
                   </QuestionHeader>
                   
                   <QuestionContent>
-                    <QuestionText>
+                    <QuestionText style={isImported ? { color: 'var(--color-accent)' } : {}}>
                       <AdminRichTextRenderer content={latestVersion.questionText} truncate={120} />
                     </QuestionText>
                     
