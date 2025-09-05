@@ -81,7 +81,7 @@ const SectionTitle = styled.h1`
   font-size: 3rem;
   font-weight: 700;
   margin: 0 0 2rem 0;
-  color: #552A47;
+  color: var(--primary-color, #552A47);
   line-height: 1.2;
   font-family: 'Inter', sans-serif;
   
@@ -119,7 +119,7 @@ const SectionImageContainer = styled.div`
 const SectionDescription = styled.p`
   font-size: 1.125rem;
   line-height: 1.6;
-  color: #4b5563;
+  color: var(--primary-color, #4b5563);
   margin: 0 0 3rem 0;
   text-align: center;
   max-width: 600px;
@@ -147,7 +147,7 @@ const ButtonContainer = styled.div`
 `;
 
 const StartSectionButton = styled.button`
-  background: #552A47;
+  background: var(--primary-color, #552A47);
   color: white;
   border: none;
   border-radius: 50px;
@@ -165,7 +165,7 @@ const StartSectionButton = styled.button`
   font-family: 'Inter', sans-serif;
   
   &:hover {
-    background: #3d1e32;
+    background: var(--primary-color, #3d1e32);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(85, 42, 71, 0.3);
   }
@@ -233,8 +233,8 @@ const StatIcon = styled.div<{ primaryColor?: string }>`
   width: 60px;
   height: 60px;
   border-radius: 10px;
-  background-color: ${props => props.primaryColor ? `${props.primaryColor}20` : 'var(--primary-color-light, #f3e8ff)'};
-  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  background-color: var(--primary-color-light, #f3e8ff);
+  color: var(--primary-color, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,7 +251,7 @@ const StatIcon = styled.div<{ primaryColor?: string }>`
 const StatValue = styled.div<{ primaryColor?: string }>`
   font-size: 32px;
   font-weight: 700;
-  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  color: var(--primary-color, #552a47);
   margin-bottom: 8px;
   line-height: 1;
   font-family: 'Inter', sans-serif;
@@ -259,7 +259,7 @@ const StatValue = styled.div<{ primaryColor?: string }>`
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: #6b7280;
+  color: var(--primary-color, #6b7280);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -677,14 +677,14 @@ const ModernSurveySection: React.FC<ModernSurveySectionProps> = ({
         
         <StatsContainer>
           <StatCard>
-            <StatIcon primaryColor={effectiveColor}>
+            <StatIcon>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="34" fill="none" viewBox="0 0 40 34">
                 <path fill="currentColor" d="M28.274 21.376a.656.656 0 0 1-.426-.154l-4.954-4.013a.69.69 0 0 1-.25-.53V5.585a.68.68 0 0 1 1.36 0v10.774l4.7 3.809a.68.68 0 0 1-.453 1.209h.023ZM16.503 24.099H8.925a.68.68 0 0 1 0-1.359h7.578a.68.68 0 0 1 0 1.359ZM13.429 16.807H.679a.68.68 0 0 1 0-1.359h12.75a.68.68 0 0 1 0 1.359ZM8.576 9.434h-4.53a.68.68 0 1 1 0-1.359h4.53a.68.68 0 0 1 0 1.359ZM23.324 29.587a.68.68 0 0 1-.68-.679v-.136a.68.68 0 0 1 1.36 0v.136a.68.68 0 0 1-.68.68ZM35.98 17.36h-.137a.68.68 0 0 1 0-1.359h.136a.679.679 0 1 1 0 1.359Z"/>
                 <path fill="currentColor" d="M7.484 19.56a.675.675 0 0 1-.67-.583 16.118 16.118 0 0 1-.15-2.297.68.68 0 1 1 1.36 0c0 .705.048 1.408.144 2.106a.68.68 0 0 1-.598.766l-.086.009ZM23.322 33.351a16.535 16.535 0 0 1-11.997-5.095.68.68 0 0 1 .978-.933 15.166 15.166 0 0 0 11.019 4.67 15.314 15.314 0 0 0 7.115-28.87A15.313 15.313 0 0 0 9.594 9.887a.68.68 0 0 1-1.218-.607A16.676 16.676 0 1 1 23.322 33.35ZM5.095 24.099H3.86a.68.68 0 0 1 0-1.359h1.236a.68.68 0 0 1 0 1.359Z"/>
                 <path fill="currentColor" d="M8.102 12.233a.683.683 0 0 1-.612-.974l.942-1.97a.68.68 0 0 1 1.228.584l-.942 1.975a.684.684 0 0 1-.616.385Z"/>
               </svg>
             </StatIcon>
-            <StatValue primaryColor={effectiveColor}>
+            <StatValue>
               {localDynamicTimeData ? 
                 localDynamicTimeData.minutes : 
                 metadata.estimatedTime}

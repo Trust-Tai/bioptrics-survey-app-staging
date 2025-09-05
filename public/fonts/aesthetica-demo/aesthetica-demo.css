@@ -1,0 +1,20 @@
+/* Aesthetica Demo Font */
+@font-face {
+  font-family: 'Aesthetica Demo';
+  src: url('aesthetica-demo.woff2') format('woff2'),
+       url('aesthetica-demo.woff') format('woff'),
+       url('aesthetica-demo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aesthetica Demo';
+  src: url('aesthetica-demo-italic.woff2') format('woff2'),
+       url('aesthetica-demo-italic.woff') format('woff'),
+       url('aesthetica-demo-italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}

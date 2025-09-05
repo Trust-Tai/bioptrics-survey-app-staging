@@ -1,7 +1,21 @@
 /* Import Outfit font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
 
+/* Import script font for Thank You page */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap');
+
+/* Import Aesthetica Demo font */
+@import url('/fonts/aesthetica-demo/aesthetica-demo.css');
+
 /* Apply Outfit font only to non-survey pages */
 body:not(.survey-public) *, html:not(.survey-public) * {
   font-family: 'Outfit', sans-serif;
+}
+
+/* Script font class for Thank You text */
+.script-thank-you {
+  font-family: 'Great Vibes', 'Dancing Script', 'Tangerine', cursive;
+  font-weight: 400;
 }
