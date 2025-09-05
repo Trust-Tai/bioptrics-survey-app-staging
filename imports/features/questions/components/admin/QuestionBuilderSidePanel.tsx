@@ -475,8 +475,8 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   // Add state to track if data is fully loaded and ready to display
   const [dataLoaded, setDataLoaded] = useState(false);
-  // State for save to question bank toggle (default to true)
-  const [saveToQuestionBank, setSaveToQuestionBank] = useState(true);
+  // State for save to question bank toggle (default to false)
+  const [saveToQuestionBank, setSaveToQuestionBank] = useState(false);
   // State for preview modal
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   // State for template modal
