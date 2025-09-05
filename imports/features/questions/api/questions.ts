@@ -36,6 +36,7 @@ export interface QuestionVersion {
   // Added fields for survey-specific questions feature
   saveToQuestionBank?: boolean;
   surveyId?: string;
+  creationSource?: string; // 'manual' or 'imported'
 }
 
 export interface QuestionDoc {
@@ -111,6 +112,7 @@ if (typeof Questions.attachSchema === 'function') {
     // Survey-specific question fields
     'versions.$.saveToQuestionBank': { type: Boolean, optional: true, defaultValue: true },
     'versions.$.surveyId': { type: String, optional: true },
+    'versions.$.creationSource': { type: String, optional: true },
     createdAt: { type: Date },
     createdBy: { type: String },
     folderId: { type: String, optional: true },
@@ -163,7 +165,8 @@ if (Meteor.isServer) {
         'versions.surveyThemes': 1,
         'versions.saveToQuestionBank': 1,
         'versions.surveyId': 1,
-        'versions.image': 1
+        'versions.image': 1,
+        'versions.creationSource': 1
       }
     });
   });

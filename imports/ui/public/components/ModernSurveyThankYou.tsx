@@ -55,141 +55,186 @@ const formatTime = (timeInSeconds: number): string => {
 
 // Styled components for ThankYou page
 const ThankYouContainer = styled.div`
-  max-width: 1200px;
+  width: 100%;
+  min-height: 100vh;
   margin: 0 auto;
   padding: 40px 20px;
-  font-family: var(--body-font, 'Inter, sans-serif');
-  color: var(--text-color, #333);
+  font-family: 'Inter', sans-serif;
+  color: #333;
   animation: fadeIn 0.6s ease-out;
-  background-color: var(--background-color, #ffffff);
+  background-color: #fdf2f8; /* Light pink background from Figma */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+`;
+
+const TopLogo = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 120px;
+  height: 40px;
+  
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const ThankYouHeader = styled.div`
   text-align: center;
   margin-bottom: 40px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const ThankYouIcon = styled.div`
-  margin: 0 auto 20px;
-  width: 80px;
-  height: 80px;
-  background-color: rgba(var(--primary-color-rgb, 44, 62, 80), 0.1);
-  border-radius: 50%;
+  margin: 0 auto;
+  width: 200px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: scaleIn 0.5s ease-out;
+  margin-bottom: 40px;
   
-  svg {
-    color: var(--primary-color, #552a47);
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
   }
 `;
 
 const ThankYouTitle = styled.h1`
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 42px;
+  font-weight: 400;
   margin-bottom: 16px;
-  color: var(--primary-color, #1f2937);
-  font-family: var(--heading-font, 'Inter, sans-serif');
+  color: #1f1f1f;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  line-height: 1.1;
 `;
 
 const ThankYouMessage = styled.p`
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.6;
-  color: var(--text-color, #4b5563);
+  color: #4b5563;
   max-width: 600px;
   margin: 0 auto;
-  font-family: var(--body-font, 'Inter, sans-serif');
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 40px;
+  font-weight: 400;
 `;
 
 const StatsContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-  margin-bottom: 60px;
-`;
-
-const StatCard = styled.div`
-  background-color: var(--card-background, white);
-  border-radius: var(--card-radius, 12px);
-  padding: 24px;
-  box-shadow: var(--card-shadow, 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1));
-  display: flex;
-  align-items: flex-start;
-  transition: all 0.3s ease;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 600px;
   
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
   }
 `;
 
-const StatIcon = styled.div`
-  width: 40px;
-  height: 40px;
+const StatCard = styled.div`
+  background-color: white;
   border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+  border: 1px solid #f3f4f6;
+  position: relative;
+  overflow: hidden;
+`;
+
+const StatIcon = styled.div`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
-  color: white;
-  flex-shrink: 0;
-  background-color: var(--primary-color, #4b5563);
+  color: #552a47;
   
   svg {
-    color: white;
+    width: 20px;
+    height: 20px;
   }
 `;
 
 const StatContent = styled.div`
-  flex: 1;
+  width: 100%;
 `;
 
 const StatValue = styled.h3`
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 700;
-  margin: 0 0 4px;
-  color: var(--primary-color, #1f2937);
-  font-family: var(--heading-font, 'Inter, sans-serif');
+  margin: 0 0 8px;
+  color: #1f1f1f;
+  font-family: 'Inter', sans-serif;
+  line-height: 1;
 `;
 
 const StatLabel = styled.p`
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
   margin: 0 0 4px;
-  color: var(--text-color, #4b5563);
-  font-family: var(--body-font, 'Inter, sans-serif');
+  color: #552a47;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const StatSublabel = styled.span`
-  font-size: 14px;
-  color: var(--secondary-text-color, #6b7280);
-  font-family: var(--body-font, 'Inter, sans-serif');
+  font-size: 11px;
+  color: #6b7280;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
 `;
 
 const ThankYouActions = styled.div`
   text-align: center;
+  margin-top: 30px;
+  width: 100%;
+  max-width: 600px;
 `;
 
 const RestartButton = styled.button`
-  background-color: var(--button-background, var(--primary-color, #4b5563));
-  color: var(--button-text, white);
-  border: 1px solid var(--primary-color, #4b5563);
-  border-radius: var(--button-radius, 30px);
-  padding: 12px 24px;
-  font-size: 16px;
+  background-color: #552a47;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: var(--card-shadow, 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1));
-  font-family: var(--body-font, 'Inter, sans-serif');
+  box-shadow: 0 1px 3px rgba(85, 42, 71, 0.2);
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+  max-width: 180px;
   
   &:hover {
-    background-color: var(--button-hover, #3a4451);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    background-color: #461e3b;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(85, 42, 71, 0.3);
   }
 `;
 
@@ -402,25 +447,16 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
   return (
     <ThankYouContainer>
       <ThankYouHeader>
-        {/* Only hide the icon container if thankYouIcon is explicitly set to null */}
-        {/* {survey.thankYouIcon !== null && ( */}
-          <ThankYouIcon>
-            {/* Use survey icon if available, otherwise use default */}
-            {survey.thankYouIcon ? (
-              <img 
-                src={survey.thankYouIcon} 
-                alt="Thank You Icon" 
-                style={{ maxWidth: '48px', maxHeight: '48px' }} 
-              />
-            ) : (
-              <FiCheckCircle size={48} color="var(--primary-color, #552a47)" />
-            )}
-          </ThankYouIcon>
-          
+        <ThankYouIcon>
+          <img 
+            src={survey.logo || "/bioptrics_fixed_black.png"} 
+            alt="Company Logo" 
+          />
+        </ThankYouIcon>
         
-        <ThankYouTitle>{survey.thankYouTitle || 'Thank You!'}</ThankYouTitle>
+        <ThankYouTitle>{survey.thankYouTitle || 'Survey Completed'}</ThankYouTitle>
         <ThankYouMessage>
-          {survey.thankYouDetails || 'Your responses have been successfully submitted. We appreciate your time and feedback.'}
+          {survey.thankYouDetails || 'Your responses have been recorded successfully'}
         </ThankYouMessage>
       </ThankYouHeader>
       
@@ -514,7 +550,7 @@ const ModernSurveyThankYou: React.FC<ModernSurveyThankYouProps> = ({
         {(survey.defaultSettings?.allowRetake !== false) && (
           <RestartButton onClick={handleRestart}>
             <ButtonIcon>
-              <FiRefreshCw size={18} />
+              <FiRefreshCw size={16} />
             </ButtonIcon>
             Take Survey Again
           </RestartButton>

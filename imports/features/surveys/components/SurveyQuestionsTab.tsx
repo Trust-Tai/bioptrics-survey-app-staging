@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiMove, FiLayers } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiMove, FiLayers, FiLock } from 'react-icons/fi';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Questions } from '../../../features/questions/api/questions';
@@ -314,6 +314,17 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     if (!questionToEdit) {
       console.error('Question not found:', questionId);
       return;
+    }
+    
+    // Check if the question is imported (should not be editable)
+    const questionDoc = Questions.findOne(questionId);
+    if (questionDoc) {
+      const latestVersion = getLatestQuestionVersion(questionDoc);
+      const isImported = latestVersion?.creationSource === 'imported';
+      
+      if (isImported) {
+        return; // Don't open the editor for imported questions
+      }
     }
     
     // Create callback to handle question updates
@@ -1204,11 +1215,20 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                     const question = surveyQuestions.find(q => q.id === orderItem.id);
                     if (!question || question.sectionId) return null;
                     
+                    // Check if the question is imported (should not be editable)
+                    const questionDoc = Questions.findOne(question.id);
+                    const latestVersion = questionDoc ? getLatestQuestionVersion(questionDoc) : null;
+                    const isImported = latestVersion?.creationSource === 'imported';
+                    
+                    // Log the creationSource for debugging
+                    console.log(`Question ID: ${question.id}, creationSource: ${latestVersion?.creationSource || 'undefined'}`);
+                    
                     return (
                       <div 
                         key={question.id}
                         className={`question-item ${getDropZoneClasses('question', question.id)}`}
-                        onClick={() => handleEditQuestion(question.id)}
+                        onClick={isImported ? undefined : () => handleEditQuestion(question.id)}
+                        style={{ cursor: isImported ? 'not-allowed' : 'pointer' }}
                         draggable
                         onDragStart={(e) => handleDragStart(e, 'question', question.id)}
                         onDragEnd={handleDragEnd}
@@ -1232,24 +1252,43 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                             </div>
                           </div>
                           <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditQuestion(question.id);
-                              }}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#6b7280',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center'
-                              }}
-                              title="Edit question"
-                            >
-                              <FiEdit2 size={14} />
-                            </button>
+                            {!isImported ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditQuestion(question.id);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Edit question"
+                              >
+                                <FiEdit2 size={14} />
+                              </button>
+                            ) : (
+                              <button
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'not-allowed',
+                                  color: '#6b7280',
+                                  opacity: 0.5,
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Cannot edit imported question"
+                                disabled
+                              >
+                                <FiLock size={14} />
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1346,74 +1385,100 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                             surveyQuestions
                               .filter(q => q.sectionId === section.id)
                               .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order property
-                              .map(question => (
-                                <div 
-                                  key={question.id}
-                                  className={`question-item ${getDropZoneClasses('question', question.id)}`}
-                                  onClick={() => handleEditQuestion(question.id)}
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, 'question', question.id)}
-                                  onDragEnd={handleDragEnd}
-                                  onDragOver={(e) => handleDragOver(e, 'question', question.id)}
-                                  onDragLeave={(e) => {
-                                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                                      setDragOverQuestionId(null);
-                                      setDragOverPosition(null);
-                                    }
-                                  }}
-                                  onDrop={(e) => handleDrop(e, 'question', question.id)}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-                                    <div className="drag-handle">
-                                      <FiMove size={16} />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                      <div style={{ fontWeight: 500 }}>{question.text}</div>
-                                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                        {question.type}
+                              .map(question => {
+                                // Check if the question is imported (should not be editable)
+                                const questionDoc = Questions.findOne(question.id);
+                                const latestVersion = questionDoc ? getLatestQuestionVersion(questionDoc) : null;
+                                const isImported = latestVersion?.creationSource === 'imported';
+                                return (
+                                  <div 
+                                    key={question.id}
+                                    className={`question-item ${getDropZoneClasses('question', question.id)}`}
+                                    onClick={isImported ? undefined : () => handleEditQuestion(question.id)}
+                                    style={{ cursor: isImported ? 'not-allowed' : 'pointer' }}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => handleDragOver(e, 'question', question.id)}
+                                    onDragLeave={(e) => {
+                                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                        setDragOverQuestionId(null);
+                                        setDragOverPosition(null);
+                                      }
+                                    }}
+                                    onDrop={(e) => handleDrop(e, 'question', question.id)}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                                      <div className="drag-handle">
+                                        <FiMove size={16} />
+                                      </div>
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 500 }}>{question.text}</div>
+                                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                          {question.type}
+                                        </div>
+                                      </div>
+                                      <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+                                        {!isImported ? (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditQuestion(question.id);
+                                            }}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              color: '#6b7280',
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                            title="Edit question"
+                                          >
+                                            <FiEdit2 size={14} />
+                                          </button>
+                                        ) : (
+                                          <button
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'not-allowed',
+                                              color: '#6b7280',
+                                              opacity: 0.5,
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                            title="Cannot edit imported question"
+                                            disabled
+                                          >
+                                            <FiLock size={14} />
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteQuestion(question.id, e);
+                                          }}
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            color: '#dc2626',
+                                            padding: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                          }}
+                                          title="Delete question"
+                                        >
+                                          <FiTrash2 size={14} />
+                                        </button>
                                       </div>
                                     </div>
-                                    <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditQuestion(question.id);
-                                        }}
-                                        style={{
-                                          background: 'none',
-                                          border: 'none',
-                                          cursor: 'pointer',
-                                          color: '#6b7280',
-                                          padding: '4px',
-                                          display: 'flex',
-                                          alignItems: 'center'
-                                        }}
-                                        title="Edit question"
-                                      >
-                                        <FiEdit2 size={14} />
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteQuestion(question.id, e);
-                                        }}
-                                        style={{
-                                          background: 'none',
-                                          border: 'none',
-                                          cursor: 'pointer',
-                                          color: '#dc2626',
-                                          padding: '4px',
-                                          display: 'flex',
-                                          alignItems: 'center'
-                                        }}
-                                        title="Delete question"
-                                      >
-                                        <FiTrash2 size={14} />
-                                      </button>
-                                    </div>
                                   </div>
-                                </div>
-                              ))
+                                );
+                              })
                           ) : (
                             <div style={{ color: '#666', fontStyle: 'italic', padding: '16px 0' }}>
                               No questions in this section yet
