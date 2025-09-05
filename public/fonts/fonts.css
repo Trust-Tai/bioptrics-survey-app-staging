@@ -1,0 +1,20 @@
+/* Custom fonts for the application */
+@font-face {
+  font-family: 'Aesthetica Demo';
+  src: url('/fonts/aesthetica-demo/aesthetica-demo.woff2') format('woff2'),
+       url('/fonts/aesthetica-demo/aesthetica-demo.woff') format('woff'),
+       url('/fonts/aesthetica-demo/aesthetica-demo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Aesthetica Demo';
+  src: url('/fonts/aesthetica-demo/aesthetica-demo-italic.woff2') format('woff2'),
+       url('/fonts/aesthetica-demo/aesthetica-demo-italic.woff') format('woff'),
+       url('/fonts/aesthetica-demo/aesthetica-demo-italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}

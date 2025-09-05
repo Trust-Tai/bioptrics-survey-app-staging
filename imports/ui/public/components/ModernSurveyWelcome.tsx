@@ -213,7 +213,7 @@ const ExpectationSidebar = styled.div<{ primaryColor?: string }>`
   right: 0;
   width: 30%;
   height: 100vh;
-  background-color: ${props => props.primaryColor || '#552a47'};
+  background-color: var(--primary-color, #552a47);
   display: flex;
   flex-direction: column;
   z-index: 5;
@@ -365,8 +365,8 @@ const StatIcon = styled.div<{ primaryColor?: string }>`
   width: 60px;
   height: 60px;
   border-radius: 10px;
-  background-color: ${props => props.primaryColor ? `${props.primaryColor}20` : 'var(--primary-color-light, #f3e8ff)'};
-  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  background-color: var(--primary-color-light, #f3e8ff);
+  color: var(--primary-color, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -383,14 +383,14 @@ const StatIcon = styled.div<{ primaryColor?: string }>`
 const StatValue = styled.div<{ primaryColor?: string }>`
   font-size: 32px;
   font-weight: 700;
-  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  color: var(--primary-color, #552a47);
   margin-bottom: 8px;
   line-height: 1;
 `;
 
 const StatLabel = styled.div`
   font-size: 14px;
-  color: #6b7280;
+  color: var(--primary-color, #6b7280);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;

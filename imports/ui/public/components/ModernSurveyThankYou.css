@@ -53,8 +53,18 @@
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0); opacity: 0; }
+  from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+.script-thank-you {
+  font-family: 'ScriptFont', 'authentica demo', cursive;
+  font-size: 72px;
+  font-weight: 400;
+  color: #000000;
+  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 16px;
 }
 
 .thank-you-title {
