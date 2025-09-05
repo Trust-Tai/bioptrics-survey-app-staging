@@ -163,7 +163,7 @@ const AppRoutes: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Routes>
-      <Route path="/" element={<AdminLogin onAdminAuth={() => navigate('/admin/dashboard')} />} />
+      <Route path="/" element={<AdminLogin onAdminAuth={() => navigate('/admin/surveys/all')} />} />
       <Route path="/logout" element={<LogoutPage />} />
       <Route path="/preview/survey/:token" element={<PreviewSurvey />} />
       <Route path="/survey/:surveyId" element={<PublicSurveyPage />} />
@@ -174,8 +174,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/leadership" element={<LeadershipManagement />} />
       <Route path="/terms" element={<TermsOfUse />} />
       <Route path="/privacy" element={<PrivacyNotice />} />
-      <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/dashboard')} />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/surveys/all')} />} />
+      {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/questions')} />} />
       <Route element={<RequireAdminAuth />}>
          <Route path="/admin/surveys" element={<SurveyPage />} />
