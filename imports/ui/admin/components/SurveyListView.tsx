@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+import { Meteor } from 'meteor/meteor';
 import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 // Styled components
@@ -40,12 +41,29 @@ const TableHeaderCell = styled.th<{ sortable?: boolean }>`
 
 const TableBody = styled.tbody``;
 
+// Define pulse animation for newly created surveys
+const pulse = keyframes`
+  0% { background-color: rgba(108, 71, 182, 0.08); }
+  50% { background-color: rgba(108, 71, 182, 0.15); }
+  100% { background-color: rgba(108, 71, 182, 0.08); }
+`;
+
 const TableRow = styled.tr`
   border-bottom: 1px solid #e9ecef;
   &:hover {
     background-color: #f8f9fa;
   }
 `;
+
+const NewSurveyRow = styled(TableRow)`
+  background-color: rgba(108, 71, 182, 0.08);
+  animation: ${pulse} 2s infinite;
+  
+  &:hover {
+    background-color: rgba(108, 71, 182, 0.12);
+  }
+`;
+
 
 const TableCell = styled.td`
   padding: 12px 16px;
@@ -372,27 +390,33 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
             if (survey.scheduledFor && new Date(survey.scheduledFor) > new Date()) {
               status = 'SCHEDULED';
             }
-          
-            // Calculate completion percentage
-            const completionPercentage = survey.responseStats?.completionRate || 0;
             
             // Format date
             const updatedDate = new Date(survey.updatedAt).toLocaleDateString();
-          
+            
+            // Check if survey was created in the last 45 seconds
+            const isNewSurvey = survey.createdAt && 
+              (new Date().getTime() - new Date(survey.createdAt).getTime()) < 45000;
+            
+            // Use either NewSurveyRow or TableRow based on whether the survey is new
+            const RowComponent = isNewSurvey ? NewSurveyRow : TableRow;
+            
             return (
-              <TableRow key={survey._id} onClick={(e) => {
-                      // Only navigate if the click is directly on the row and not on a child element with its own click handler
-                      if (e.target === e.currentTarget || 
-                          (e.target as HTMLElement).tagName === 'TD' || 
-                          (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
-                        console.log('Row clicked - triggering Edit action');
-                        safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
-                      }
-                    }} 
-                    style={{ 
-                      cursor: 'pointer',
-                      textDecoration: 'none'
-                    }}>
+              <RowComponent 
+                key={survey._id}
+                onClick={(e) => {
+                  // Only navigate if the click is directly on the row and not on a child element with its own click handler
+                  if (e.target === e.currentTarget || 
+                      (e.target as HTMLElement).tagName === 'TD' || 
+                      (e.target as HTMLElement).closest('[data-no-navigate]') === null) {
+                    console.log('Row clicked - triggering Edit action');
+                    safelyExecuteAction(onEdit, 'Row Click → Edit', survey._id);
+                  }
+                }}
+                style={{ 
+                  cursor: 'pointer',
+                  textDecoration: 'none'
+                }}>
               <TableCell>
                 {survey.title}
                 {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
@@ -412,7 +436,22 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 </div>
               </TableCell>
               <TableCell>{survey.createdByName || 'System'}</TableCell>
-              <TableCell>{updatedDate}</TableCell>
+              <TableCell>
+                {updatedDate}
+                {isNewSurvey && (
+                  <span style={{ 
+                    marginLeft: '8px', 
+                    fontSize: '11px', 
+                    fontWeight: 'bold',
+                    color: 'var(--color-primary)',
+                    backgroundColor: 'rgba(108, 71, 182, 0.1)',
+                    padding: '2px 6px',
+                    borderRadius: '10px'
+                  }}>
+                    NEW
+                  </span>
+                )}
+              </TableCell>
               <TableCell data-no-navigate="true">
                 <ActionContainer 
                   ref={(el) => { dropdownRefs.current[survey._id] = el; }} 
@@ -694,7 +733,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                   )}
                 </ActionContainer>
             </TableCell>
-          </TableRow>
+          </RowComponent>
             );
           })
         }

@@ -64,7 +64,7 @@ const QuestionContentColumn = styled.div`
   flex: 0 0 70%;
   display: flex;
   flex-direction: column;
-  max-width: 500px;
+  max-width: 750px;
   margin: 50px auto;
   
   @media (max-width: 768px) {
@@ -628,33 +628,82 @@ const ModernSurveyQuestion: React.FC<ModernSurveyQuestionProps> = ({
   };
 
   const renderRatingScale = () => {
-    const ratingOptions = Array.from({ length: 5 }, (_, i) => i + 1);
+    // Get options from the question
+    const options = question.options || [];
+    const isObjectOptions = options.length > 0 && 
+      typeof options[0] === 'object' && 
+      options[0] !== null;
+    
+    // If no options are available, fall back to numeric scale
+    const ratingOptions = options.length > 0 ? 
+      options.map((option, index) => {
+        const value = isObjectOptions ? (option as any).value || (option as any).label : option as string;
+        const label = isObjectOptions ? (option as any).text || (option as any).label : option as string;
+        return { value, label, index: index + 1 };
+      }) : 
+      Array.from({ length: 5 }, (_, i) => ({ value: (i + 1).toString(), label: (i + 1).toString(), index: i + 1 }));
     
     return (
       <div className="rating-container">
-        <div className="rating-options">
-          {ratingOptions.map((value) => (
+        <div className="rating-options-horizontal">
+          {ratingOptions.map((option) => (
             <div
-              key={value}
-              className={`rating-option-circle ${answer === value.toString() ? 'selected' : ''}`}
+              key={option.index}
+              className={`rating-option ${answer === option.value ? 'selected' : ''}`}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Rating option clicked:', value, 'calling onAnswer with saveOnly: true');
-                setAnswer(value.toString());
-                onAnswer(value.toString(), true);
+                console.log('Rating option clicked:', option.value, 'calling onAnswer with saveOnly: true');
+                setAnswer(option.value);
+                onAnswer(option.value, true);
               }}
-              style={answer === value.toString() ? {backgroundColor: color, borderColor: color} : {}}
+              style={{
+                borderRadius: '40px',
+                padding: '25px 30px',
+                minWidth: '250px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '5px',
+                cursor: 'pointer',
+                backgroundColor: answer === option.value ? '#f2f9ee' : '#f9f9f9',
+                border: `1px solid ${answer === option.value ? '#8bc34a' : '#e0e0e0'}`,
+                transition: 'all 0.2s ease',
+                position: 'relative'
+              }}
             >
-              {value}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  border: `2px solid ${answer === option.value ? '#8bc34a' : '#999'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: answer === option.value ? '#8bc34a' : 'transparent'
+                }}>
+                  {answer === option.value && (
+                    <div style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      backgroundColor: 'white'
+                    }}></div>
+                  )}
+                </div>
+                <span style={{
+                  fontWeight: answer === option.value ? 600 : 400,
+                  color: '#333'
+                }}>{option.label}</span>
+              </div>
             </div>
           ))}
         </div>
-        {answer && (
-          <div className="selected-rating-value">
-            Selected: {answer}
-          </div>
-        )}
       </div>
     );
   };

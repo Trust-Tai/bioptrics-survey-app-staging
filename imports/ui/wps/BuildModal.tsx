@@ -475,12 +475,16 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
       // Track completion of both imports
       let completedImports = 0;
       let successfulImports = 0;
+      const importedSurveyIds: string[] = [];
       
       // Import leader survey
       Meteor.call('surveys.import', leaderSurvey, (leaderError: any, leaderResult: any) => {
         completedImports++;
         if (!leaderError && leaderResult && leaderResult.success) {
           successfulImports++;
+          if (leaderResult.surveyId) {
+            importedSurveyIds.push(leaderResult.surveyId);
+          }
         }
         
         // Import workforce survey
@@ -488,23 +492,27 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
           completedImports++;
           if (!workforceError && workforceResult && workforceResult.success) {
             successfulImports++;
+            if (workforceResult.surveyId) {
+              importedSurveyIds.push(workforceResult.surveyId);
+            }
           }
           
           // Both imports are complete, check results
           if (completedImports === 2) {
-            if (successfulImports === 2) {
-              // Both imports successful
-              toast.success('Surveys built and imported successfully!');
-              setImportedSurveyCount(2);
-              setShowSuccessModal(true);
+            setIsLoading(false);
+            if (successfulImports > 0) {
+              // Call onImportSuccess callback if provided
               if (onImportSuccess) {
                 onImportSuccess();
               }
+              
+              // Redirect to all surveys page with newly imported survey IDs
+              const queryParams = new URLSearchParams();
+              importedSurveyIds.forEach(id => queryParams.append('highlight', id));
+              navigate(`/admin/surveys/all?${queryParams.toString()}`);
             } else {
-              toast.error('Failed to import one or more surveys');
-              setShowSuccessModal(true);
+              toast.error('Failed to import surveys');
             }
-            setIsLoading(false);
           }
         });
       });
@@ -518,11 +526,16 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
           console.error('Error importing survey:', error);
           toast.error(`Error: ${error.message || 'Unknown error'}`);
         } else if (result && result.success) {
-          toast.success('Survey built and imported successfully!');
-          setImportedSurveyCount(1);
-          setShowSuccessModal(true);
+          // Call onImportSuccess callback if provided
           if (onImportSuccess) {
             onImportSuccess();
+          }
+          
+          // Redirect to all surveys page with newly imported survey ID
+          if (result.surveyId) {
+            navigate(`/admin/surveys/all?highlight=${result.surveyId}`);
+          } else {
+            navigate('/admin/surveys/all');
           }
         } else {
           toast.error('Failed to import survey');
@@ -538,11 +551,16 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
           console.error('Error importing survey:', error);
           toast.error(`Error: ${error.message || 'Unknown error'}`);
         } else if (result && result.success) {
-          toast.success('Survey built and imported successfully!');
-          setImportedSurveyCount(1);
-          setShowSuccessModal(true);
+          // Call onImportSuccess callback if provided
           if (onImportSuccess) {
             onImportSuccess();
+          }
+          
+          // Redirect to all surveys page with newly imported survey ID
+          if (result.surveyId) {
+            navigate(`/admin/surveys/all?highlight=${result.surveyId}`);
+          } else {
+            navigate('/admin/surveys/all');
           }
         } else {
           toast.error('Failed to import survey');
@@ -567,19 +585,8 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
 
   return (
     <>
-      {/* Success Modal */}
-      <SuccessModal 
-        show={showSuccessModal} 
-        onHide={() => {
-          setShowSuccessModal(false);
-          onHide();
-        }} 
-        surveyCount={importedSurveyCount} 
-        onViewSurveys={handleViewAllSurveys} 
-      />
-      
       {/* Main Modal */}
-      <Modal show={show && !showSuccessModal} onHide={onHide} centered size="lg" dialogClassName="wps-builder-modal">
+      <Modal show={show} onHide={onHide} centered size="lg" dialogClassName="wps-builder-modal">
         <div style={{ borderBottom: 'none' }}>
           <Modal.Header closeButton style={{ borderBottom: 'none' }} />
         </div>
