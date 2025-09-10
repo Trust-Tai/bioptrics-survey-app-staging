@@ -14,8 +14,154 @@ interface ResponseTrendDataPoint {
 
 if (Meteor.isServer) {
   Meteor.methods({
+    // Method to get response data for a specific question
+    async 'questions.getResponseData'(questionId: string) {
+      check(questionId, String);
+      
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access question response data');
+      }
+      
+      try {
+        // Get the question data
+        const question = await Questions.findOneAsync({ _id: questionId });
+        if (!question) {
+          throw new Meteor.Error('not-found', 'Question not found');
+        }
+        
+        // Get the latest version of the question
+        const latestVersion = question.versions[question.currentVersion || question.versions.length - 1];
+        
+        // Find all survey responses that include this question
+        const responses = await SurveyResponses.find({
+          'responses.questionId': questionId,
+          completed: true
+        }).fetchAsync();
+        
+        // Calculate response statistics
+        const totalResponses = responses.length;
+        const answerCounts: Record<string, number> = {};
+        
+        // Process responses to count each answer option
+        responses.forEach(response => {
+          const questionResponse = response.responses.find(r => r.questionId === questionId);
+          if (questionResponse) {
+            const answer = questionResponse.answer;
+            if (typeof answer === 'string' || typeof answer === 'number') {
+              answerCounts[String(answer)] = (answerCounts[String(answer)] || 0) + 1;
+            } else if (Array.isArray(answer)) {
+              // Handle multi-select questions
+              answer.forEach(option => {
+                answerCounts[String(option)] = (answerCounts[String(option)] || 0) + 1;
+              });
+            }
+          }
+        });
+        
+        // Format the data for the report
+        const options = [];
+        
+        // Different handling based on question type
+        if (latestVersion.responseType === 'radio' || latestVersion.responseType === 'checkbox' || 
+            latestVersion.responseType === 'dropdown' || latestVersion.responseType === 'likert') {
+          // For choice-based questions
+          latestVersion.options.forEach((option: any, index: number) => {
+            const count = answerCounts[option.value] || 0;
+            const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+            
+            options.push({
+              label: option.label,
+              count: count,
+              percentage: percentage,
+              color: getColorForIndex(index)
+            });
+          });
+        } else if (latestVersion.responseType === 'rating') {
+          // For rating questions
+          const maxRating = latestVersion.maxRating || 5;
+          for (let i = 1; i <= maxRating; i++) {
+            const count = answerCounts[String(i)] || 0;
+            const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+            
+            options.push({
+              label: `${i}`,
+              count: count,
+              percentage: percentage,
+              color: getColorForIndex(i - 1)
+            });
+          }
+        } else if (latestVersion.responseType === 'text' || latestVersion.responseType === 'textarea') {
+          // For text questions, collect text responses
+          const textResponses = responses
+            .map(r => {
+              const resp = r.responses.find(resp => resp.questionId === questionId);
+              return resp?.answer ? String(resp.answer) : null;
+            })
+            .filter(Boolean);
+          
+          return {
+            reportTitle: 'Question Response Report',
+            reportSubtitle: 'Text Responses',
+            description: 'Analysis of text responses for the selected question',
+            date: new Date().toLocaleDateString(),
+            logoUrl: '/bioptrics_fixed_black.png',
+            totalRespondents: totalResponses,
+            question: {
+              id: questionId,
+              title: latestVersion.questionText,
+              description: latestVersion.description || '',
+              responseType: latestVersion.responseType,
+              categoryTags: latestVersion.categoryTags || [],
+              respondents: totalResponses,
+              textResponses: textResponses
+            }
+          };
+        }
+        
+        // Calculate response overview text
+        let responseOverview = '';
+        if (options.length > 0) {
+          const topOption = [...options].sort((a, b) => b.percentage - a.percentage)[0];
+          responseOverview = `${topOption.percentage}% selected "${topOption.label}"`;
+        }
+        
+        // Format the data in the same structure as the survey report
+        return {
+          reportTitle: 'Question Response Report',
+          reportSubtitle: question.title || 'Response Analysis',
+          description: 'Analysis of responses for the selected question',
+          date: new Date().toLocaleDateString(),
+          logoUrl: '/bioptrics_fixed_black.png',
+          totalRespondents: totalResponses,
+          parentTags: [{
+            id: 'question-response',
+            name: 'Question Response',
+            description: 'Response data for the selected question',
+            childTags: [{
+              id: 'response-data',
+              name: 'Response Data',
+              description: 'Detailed response statistics',
+              questions: [{
+                id: questionId,
+                title: latestVersion.questionText,
+                description: latestVersion.description || '',
+                responseOverview: responseOverview,
+                respondents: totalResponses,
+                categoryTags: latestVersion.categoryTags || [],
+                options: options
+              }]
+            }]
+          }]
+        };
+      } catch (error: any) {
+        console.error('Error getting question response data:', error);
+        throw new Meteor.Error('server-error', error.message);
+      }
+    },
+    
     // Method to restore an inactive survey
-    async 'surveys.restore'(surveyId: string) {
+    'surveys.restore': async function(surveyId: string) {
       check(surveyId, String);
       
       if (!this.userId) {
