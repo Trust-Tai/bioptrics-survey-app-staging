@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { 
@@ -9,7 +9,8 @@ import {
   FiBarChart2,
   FiFileText,
   FiActivity,
-  FiUsers
+  FiUsers,
+  FiDownload
 } from 'react-icons/fi';
 import { 
   FaUsers, 
@@ -24,7 +25,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 // Import tab components
 import TabsContainer, { TabItem } from './TabsContainer';
 import OverviewTab from './tabs/OverviewTab';
-import QuestionsTab from './tabs/QuestionsTab';
+import QuestionsTab, { QuestionsTabRef } from './tabs/QuestionsTab';
+import { exportQuestionsToPDF } from '/imports/features/surveys/utils/AnalyticsSurveyQuestionPdf';
 // import GroupsTab from './tabs/GroupsTab';
 import CommentsTab from './tabs/CommentsTab';
 import ActivityTab from './tabs/ActivityTab';
@@ -441,8 +443,39 @@ const LoadingIndicator = styled.div`
   font-size: 14px;
 `;
 
+const ExportButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #552a47;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #46223b;
+  }
+  
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+`;
+
 // Main component
 const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => {
+  // Ref for QuestionsTab component
+  const questionsTabRef = useRef<QuestionsTabRef>(null);
+  
+  // State for PDF export
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [surveyTitle, setSurveyTitle] = useState('');
+  const [surveyDescription, setSurveyDescription] = useState('');
+  
   // State for analytics data
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     completedSurveysCount: 0,
@@ -589,10 +622,84 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Fetch data on component mount and when filters change
+  // Function to handle PDF export
+  const handleExportPDF = () => {
+    setExportingPDF(true);
+    
+    // Check if we can get questions from the ref
+    const getQuestionsFromRef = () => {
+      if (questionsTabRef.current) {
+        const questions = questionsTabRef.current.getAnalyticsQuestions();
+        if (questions && questions.length > 0) {
+          return questions;
+        }
+      }
+      return null;
+    };
+    
+    // Try to get questions from ref first
+    const refQuestions = getQuestionsFromRef();
+    
+    if (refQuestions) {
+      // If we have questions from the ref, use them directly
+      try {
+        exportQuestionsToPDF(refQuestions, {
+          surveyTitle: surveyTitle,
+          surveyDescription: surveyDescription,
+          surveyId: surveyId
+        });
+        setExportingPDF(false);
+      } catch (error) {
+        console.error('Error generating PDF from ref questions:', error);
+        setExportingPDF(false);
+      }
+    } else {
+      // If questions aren't available from ref, fetch them directly
+      Meteor.call(
+        'AnalyticsQuestionGetTitles', 
+        surveyId,
+        (error: any, result: any) => {
+          if (error) {
+            console.error('Error fetching questions for PDF:', error);
+            setExportingPDF(false);
+          } else {
+            try {
+              // Use the utility function to export questions to PDF
+              exportQuestionsToPDF(result, {
+                surveyTitle: surveyTitle,
+                surveyDescription: surveyDescription,
+                surveyId: surveyId
+              });
+            } catch (exportError) {
+              console.error('Error generating PDF:', exportError);
+            } finally {
+              setExportingPDF(false);
+            }
+          }
+        }
+      );
+    }
+  };
+
+  // Fetch survey details
   useEffect(() => {
+    // Fetch survey details for PDF export
+    Meteor.call(
+      'surveys.getSurvey',
+      surveyId,
+      (error: any, result: any) => {
+        if (error) {
+          console.error('Error fetching survey details:', error);
+        } else {
+          console.log('Fetched survey details:', result);
+          setSurveyTitle(result.title || '');
+          setSurveyDescription(result.description || '');
+        }
+      }
+    );
+    
     fetchAnalyticsData();
-  }, [fetchAnalyticsData]);
+  }, [fetchAnalyticsData, surveyId]);
 
   if (!surveyId) {
     return <div>No survey selected</div>;
@@ -661,7 +768,7 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
       id: 'questions',
       label: 'Questions',
       icon: <FiFileText size={16} />,
-      content: <QuestionsTab isLoading={isLoading} />
+      content: <QuestionsTab ref={questionsTabRef} isLoading={isLoading} surveyId={surveyId} />
     },
     // {
     //   id: 'groups',
@@ -736,7 +843,19 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
       {isLoading ? (
         <LoadingIndicator>Loading analytics data...</LoadingIndicator>
       ) : (
-        <TabsContainer tabs={tabs} defaultActiveTab="overview" />
+        <TabsContainer 
+          tabs={tabs} 
+          defaultActiveTab="overview" 
+          headerActions={
+            <ExportButton 
+              onClick={handleExportPDF} 
+              disabled={exportingPDF}
+            >
+              <FiDownload size={16} />
+              {exportingPDF ? 'Exporting...' : 'Export PDF'}
+            </ExportButton>
+          }
+        />
       )}
     </AnalyticsDashboard>
   );

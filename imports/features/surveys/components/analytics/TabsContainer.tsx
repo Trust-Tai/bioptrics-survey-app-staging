@@ -7,6 +7,8 @@ interface TabProps {
 
 const TabsWrapper = styled.div`
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: 24px;
   overflow-x: auto;
@@ -15,6 +17,22 @@ const TabsWrapper = styled.div`
   &::-webkit-scrollbar {
     display: none;
   }
+`;
+
+const TabsList = styled.div`
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+const TabsActions = styled.div`
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
 `;
 
 const Tab = styled.div<TabProps>`
@@ -53,24 +71,32 @@ export interface TabItem {
 interface TabsContainerProps {
   tabs: TabItem[];
   defaultActiveTab?: string;
+  headerActions?: React.ReactNode;
 }
 
-const TabsContainer: React.FC<TabsContainerProps> = ({ tabs, defaultActiveTab }) => {
+const TabsContainer: React.FC<TabsContainerProps> = ({ tabs, defaultActiveTab, headerActions }) => {
   const [activeTab, setActiveTab] = useState<string>(defaultActiveTab || (tabs.length > 0 ? tabs[0].id : ''));
 
   return (
     <div>
       <TabsWrapper>
-        {tabs.map(tab => (
-          <Tab 
-            key={tab.id} 
-            active={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <TabIcon>{tab.icon}</TabIcon>
-            {tab.label}
-          </Tab>
-        ))}
+        <TabsList>
+          {tabs.map(tab => (
+            <Tab 
+              key={tab.id} 
+              active={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <TabIcon>{tab.icon}</TabIcon>
+              {tab.label}
+            </Tab>
+          ))}
+        </TabsList>
+        {headerActions && (
+          <TabsActions>
+            {headerActions}
+          </TabsActions>
+        )}
       </TabsWrapper>
       <TabContent>
         {tabs.find(tab => tab.id === activeTab)?.content}
