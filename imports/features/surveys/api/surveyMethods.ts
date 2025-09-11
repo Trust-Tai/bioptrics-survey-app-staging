@@ -2173,3 +2173,350 @@ if (Meteor.isServer) {
     }
   });
 }
+
+/**
+ * Gets question titles and adds dummy progress data for analytics
+ * @param surveyId - The ID of the survey
+ * @returns Array of question objects with title and dummy progress
+ */
+Meteor.methods({
+  async 'AnalyticsQuestionGetTitles'(surveyId) {
+    check(surveyId, String);
+    
+    // Authorization check
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    
+    try {
+      // Step 1: Get the survey and extract question IDs from surveyOrder
+      const survey = await Surveys.findOneAsync({ _id: surveyId });
+      if (!survey) {
+        throw new Meteor.Error('not-found', 'Survey not found');
+      }
+      
+      // Extract question IDs from surveyOrder
+      const questionIds: string[] = [];
+      if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+        survey.surveyOrder.forEach((item: any) => {
+          if (item && item.id && item.type === 'question') {
+            questionIds.push(item.id);
+          }
+        });
+      }
+      
+      console.log(`Found ${questionIds.length} question IDs in survey ${surveyId}`);
+      
+      // Step 2: Create question data with real progress from responses
+      interface QuestionData {
+        questionId: string;
+        questionText: string;
+        questionType: string;
+        options: string[] | { min: number; max: number; step: number; };
+        progress: Record<string, number>;
+        latestResponses?: Array<{
+          answer: string;
+          date: Date;
+        }>;
+      }
+      
+      const questions: QuestionData[] = [];
+      
+      // Get all completed survey responses for this survey
+      const surveyResponses = await SurveyResponses.find({
+        surveyId: surveyId,
+        completed: true
+      }).fetchAsync();
+      
+      console.log(`Found ${surveyResponses.length} completed responses for survey ${surveyId}`);
+      
+      // Process each question
+      for (const questionId of questionIds) {
+        // Get the question details
+        const question = await Questions.findOneAsync({ _id: questionId });
+        
+        // Get the current version of the question
+        const currentVersion = question?.versions?.[question?.currentVersion - 1] || 
+                              question?.versions?.[question?.versions?.length - 1];
+        
+        if (!currentVersion) {
+          console.log(`No version found for question ${questionId}, skipping`);
+          continue;
+        }
+        
+        // Initialize progress tracking with counts
+        const progressCounts: Record<string, number> = {};
+        
+        // For text, textarea, and date types, we'll collect the latest responses instead of progress
+        const latestResponses: Array<{ answer: string; date: Date }> = [];
+        
+        // Initialize all possible options based on question type
+        if (currentVersion.responseType === 'text' || 
+            currentVersion.responseType === 'textarea' || 
+            currentVersion.responseType === 'date') {
+          // For these types, we don't need to initialize progress counts
+          // We'll collect the latest responses instead
+        } else if (currentVersion.responseType === 'likert') {
+          // Check if the question has custom Likert options defined
+          if (currentVersion.options && Array.isArray(currentVersion.options) && currentVersion.options.length > 0) {
+            // Use the custom options from the question definition
+            currentVersion.options.forEach((option: any) => {
+              if (option && option.value) {
+                progressCounts[option.value] = 0;
+              }
+            });
+          } else {
+            // Fallback to standard Likert options
+            progressCounts['Strongly Disagree'] = 0;
+            progressCounts['Disagree'] = 0;
+            progressCounts['Neutral'] = 0;
+            progressCounts['Agree'] = 0;
+            progressCounts['Strongly Agree'] = 0;
+          }
+        } else if (currentVersion.responseType === 'rating') {
+          // Check if the question has custom rating options defined with labels
+          if (currentVersion.options && Array.isArray(currentVersion.options) && currentVersion.options.length > 0) {
+            // Use the custom options from the question definition
+            currentVersion.options.forEach((option: any) => {
+              if (option) {
+                // Use label if available, otherwise use value
+                const optionKey = option.label || option.value || String(option);
+                progressCounts[optionKey] = 0;
+              }
+            });
+          } else {
+            // Fallback to numeric rating if no custom options
+            const maxRating = (currentVersion as any).maxRating || 5;
+            for (let i = 1; i <= maxRating; i++) {
+              progressCounts[String(i)] = 0;
+            }
+          }
+        } else if (currentVersion.responseType === 'radio' || 
+                   currentVersion.responseType === 'checkbox' || 
+                   currentVersion.responseType === 'dropdown' || 
+                   currentVersion.responseType === 'ranking' || 
+                   (currentVersion.options && Array.isArray(currentVersion.options))) {
+          // For questions with predefined options (radio, checkbox, dropdown, ranking, etc.)
+          if (currentVersion.options && Array.isArray(currentVersion.options)) {
+            currentVersion.options.forEach((option: any) => {
+              if (option) {
+                // Prioritize text field, then fall back to label, then value
+                const optionKey = option.text || option.label || option.value || String(option);
+                progressCounts[optionKey] = 0;
+              }
+            });
+          }
+        }
+        
+        // Process responses for this question
+        let totalResponses = 0;
+        for (const response of surveyResponses) {
+          // Find the answer for this question in the response
+          const questionResponse = response.responses?.find(r => r.questionId === questionId);
+          
+          if (questionResponse && questionResponse.answer) {
+            // Handle different answer types
+            if (typeof questionResponse.answer === 'string') {
+              // For text, textarea, and date types, collect the latest responses
+              if (currentVersion.responseType === 'text' || 
+                  currentVersion.responseType === 'textarea' || 
+                  currentVersion.responseType === 'date') {
+                
+                // Add this response to the latest responses array
+                latestResponses.push({
+                  answer: questionResponse.answer,
+                  date: response.createdAt || response.updatedAt || new Date()
+                });
+                
+                // We still count it for the total responses
+                totalResponses++;
+              }
+              // For questions with custom options (rating, radio, checkbox, dropdown, ranking)
+              else if ((currentVersion.responseType === 'rating' || 
+                   currentVersion.responseType === 'radio' || 
+                   currentVersion.responseType === 'dropdown' || 
+                   currentVersion.responseType === 'ranking') && 
+                  currentVersion.options && 
+                  Array.isArray(currentVersion.options)) {
+                // Try to find the option with matching value
+                // Define a type for the option object
+                interface QuestionOption {
+                  value: string | number;
+                  label?: string;
+                  text?: string;
+                }
+                
+                const matchingOption = currentVersion.options.find(
+                  (opt: any) => opt && typeof opt === 'object' && 'value' in opt && opt.value === questionResponse.answer
+                ) as QuestionOption | undefined;
+                
+                if (matchingOption && typeof matchingOption === 'object') {
+                  // Prioritize text field, then fall back to label, then value
+                  const optionKey = matchingOption.text || matchingOption.label || matchingOption.value || questionResponse.answer;
+                  const displayKey = String(optionKey);
+                  progressCounts[displayKey] = (progressCounts[displayKey] || 0) + 1;
+                } else {
+                  // Fallback to the answer value
+                  progressCounts[questionResponse.answer] = (progressCounts[questionResponse.answer] || 0) + 1;
+                }
+              } else {
+                // For regular text answers
+                progressCounts[questionResponse.answer] = (progressCounts[questionResponse.answer] || 0) + 1;
+              }
+              totalResponses++;
+            } else if (typeof questionResponse.answer === 'number') {
+              // For numeric answers
+              const answerKey = String(questionResponse.answer);
+              
+              // Check if this is a question with custom options (rating, radio, checkbox, dropdown, ranking)
+              if ((currentVersion.responseType === 'rating' || 
+                   currentVersion.responseType === 'radio' || 
+                   currentVersion.responseType === 'dropdown' || 
+                   currentVersion.responseType === 'ranking') && 
+                  currentVersion.options && 
+                  Array.isArray(currentVersion.options)) {
+                // Try to find the option with matching value
+                // Define a type for the option object
+                interface QuestionOption {
+                  value: string | number;
+                  label?: string;
+                  text?: string;
+                }
+                
+                const matchingOption = currentVersion.options.find(
+                  (opt: any) => opt && typeof opt === 'object' && 'value' in opt && 
+                    (String(opt.value) === answerKey || opt.value === questionResponse.answer)
+                ) as QuestionOption | undefined;
+                
+                if (matchingOption && typeof matchingOption === 'object') {
+                  // Prioritize text field, then fall back to label, then value
+                  const optionKey = matchingOption.text || matchingOption.label || matchingOption.value || answerKey;
+                  const displayKey = String(optionKey);
+                  progressCounts[displayKey] = (progressCounts[displayKey] || 0) + 1;
+                } else {
+                  // Fallback to the answer value
+                  progressCounts[answerKey] = (progressCounts[answerKey] || 0) + 1;
+                }
+              } else {
+                // For regular numeric answers
+                progressCounts[answerKey] = (progressCounts[answerKey] || 0) + 1;
+              }
+              totalResponses++;
+            } else if (Array.isArray(questionResponse.answer)) {
+              // For multi-select answers (checkbox, ranking, etc.)
+              if ((currentVersion.responseType === 'checkbox' || 
+                   currentVersion.responseType === 'ranking') && 
+                  currentVersion.options && 
+                  Array.isArray(currentVersion.options)) {
+                
+                questionResponse.answer.forEach(option => {
+                  const optionValue = String(option);
+                  // Try to find the option with matching value
+                  // Define a type for the option object
+                  interface QuestionOption {
+                    value: string | number;
+                    label?: string;
+                    text?: string;
+                  }
+                  
+                  const matchingOption: QuestionOption | undefined = currentVersion.options.find(
+                    (opt: any) => opt && typeof opt === 'object' && 'value' in opt && 
+                      (String(opt.value) === optionValue || opt.value === option)
+                  );
+                  
+                  if (matchingOption && typeof matchingOption === 'object') {
+                    // Prioritize text field, then fall back to label, then value
+                    const optionKey = matchingOption.text || matchingOption.label || matchingOption.value || optionValue;
+                    const displayKey = String(optionKey);
+                    progressCounts[displayKey] = (progressCounts[displayKey] || 0) + 1;
+                  } else {
+                    // Fallback to the option value
+                    progressCounts[optionValue] = (progressCounts[optionValue] || 0) + 1;
+                  }
+                });
+              } else {
+                // For regular multi-select answers
+                questionResponse.answer.forEach(option => {
+                  const optionKey = String(option);
+                  progressCounts[optionKey] = (progressCounts[optionKey] || 0) + 1;
+                });
+              }
+              // For multi-select, we count the response once, not per option
+              totalResponses++;
+            }
+          }
+        }
+        
+        // Convert counts to percentages that add up to 100%
+        const progress: Record<string, number> = {};
+        
+        // If we have responses, calculate percentages
+        if (totalResponses > 0) {
+          // Calculate percentages based on total responses
+          Object.keys(progressCounts).forEach(key => {
+            progress[key] = Math.round((progressCounts[key] / totalResponses) * 100);
+          });
+          
+          // Ensure percentages add up to 100%
+          let totalPercentage = Object.values(progress).reduce((sum, val) => sum + val, 0);
+          
+          // If there's a rounding discrepancy, adjust the largest value
+          if (totalPercentage !== 100 && totalPercentage > 0) {
+            // Find the key with the largest count to adjust
+            const largestKey = Object.keys(progressCounts).reduce((a, b) => 
+              progressCounts[a] > progressCounts[b] ? a : b
+            );
+            
+            // Adjust the percentage to make the total 100%
+            progress[largestKey] += (100 - totalPercentage);
+          }
+        } else {
+          // If no responses, all options get 0%
+          Object.keys(progressCounts).forEach(key => {
+            progress[key] = 0;
+          });
+        }
+        
+        // For text, textarea, and date question types, sort and limit the latest responses
+        if (currentVersion.responseType === 'text' || 
+            currentVersion.responseType === 'textarea' || 
+            currentVersion.responseType === 'date') {
+          
+          // Sort responses by date (newest first)
+          latestResponses.sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+          
+          // Limit to 5 latest responses
+          const limitedResponses = latestResponses.slice(0, 5);
+          
+          // Add to questions array with latest responses
+          questions.push({
+            questionId: questionId,
+            questionText: currentVersion.questionText || '',
+            questionType: currentVersion.responseType || '',
+            options: currentVersion.options || [],
+            progress: {}, // Empty progress for these types
+            latestResponses: limitedResponses
+          });
+        } else {
+          // Add to questions array with progress data for other question types
+          questions.push({
+            questionId: questionId,
+            questionText: currentVersion.questionText || '',
+            questionType: currentVersion.responseType || '',
+            options: currentVersion.options || [],
+            progress: progress
+          });
+        }
+      }
+      
+      console.log(`Created ${questions.length} questions with real progress data`);
+      return questions;
+    } catch (error: unknown) {
+      console.error('Error in AnalyticsQuestionGetTitles:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Meteor.Error('internal-error', `Error getting question titles: ${errorMessage}`);
+    }
+  }
+});
