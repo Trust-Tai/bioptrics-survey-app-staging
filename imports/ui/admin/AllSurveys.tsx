@@ -5,6 +5,7 @@ import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
+import { Counts } from 'meteor/tmeasday:publish-counts';
 import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
@@ -787,18 +788,18 @@ const AllSurveys: React.FC = () => {
       }
     });
     
-    // Get total count for pagination (separate subscription)
-    const countHandle = Meteor.subscribe('surveys.count');
-    const totalSurveys = Counts.get('surveys.total') || 0;
-    
     const data = Surveys.find({}, { 
       sort: { updatedAt: -1 },
       limit: itemsPerPage,
       skip: skip
     }).fetch();
     
+    // Get total count from the current data length for now
+    // This is a temporary fix - ideally we'd have a proper count subscription
+    const totalSurveys = data.length;
+    
     return {
-      loading: !handle.ready() || !countHandle.ready(),
+      loading: !handle.ready(),
       surveys: data,
       totalCount: totalSurveys
     };
@@ -1120,10 +1121,10 @@ const AllSurveys: React.FC = () => {
             </LoadingContainer>
           ) : filtered && filtered.length === 0 ? (
             <NoResultsText>No {surveyLabelPlural.toLowerCase()} found.</NoResultsText>
-          ) : paginated.length > 0 && (
+          ) : paginatedSurveys.length > 0 && (
             view === 'grid' ? (
               <GridContainer>
-                {paginated.map((s) => (
+                {paginatedSurveys.map((s) => (
                   <SurveyCard
                     key={s._id}
                     onMouseEnter={(e) => {
@@ -1344,7 +1345,7 @@ const AllSurveys: React.FC = () => {
               </GridContainer>
             ) : (
               <SurveyListView 
-                surveys={paginated}
+                surveys={paginatedSurveys}
                 loading={loading}
                 onEdit={(id) => {
                   console.log('Navigating to edit survey:', id);
