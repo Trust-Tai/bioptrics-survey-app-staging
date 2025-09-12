@@ -721,6 +721,7 @@ const AllSurveys: React.FC = () => {
   const [view, setView] = useState<'grid' | 'list'>('list');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showImportPanel, setShowImportPanel] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Functions for handling survey actions
   const onEdit = (id: string, title: string) => {
@@ -761,11 +762,15 @@ const AllSurveys: React.FC = () => {
   // Get the current user ID
   const userId = Meteor.userId();
 
-  // Fetch surveys data - revert to original implementation for now to fix the empty surveys issue
+  // Fetch surveys data with dynamic pagination
   const { surveys, loading } = useTracker(() => {
-    // Use the original publication that we know works
+    // Calculate skip value based on current page and items per page
+    const skip = (page - 1) * itemsPerPage;
+    
+    // Use dynamic limit and skip for proper pagination
     const handle = Meteor.subscribe('surveys.ownedAndCollaborated', {
-      limit: 100, // Limit the initial load to improve performance
+      limit: itemsPerPage, // Dynamic limit based on items per page
+      skip: skip, // Dynamic skip based on current page
       fields: { // Only fetch the fields we need initially
         _id: 1,
         title: 1,
@@ -786,8 +791,7 @@ const AllSurveys: React.FC = () => {
     
     const data = Surveys.find({}, { 
       sort: { updatedAt: -1 },
-      // Apply the same limit here to ensure consistency
-      limit: 100
+      // Remove static limit - let backend handle pagination
     }).fetch();
     
     // Ensure all required fields are present in the survey data
@@ -800,11 +804,25 @@ const AllSurveys: React.FC = () => {
       loading: !handle.ready(),
       surveys: processedData
     };
-  }, []);
+  }, [page, itemsPerPage]); // Add page and itemsPerPage as dependencies
 
   // Subscribe to all users to ensure we have their data for creator names
   useTracker(() => {
     Meteor.subscribe('allUsersBasic');
+  }, []);
+
+  // Get total count for pagination
+  useEffect(() => {
+    const getTotalCount = async () => {
+      try {
+        const count = await Meteor.callAsync('surveys.getTotalCount');
+        setTotalCount(count);
+      } catch (error) {
+        console.error('Error getting total count:', error);
+      }
+    };
+    
+    getTotalCount();
   }, []);
 
   // Define interface for survey data
@@ -937,8 +955,9 @@ const AllSurveys: React.FC = () => {
     return matchesSearch && matchesStatus && matchesCreatedBy;
   });
   
-  const pageCount = Math.ceil(filtered.length / itemsPerPage);
-  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  // Use server-side total count for proper pagination
+  const pageCount = Math.ceil(totalCount / itemsPerPage);
+  const paginated = filtered; // No client-side slicing since server handles pagination
 
   useEffect(() => {
     setPage(1);
@@ -1434,7 +1453,7 @@ const AllSurveys: React.FC = () => {
                 <option value={25}>25</option>
                 <option value={50}>50</option>
               </select>
-              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, filtered.length)} - {Math.min(page * itemsPerPage, filtered.length)} of {filtered.length}</span>
+              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, totalCount)} - {Math.min(page * itemsPerPage, totalCount)} of {totalCount}</span>
             </div>
             
             <div>

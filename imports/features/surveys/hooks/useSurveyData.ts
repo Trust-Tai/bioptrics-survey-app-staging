@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
-import { Surveys } from '../api/surveys';
 import { Questions } from '../../../features/questions/api/questions';
-import { SurveyThemes } from '../../../features/survey-themes/api/surveyThemes';
-import { WPSCategories } from '../../../features/wps-framework/api/wpsCategories';
+import { Surveys } from '../../../features/surveys/api/surveys';
 
-// Define QuestionItem interface
-interface QuestionItem {
+// Types
+export interface QuestionItem {
   id: string;
   text: string;
   type: string;
@@ -21,182 +19,258 @@ interface QuestionItem {
   responseType?: string;
 }
 
-// Define SurveySectionItem interface
-interface SurveySectionItem {
+export interface SurveySectionItem {
   _id: string;
   title: string;
   description?: string;
   order: number;
-  questions: QuestionItem[];
-  isVisible?: boolean;
-  visibilityCondition?: any;
-  timeLimit?: number;
+  questions?: QuestionItem[];
 }
 
-/**
- * Custom hook to fetch and manage survey data
- * Consolidates multiple data fetching operations into a single hook
- */
-export const useSurveyData = (surveyId: string | undefined) => {
-  const [survey, setSurvey] = useState<any>(null);
+export interface SurveyData {
+  _id?: string;
+  title: string;
+  description: string;
+  status: string;
+  surveySections?: SurveySectionItem[];
+  questions?: QuestionItem[];
+  surveyOrder?: any[];
+  sectionQuestions?: any;
+  selectedQuestions?: any;
+  createdAt?: Date;
+  createdBy?: string;
+  defaultSettings?: {
+    allowRetake?: boolean;
+  };
+}
+
+// Hook for managing survey data
+export const useSurveyData = (surveyId?: string) => {
+  // State
+  const [surveyData, setSurveyData] = useState<SurveyData | null>(null);
+  const [survey, setSurvey] = useState<SurveyData>({ 
+    defaultSettings: { allowRetake: true },
+    title: '',
+    description: '',
+    status: 'draft'
+  });
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [surveyOrder, setSurveyOrder] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Helper function to extract question text from the current version
-  const getQuestionText = (question: any): string => {
-    if (!question) return 'Untitled Question';
-    if (!question.versions || !Array.isArray(question.versions) || question.versions.length === 0) {
-      return 'Untitled Question';
-    }
-    
-    // Get the latest version
-    const currentVersion = question.currentVersion;
-    const latestVersion = question.versions.find((v: any) => v.version === currentVersion) || 
-                          question.versions[question.versions.length - 1];
-    
-    // Strip HTML tags from question text for cleaner display
-    const questionText = latestVersion && latestVersion.questionText ? latestVersion.questionText : 'Untitled Question';
-    return questionText.replace(/<\/?p>/g, '').replace(/<\/?[^>]+(>|$)/g, '');
-  };
-
-  // Use Meteor's reactive data system to load questions and survey data
-  const { allQuestions, surveyThemes, wpsCategories, subscriptionsReady } = useTracker(() => {
-    // Only subscribe if we have a surveyId
-    if (!surveyId) {
-      return { 
-        allQuestions: [], 
-        surveyThemes: [], 
-        wpsCategories: [], 
-        subscriptionsReady: true 
+  // Subscribe to questions for the survey
+  useEffect(() => {
+    if (surveyId) {
+      const subscription = Meteor.subscribe('questions.all', surveyId);
+      
+      return () => {
+        if (subscription) {
+          subscription.stop();
+        }
       };
     }
-
-    // Subscribe to necessary collections with field filtering for better performance
-    const questionsSub = Meteor.subscribe('questions.all', { 
-      fields: { 
-        _id: 1, 
-        currentVersion: 1, 
-        versions: 1, 
-        createdAt: 1 
-      } 
-    });
-    
-    const themesSub = Meteor.subscribe('surveyThemes.all', { 
-      fields: { 
-        _id: 1, 
-        name: 1 
-      } 
-    });
-    
-    const categoriesSub = Meteor.subscribe('wpsCategories.all', { 
-      fields: { 
-        _id: 1, 
-        name: 1 
-      } 
-    });
-    
-    const surveysSub = Meteor.subscribe('surveys.single', surveyId);
-    
-    const subscriptionsReady = 
-      questionsSub.ready() && 
-      surveysSub.ready() && 
-      themesSub.ready() && 
-      categoriesSub.ready();
-
-    // Fetch data only when subscriptions are ready
-    const allQuestions = subscriptionsReady ? Questions.find({}, { 
-      sort: { createdAt: -1 },
-      fields: { _id: 1, currentVersion: 1, versions: 1 }
-    }).fetch().map(q => {
-      // Get the latest version to extract the response type
-      const currentVersion = q.currentVersion;
-      const latestVersion = q.versions && Array.isArray(q.versions) ?
-        (q.versions.find((v: any) => v.version === currentVersion) || 
-        (q.versions.length > 0 ? q.versions[q.versions.length - 1] : null)) : null;
-      
-      // Create a properly typed QuestionItem
-      const questionItem: QuestionItem = {
-        id: q._id || '',
-        text: getQuestionText(q),
-        type: latestVersion?.responseType || 'text',
-        status: 'published'
-      };
-      
-      return questionItem;
-    }) : [];
-    
-    const surveyThemes = subscriptionsReady ? SurveyThemes.find({}, { 
-      sort: { name: 1 },
-      fields: { _id: 1, name: 1 }
-    }).fetch() : [];
-    
-    const wpsCategories = subscriptionsReady ? WPSCategories.find({}, { 
-      sort: { name: 1 },
-      fields: { _id: 1, name: 1 }
-    }).fetch() : [];
-
-    return { allQuestions, surveyThemes, wpsCategories, subscriptionsReady };
   }, [surveyId]);
 
   // Load survey data when surveyId changes
   useEffect(() => {
-    if (!surveyId) {
-      setIsLoading(false);
-      return;
+    if (surveyId) {
+      setIsLoading(true);
+      Meteor.call('surveys.getSurvey', surveyId, (error: any, result: any) => {
+        setIsLoading(false);
+        if (error) {
+          console.error('Error loading survey:', error);
+        } else {
+          setSurvey(result);
+          setSections(result.surveySections || []);
+          
+          // Set surveyOrder state from the loaded survey data
+          console.log('Loading surveyOrder from survey data:', result.surveyOrder);
+          if (result.surveyOrder && Array.isArray(result.surveyOrder)) {
+            setSurveyOrder(result.surveyOrder);
+          } else {
+            console.warn('No surveyOrder found in loaded survey data, initializing empty array');
+            setSurveyOrder([]);
+          }
+        }
+      });
     }
-
-    setIsLoading(true);
-    setError(null);
-
-    // Use a single method call to get survey data with questions
-    Meteor.call('surveys.getSurveyWithQuestions', surveyId, (error: any, result: any) => {
-      if (error) {
-        console.error('Error loading survey data:', error);
-        setError(error);
-        setIsLoading(false);
-      } else if (result) {
-        // Process survey data
-        const surveyData = result.survey;
-        
-        // Clean up the description by removing paragraph tags if they exist
-        if (surveyData.description) {
-          surveyData.description = surveyData.description.replace(/<p>/g, '').replace(/<\/p>/g, '');
-        }
-        
-        // Ensure defaultSettings exists to prevent null reference errors
-        if (!surveyData.defaultSettings) {
-          surveyData.defaultSettings = { allowRetake: true };
-        }
-        
-        setSurvey(surveyData);
-        
-        // Initialize sections if they exist in the survey
-        if (surveyData.surveySections && Array.isArray(surveyData.surveySections)) {
-          setSections(surveyData.surveySections);
-        } else if (surveyData.sections && Array.isArray(surveyData.sections)) {
-          setSections(surveyData.sections);
-        }
-        
-        // Initialize questions if they exist in the survey
-        if (result.questions && Array.isArray(result.questions)) {
-          setSurveyQuestions(result.questions);
-        }
-        
-        setIsLoading(false);
-      }
-    });
   }, [surveyId]);
 
+  // Load questions from the database
+  useTracker(() => {
+    if (surveyId) {
+      const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
+      if (questionsSub.ready()) {
+        // Fetch questions from the collection directly
+        const questionsFromDB = Questions.find({}).fetch();
+        
+        // Map QuestionDoc objects to QuestionItem objects
+        const mappedQuestions = questionsFromDB.map(question => {
+          // Find the latest version of the question
+          const latestVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
+
+          // Determine status - explicitly use 'published' or 'draft' to match the union type
+          const status: 'published' | 'draft' = latestVersion?.isActive !== false ? 'published' : 'draft';
+          
+          return {
+            id: question._id || '',
+            _id: question._id,
+            text: latestVersion?.questionText || '',
+            type: latestVersion?.responseType || '',
+            status,
+            versions: question.versions,
+            currentVersion: question.currentVersion,
+            questionText: latestVersion?.questionText
+          };
+        });
+        
+        setSurveyQuestions(mappedQuestions);
+      }
+    }
+  }, [surveyId]);
+
+  // Helper function to get total question count in a survey
+  const getTotalQuestionCount = (survey: SurveyData | null): number => {
+    if (!survey) return 0;
+    
+    let count = 0;
+    
+    // Count questions in sections
+    if (survey.surveySections && Array.isArray(survey.surveySections)) {
+      survey.surveySections.forEach((section: SurveySectionItem) => {
+        if (section.questions && Array.isArray(section.questions)) {
+          count += section.questions.length;
+        }
+      });
+    }
+    
+    // Count direct questions (non-sectioned surveys)
+    if (survey.questions && Array.isArray(survey.questions)) {
+      count += survey.questions.length;
+    }
+    
+    return count;
+  };
+
+  // Helper function to get question details
+  const getQuestionDetails = (questionId: string, sectionId: string | undefined, surveyData: SurveyData | null) => {
+    if (!surveyData) return { questionText: "Unknown Question", sectionName: "" };
+    
+    let questionText = "Unknown Question";
+    let sectionName = "";
+    
+    // Try to find question in direct questions array
+    if (surveyData.questions && Array.isArray(surveyData.questions)) {
+      const question = surveyData.questions.find((q: any) => q._id === questionId);
+      if (question) {
+        questionText = question.text || question.title || "Unknown Question";
+        return { questionText, sectionName };
+      }
+    }
+    
+    // Try to find question in sections
+    if (surveyData.surveySections && Array.isArray(surveyData.surveySections)) {
+      for (const section of surveyData.surveySections) {
+        if (sectionId && section._id !== sectionId) continue;
+        
+        if (section.questions && Array.isArray(section.questions)) {
+          const question = section.questions.find((q: any) => q._id === questionId);
+          if (question) {
+            questionText = question.text || question.title || "Unknown Question";
+            sectionName = section.title || section.name || "";
+            return { questionText, sectionName };
+          }
+        }
+      }
+    }
+    
+    // Try to find in selectedQuestions object
+    if (surveyData.selectedQuestions && typeof surveyData.selectedQuestions === 'object') {
+      for (const key in surveyData.selectedQuestions) {
+        if (key === questionId) {
+          const question = surveyData.selectedQuestions[key];
+          questionText = question.text || question.title || "Unknown Question";
+          return { questionText, sectionName };
+        }
+      }
+    }
+    
+    // Deep search in the entire survey data structure
+    const deepSearch = (obj: any, targetId: string): any => {
+      if (!obj || typeof obj !== 'object') return null;
+      
+      if (obj._id === targetId) return obj;
+      
+      for (const key in obj) {
+        if (Array.isArray(obj[key])) {
+          for (const item of obj[key]) {
+            const found = deepSearch(item, targetId);
+            if (found) return found;
+          }
+        } else if (typeof obj[key] === 'object') {
+          const found = deepSearch(obj[key], targetId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const foundQuestion = deepSearch(surveyData, questionId);
+    if (foundQuestion) {
+      questionText = foundQuestion.text || foundQuestion.title || "Unknown Question";
+    }
+    
+    return { questionText, sectionName };
+  };
+
+  // Refresh survey data
+  const refreshSurveyData = () => {
+    if (surveyId) {
+      Meteor.subscribe('questions.all', surveyId);
+      Meteor.call('surveys.getSurvey', surveyId, (error: any, result: any) => {
+        if (error) {
+          console.error('Error refreshing survey:', error);
+        } else {
+          setSurvey(result);
+          setSections(result.surveySections || []);
+          setSurveyOrder(result.surveyOrder || []);
+        }
+      });
+    }
+  };
+
+  // Load survey data for question lookup
+  const loadSurveyDataForLookup = () => {
+    if (!surveyData && surveyId) {
+      Meteor.call('getSurveyById', surveyId, (err: Meteor.Error, survey: any) => {
+        if (err) {
+          console.error('Error fetching survey data:', err);
+          return;
+        }
+        setSurveyData(survey);
+      });
+    }
+  };
+
   return {
+    // State
+    surveyData,
+    setSurveyData,
     survey,
+    setSurvey,
     sections,
+    setSections,
     surveyQuestions,
-    allQuestions,
-    surveyThemes,
-    wpsCategories,
-    isLoading: isLoading || !subscriptionsReady,
-    error
+    setSurveyQuestions,
+    surveyOrder,
+    setSurveyOrder,
+    isLoading,
+    
+    // Helper functions
+    getTotalQuestionCount,
+    getQuestionDetails,
+    refreshSurveyData,
+    loadSurveyDataForLookup,
   };
 };

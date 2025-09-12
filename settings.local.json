@@ -3,6 +3,9 @@
     "jwtSecret": "local-development-secret-key-2024"
   },
   "public": {
-    "appName": "Bioptrics Survey App - Local Development"
+    "appName": "Bioptrics Survey App - Local Development",
+    "environment": "development"
   }
 }
+
+
