@@ -5,7 +5,6 @@ import { QuestionBuilderPanelProvider } from '../features/questions/contexts/Que
 import { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { AdminLogin } from './AdminLogin';
-import AdminDashboard from './admin/AdminDashboard';
 import Analytics from './admin/Analytics';
 import AnalyticsDashboard from './admin/AnalyticsDashboard';
 import AnalyticsCompareCohorts from './admin/AnalyticsCompareCohorts';
@@ -175,7 +174,6 @@ const AppRoutes: React.FC = () => {
       <Route path="/terms" element={<TermsOfUse />} />
       <Route path="/privacy" element={<PrivacyNotice />} />
       <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/surveys/all')} />} />
-      {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/questions')} />} />
       <Route element={<RequireAdminAuth />}>
          <Route path="/admin/surveys" element={<SurveyPage />} />
