@@ -6,6 +6,7 @@ import { Questions } from '../../../features/questions/api/questions';
 import QuestionSelector from './sections/QuestionSelector';
 import SectionEditor from './sections/SectionEditor';
 import { Meteor } from 'meteor/meteor';
+import EditWarningModal from '../../../features/questions/components/admin/EditWarningModal';
 import { QuestionItem } from '../types';
 
 interface SurveyQuestionsTabProps {
@@ -51,6 +52,11 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     position: { x: number; y: number };
   } | null>(null);
   const [currentSection, setCurrentSection] = useState<any>(undefined);
+  
+  // State for the edit warning modal
+  const [showEditWarningModal, setShowEditWarningModal] = useState(false);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | undefined>(undefined);
+  const [questionResponseCount, setQuestionResponseCount] = useState(0);
 
   // Helper function to extract clean question text
   const extractQuestionText = (question: any): string => {
@@ -306,7 +312,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     });
   };
 
-  const handleEditQuestion = (questionId: string) => {
+  const handleEditQuestion = async (questionId: string) => {
     console.log('Edit question:', questionId);
     
     // Find the question to edit
@@ -327,7 +333,43 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       }
     }
     
-    // Create callback to handle question updates
+    // Check if the question has responses before editing
+    try {
+      // Get the response data for this question - this will include the response count
+      const data = await Meteor.callAsync('questions.exportResponseData', questionId);
+      
+      // Extract response count from the data
+      const responseCount = data.totalRespondents || 0;
+      
+      // Check if we should show the warning
+      const dontShowWarning = localStorage.getItem('dontShowQuestionEditWarning') === 'true';
+      
+      if (responseCount > 0 && !dontShowWarning) {
+        // If there are responses, show the warning modal
+        setSelectedQuestionId(questionId);
+        setQuestionResponseCount(responseCount);
+        setShowEditWarningModal(true);
+      } else {
+        // If no responses or user opted out of warnings, proceed directly to edit
+        proceedToEditQuestion(questionId);
+      }
+    } catch (error) {
+      console.error('Error checking question responses:', error);
+      // If there's an error, proceed with editing anyway
+      proceedToEditQuestion(questionId);
+    }
+  };
+  
+  // Function to proceed with editing after warning or if no warning needed
+  const proceedToEditQuestion = (questionId: string) => {
+    // Find the question to edit
+    const questionToEdit = surveyQuestions.find(q => q.id === questionId);
+    if (!questionToEdit) {
+      console.error('Question not found:', questionId);
+      return;
+    }
+    
+    // Create callback for when question is updated
     const onQuestionUpdatedCallback = (updatedQuestionId: string) => {
       console.log('Question updated:', updatedQuestionId);
       
@@ -1569,6 +1611,26 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         section={currentSection}
         onSave={handleSaveSection}
       />
+      
+      {/* Edit Warning Modal */}
+      {showEditWarningModal && selectedQuestionId && (
+        <EditWarningModal
+          isOpen={showEditWarningModal}
+          onClose={() => setShowEditWarningModal(false)}
+          onContinue={() => {
+            setShowEditWarningModal(false);
+            proceedToEditQuestion(selectedQuestionId);
+          }}
+          onDoNotRemindAgain={() => {
+            // Save user preference not to show warning again
+            localStorage.setItem('dontShowQuestionEditWarning', 'true');
+            setShowEditWarningModal(false);
+            proceedToEditQuestion(selectedQuestionId);
+          }}
+          responseCount={questionResponseCount}
+          questionId={selectedQuestionId}
+        />
+      )}
 
       {/* Delete Question Confirmation Popup */}
       {deleteConfirmation && (
