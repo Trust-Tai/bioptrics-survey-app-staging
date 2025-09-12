@@ -4,6 +4,8 @@
   "type": "commonjs",
   "scripts": {
     "start": "meteor run --settings settings.json --port $PORT --allow-superuser",
+    "start:local": "MONGO_URL=mongodb://localhost:27017/bioptrics-local meteor run --settings settings.local.json --port 3000 --allow-superuser",
+    "start:dev": "meteor run --settings settings.local.json --port 3000 --allow-superuser",
     "test": "meteor test --once --driver-package meteortesting:mocha",
     "test-app": "TEST_WATCH=1 meteor test --full-app --driver-package meteortesting:mocha",
     "visualize": "meteor --production --extra-packages bundle-visualizer",

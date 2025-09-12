@@ -5,7 +5,6 @@ import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Counts } from 'meteor/tmeasday:publish-counts';
 import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
@@ -722,6 +721,7 @@ const AllSurveys: React.FC = () => {
   const [view, setView] = useState<'grid' | 'list'>('list');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showImportPanel, setShowImportPanel] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Functions for handling survey actions
   const onEdit = (id: string, title: string) => {
@@ -763,7 +763,7 @@ const AllSurveys: React.FC = () => {
   const userId = Meteor.userId();
 
   // Optimized surveys data fetching with pagination support
-  const { surveys, loading, totalCount } = useTracker(() => {
+  const { surveys, loading } = useTracker(() => {
     // Calculate skip based on current page and items per page
     const skip = (page - 1) * itemsPerPage;
     
@@ -808,6 +808,20 @@ const AllSurveys: React.FC = () => {
   // Subscribe to all users to ensure we have their data for creator names
   useTracker(() => {
     Meteor.subscribe('allUsersBasic');
+  }, []);
+
+  // Get total count for pagination
+  useEffect(() => {
+    const getTotalCount = async () => {
+      try {
+        const count = await Meteor.callAsync('surveys.getTotalCount');
+        setTotalCount(count);
+      } catch (error) {
+        console.error('Error getting total count:', error);
+      }
+    };
+    
+    getTotalCount();
   }, []);
 
   // Define interface for survey data
@@ -1450,7 +1464,7 @@ const AllSurveys: React.FC = () => {
                 <option value={25}>25</option>
                 <option value={50}>50</option>
               </select>
-              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, filtered.length)} - {Math.min(page * itemsPerPage, filtered.length)} of {filtered.length}</span>
+              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, totalCount)} - {Math.min(page * itemsPerPage, totalCount)} of {totalCount}</span>
             </div>
             
             <div>
