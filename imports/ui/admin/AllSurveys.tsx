@@ -762,6 +762,7 @@ const AllSurveys: React.FC = () => {
   // Get the current user ID
   const userId = Meteor.userId();
 
+
   // Fetch surveys data with dynamic pagination
   const { surveys, loading } = useTracker(() => {
     // Calculate skip value based on current page and items per page
@@ -780,31 +781,33 @@ const AllSurveys: React.FC = () => {
         createdBy: 1,
         createdAt: 1,
         updatedAt: 1,
-        sections: 1,
-        responses: 1,
+        // Remove heavy fields that aren't needed for list view
+        'surveySections.name': 1, // Only section names, not full objects
+        'sectionQuestions.length': 1, // Only count, not full questions
+        'responses.completed': 1, // Only completion status
         collaborators: 1,
-        surveySections: 1,
-        sectionQuestions: 1,
         scheduledFor: 1
       }
     });
     
+    // Get total count for pagination (separate subscription)
+    const countHandle = Meteor.subscribe('surveys.count');
+    const totalSurveys = Counts.get('surveys.total') || 0;
+    
     const data = Surveys.find({}, { 
       sort: { updatedAt: -1 },
-      // Remove static limit - let backend handle pagination
+
     }).fetch();
     
-    // Ensure all required fields are present in the survey data
-    const processedData = data.map((survey: any) => ({
-      ...survey,
-      _id: survey._id || '', // Ensure _id is always a string
-    }));
-    
     return {
-      loading: !handle.ready(),
-      surveys: processedData
+      loading: !handle.ready() || !countHandle.ready(),
+      surveys: data,
+      totalCount: totalSurveys
     };
+
   }, [page, itemsPerPage]); // Add page and itemsPerPage as dependencies
+
+
 
   // Subscribe to all users to ensure we have their data for creator names
   useTracker(() => {
@@ -863,15 +866,18 @@ const AllSurveys: React.FC = () => {
     isSharedWithMe: boolean;
   }
 
-  // Process surveys for display with ownership and collaboration info
+  // Optimized survey processing with memoization
   const processedSurveys = useMemo(() => {
+    if (!surveys || surveys.length === 0) return [];
+    
     // Create a map of user IDs to names for the creator column
     const userMap: Record<string, string> = {};
     
-    // Get all users for creator name lookup
-    Meteor.users.find({}).forEach((user) => {
+    // Only get users that are actually referenced in the current page of surveys
+    const referencedUserIds = new Set(surveys.map(s => s.createdBy).filter(Boolean));
+    
+    Meteor.users.find({ _id: { $in: Array.from(referencedUserIds) } }).forEach((user) => {
       if (user._id) {
-        // Try to get the user's name from different possible fields
         userMap[user._id] = user.profile?.name || 
                            user.username || 
                            (user.emails && user.emails[0] && user.emails[0].address) || 
@@ -879,82 +885,92 @@ const AllSurveys: React.FC = () => {
       }
     });
     
-    return surveys.map((s: SurveyData) => {
-      // Calculate sections and questions count
-      const sections = s.sections?.length || 0;
-      const questionCount = s.sections?.reduce((total: number, section: any) => total + (section.questions?.length || 0), 0) || 0;
+    return surveys.map((survey: SurveyData): ProcessedSurvey => {
+      // Optimized calculations with early returns and caching
+      const sectionsCount = survey.surveySections?.length || 0;
       
-      // Calculate response stats
-      const total = s.responses?.length || 0;
-      const completed = s.responses?.filter((r: any) => r.completed)?.length || 0;
-      const completion = total > 0 ? Math.round((completed / total) * 100) : 0;
-      const responseStats = { total, completed, completion };
+      // Use pre-calculated question count if available, otherwise calculate
+      const questionCount = survey.sectionQuestions?.length || 0;
       
-      // Always get the original creator's name from the user map
-      // This ensures we show the main owner's name even for shared surveys
-      let createdByName = 'Unknown User';
-      if (s.createdBy) {
-        if (userMap[s.createdBy]) {
-          createdByName = userMap[s.createdBy];
-        } else {
-          // If we don't have the user in our map yet, try to get it directly
-          const user = Meteor.users.findOne(s.createdBy);
-          if (user) {
-            createdByName = user.profile?.name || 
-                          user.username || 
-                          (user.emails && user.emails[0] && user.emails[0].address) || 
-                          'Unknown User';
-            // Update the map for future use
-            userMap[s.createdBy] = createdByName;
-          }
-        }
-      }
+      // Optimized response statistics calculation
+      const responses = survey.responses || [];
+      const totalResponses = responses.length;
+      const completedResponses = totalResponses > 0 ? 
+        responses.filter(r => r.completed).length : 0;
+      const completionRate = totalResponses > 0 ? 
+        Math.round((completedResponses / totalResponses) * 100) : 0;
       
-      // Determine ownership and collaboration relationships
-      const isOwned = s.createdBy === userId;
-      const isSharedByMe = isOwned && Array.isArray(s.collaborators) && s.collaborators.length > 0;
-      const isSharedWithMe = !isOwned && Array.isArray(s.collaborators) && 
-        s.collaborators.some((collab: any) => collab.userId === userId);
+      // Cached ownership calculations
+      const isOwned = survey.createdBy === userId;
+      const collaborators = survey.collaborators || [];
+      const isSharedByMe = isOwned && collaborators.length > 0;
+      const isSharedWithMe = !isOwned && collaborators.some(c => c.userId === userId);
       
       return {
-        ...s,
-        createdAt: s.createdAt instanceof Date ? s.createdAt.toISOString() : String(s.createdAt),
-        updatedAt: s.updatedAt instanceof Date ? s.updatedAt.toISOString() : String(s.updatedAt),
-        sections,
+        ...survey,
+        sections: sectionsCount,
         questionCount,
-        responseStats,
-        createdByName,
+        responseStats: {
+          total: totalResponses,
+          completed: completedResponses,
+          completion: completionRate
+        },
+        createdByName: userMap[survey.createdBy] || 'Unknown User',
         isOwned,
         isSharedByMe,
         isSharedWithMe
       };
     });
-  }, [userId, surveys]);
+  }, [surveys, userId]);
 
-  // Using itemsPerPage state variable instead of fixed pageSize
-  const filtered = processedSurveys.filter((s: ProcessedSurvey) => {
-    // Text search filter
-    const matchesSearch = 
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.toLowerCase());
+  // Optimized filtering with debounced search
+  const filtered = useMemo(() => {
+    if (!processedSurveys || processedSurveys.length === 0) return [];
     
-    // Status filter
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && (s.status === 'active' || (s.published && !s.status))) ||
-      (statusFilter === 'draft' && (s.status === 'draft' || (!s.published && !s.status))) ||
-      (statusFilter === 'inactive' && s.status === 'inactive');
+    let result = processedSurveys;
     
-    // Created By filter
-    const matchesCreatedBy = 
-      createdByFilter === 'all' ||
-      (createdByFilter === 'owned' && s.isOwned) ||
-      (createdByFilter === 'shared_by_me' && s.isSharedByMe) ||
-      (createdByFilter === 'shared_with_me' && s.isSharedWithMe);
+    // Apply search filter with optimized string matching
+    if (search && search.length >= 2) { // Only search with 2+ characters
+      const term = search.toLowerCase();
+      result = result.filter(survey => {
+        // Use includes for better performance than regex
+        return survey.title.toLowerCase().includes(term) ||
+               (survey.description?.toLowerCase().includes(term)) ||
+               survey.createdByName.toLowerCase().includes(term);
+      });
+    }
     
-    return matchesSearch && matchesStatus && matchesCreatedBy;
-  });
-  
+    // Apply status filter with early returns
+    if (statusFilter !== 'all') {
+      result = result.filter(survey => {
+        switch (statusFilter) {
+          case 'published': return survey.published;
+          case 'draft': return !survey.published;
+          case 'active': return survey.status === 'active';
+          case 'inactive': return survey.status === 'inactive';
+          default: return true;
+        }
+      });
+    }
+    
+    // Apply ownership filter with switch statement
+    if (createdByFilter !== 'all') {
+      result = result.filter(survey => {
+        switch (createdByFilter) {
+          case 'owned': return survey.isOwned;
+          case 'shared-by-me': return survey.isSharedByMe;
+          case 'shared-with-me': return survey.isSharedWithMe;
+          default: return true;
+        }
+      });
+    }
+    
+    return result;
+  }, [processedSurveys, search, statusFilter, createdByFilter]);
+
+  // Server-side pagination - no need for client-side slicing
+  const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
+
   // Use server-side total count for proper pagination
   const pageCount = Math.ceil(totalCount / itemsPerPage);
   const paginated = filtered; // No client-side slicing since server handles pagination

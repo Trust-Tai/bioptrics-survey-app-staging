@@ -24,6 +24,7 @@ import { useQuestionBuilderPanel } from '../../../features/questions/contexts/Qu
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
+
 import { SettingsTab } from './builder/tabs/SettingsTab/SettingsTab';
 import AppearanceTab from './builder/tabs/AppearanceTab/AppearanceTab';
 import BasicSurveyWelcomeSection from './builder/tabs/BasicSurveyWelcomeSection';
@@ -92,7 +93,6 @@ const steps = [
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
   { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
-  { id: 'analyzeResults', label: 'Analyze Results', icon: 'FiBarChart2' },
   { id: 'analytics', label: 'Analytics', icon: 'FiPieChart' },
   // { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   // { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
@@ -3253,23 +3253,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     surveyData={survey}
                   />
                 </div>
-              ) : activeStep === 'analyzeResults' ? (
-                <div className="survey-builder-panel">
-                  <div className="survey-builder-panel-header">
-                    <h2 className="survey-builder-panel-title">Analyze Results</h2>
-                  </div>
-                  
-                  {survey?._id ? (
-                    <div style={{ margin: '-1.5rem', width: '100%', marginLeft: '0' }}>
-                      <SurveyAnalytics surveyId={survey._id} embedded={true} />
-                    </div>
-                  ) : (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                      <p>Please save the survey first to view analytics.</p>
-                    </div>
-                  )}
-                </div>
               ) : activeStep === 'analytics' ? (
+
                <AnalyticsTab surveyId={survey?._id} />
               ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">

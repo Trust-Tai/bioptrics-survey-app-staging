@@ -875,6 +875,32 @@ if (Meteor.isServer) {
         sectionCompletionRates,
         averageSectionTimes
       };
+    },
+    
+    // Method to check if a question ID is used in any survey responses
+    async 'questions.checkIfUsedInResponses'(questionId: string) {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to check question usage');
+      }
+      
+      try {
+        // Count how many survey responses contain this questionId
+        const count = await SurveyResponses.find({
+          'responses.questionId': questionId
+        }).countAsync();
+        
+        console.log(`[SERVER] Question ID ${questionId} is used in ${count} survey responses`);
+        
+        return {
+          isUsed: count > 0,
+          count: count
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[SERVER] Error checking question usage: ${errorMessage}`);
+        throw new Meteor.Error('db-error', `Error checking question usage: ${errorMessage}`);
+      }
     }
   });
 }

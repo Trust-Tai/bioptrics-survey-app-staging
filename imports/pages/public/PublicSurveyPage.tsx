@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
+import { Container, Row, Col, Card, Button, Form, Alert } from 'react-bootstrap';
 
 interface Survey {
   _id: string;
@@ -28,20 +29,47 @@ const PublicSurveyPage: React.FC = () => {
     });
   }, [surveyId]);
 
-  if (loading) return <div style={{ padding: 32 }}>Loading survey...</div>;
-  if (error) return <div style={{ padding: 32, color: 'red' }}>{error}</div>;
+  if (loading) {
+    return (
+      <Container fluid className="px-3 py-3 py-md-5">
+        <Row className="justify-content-center">
+          <Col xs={12} sm={10} md={8} lg={6}>
+            <div className="text-center">Loading survey...</div>
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container fluid className="px-3 py-3 py-md-5">
+        <Row className="justify-content-center">
+          <Col xs={12} sm={10} md={8} lg={6}>
+            <Alert variant="danger">{error}</Alert>
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+  
   if (!survey) return null;
 
   return (
-    <div style={{ padding: 32, maxWidth: 600, margin: '0 auto' }}>
-      <h2 style={{ fontWeight: 800, color: '#28211e', fontSize: 26 }}>{survey.title}</h2>
-      <p style={{ color: '#6e5a67', fontSize: 18 }}>{survey.description}</p>
-      {/* Render questions here. */}
-      <SurveyQuestions
-        surveyId={survey._id}
-        questions={survey.questions}
-      />
-    </div>
+    <Container fluid className="px-3 py-3 py-md-5">
+      <Row className="justify-content-center">
+        <Col xs={12} sm={11} md={10} lg={8} xl={7} xxl={6}>
+          <div className="text-center mb-3 mb-md-4 mb-lg-5">
+            <h2 className="fw-bold text-dark fs-3 fs-sm-2 fs-md-1 mb-2 mb-md-3">{survey.title}</h2>
+            <p className="text-muted fs-6 fs-sm-5 fs-md-4 px-2 px-sm-0">{survey.description}</p>
+          </div>
+          <SurveyQuestions
+            surveyId={survey._id}
+            questions={survey.questions}
+          />
+        </Col>
+      </Row>
+  </Container>
   );
 };
 
@@ -83,41 +111,76 @@ const SurveyQuestions: React.FC<{ surveyId: string; questions: string[] }> = ({ 
   };
 
   if (submitted) {
-    return <div style={{ marginTop: 32, color: '#2ecc40', fontWeight: 700, fontSize: 20 }}>Thank you for completing the survey!</div>;
+    return (
+      <Alert variant="success" className="text-center py-3 py-md-4">
+        <h4 className="fw-bold mb-2 fs-5 fs-md-4">Thank you for completing the survey!</h4>
+        <p className="mb-0 fs-6">Your response has been recorded successfully.</p>
+      </Alert>
+    );
   }
 
   if (error) {
-    return <div style={{ marginTop: 24, color: 'red' }}>{error}</div>;
+    return <Alert variant="danger" className="mt-3 mx-2 mx-sm-0">{error}</Alert>;
   }
 
   if (!questionData.length) {
-    return <div style={{ marginTop: 24 }}>Loading questions...</div>;
+    return (
+      <div className="text-center mt-3 mt-md-4">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading questions...</span>
+        </div>
+        <p className="mt-2 text-muted fs-6">Loading questions...</p>
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {questionData.map((q: any, idx: number) => {
-        // Assume latest version is last
-        const latest = q.versions && q.versions.length > 0 ? q.versions[q.versions.length - 1] : {};
-        const qid = q._id || q.id || questions[idx];
-        return (
-          <div key={qid} style={{ background: '#f9f4f7', padding: 20, borderRadius: 8 }}>
-            <div style={{ fontWeight: 600, color: '#28211e', fontSize: 17, marginBottom: 8 }}>{latest.questionText || q.question_text}</div>
-            <div style={{ color: '#6e5a67', fontSize: 15, marginBottom: 10 }}>{latest.description || ''}</div>
-            {renderInput(latest, qid, answers[qid], (val: any) => handleChange(qid, val))}
+    <Form onSubmit={handleSubmit}>
+    <Row>
+      <Col xs={12}>
+        {questionData.map((q: any, idx: number) => {
+          // Assume latest version is last
+          const latest = q.versions && q.versions.length > 0 ? q.versions[q.versions.length - 1] : {};
+          const qid = q._id || q.id || questions[idx];
+          return (
+            <Card key={qid} className="mb-3 mb-md-4 border-0 shadow-sm mx-1 mx-sm-0">
+              <Card.Body className="p-3 p-sm-4">
+                <Card.Title className="fw-semibold text-dark fs-6 fs-sm-5 fs-md-4 mb-2 mb-md-3 lh-sm">
+                  {latest.questionText || q.question_text}
+                </Card.Title>
+                {(latest.description || '') && (
+                  <Card.Text className="text-muted fs-7 fs-sm-6 mb-3 lh-sm">
+                    {latest.description}
+                  </Card.Text>
+                )}
+                {renderInput(latest, qid, answers[qid], (val: any) => handleChange(qid, val))}
+              </Card.Body>
+            </Card>
+          );
+        })}
+
+        <div className="d-grid gap-2 mt-4 px-1 px-sm-0">
+          <Button
+            type="submit"
+            disabled={submitting}
+            variant="primary"
+            size="lg"
+            className="py-3 fs-6 fs-md-5"
+            style={{ backgroundColor: '#552a47', borderColor: '#552a47' }}
+          >
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Submitting...
+              </>
+            ) : (
+              'Submit Survey'
+            )}
+          </Button>
           </div>
-        );
-      })}
-      <button
-        type="submit"
-        disabled={submitting}
-        style={{
-          background: '#552a47', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 6, padding: '12px 32px', marginTop: 8, cursor: 'pointer', opacity: submitting ? 0.7 : 1
-        }}
-      >
-        {submitting ? 'Submitting...' : 'Submit Survey'}
-      </button>
-    </form>
+          </Col>
+      </Row>
+    </Form>
   );
 };
 
@@ -125,41 +188,46 @@ function renderInput(q: any, qid: string, value: any, onChange: (v: any) => void
   // Support scale_1_to_5, textarea, short_text
   if (q.display_format === 'scale_1_to_5' || q.responseType === 'scale_1_to_5') {
     return (
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+      <div className="d-flex flex-column flex-sm-row gap-2 gap-sm-3 align-items-start">
         {[1,2,3,4,5].map(n => (
-          <label key={n} style={{ fontWeight: 500, color: '#552a47' }}>
-            <input
-              type="radio"
-              name={qid}
-              value={n}
-              checked={String(value) === String(n)}
-              onChange={() => onChange(n)}
-              style={{ marginRight: 6 }}
-            />
-            {n}
-          </label>
+          <Form.Check
+            key={n}
+            type="radio"
+            id={`${qid}-${n}`}
+            name={qid}
+            value={n}
+            checked={String(value) === String(n)}
+            onChange={() => onChange(n)}
+            label={n.toString()}
+            className="fw-medium fs-6 mb-1 mb-sm-0"
+            style={{ color: '#552a47' }}
+          />
         ))}
       </div>
     );
   }
   if (q.display_format === 'textarea' || q.responseType === 'textarea') {
     return (
-      <textarea
+      <Form.Control
+        as="textarea"
+        rows={3}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
-        style={{ width: '100%', minHeight: 60, fontSize: 15, padding: 8, borderRadius: 4, border: '1.5px solid #e5d6c7' }}
         placeholder="Your answer"
+        className="border-2 fs-6"
+        style={{ borderColor: '#e5d6c7' }}
       />
     );
   }
   // Default: short text
   return (
-    <input
+    <Form.Control
       type="text"
       value={value || ''}
       onChange={e => onChange(e.target.value)}
-      style={{ width: '100%', fontSize: 15, padding: 8, borderRadius: 4, border: '1.5px solid #e5d6c7' }}
       placeholder="Your answer"
+      className="border-2 fs-6"
+      style={{ borderColor: '#e5d6c7' }}
     />
   );
 }

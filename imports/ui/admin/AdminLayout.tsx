@@ -119,14 +119,7 @@ const Sidebar = styled.aside<SidebarProps>`
   overflow-y: visible;
   background-clip: padding-box;
 
-  @media (max-width: 1024px) {
-    width: ${props => props.collapsed ? '0' : '240px'};
-    transform: ${props => props.collapsed ? 'translateX(-100%)' : 'translateX(0)'};
-    margin: 0;
-    border-radius: 0 22px 22px 0;
-    height: 100vh;
-    top: 0;
-  }
+  /* Remove the conflicting media query - let Bootstrap handle mobile */
 `;
 
 
@@ -299,6 +292,24 @@ const MainContent = styled.main<MainContentProps>`
   min-height: calc(100vh - 72px);
 `;
 
+// Add type declaration for Bootstrap
+declare global {
+  interface Window {
+    bootstrap?: {
+      Collapse?: {
+        getInstance: (element: Element) => {
+          hide: () => void;
+          show: () => void;
+        } | null;
+        getOrCreateInstance: (element: Element) => {
+          hide: () => void;
+          show: () => void;
+        };
+      };
+    }
+  }
+}
+
 /**
  * AdminLayout component that provides the admin dashboard shell with navigation
  */
@@ -322,6 +333,18 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Add responsive state management
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 1024);
+    };
+    
+    handleResize(); // Set initial state
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Add expandedMenus state for submenu toggling
   const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
@@ -351,9 +374,86 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     });
   }
 
+  // Add function to close mobile sidebar
+  const closeMobileSidebar = () => {
+    if (isMobile) {
+      const sidebarElement = document.getElementById('mobileSidebar');
+      if (sidebarElement) {
+        // Try using Bootstrap's collapse API first
+        if (window.bootstrap?.Collapse) {
+          const bsCollapse = window.bootstrap.Collapse.getInstance(sidebarElement);
+          if (bsCollapse) {
+            bsCollapse.hide();
+          }
+        } else {
+          // Fallback: manually remove Bootstrap classes
+          sidebarElement.classList.remove('show');
+          sidebarElement.classList.add('collapsing');
+          setTimeout(() => {
+            sidebarElement.classList.remove('collapsing');
+          }, 350); // Bootstrap's default transition duration
+        }
+      }
+    }
+  };
+
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar collapsed={collapsed}>
+      {/* Bootstrap navbar for mobile toggle */}
+      <nav className="navbar navbar-dark d-lg-none fixed-top" style={{ 
+        background: 'var(--color-primary, #552a47)', 
+        zIndex: 1050,
+        padding: '0.5rem 1rem'
+      }}>
+        <span className="navbar-brand mb-0 h1" style={{ fontSize: '1.2rem' }}>Bioptrics</span>
+        <button 
+          className="navbar-toggler border-0" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#mobileSidebar" 
+          aria-controls="mobileSidebar" 
+          aria-expanded="false" 
+          aria-label="Toggle navigation"
+        >
+          <FaBars size={20} color="white" />
+        </button>
+      </nav>
+
+      {/* Mobile backdrop overlay */}
+      <div 
+        className="d-lg-none position-fixed w-100 h-100 bg-dark opacity-50"
+        style={{ 
+          top: 0, 
+          left: 0, 
+          zIndex: 1035,
+          display: isMobile && document.getElementById('mobileSidebar')?.classList.contains('show') ? 'block' : 'none'
+        }}
+        onClick={closeMobileSidebar}
+      />
+
+      {/* Sidebar - Desktop always visible, Mobile collapsible */}
+      <aside
+        className={`${isMobile ? 'collapse' : 'd-block'}`}
+        id="mobileSidebar"
+        style={{
+          width: isMobile ? '280px' : (collapsed ? '72px' : '240px'),
+          background: 'linear-gradient(135deg, var(--color-primary, #552a47) 0%, var(--color-primary-dark, #3d1e33) 100%)',
+          color: '#2c2c2c',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '1.5rem 0',
+          borderRadius: isMobile ? '0 22px 22px 0' : '22px',
+          margin: isMobile ? '0' : '32px 0 32px 24px',
+          position: 'fixed',
+          left: 0,
+          top: isMobile ? '56px' : '0',
+          height: isMobile ? 'calc(100vh - 56px)' : 'max-content',
+          zIndex: 1040,
+          transition: 'width 0.3s ease',
+          overflowX: 'visible',
+          overflowY: 'auto'
+        }}
+      >
         <nav>
           {sidebarLinks.map((link, idx) => {
             const isActive = location.pathname.startsWith(link.to);
@@ -363,16 +463,15 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 key={link.to}
                 style={{ position: 'relative', overflow: 'visible' }}
                 onMouseEnter={() => {
-                  // Only allow hover/flyout if not showing inline submenu
                   const isInline = !collapsed && (location.pathname.startsWith(link.to) || (link.submenu && link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))));
-                  if (!isInline) setHovered(idx);
+                  if (!isInline && !isMobile) setHovered(idx);
                 }}
-                onMouseLeave={() => setHovered(null)}
+                onMouseLeave={() => !isMobile && setHovered(null)}
               >
                 <NavItem
                   to={link.to}
                   active={isActive}
-                  collapsed={collapsed}
+                  collapsed={collapsed && !isMobile}
                   tabIndex={0}
                   aria-haspopup={hasSubmenu ? 'true' : undefined}
                   aria-expanded={hasSubmenu ? hovered === idx : undefined}
@@ -380,6 +479,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     if (link.to === '/logout') {
                       e.preventDefault();
                       handleLogout();
+                    } else {
+                      // Close mobile sidebar when clicking any link
+                      closeMobileSidebar();
                     }
                   }}
                   onKeyDown={e => {
@@ -389,23 +491,22 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     }
                   }}
                 >
-                  <NavIcon collapsed={collapsed}>{React.createElement(link.icon)}</NavIcon>
-                  <NavLabel collapsed={collapsed}>{link.label}</NavLabel>
-                  {hasSubmenu && !collapsed && (
+                  <NavIcon collapsed={collapsed && !isMobile}>{React.createElement(link.icon)}</NavIcon>
+                  <NavLabel collapsed={collapsed && !isMobile}>{link.label}</NavLabel>
+                  {hasSubmenu && (!collapsed || isMobile) && (
                     <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7, transform: hovered === idx ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
                       ▸
                     </span>
                   )}
-                  {collapsed && hovered === idx && (
+                  {collapsed && !isMobile && hovered === idx && (
                     <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
                       {link.label}
                     </Tooltip>
                   )}
                 </NavItem>
-                {/* Submenu inline if active, flyout if hovered */}
-                {hasSubmenu && !collapsed && (
-                  // Only show flyout on hover if not showing inline
-                  (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx)
+                {/* Submenu handling */}
+                {hasSubmenu && (!collapsed || isMobile) && (
+                  (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx && !isMobile)
                   ? (
                     <SubmenuFlyout>
                       {link.submenu.map((sublink: any) => (
@@ -413,13 +514,13 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                           key={sublink.to}
                           to={sublink.to}
                           active={location.pathname.startsWith(sublink.to)}
+                          onClick={closeMobileSidebar}
                         >
                           {sublink.label}
                         </SubmenuItem>
                       ))}
                     </SubmenuFlyout>
                   ) : (
-                    // Always show Question Bank submenu or other active submenus
                     (location.pathname.startsWith(link.to) || 
                      link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)) || 
                      link.to === '/admin/questions') && (
@@ -429,6 +530,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             key={sublink.to}
                             to={sublink.to}
                             active={location.pathname.startsWith(sublink.to)}
+                            onClick={closeMobileSidebar}
                           >
                             {sublink.label}
                           </SubmenuItem>
@@ -448,8 +550,43 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             style={{ maxWidth: '80%', height: 'auto' }} 
           />
         </Logo>
-      </Sidebar>
-      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', display: 'flex', flexDirection: 'column' }}>
+      </aside>
+
+      {/* Desktop toggle button - only show on desktop */}
+      <button 
+        className="d-none d-lg-block"
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          position: 'fixed',
+          left: collapsed ? '1rem' : '245px',
+          top: '1rem',
+          background: 'var(--color-primary, #552a47)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50%',
+          width: '36px',
+          height: '36px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 1000,
+          transition: 'left 0.3s ease',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+        }}
+      >
+        {collapsed ? <FaBars /> : <FaTimes />}
+      </button>
+
+      <div style={{ 
+        flex: 1, 
+        minHeight: '100vh', 
+        marginLeft: isMobile ? 0 : (collapsed ? 72 : 264),
+        marginTop: isMobile ? '56px' : '0',
+        transition: 'margin-left 0.3s', 
+        display: 'flex', 
+        flexDirection: 'column' 
+      }}>
         {/* Main Content */}
         <MainContent sidebarCollapsed={collapsed}>
           <div style={{ flex: 1 }}>{children}</div>

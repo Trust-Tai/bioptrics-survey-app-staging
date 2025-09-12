@@ -16,7 +16,7 @@ import {
   Spinner
 } from 'react-bootstrap';
 import WpsBuilderModal from '/imports/ui/wps/WpsBuilderModal';
-import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
+import { AdminLayout } from '/imports/layouts';
 import { Products, Product } from '/imports/api/products/products';
 import { useTheme } from '/imports/contexts/ThemeContext';
 import { 
