@@ -39,12 +39,12 @@ interface SidebarLink {
 
 // Function to get sidebar links with customized terminology and dynamic tags
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []): SidebarLink[] => [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard}, 
   { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase},
   { to: '/admin/tags/manage', label: 'Tags', icon: FaTag },
   { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie},
   { to: '/admin/marketplace', label: 'Marketplace', icon: FaStore},
-  // { to: '/admin/migration', label: 'Migration', icon: FaCog},
   { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding},
   { to: '/logout', label: 'Logout', icon: FiLogOut },
 ];
@@ -73,6 +73,24 @@ interface ToggleButtonProps {
 
 interface MainContentProps {
   sidebarCollapsed: boolean;
+}
+
+// Add Bootstrap globals declaration
+declare global {
+  interface Window {
+    bootstrap?: {
+      Collapse?: {
+        getInstance: (element: Element) => {
+          hide: () => void;
+          show: () => void;
+        } | null;
+        getOrCreateInstance: (element: Element) => {
+          hide: () => void;
+          show: () => void;
+        };
+      };
+    };
+  }
 }
 
 // Define SubmenuItem first
@@ -135,10 +153,8 @@ const SubmenuInline = styled.ul`
 
 const Sidebar = styled.aside<SidebarProps>`
   width: ${({$collapsed}) => $collapsed ? '72px' : '240px'};
-  // background: var(--color-sidebar);
   background: transparent;
-  // color: var(--color-sidebar-text) !important;
-  color: #2c2c2c;
+  color: var(--color-sidebar-text, #2c2c2c) !important;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 0;
@@ -155,17 +171,34 @@ const Sidebar = styled.aside<SidebarProps>`
   background-clip: padding-box;
 
   @media (max-width: 1024px) {
-    width: ${({$collapsed}) => $collapsed ? '0' : '240px'};
-    transform: ${({$collapsed}) => $collapsed ? 'translateX(-100%)' : 'translateX(0)'};
-    margin: 0;
-    border-radius: 0 22px 22px 0;
-    height: 100vh;
-    top: 0;
+    width: ${({$collapsed}) => $collapsed ? '72px' : '280px'};
+    margin: 24px 0 24px 12px;
+    height: calc(100vh - 48px);
+    overflow-y: auto;
+    z-index: 1045;
   }
   
   /* Force all text elements to use sidebar text color */
   * {
-    color: var(--color-sidebar-text) !important;
+    color: var(--color-sidebar-text, #2c2c2c) !important;
+  }
+`;
+
+// Update mobile backdrop for click-to-expand functionality
+const MobileBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 1040;
+  display: none;
+  
+  @media (max-width: 1024px) {
+    &.show {
+      display: block;
+    }
   }
 `;
 
@@ -325,7 +358,7 @@ const HeartIcon = styled.span`
   }
 `;
 
-const MainContent = styled.main<MainContentProps>`
+const MainContent = styled.main<MainContentProps & { isMobile?: boolean }>`
   padding: 2rem 2rem 5rem 2rem;
   transition: margin-left 0.3s ease, width 0.3s ease;
   height: 100%;
@@ -337,6 +370,12 @@ const MainContent = styled.main<MainContentProps>`
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 72px);
+  
+  @media (max-width: 1024px) {
+    padding: 1.5rem 1rem 5rem 1rem;
+    min-height: 100vh;
+    margin-left: ${({isMobile}) => isMobile ? '84px' : '0'};
+  }
 `;
 
 
@@ -389,6 +428,40 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Add mobile detection and auto-collapse
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 1024;
+      setIsMobile(mobile);
+      
+      // Auto-collapse on mobile for more space
+      if (mobile) {
+        setCollapsed(true);
+      } else {
+        setCollapsed(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Handle sidebar expand on mobile
+  const handleSidebarInteraction = () => {
+    if (isMobile && collapsed) {
+      setCollapsed(false);
+    }
+  };
+
+  // Handle backdrop click to collapse on mobile
+  const handleBackdropClick = () => {
+    if (isMobile && !collapsed) {
+      setCollapsed(true);
+    }
+  };
 
   // Add expandedMenus state for submenu toggling
   const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
@@ -411,9 +484,29 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   }
 
+  // Handle navigation link clicks
+  const handleNavClick = (link: SidebarLink, e: React.MouseEvent) => {
+    if (link.to === '/logout') {
+      e.preventDefault();
+      handleLogout();
+    }
+  };
+
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar $collapsed={collapsed} theme={colors}>
+      {/* Mobile Backdrop - for collapsing when clicking outside */}
+      <MobileBackdrop 
+        className={isMobile && !collapsed ? 'show' : ''} 
+        onClick={handleBackdropClick} 
+      />
+
+      {/* Sidebar */}
+      <Sidebar 
+        $collapsed={collapsed} 
+        theme={colors}
+        id="adminSidebar"
+        onMouseEnter={handleSidebarInteraction}
+      >
         <nav>
           {sidebarLinks.map((link, idx) => {
             const isActive = location.pathname.startsWith(link.to);
@@ -423,9 +516,10 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 key={link.to}
                 style={{ position: 'relative', overflow: 'visible' }}
                 onMouseEnter={() => {
-                  // Only allow hover/flyout if not showing inline submenu
-                  const isInline = !collapsed && (location.pathname.startsWith(link.to) || (link.submenu && link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))));
-                  if (!isInline) setHovered(idx);
+                  if (!isMobile || !collapsed) {
+                    const isInline = !collapsed && (location.pathname.startsWith(link.to) || (link.submenu && link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))));
+                    if (!isInline) setHovered(idx);
+                  }
                 }}
                 onMouseLeave={() => setHovered(null)}
               >
@@ -437,12 +531,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   tabIndex={0}
                   aria-haspopup={hasSubmenu ? 'true' : undefined}
                   aria-expanded={hasSubmenu ? hovered === idx : undefined}
-                  onClick={e => {
-                    if (link.to === '/logout') {
-                      e.preventDefault();
-                      handleLogout();
-                    }
-                  }}
+                  onClick={(e) => handleNavClick(link, e)}
                   onKeyDown={e => {
                     if (hasSubmenu && (e.key === 'Enter' || e.key === ' ')) {
                       e.preventDefault();
@@ -450,10 +539,20 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     }
                   }}
                 >
-                  <NavIcon $collapsed={collapsed} theme={colors}>{React.createElement(link.icon)}</NavIcon>
-                  <NavLabel $collapsed={collapsed}>{link.label}</NavLabel>
+                  <NavIcon $collapsed={collapsed} theme={colors}>
+                    {React.createElement(link.icon)}
+                  </NavIcon>
+                  <NavLabel $collapsed={collapsed}>
+                    {link.label}
+                  </NavLabel>
                   {hasSubmenu && !collapsed && (
-                    <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7, transform: hovered === idx ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
+                    <span style={{ 
+                      marginLeft: 'auto', 
+                      fontSize: 14, 
+                      opacity: 0.7, 
+                      transform: hovered === idx ? 'rotate(90deg)' : 'none', 
+                      transition: 'transform 0.2s' 
+                    }}>
                       ▸
                     </span>
                   )}
@@ -463,9 +562,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </Tooltip>
                   )}
                 </NavItem>
-                {/* Submenu inline if active, flyout if hovered */}
+                
+                {/* Submenu handling */}
                 {hasSubmenu && !collapsed && link.submenu && (
-                  // Only show flyout on hover if not showing inline
                   (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx)
                   ? (
                     <SubmenuFlyout theme={colors}>
@@ -501,23 +600,50 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             );
           })}
         </nav>
+        
         {/* Onboarding Toggle */}
         <OnboardingToggle collapsed={collapsed} />
+        
         <Logo theme={colors}>
           <img 
             src="/bioptrics_fixed_black.png" 
             alt="Bioptrics Logo" 
-            style={{ width: '100%', height: 'auto' }} 
+            style={{ width: '100%', height: 'auto', maxWidth: collapsed ? '32px' : '150px' }} 
           />
         </Logo>
       </Sidebar>
-      <div style={{ flex: 1, minHeight: '100vh', marginLeft: collapsed ? 72 : 264, transition: 'margin-left 0.3s', width: 'calc(100% - 264px)' }}>
-        {/* Main Content */}
-        <MainContent sidebarCollapsed={collapsed}>
+
+      {/* Desktop toggle button */}
+      {!isMobile && (
+        <ToggleButton $collapsed={collapsed}>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+          >
+            {collapsed ? <FaBars /> : <FaTimes />}
+          </button>
+        </ToggleButton>
+      )}
+
+      {/* Main content area */}
+      <div style={{ 
+        flex: 1, 
+        minHeight: '100vh', 
+        marginLeft: isMobile ? 0 : (collapsed ? 72 : 264),
+        transition: 'margin-left 0.3s',
+        width: isMobile ? '100%' : `calc(100% - ${collapsed ? 72 : 264}px)`
+      }}>
+        <MainContent sidebarCollapsed={collapsed} isMobile={isMobile}>
           {/* Onboarding Panel - Shows when toggle is enabled */}
           {onboardingEnabled && <OnboardingPanel collapsed={collapsed} />}
           <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
+        
         <Footer collapsed={collapsed}>
           Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.
         </Footer>

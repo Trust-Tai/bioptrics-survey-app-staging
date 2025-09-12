@@ -729,9 +729,9 @@ return (
             {!currentView || currentView === 'default' ? 'Settings' : ''}
           </PageTitle>
           {currentView !== 'default' && (
-            <BackLink onClick={() => navigate('/admin/settings')}>
-              &larr; Back to Settings
-            </BackLink>
+             <BackLink onClick={() => navigate((currentView === 'timezone' || currentView === 'password' || currentView === 'ui-preferences') ? '/admin/settings' : '/admin/org-setup')}>
+                &larr; {(currentView === 'timezone' || currentView === 'password' || currentView === 'ui-preferences') ? 'Back to Settings' : 'Back to Org-Setup'}
+              </BackLink>
           )}
         </PageHeader>
         
