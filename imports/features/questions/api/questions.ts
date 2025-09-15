@@ -31,6 +31,7 @@ export interface QuestionVersion {
   priority?: number;
   isActive?: boolean;
   keywords?: string[];
+  qualityScore?: number;
   estimatedTimeSeconds?: number;
   customFields?: CustomField[];
   // Added fields for survey-specific questions feature
@@ -122,7 +123,7 @@ if (typeof Questions.attachSchema === 'function') {
 
 if (Meteor.isServer) {
   
-  Meteor.publish('questions.all', function(surveyId) {
+  Meteor.publish('questions.all', function(surveyId?: string, skip?: number, limit?: number) {
     // If surveyId is provided, include both global questions and survey-specific questions for this survey
     // Otherwise, only return global questions (saved to Question Bank)
     // Build the query
@@ -145,7 +146,11 @@ if (Meteor.isServer) {
       });
     }
     
-    console.log(`[questions.all] Publishing questions with${surveyId ? ' surveyId: ' + surveyId : ' no surveyId'}`);
+    // Coerce pagination params with safe defaults
+    const safeLimit = [5, 10, 25, 50].includes(Number(limit)) ? Number(limit) : 25;
+    const safeSkip = Number.isFinite(Number(skip)) && Number(skip) >= 0 ? Number(skip) : 0;
+
+    console.log(`[questions.all] Publishing questions with${surveyId ? ' surveyId: ' + surveyId : ' no surveyId'}, skip=${safeSkip}, limit=${safeLimit}`);
     
     // Use field projection to only return the fields needed for the UI
     return Questions.find(query, {
@@ -167,7 +172,10 @@ if (Meteor.isServer) {
         'versions.surveyId': 1,
         'versions.image': 1,
         'versions.creationSource': 1
-      }
+      },
+      sort: { createdAt: -1 },
+      skip: safeSkip,
+      limit: safeLimit
     });
   });
   
@@ -232,8 +240,32 @@ if (Meteor.isServer) {
           totalQuestions: 0,
           avgQualityScore: 0,
           timestamp: new Date(),
-          error: error.message
+          error: (error as any).message
         };
+      }
+    },
+    // Return total count for questions list (matches questions.all query semantics)
+    'questions.count': async function (surveyId?: string) {
+      try {
+        const query: any = {
+          $or: [
+            { 'versions.saveToQuestionBank': { $ne: false } },
+            { 'versions.saveToQuestionBank': { $exists: false } }
+          ]
+        };
+        if (surveyId) {
+          query.$or.push({
+            $and: [
+              { 'versions.saveToQuestionBank': false },
+              { 'versions.surveyId': surveyId }
+            ]
+          });
+        }
+        const count = await Questions.find(query).countAsync();
+        return count;
+      } catch (error: any) {
+        console.error('[questions.count] Error:', error);
+        throw new Meteor.Error('questions.count.error', error.message || 'Failed to get count');
       }
     },
     // Public method to get a single question by ID
@@ -607,11 +639,11 @@ if (Meteor.isServer) {
           return await Questions.findOneAsync({ _id: questionId });
         } catch (updateError) {
           console.error('Error updating question with new version:', updateError);
-          throw new Meteor.Error('update-failed', `Failed to update question: ${updateError.message || 'Unknown error'}`);
+          throw new Meteor.Error('update-failed', `Failed to update question: ${(updateError as any).message || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Error reverting question version:', error);
-        throw new Meteor.Error('revert-failed', error.message || 'Failed to revert question version');
+        throw new Meteor.Error('revert-failed', (error as any).message || 'Failed to revert question version');
       }
     },
 

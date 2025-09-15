@@ -172,7 +172,7 @@ export const Surveys = new Mongo.Collection<SurveyDoc>('surveys');
 // Re-export SurveyResponseDoc for backward compatibility
 export { SurveyResponseDoc };
 
-// Re-export for backward compatibility
+// Re-export for backward compatibility¸
 export { SurveyResponses };
 
 if (Meteor.isServer) {
@@ -200,7 +200,8 @@ if (Meteor.isServer) {
     }
     
     // Extract options with defaults
-    const limit = options.limit || 100;
+    const limit = options.limit || 10; // Default limit changed to 10
+    const skip = options.skip || 0; // Add skip parameter
     const fields = options.fields || {};
     
     // Return surveys where the user is either the owner or a collaborator
@@ -212,6 +213,7 @@ if (Meteor.isServer) {
     }, {
       sort: { updatedAt: -1 },
       limit: limit,
+      skip: skip, // Add skip for pagination
       fields: fields
     });
   });
@@ -223,7 +225,7 @@ if (Meteor.isServer) {
     }
     
     // Extract options with defaults
-    const limit = options.limit || 100;
+    const limit = options.limit || 10; // Default limit changed to 10
     const skip = options.skip || 0;
     
     // Find surveys where the user is either the owner or a collaborator
@@ -1959,5 +1961,23 @@ Meteor.methods({
     
     // Return the collaborators array or an empty array if none
     return survey.collaborators || [];
+  },
+
+  // Get total count of surveys for pagination
+  async 'surveys.getTotalCount'() {
+    // Check if user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to get survey count');
+    }
+    
+    // Count surveys where the user is either the owner or a collaborator
+    const totalCount = await Surveys.find({
+      $or: [
+        { createdBy: this.userId },
+        { 'collaborators.userId': this.userId }
+      ]
+    }).countAsync();
+    
+    return totalCount;
   },
 });
