@@ -3676,7 +3676,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           </div>
         )}
         
-        {/* Question Builder Side Panel is now managed by QuestionBuilderPanelContext provider */}
+      
       </DashboardBg>
     </AdminLayout>
   );
