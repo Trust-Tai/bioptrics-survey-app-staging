@@ -1357,6 +1357,50 @@ if (Meteor.isServer) {
       }
     },
     
+    // Calculate average completion time for a specific survey
+    async 'getCurrentCompletionTime'(surveyId: string) {
+      console.log('getCurrentCompletionTime method called for survey:', surveyId);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get completion time');
+      }
+      
+      try {
+        // Get all completed survey responses for this survey
+        const completedResponses = await SurveyResponses.find({
+          surveyId: surveyId,
+          completed: true,
+          completionTime: { $exists: true }
+        }).fetchAsync();
+        
+        console.log(`Found ${completedResponses.length} completed responses with completion time`);
+        
+        if (completedResponses.length === 0) {
+          return 0; // No responses with completion time
+        }
+        
+        // Calculate the sum of all completion times in minutes
+        let totalCompletionTime = 0;
+        for (const response of completedResponses) {
+          if (response.completionTime !== undefined) {
+            // The database stores completion time in minutes (e.g., 5.309 means 5.309 minutes)
+            // We keep the calculation in minutes
+            totalCompletionTime += response.completionTime;
+          }
+        }
+        
+        // Calculate the average completion time in minutes
+        const averageCompletionTime = totalCompletionTime / completedResponses.length;
+        console.log(`Average completion time: ${averageCompletionTime} minutes`);
+        
+        return averageCompletionTime;
+      } catch (error: unknown) {
+        console.error('Error calculating average completion time:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating average completion time: ${errorMessage}`);
+      }
+    },
+    
     // Get filtered completion time with optional filters
     async 'getFilteredCompletionTime'(filterParams?: { 
       surveyIds?: string[], 

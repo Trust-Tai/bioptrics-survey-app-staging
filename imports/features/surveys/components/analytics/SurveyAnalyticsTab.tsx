@@ -19,6 +19,9 @@ import {
   FaClock,
   FaChartBar
 } from 'react-icons/fa';
+import { useResponseRateData } from '../../hooks/useResponseRateData';
+import { useParticipantData } from '../../hooks/useParticipantData';
+import { useCompletionTimeData } from '../../hooks/useCompletionTimeData';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -56,6 +59,8 @@ interface AnalyticsData {
     completions: number;
   }>;
 }
+
+// ResponseRateContent component will be defined after the styled components
 
 // Styled components
 const AnalyticsDashboard = styled.div`
@@ -467,6 +472,139 @@ const ExportButton = styled.button`
 `;
 
 // Main component
+// ResponseRateContent component to display dynamic response rate
+interface ResponseRateContentProps {
+  surveyId: string;
+}
+
+const ResponseRateContent: React.FC<ResponseRateContentProps> = ({ surveyId }) => {
+  const { rate, trend, isLoading, error } = useResponseRateData(surveyId);
+  
+  const formatTrend = (value: number) => {
+    return value > 0 ? `+${value}` : value.toString();
+  };
+  
+  if (isLoading) {
+    return (
+      <>
+        <KpiValue>Loading...</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  if (error) {
+    return (
+      <>
+        <KpiValue>--</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  return (
+    <>
+      <KpiValue>{rate}%</KpiValue>
+      <KpiTrend trend={trend.direction}>
+        {formatTrend(trend.value)}% <span>vs prev. period</span>
+      </KpiTrend>
+    </>
+  );
+};
+
+// ParticipantsContent component to display dynamic participant count
+interface ParticipantsContentProps {
+  surveyId: string;
+}
+
+const ParticipantsContent: React.FC<ParticipantsContentProps> = ({ surveyId }) => {
+  const { count, trend, isLoading, error } = useParticipantData(surveyId);
+  
+  const formatTrend = (value: number) => {
+    return value > 0 ? `+${value}` : value.toString();
+  };
+  
+  if (isLoading) {
+    return (
+      <>
+        <KpiValue>Loading...</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  if (error) {
+    return (
+      <>
+        <KpiValue>--</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  return (
+    <>
+      <KpiValue>{count}</KpiValue>
+      <KpiTrend trend={trend.direction}>
+        {formatTrend(trend.value)}% <span>vs prev. period</span>
+      </KpiTrend>
+    </>
+  );
+};
+
+
+// CompletionTimeContent component to display dynamic completion time
+interface CompletionTimeContentProps {
+  surveyId: string;
+}
+
+const CompletionTimeContent: React.FC<CompletionTimeContentProps> = ({ surveyId }) => {
+  const { time, trend, isLoading, error } = useCompletionTimeData(surveyId);
+  
+  const formatTime = (minutes: number): string => {
+    if (minutes === 0) return '0:00';
+    
+    // The time is already in minutes (e.g., 5.309 means 5 minutes and 18.54 seconds)
+    const wholeMinutes = Math.floor(minutes);
+    const fractionalMinutes = minutes - wholeMinutes;
+    const seconds = Math.round(fractionalMinutes * 60);
+    
+    // Format as M:SS
+    return `${wholeMinutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  const formatTrend = (value: number) => {
+    return value > 0 ? `+${value}` : value.toString();
+  };
+  
+  if (isLoading) {
+    return (
+      <>
+        <KpiValue>Loading...</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  if (error) {
+    return (
+      <>
+        <KpiValue>--</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  return (
+    <>
+      <KpiValue>{formatTime(time)}</KpiValue>
+      <KpiTrend trend={trend.direction}>
+        {formatTrend(trend.value)}% <span>vs prev. period</span>
+      </KpiTrend>
+    </>
+  );
+};
+
 const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => {
   // Ref for QuestionsTab component
   const questionsTabRef = useRef<QuestionsTabRef>(null);
@@ -713,54 +851,55 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
       icon: <FiBarChart2 size={16} />,
       content: (
         <>
-          {/* KPI Cards Section */}
-          <KpiSection>
-            <KpiCard>
-              <KpiIcon>
-                <FaUsers size={24} />
-              </KpiIcon>
-              <KpiContent>
-                <h4>Total Participants</h4>
-                <KpiValue>{analyticsData.completedSurveysCount}</KpiValue>
-                <KpiTrend trend="positive">+12% <span>vs prev. period</span></KpiTrend>
-              </KpiContent>
-            </KpiCard>
-            
-            <KpiCard>
-              <KpiIcon>
-                <FaPercentage size={24} />
-              </KpiIcon>
-              <KpiContent>
-                <h4>Response Rate</h4>
-                <KpiValue>{analyticsData.responseRate}%</KpiValue>
-                <KpiTrend trend="positive">+5% <span>vs prev. period</span></KpiTrend>
-              </KpiContent>
-            </KpiCard>
-            
-            <KpiCard>
-              <KpiIcon>
-                <FaChartPie size={24} />
-              </KpiIcon>
-              <KpiContent>
-                <h4>Engagement Score</h4>
-                <KpiValue>{analyticsData.engagementScore.toFixed(1)}</KpiValue>
-                <KpiTrend trend="negative">-0.3 <span>vs prev. period</span></KpiTrend>
-              </KpiContent>
-            </KpiCard>
-            
-            <KpiCard>
-              <KpiIcon>
-                <FaClock size={24} />
-              </KpiIcon>
-              <KpiContent>
-                <h4>Avg. Completion Time</h4>
-                <KpiValue>{formatTime(analyticsData.completionTime)}</KpiValue>
-                <KpiTrend trend="neutral">0% <span>vs prev. period</span></KpiTrend>
-              </KpiContent>
-            </KpiCard>
-          </KpiSection>
+          {/* Only show KPI Cards if there are participants */}
+          {analyticsData.completedSurveysCount > 0 ? (
+            <KpiSection>
+              <KpiCard>
+                <KpiIcon>
+                  <FaUsers size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Total Participants</h4>
+                  <ParticipantsContent surveyId={surveyId} />
+                </KpiContent>
+              </KpiCard>
+              
+              <KpiCard>
+                <KpiIcon>
+                  <FaPercentage size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Response Rate</h4>
+                  <ResponseRateContent surveyId={surveyId} />
+                </KpiContent>
+              </KpiCard>
+              
+              {/* <KpiCard>
+                <KpiIcon>
+                  <FaChartPie size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Engagement Score</h4>
+                  <KpiValue>{analyticsData.engagementScore.toFixed(1)}</KpiValue>
+                  <KpiTrend trend="negative">-0.3 <span>vs prev. period</span></KpiTrend>
+                </KpiContent>
+              </KpiCard> */}
+              
+              <KpiCard>
+                <KpiIcon>
+                  <FaClock size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Avg. Completion Time</h4>
+                  <CompletionTimeContent surveyId={surveyId} />
+                </KpiContent>
+              </KpiCard>
+            </KpiSection>
+          ) : null}
           
-          <OverviewTab analyticsData={analyticsData} isLoading={isLoading} />
+          <OverviewTab analyticsData={analyticsData} isLoading={isLoading} surveyId={surveyId} />
+          
+          {/* No additional components needed */}
         </>
       )
     },
