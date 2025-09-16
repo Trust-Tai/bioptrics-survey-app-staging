@@ -18,7 +18,7 @@ import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } f
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
 import QuestionSelector from './sections/QuestionSelector';
-import SurveyQuestionsTab from './SurveyQuestionsTab';
+const SurveyQuestionsTab = React.lazy(() => import('./SurveyQuestionsTab'));
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import SectionEditor from './sections/SectionEditor';
@@ -30,6 +30,8 @@ import AppearanceTab from './builder/tabs/AppearanceTab/AppearanceTab';
 import BasicSurveyWelcomeSection from './builder/tabs/BasicSurveyWelcomeSection';
 import SectionsTab from './builder/tabs/SectionsTab';
 import { lazy, Suspense } from 'react';
+
+import AnalyticsTab from "./builder/tabs/AnalyticsTab"
 
 const CollaborationTab = lazy(() => import('./builder/tabs/CollaborationTab/CollaborationTab'));
 
@@ -77,7 +79,7 @@ interface SectionQuestion {
 
 // Import styles
 import './EnhancedSurveyBuilder.css';
-import AnalyticsTab from './builder/tabs/AnalyticsTab';
+
 import SurveyHeaderSection from './builder/tabs/SurveyHeaderSection';
 import ThemeCreationModal from './ThemeCreationModal';
 import ThemePreview from './ThemePreview';
@@ -857,11 +859,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         
           // Replace the missing Meteor method call with a subscription to the questions.bySurvey publication
           const questionsSub = Meteor.subscribe('questions.bySurvey', surveyId);
-          if (questionsSub.ready()) {
-            // Fetch questions from the collection directly
-            const questionsFromDB = Questions.find({}).fetch();
-            
-            // Map QuestionDoc objects to QuestionItem objects
+          if ((questionsSub as any).ready?.()) {
+            const questionsFromDB = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
             const mappedQuestions = questionsFromDB.map(question => {
               // Find the latest version of the question
               const latestVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
@@ -1123,8 +1122,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
 
   // Use Meteor's reactive data system to load questions and survey data
   const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
-    // Subscribe to all questions
-    const questionsSub = Meteor.subscribe('questions.all');
+    // Subscribe to only survey-specific questions to avoid loading all questions
+    const questionsSub = surveyId ? Meteor.subscribe('questions.bySurvey', surveyId) : { ready: () => true } as any;
     const themesSub = Meteor.subscribe('surveyThemes.all');
     const categoriesSub = Meteor.subscribe('wpsCategories.all');
     
@@ -1138,7 +1137,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       currentSurvey = surveysSub.ready() ? Surveys.findOne(surveyId) : null;
     }
     
-    const isLoading = !questionsSub.ready() || !surveysSub.ready() || !themesSub.ready() || !categoriesSub.ready();
+    const isLoading = !surveysSub.ready() || !themesSub.ready() || !categoriesSub.ready() || !(questionsSub as any).ready?.();
     
     // Helper function to extract question text from the current version
     const getQuestionText = (question: any): string => {
@@ -1526,6 +1525,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // Track if there are unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [lastUserActivity, setLastUserActivity] = useState<number>(Date.now());
+  // Throttle frequent activity updates to prevent re-render storms on hover/mousemove
+  const lastActivityUpdateRef = useRef<number>(Date.now());
   const [lastSaved, setLastSaved] = useState<number | null>(null);
   const [showSavedMessage, setShowSavedMessage] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -1612,7 +1613,12 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // Function to update last user activity timestamp
   // Only tracks activity without marking changes
   const updateUserActivity = () => {
-    setLastUserActivity(Date.now());
+    const now = Date.now();
+    // Only update state at most once per 1000ms to avoid excessive re-renders on hover
+    if (now - lastActivityUpdateRef.current >= 1000) {
+      lastActivityUpdateRef.current = now;
+      setLastUserActivity(now);
+    }
   };
   
   // Function to track user activity that actually changes content
@@ -2163,39 +2169,9 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const handleAddQuestion = (sectionId: string | null) => {
     setCurrentSectionId(sectionId);
     
-    // First, ensure we're subscribed to the questions.all publication with the current surveyId
-    // This ensures we get both global questions and survey-specific questions for this survey
-    Meteor.subscribe('questions.all', surveyId, {
-      onReady: () => {
-        
-        // Now that we're subscribed, fetch the questions
-        const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
-          // Get the latest version to extract the response type and text
-          const latestVersion = getLatestQuestionVersion(q);
-          
-          // Create a properly typed QuestionItem
-          const questionItem: QuestionItem = {
-            id: q._id || '',
-            text: extractQuestionText(q), // Use our helper function to get clean question text
-            type: latestVersion?.responseType || 'text',
-            status: 'published'
-          };
-          
-          // Log question details for debugging
-          const isSurveySpecific = latestVersion?.saveToQuestionBank === false;
-          return questionItem;
-        });
-        
-        // Update the question selector items
-        setQuestionSelectorItems(refreshedQuestions);
-        setShowQuestionSelector(true);
-      },
-      onError: (error: any) => {
-        console.error('Error subscribing to questions.all:', error);
-        // Still show the selector with whatever questions we have
-        setShowQuestionSelector(true);
-      }
-    });
+    // Open selector; it will manage its own paginated subscription
+    setShowQuestionSelector(true);
+
   };
   
   // Get context methods for question builder panel
@@ -3173,10 +3149,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
               
               {/* Survey Questions Tab */}
               {activeStep === 'questions' && (
-                <SurveyQuestionsTab
-                  surveyId={surveyId}
-                  survey={survey}
-                  onSurveyUpdate={(updatedSurvey) => {
+                <Suspense fallback={<div style={{ padding: 20 }}>Loading questions…</div>}>
+                  <SurveyQuestionsTab
+                    surveyId={surveyId}
+                    survey={survey}
+                    onSurveyUpdate={(updatedSurvey) => {
                     // Debug log to track incoming surveyOrder from child component
                     console.log('Received surveyOrder in onSurveyUpdate:', updatedSurvey.surveyOrder);
                     
@@ -3226,6 +3203,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   }}
                   onHasUnsavedChanges={setHasUnsavedChanges}
                 />
+                </Suspense>
               )}
               
               {/* Other steps would be implemented here */}
@@ -3254,8 +3232,19 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   />
                 </div>
               ) : activeStep === 'analytics' ? (
-
-               <AnalyticsTab surveyId={survey?._id} />
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Analytics Dashboard</h2>
+                  </div>
+                  
+                  {survey?._id ? (
+                    <AnalyticsTab surveyId={survey._id} />
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                      <p>Please save the survey to view analytics.</p>
+                    </div>
+                  )}
+                </div>
               ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
@@ -3667,7 +3656,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           </div>
         )}
         
-        {/* Question Builder Side Panel is now managed by QuestionBuilderPanelContext provider */}
+      
       </DashboardBg>
     </AdminLayout>
   );

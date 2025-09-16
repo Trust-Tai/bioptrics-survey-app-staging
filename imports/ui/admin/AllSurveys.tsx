@@ -5,7 +5,6 @@ import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Counts } from 'meteor/tmeasday:publish-counts';
 import { Surveys } from '../../features/surveys/api/surveys';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
@@ -763,10 +762,10 @@ const AllSurveys: React.FC = () => {
   // Get the current user ID
   const userId = Meteor.userId();
 
-
-  // Fetch surveys data with dynamic pagination
+  // Optimized surveys data fetching with pagination support
   const { surveys, loading } = useTracker(() => {
-    // Calculate skip value based on current page and items per page
+    // Calculate skip based on current page and items per page
+
     const skip = (page - 1) * itemsPerPage;
     
     // Use dynamic limit and skip for proper pagination
