@@ -84,22 +84,14 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Load existing survey questions and sections when component mounts or survey changes
   useEffect(() => {
-    console.log('=== SurveyQuestionsTab useEffect triggered ===');
-    console.log('Survey data:', {
-      surveyOrder: survey?.surveyOrder,
-      sectionQuestions: survey?.sectionQuestions,
-      surveySections: survey?.surveySections
-    });
     
     // Load sections
     if (survey && survey.surveySections && Array.isArray(survey.surveySections)) {
-      console.log('Loading sections:', survey.surveySections);
       setSections(survey.surveySections);
     }
 
     // Load surveyOrder - this is now the single source of truth
     if (survey && survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
-      console.log('Loading survey from surveyOrder:', survey.surveyOrder);
       setSurveyOrder(survey.surveyOrder);
       
       // Extract question IDs from surveyOrder
@@ -109,13 +101,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
       
       if (questionIds.length > 0) {
         setIsQuestionsLoading(true);
-        console.log(`Found ${questionIds.length} question IDs in surveyOrder:`, questionIds);
         
         // Subscribe to get question details
-        const subscription = Meteor.subscribe('questions.all', surveyId, {
+        const subscription = Meteor.subscribe('questions.bySurvey', surveyId, {
           onReady: () => {
-            console.log('Question subscription ready, loading question data from surveyOrder');
-            console.log('Available sectionQuestions:', survey.sectionQuestions);
             
             const questions = questionIds.map((id: string) => {
               const questionDoc = Questions.findOne(id);
@@ -128,13 +117,10 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                   const sectionQuestion = survey.sectionQuestions.find((sq: any) => 
                     sq.id === id
                   );
-                  console.log(`Looking for question ${id} in sectionQuestions:`, sectionQuestion);
                   if (sectionQuestion) {
                     sectionId = sectionQuestion.sectionId;
                     order = sectionQuestion.order || 0;
-                    console.log(`Found section assignment: question ${id} -> section ${sectionId}`);
                   } else {
-                    console.log(`No section assignment found for question ${id}`);
                   }
                 }
                 
@@ -151,8 +137,6 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                   sectionId: sectionId,
                   order: orderItem?.order || order
                 };
-                
-                console.log(`Created question item:`, questionItem);
                 return questionItem;
               }
               return null;
@@ -160,8 +144,6 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
             
             // Sort questions by their order in surveyOrder
             questions.sort((a, b) => (a.order || 0) - (b.order || 0));
-            
-            console.log(`Final loaded questions:`, questions);
             setSurveyQuestions(questions);
             setIsQuestionsLoading(false);
           }
@@ -171,18 +153,22 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
           subscription.stop();
         };
       } else {
-        console.log('No question IDs found in surveyOrder');
         setSurveyQuestions([]);
         setIsQuestionsLoading(false);
       }
     } else {
-      console.log('No surveyOrder found, clearing questions');
       // Clear questions if survey has no surveyOrder
       setSurveyQuestions([]);
       setSurveyOrder([]);
       setIsQuestionsLoading(false);
     }
-  }, [survey?.surveyOrder, survey?.surveySections, survey?.sectionQuestions, survey?._id]);
+  }, [
+    surveyId,
+    JSON.stringify(survey?.surveyOrder || []),
+    JSON.stringify(survey?.surveySections || []),
+    JSON.stringify(survey?.sectionQuestions || []),
+    survey?._id
+  ]);
 
 
   const handleCreateQuestion = () => {
@@ -280,36 +266,8 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   const handleChooseFromQuestionBank = () => {
     console.log('Choose from Question Bank clicked');
-    
-    // Subscribe to questions and open the selector
-    Meteor.subscribe('questions.all', surveyId, {
-      onReady: () => {
-        // Fetch the questions
-        const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
-          // Get the latest version to extract the response type and text
-          const latestVersion = getLatestQuestionVersion(q);
-          
-          // Create a properly typed QuestionItem
-          const questionItem: QuestionItem = {
-            id: q._id || '',
-            text: extractQuestionText(q),
-            type: latestVersion?.responseType || 'text',
-            status: 'published' as 'published'
-          };
-          
-          return questionItem;
-        });
-        
-        // Update the question selector items
-        setQuestionSelectorItems(refreshedQuestions);
-        setShowQuestionSelector(true);
-      },
-      onError: (error: any) => {
-        console.error('Error subscribing to questions.all:', error);
-        // Still show the selector with whatever questions we have
-        setShowQuestionSelector(true);
-      }
-    });
+    // Open selector; it will handle its own paginated subscription
+    setShowQuestionSelector(true);
   };
 
   const handleEditQuestion = async (questionId: string) => {
@@ -1119,26 +1077,8 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   // Handle choosing from question bank for a specific section
   const handleChooseFromQuestionBankForSection = (sectionId: string) => {
     setCurrentSectionId(sectionId);
-    
-    Meteor.subscribe('questions.all', {
-      onReady: () => {
-        const refreshedQuestions = Questions.find({}, { sort: { createdAt: -1 } }).fetch().map(q => {
-          const latestVersion = getLatestQuestionVersion(q);
-          return {
-            id: q._id || '',
-            text: extractQuestionText(q),
-            type: latestVersion?.responseType || 'text',
-            status: 'published' as const
-          };
-        });
-        setQuestionSelectorItems(refreshedQuestions);
-        setShowQuestionSelector(true);
-      },
-      onError: (error: any) => {
-        console.error('Error subscribing to questions.all:', error);
-        setShowQuestionSelector(true);
-      }
-    });
+    // Open selector; it will handle its own paginated subscription
+    setShowQuestionSelector(true);
   };
 
   // Get drop zone classes for visual feedback
@@ -1262,8 +1202,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                     const latestVersion = questionDoc ? getLatestQuestionVersion(questionDoc) : null;
                     const isImported = latestVersion?.creationSource === 'imported';
                     
-                    // Log the creationSource for debugging
-                    console.log(`Question ID: ${question.id}, creationSource: ${latestVersion?.creationSource || 'undefined'}`);
+                    
                     
                     return (
                       <div 
@@ -1602,6 +1541,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
         selectedQuestionIds={surveyQuestions.map(q => q.id)}
         onSelectQuestions={handleSelectQuestions}
         sectionId={currentSectionId || ''}
+        surveyId={surveyId}
       />
 
       {/* Section Editor Modal */}
