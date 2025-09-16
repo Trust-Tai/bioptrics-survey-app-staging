@@ -804,6 +804,7 @@ const AllQuestions: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(25);
+  const [totalCount, setTotalCount] = useState<number>(0);
   
   // Folder management state
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>('all');
@@ -916,16 +917,26 @@ const AllQuestions: React.FC = () => {
     return map;
   }, [surveyThemes]);
   
-  // Subscribe to Questions collection
+  // Subscribe to Questions collection with pagination
   const { questions, loading } = useTracker(() => {
-    console.log('[AllQuestions] Subscribing to questions.all');
-    const handle = Meteor.subscribe('questions.all');
+    const skip = (currentPage - 1) * itemsPerPage;
+    const handle = Meteor.subscribe('questions.all', undefined, skip, itemsPerPage);
     return {
       loading: !handle.ready(),
-      // Sort by createdAt in descending order to show latest questions first
       questions: Questions.find({}, { sort: { createdAt: -1 } }).fetch()
     };
-  }, []);
+  }, [currentPage, itemsPerPage]);
+
+  // Fetch total count for pagination
+  useEffect(() => {
+    Meteor.call('questions.count', (err: any, res: number) => {
+      if (!err && typeof res === 'number') {
+        setTotalCount(res);
+        const maxPage = Math.max(1, Math.ceil(res / itemsPerPage));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      }
+    });
+  }, [itemsPerPage]);
 
   // Get question statistics from the new stats publication
   const [stats, setStats] = useState({
@@ -1214,7 +1225,7 @@ const AllQuestions: React.FC = () => {
         
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: '0.9rem', color: '#666' }}>
-            Showing {filteredQuestions.length} questions {searchTerm ? `matching "${searchTerm}"` : ''}
+            Total questions: {totalCount}
           </div>
         </div>
         
@@ -1380,7 +1391,7 @@ const AllQuestions: React.FC = () => {
           <>
             {filteredQuestions.length > 0 ? (
               <QuestionTableView 
-                questions={filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+                questions={filteredQuestions}
                 onPreview={(question) => {
                   setPreviewQuestion(question);
                   setPreviewOpen(true);
@@ -1425,7 +1436,11 @@ const AllQuestions: React.FC = () => {
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                 </select>
-                <span>Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredQuestions.length)} - {Math.min(currentPage * itemsPerPage, filteredQuestions.length)} of {filteredQuestions.length}</span>
+                <span>
+                  Showing {totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+                  {' '}-
+                  {' '}{Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}
+                </span>
               </div>
               
               <div>
@@ -1444,7 +1459,7 @@ const AllQuestions: React.FC = () => {
                 {(() => {
                   // Show current page and 2 pages before and after
                   const pageNumbers = [];
-                  const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
+                  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
                   
                   let startPage = Math.max(1, currentPage - 2);
                   let endPage = Math.min(totalPages, currentPage + 2);
@@ -1471,14 +1486,14 @@ const AllQuestions: React.FC = () => {
                   return pageNumbers;
                 })()}
                 <PaginationButton 
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredQuestions.length / itemsPerPage)))} 
-                  disabled={currentPage === Math.ceil(filteredQuestions.length / itemsPerPage)}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.max(1, Math.ceil(totalCount / itemsPerPage))))} 
+                  disabled={currentPage === Math.max(1, Math.ceil(totalCount / itemsPerPage))}
                 >
                   Next
                 </PaginationButton>
                 <PaginationButton 
-                  onClick={() => setCurrentPage(Math.ceil(filteredQuestions.length / itemsPerPage))} 
-                  disabled={currentPage === Math.ceil(filteredQuestions.length / itemsPerPage)}
+                  onClick={() => setCurrentPage(Math.max(1, Math.ceil(totalCount / itemsPerPage)))} 
+                  disabled={currentPage === Math.max(1, Math.ceil(totalCount / itemsPerPage))}
                 >
                   Last
                 </PaginationButton>
