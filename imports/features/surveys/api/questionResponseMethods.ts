@@ -3,6 +3,16 @@ import { check } from 'meteor/check';
 import { SurveyResponses } from './surveyResponses';
 import { Questions } from '../../questions/api/questions';
 
+// Interface for question response statistics
+export interface QuestionResponseStats {
+  totalQuestions: number;
+  answeredQuestions: number;
+  skippedQuestions: number;
+  answeredPercentage: number;
+  skippedPercentage: number;
+  totalResponses: number;
+}
+
 // Helper function to get colors for chart
 function getColorForIndex(index: number) {
   const colors = [
@@ -16,8 +26,123 @@ function getColorForIndex(index: number) {
   return index < colors.length ? colors[index] : '#6495ED'; // Default to blue for additional options
 }
 
+import { Surveys } from './surveys';
+
 if (Meteor.isServer) {
   Meteor.methods({
+    // Method to calculate answered and skipped question percentages
+    async 'surveys.getQuestionResponseStats'(surveyId: string): Promise<QuestionResponseStats> {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access survey data');
+      }
+      
+      try {
+        console.log(`[SERVER] Calculating question response stats for survey: ${surveyId}`);
+        
+        // Get the survey using findOneAsync
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        if (!survey) {
+          throw new Meteor.Error('not-found', 'Survey not found');
+        }
+        
+        // Count total questions from surveyOrder field
+        let totalQuestions = 0;
+        const questionIds: string[] = [];
+        
+        if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+          // Filter items with type 'question' and extract their IDs
+          survey.surveyOrder
+            .filter(item => item.type === 'question')
+            .forEach(item => questionIds.push(item.id));
+          
+          totalQuestions = questionIds.length;
+        }
+        
+        if (totalQuestions === 0) {
+          return {
+            totalQuestions: 0,
+            answeredQuestions: 0,
+            skippedQuestions: 0,
+            answeredPercentage: 0,
+            skippedPercentage: 0,
+            totalResponses: 0
+          };
+        }
+        
+        // Get all responses for this survey
+        const surveyResponses = await SurveyResponses.find({ surveyId }).fetchAsync();
+        const totalResponses = surveyResponses.length;
+        
+        // Track which questions have been answered
+        const answeredQuestionMap: Record<string, boolean> = {};
+        
+        // Check each response to see which questions were answered
+        surveyResponses.forEach(response => {
+          if (response.responses && Array.isArray(response.responses)) {
+            response.responses.forEach(answer => {
+              if (questionIds.includes(answer.questionId) && 
+                  answer.answer !== null && 
+                  answer.answer !== undefined && 
+                  answer.answer !== '') {
+                answeredQuestionMap[answer.questionId] = true;
+              }
+            });
+          }
+        });
+        
+        // Count answered and skipped questions
+        const answeredQuestions = Object.keys(answeredQuestionMap).length;
+        const skippedQuestions = totalQuestions - answeredQuestions;
+        
+        // Calculate percentages
+        const answeredPercentage = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
+        const skippedPercentage = totalQuestions > 0 ? Math.round((skippedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log(`[SERVER] Stats: ${answeredQuestions}/${totalQuestions} questions answered (${answeredPercentage}%)`);
+        
+        return {
+          totalQuestions,
+          answeredQuestions,
+          skippedQuestions,
+          answeredPercentage,
+          skippedPercentage,
+          totalResponses
+        };
+      } catch (error: any) {
+        console.error('[SERVER] Error calculating question response stats:', error);
+        throw new Meteor.Error('server-error', `Failed to calculate question response stats: ${error.message}`);
+      }
+    },
+    // Method to get total question count for a specific survey
+    async 'surveys.getTotalQuestionCount'(surveyId: string) {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access survey data');
+      }
+      
+      try {
+        console.log(`[SERVER] Getting total question count for survey: ${surveyId}`);
+        
+        // Get the survey using findOneAsync
+        const survey = await Surveys.findOneAsync({ _id: surveyId });
+        if (!survey) {
+          throw new Meteor.Error('not-found', 'Survey not found');
+        }
+        
+        // Count questions from surveyOrder field
+        let questionCount = 0;
+        if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+          questionCount = survey.surveyOrder.filter(item => item.type === 'question').length;
+        }
+        
+        console.log(`[SERVER] Found ${questionCount} questions for survey ${surveyId}`);
+        return questionCount;
+      } catch (error: any) {
+        console.error('[SERVER] Error getting question count:', error);
+        throw new Meteor.Error('server-error', `Failed to get question count: ${error.message}`);
+      }
+    },
     // Method to get response data for a specific question for export
     async 'questions.exportResponseData'(questionId: string) {
       check(questionId, String);

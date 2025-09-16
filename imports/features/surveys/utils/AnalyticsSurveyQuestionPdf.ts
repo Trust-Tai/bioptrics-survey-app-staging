@@ -519,14 +519,14 @@ const generatePDF = (reportData: SurveyReportData) => {
                   <h3 class="subsection-title" style="display: none;">${childTag.name}</h3>
                   <p class="subsection-description" style="display: none;">${childTag.description}</p>
                   
-                  ${childTag.questions.map(question => `
+                  ${childTag.questions.map((question, questionIndex) => `
                       <div style="background-color: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); padding: 24px; margin-bottom: 24px; page-break-inside: avoid;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                          <h4 style="font-size: 16px; font-weight: 500; color: #1e293b; margin: 0;">${question.title}</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                          <div style="font-size: 16px; font-weight: 500; color: #1e293b; max-width: 80%;"><span style="font-weight: 700;">Question ${questionIndex + 1}:</span> ${question.title.replace(/\n/g, ' ').replace(/<br\s*\/?>/gi, ' ')}</div>
                           <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: #552a47; color: white;">${question.categoryTags && question.categoryTags.length > 0 ? question.categoryTags[0] : 'Unknown'}</span>
                         </div>
                         
-                        <p style="font-size: 14px; font-weight: 500; color: #46223b; margin-bottom: 15px;">
+                        <p style="display:none; font-size: 14px; font-weight: 500; color: #46223b; margin-bottom: 15px;">
                           ${question.responseOverview}
                         </p>
                         
