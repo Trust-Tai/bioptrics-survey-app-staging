@@ -24,6 +24,7 @@ import { useQuestionBuilderPanel } from '../../../features/questions/contexts/Qu
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
+import SurveyAnalyticsTab from './analytics/SurveyAnalyticsTab';
 
 import { SettingsTab } from './builder/tabs/SettingsTab/SettingsTab';
 import AppearanceTab from './builder/tabs/AppearanceTab/AppearanceTab';
@@ -3254,8 +3255,18 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   />
                 </div>
               ) : activeStep === 'analytics' ? (
-
-               <AnalyticsTab surveyId={survey?._id} />
+                <div className="survey-builder-panel">
+                  <div className="survey-builder-panel-header">
+                    <h2 className="survey-builder-panel-title">Analytics Dashboard</h2>
+                  </div>
+                  {survey?._id ? (
+                    <SurveyAnalyticsTab surveyId={survey._id} />
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                      <p>Please save the survey to view analytics.</p>
+                    </div>
+                  )}
+                </div>
               ) : activeStep === 'appearance' ? (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">

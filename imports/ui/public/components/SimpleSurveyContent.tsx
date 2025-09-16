@@ -6,6 +6,11 @@ import ModernSurveySection from './ModernSurveySection';
 import ModernSurveyQuestion from './ModernSurveyQuestion';
 import ModernSurveyThankYou from './ModernSurveyThankYou';
 
+// Import new layout components
+import ConsentScreen from '../frontend/components/ConsentScreen';
+import StepByStepLayout from '../frontend/layouts/StepByStepLayout';
+import AllOnOnePageLayout from '../frontend/layouts/AllOnOnePageLayout';
+
 // Clean, simplified interfaces
 interface Question {
   _id: string;
@@ -358,11 +363,62 @@ const SimpleSurveyContent: React.FC<SimpleSurveyContentProps> = ({
     }
   };
 
-  return (
-    <ContentContainer>
-      {renderContent()}
-    </ContentContainer>
-  );
+  // Use the new layout components based on survey.layout property
+  if (survey.layout === 'allOnOnePage') {
+    return (
+      <AllOnOnePageLayout
+        survey={survey}
+        sections={sections}
+        questions={questions}
+        responses={responses}
+        onAnswer={(questionId: string, answer: any) => {
+          setResponses(prev => ({
+            ...prev,
+            [questionId]: answer
+          }));
+        }}
+        onSubmit={handleSubmit}
+        isSubmitted={isSubmitted}
+      />
+    );
+  } else {
+    // Default to step-by-step layout
+    return (
+      <ContentContainer>
+        {currentStep.type === 'welcome' ? (
+          <ModernSurveyWelcome
+            survey={{
+              ...survey,
+              questionCount: questions.length,
+              sectionCount: sections.length,
+              estimatedTime: `${Math.max(1, Math.ceil(questions.length * 0.5))} min`
+            }}
+            onStart={handleStart}
+            totalQuestions={questions.length}
+            totalSections={sections.length}
+          />
+        ) : isSubmitted || currentStep.type === 'thank-you' ? (
+          <ModernSurveyThankYou survey={survey} />
+        ) : (
+          <StepByStepLayout
+            survey={survey}
+            sections={sections}
+            questions={questions}
+            currentStep={currentStep.type === 'section' 
+              ? { type: 'section', id: currentStep.sectionId } 
+              : { type: 'question', id: currentStep.questionId }
+            }
+            responses={responses}
+            onAnswer={handleQuestionAnswer}
+            onNext={handleNext}
+            onBack={handleBack}
+            onSubmit={handleSubmit}
+            isSubmitted={isSubmitted}
+          />
+        )}
+      </ContentContainer>
+    );
+  }
 };
 
 export default SimpleSurveyContent;
