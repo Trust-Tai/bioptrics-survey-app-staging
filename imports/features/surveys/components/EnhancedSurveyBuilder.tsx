@@ -24,12 +24,15 @@ import { useQuestionBuilderPanel } from '../../../features/questions/contexts/Qu
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
+
 import { SettingsTab } from './builder/tabs/SettingsTab/SettingsTab';
 import AppearanceTab from './builder/tabs/AppearanceTab/AppearanceTab';
 import BasicSurveyWelcomeSection from './builder/tabs/BasicSurveyWelcomeSection';
 import SectionsTab from './builder/tabs/SectionsTab';
 import { lazy, Suspense } from 'react';
+
 import AnalyticsTab from "./builder/tabs/AnalyticsTab"
+
 const CollaborationTab = lazy(() => import('./builder/tabs/CollaborationTab/CollaborationTab'));
 
 // Import existing components we'll reuse
@@ -76,6 +79,7 @@ interface SectionQuestion {
 
 // Import styles
 import './EnhancedSurveyBuilder.css';
+
 import SurveyHeaderSection from './builder/tabs/SurveyHeaderSection';
 import ThemeCreationModal from './ThemeCreationModal';
 import ThemePreview from './ThemePreview';
@@ -2167,6 +2171,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     
     // Open selector; it will manage its own paginated subscription
     setShowQuestionSelector(true);
+
   };
   
   // Get context methods for question builder panel

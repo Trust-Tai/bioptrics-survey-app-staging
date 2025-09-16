@@ -243,6 +243,3 @@ export const formatTagsForDisplay = (tags: Layer[]): string[] => {
 
 
 
-
-
-

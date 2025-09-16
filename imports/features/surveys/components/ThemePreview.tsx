@@ -191,5 +191,3 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ theme, open, onClose }) => 
 export default ThemePreview;
 
 
-
-
