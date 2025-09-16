@@ -1480,6 +1480,138 @@ if (Meteor.isServer) {
       }
     },
     
+    // Get total participants count including incomplete responses
+    async 'getTotalParticipantsCount'(surveyIds: string[]) {
+      console.log('getTotalParticipantsCount method called with surveyIds:', surveyIds);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get participants count');
+      }
+      
+      try {
+        // Check if collections exist
+        console.log('SurveyResponses collection exists:', !!SurveyResponses);
+        console.log('IncompleteSurveyResponses collection exists:', !!IncompleteSurveyResponses);
+        
+        // Default date range: last 30 days
+        let startDateFilter = new Date();
+        startDateFilter.setDate(startDateFilter.getDate() - 30);
+        
+        // Build query for completed surveys
+        const completedQuery: any = {
+          completed: true
+          // Removing date filter to get all responses
+        };
+        
+        // Add survey filter if provided
+        if (surveyIds && surveyIds.length > 0) {
+          completedQuery.surveyId = { $in: surveyIds };
+        }
+        
+        console.log('Completed survey query:', JSON.stringify(completedQuery));
+        
+        // Count completed responses
+        const completedCount = await SurveyResponses.find(completedQuery).countAsync();
+        console.log(`Found ${completedCount} completed responses`);
+        
+        // Get a sample of completed responses to verify data
+        const sampleCompleted = await SurveyResponses.find(completedQuery, { limit: 2 }).fetchAsync();
+        console.log('Sample completed responses:', sampleCompleted.map(r => ({ _id: r._id, surveyId: r.surveyId })));
+        
+        // Build query for incomplete surveys
+        const incompleteQuery: any = {
+          isCompleted: false
+          // Removing other filters to get all incomplete responses
+        };
+        
+        // Add survey filter if provided
+        if (surveyIds && surveyIds.length > 0) {
+          incompleteQuery.surveyId = { $in: surveyIds };
+        }
+        
+        console.log('Incomplete survey query:', JSON.stringify(incompleteQuery));
+        
+        // Count incomplete responses
+        const incompleteCount = await IncompleteSurveyResponses.find(incompleteQuery).countAsync();
+        console.log(`Found ${incompleteCount} incomplete responses`);
+        
+        // Get a sample of incomplete responses to verify data
+        const sampleIncomplete = await IncompleteSurveyResponses.find(incompleteQuery, { limit: 2 }).fetchAsync();
+        console.log('Sample incomplete responses:', sampleIncomplete.map(r => ({ _id: r._id, surveyId: r.surveyId, isAbandoned: r.isAbandoned })));
+        
+        // Calculate total participants
+        const totalCount = completedCount + incompleteCount;
+        console.log(`Total participants: ${totalCount} (${completedCount} completed + ${incompleteCount} incomplete)`);
+        
+        return totalCount;
+      } catch (error: unknown) {
+        console.error('Error calculating total participants count:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating total participants count: ${errorMessage}`);
+      }
+    },
+    
+    // Get accurate completion time for selected surveys
+    async 'getAccurateCompletionTime'(surveyIds: string[]) {
+      console.log('getAccurateCompletionTime method called with surveyIds:', surveyIds);
+      
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to get completion time');
+      }
+      
+      try {
+        // Query completed responses with completion time
+        const query: any = {
+          completed: true,
+          completionTime: { $exists: true, $ne: null }
+        };
+        
+        // Add survey filter if provided
+        if (surveyIds && surveyIds.length > 0) {
+          query.surveyId = { $in: surveyIds };
+        }
+        
+        // Find all completed responses with filters
+        const responses = await SurveyResponses.find(query).fetchAsync();
+        
+        if (responses.length === 0) {
+          return 0;
+        }
+        
+        // Calculate average completion time in seconds
+        let totalCompletionTime = 0;
+        let validResponseCount = 0;
+        
+        responses.forEach(response => {
+          if (response.completionTime && response.completionTime > 0) {
+            // The database stores completion time in minutes (e.g., 5.309 means 5.309 minutes)
+            // We keep the calculation in minutes to match the Analytics Dashboard
+            totalCompletionTime += response.completionTime;
+            validResponseCount++;
+          }
+        });
+        
+        if (validResponseCount === 0) {
+          return 0;
+        }
+        
+        // Calculate average completion time in minutes
+        const avgCompletionTimeMinutes = totalCompletionTime / validResponseCount;
+        
+        // Convert to seconds for the Export Reports view
+        // This ensures the time is displayed consistently with the Analytics Dashboard
+        const avgCompletionTimeSeconds = avgCompletionTimeMinutes * 60;
+        
+        console.log(`Accurate average completion time: ${avgCompletionTimeMinutes.toFixed(1)} minutes (${avgCompletionTimeSeconds.toFixed(1)} seconds)`);
+        
+        return avgCompletionTimeSeconds;
+      } catch (error: unknown) {
+        console.error('Error calculating accurate completion time:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('db-error', `Error calculating accurate completion time: ${errorMessage}`);
+      }
+    },
+    
     // Get enhanced completion time with optional filters
     async 'getResponseTrendsData'(filterParams?: { 
       surveyIds?: string[], 
