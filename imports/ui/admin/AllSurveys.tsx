@@ -973,6 +973,8 @@ const AllSurveys: React.FC = () => {
   const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
   const paginated = filtered; // No client-side slicing since server handles pagination
 
+  const paginatedSurveys = filtered;
+
   useEffect(() => {
     setPage(1);
   }, [search, statusFilter, createdByFilter]);
