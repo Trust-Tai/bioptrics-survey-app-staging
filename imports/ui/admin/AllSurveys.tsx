@@ -973,7 +973,6 @@ const AllSurveys: React.FC = () => {
 
   const paginatedSurveys = filtered;
 
-  const paginatedSurveys = filtered;
 
   useEffect(() => {
     setPage(1);

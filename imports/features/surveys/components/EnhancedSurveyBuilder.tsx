@@ -18,7 +18,7 @@ import { FaUsers, FaTags, FaChartPie, FaHeart, FaClock, FaPercentage, FaCopy } f
 // Import our new components
 import EnhancedSurveySection from './sections/EnhancedSurveySection';
 import QuestionSelector from './sections/QuestionSelector';
-const SurveyQuestionsTab = React.lazy(() => import('./SurveyQuestionsTab'));
+import SurveyQuestionsTab from './SurveyQuestionsTab';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import SectionEditor from './sections/SectionEditor';
@@ -1123,8 +1123,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
 
   // Use Meteor's reactive data system to load questions and survey data
   const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
-    // Subscribe to only survey-specific questions to avoid loading all questions
-    const questionsSub = surveyId ? Meteor.subscribe('questions.bySurvey', surveyId) : { ready: () => true } as any;
+    // Subscribe to all questions
+    const questionsSub = Meteor.subscribe('questions.all');
     const themesSub = Meteor.subscribe('surveyThemes.all');
     const categoriesSub = Meteor.subscribe('wpsCategories.all');
     
