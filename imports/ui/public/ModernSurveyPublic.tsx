@@ -6,6 +6,8 @@ import styled from 'styled-components';
 import { decryptToken } from '../../utils/tokenUtils';
 import { Surveys } from '../../features/surveys/api/surveys';
 
+// Import our new layout bridge component
+import SurveyLayoutBridge from './frontend/SurveyLayoutBridge';
 import SimpleSurveyContent from './components/SimpleSurveyContent';
 
 import ModernSurveyLoader from './components/ModernSurveyLoader';
@@ -398,12 +400,20 @@ const ModernSurveyPublic: React.FC = () => {
         </Header>
         <MainContent>
 
-          <SimpleSurveyContent 
-
-            survey={surveyData} 
-            isPreviewMode={isPreviewMode} 
-            token={token || ''}
-          />
+          {/* Use our new layout bridge for surveys with layout property */}
+          {surveyData.layout ? (
+            <SurveyLayoutBridge
+              survey={surveyData}
+              isPreviewMode={isPreviewMode}
+              token={token || ''}
+            />
+          ) : (
+            <SimpleSurveyContent
+              survey={surveyData}
+              isPreviewMode={isPreviewMode}
+              token={token || ''}
+            />
+          )}
           {/* Add real-time analytics tracker (invisible component) */}
           {!isPreviewMode && surveyData._id && (
             <RealTimeTracker
