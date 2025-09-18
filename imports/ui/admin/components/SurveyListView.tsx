@@ -334,6 +334,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
             onClick={() => handleSort('title')}
           >
             SURVEY {renderSortIcon('title')}
+            
           </TableHeaderCell>
           <TableHeaderCell 
             sortable 
@@ -351,7 +352,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
             sortable 
             onClick={() => handleSort('createdBy')}
           >
-            CREATED BY {renderSortIcon('createdBy')}
+            AUDIENCE {renderSortIcon('createdBy')}
           </TableHeaderCell>
           <TableHeaderCell 
             sortable 
@@ -418,7 +419,9 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                   textDecoration: 'none'
                 }}>
               <TableCell>
-                {survey.title}
+                <div>{survey.title}</div>
+                <div style={{ fontSize: '12px', color: '#6c757d' }}>{survey.createdByName || 'System'}</div>
+                
                 {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
                   {survey.description ? survey.description.substring(0, 100) + (survey.description.length > 100 ? '...' : '') : ''}
                 </div> */}
@@ -435,7 +438,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                   {survey.sectionQuestions?.length || 0} {(survey.sectionQuestions?.length || 0) === 1 ? 'Question' : 'Questions'}
                 </div>
               </TableCell>
-              <TableCell>{survey.createdByName || 'System'}</TableCell>
+              {/* <TableCell>{survey.createdByName || 'System'}</TableCell> */}
               <TableCell>
                 {updatedDate}
                 {isNewSurvey && (
