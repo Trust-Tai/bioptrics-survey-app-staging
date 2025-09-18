@@ -162,6 +162,12 @@ export interface SurveyDoc {
   isActive?: boolean;
   priority?: number;
   keywords?: string[];
+  // Response statistics
+  responseStats?: {
+    total: number;
+    completed: number;
+    completion: number;
+  };
 }
 
 // Import SurveyResponseDoc from the dedicated file

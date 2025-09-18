@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Meteor } from 'meteor/meteor';
+import { useTracker } from 'meteor/react-meteor-data';
 import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { Layers } from '/imports/api/layers';
 
 // Styled components
 const Table = styled.table`
@@ -117,6 +119,44 @@ const StatusBadge = styled.span<{ status: string }>`
   }
 `;
 
+const TagBadge = styled.span<{ color?: string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: ${props => props.color || '#e3f2fd'};
+  color: ${props => props.color ? '#ffffff' : '#1976d2'};
+  margin-right: 4px;
+  margin-bottom: 2px;
+  border: 1px solid ${props => props.color ? 'transparent' : 'rgba(25, 118, 210, 0.2)'};
+  
+  &:last-child {
+    margin-right: 0;
+  }
+`;
+
+const TagsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  max-width: 200px;
+`;
+
+const MoreTagsIndicator = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: #f5f5f5;
+  color: #666666;
+  border: 1px solid #e0e0e0;
+`;
+
 const DropdownButton = styled.button`
   display: flex;
   align-items: center;
@@ -172,7 +212,7 @@ interface SurveyListViewProps {
 }
 
 // Define type for sort field
-type SortField = 'title' | 'status' | 'structure' | 'createdBy' | 'updatedAt' | null;
+type SortField = 'title' | 'status' | 'structure' | 'createdBy' | 'updatedAt' | 'tags' | 'responses' | null;
 
 // Define type for sort direction
 type SortDirection = 'asc' | 'desc';
@@ -197,6 +237,51 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
+  // Fetch all layers (tags) for display
+  const { layers } = useTracker(() => {
+    const subscription = Meteor.subscribe('layers.all');
+    return {
+      layers: Layers.find({}).fetch(),
+      loading: !subscription.ready()
+    };
+  }, []);
+  
+  console.log("Surveys", surveys)
+
+  // Component to render survey tags
+  const renderSurveyTags = (selectedTags: string[] = []) => {
+    if (!selectedTags || selectedTags.length === 0) {
+      return <span style={{ color: '#999', fontSize: '12px' }}>No tags</span>;
+    }
+
+    // Get tag details from layers
+    const tagDetails = selectedTags
+      .map(tagId => layers.find(layer => layer._id === tagId))
+      .filter(Boolean);
+
+    // Show only first 2 tags, then "+" indicator if more
+    const displayTags = tagDetails.slice(0, 2);
+    const remainingCount = tagDetails.length - 2;
+
+    return (
+      <TagsContainer>
+        {displayTags.map((tag, index) => {
+          if (!tag) return null;
+          return (
+            <TagBadge key={tag._id || index} color={tag.color}>
+              {tag.name}
+            </TagBadge>
+          );
+        })}
+        {remainingCount > 0 && (
+          <MoreTagsIndicator>
+            +{remainingCount}
+          </MoreTagsIndicator>
+        )}
+      </TagsContainer>
+    );
+  };
+
   // Handle click outside to close dropdown
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -298,6 +383,16 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
         const dateB = new Date(b.updatedAt).getTime();
         comparison = dateA - dateB;
         break;
+      case 'tags':
+        const tagsA = a.selectedTags?.length || 0;
+        const tagsB = b.selectedTags?.length || 0;
+        comparison = tagsA - tagsB;
+        break;
+      case 'responses':
+        const responsesA = a.responseStats?.total || 0;
+        const responsesB = b.responseStats?.total || 0;
+        comparison = responsesA - responsesB;
+        break;
       default:
         return 0;
     }
@@ -350,10 +445,22 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           </TableHeaderCell>
           <TableHeaderCell 
             sortable 
+            onClick={() => handleSort('tags')}
+          >
+            TAGS {renderSortIcon('tags')}
+          </TableHeaderCell>
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('responses')}
+          >
+            RESPONSES {renderSortIcon('responses')}
+          </TableHeaderCell>
+          {/* <TableHeaderCell 
+            sortable 
             onClick={() => handleSort('createdBy')}
           >
             AUDIENCE {renderSortIcon('createdBy')}
-          </TableHeaderCell>
+          </TableHeaderCell> */}
           <TableHeaderCell 
             sortable 
             onClick={() => handleSort('updatedAt')}
@@ -366,7 +473,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
       <TableBody>
         {loading ? (
           <tr>
-            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0' }}>
+            <td colSpan={8} style={{ textAlign: 'center', padding: '30px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ width: '20px', height: '20px', border: '4px solid var(--color-accent)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
               </div>
@@ -380,7 +487,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           </tr>
         ) : sortedSurveys && sortedSurveys.length === 0 ? (
           <tr>
-            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0', color: 'var(--color-text)' }}>
+            <td colSpan={8} style={{ textAlign: 'center', padding: '30px 0', color: 'var(--color-text)' }}>
               No surveys found matching your filters.
             </td>
           </tr>
@@ -437,6 +544,19 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 <div style={{ fontSize: '12px', color: '#6c757d' }}>
                   {survey.sectionQuestions?.length || 0} {(survey.sectionQuestions?.length || 0) === 1 ? 'Question' : 'Questions'}
                 </div>
+              </TableCell>
+              <TableCell>
+                {renderSurveyTags(survey.selectedTags)}
+              </TableCell>
+              <TableCell>
+                <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                  {survey.responseStats?.completed || 0}/{survey.responseStats?.total || 0}
+                </div>
+                {survey.responseStats?.completion !== undefined && (
+                  <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                    {Math.round(survey.responseStats.completion)}% complete
+                  </div>
+                )}
               </TableCell>
               {/* <TableCell>{survey.createdByName || 'System'}</TableCell> */}
               <TableCell>
