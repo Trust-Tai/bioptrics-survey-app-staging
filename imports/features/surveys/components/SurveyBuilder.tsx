@@ -67,6 +67,12 @@ interface SurveyForm {
     allowedGroups?: string[];
     passwordProtected?: boolean;
     accessPassword?: string;
+    // Survey retake settings
+    allowRetake?: boolean;
+    retakeMode?: 'replace' | 'new';
+    // Response limit settings
+    limitResponses?: boolean;
+    maxResponses?: number;
   };
   branchingLogic?: {
     rules: Array<{

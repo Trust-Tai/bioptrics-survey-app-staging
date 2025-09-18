@@ -64,6 +64,12 @@ interface SurveyForm {
     allowedGroups?: string[];
     passwordProtected?: boolean;
     accessPassword?: string;
+    // Survey retake settings
+    allowRetake?: boolean;
+    retakeMode?: 'replace' | 'new';
+    // Response limit settings
+    limitResponses?: boolean;
+    maxResponses?: number;
   };
   branchingLogic?: {
     rules: Array<{
@@ -241,6 +247,12 @@ const [copied, setCopied] = useState(false);
     allowedGroups?: string[];
     passwordProtected?: boolean;
     accessPassword?: string;
+    // Survey retake settings
+    allowRetake?: boolean;
+    retakeMode?: 'replace' | 'new';
+    // Response limit settings
+    limitResponses?: boolean;
+    maxResponses?: number;
   }
   
   // Default settings state
@@ -258,6 +270,12 @@ const [copied, setCopied] = useState(false);
     responseLimit: 0,
     themes: [] as string[],
     categories: [] as string[],
+    // Survey retake settings
+    allowRetake: true,
+    retakeMode: 'replace',
+    // Response limit settings
+    limitResponses: false,
+    maxResponses: undefined,
   });
   
   // State for default settings panel visibility
@@ -449,6 +467,39 @@ const [copied, setCopied] = useState(false);
           }
         } else {
           setPublishedLink(null);
+        }
+        
+        // Load defaultSettings from survey data
+        if (survey.defaultSettings) {
+          setDefaultSettings({
+            allowAnonymous: survey.defaultSettings.allowAnonymous ?? true,
+            requireLogin: survey.defaultSettings.requireLogin ?? false,
+            showProgressBar: survey.defaultSettings.showProgressBar ?? true,
+            allowSave: survey.defaultSettings.allowSave ?? true,
+            allowSkip: survey.defaultSettings.allowSkip ?? false,
+            showThankYou: survey.defaultSettings.showThankYou ?? true,
+            thankYouMessage: survey.defaultSettings.thankYouMessage ?? 'Thank you for completing this survey! Your feedback is valuable to us.',
+            redirectUrl: survey.defaultSettings.redirectUrl ?? '',
+            notificationEmails: survey.defaultSettings.notificationEmails ?? [],
+            expiryDate: survey.defaultSettings.expiryDate,
+            responseLimit: survey.defaultSettings.responseLimit ?? 0,
+            themes: survey.defaultSettings.themes ?? [],
+            categories: survey.defaultSettings.categories ?? [],
+            startDate: survey.defaultSettings.startDate,
+            autoPublish: survey.defaultSettings.autoPublish,
+            recurringSchedule: survey.defaultSettings.recurringSchedule,
+            recurringFrequency: survey.defaultSettings.recurringFrequency,
+            restrictAccess: survey.defaultSettings.restrictAccess,
+            allowedGroups: survey.defaultSettings.allowedGroups,
+            passwordProtected: survey.defaultSettings.passwordProtected,
+            accessPassword: survey.defaultSettings.accessPassword,
+            // Survey retake settings
+            allowRetake: survey.defaultSettings.allowRetake ?? true,
+            retakeMode: survey.defaultSettings.retakeMode ?? 'replace',
+            // Response limit settings
+            limitResponses: survey.defaultSettings.limitResponses ?? false,
+            maxResponses: survey.defaultSettings.maxResponses,
+          });
         }
       }
       setLoadingSurvey(false);
