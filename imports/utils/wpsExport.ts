@@ -6,7 +6,7 @@ export function buildJSONExport(filteredQuestions: { question: string; standard:
   const standardOrderCount: Record<string, number> = {};
   type RatingQuestion = {
     text: string;
-    responseType: 'rating';
+    responseType: 'likert';
     sectionId: string;
     order: number;
     options: { value: string; label: string }[];
@@ -46,7 +46,7 @@ export function buildJSONExport(filteredQuestions: { question: string; standard:
     // Add question to questionsSet (filtered questions)
     questionsSet.push({
       text: q.question,
-      responseType: "rating",
+      responseType: "likert",
       sectionId: q.standard ? q.standard.toLowerCase().replace(/\s+/g, '-') : '',
       order: standardOrderCount[q.standard],
       options: [
