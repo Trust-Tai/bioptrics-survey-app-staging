@@ -22,6 +22,7 @@ interface QuestionRendererProps {
   max?: number;
   currentStep?: number;
   totalSteps?: number;
+  image?: string; // Add image property
 }
 
 const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -35,8 +36,29 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   min = 1,
   max = 5,
   currentStep,
-  totalSteps
+  totalSteps,
+  image,
 }) => {
+  // Debug image data
+  React.useEffect(() => {
+    console.log('QuestionRenderer props:', {
+      questionText,
+      hasImage: !!image,
+      imageType: image ? typeof image : 'none',
+      imageLength: image ? image.length : 0,
+      imageStart: image ? image.substring(0, 50) + '...' : 'none',
+      startsWithData: image ? image.startsWith('data:') : false
+    });
+    
+    if (image) {
+      console.log('Question has image data:', image.substring(0, 50) + '...');
+      console.log('Image data type:', typeof image);
+      console.log('Image data length:', image.length);
+      console.log('Image starts with data:image?', image.startsWith('data:image'));
+    } else {
+      console.log('Question has no image data', questionText);
+    }
+  }, [image, questionText]);
   // Render different question types based on questionType prop
   const renderQuestionInput = () => {
     switch (questionType) {
@@ -341,12 +363,32 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
   return (
     <QuestionContainer>
-      {currentStep && totalSteps && (
+      {/* {currentStep && totalSteps && (
         <StepIndicator>
           STEP {currentStep}/{totalSteps}
         </StepIndicator>
-      )}
+      )} */}
       <QuestionText dangerouslySetInnerHTML={{ __html: questionText }} />
+      
+      {/* Display image if available */}
+      {image && (
+        <QuestionImageContainer>
+          <QuestionImage 
+            src={image.startsWith('data:') ? image : `data:image/png;base64,${image}`} 
+            alt="Question visual" 
+            onError={(e) => {
+              console.error('Image failed to load:', e);
+              // Try alternative format if initial load fails
+              const imgElement = e.target as HTMLImageElement;
+              if (!imgElement.src.startsWith('data:image/jpeg')) {
+                console.log('Trying JPEG format instead of PNG');
+                imgElement.src = `data:image/jpeg;base64,${image}`;
+              }
+            }}
+          />
+        </QuestionImageContainer>
+      )}
+      
       {renderQuestionInput()}
       {required && !value && <RequiredIndicator>* Required</RequiredIndicator>}
     </QuestionContainer>
@@ -619,6 +661,40 @@ const StepIndicator = styled.div`
   margin-bottom: 1.5rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+`;
+
+// Question image styles
+const QuestionImageContainer = styled.div`
+  margin: 1rem 0 2rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 100%;
+`;
+
+const QuestionImage = styled.img`
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 0 auto;
+  max-height: 600px; /* Limit maximum height */
+`;
+
+// Admin label styling
+const AdminLabel = styled.div`
+  background-color: #f0f8ff; /* Light blue background */
+  color: #0066cc; /* Blue text */
+  padding: 8px 12px;
+  margin: 10px 0;
+  border-left: 4px solid #0066cc;
+  font-size: 0.9rem;
+  font-style: italic;
+  border-radius: 4px;
 `;
 
 export default QuestionRenderer;

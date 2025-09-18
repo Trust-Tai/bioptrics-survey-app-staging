@@ -2123,10 +2123,19 @@ if (Meteor.isServer) {
         console.log(`Retrieved ${questions.length} question documents from database`);
         
         // For each question, add the current version as a property for easier access
+        // Also extract questionText and image from currentVersion to the top level
         const enhancedQuestions = questions.map(question => {
           const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
-          return { ...question, currentVersion };
+          return { 
+            ...question, 
+            currentVersion,
+            text: currentVersion.questionText,  // Extract questionText to top level
+            image: currentVersion.image         // Extract image to top level
+          };
         });
+        
+        console.log('Enhanced questions with image data:', 
+          enhancedQuestions.map(q => ({ id: q._id, hasImage: !!q.image, imageLength: q.image ? q.image.length : 0 })));
         
         return enhancedQuestions;
       } catch (error: unknown) {

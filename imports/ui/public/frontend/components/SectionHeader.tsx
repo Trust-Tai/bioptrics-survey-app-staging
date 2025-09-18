@@ -30,7 +30,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
 
 // Styled components
 const HeaderContainer = styled.div<{ color: string }>`
-  background-color: ${props => `${props.color}DD`};
+  background-color: ${props => `${props.color}`};
   color: white;
   padding: 2rem;
   border-radius: 8px;
@@ -48,6 +48,7 @@ const Description = styled.p`
   margin: 0 0 1.5rem 0;
   opacity: 0.9;
   line-height: 1.5;
+  max-width: 468px;
 `;
 
 const ProgressContainer = styled.div`

@@ -13,6 +13,12 @@ interface Question {
   required?: boolean;
   options?: Array<any>;
   sectionId?: string;
+  image?: string; // Add image property
+}
+
+interface CurrentStep {
+  type: 'welcome' | 'section' | 'question' | 'thank-you';
+  id: string;
 }
 
 interface Section {
@@ -42,9 +48,20 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
   
+  // State for step navigation
+  const [currentStep, setCurrentStep] = useState<CurrentStep>({ type: 'section', id: '' });
+  
   // Load survey data
   useEffect(() => {
     if (!survey || !survey._id) return;
+    
+    // Initialize with the first section if available
+    if (survey.surveySections && survey.surveySections.length > 0) {
+      setCurrentStep({
+        type: 'section',
+        id: survey.surveySections[0]._id || survey.surveySections[0].id
+      });
+    }
     
     // Load sections
     if (survey.surveySections) {
@@ -73,6 +90,15 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
           
           console.log('Loaded questions:', result);
           
+          // Debug image data
+          result.forEach((doc: any) => {
+            console.log(`Question ${doc._id} image data:`, {
+              hasTopLevelImage: !!doc.image,
+              hasVersionImage: !!(doc.currentVersion && doc.currentVersion.image),
+              imageLength: doc.image ? doc.image.length : 0
+            });
+          });
+          
           // Process question data
           const processedQuestions = result.map((doc: any) => {
             const version = doc.currentVersion || {};
@@ -100,6 +126,17 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
             
             console.log(`Question ${doc._id} mapped to section ${sectionId || 'none'}`);
             
+            // IMPORTANT: Get the image directly from the raw document
+            // This ensures we get the image data exactly as it is in the database
+            const imageData = doc.image || (doc.versions && doc.versions[0] && doc.versions[0].image);
+            
+            // Debug the image data
+            console.log(`Processing question ${doc._id} image:`, {
+              hasImage: !!imageData,
+              imageLength: imageData ? imageData.length : 0,
+              imageSource: imageData === doc.image ? 'top-level' : 'version'
+            });
+            
             return {
               _id: doc._id,
               id: doc._id,
@@ -109,6 +146,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
               sectionId: sectionId,
               options: version.options || [],
               required: version.required !== false,
+              image: imageData, // Add image property directly from the raw document
             };
           });
           
@@ -174,7 +212,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   }, [survey]);
   
   // Handle question answers
-  const handleQuestionAnswer = (questionId: string, answer: any) => {
+  const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {
     setResponses(prev => ({
       ...prev,
       [questionId]: answer
@@ -211,6 +249,52 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     );
   };
   
+  // Navigation handlers
+  const handleNext = () => {
+    if (currentStep.type === 'section') {
+      // When on a section view, we stay on the section view
+      // but we need to move to the next section if all questions are answered
+      const currentSectionIndex = sections.findIndex(s => s.id === currentStep.id);
+      
+      // Check if all required questions in this section are answered
+      const sectionQuestions = questions.filter(q => q.sectionId === currentStep.id);
+      const requiredQuestions = sectionQuestions.filter(q => q.required);
+      const allRequiredAnswered = requiredQuestions.every(q => {
+        const answer = responses[q._id];
+        return answer !== undefined && answer !== null && answer !== '' && 
+               !(Array.isArray(answer) && answer.length === 0);
+      });
+      
+      if (allRequiredAnswered) {
+        if (currentSectionIndex < sections.length - 1) {
+          // Go to next section
+          setCurrentStep({
+            type: 'section',
+            id: sections[currentSectionIndex + 1].id
+          });
+        } else {
+          // If last section and all questions answered, submit
+          handleSubmit();
+        }
+      }
+    }
+  };
+  
+  const handleBack = () => {
+    if (currentStep.type === 'section') {
+      // Find current section
+      const currentSectionIndex = sections.findIndex(s => s.id === currentStep.id);
+      
+      if (currentSectionIndex > 0) {
+        // Go to previous section
+        setCurrentStep({
+          type: 'section',
+          id: sections[currentSectionIndex - 1].id
+        });
+      }
+    }
+  };
+
   // Handle survey submission
   const handleSubmit = () => {
     if (!survey || !survey._id) return;
@@ -257,7 +341,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   
   // Render the appropriate layout
   return (
-    <div className="survey-content">
+    <>
       {layout === 'allOnOnePage' ? (
         <AllOnOnePageLayout 
           survey={survey}
@@ -273,16 +357,17 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
           survey={survey}
           sections={sections}
           questions={questions}
-          currentStep={{ type: 'welcome', id: 'welcome' }}
+          currentStep={currentStep}
           responses={responses}
           onAnswer={handleQuestionAnswer}
-          onNext={() => {}}
-          onBack={() => {}}
+          onNext={handleNext}
+          onBack={handleBack}
           onSubmit={handleSubmit}
           isSubmitted={isSubmitted}
+          onSetCurrentStep={(step) => setCurrentStep(step)}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -71,6 +71,7 @@ const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
 }) => {
   return (
     <ThankYouContainer primaryColor={color}>
+      <ConfettiLayer />
       <ThankYouHeader>
         <ThankYouIcon>
           <img 
@@ -100,7 +101,7 @@ const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
           </StatIcon>
           <StatContent>
             <StatValue primaryColor={color}>{totalResponses}</StatValue>
-            <StatLabel primaryColor={color}>TOTAL RESPONSES</StatLabel>
+            <StatLabel primaryColor={color}>TOTAL Questions answered</StatLabel>
             <StatSublabel primaryColor={color}>Questions answered</StatSublabel>
           </StatContent>
         </StatCard>
@@ -173,29 +174,39 @@ const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
 
 // Styled components
 const ThankYouContainer = styled.div<{ primaryColor?: string }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: 40px 20px;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
   font-family: 'Inter', sans-serif;
   color: var(--text-color, #333);
   animation: fadeIn 0.6s ease-out;
-  background-color: ${props => props.primaryColor ? `${props.primaryColor}10` : 'var(--primary-color-light, #f3e8ff)'};
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8F2F6 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
+  overflow-y: auto;
+  z-index: 1000;
+  box-sizing: border-box;
 `;
 
 const ThankYouHeader = styled.div`
   text-align: center;
   margin-bottom: 40px;
   width: 100%;
-  max-width: 600px;
+  max-width: 783px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 1;
+  padding: 0 20px;
 `;
 
 const ThankYouIcon = styled.div`
@@ -207,6 +218,7 @@ const ThankYouIcon = styled.div`
   justify-content: center;
   animation: scaleIn 0.5s ease-out;
   margin-bottom: 40px;
+  margin-top: 60px;
   
   img {
     max-width: 100%;
@@ -216,7 +228,7 @@ const ThankYouIcon = styled.div`
 `;
 
 const ThankYouTitle = styled.h1`
-  font-size: 72px;
+  font-size: 100px;
   font-weight: 400;
   margin-bottom: 16px;
   color: var(--primary-color, #000000);
@@ -230,10 +242,10 @@ const ThankYouTitle = styled.h1`
 `;
 
 const ThankYouMessage = styled.p`
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-color, #4b5563);
-  max-width: 600px;
+  font-size: 30px;
+  line-height: 40px;
+  color: rgba(51, 51, 51, 1);
+  max-width: 719px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
   margin-bottom: 40px;
@@ -244,53 +256,52 @@ const ThankYouMessage = styled.p`
 const StatsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  margin-bottom: 40px;
+  gap: 50px;
+  margin-bottom: 30px;
   width: 100%;
-  max-width: 700px;
+  max-width: 783px;
   
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
+  position: relative;
+  z-index: 1;
 `;
 
 const StatCard = styled.div<{ primaryColor?: string }>`
-  background: white;
-  border-radius: 16px;
-  padding: 24px 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 18px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  border: 1px solid ${props => props.primaryColor ? `${props.primaryColor}20` : '#e5e7eb'};
+  border: 1px solid ${props => props.primaryColor ? `${props.primaryColor}25` : '#e9dce6'};
   color: ${props => props.primaryColor || 'var(--primary-color, #333)'};
   transition: all 0.2s ease;
   min-width: 200px;
   width: 100%;
-  
-  &:hover {
-    box-shadow: 0 4px 12px rgba(${props => props.primaryColor ? hexToRgb(props.primaryColor) : 'var(--primary-color-rgb, 0, 0, 0)'}, 0.15);
-    transform: translateY(-2px);
-  }
+  position: relative;
 `;
 
 const StatIcon = styled.div<{ primaryColor?: string }>`
-  width: 60px;
-  height: 60px;
-  border-radius: 10px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   background-color: ${props => props.primaryColor ? `${props.primaryColor}20` : 'var(--primary-color-light, #f3e8ff)'};
   color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
-  font-size: 40px;
-  align-self: flex-end;
+  font-size: 20px;
 
   svg {
-    width: 40px;
-    height: 40px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
@@ -299,7 +310,7 @@ const StatContent = styled.div`
 `;
 
 const StatValue = styled.h3<{ primaryColor?: string }>`
-  font-size: 64px;
+  font-size: 48px;
   font-weight: 700;
   margin: 0 0 8px;
   color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
@@ -329,16 +340,18 @@ const ThankYouActions = styled.div`
   text-align: center;
   margin-top: 30px;
   width: 100%;
-  max-width: 600px;
+  max-width: 783px;
   display: flex;
   justify-content: center;
   gap: 20px;
+  position: relative;
+  z-index: 1;
 `;
 
 const RestartButton = styled.button<{ primaryColor?: string }>`
-  background-color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
-  color: white;
-  border: none;
+  background-color: white;
+  color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
+  border: 1px solid ${props => props.primaryColor ? `${props.primaryColor}80` : 'var(--primary-color, #4A2B46)'};
   border-radius: var(--button-radius, 30px);
   padding: 12px 24px;
   font-size: 14px;
@@ -348,26 +361,26 @@ const RestartButton = styled.button<{ primaryColor?: string }>`
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(var(--primary-color-rgb, 74, 43, 70), 0.2);
+  box-shadow: 0 1px 3px rgba(var(--primary-color-rgb, 74, 43, 70), 0.1);
   font-family: 'Inter', sans-serif;
   width: auto;
   min-width: 160px;
   
   &:hover {
-    background-color: ${props => props.primaryColor ? adjustColor(props.primaryColor, -20) : 'var(--button-hover, #3A2136)'};
+    background-color: ${props => props.primaryColor ? `${props.primaryColor}10` : '#f9f5fb'};
     transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(var(--primary-color-rgb, 74, 43, 70), 0.3);
+    box-shadow: 0 2px 5px rgba(var(--primary-color-rgb, 74, 43, 70), 0.15);
   }
 `;
 
 const ViewResultsButton = styled(RestartButton)`
-  background-color: white;
-  color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
-  border: 1px solid ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
+  background-color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
+  color: #ffffff;
+  border: none;
   
   &:hover {
-    background-color: ${props => props.primaryColor ? `${props.primaryColor}10` : '#f9f5fb'};
-    color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
+    background-color: ${props => props.primaryColor ? adjustColor(props.primaryColor, -20) : 'var(--button-hover, #3A2136)'};
+    color: #ffffff;
   }
 `;
 
@@ -378,3 +391,59 @@ const ButtonIcon = styled.span`
 `;
 
 export default ThankYouScreen;
+
+// Decorative confetti overlay (top area)
+const ConfettiLayer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 55vh;
+  pointer-events: none;
+  opacity: 0.3;
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 1500px 600px;
+  z-index: 0;
+  /* Lightweight inline SVG with pastel confetti */
+  background-image: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' width='1500' height='600' viewBox='0 0 1500 600'>\
+    <defs>\
+      <radialGradient id='fade' cx='50%' cy='0%' r='80%'>\
+        <stop offset='0%' stop-color='rgba(255,255,255,0)'/>\
+        <stop offset='100%' stop-color='rgba(255,255,255,1)'/>\
+      </radialGradient>\
+    </defs>\
+    <rect fill='url(%23fade)' x='0' y='300' width='1500' height='300'/>\
+    <g opacity='0.8'>\
+      <circle cx='100' cy='120' r='8' fill='%23FFD166'/>\
+      <circle cx='240' cy='90' r='6' fill='%23A8DADC'/>\
+      <circle cx='380' cy='160' r='7' fill='%23F4A261'/>\
+      <circle cx='520' cy='70' r='5' fill='%23BDE0FE'/>\
+      <circle cx='660' cy='130' r='8' fill='%23FFAFCC'/>\
+      <circle cx='800' cy='80' r='7' fill='%2390BE6D'/>\
+      <circle cx='940' cy='150' r='6' fill='%238D99AE'/>\
+      <circle cx='1080' cy='100' r='8' fill='%23E9C46A'/>\
+      <circle cx='1220' cy='170' r='6' fill='%23CED4DA'/>\
+      <circle cx='1360' cy='120' r='7' fill='%23F08080'/>\
+      <rect x='170' y='180' width='8' height='8' fill='%23FFCAD4' rx='2'/>\
+      <rect x='310' y='110' width='10' height='10' fill='%2390CAF9' rx='3'/>\
+      <rect x='450' y='190' width='9' height='9' fill='%23B9FBC0' rx='3'/>\
+      <rect x='590' y='100' width='8' height='8' fill='%23E5989B' rx='2'/>\
+      <rect x='730' y='180' width='10' height='10' fill='%23CDEAC0' rx='3'/>\
+      <rect x='870' y='110' width='8' height='8' fill='%23F7D794' rx='2'/>\
+      <rect x='1010' y='190' width='9' height='9' fill='%23A3CEF1' rx='3'/>\
+      <rect x='1150' y='100' width='10' height='10' fill='%23E0AFA0' rx='3'/>\
+      <rect x='1290' y='170' width='8' height='8' fill='%23BDB2FF' rx='2'/>\
+      <polygon points='200,80 210,95 190,95' fill='%23E76F51'/>\
+      <polygon points='340,140 350,155 330,155' fill='%23A5D6A7'/>\
+      <polygon points='480,60 490,75 470,75' fill='%239957AD'/>\
+      <polygon points='620,150 630,165 610,165' fill='%23F1A7A1'/>\
+      <polygon points='760,90 770,105 750,105' fill='%2381B29A'/>\
+      <polygon points='900,160 910,175 890,175' fill='%23F2CC8F'/>\
+      <polygon points='1040,70 1050,85 1030,85' fill='%238AB17D'/>\
+      <polygon points='1180,140 1190,155 1170,155' fill='%23B5838D'/>\
+      <polygon points='1320,90 1330,105 1310,105' fill='%2394D2BD'/>\
+    </g>\
+  </svg>");
+`;

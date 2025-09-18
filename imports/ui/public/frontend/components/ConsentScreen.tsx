@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { FiLock } from 'react-icons/fi';
+import HeaderBar from './HeaderBar';
 
 interface ConsentScreenProps {
   surveyTitle?: string;
@@ -42,16 +44,19 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
   
   return (
     <ConsentContainer>
-      <Header>
-        <Logo src={logo} alt="Company Logo" />
-        <Title>{surveyTitle}</Title>
-      </Header>
+      <HeaderBar 
+        surveyTitle={surveyTitle} 
+        logo={logo}
+      />
       
-      <ConsentCard>
-        <AnonymityNotice>
-          <Icon>🔒</Icon>
-          <NoticeText>This survey is anonymous. Your responses cannot be linked back to you personally.</NoticeText>
-        </AnonymityNotice>
+      <ContentWrapper>
+        <ConsentCard>
+          <AnonymityNotice>
+            <Icon>
+              <FiLock size={18} />
+            </Icon>
+            <NoticeText>This survey is anonymous. Your responses cannot be linked back to you personally.</NoticeText>
+          </AnonymityNotice>
         
         <SectionTitle>Informed Consent</SectionTitle>
         
@@ -60,27 +65,27 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
         </ConsentText>
         
         <ConsentSection>
-          <SectionLabel>**Purpose**:</SectionLabel>
+          <SectionLabel>Purpose:</SectionLabel>
           <SectionContent>{consentText.purpose}</SectionContent>
         </ConsentSection>
         
         <ConsentSection>
-          <SectionLabel>**Data Collection**:</SectionLabel>
+          <SectionLabel>Data Collection:</SectionLabel>
           <SectionContent>{consentText.dataCollection}</SectionContent>
         </ConsentSection>
         
         <ConsentSection>
-          <SectionLabel>**Data Use**:</SectionLabel>
+          <SectionLabel>Data Use:</SectionLabel>
           <SectionContent>{consentText.dataUse}</SectionContent>
         </ConsentSection>
         
         <ConsentSection>
-          <SectionLabel>**Confidentiality**:</SectionLabel>
+          <SectionLabel>Confidentiality:</SectionLabel>
           <SectionContent>{consentText.confidentiality}</SectionContent>
         </ConsentSection>
         
         <ConsentSection>
-          <SectionLabel>**Contact**:</SectionLabel>
+          <SectionLabel>Contact:</SectionLabel>
           <SectionContent>{consentText.contact}</SectionContent>
         </ConsentSection>
         
@@ -97,10 +102,11 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
         </CheckboxContainer>
         
         <FooterContainer>
+          <span>For more information, please see our  
           <PrivacyLink href={privacyNoticeUrl} target="_blank" rel="noopener noreferrer">
-            For more information, please see our Privacy Notice
+             Privacy Notice
           </PrivacyLink>
-          
+          </span>
           <ContinueButton 
             onClick={handleContinue} 
             disabled={!hasConsented}
@@ -109,6 +115,7 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
           </ContinueButton>
         </FooterContainer>
       </ConsentCard>
+      </ContentWrapper>
     </ConsentContainer>
   );
 };
@@ -119,90 +126,117 @@ const ConsentContainer = styled.div`
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  padding: 2rem;
-  font-family: 'Inter', sans-serif;
-`;
-
-const Header = styled.header`
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
+  font-family: 'Jost', 'Inter', sans-serif;
+     background: linear-gradient(180deg, #FFFFFF 0%, #F8F2F6 100%);
   width: 100%;
 `;
 
-const Logo = styled.img`
-  height: 40px;
-  margin-right: 1rem;
-`;
-
-const Title = styled.h1`
-  font-size: 1.5rem;
-  color: #552A47;
-  margin: 0;
+const ContentWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 80px 1rem 2rem 1rem;
+  margin: 0 auto;
+  max-width: 1200px;
 `;
 
 const ConsentCard = styled.div`
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  max-width: 700px;
-  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0px 0px 12px 0px rgba(0, 0, 0, 0.15);
+  padding: 30px 25px;
+  width: 800px;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
 `;
 
 const AnonymityNotice = styled.div`
   display: flex;
   align-items: center;
-  background-color: #f2f9ee;
-  border: 1px solid #8bc34a;
-  border-radius: 4px;
-  padding: 0.75rem;
+  background-color: rgb(168, 221, 71);
+  border-radius: 10px;
+  padding: 10px;
   margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 20px 0;
 `;
 
-const Icon = styled.span`
-  font-size: 1.25rem;
-  margin-right: 0.75rem;
+const Icon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  color: #000;
 `;
 
 const NoticeText = styled.p`
   margin: 0;
-  color: #333;
-  font-size: 0.9rem;
+  color: #000;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.25rem;
-  color: #333;
-  margin-bottom: 1rem;
+  font-size: 32px;
+  font-weight: 600;
+  color: rgb(34, 34, 34);
+  margin: 20px 0;
+  text-align: left;
+  width: 100%;
+  line-height: 1.2;
 `;
 
 const ConsentText = styled.p`
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-  color: #333;
+  margin-bottom: 20px;
+  line-height: 26px;
+  color: rgb(51, 51, 51);
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+  width: 100%;
+  max-width: 600px;
 `;
 
 const ConsentSection = styled.div`
-  margin-bottom: 1rem;
+  margin-bottom: 20px;
+  width: 100%;
+  text-align: left;
 `;
 
-const SectionLabel = styled.p`
+const SectionLabel = styled.span`
   font-weight: 600;
-  margin: 0 0 0.25rem 0;
-  color: #333;
+  margin: 0;
+  color: rgb(51, 51, 51);
+  font-size: 16px;
+  text-align: left;
+  display: inline;
+  margin-right: 6px;
 `;
 
-const SectionContent = styled.p`
+const SectionContent = styled.span`
   margin: 0;
-  color: #555;
-  line-height: 1.5;
+  color: rgb(51, 51, 51);
+  line-height: 26px;
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+  display: inline;
 `;
 
 const CheckboxContainer = styled.div`
   display: flex;
   align-items: flex-start;
-  margin: 1.5rem 0;
+  margin: 20px 0;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+   padding-bottom: 20px;
+  width: 100%;
+  justify-content: flex-start;
 `;
 
 const Checkbox = styled.input`
@@ -212,23 +246,26 @@ const Checkbox = styled.input`
 
 const CheckboxLabel = styled.label`
   line-height: 1.5;
-  color: #333;
+  color: rgb(102, 102, 102);
+  font-size: 15px;
 `;
 
 const FooterContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
+  width: 100%;
 `;
 
 const PrivacyLink = styled.a`
   color: #552A47;
-  text-decoration: none;
-  font-size: 0.9rem;
+  text-decoration: underline;
+  font-size: 16px;
+  font-weight: 600;
+  padding-left: 5px;
   
   &:hover {
-    text-decoration: underline;
+    opacity: 0.8;
   }
 `;
 
@@ -236,11 +273,14 @@ const ContinueButton = styled.button`
   background-color: #552A47;
   color: white;
   border: none;
-  border-radius: 30px;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
+  height: 40px;
+  font-family: 'Inter', sans-serif;
   
   &:hover:not(:disabled) {
     background-color: #3d1e32;

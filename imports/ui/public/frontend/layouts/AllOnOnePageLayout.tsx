@@ -16,6 +16,11 @@ interface Question {
   required?: boolean;
   options?: Array<any>;
   sectionId?: string;
+  image?: string; // Add image property
+  currentVersion?: {
+    image?: string;
+    // Add other currentVersion properties as needed
+  };
 }
 
 interface Section {
@@ -64,7 +69,9 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
     const completionTime = Math.round((Date.now() - startTime) / 1000); // in seconds
     const minutes = Math.floor(completionTime / 60);
     const seconds = completionTime % 60;
-    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}sec`;
+    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`;
     
     return (
       <ThankYouScreen 
@@ -100,10 +107,18 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
     };
   });
   
-  // Check if all required questions are answered
+  // Check if all required questions are answered (robust across types)
   const areAllRequiredQuestionsAnswered = () => {
     const requiredQuestions = questions.filter(q => q.required);
-    return requiredQuestions.every(q => responses[q._id]);
+    return requiredQuestions.every(q => {
+      const answer = responses[q._id];
+      // Arrays (checkbox, rank, multi-select)
+      if (Array.isArray(answer)) return answer.length > 0;
+      // Strings (text, textarea, date string)
+      if (typeof answer === 'string') return answer.trim().length > 0;
+      // Numbers/booleans or other primitives
+      return answer !== undefined && answer !== null && answer !== '';
+    });
   };
   
   return (
@@ -169,6 +184,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
                       value={responses[question._id]}
                       onChange={(value) => onAnswer(question._id, value)}
                       required={!!question.required}
+                      image={question.image || (question.currentVersion && question.currentVersion.image)} // Get image from question or currentVersion
                     />
                   </QuestionContent>
                 </QuestionItem>
@@ -220,9 +236,9 @@ const LayoutContainer = styled.div`
 
 const ContentContainer = styled.div`
   flex-grow: 1;
-  padding: 2rem;
+  padding: 80px 10rem;
   margin-left: 280px;
-  max-width: 100%;
+  max-width: 1250px;
   margin-top: 0px; /* Add space for the header */
   
   @media (max-width: 768px) {
@@ -288,7 +304,7 @@ const SubmitButtonContainer = styled.div`
 `;
 
 const SubmitButton = styled.button<{ color: string; disabled: boolean }>`
-  background-color: ${props => props.disabled ? '#d1d5db' : props.color};
+  background-color: ${props => props.disabled ? '#d1d5db' : (props.color || '#552A47')};
   color: white;
   border: none;
   font-size: 1rem;

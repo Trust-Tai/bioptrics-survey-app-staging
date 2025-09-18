@@ -6,6 +6,7 @@ import QuestionRenderer from '../components/QuestionRenderer';
 import NavigationControls from '../components/NavigationControls';
 import ThankYouScreen from '../components/ThankYouScreen';
 import HeaderBar from '../components/HeaderBar';
+import NotificationModal from '../components/NotificationModal';
 
 interface Question {
   _id: string;
@@ -16,6 +17,11 @@ interface Question {
   required?: boolean;
   options?: Array<any>;
   sectionId?: string;
+  image?: string; // Add image property
+  currentVersion?: {
+    image?: string;
+    // Add other currentVersion properties as needed
+  };
 }
 
 interface Section {
@@ -40,6 +46,8 @@ interface StepByStepLayoutProps {
   onBack: () => void;
   onSubmit: () => void;
   isSubmitted: boolean;
+  // Optional prop to directly set the current step
+  onSetCurrentStep?: (step: CurrentStep) => void;
 }
 
 const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
@@ -52,12 +60,17 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   onNext,
   onBack,
   onSubmit,
-  isSubmitted
+  isSubmitted,
+  onSetCurrentStep
 }) => {
   // State for current section and question
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [startTime] = useState<number>(Date.now());
+  
+  // State for notification modal
+  const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
+  const [notificationMessage, setNotificationMessage] = useState<string>('');
   
   // Effect to update current section/question based on currentStep
   useEffect(() => {
@@ -128,11 +141,22 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   // Handle continue button click
   const handleContinue = () => {
     if (currentStep.type === 'question' && currentQuestion) {
-      const isLastQuestion = questions.findIndex(q => q._id === currentQuestion._id) === questions.length - 1;
+      // Find all questions in the current section
+      const sectionQuestions = questions.filter(q => q.sectionId === currentQuestion.sectionId);
+      const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
       
-      if (isLastQuestion) {
+      // Check if this is the last question in the section
+      const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
+      
+      // Check if this is the last section
+      const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
+      const isLastSection = currentSectionIndex === sections.length - 1;
+      
+      if (isLastQuestionInSection && isLastSection) {
+        // If last question in last section, submit the survey
         onSubmit();
       } else {
+        // Otherwise, go to next question or section
         onNext();
       }
     } else {
@@ -152,12 +176,36 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     return true;
   };
   
+  // Check if all questions in a section are answered
+  const areSectionQuestionsAnswered = (sectionId: string) => {
+    const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+    const requiredQuestions = sectionQuestions.filter(q => q.required);
+    
+    return requiredQuestions.every(q => {
+      const answer = responses[q._id];
+      if (answer === undefined || answer === null || answer === '') return false;
+      if (Array.isArray(answer) && answer.length === 0) return false;
+      return true;
+    });
+  };
+  
+  // Get the next section ID
+  const getNextSectionId = (currentSectionId: string) => {
+    const currentIndex = sections.findIndex(s => s.id === currentSectionId);
+    if (currentIndex < sections.length - 1) {
+      return sections[currentIndex + 1].id;
+    }
+    return null;
+  };
+  
   // If submitted, show thank you screen
   if (isSubmitted) {
     const completionTime = Math.round((Date.now() - startTime) / 1000); // in seconds
     const minutes = Math.floor(completionTime / 60);
     const seconds = completionTime % 60;
-    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}sec`;
+    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`;
     
     return (
       <ThankYouScreen 
@@ -232,6 +280,14 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   
   return (
     <LayoutContainer>
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notificationOpen}
+        onClose={() => setNotificationOpen(false)}
+        message={notificationMessage}
+        title="Action Required"
+        color={survey.color || '#552A47'}
+      />
       <HeaderBar 
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
@@ -242,9 +298,107 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         currentSectionId={currentSection?.id || ''}
         progress={calculateProgress()}
         onSectionClick={(sectionId) => {
-          // Logic to navigate to section would be implemented here
-          // This would typically involve finding the first question in the section
-          // and navigating to it
+          // Navigate to the selected section
+          if (sectionId) {
+            // Check if all required questions in previous sections are answered
+            const sectionIndex = sections.findIndex(s => s.id === sectionId);
+            let canNavigate = true;
+            
+            // Check if all required questions in previous sections are answered
+            for (let i = 0; i < sectionIndex; i++) {
+              const prevSectionId = sections[i].id;
+              const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId && q.required);
+              
+              // Check if all required questions in this section are answered
+              const allAnswered = prevSectionQuestions.every(q => {
+                const answer = responses[q._id];
+                return answer !== undefined && answer !== null && answer !== '' && 
+                      !(Array.isArray(answer) && answer.length === 0);
+              });
+              
+              if (!allAnswered) {
+                canNavigate = false;
+                break;
+              }
+            }
+            
+            if (canNavigate) {
+              // Navigate directly to the selected section
+              const selectedSection = sections.find(s => s.id === sectionId);
+              if (selectedSection) {
+                // If we have a direct setter for currentStep, use it
+                if (typeof onSetCurrentStep === 'function') {
+                  onSetCurrentStep({
+                    type: 'section',
+                    id: sectionId
+                  });
+                } else {
+                  // Otherwise, we need to navigate to this section through the parent component
+                  // Find the current section index
+                  const currentSectionIndex = sections.findIndex(s => s.id === currentSection?.id);
+                  const targetSectionIndex = sections.findIndex(s => s.id === sectionId);
+                  
+                  // If we're going forward
+                  if (targetSectionIndex > currentSectionIndex) {
+                    // Call onNext repeatedly until we reach the target section
+                    const navigateToSection = () => {
+                      if (currentStep.type === 'section' && currentStep.id === sectionId) {
+                        return; // We've reached the target section
+                      }
+                      onNext();
+                      // Schedule the next navigation after a short delay to allow state to update
+                      setTimeout(navigateToSection, 100);
+                    };
+                    navigateToSection();
+                  } 
+                  // If we're going backward
+                  else if (targetSectionIndex < currentSectionIndex) {
+                    // Call onBack repeatedly until we reach the target section
+                    const navigateToSection = () => {
+                      if (currentStep.type === 'section' && currentStep.id === sectionId) {
+                        return; // We've reached the target section
+                      }
+                      onBack();
+                      // Schedule the next navigation after a short delay to allow state to update
+                      setTimeout(navigateToSection, 100);
+                    };
+                    navigateToSection();
+                  }
+                }
+              }
+            } else {
+              // Create a more specific message about which sections need to be completed
+              const incompleteSections = [];
+              
+              for (let i = 0; i < sectionIndex; i++) {
+                const prevSectionId = sections[i].id;
+                const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId && q.required);
+                
+                // Check if all required questions in this section are answered
+                const allAnswered = prevSectionQuestions.every(q => {
+                  const answer = responses[q._id];
+                  return answer !== undefined && answer !== null && answer !== '' && 
+                        !(Array.isArray(answer) && answer.length === 0);
+                });
+                
+                if (!allAnswered) {
+                  incompleteSections.push(sections[i].name);
+                }
+              }
+              
+              // Create a more helpful message
+              let message = '<p>Please complete all required questions in the following section(s) before proceeding:</p>';
+              message += '<ul style="margin-top: 10px; padding-left: 20px;">';
+              incompleteSections.forEach(sectionName => {
+                message += `<li style="margin-bottom: 5px;">${sectionName}</li>`;
+              });
+              message += '</ul>';
+              message += '<p style="margin-top: 10px;">Required questions are marked with an asterisk (*)</p>';
+              
+              setNotificationMessage(message);
+              setNotificationOpen(true);
+            }
+          }
         }}
         color={survey.color}
         logo={survey.logo}
@@ -260,44 +414,43 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
               color={survey.color}
             />
             
-            <NavigationControls 
-              onBack={onBack}
-              onNext={handleContinue}
-              nextLabel="Start Section"
-              previousSectionName={getPreviousSectionName()}
-              color={survey.color}
-            />
-          </>
-        )}
-        
-        {currentStep.type === 'question' && currentQuestion && (
-          <>
-            <QuestionContainer>
-              <StepIndicator>
-                STEP {getQuestionPosition().current}/{getQuestionPosition().total}
-              </StepIndicator>
-              
-              <QuestionRenderer
-                questionType={getQuestionType(currentQuestion)}
-                questionText={currentQuestion.text}
-                options={currentQuestion.options || []}
-                value={responses[currentQuestion._id]}
-                onChange={(value) => onAnswer(currentQuestion._id, value)}
-                required={!!currentQuestion.required}
-              />
-            </QuestionContainer>
+            {/* Display all questions for this section */}
+            <QuestionsContainer>
+              {questions
+                .filter(q => q.sectionId === currentSection.id)
+                .map((question, index) => (
+                  <QuestionItem key={question._id}>
+                    <QuestionNumber>Q{index + 1}.</QuestionNumber>
+                    <QuestionContent>
+                      <QuestionRenderer
+                        questionType={getQuestionType(question)}
+                        questionText={question.text}
+                        options={question.options || []}
+                        value={responses[question._id]}
+                        onChange={(value) => onAnswer(question._id, value)}
+                        required={!!question.required}
+                        currentStep={index + 1}
+                        totalSteps={questions.filter(q => q.sectionId === currentSection.id).length}
+                        image={question.image || (question.currentVersion && question.currentVersion.image)} // Get image from question or currentVersion
+                      />
+                    </QuestionContent>
+                  </QuestionItem>
+                ))
+              }
+            </QuestionsContainer>
             
             <NavigationControls 
               onBack={onBack}
               onNext={handleContinue}
-              isNextDisabled={currentQuestion.required && !isAnswerValid()}
-              isLastQuestion={isLastQuestion()}
+              nextLabel={getNextSectionName() ? `Next: ${getNextSectionName()}` : "Submit"}
               previousSectionName={getPreviousSectionName()}
-              nextSectionName={isLastQuestion() ? getNextSectionName() : ''}
               color={survey.color}
+              isNextDisabled={!areSectionQuestionsAnswered(currentSection.id)}
             />
           </>
         )}
+        
+        {/* We're not using individual question view in this layout */}
       </ContentContainer>
     </LayoutContainer>
   );
@@ -312,10 +465,10 @@ const LayoutContainer = styled.div`
 
 const ContentContainer = styled.div`
   flex-grow: 1;
-  padding: 2rem;
+  padding: 40px 10rem;
   margin-left: 280px;
-  max-width: 800px;
-  margin-top: 60px; /* Add space for the header */
+  max-width: 100%;
+  margin-top: 0px; /* Add space for the header */
   
   @media (max-width: 768px) {
     margin-left: 0;
@@ -325,6 +478,32 @@ const ContentContainer = styled.div`
 
 const QuestionContainer = styled.div`
   margin-bottom: 2rem;
+`;
+
+const QuestionsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin: 2rem 0;
+`;
+
+const QuestionItem = styled.div`
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const QuestionNumber = styled.div`
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 2.5rem;
+`;
+
+const QuestionContent = styled.div`
+  flex-grow: 1;
 `;
 
 const StepIndicator = styled.div`

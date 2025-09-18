@@ -57,7 +57,8 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   
   // Handle section click
   const handleSectionClick = (sectionId: string) => {
-    setActiveSection(sectionId);
+    // Only update the active section if the click handler is successful
+    // This will be done in the useEffect when currentSectionId changes
     onSectionClick(sectionId);
   };
   return (

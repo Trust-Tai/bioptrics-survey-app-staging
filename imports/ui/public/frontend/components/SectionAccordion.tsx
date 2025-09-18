@@ -11,6 +11,10 @@ interface Question {
   required?: boolean;
   options?: Array<any>;
   sectionId?: string;
+  image?: string;
+  currentVersion?: {
+    image?: string;
+  };
 }
 
 interface SectionAccordionProps {
@@ -34,20 +38,18 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
   completionPercentage,
   color = '#552A47'
 }) => {
-  // Get question type
+  // Function to determine question type
   const getQuestionType = (question: Question) => {
-    const type = question.responseType || question.type || '';
+    const type = question.type || question.responseType || 'text';
     
-    if (type.includes('likert')) return 'likert';
-    if (type.includes('radio') || type === 'single_choice') return 'radio';
-    if (type.includes('checkbox') || type === 'multiple_choice') return 'checkbox';
-    if (type.includes('rating') || type === 'scale') return 'rating';
-    if (type.includes('rank')) return 'rank';
-    if (type.includes('date')) return 'date';
-    if (type.includes('long_text') || type === 'textarea') return 'textarea';
-    if (type.includes('text')) return 'text';
+    // Simple mapping of response types to component types
+    if (typeof type === 'string') {
+      if (type.includes('date')) return 'date';
+      if (type.includes('long_text') || type === 'textarea') return 'textarea';
+      if (type.includes('text')) return 'text';
+    }
     
-    return 'text';
+    return type as any; // Cast to any to avoid type errors
   };
 
   return (
@@ -78,7 +80,7 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
                 value={responses[question._id]}
                 onChange={(value) => onAnswer(question._id, value)}
                 required={!!question.required}
-              />
+                image={question.image || (question.currentVersion && question.currentVersion.image)}              />
             </QuestionContent>
           </QuestionItem>
         ))}
