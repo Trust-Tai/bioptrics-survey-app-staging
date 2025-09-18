@@ -231,12 +231,11 @@ const ThankYouTitle = styled.h1`
   font-size: 100px;
   font-weight: 400;
   margin-bottom: 16px;
-  color: var(--primary-color, #000000);
+  color: #552a47;
   font-family: 'Aesthetica Demo', cursive;
   line-height: 1.1;
   letter-spacing: 0;
   text-align: center;
-  font-style: italic;
   margin: 0;
   padding: 0;
 `;
