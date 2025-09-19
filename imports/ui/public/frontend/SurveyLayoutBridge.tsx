@@ -47,10 +47,40 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
+  const [surveyWithTime, setSurveyWithTime] = useState<any>(survey);
   
   // State for step navigation
   const [currentStep, setCurrentStep] = useState<CurrentStep>({ type: 'section', id: '' });
   
+  /**
+   * Calculates the estimated completion time for a survey based on question times
+   * @param questions Array of question documents with estimatedTimeSeconds field
+   * @returns Formatted time string in format "MM:SS" (e.g., "2:30")
+   */
+  function calculateEstimatedTime(questions: any[]): string {
+    // Default time per question (in seconds) if not specified
+    const DEFAULT_QUESTION_TIME = 30;
+    
+    let totalSeconds = 0;
+    
+    // Calculate total seconds from all questions
+    questions.forEach(question => {
+      // Use estimatedTimeSeconds if available and greater than 0, otherwise use default
+      const seconds = question.currentVersion.estimatedTimeSeconds > 0 
+        ? question.currentVersion.estimatedTimeSeconds 
+        : DEFAULT_QUESTION_TIME;
+      
+      totalSeconds += seconds;
+    });
+    
+    // Calculate minutes and remaining seconds
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format as MM:SS with padding for seconds
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
   // Load survey data
   useEffect(() => {
     if (!survey || !survey._id) return;
@@ -80,7 +110,6 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
         .map((item: any) => item.id);
 
       if (questionIds.length > 0) {
-        console.log('Loading questions with IDs:', questionIds);
         
         Meteor.call('getQuestionDocuments', questionIds, (error: any, result: any) => {
           if (error) {
@@ -88,16 +117,14 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
             return;
           }
           
-          console.log('Loaded questions:', result);
           
-          // Debug image data
-          result.forEach((doc: any) => {
-            console.log(`Question ${doc._id} image data:`, {
-              hasTopLevelImage: !!doc.image,
-              hasVersionImage: !!(doc.currentVersion && doc.currentVersion.image),
-              imageLength: doc.image ? doc.image.length : 0
-            });
-          });
+          // Calculate estimated time in MM:SS format
+          const formattedTime = calculateEstimatedTime(result);
+          
+          // Store the formatted time in a new survey object to avoid mutating props
+          const updatedSurvey = { ...survey, estimatedTime: formattedTime };
+          setSurveyWithTime(updatedSurvey);
+            
           
           // Process question data
           const processedQuestions = result.map((doc: any) => {
@@ -124,18 +151,10 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
               }
             }
             
-            console.log(`Question ${doc._id} mapped to section ${sectionId || 'none'}`);
             
             // IMPORTANT: Get the image directly from the raw document
             // This ensures we get the image data exactly as it is in the database
             const imageData = doc.image || (doc.versions && doc.versions[0] && doc.versions[0].image);
-            
-            // Debug the image data
-            console.log(`Processing question ${doc._id} image:`, {
-              hasImage: !!imageData,
-              imageLength: imageData ? imageData.length : 0,
-              imageSource: imageData === doc.image ? 'top-level' : 'version'
-            });
             
             return {
               _id: doc._id,
@@ -329,6 +348,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
       <ConsentScreen
         surveyTitle={survey.title}
         logo={survey.logo}
+        averageTime={(surveyWithTime || survey).estimatedTime}
         consentText={survey.consentText}
         privacyNoticeUrl={survey.privacyNoticeUrl}
         onConsent={handleConsent}
@@ -344,7 +364,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     <>
       {layout === 'allOnOnePage' ? (
         <AllOnOnePageLayout 
-          survey={survey}
+          survey={surveyWithTime || survey}
           sections={sections}
           questions={questions}
           responses={responses}
@@ -354,7 +374,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
         />
       ) : (
         <StepByStepLayout 
-          survey={survey}
+          survey={surveyWithTime || survey}
           sections={sections}
           questions={questions}
           currentStep={currentStep}

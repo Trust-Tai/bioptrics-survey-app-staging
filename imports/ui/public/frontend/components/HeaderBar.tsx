@@ -18,10 +18,13 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo })
         )}
       </LeftSection>
       <CenterSection>
-        <SurveyTitleText as="h1">{surveyTitle || 'Survey'}</SurveyTitleText>
+        <SurveyTitleContainer>
+          <SurveyTitleText as="h1">{surveyTitle || 'Survey'}</SurveyTitleText>
+          {averageTime && <AverageTimeTag>{averageTime}</AverageTimeTag>}
+        </SurveyTitleContainer>
       </CenterSection>
       <RightSection>
-        {averageTime && <AverageTimeTag>{averageTime}</AverageTimeTag>}
+        {/* Right section can remain empty or be used for other elements in the future */}
       </RightSection>
     </HeaderContainer>
   );
@@ -77,6 +80,12 @@ const LogoText = styled.div`
   font-family: 'Inter', sans-serif;
 `;
 
+const SurveyTitleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+`;
+
 const SurveyTitleText = styled.h1`
   font-size: 28px;
   font-weight: 600;
@@ -93,13 +102,15 @@ const AverageTimeTag = styled.div`
   background-color: #f5f0f7;
   color: #552A47;
   font-size: 14px;
-  padding: 4px 12px;
+  padding: 4px 12px 0px 12px;
   border-radius: 16px;
-  font-weight: 500;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 28px;
+  margin-left: 50px;
+  white-space: nowrap;
 `;
 
 export default HeaderBar;

@@ -6,6 +6,7 @@ import HeaderBar from './HeaderBar';
 interface ConsentScreenProps {
   surveyTitle?: string;
   logo?: string;
+  averageTime?: string; // Add averageTime prop
   consentText?: {
     purpose?: string;
     dataCollection?: string;
@@ -20,6 +21,7 @@ interface ConsentScreenProps {
 const ConsentScreen: React.FC<ConsentScreenProps> = ({
   surveyTitle = 'Employee Engagement Survey',
   logo = '/bioptrics_fixed_black.png',
+  averageTime, // Add averageTime prop
   consentText = {
     purpose: 'This survey is designed to gather feedback to improve our services and workplace environment.',
     dataCollection: 'We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.',
@@ -47,6 +49,7 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
       <HeaderBar 
         surveyTitle={surveyTitle} 
         logo={logo}
+        averageTime={averageTime}
       />
       
       <ContentWrapper>
