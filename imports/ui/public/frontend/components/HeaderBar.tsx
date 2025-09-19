@@ -110,6 +110,7 @@ const AverageTimeTag = styled.div`
   justify-content: center;
   height: 28px;
   margin-left: 50px;
+  margin-top: 5px;
   white-space: nowrap;
 `;
 
