@@ -1,8 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { Meteor } from 'meteor/meteor';
 import ConsentScreen from './components/ConsentScreen';
 import StepByStepLayout from './layouts/StepByStepLayout';
 import AllOnOnePageLayout from './layouts/AllOnOnePageLayout';
+import ThankYouWrapper from './components/ThankYouWrapper';
+
+// Define interfaces for the wrapper components
+interface StepByStepLayoutProps {
+  survey: any;
+  sections: Section[];
+  questions: Question[];
+  currentStep: CurrentStep;
+  responses: Record<string, any>;
+  onAnswer: (questionId: string, answer: any, saveOnly?: boolean) => void;
+  onNext: () => void;
+  onBack: () => void;
+  onSubmit: () => void;
+  isSubmitted: boolean;
+  onSetCurrentStep: (step: CurrentStep) => void;
+}
+
+interface AllOnOnePageLayoutProps {
+  survey: any;
+  sections: Section[];
+  questions: Question[];
+  responses: Record<string, any>;
+  onAnswer: (questionId: string, answer: any, saveOnly?: boolean) => void;
+  onSubmit: () => void;
+  isSubmitted: boolean;
+}
+
+// Create stable wrapper components to ensure consistent hook usage
+const StableStepByStepLayout = memo((props: StepByStepLayoutProps) => {
+  const { survey, sections, questions, currentStep, responses, onAnswer, onNext, onBack, onSubmit, isSubmitted, onSetCurrentStep } = props;
+  
+  return (
+    <StepByStepLayout
+      survey={survey}
+      sections={sections}
+      questions={questions}
+      currentStep={currentStep}
+      responses={responses}
+      onAnswer={onAnswer}
+      onNext={onNext}
+      onBack={onBack}
+      onSubmit={onSubmit}
+      isSubmitted={isSubmitted}
+      onSetCurrentStep={onSetCurrentStep}
+    />
+  );
+});
+
+const StableAllOnOnePageLayout = memo((props: AllOnOnePageLayoutProps) => {
+  const { survey, sections, questions, responses, onAnswer, onSubmit, isSubmitted } = props;
+  
+  return (
+    <AllOnOnePageLayout
+      survey={survey}
+      sections={sections}
+      questions={questions}
+      responses={responses}
+      onAnswer={onAnswer}
+      onSubmit={onSubmit}
+      isSubmitted={isSubmitted}
+    />
+  );
+});
 
 interface Question {
   _id: string;
@@ -48,6 +111,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
   const [surveyWithTime, setSurveyWithTime] = useState<any>(survey);
+  const [startTime] = useState<number>(Date.now()); // Track when the survey started
   
   // State for step navigation
   const [currentStep, setCurrentStep] = useState<CurrentStep>({ type: 'section', id: '' });
@@ -342,8 +406,27 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     );
   };
   
-  // If user hasn't consented yet, show the consent screen
-  if (!hasConsented && !isPreviewMode) {
+  // Determine which layout to use
+  const layout = survey.layout || 'stepByStep';
+  
+  // Show consent screen if needed
+  const showConsentScreen = !hasConsented && !isPreviewMode;
+  
+  // Helper function to calculate time taken
+  const calculateTimeTaken = (startTimeMs: number): string => {
+    const completionTime = Math.round((Date.now() - startTimeMs) / 1000); // in seconds
+    const minutes = Math.floor(completionTime / 60);
+    const seconds = completionTime % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Stable callback for onSetCurrentStep
+  const handleSetCurrentStep = useCallback((step: CurrentStep) => {
+    setCurrentStep(step);
+  }, []);
+
+  // Render the appropriate content based on state
+  if (showConsentScreen) {
     return (
       <ConsentScreen
         surveyTitle={survey.title}
@@ -355,39 +438,47 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
       />
     );
   }
+
+  // If submitted, show thank you screen using our wrapper
+  if (isSubmitted) {
+    return (
+      <ThankYouWrapper
+        logo={survey.logo}
+        totalResponses={Object.keys(responses).length}
+        unansweredQuestions={questions.filter(q => !responses[q._id]).length}
+        completionPercentage={100}
+        timeTaken={calculateTimeTaken(startTime)}
+        onTakeAgain={() => window.location.reload()}
+        color={survey.color}
+      />
+    );
+  }
   
-  // Determine which layout to use
-  const layout = survey.layout || 'stepByStep';
-  
-  // Render the appropriate layout
-  return (
-    <>
-      {layout === 'allOnOnePage' ? (
-        <AllOnOnePageLayout 
-          survey={surveyWithTime || survey}
-          sections={sections}
-          questions={questions}
-          responses={responses}
-          onAnswer={handleQuestionAnswer}
-          onSubmit={handleSubmit}
-          isSubmitted={isSubmitted}
-        />
-      ) : (
-        <StepByStepLayout 
-          survey={surveyWithTime || survey}
-          sections={sections}
-          questions={questions}
-          currentStep={currentStep}
-          responses={responses}
-          onAnswer={handleQuestionAnswer}
-          onNext={handleNext}
-          onBack={handleBack}
-          onSubmit={handleSubmit}
-          isSubmitted={isSubmitted}
-          onSetCurrentStep={(step) => setCurrentStep(step)}
-        />
-      )}
-    </>
+  // Use the appropriate layout based on survey configuration
+  return layout === 'allOnOnePage' ? (
+    <StableAllOnOnePageLayout
+      survey={surveyWithTime || survey}
+      sections={sections}
+      questions={questions}
+      responses={responses}
+      onAnswer={handleQuestionAnswer}
+      onSubmit={handleSubmit}
+      isSubmitted={false} // Always false here since we handle isSubmitted above
+    />
+  ) : (
+    <StableStepByStepLayout
+      survey={surveyWithTime || survey}
+      sections={sections}
+      questions={questions}
+      currentStep={currentStep}
+      responses={responses}
+      onAnswer={handleQuestionAnswer}
+      onNext={handleNext}
+      onBack={handleBack}
+      onSubmit={handleSubmit}
+      isSubmitted={false} // Always false here since we handle isSubmitted above
+      onSetCurrentStep={handleSetCurrentStep}
+    />
   );
 };
 

@@ -56,7 +56,7 @@ const LeftSection = styled.div`
 const CenterSection = styled.div`
   flex-grow: 1;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-around;
   padding: 0;
 `;
 

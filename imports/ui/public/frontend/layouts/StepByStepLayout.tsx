@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import SidebarNavigation from '../components/SidebarNavigation';
 import SectionHeader from '../components/SectionHeader';
@@ -72,6 +72,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
   
+  // Reference to the setActiveSection function from SidebarNavigation
+  const setActiveSectionRef = useRef<((sectionId: string) => void) | null>(null);
+  
   // Effect to update current section/question based on currentStep
   useEffect(() => {
     console.log('Current step:', currentStep);
@@ -84,8 +87,11 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       setCurrentSection(section || null);
       setCurrentQuestion(null);
       
-      // When showing a section, also find its questions for debugging
-      if (section) {
+      // Update sidebar highlighting when section changes
+      if (section && setActiveSectionRef.current) {
+        setActiveSectionRef.current(section.id);
+        
+        // When showing a section, also find its questions for debugging
         const sectionQuestions = questions.filter(q => q.sectionId === section.id);
         console.log(`Questions for section ${section.name}:`, sectionQuestions);
       }
@@ -98,6 +104,11 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         const section = sections.find(s => s.id === question.sectionId);
         console.log('Found section for question:', section);
         setCurrentSection(section || null);
+        
+        // Update sidebar highlighting when section changes via question navigation
+        if (section && setActiveSectionRef.current) {
+          setActiveSectionRef.current(section.id);
+        }
       } else {
         console.log('Question has no sectionId');
         setCurrentSection(null);
@@ -108,19 +119,20 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     }
   }, [currentStep, sections, questions]);
   
-  // Calculate overall progress
-  const calculateProgress = () => {
-    const totalQuestions = questions.length;
+  // Calculate overall progress - memoized with safer calculation
+  const calculateProgress = useCallback(() => {
+    const totalQuestions = questions.length || 1; // Prevent division by zero
     const answeredQuestions = Object.keys(responses).length;
     return Math.round((answeredQuestions / totalQuestions) * 100);
-  };
-  
-  // Calculate section progress
-  const calculateSectionProgress = (sectionId: string) => {
+  }, [questions.length, responses]);
+
+  // Calculate section progress - memoized with safer calculation
+  const calculateSectionProgress = useCallback((sectionId: string) => {
     const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+    if (sectionQuestions.length === 0) return 0;
     const answeredSectionQuestions = sectionQuestions.filter(q => responses[q._id]);
     return Math.round((answeredSectionQuestions.length / sectionQuestions.length) * 100) || 0;
-  };
+  }, [questions, responses]);
   
   // Get question type
   const getQuestionType = (question: Question) => {
@@ -198,39 +210,24 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     return null;
   };
   
-  // If submitted, show thank you screen
-  if (isSubmitted) {
-    const completionTime = Math.round((Date.now() - startTime) / 1000); // in seconds
-    const minutes = Math.floor(completionTime / 60);
-    const seconds = completionTime % 60;
-    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds
-      .toString()
-      .padStart(2, '0')}`;
-    
-    return (
-      <ThankYouScreen 
-        logo={survey.logo}
-        totalResponses={Object.keys(responses).length}
-        unansweredQuestions={questions.filter(q => !responses[q._id]).length}
-        completionPercentage={calculateProgress()}
-        timeTaken={formattedTime}
-        onTakeAgain={() => window.location.reload()}
-        color={survey.color}
-      />
-    );
-  }
+  // Prepare sections data for sidebar - with more stable dependencies
+  const sidebarSections = useMemo(() => {
+    return sections.map(section => {
+      const progress = calculateSectionProgress(section.id);
+      const currentSectionId = currentSection?.id || '';
+      
+      return {
+        id: section.id,
+        name: section.name,
+        isActive: currentSectionId === section.id,
+        isCompleted: progress === 100,
+        progress: progress // Pass the progress percentage
+      };
+    });
+  }, [sections, calculateSectionProgress, currentSection?.id]);
   
-  // Prepare sections data for sidebar
-  const sidebarSections = sections.map(section => {
-    const progress = calculateSectionProgress(section.id);
-    
-    return {
-      id: section.id,
-      name: section.name,
-      isActive: currentSection?.id === section.id,
-      isCompleted: progress === 100
-    };
-  });
+  // We no longer handle the ThankYou screen here - it's moved to SurveyLayoutBridge
+  // This prevents hook order issues when transitioning to the submitted state
   
   // Get previous and next section names for navigation
   const getPreviousSectionName = () => {
@@ -297,6 +294,10 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         sections={sidebarSections}
         currentSectionId={currentSection?.id || ''}
         progress={calculateProgress()}
+        deferHighlighting={true} // Prevent automatic highlighting
+        onSetActiveSection={useCallback((callback: (sectionId: string) => void) => {
+          setActiveSectionRef.current = callback;
+        }, [])}
         onSectionClick={(sectionId) => {
           // Navigate to the selected section
           if (sectionId) {
@@ -304,30 +305,45 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
             const sectionIndex = sections.findIndex(s => s.id === sectionId);
             let canNavigate = true;
             
-            // Check if all required questions in previous sections are answered
-            for (let i = 0; i < sectionIndex; i++) {
-              const prevSectionId = sections[i].id;
-              const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId && q.required);
-              
-              // Check if all required questions in this section are answered
-              const allAnswered = prevSectionQuestions.every(q => {
-                const answer = responses[q._id];
-                return answer !== undefined && answer !== null && answer !== '' && 
-                      !(Array.isArray(answer) && answer.length === 0);
-              });
-              
-              if (!allAnswered) {
-                canNavigate = false;
-                break;
+            // Check if the clicked section is already completed
+            const clickedSectionProgress = calculateSectionProgress(sectionId);
+            const isClickedSectionCompleted = clickedSectionProgress === 100;
+            
+            // If the clicked section is completed, we can navigate directly to it
+            if (isClickedSectionCompleted) {
+              canNavigate = true;
+            } else {
+              // Otherwise, check if all required questions in previous sections are answered
+              for (let i = 0; i < sectionIndex; i++) {
+                const prevSectionId = sections[i].id;
+                const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId && q.required);
+                
+                // Check if all required questions in this section are answered
+                const allAnswered = prevSectionQuestions.every(q => {
+                  const answer = responses[q._id];
+                  return answer !== undefined && answer !== null && answer !== '' && 
+                        !(Array.isArray(answer) && answer.length === 0);
+                });
+                
+                if (!allAnswered) {
+                  canNavigate = false;
+                  break;
+                }
               }
             }
             
             if (canNavigate) {
+              // Highlight the section in the sidebar
+              if (setActiveSectionRef.current) {
+                setActiveSectionRef.current(sectionId);
+              }
+              
               // Navigate directly to the selected section
               const selectedSection = sections.find(s => s.id === sectionId);
               if (selectedSection) {
                 // If we have a direct setter for currentStep, use it
                 if (typeof onSetCurrentStep === 'function') {
+                  // Update the current step
                   onSetCurrentStep({
                     type: 'section',
                     id: sectionId

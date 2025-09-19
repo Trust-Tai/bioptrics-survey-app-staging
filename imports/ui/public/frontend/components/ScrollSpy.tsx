@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 
 interface ScrollSpyProps {
@@ -8,41 +8,58 @@ interface ScrollSpyProps {
   }>;
   offset?: number;
   color?: string;
+  onActiveSectionChange?: (sectionId: string) => void;
 }
 
 const ScrollSpy: React.FC<ScrollSpyProps> = ({
   sections,
   offset = 100,
-  color = '#552A47'
+  color = '#552A47',
+  onActiveSectionChange
 }) => {
   const [activeSection, setActiveSection] = useState<string>('');
   
+  // Use ref to store the latest activeSection value without triggering re-renders
+  const activeSectionRef = useRef(activeSection);
+  activeSectionRef.current = activeSection;
+  
+  // Store onActiveSectionChange in a ref to avoid dependency changes
+  const onActiveSectionChangeRef = useRef(onActiveSectionChange);
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + offset;
+    onActiveSectionChangeRef.current = onActiveSectionChange;
+  }, [onActiveSectionChange]);
+  
+  // Memoize the scroll handler to prevent recreating it on every render
+  const handleScroll = useCallback(() => {
+    const scrollPosition = window.scrollY + offset;
+    
+    // Find the current section based on scroll position
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const section = sections[i];
+      const element = document.getElementById(`section-${section.id}`);
       
-      // Find the current section based on scroll position
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i];
-        const element = document.getElementById(`section-${section.id}`);
-        
-        if (element) {
-          const { top } = element.getBoundingClientRect();
-          if (top <= offset) {
-            setActiveSection(section.id);
-            break;
+      if (element) {
+        const { top } = element.getBoundingClientRect();
+        if (top <= offset && activeSectionRef.current !== section.id) {
+          setActiveSection(section.id);
+          // Notify parent component about the active section change
+          if (onActiveSectionChangeRef.current) {
+            onActiveSectionChangeRef.current(section.id);
           }
+          break;
         }
       }
-    };
-    
+    }
+  }, [sections, offset]);
+  
+  useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     handleScroll(); // Initial check
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [sections, offset]);
+  }, [handleScroll]);
   
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(`section-${sectionId}`);
@@ -54,25 +71,25 @@ const ScrollSpy: React.FC<ScrollSpyProps> = ({
     }
   };
   
-  // return (
-  //   <NavContainer>
-  //     {sections.map(section => (
-  //       <NavItem 
-  //         key={section.id}
-  //         isActive={activeSection === section.id}
-  //         onClick={() => scrollToSection(section.id)}
-  //         color={color}
-  //       >
-  //         {section.name}
-  //       </NavItem>
-  //     ))}
-  //   </NavContainer>
-  // );
+  return (
+    <NavContainer>
+      {sections.map(section => (
+        <NavItem 
+          key={section.id}
+          isActive={activeSection === section.id}
+          onClick={() => scrollToSection(section.id)}
+          color={color}
+        >
+          {section.name}
+        </NavItem>
+      ))}
+    </NavContainer>
+  );
 };
 
 // Styled components
 const NavContainer = styled.div`
-  display: flex;
+  display: none;
   gap: 1rem;
   padding: 1rem 0;
   margin-bottom: 2rem;
@@ -110,4 +127,5 @@ const NavItem = styled.button<{ isActive: boolean; color: string }>`
   }
 `;
 
-export default ScrollSpy;
+// Memoize the entire component to prevent unnecessary re-renders
+export default React.memo(ScrollSpy);

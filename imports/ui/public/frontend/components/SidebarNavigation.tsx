@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { FiCheckCircle, FiCircle, FiUsers, FiStar, FiBriefcase, FiHeart } from 'react-icons/fi';
+import { FiCheckCircle, FiCircle, FiUsers, FiStar, FiBriefcase, FiHeart, FiClock } from 'react-icons/fi';
 import { MdOutlineWorkOutline } from 'react-icons/md';
+import { AiOutlineCheckCircle } from 'react-icons/ai';
+import { BiLoaderCircle } from 'react-icons/bi';
 
 interface SectionItem {
   id: string;
@@ -9,6 +11,7 @@ interface SectionItem {
   isActive: boolean;
   isCompleted: boolean;
   icon?: React.ReactNode;
+  progress?: number; // Section completion percentage
 }
 
 interface SidebarNavigationProps {
@@ -20,6 +23,8 @@ interface SidebarNavigationProps {
   logo?: string; // URL to the logo image
   surveyTitle?: string; // Survey title
   averageTime?: string; // Average completion time
+  deferHighlighting?: boolean; // If true, don't update active section until parent confirms
+  onSetActiveSection?: (callback: (sectionId: string) => void) => void; // Method to provide a callback for setting active section
 }
 
 // Helper function to get the appropriate icon for each section
@@ -43,22 +48,42 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   color = '#552A47',
   logo,
   surveyTitle,
-  averageTime
+  averageTime,
+  deferHighlighting = false,
+  onSetActiveSection
 }) => {
   // Use state to track the active section
   const [activeSection, setActiveSection] = useState<string>(currentSectionId || (sections.length > 0 ? sections[0].id : ''));
   
-  // Update active section when currentSectionId changes
+  // Update active section when currentSectionId changes, but only on initial render
   useEffect(() => {
     if (currentSectionId) {
       setActiveSection(currentSectionId);
+    } else if (sections.length > 0) {
+      setActiveSection(sections[0].id);
     }
-  }, [currentSectionId]);
+  }, []); // Empty dependency array - only run on mount
+  
+  // Expose setActiveSection to parent component if onSetActiveSection is provided
+  // Using a stable reference pattern to avoid infinite loops
+  const stableSetActiveSection = useRef((sectionId: string) => {
+    setActiveSection(sectionId);
+  });
+  
+  // Only register the callback once when the component mounts
+  useEffect(() => {
+    if (onSetActiveSection) {
+      onSetActiveSection(stableSetActiveSection.current);
+    }
+  }, [onSetActiveSection]);
   
   // Handle section click
   const handleSectionClick = (sectionId: string) => {
-    // Only update the active section if the click handler is successful
-    // This will be done in the useEffect when currentSectionId changes
+    // Only update the local state immediately if not deferring highlighting
+    if (!deferHighlighting) {
+      setActiveSection(sectionId);
+    }
+    // Call the parent's click handler
     onSectionClick(sectionId);
   };
   return (
@@ -89,7 +114,16 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
               style={index === 0 ? { marginTop: '55px' } : {}}
             >
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                {section.id === activeSection ? (
+                {/* Status Icon based on completion */}
+                {section.isCompleted ? (
+                  <CompletionIcon isActive={section.id === activeSection} color={color}>
+                    <AiOutlineCheckCircle size={20} />
+                  </CompletionIcon>
+                ) : section.progress && section.progress > 0 ? (
+                  <InProgressIcon isActive={section.id === activeSection} color={color}>
+                    <BiLoaderCircle size={20} />
+                  </InProgressIcon>
+                ) : section.id === activeSection ? (
                   <SectionIcon isActive={true} isCompleted={section.isCompleted} color={color}>
                     {icon}
                   </SectionIcon>
@@ -97,7 +131,27 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                   <RadioCircle isActive={false} />
                 )}
                 <SectionName isActive={section.id === activeSection}>{section.name}</SectionName>
+                
+                {/* Always show completion percentage */}
+                <CompletionPercentage 
+                  isActive={section.id === activeSection}
+                  progress={section.progress || 0}
+                >
+                  {section.progress || 0}%
+                </CompletionPercentage>
               </div>
+              
+              {/* Section progress bar */}
+              <SectionProgressContainer>
+                <SectionProgressBar>
+                  <SectionProgressIndicator 
+                    width={section.progress || 0} 
+                    color={color} 
+                    isActive={section.id === activeSection}
+                  />
+                </SectionProgressBar>
+              </SectionProgressContainer>
+              
               {section.id === activeSection && (
                 <StepIndicator>STEP {sections.findIndex(s => s.id === section.id) + 1}/{sections.length}</StepIndicator>
               )}
@@ -251,7 +305,7 @@ const StepIndicator = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-left: 36px;
-  margin-top: 4px;
+  margin-top: 5px;
   background-color: rgba(255, 255, 255, 0.2);
   padding: 2px 6px;
   border-radius: 4px;
@@ -305,6 +359,66 @@ const CompletedIcon = styled.div`
   align-items: center;
   justify-content: center;
   margin-left: auto;
+`;
+
+const CompletionIcon = styled.div<{ isActive: boolean; color: string }>`
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: ${props => props.isActive ? '#ffffff' : '#552A47'};
+  font-size: 18px;
+`;
+
+const InProgressIcon = styled.div<{ isActive: boolean; color: string }>`
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: ${props => props.isActive ? '#ffffff' : props.color};
+  font-size: 18px;
+`;
+
+const CompletionPercentage = styled.span<{ isActive: boolean; progress: number }>`
+  font-size: 12px;
+  color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.9)' : 
+    props.progress === 100 ? '#fff' : 
+    props.progress === 0 ? '#666' : '#552A47'};
+  margin-left: auto;
+  font-weight: 600;
+  background-color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.2)' : 
+    props.progress === 100 ? '#552A47DD' :
+    props.progress === 0 ? 'rgba(0, 0, 0, 0.05)' : 'rgba(85, 42, 71, 0.1)'};
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 42px;
+  text-align: center;
+`;
+
+const SectionProgressContainer = styled.div`
+  width: 100%;
+  padding: 0 36px;
+  margin-top: 8px;
+`;
+
+const SectionProgressBar = styled.div`
+  height: 3px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 1.5px;
+  position: relative;
+  overflow: hidden;
+`;
+
+const SectionProgressIndicator = styled.div<{ width: number; color: string; isActive: boolean }>`
+  height: 100%;
+  width: ${props => props.width}%;
+  background-color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.5)' : props.color};
+  border-radius: 1.5px;
+  transition: width 0.3s ease;
 `;
 
 export default SidebarNavigation;
