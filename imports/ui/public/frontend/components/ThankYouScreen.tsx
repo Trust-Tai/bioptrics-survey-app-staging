@@ -60,7 +60,7 @@ const hexToRgb = (hex: string): string => {
 };
 
 const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
-  logo = "/bioptrics_fixed_black.png",
+  logo,
   totalResponses,
   unansweredQuestions,
   completionPercentage,

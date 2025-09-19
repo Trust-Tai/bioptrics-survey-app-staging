@@ -24,10 +24,12 @@ const ThankYouWrapper = memo(({
   onTakeAgain, 
   color 
 }: ThankYouWrapperProps) => {
+  const DefaultLogo = "/TeamsynerG.png";
+  const mainLogo = logo || DefaultLogo;
   // Use stable references for all props to prevent re-renders
   return (
     <ThankYouScreen
-      logo={logo}
+      logo={mainLogo}
       totalResponses={totalResponses}
       unansweredQuestions={unansweredQuestions}
       completionPercentage={completionPercentage}

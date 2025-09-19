@@ -12,7 +12,8 @@ interface HeaderBarProps {
 const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo }) => {
   // Get timer state from context
   const { isRunning, elapsedTime } = useTimer();
-  
+  // Use the logo from the public folder
+  const DefaultLogo = "/TeamsynerG.png"; // This logo already exists in your public folder
   // For debugging
   console.log('HeaderBar render:', { isRunning, elapsedTime, averageTime });
   
@@ -21,7 +22,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo })
       <LeftSection>
         {logo ? (
           <LogoImage src={logo} alt="Logo" />
-        ) : (
+        ) : DefaultLogo ? (
+          <LogoImage src={DefaultLogo} alt="Logo" />
+        ):(
           <LogoText>TeamsynerG</LogoText>
         )}
       </LeftSection>
