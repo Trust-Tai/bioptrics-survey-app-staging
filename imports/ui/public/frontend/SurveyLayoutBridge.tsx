@@ -4,6 +4,7 @@ import ConsentScreen from './components/ConsentScreen';
 import StepByStepLayout from './layouts/StepByStepLayout';
 import AllOnOnePageLayout from './layouts/AllOnOnePageLayout';
 import ThankYouWrapper from './components/ThankYouWrapper';
+import { TimerProvider, useTimer } from './contexts/TimerContext';
 
 // Define interfaces for the wrapper components
 interface StepByStepLayoutProps {
@@ -96,7 +97,7 @@ interface SurveyLayoutBridgeProps {
   isPreviewMode?: boolean;
 }
 
-const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
+const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   survey,
   token,
   isPreviewMode = false
@@ -111,7 +112,9 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
   const [surveyWithTime, setSurveyWithTime] = useState<any>(survey);
-  const [startTime] = useState<number>(Date.now()); // Track when the survey started
+  // We no longer need these states as they're managed by the TimerContext
+  // const [startTime, setStartTime] = useState<number | null>(null);
+  // const [endTime, setEndTime] = useState<number | null>(null);
   
   // State for step navigation
   const [currentStep, setCurrentStep] = useState<CurrentStep>({ type: 'section', id: '' });
@@ -268,9 +271,15 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     }
   }, [survey]);
   
-  // Handle consent action
+  // Get timer functions from context
+  const { startTimer } = useTimer();
+
+  // Handle consent
   const handleConsent = () => {
+    console.log('Consent given, starting timer');
     setHasConsented(true);
+    // Start the timer when user gives consent
+    startTimer();
     
     // Save consent in localStorage
     try {
@@ -286,8 +295,14 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     
     try {
       const storedConsent = localStorage.getItem(`survey_consent_${survey._id}`);
+      console.log('Checking stored consent:', { storedConsent });
+      
       if (storedConsent === 'true') {
+        console.log('Found existing consent, starting timer');
         setHasConsented(true);
+        
+        // If user has already consented, start the timer
+        startTimer();
       }
     } catch (e) {
       console.error('Error reading consent from localStorage:', e);
@@ -378,18 +393,24 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     }
   };
 
+  // Get timer stop function from context
+  const { stopTimer } = useTimer();
+
   // Handle survey submission
   const handleSubmit = () => {
-    if (!survey || !survey._id) return;
+    // Stop the timer when user submits
+    stopTimer();
     
     // Submit survey response
+    if (!survey || !survey._id) return;
+    
+    // Create a final response
     Meteor.call(
       'surveys.submitResponse',
       {
         surveyId: survey._id,
-        responses: responses,
-        token: token,
-        incompleteResponseId: responseId
+        responseId: responseId,
+        responses: responses
       },
       (error: any, result: any) => {
         if (error) {
@@ -397,11 +418,11 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
           return;
         }
         
-        // Clear response ID from localStorage
-        localStorage.removeItem(`survey_response_${survey._id}`);
-        
-        // Show thank you screen
+        console.log('Survey submitted successfully');
         setIsSubmitted(true);
+        
+        // Remove incomplete response from localStorage
+        localStorage.removeItem(`survey_response_${survey._id}`);
       }
     );
   };
@@ -412,13 +433,8 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   // Show consent screen if needed
   const showConsentScreen = !hasConsented && !isPreviewMode;
   
-  // Helper function to calculate time taken
-  const calculateTimeTaken = (startTimeMs: number): string => {
-    const completionTime = Math.round((Date.now() - startTimeMs) / 1000); // in seconds
-    const minutes = Math.floor(completionTime / 60);
-    const seconds = completionTime % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
+  // Get elapsed time from timer context
+  const { elapsedTime } = useTimer();
 
   // Stable callback for onSetCurrentStep
   const handleSetCurrentStep = useCallback((step: CurrentStep) => {
@@ -447,7 +463,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
         totalResponses={Object.keys(responses).length}
         unansweredQuestions={questions.filter(q => !responses[q._id]).length}
         completionPercentage={100}
-        timeTaken={calculateTimeTaken(startTime)}
+        timeTaken={elapsedTime}
         onTakeAgain={() => window.location.reload()}
         color={survey.color}
       />
@@ -479,6 +495,14 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
       isSubmitted={false} // Always false here since we handle isSubmitted above
       onSetCurrentStep={handleSetCurrentStep}
     />
+  );
+};
+
+const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = (props) => {
+  return (
+    <TimerProvider>
+      <SurveyLayoutBridgeContent {...props} />
+    </TimerProvider>
   );
 };
 

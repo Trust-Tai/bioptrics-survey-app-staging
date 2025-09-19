@@ -1,5 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
+import { FiClock } from 'react-icons/fi';
+import { useTimer } from '../contexts/TimerContext';
 
 interface HeaderBarProps {
   surveyTitle?: string;
@@ -8,6 +10,12 @@ interface HeaderBarProps {
 }
 
 const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo }) => {
+  // Get timer state from context
+  const { isRunning, elapsedTime } = useTimer();
+  
+  // For debugging
+  console.log('HeaderBar render:', { isRunning, elapsedTime, averageTime });
+  
   return (
     <HeaderContainer>
       <LeftSection>
@@ -20,7 +28,22 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo })
       <CenterSection>
         <SurveyTitleContainer>
           <SurveyTitleText as="h1">{surveyTitle || 'Survey'}</SurveyTitleText>
-          {averageTime && <AverageTimeTag>{averageTime}</AverageTimeTag>}
+          {isRunning ? (
+            <TimerRunningTag>
+              <ClockIcon />
+              <span>{elapsedTime}</span>
+            </TimerRunningTag>
+          ) : elapsedTime ? (
+            <TimerRunningTag>
+              <ClockIcon />
+              <span>{elapsedTime}</span>
+            </TimerRunningTag>
+          ) : null}
+          {averageTime ? (
+            <AverageTimeTag>
+              <ClockIcon />
+              <span>{averageTime}</span>
+            </AverageTimeTag>) : null}
         </SurveyTitleContainer>
       </CenterSection>
       <RightSection>
@@ -99,19 +122,34 @@ const SurveyTitleText = styled.h1`
 `;
 
 const AverageTimeTag = styled.div`
-  background-color: #f5f0f7;
-  color: #552A47;
-  font-size: 14px;
-  padding: 4px 12px 0px 12px;
-  border-radius: 16px;
+  background-color: #552a47;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 18px;
+  color: #fff;
+  margin-left: 55px;
+  display: none;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
+`;
+const TimerRunningTag = styled.div`
+  background-color: #552a47;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 18px;
+  color: #fff;
+  margin-left: 55px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 28px;
-  margin-left: 50px;
-  margin-top: 5px;
-  white-space: nowrap;
+  gap: 8px;
+  font-weight: 700;
+`;
+
+const ClockIcon = styled(FiClock)`
+  font-size: 18px;
+  color: #fff;
+  font-weight: 700;
 `;
 
 export default HeaderBar;
