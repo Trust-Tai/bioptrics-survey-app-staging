@@ -276,7 +276,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   };
   
   return (
-    <LayoutContainer>
+    <PageContainer>
       {/* Notification Modal */}
       <NotificationModal
         isOpen={notificationOpen}
@@ -285,20 +285,25 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         title="Action Required"
         color={survey.color || '#552A47'}
       />
+      {/* Header Bar - Now outside the main layout */}
       <HeaderBar 
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
         logo={survey.logo}
       />
-      <SidebarNavigation 
-        sections={sidebarSections}
-        currentSectionId={currentSection?.id || ''}
-        progress={calculateProgress()}
-        deferHighlighting={true} // Prevent automatic highlighting
-        onSetActiveSection={useCallback((callback: (sectionId: string) => void) => {
-          setActiveSectionRef.current = callback;
-        }, [])}
-        onSectionClick={(sectionId) => {
+      
+      {/* Main Layout with Sidebar and Content */}
+      <MainLayout>
+        {/* Sidebar Navigation */}
+        <SidebarNavigation 
+          sections={sidebarSections}
+          currentSectionId={currentSection?.id || ''}
+          progress={calculateProgress()}
+          deferHighlighting={true} // Prevent automatic highlighting
+          onSetActiveSection={useCallback((callback: (sectionId: string) => void) => {
+            setActiveSectionRef.current = callback;
+          }, [])}
+          onSectionClick={(sectionId) => {
           // Navigate to the selected section
           if (sectionId) {
             // Check if all required questions in previous sections are answered
@@ -468,27 +473,37 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         
         {/* We're not using individual question view in this layout */}
       </ContentContainer>
-    </LayoutContainer>
+      </MainLayout>
+    </PageContainer>
   );
 };
 
 // Styled components
-const LayoutContainer = styled.div`
+const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+`;
+
+const MainLayout = styled.div`
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  position: relative;
 `;
 
 const ContentContainer = styled.div`
   flex-grow: 1;
-  padding: 40px 10rem;
-  margin-left: 280px;
-  max-width: 100%;
-  margin-top: 0px; /* Add space for the header */
+  padding: 100px 2rem 40px;
+  margin: 0 auto;
+  margin-left: 280px; /* Add margin to account for fixed sidebar */
+  width: calc(100% - 280px); /* Adjust width to account for sidebar */
   
   @media (max-width: 768px) {
     margin-left: 0;
-    padding: 1rem;
+    width: 100%;
+    padding: 100px 1rem 1rem;
   }
 `;
 
@@ -500,16 +515,19 @@ const QuestionsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  margin: 2rem 0;
+  margin: 2rem auto;
+  width: 100%;
+  max-width: 800px;
 `;
 
 const QuestionItem = styled.div`
   display: flex;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.8rem;
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  width: 100%;
 `;
 
 const QuestionNumber = styled.div`

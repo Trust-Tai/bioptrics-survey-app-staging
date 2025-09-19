@@ -31,11 +31,8 @@ export const TimerProvider: React.FC<{children: React.ReactNode}> = ({ children 
   const startTimer = () => {
     // Only start if not already running
     if (!startTime) {
-      console.log('Timer started');
       setStartTime(Date.now());
       setIsRunning(true);
-    } else {
-      console.log('Timer already started, ignoring');
     }
   };
   
@@ -47,23 +44,23 @@ export const TimerProvider: React.FC<{children: React.ReactNode}> = ({ children 
   
   // Update elapsed time every second
   useEffect(() => {
-    console.log('Timer effect running with:', { startTime, endTime, isRunning });
     let interval: NodeJS.Timeout | null = null;
     
     if (startTime && !endTime) {
-      console.log('Setting up timer interval');
-      interval = setInterval(() => {
+      // Use requestAnimationFrame for more efficient updates
+      const updateTimer = () => {
         const now = Date.now();
         const seconds = Math.floor((now - startTime) / 1000);
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        const newTime = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-        console.log('Updating elapsed time:', newTime);
-        setElapsedTime(newTime);
-      }, 1000);
+        setElapsedTime(`${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`);
+      };
+      
+      interval = setInterval(updateTimer, 1000);
+      // Initial update
+      updateTimer();
     } else if (startTime && endTime) {
       // Calculate final time when timer is stopped
-      console.log('Timer stopped, calculating final time');
       const seconds = Math.floor((endTime - startTime) / 1000);
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
@@ -72,11 +69,10 @@ export const TimerProvider: React.FC<{children: React.ReactNode}> = ({ children 
     
     return () => {
       if (interval) {
-        console.log('Clearing timer interval');
         clearInterval(interval);
       }
     };
-  }, [startTime, endTime, isRunning]);
+  }, [startTime, endTime]);
   
   return (
     <TimerContext.Provider value={{ 

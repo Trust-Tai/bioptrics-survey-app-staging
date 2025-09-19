@@ -33,8 +33,12 @@ const HeaderContainer = styled.div<{ color: string }>`
   background-color: ${props => `${props.color}`};
   color: white;
   padding: 2rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  border-radius: 12px;
+  margin: 0 auto 2rem;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  text-align: center;
 `;
 
 const Title = styled.h2`
@@ -48,7 +52,7 @@ const Description = styled.p`
   margin: 0 0 1.5rem 0;
   opacity: 0.9;
   line-height: 1.5;
-  max-width: 468px;
+  max-width: 600px;
 `;
 
 const ProgressContainer = styled.div`

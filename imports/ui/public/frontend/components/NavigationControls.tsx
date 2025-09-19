@@ -48,10 +48,11 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
 const ControlsContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  margin-top: 2rem;
+  margin: 2rem auto 0;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
   width: 100%;
+  max-width: 800px;
 `;
 
 const BackButton = styled.button`

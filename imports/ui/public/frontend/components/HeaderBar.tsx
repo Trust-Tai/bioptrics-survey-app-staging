@@ -14,8 +14,30 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo })
   const { isRunning, elapsedTime } = useTimer();
   // Use the logo from the public folder
   const DefaultLogo = "/TeamsynerG.png"; // This logo already exists in your public folder
-  // For debugging
-  console.log('HeaderBar render:', { isRunning, elapsedTime, averageTime });
+  // Use memo for stable rendering
+  const timerDisplay = React.useMemo(() => {
+    if (isRunning || elapsedTime !== '00:00') {
+      return (
+        <TimerRunningTag>
+          <ClockIcon />
+          <span>{elapsedTime}</span>
+        </TimerRunningTag>
+      );
+    }
+    return null;
+  }, [isRunning, elapsedTime]);
+  
+  const averageTimeDisplay = React.useMemo(() => {
+    if (averageTime) {
+      return (
+        <AverageTimeTag>
+          <ClockIcon />
+          <span>{averageTime}</span>
+        </AverageTimeTag>
+      );
+    }
+    return null;
+  }, [averageTime]);
   
   return (
     <HeaderContainer>
@@ -31,22 +53,8 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo })
       <CenterSection>
         <SurveyTitleContainer>
           <SurveyTitleText as="h1">{surveyTitle || 'Survey'}</SurveyTitleText>
-          {isRunning ? (
-            <TimerRunningTag>
-              <ClockIcon />
-              <span>{elapsedTime}</span>
-            </TimerRunningTag>
-          ) : elapsedTime ? (
-            <TimerRunningTag>
-              <ClockIcon />
-              <span>{elapsedTime}</span>
-            </TimerRunningTag>
-          ) : null}
-          {averageTime ? (
-            <AverageTimeTag>
-              <ClockIcon />
-              <span>{averageTime}</span>
-            </AverageTimeTag>) : null}
+          {timerDisplay}
+          {averageTimeDisplay}
         </SurveyTitleContainer>
       </CenterSection>
       <RightSection>
@@ -71,6 +79,7 @@ const HeaderContainer = styled.div`
   z-index: 100;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   gap: 21px;
+  height: 80px; /* Fixed height for header */
 `;
 
 const LeftSection = styled.div`
@@ -82,7 +91,7 @@ const LeftSection = styled.div`
 const CenterSection = styled.div`
   flex-grow: 1;
   display: flex;
-  justify-content: space-around;
+  justify-content: center; /* Center the title */
   padding: 0;
 `;
 

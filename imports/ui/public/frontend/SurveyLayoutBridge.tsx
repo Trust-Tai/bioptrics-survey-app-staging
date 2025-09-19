@@ -275,8 +275,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   const { startTimer } = useTimer();
 
   // Handle consent
-  const handleConsent = () => {
-    console.log('Consent given, starting timer');
+  const handleConsent = useCallback(() => {
     setHasConsented(true);
     // Start the timer when user gives consent
     startTimer();
@@ -287,7 +286,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     } catch (e) {
       console.error('Error saving consent to localStorage:', e);
     }
-  };
+  }, [survey, startTimer]);
   
   // Check if user has already consented
   useEffect(() => {
@@ -295,10 +294,8 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     
     try {
       const storedConsent = localStorage.getItem(`survey_consent_${survey._id}`);
-      console.log('Checking stored consent:', { storedConsent });
       
       if (storedConsent === 'true') {
-        console.log('Found existing consent, starting timer');
         setHasConsented(true);
         
         // If user has already consented, start the timer
@@ -307,7 +304,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     } catch (e) {
       console.error('Error reading consent from localStorage:', e);
     }
-  }, [survey]);
+  }, [survey, startTimer]);
   
   // Handle question answers
   const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {

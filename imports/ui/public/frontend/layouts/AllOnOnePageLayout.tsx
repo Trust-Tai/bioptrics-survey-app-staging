@@ -113,12 +113,13 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
   };
   
   return (
-    <LayoutContainer>
+    <PageContainer>
       <HeaderBar 
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
         logo={survey.logo}
       />
+      <MainLayout>
       <SidebarNavigation 
         sections={sectionData}
         currentSectionId={activeSectionId}
@@ -211,7 +212,8 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
           This survey was created using Bioptrics Survey Platform
         </Footer>
       </ContentContainer>
-    </LayoutContainer>
+      </MainLayout>
+    </PageContainer>
   );
 };
 
@@ -232,22 +234,32 @@ const getQuestionType = (question: any) => {
 };
 
 // Styled components
-const LayoutContainer = styled.div`
+const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+`;
+
+const MainLayout = styled.div`
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
 `;
 
 const ContentContainer = styled.div`
   flex-grow: 1;
-  padding: 80px 10rem;
-  margin-left: 280px;
-  max-width: 1250px;
-  margin-top: 0px; /* Add space for the header */
+  padding: 100px 2rem 40px;
+  margin: 0 auto;
+  margin-left: 280px; /* Add margin to account for fixed sidebar */
+  width: calc(100% - 280px); /* Adjust width to account for sidebar */
   
   @media (max-width: 768px) {
     margin-left: 0;
-    padding: 1rem;
+    width: 100%;
+    padding: 100px 1rem 1rem;
   }
 `;
 

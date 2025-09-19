@@ -91,8 +91,9 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
 
 // Styled components
 const SectionContainer = styled.div`
-  margin-bottom: 3rem;
+ margin: 0 auto 2rem;
   scroll-margin-top: 2rem;
+  max-width: 800px;
 `;
 
 const SectionHeader = styled.div<{ color: string }>`

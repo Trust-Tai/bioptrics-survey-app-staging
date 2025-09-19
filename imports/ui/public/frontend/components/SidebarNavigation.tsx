@@ -175,16 +175,18 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
 // Styled components
 const SidebarContainer = styled.div`
   width: 280px;
+  min-width: 280px;
   background-color: #ffffff;
   border-right: 1px solid #e5e7eb;
-  height: calc(100vh - 60px); /* Subtract header height */
+  height: calc(100vh - 80px); /* Subtract header height */
   position: fixed;
+  top: 80px; /* Start below the header */
   left: 0;
-  top: 60px; /* Start below the header */
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
   overflow-y: auto;
+  z-index: 50;
   
   @media (max-width: 768px) {
     width: 100%;
@@ -192,6 +194,7 @@ const SidebarContainer = styled.div`
     position: relative;
     border-right: none;
     border-bottom: 1px solid #e5e7eb;
+    left: auto;
   }
 `;
 
