@@ -8,6 +8,7 @@ interface NavigationControlsProps {
   backLabel?: string;
   nextLabel?: string;
   isNextDisabled?: boolean;
+  isBackDisabled?: boolean;
   isLastQuestion?: boolean;
   previousSectionName?: string;
   nextSectionName?: string;
@@ -20,6 +21,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
   backLabel = 'Previous',
   nextLabel = 'Next Question',
   isNextDisabled = false,
+  isBackDisabled = false,
   isLastQuestion = false,
   previousSectionName,
   nextSectionName,
@@ -27,7 +29,10 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
 }) => {
   return (
     <ControlsContainer>
-      <BackButton onClick={onBack}>
+      <BackButton 
+        onClick={onBack} 
+        disabled={isBackDisabled}
+      >
         <FiArrowLeft size={18} style={{ marginRight: '8px' }} />
         {previousSectionName ? `${previousSectionName}` : backLabel}
       </BackButton>
@@ -55,22 +60,23 @@ const ControlsContainer = styled.div`
   max-width: 800px;
 `;
 
-const BackButton = styled.button`
+const BackButton = styled.button<{ disabled: boolean }>`
   display: flex;
   align-items: center;
   background: none;
   border: none;
-  color: #6b7280;
+  color: ${props => props.disabled ? '#d1d5db' : '#6b7280'};
   font-size: 0.9rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   padding: 0.75rem 1rem;
   border-radius: 4px;
   transition: all 0.2s ease;
+  opacity: ${props => props.disabled ? 0.6 : 1};
   
   &:hover {
-    background-color: #f3f4f6;
-    color: #374151;
+    background-color: ${props => props.disabled ? 'transparent' : '#f3f4f6'};
+    color: ${props => props.disabled ? '#d1d5db' : '#374151'};
   }
 `;
 

@@ -67,6 +67,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [startTime] = useState<number>(Date.now());
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Add loading state
   
   // State for notification modal
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
@@ -75,11 +76,51 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   // Reference to the setActiveSection function from SidebarNavigation
   const setActiveSectionRef = useRef<((sectionId: string) => void) | null>(null);
   
+  // Track if initial navigation has been done
+  const initialNavigationDone = useRef<boolean>(false);
+  
+  // Separate effect to force navigation to first question ONLY on initial load
+  useEffect(() => {
+    if (questions.length > 0 && !isLoading && !initialNavigationDone.current) {
+      console.log('Questions loaded, checking for auto-navigation');
+      
+      // FORCE navigation to first question when questions are loaded (only on initial load)
+      if (currentStep.type === 'section' && sections.length > 0) {
+        // Find the first section with questions
+        for (const section of sections) {
+          const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+          if (sectionQuestions.length > 0) {
+            console.log('Auto-navigating to first question in section:', section.name);
+            
+            // Use a timeout to ensure state updates properly
+            setTimeout(() => {
+              if (onSetCurrentStep) {
+                onSetCurrentStep({
+                  type: 'question',
+                  id: sectionQuestions[0]._id
+                });
+                // Mark initial navigation as done
+                initialNavigationDone.current = true;
+                console.log('Initial navigation completed');
+              }
+            }, 300);
+            break;
+          }
+        }
+      }
+    }
+  }, [questions, sections, currentStep, isLoading, onSetCurrentStep]);
+  
   // Effect to update current section/question based on currentStep
   useEffect(() => {
     console.log('Current step:', currentStep);
     console.log('Available sections:', sections);
     console.log('Available questions:', questions);
+    
+    // If we have questions, we're no longer loading
+    if (questions.length > 0) {
+      setIsLoading(false);
+    }
     
     if (currentStep.type === 'section') {
       const section = sections.find(s => s.id === currentStep.id);
@@ -150,30 +191,109 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     return 'text';
   };
   
-  // Handle continue button click
-  const handleContinue = () => {
+  // Custom back button handler
+  const handleBack = () => {
+    console.log('handleBack called in StepByStepLayout');
+    
+    // If we're on a question, check if we need special handling
     if (currentStep.type === 'question' && currentQuestion) {
-      // Find all questions in the current section
       const sectionQuestions = questions.filter(q => q.sectionId === currentQuestion.sectionId);
       const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
       
-      // Check if this is the last question in the section
-      const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
-      
-      // Check if this is the last section
-      const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
-      const isLastSection = currentSectionIndex === sections.length - 1;
-      
-      if (isLastQuestionInSection && isLastSection) {
-        // If last question in last section, submit the survey
-        onSubmit();
-      } else {
-        // Otherwise, go to next question or section
-        onNext();
+      // If this is the first question in a section and not the first section
+      if (currentQuestionIndex === 0) {
+        const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
+        if (currentSectionIndex > 0) {
+          // Get the previous section
+          const prevSectionId = sections[currentSectionIndex - 1].id;
+          const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId);
+          
+          if (prevSectionQuestions.length > 0 && onSetCurrentStep) {
+            // If previous section has questions, go directly to the last question
+            console.log('Moving to last question of previous section:', sections[currentSectionIndex - 1].name);
+            onSetCurrentStep({
+              type: 'question',
+              id: prevSectionQuestions[prevSectionQuestions.length - 1]._id
+            });
+            return;
+          }
+        }
       }
-    } else {
-      onNext();
     }
+    
+    // Default back behavior
+    onBack();
+  };
+  
+  // Handle continue button click
+  const handleContinue = () => {
+    console.log('handleContinue called, currentStep:', currentStep);
+    
+    // For one-question-at-a-time navigation
+    if (currentStep.type === 'question' && !isAnswerValid()) {
+      // If the current question is required and not answered, show notification
+      setNotificationMessage('Please answer this question before continuing.');
+      setNotificationOpen(true);
+      return;
+    }
+    
+    // If we're on a section view, try to navigate directly to the first question
+    if (currentStep.type === 'section' && currentSection) {
+      const sectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+      
+      if (sectionQuestions.length > 0) {
+        // If we have questions in this section, navigate to the first one
+        if (onSetCurrentStep) {
+          onSetCurrentStep({
+            type: 'question',
+            id: sectionQuestions[0]._id
+          });
+          return;
+        }
+      } else {
+        // If this section has no questions, try to move to the next section
+        const currentSectionIndex = sections.findIndex(s => s.id === currentSection.id);
+        if (currentSectionIndex < sections.length - 1) {
+          // Get the next section
+          const nextSectionId = sections[currentSectionIndex + 1].id;
+          const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+          
+          if (nextSectionQuestions.length > 0 && onSetCurrentStep) {
+            // If next section has questions, go directly to first question
+            onSetCurrentStep({
+              type: 'question',
+              id: nextSectionQuestions[0]._id
+            });
+            return;
+          }
+        }
+      }
+    }
+    
+    // If we're at the last question of a section, check if we need to go to the next section
+    if (currentStep.type === 'question' && currentQuestion && isLastQuestion()) {
+      const currentSectionId = currentQuestion.sectionId;
+      const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
+      
+      if (currentSectionIndex < sections.length - 1) {
+        // Get the next section
+        const nextSectionId = sections[currentSectionIndex + 1].id;
+        const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+        
+        if (nextSectionQuestions.length > 0 && onSetCurrentStep) {
+          console.log('Moving directly to first question of next section:', sections[currentSectionIndex + 1].name);
+          // If next section has questions, go directly to first question
+          onSetCurrentStep({
+            type: 'question',
+            id: nextSectionQuestions[0]._id
+          });
+          return;
+        }
+      }
+    }
+    
+    // Otherwise, proceed to next question or section
+    onNext();
   };
   
   // Check if answer is valid
@@ -275,6 +395,44 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     }
   };
   
+  // Determine if current question is the first question of the first section
+  const isFirstQuestionOfFirstSection = () => {
+    if (!currentQuestion || !currentSection) return false;
+    
+    // Check if this is the first section
+    const isFirstSection = sections.findIndex(s => s.id === currentSection.id) === 0;
+    if (!isFirstSection) return false;
+    
+    // Check if this is the first question in the section
+    const sectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+    const isFirstQuestion = sectionQuestions.findIndex(q => q._id === currentQuestion._id) === 0;
+    
+    return isFirstSection && isFirstQuestion;
+  };
+  
+  // Get the appropriate next button label based on current position
+  const getNextButtonLabel = () => {
+    if (!currentQuestion) return 'Next';
+    
+    const sectionQuestions = questions.filter(q => q.sectionId === currentQuestion.sectionId);
+    const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
+    const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
+    
+    if (isLastQuestionInSection) {
+      // If this is the last question in the section
+      const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
+      const isLastSection = currentSectionIndex === sections.length - 1;
+      
+      if (isLastSection) {
+        return 'Submit';
+      } else {
+        return `Next Section: ${getNextSectionName()}`;
+      }
+    } else {
+      return 'Next Question';
+    }
+  };
+  
   return (
     <PageContainer>
       {/* Notification Modal */}
@@ -346,9 +504,18 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
               // Navigate directly to the selected section
               const selectedSection = sections.find(s => s.id === sectionId);
               if (selectedSection) {
-                // If we have a direct setter for currentStep, use it
-                if (typeof onSetCurrentStep === 'function') {
-                  // Update the current step
+                // For one-question-at-a-time navigation, we want to go directly to the first question
+                // Get the first question in this section
+                const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+                
+                if (sectionQuestions.length > 0 && typeof onSetCurrentStep === 'function') {
+                  // Navigate directly to the first question in this section
+                  onSetCurrentStep({
+                    type: 'question',
+                    id: sectionQuestions[0]._id
+                  });
+                } else if (typeof onSetCurrentStep === 'function') {
+                  // If no questions, just go to the section view
                   onSetCurrentStep({
                     type: 'section',
                     id: sectionId
@@ -426,7 +593,71 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       />
       
       <ContentContainer>
-        {currentStep.type === 'section' && currentSection && (
+        {/* Show loading indicator when questions are being loaded */}
+        {isLoading && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                border: '4px solid #f3f3f3',
+                borderTop: `4px solid ${survey.color || '#552A47'}`,
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                margin: '0 auto 20px',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <p>Loading survey questions...</p>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          </div>
+        )}
+        
+        {/* Show a fallback view if we're in a section but there are no questions */}
+        {!isLoading && currentStep.type === 'section' && currentSection && questions.filter(q => q.sectionId === currentSection.id).length === 0 && (
+          <>
+            <SectionHeader 
+              title={currentSection.name}
+              description={currentSection.description}
+              progress={100}
+              color={survey.color}
+            />
+            
+            <QuestionsContainer>
+              <QuestionItem>
+                <QuestionContent>
+                  <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <h3>No Questions Available</h3>
+                    <p>This section doesn't have any questions.</p>
+                    {sections.findIndex(s => s.id === currentSection.id) < sections.length - 1 && (
+                      <button 
+                        onClick={handleContinue}
+                        style={{
+                          backgroundColor: survey.color || '#552A47',
+                          color: 'white',
+                          padding: '0.75rem 1.5rem',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '1rem',
+                          cursor: 'pointer',
+                          marginTop: '1rem'
+                        }}
+                      >
+                        Next Section
+                      </button>
+                    )}
+                  </div>
+                </QuestionContent>
+              </QuestionItem>
+            </QuestionsContainer>
+          </>
+        )}
+        
+        {!isLoading && currentStep.type === 'question' && currentQuestion && currentSection && (
           <>
             <SectionHeader 
               title={currentSection.name}
@@ -435,38 +666,34 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
               color={survey.color}
             />
             
-            {/* Display all questions for this section */}
+            {/* Display current question */}
             <QuestionsContainer>
-              {questions
-                .filter(q => q.sectionId === currentSection.id)
-                .map((question, index) => (
-                  <QuestionItem key={question._id}>
-                    <QuestionNumber>Q{index + 1}.</QuestionNumber>
-                    <QuestionContent>
-                      <QuestionRenderer
-                        questionType={getQuestionType(question)}
-                        questionText={question.text}
-                        options={question.options || []}
-                        value={responses[question._id]}
-                        onChange={(value) => onAnswer(question._id, value)}
-                        required={!!question.required}
-                        currentStep={index + 1}
-                        totalSteps={questions.filter(q => q.sectionId === currentSection.id).length}
-                        image={question.image || (question.currentVersion && question.currentVersion.image)} // Get image from question or currentVersion
-                      />
-                    </QuestionContent>
-                  </QuestionItem>
-                ))
-              }
+              <QuestionItem>
+                <QuestionNumber>Q{getQuestionPosition().current}/{getQuestionPosition().total}</QuestionNumber>
+                <QuestionContent>
+                  <QuestionRenderer
+                    questionType={getQuestionType(currentQuestion)}
+                    questionText={currentQuestion.text}
+                    options={currentQuestion.options || []}
+                    value={responses[currentQuestion._id]}
+                    onChange={(value) => onAnswer(currentQuestion._id, value)}
+                    required={!!currentQuestion.required}
+                    currentStep={getQuestionPosition().current}
+                    totalSteps={getQuestionPosition().total}
+                    image={currentQuestion.image || (currentQuestion.currentVersion && currentQuestion.currentVersion.image)}
+                  />
+                </QuestionContent>
+              </QuestionItem>
             </QuestionsContainer>
             
             <NavigationControls 
-              onBack={onBack}
+              onBack={handleBack}
               onNext={handleContinue}
-              nextLabel={getNextSectionName() ? `Next: ${getNextSectionName()}` : "Submit"}
+              nextLabel={getNextButtonLabel()}
               previousSectionName={getPreviousSectionName()}
               color={survey.color}
-              isNextDisabled={!areSectionQuestionsAnswered(currentSection.id)}
+              isNextDisabled={!isAnswerValid()}
+              isBackDisabled={isFirstQuestionOfFirstSection()}
             />
           </>
         )}
@@ -477,6 +704,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     </PageContainer>
   );
 };
+
 
 // Styled components
 const PageContainer = styled.div`
@@ -551,6 +779,25 @@ const StepIndicator = styled.div`
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
+`;
+
+const SectionIntro = styled.div`
+  text-align: center;
+  padding: 2rem;
+  
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #374151;
+  }
+  
+  p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+  }
 `;
 
 export default StepByStepLayout;
