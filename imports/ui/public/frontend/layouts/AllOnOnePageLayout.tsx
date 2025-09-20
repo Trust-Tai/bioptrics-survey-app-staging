@@ -320,7 +320,7 @@ const SubmitButtonContainer = styled.div`
 `;
 
 const SubmitButton = styled.button<{ color: string; disabled: boolean }>`
-  background-color: ${props => props.disabled ? '#d1d5db' : (props.color || '#552A47')};
+  background-color: var(--primary-color, #552A47);
   color: white;
   border: none;
   font-size: 1rem;
@@ -331,7 +331,7 @@ const SubmitButton = styled.button<{ color: string; disabled: boolean }>`
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.disabled ? '#d1d5db' : '#3d1e32'};
+    background-color: var(--secondary-color, #3d1e32);
     transform: ${props => props.disabled ? 'none' : 'translateY(-1px)'};
   }
 `;

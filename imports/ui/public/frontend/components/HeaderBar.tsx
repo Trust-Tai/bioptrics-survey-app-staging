@@ -111,8 +111,8 @@ const LogoImage = styled.img`
 const LogoText = styled.div`
   font-size: 18px;
   font-weight: 600;
-  color: #552A47;
-  font-family: 'Inter', sans-serif;
+  color: var(--primary-color, #552A47);
+  font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
 const SurveyTitleContainer = styled.div`
@@ -124,17 +124,17 @@ const SurveyTitleContainer = styled.div`
 const SurveyTitleText = styled.h1`
   font-size: 28px;
   font-weight: 600;
-  color: rgba(85, 42, 71, 1);
+  color: var(--primary-color, #552A47);
   margin: 0;
   padding: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--heading-font, 'Inter, sans-serif');
   text-align: left;
   line-height: 1.2;
   width: 100%;
 `;
 
 const AverageTimeTag = styled.div`
-  background-color: #552a47;
+  background-color: var(--primary-color, #552A47);
   border-radius: 20px;
   padding: 6px 14px;
   font-size: 18px;
@@ -146,7 +146,7 @@ const AverageTimeTag = styled.div`
   font-weight: 700;
 `;
 const TimerRunningTag = styled.div`
-  background-color: #552a47;
+  background-color: var(--primary-color, #552A47);
   border-radius: 20px;
   padding: 6px 14px;
   font-size: 18px;

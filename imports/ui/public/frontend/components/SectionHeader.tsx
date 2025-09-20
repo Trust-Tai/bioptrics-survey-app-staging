@@ -5,22 +5,23 @@ interface SectionHeaderProps {
   title: string;
   description: string;
   progress: number; // percentage for this section
-  color?: string;
+  color?: string; // Kept for backward compatibility
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({
   title,
   description,
   progress,
+  // color prop is kept for backward compatibility but not used directly
   color = '#552A47'
 }) => {
   return (
-    <HeaderContainer color={color}>
+    <HeaderContainer>
       <Title>{title}</Title>
       <Description>{description}</Description>
       <ProgressContainer>
         <ProgressBar>
-          <ProgressIndicator width={progress} color={color} />
+          <ProgressIndicator width={progress} />
         </ProgressBar>
         <ProgressText>{progress}% Completed</ProgressText>
       </ProgressContainer>
@@ -29,8 +30,8 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
 };
 
 // Styled components
-const HeaderContainer = styled.div<{ color: string }>`
-  background-color: ${props => `${props.color}`};
+const HeaderContainer = styled.div`
+  background-color: var(--primary-color, #552A47);
   color: white;
   padding: 2rem;
   border-radius: 12px;
@@ -68,7 +69,7 @@ const ProgressBar = styled.div`
   overflow: hidden;
 `;
 
-const ProgressIndicator = styled.div<{ width: number; color: string }>`
+const ProgressIndicator = styled.div<{ width: number }>`
   height: 100%;
   width: ${props => props.width}%;
   background-color: white;

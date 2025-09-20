@@ -19,7 +19,7 @@ interface SidebarNavigationProps {
   currentSectionId: string;
   progress: number; // percentage
   onSectionClick: (sectionId: string) => void;
-  color?: string;
+  color?: string; // Kept for backward compatibility
   logo?: string; // URL to the logo image
   surveyTitle?: string; // Survey title
   averageTime?: string; // Average completion time
@@ -45,7 +45,7 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   currentSectionId,
   progress,
   onSectionClick,
-  color = '#552A47',
+  color = '#552A47', // Kept for backward compatibility
   logo,
   surveyTitle,
   averageTime,
@@ -206,7 +206,7 @@ const LogoContainer = styled.div`
 const LogoText = styled.h1`
   font-size: 18px;
   font-weight: 600;
-  color: #552A47;
+  color: var(--primary-color, #552A47);
   margin: 0;
   padding: 0;
 `;
@@ -238,10 +238,10 @@ const ProgressBar = styled.div`
   overflow: hidden;
 `;
 
-const ProgressIndicator = styled.div<{ width: number; color: string }>`
+const ProgressIndicator = styled.div<{ width: number; color?: string }>`
   height: 100%;
   width: ${props => props.width}%;
-  background-color: ${props => props.color};
+  background-color: var(--primary-color, #552A47);
   border-radius: 2px;
   transition: width 0.3s ease;
 `;
@@ -262,12 +262,12 @@ const SectionsList = styled.div`
   margin-top: 20px;
 `;
 
-const SectionItem = styled.div<{ isActive: boolean; isCompleted: boolean; color: string }>`
+const SectionItem = styled.div<{ isActive: boolean; isCompleted: boolean; color?: string }>`
   display: flex;
   align-items: center;
   padding: 12px 20px;
   cursor: pointer;
-  background-color: ${props => props.isActive ? '#552A47' : 'transparent'};
+  background-color: ${props => props.isActive ? 'var(--primary-color, #552A47)' : 'transparent'};
   transition: all 0.2s ease;
   border-radius: 0;
   margin: 0 10px;
@@ -277,11 +277,11 @@ const SectionItem = styled.div<{ isActive: boolean; isCompleted: boolean; color:
   border-radius: 6px;
   
   &:hover {
-    background-color: ${props => props.isActive ? '#552A47' : '#f8f8f8'};
+    background-color: ${props => props.isActive ? 'var(--primary-color, #552A47)' : '#f8f8f8'};
   }
 `;
 
-const SectionIcon = styled.div<{ isActive: boolean; isCompleted: boolean; color: string }>`
+const SectionIcon = styled.div<{ isActive: boolean; isCompleted: boolean; color?: string }>`
   width: 24px;
   height: 24px;
   display: flex;
@@ -290,7 +290,7 @@ const SectionIcon = styled.div<{ isActive: boolean; isCompleted: boolean; color:
   margin-right: 12px;
   color: ${props => props.isActive ? '#ffffff' : '#666666'};
   font-size: 18px;
-  background-color: ${props => props.isActive ? '#552A47' : 'transparent'};
+  background-color: ${props => props.isActive ? 'var(--primary-color, #552A47)' : 'transparent'};
 `;
 
 const SectionName = styled.span<{ isActive?: boolean }>`
@@ -346,8 +346,8 @@ const SurveyTitleText = styled.h2`
 `;
 
 const AverageTimeTag = styled.div`
-  background-color: #f5f0f7;
-  color: #552A47;
+  background-color: rgba(var(--primary-color-rgb, 85, 42, 71), 0.1);
+  color: var(--primary-color, #552A47);
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 12px;
@@ -364,25 +364,25 @@ const CompletedIcon = styled.div`
   margin-left: auto;
 `;
 
-const CompletionIcon = styled.div<{ isActive: boolean; color: string }>`
+const CompletionIcon = styled.div<{ isActive: boolean; color?: string }>`
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 12px;
-  color: ${props => props.isActive ? '#ffffff' : '#552A47'};
+  color: ${props => props.isActive ? '#ffffff' : 'var(--primary-color, #552A47)'};
   font-size: 18px;
 `;
 
-const InProgressIcon = styled.div<{ isActive: boolean; color: string }>`
+const InProgressIcon = styled.div<{ isActive: boolean; color?: string }>`
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 12px;
-  color: ${props => props.isActive ? '#ffffff' : props.color};
+  color: ${props => props.isActive ? '#ffffff' : 'var(--primary-color, #552A47)'};
   font-size: 18px;
 `;
 
@@ -390,12 +390,12 @@ const CompletionPercentage = styled.span<{ isActive: boolean; progress: number }
   font-size: 12px;
   color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.9)' : 
     props.progress === 100 ? '#fff' : 
-    props.progress === 0 ? '#666' : '#552A47'};
+    props.progress === 0 ? '#666' : 'var(--primary-color, #552A47)'};
   margin-left: auto;
   font-weight: 600;
   background-color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.2)' : 
-    props.progress === 100 ? '#552A47DD' :
-    props.progress === 0 ? 'rgba(0, 0, 0, 0.05)' : 'rgba(85, 42, 71, 0.1)'};
+    props.progress === 100 ? 'var(--primary-color, #552A47)' :
+    props.progress === 0 ? 'rgba(0, 0, 0, 0.05)' : 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)'};
   padding: 2px 6px;
   border-radius: 10px;
   min-width: 42px;
@@ -416,10 +416,10 @@ const SectionProgressBar = styled.div`
   overflow: hidden;
 `;
 
-const SectionProgressIndicator = styled.div<{ width: number; color: string; isActive: boolean }>`
+const SectionProgressIndicator = styled.div<{ width: number; color?: string; isActive: boolean }>`
   height: 100%;
   width: ${props => props.width}%;
-  background-color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.5)' : props.color};
+  background-color: ${props => props.isActive ? 'rgba(255, 255, 255, 0.5)' : 'var(--primary-color, #552A47)'};
   border-radius: 1.5px;
   transition: width 0.3s ease;
 `;

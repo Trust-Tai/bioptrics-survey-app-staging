@@ -80,8 +80,7 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
           )}
         
         <SectionTitle>{consentConfig.title}</SectionTitle>
-        
-        <div dangerouslySetInnerHTML={{ __html: consentText }} />
+        <ConsentText><div dangerouslySetInnerHTML={{ __html: consentText }} /></ConsentText>
         
         <CheckboxContainer>
           <Checkbox 
@@ -96,11 +95,12 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
         </CheckboxContainer>
         
         <FooterContainer>
-          <span>{consentConfig.privacyInfoText}  
-          <PrivacyLink href={consentConfig.privacyNoticeUrl} target="_blank" rel="noopener noreferrer">
-             {consentConfig.privacyLinkText}
-          </PrivacyLink>
-          </span>
+          <PrivacyInfoContainer>
+            <span>{consentConfig.privacyInfoText}</span>
+            <PrivacyLink href={consentConfig.privacyNoticeUrl} target="_blank" rel="noopener noreferrer">
+              {consentConfig.privacyLinkText}
+            </PrivacyLink>
+          </PrivacyInfoContainer>
           <ContinueButton 
             onClick={handleContinue} 
             disabled={!hasConsented}
@@ -120,8 +120,8 @@ const ConsentContainer = styled.div`
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  font-family: 'Jost', 'Inter', sans-serif;
-     background: linear-gradient(180deg, #FFFFFF 0%, #F8F2F6 100%);
+  font-family: var(--body-font, 'Jost, Inter, sans-serif');
+  background: linear-gradient(180deg, #FFFFFF 0%, var(--background-gradient-end, #F8F2F6) 100%);
   width: 100%;
 `;
 
@@ -177,11 +177,12 @@ const NoticeText = styled.p`
 const SectionTitle = styled.h2`
   font-size: 32px;
   font-weight: 600;
-  color: rgb(34, 34, 34);
+  color: var(--heading-color, rgb(34, 34, 34));
   margin: 20px 0;
   text-align: left;
   width: 100%;
   line-height: 1.2;
+  font-family: var(--heading-font, 'Jost, Inter, sans-serif');
 `;
 
 const ConsentText = styled.p`
@@ -244,6 +245,15 @@ const CheckboxLabel = styled.label`
   font-size: 15px;
 `;
 
+const PrivacyInfoContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  color: var(--text-color, #666666);
+  font-family: var(--body-font, 'Inter, sans-serif');
+`;
+
 const FooterContainer = styled.div`
   display: flex;
   justify-content: space-between;
@@ -252,7 +262,7 @@ const FooterContainer = styled.div`
 `;
 
 const PrivacyLink = styled.a`
-  color: #552A47;
+  color: var(--primary-color, #552A47) !important;
   text-decoration: underline;
   font-size: 16px;
   font-weight: 600;
@@ -264,20 +274,20 @@ const PrivacyLink = styled.a`
 `;
 
 const ContinueButton = styled.button`
-  background-color: #552A47;
+  background-color: var(--primary-color, #552A47);
   color: white;
   border: none;
-  border-radius: 20px;
+  border-radius: var(--button-radius, 20px);
   padding: 10px 20px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.2s;
   height: 40px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--body-font, 'Inter, sans-serif');
   
   &:hover:not(:disabled) {
-    background-color: #3d1e32;
+    background-color: var(--button-hover, #3d1e32);
   }
   
   &:disabled {

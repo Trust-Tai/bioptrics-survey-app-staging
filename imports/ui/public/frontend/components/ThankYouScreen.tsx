@@ -10,7 +10,7 @@ interface ThankYouScreenProps {
   timeTaken: string;
   onTakeAgain?: () => void;
   onViewResults?: () => void;
-  color?: string;
+  color?: string; // Kept for backward compatibility
 }
 
 // Helper function to adjust color brightness
@@ -67,10 +67,10 @@ const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
   timeTaken,
   onTakeAgain,
   onViewResults,
-  color = '#552A47'
+  color = '#552A47' // Kept for backward compatibility
 }) => {
   return (
-    <ThankYouContainer primaryColor={color}>
+    <ThankYouContainer>
       <ConfettiLayer />
       <ThankYouHeader>
         <ThankYouIcon>
@@ -231,8 +231,8 @@ const ThankYouTitle = styled.h1`
   font-size: 100px;
   font-weight: 400;
   margin-bottom: 16px;
-  color: #552a47;
-  font-family: 'Aesthetica Demo', cursive;
+  color: var(--primary-color, #552a47);
+  font-family: var(--heading-font, 'Aesthetica Demo, cursive');
   line-height: 1.1;
   letter-spacing: 0;
   text-align: center;
@@ -276,8 +276,8 @@ const StatCard = styled.div<{ primaryColor?: string }>`
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  border: 1px solid ${props => props.primaryColor ? `${props.primaryColor}25` : '#e9dce6'};
-  color: ${props => props.primaryColor || 'var(--primary-color, #333)'};
+  border: 1px solid rgba(var(--primary-color-rgb, 85, 42, 71), 0.15);
+  color: var(--primary-color, #552a47);
   transition: all 0.2s ease;
   min-width: 200px;
   width: 100%;
@@ -291,8 +291,8 @@ const StatIcon = styled.div<{ primaryColor?: string }>`
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background-color: ${props => props.primaryColor ? `${props.primaryColor}20` : 'var(--primary-color-light, #f3e8ff)'};
-  color: ${props => props.primaryColor || 'var(--primary-color, #552a47)'};
+  background-color: rgba(var(--primary-color-rgb, 85, 42, 71), 0.1);
+  color: var(--primary-color, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,8 +312,8 @@ const StatValue = styled.h3<{ primaryColor?: string }>`
   font-size: 48px;
   font-weight: 700;
   margin: 0 0 8px;
-  color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
-  font-family: 'Inter', sans-serif;
+  color: var(--primary-color, #552a47);
+  font-family: var(--heading-font, 'Inter, sans-serif');
   line-height: 1;
   white-space: nowrap;
 `;
@@ -322,16 +322,16 @@ const StatLabel = styled.p<{ primaryColor?: string }>`
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 4px;
-  color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
-  font-family: 'Inter', sans-serif;
+  color: var(--primary-color, #552a47);
+  font-family: var(--body-font, 'Inter, sans-serif');
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
 
 const StatSublabel = styled.span<{ primaryColor?: string }>`
   font-size: 14px;
-  color: ${props => props.primaryColor ? `${props.primaryColor}90` : 'var(--text-color, #6b7280)'};
-  font-family: 'Inter', sans-serif;
+  color: var(--text-color, #6b7280);
+  font-family: var(--body-font, 'Inter, sans-serif');
   font-weight: 400;
 `;
 
@@ -349,8 +349,8 @@ const ThankYouActions = styled.div`
 
 const RestartButton = styled.button<{ primaryColor?: string }>`
   background-color: white;
-  color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
-  border: 1px solid ${props => props.primaryColor ? `${props.primaryColor}80` : 'var(--primary-color, #4A2B46)'};
+  color: var(--primary-color, #552a47);
+  border: 1px solid var(--primary-color, #552a47);
   border-radius: var(--button-radius, 30px);
   padding: 12px 24px;
   font-size: 14px;
@@ -360,25 +360,25 @@ const RestartButton = styled.button<{ primaryColor?: string }>`
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(var(--primary-color-rgb, 74, 43, 70), 0.1);
-  font-family: 'Inter', sans-serif;
+  box-shadow: 0 1px 3px rgba(var(--primary-color-rgb, 85, 42, 71), 0.1);
+  font-family: var(--body-font, 'Inter, sans-serif');
   width: auto;
   min-width: 160px;
   
   &:hover {
-    background-color: ${props => props.primaryColor ? `${props.primaryColor}10` : '#f9f5fb'};
+    background-color: rgba(var(--primary-color-rgb, 85, 42, 71), 0.05);
     transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(var(--primary-color-rgb, 74, 43, 70), 0.15);
+    box-shadow: 0 2px 5px rgba(var(--primary-color-rgb, 85, 42, 71), 0.15);
   }
 `;
 
-const ViewResultsButton = styled(RestartButton)`
-  background-color: ${props => props.primaryColor || 'var(--primary-color, #4A2B46)'};
+const ViewResultsButton = styled(RestartButton)<{ primaryColor?: string }>`
+  background-color: var(--primary-color, #552a47);
   color: #ffffff;
   border: none;
   
   &:hover {
-    background-color: ${props => props.primaryColor ? adjustColor(props.primaryColor, -20) : 'var(--button-hover, #3A2136)'};
+    background-color: var(--button-hover, #3d1e32);
     color: #ffffff;
   }
 `;

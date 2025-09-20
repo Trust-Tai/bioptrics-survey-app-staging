@@ -413,7 +413,7 @@ const OptionIcon = styled.div<{ isSelected: boolean }>`
   align-items: center;
   justify-content: center;
   margin-right: 0.75rem;
-  background-color: ${props => props.isSelected ? '#552A47' : '#f2f2f2'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#f2f2f2'};
   color: ${props => props.isSelected ? 'white' : '#666'};
   font-size: 1.25rem;
 `;
@@ -467,13 +467,13 @@ const RadioOption = styled.div<{ isSelected: boolean }>`
   padding: 0.75rem 1.5rem;
   border-radius: 40px;
   cursor: pointer;
-  background-color: ${props => props.isSelected ? '#e6f7e6' : '#f9f9f9'};
-  border: 1px solid ${props => props.isSelected ? '#8BC34A' : '#e0e0e0'};
+  background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f9f9f9'};
+  border: 1px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#e0e0e0'};
   transition: all 0.2s ease;
   margin-bottom: 0.75rem;
   
   &:hover {
-    background-color: ${props => props.isSelected ? '#e6f7e6' : '#f2f2f2'};
+    background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f2f2f2'};
   }
 `;
 
@@ -481,12 +481,12 @@ const RadioButton = styled.div<{ isSelected: boolean }>`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid ${props => props.isSelected ? '#8BC34A' : '#999'};
+  border: 2px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#999'};
   margin-right: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.isSelected ? '#8BC34A' : 'transparent'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : 'transparent'};
 `;
 
 const RadioButtonInner = styled.div`
@@ -505,8 +505,8 @@ const TextInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
   }
 `;
 
@@ -520,8 +520,8 @@ const TextareaInput = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
   }
 `;
 
@@ -531,12 +531,12 @@ const CheckboxOption = styled.div<{ isSelected: boolean }>`
   padding: 0.75rem;
   border-radius: 8px;
   cursor: pointer;
-  background-color: ${props => props.isSelected ? '#f0e6f5' : '#f9f9f9'};
-  border: 1px solid ${props => props.isSelected ? '#552A47' : '#e0e0e0'};
+  background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f9f9f9'};
+  border: 1px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#e0e0e0'};
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.isSelected ? '#f0e6f5' : '#f2f2f2'};
+    background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f2f2f2'};
   }
 `;
 
@@ -544,12 +544,12 @@ const CheckboxButton = styled.div<{ isSelected: boolean }>`
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  border: 2px solid ${props => props.isSelected ? '#552A47' : '#999'};
+  border: 2px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#999'};
   margin-right: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.isSelected ? '#552A47' : 'transparent'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : 'transparent'};
 `;
 
 const CheckboxButtonInner = styled.div`
@@ -569,7 +569,7 @@ const RatingButton = styled.button<{ isSelected: boolean }>`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: ${props => props.isSelected ? '#552A47' : '#f2f2f2'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#f2f2f2'};
   color: ${props => props.isSelected ? 'white' : '#333'};
   font-size: 1rem;
   font-weight: ${props => props.isSelected ? 'bold' : 'normal'};
@@ -577,7 +577,7 @@ const RatingButton = styled.button<{ isSelected: boolean }>`
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.isSelected ? '#3d1e32' : '#e0e0e0'};
+    background-color: ${props => props.isSelected ? 'var(--button-hover, #3d1e32)' : '#e0e0e0'};
   }
 `;
 
@@ -606,7 +606,7 @@ const RankInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
+    border-color: var(--primary-color, #552A47);
   }
 `;
 
@@ -623,8 +623,8 @@ const DateInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
   }
 `;
 
@@ -636,8 +636,8 @@ const RequiredIndicator = styled.div`
 `;
 
 const StepIndicator = styled.div`
-  background-color: #f8e6f3;
-  color: #9c2a7b; /* Brighter pink color from Figma */
+  background-color: rgba(var(--primary-color-rgb, 85, 42, 71), 0.1);
+  color: var(--primary-color, #552A47);
   font-size: 0.9rem;
   font-weight: 600;
   padding: 0.5rem 1.2rem;
