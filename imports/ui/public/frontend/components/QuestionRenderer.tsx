@@ -333,7 +333,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
       {required && !value && <RequiredIndicator>Please answer this required question</RequiredIndicator>}
     </QuestionContainer>
   );
-}));
+});
 
 // Styled components
 const QuestionContainer = styled.div`

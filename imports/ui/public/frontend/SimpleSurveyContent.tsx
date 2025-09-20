@@ -283,7 +283,7 @@ const SimpleSurveyContent: React.FC<SimpleSurveyContentProps> = ({
   }
   
   // Determine which layout to use
-  const layout = survey.layout || 'stepByStep';
+  const layout = survey.layout || 'multiStep';
   
   // Render the appropriate layout
   return (

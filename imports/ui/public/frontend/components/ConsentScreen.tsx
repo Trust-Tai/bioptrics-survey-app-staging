@@ -6,30 +6,46 @@ import HeaderBar from './HeaderBar';
 interface ConsentScreenProps {
   surveyTitle?: string;
   logo?: string;
-  averageTime?: string; // Add averageTime prop
-  consentText?: {
-    purpose?: string;
-    dataCollection?: string;
-    dataUse?: string;
-    confidentiality?: string;
-    contact?: string;
+  averageTime?: string;
+  consentText?: string; // Updated to accept HTML content
+  consentConfig?: {
+    title?: string;
+    showAnonymityNotice: boolean;
+    anonymityNoticeText: string;
+    privacyNoticeUrl: string;
+    privacyLinkText?: string;
+    privacyInfoText?: string;
+    continueButtonText?: string;
+    checkboxText: string;
   };
-  privacyNoticeUrl?: string;
   onConsent: () => void;
 }
+
+// Default consent text if none provided
+const defaultConsentText = `
+<p>Thank you for participating in this survey. Your participation is voluntary and you may withdraw at any time.</p>
+<p><strong>Purpose:</strong> This survey is designed to gather feedback to improve our services and workplace environment.</p>
+<p><strong>Data Collection:</strong> We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.</p>
+<p><strong>Data Use:</strong> Your responses will be analyzed in aggregate to identify trends and areas for improvement. Individual responses will only be viewed by authorized research personnel.</p>
+<p><strong>Confidentiality:</strong> Your responses will be kept confidential and will only be reported in aggregate form where individual responses cannot be identified.</p>
+<p><strong>Contact:</strong> If you have questions about this survey or your rights as a participant, please contact our research team.</p>
+`;
 
 const ConsentScreen: React.FC<ConsentScreenProps> = ({
   surveyTitle = 'Employee Engagement Survey',
   logo = '/bioptrics_fixed_black.png',
-  averageTime, // Add averageTime prop
-  consentText = {
-    purpose: 'This survey is designed to gather feedback to improve our services and workplace environment.',
-    dataCollection: 'We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.',
-    dataUse: 'Your responses will be analyzed in aggregate to identify trends and areas for improvement. Individual responses will only be viewed by authorized research personnel.',
-    confidentiality: 'Your responses will be kept confidential and will only be reported in aggregate form where individual responses cannot be identified.',
-    contact: 'If you have questions about this survey or your rights as a participant, please contact our research team.'
+  averageTime,
+  consentText = defaultConsentText,
+  consentConfig = {
+    title: 'Informed Consent',
+    showAnonymityNotice: true,
+    anonymityNoticeText: 'This survey is anonymous. Your responses cannot be linked back to you personally.',
+    privacyNoticeUrl: '#',
+    privacyLinkText: 'Privacy Notice',
+    privacyInfoText: 'For more information, please see our',
+    continueButtonText: 'Continue to Survey',
+    checkboxText: 'I have read and understand the above information and consent to participate in this survey'
   },
-  privacyNoticeUrl = '#',
   onConsent
 }) => {
   const [hasConsented, setHasConsented] = useState(false);
@@ -54,43 +70,18 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
       
       <ContentWrapper>
         <ConsentCard>
-          <AnonymityNotice>
-            <Icon>
-              <FiLock size={18} />
-            </Icon>
-            <NoticeText>This survey is anonymous. Your responses cannot be linked back to you personally.</NoticeText>
-          </AnonymityNotice>
+          {consentConfig.showAnonymityNotice && (
+            <AnonymityNotice>
+              <Icon>
+                <FiLock size={18} />
+              </Icon>
+              <NoticeText>{consentConfig.anonymityNoticeText}</NoticeText>
+            </AnonymityNotice>
+          )}
         
-        <SectionTitle>Informed Consent</SectionTitle>
+        <SectionTitle>{consentConfig.title}</SectionTitle>
         
-        <ConsentText>
-          Thank you for participating in this survey. Your participation is voluntary and you may withdraw at any time.
-        </ConsentText>
-        
-        <ConsentSection>
-          <SectionLabel>Purpose:</SectionLabel>
-          <SectionContent>{consentText.purpose}</SectionContent>
-        </ConsentSection>
-        
-        <ConsentSection>
-          <SectionLabel>Data Collection:</SectionLabel>
-          <SectionContent>{consentText.dataCollection}</SectionContent>
-        </ConsentSection>
-        
-        <ConsentSection>
-          <SectionLabel>Data Use:</SectionLabel>
-          <SectionContent>{consentText.dataUse}</SectionContent>
-        </ConsentSection>
-        
-        <ConsentSection>
-          <SectionLabel>Confidentiality:</SectionLabel>
-          <SectionContent>{consentText.confidentiality}</SectionContent>
-        </ConsentSection>
-        
-        <ConsentSection>
-          <SectionLabel>Contact:</SectionLabel>
-          <SectionContent>{consentText.contact}</SectionContent>
-        </ConsentSection>
+        <div dangerouslySetInnerHTML={{ __html: consentText }} />
         
         <CheckboxContainer>
           <Checkbox 
@@ -100,21 +91,21 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
             onChange={handleCheckboxChange} 
           />
           <CheckboxLabel htmlFor="consent-checkbox">
-            I have read and understand the above information and consent to participate in this survey
+            {consentConfig.checkboxText}
           </CheckboxLabel>
         </CheckboxContainer>
         
         <FooterContainer>
-          <span>For more information, please see our  
-          <PrivacyLink href={privacyNoticeUrl} target="_blank" rel="noopener noreferrer">
-             Privacy Notice
+          <span>{consentConfig.privacyInfoText}  
+          <PrivacyLink href={consentConfig.privacyNoticeUrl} target="_blank" rel="noopener noreferrer">
+             {consentConfig.privacyLinkText}
           </PrivacyLink>
           </span>
           <ContinueButton 
             onClick={handleContinue} 
             disabled={!hasConsented}
           >
-            Continue to Survey
+            {consentConfig.continueButtonText}
           </ContinueButton>
         </FooterContainer>
       </ConsentCard>

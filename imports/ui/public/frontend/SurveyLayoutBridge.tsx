@@ -425,7 +425,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   };
   
   // Determine which layout to use
-  const layout = survey.layout || 'stepByStep';
+  const layout = survey.layout || 'multiStep';
   
   // Show consent screen if needed
   const showConsentScreen = !hasConsented && !isPreviewMode;
@@ -445,8 +445,20 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         surveyTitle={survey.title}
         logo={survey.logo}
         averageTime={(surveyWithTime || survey).estimatedTime}
-        consentText={survey.consentText}
-        privacyNoticeUrl={survey.privacyNoticeUrl}
+        consentText={survey.consentScreen?.consentText}
+        consentConfig={{
+          title: survey.consentScreen?.title || 'Informed Consent',
+          showAnonymityNotice: survey.consentScreen?.showAnonymityNotice !== undefined ? 
+            survey.consentScreen.showAnonymityNotice : true,
+          anonymityNoticeText: survey.consentScreen?.anonymityNoticeText || 
+            'This survey is anonymous. Your responses cannot be linked back to you personally.',
+          privacyNoticeUrl: survey.consentScreen?.privacyNoticeUrl || '#',
+          privacyLinkText: survey.consentScreen?.privacyLinkText || 'Privacy Notice',
+          privacyInfoText: survey.consentScreen?.privacyInfoText || 'For more information, please see our',
+          continueButtonText: survey.consentScreen?.continueButtonText || 'Continue to Survey',
+          checkboxText: survey.consentScreen?.checkboxText || 
+            'I have read and understand the above information and consent to participate in this survey'
+        }}
         onConsent={handleConsent}
       />
     );
