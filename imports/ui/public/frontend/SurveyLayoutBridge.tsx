@@ -1,8 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { Meteor } from 'meteor/meteor';
 import ConsentScreen from './components/ConsentScreen';
 import StepByStepLayout from './layouts/StepByStepLayout';
 import AllOnOnePageLayout from './layouts/AllOnOnePageLayout';
+import ThankYouWrapper from './components/ThankYouWrapper';
+import { TimerProvider, useTimer } from './contexts/TimerContext';
+
+// Define interfaces for the wrapper components
+interface StepByStepLayoutProps {
+  survey: any;
+  sections: Section[];
+  questions: Question[];
+  currentStep: CurrentStep;
+  responses: Record<string, any>;
+  onAnswer: (questionId: string, answer: any, saveOnly?: boolean) => void;
+  onNext: () => void;
+  onBack: () => void;
+  onSubmit: () => void;
+  isSubmitted: boolean;
+  onSetCurrentStep: (step: CurrentStep) => void;
+}
+
+interface AllOnOnePageLayoutProps {
+  survey: any;
+  sections: Section[];
+  questions: Question[];
+  responses: Record<string, any>;
+  onAnswer: (questionId: string, answer: any, saveOnly?: boolean) => void;
+  onSubmit: () => void;
+  isSubmitted: boolean;
+}
+
+// Create stable wrapper components to ensure consistent hook usage
+const StableStepByStepLayout = memo((props: StepByStepLayoutProps) => {
+  const { survey, sections, questions, currentStep, responses, onAnswer, onNext, onBack, onSubmit, isSubmitted, onSetCurrentStep } = props;
+  
+  return (
+    <StepByStepLayout
+      survey={survey}
+      sections={sections}
+      questions={questions}
+      currentStep={currentStep}
+      responses={responses}
+      onAnswer={onAnswer}
+      onNext={onNext}
+      onBack={onBack}
+      onSubmit={onSubmit}
+      isSubmitted={isSubmitted}
+      onSetCurrentStep={onSetCurrentStep}
+    />
+  );
+});
+
+const StableAllOnOnePageLayout = memo((props: AllOnOnePageLayoutProps) => {
+  const { survey, sections, questions, responses, onAnswer, onSubmit, isSubmitted } = props;
+  
+  return (
+    <AllOnOnePageLayout
+      survey={survey}
+      sections={sections}
+      questions={questions}
+      responses={responses}
+      onAnswer={onAnswer}
+      onSubmit={onSubmit}
+      isSubmitted={isSubmitted}
+    />
+  );
+});
 
 interface Question {
   _id: string;
@@ -33,7 +97,7 @@ interface SurveyLayoutBridgeProps {
   isPreviewMode?: boolean;
 }
 
-const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
+const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   survey,
   token,
   isPreviewMode = false
@@ -47,9 +111,46 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
+  const [surveyWithTime, setSurveyWithTime] = useState<any>(survey);
+  // We no longer need these states as they're managed by the TimerContext
+  // const [startTime, setStartTime] = useState<number | null>(null);
+  // const [endTime, setEndTime] = useState<number | null>(null);
   
   // State for step navigation
   const [currentStep, setCurrentStep] = useState<CurrentStep>({ type: 'section', id: '' });
+  
+  /**
+   * Calculates the estimated completion time for a survey based on question times
+   * @param questions Array of question documents with estimatedTimeSeconds field
+   * @returns Formatted time string in format "MM:SS" (e.g., "2:30")
+   */
+  function calculateEstimatedTime(questions: any[]): string {
+    // Default time per question (in seconds) if not specified
+    const DEFAULT_QUESTION_TIME = 30;
+    
+    let totalSeconds = 0;
+    
+    // Calculate total seconds from all questions
+    questions.forEach(question => {
+      // Use estimatedTimeSeconds if available and greater than 0, otherwise use default
+      const seconds = question.currentVersion.estimatedTimeSeconds > 0 
+        ? question.currentVersion.estimatedTimeSeconds 
+        : DEFAULT_QUESTION_TIME;
+      
+      totalSeconds += seconds;
+    });
+    
+    // Calculate minutes and remaining seconds
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    // Format as MM:SS with padding for seconds
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // State to track if questions are loaded
+  const [questionsLoaded, setQuestionsLoaded] = useState(false);
+  const [initialNavigationDone, setInitialNavigationDone] = useState(false);
   
   // Load survey data
   useEffect(() => {
@@ -57,9 +158,13 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     
     // Initialize with the first section if available
     if (survey.surveySections && survey.surveySections.length > 0) {
+      // Get the first section ID
+      const firstSectionId = survey.surveySections[0]._id || survey.surveySections[0].id;
+      
+      // We'll load the section first, then navigate to its first question after questions are loaded
       setCurrentStep({
         type: 'section',
-        id: survey.surveySections[0]._id || survey.surveySections[0].id
+        id: firstSectionId
       });
     }
     
@@ -80,7 +185,6 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
         .map((item: any) => item.id);
 
       if (questionIds.length > 0) {
-        console.log('Loading questions with IDs:', questionIds);
         
         Meteor.call('getQuestionDocuments', questionIds, (error: any, result: any) => {
           if (error) {
@@ -88,16 +192,14 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
             return;
           }
           
-          console.log('Loaded questions:', result);
           
-          // Debug image data
-          result.forEach((doc: any) => {
-            console.log(`Question ${doc._id} image data:`, {
-              hasTopLevelImage: !!doc.image,
-              hasVersionImage: !!(doc.currentVersion && doc.currentVersion.image),
-              imageLength: doc.image ? doc.image.length : 0
-            });
-          });
+          // Calculate estimated time in MM:SS format
+          const formattedTime = calculateEstimatedTime(result);
+          
+          // Store the formatted time in a new survey object to avoid mutating props
+          const updatedSurvey = { ...survey, estimatedTime: formattedTime };
+          setSurveyWithTime(updatedSurvey);
+            
           
           // Process question data
           const processedQuestions = result.map((doc: any) => {
@@ -124,18 +226,10 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
               }
             }
             
-            console.log(`Question ${doc._id} mapped to section ${sectionId || 'none'}`);
             
             // IMPORTANT: Get the image directly from the raw document
             // This ensures we get the image data exactly as it is in the database
             const imageData = doc.image || (doc.versions && doc.versions[0] && doc.versions[0].image);
-            
-            // Debug the image data
-            console.log(`Processing question ${doc._id} image:`, {
-              hasImage: !!imageData,
-              imageLength: imageData ? imageData.length : 0,
-              imageSource: imageData === doc.image ? 'top-level' : 'version'
-            });
             
             return {
               _id: doc._id,
@@ -157,13 +251,57 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
               sectionQuestions.map((q: Question) => q.text));
           });
           
+          // Set questions and mark as loaded
           setQuestions(processedQuestions);
+          setQuestionsLoaded(true);
+          
+          console.log('Questions loaded, processedQuestions.length:', processedQuestions.length);
+          
+          // FORCE navigation to the first question regardless of current step
+          if (processedQuestions.length > 0) {
+            // Find the first section with questions
+            let firstSectionWithQuestions = null;
+            let firstQuestionId = null;
+            
+            for (const section of sections) {
+              const sectionQuestions = processedQuestions.filter((q: Question) => q.sectionId === section.id);
+              if (sectionQuestions.length > 0) {
+                firstSectionWithQuestions = section;
+                firstQuestionId = sectionQuestions[0]._id;
+                break;
+              }
+            }
+            
+            if (firstSectionWithQuestions && firstQuestionId) {
+              console.log('FORCE navigating to first question in section:', firstSectionWithQuestions.name);
+              
+              // Use a longer delay to ensure everything is ready
+              setTimeout(() => {
+                setCurrentStep({
+                  type: 'question',
+                  id: firstQuestionId
+                });
+                setInitialNavigationDone(true);
+              }, 300); // Longer delay to ensure state updates properly
+            } else {
+              // If no sections have questions, just mark as done
+              setInitialNavigationDone(true);
+            }
+          } else {
+            // If no questions at all, mark as done
+            setInitialNavigationDone(true);
+          }
+        
         });
       } else {
         console.log('No questions found in survey order');
+        // Even if no questions, mark as loaded to avoid infinite loading state
+        setQuestionsLoaded(true);
       }
     } else {
       console.log('No survey order found');
+      // Even if no survey order, mark as loaded to avoid infinite loading state
+      setQuestionsLoaded(true);
     }
     
     // Check for existing incomplete response
@@ -185,9 +323,14 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     }
   }, [survey]);
   
-  // Handle consent action
-  const handleConsent = () => {
+  // Get timer functions from context
+  const { startTimer } = useTimer();
+
+  // Handle consent
+  const handleConsent = useCallback(() => {
     setHasConsented(true);
+    // Start the timer when user gives consent
+    startTimer();
     
     // Save consent in localStorage
     try {
@@ -195,7 +338,7 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     } catch (e) {
       console.error('Error saving consent to localStorage:', e);
     }
-  };
+  }, [survey, startTimer]);
   
   // Check if user has already consented
   useEffect(() => {
@@ -203,13 +346,17 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
     
     try {
       const storedConsent = localStorage.getItem(`survey_consent_${survey._id}`);
+      
       if (storedConsent === 'true') {
         setHasConsented(true);
+        
+        // If user has already consented, start the timer
+        startTimer();
       }
     } catch (e) {
       console.error('Error reading consent from localStorage:', e);
     }
-  }, [survey]);
+  }, [survey, startTimer]);
   
   // Handle question answers
   const handleQuestionAnswer = (questionId: string, answer: any, saveOnly: boolean = false) => {
@@ -251,62 +398,211 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
   
   // Navigation handlers
   const handleNext = () => {
+    console.log('handleNext called, currentStep:', currentStep);
+    console.log('Current sections:', sections.map(s => `${s.name} (${s.id})`));
+    console.log('Current questions count:', questions.length);
+    
+    // For question-by-question navigation
     if (currentStep.type === 'section') {
-      // When on a section view, we stay on the section view
-      // but we need to move to the next section if all questions are answered
-      const currentSectionIndex = sections.findIndex(s => s.id === currentStep.id);
+      // When on a section view, we need to move to the first question in this section
+      const currentSectionId = currentStep.id;
+      const sectionQuestions = questions.filter(q => q.sectionId === currentSectionId);
       
-      // Check if all required questions in this section are answered
-      const sectionQuestions = questions.filter(q => q.sectionId === currentStep.id);
-      const requiredQuestions = sectionQuestions.filter(q => q.required);
-      const allRequiredAnswered = requiredQuestions.every(q => {
-        const answer = responses[q._id];
-        return answer !== undefined && answer !== null && answer !== '' && 
-               !(Array.isArray(answer) && answer.length === 0);
-      });
+      console.log('Section questions:', sectionQuestions.length);
       
-      if (allRequiredAnswered) {
-        if (currentSectionIndex < sections.length - 1) {
-          // Go to next section
+      if (sectionQuestions.length > 0) {
+        // Move directly to the first question in this section
+        console.log('Moving to first question in section:', sectionQuestions[0].text);
+        setTimeout(() => {
           setCurrentStep({
-            type: 'section',
-            id: sections[currentSectionIndex + 1].id
+            type: 'question',
+            id: sectionQuestions[0]._id
           });
+        }, 100);
+      } else {
+        // If no questions in this section, move to the next section
+        const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
+        if (currentSectionIndex < sections.length - 1) {
+          // Get the next section
+          const nextSectionId = sections[currentSectionIndex + 1].id;
+          const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+          
+          if (nextSectionQuestions.length > 0) {
+            // If next section has questions, go directly to first question
+            setCurrentStep({
+              type: 'question',
+              id: nextSectionQuestions[0]._id
+            });
+          } else {
+            // If next section has no questions, just go to the section
+            setCurrentStep({
+              type: 'section',
+              id: nextSectionId
+            });
+          }
         } else {
-          // If last section and all questions answered, submit
+          // If last section and no questions, submit
           handleSubmit();
+        }
+      }
+    } else if (currentStep.type === 'question') {
+      // When on a question view, we need to move to the next question or next section
+      const currentQuestionId = currentStep.id;
+      const currentQuestion = questions.find(q => q._id === currentQuestionId);
+      
+      if (currentQuestion) {
+        const currentSectionId = currentQuestion.sectionId;
+        const sectionQuestions = questions.filter(q => q.sectionId === currentSectionId);
+        const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestionId);
+        
+        // Check if current question is answered if it's required
+        const isCurrentQuestionAnswered = !currentQuestion.required || (
+          responses[currentQuestionId] !== undefined && 
+          responses[currentQuestionId] !== null && 
+          responses[currentQuestionId] !== '' && 
+          !(Array.isArray(responses[currentQuestionId]) && responses[currentQuestionId].length === 0)
+        );
+        
+        if (isCurrentQuestionAnswered) {
+          if (currentQuestionIndex < sectionQuestions.length - 1) {
+            // Move to next question in this section
+            setCurrentStep({
+              type: 'question',
+              id: sectionQuestions[currentQuestionIndex + 1]._id
+            });
+          } else {
+            // This was the last question in the section
+            // Move to the next section or submit if this was the last section
+            const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
+            
+            if (currentSectionIndex < sections.length - 1) {
+              // Get the next section
+              const nextSectionId = sections[currentSectionIndex + 1].id;
+              const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+              
+              if (nextSectionQuestions.length > 0) {
+                // If next section has questions, go directly to first question
+                console.log('Moving directly to first question of next section:', sections[currentSectionIndex + 1].name);
+                setCurrentStep({
+                  type: 'question',
+                  id: nextSectionQuestions[0]._id
+                });
+              } else {
+                // If next section has no questions, just go to the section view
+                setCurrentStep({
+                  type: 'section',
+                  id: nextSectionId
+                });
+              }
+            } else {
+              // This was the last question in the last section, submit
+              handleSubmit();
+            }
+          }
         }
       }
     }
   };
   
   const handleBack = () => {
+    console.log('handleBack called in SurveyLayoutBridge, currentStep:', currentStep);
+    console.log('Current sections:', sections.map(s => `${s.name} (${s.id})`));
+    console.log('Current questions count:', questions.length);
+    
     if (currentStep.type === 'section') {
       // Find current section
       const currentSectionIndex = sections.findIndex(s => s.id === currentStep.id);
       
       if (currentSectionIndex > 0) {
-        // Go to previous section
-        setCurrentStep({
-          type: 'section',
-          id: sections[currentSectionIndex - 1].id
-        });
+        // Get the previous section
+        const prevSectionId = sections[currentSectionIndex - 1].id;
+        const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId);
+        
+        if (prevSectionQuestions.length > 0) {
+          // If previous section has questions, go directly to the last question
+          console.log('Moving to last question of previous section:', sections[currentSectionIndex - 1].name);
+          setCurrentStep({
+            type: 'question',
+            id: prevSectionQuestions[prevSectionQuestions.length - 1]._id
+          });
+        } else {
+          // If previous section has no questions, just go to the section view
+          setCurrentStep({
+            type: 'section',
+            id: prevSectionId
+          });
+        }
+      }
+    } else if (currentStep.type === 'question') {
+      // When on a question view, we need to move to the previous question or previous section
+      const currentQuestionId = currentStep.id;
+      const currentQuestion = questions.find(q => q._id === currentQuestionId);
+      
+      if (currentQuestion) {
+        const currentSectionId = currentQuestion.sectionId;
+        const sectionQuestions = questions.filter(q => q.sectionId === currentSectionId);
+        const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestionId);
+        
+        if (currentQuestionIndex > 0) {
+          // Move to previous question in this section
+          setCurrentStep({
+            type: 'question',
+            id: sectionQuestions[currentQuestionIndex - 1]._id
+          });
+        } else {
+          // This was the first question in the section
+          // Find the previous section
+          const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
+          
+          if (currentSectionIndex > 0) {
+            // Get the previous section
+            const prevSectionId = sections[currentSectionIndex - 1].id;
+            const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId);
+            
+            if (prevSectionQuestions.length > 0) {
+              // If previous section has questions, go directly to the last question
+              console.log('Moving to last question of previous section:', sections[currentSectionIndex - 1].name);
+              setCurrentStep({
+                type: 'question',
+                id: prevSectionQuestions[prevSectionQuestions.length - 1]._id
+              });
+            } else {
+              // If previous section has no questions, just go to the section view
+              setCurrentStep({
+                type: 'section',
+                id: prevSectionId
+              });
+            }
+          } else {
+            // This is the first section, just go to the section view
+            setCurrentStep({
+              type: 'section',
+              id: currentSectionId || ''
+            });
+          }
+        }
       }
     }
   };
 
+  // Get timer stop function from context
+  const { stopTimer } = useTimer();
+
   // Handle survey submission
   const handleSubmit = () => {
-    if (!survey || !survey._id) return;
+    // Stop the timer when user submits
+    stopTimer();
     
     // Submit survey response
+    if (!survey || !survey._id) return;
+    
+    // Create a final response
     Meteor.call(
       'surveys.submitResponse',
       {
         surveyId: survey._id,
-        responses: responses,
-        token: token,
-        incompleteResponseId: responseId
+        responseId: responseId,
+        responses: responses
       },
       (error: any, result: any) => {
         if (error) {
@@ -314,60 +610,103 @@ const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = ({
           return;
         }
         
-        // Clear response ID from localStorage
-        localStorage.removeItem(`survey_response_${survey._id}`);
-        
-        // Show thank you screen
+        console.log('Survey submitted successfully');
         setIsSubmitted(true);
+        
+        // Remove incomplete response from localStorage
+        localStorage.removeItem(`survey_response_${survey._id}`);
       }
     );
   };
   
-  // If user hasn't consented yet, show the consent screen
-  if (!hasConsented && !isPreviewMode) {
+  // Determine which layout to use
+  const layout = survey.layout || 'multiStep';
+  
+  // Show consent screen if needed
+  const showConsentScreen = !hasConsented && !isPreviewMode;
+  
+  // Get elapsed time from timer context
+  const { elapsedTime } = useTimer();
+
+  // Stable callback for onSetCurrentStep
+  const handleSetCurrentStep = useCallback((step: CurrentStep) => {
+    setCurrentStep(step);
+  }, []);
+
+  // Render the appropriate content based on state
+  if (showConsentScreen) {
     return (
       <ConsentScreen
         surveyTitle={survey.title}
         logo={survey.logo}
-        consentText={survey.consentText}
-        privacyNoticeUrl={survey.privacyNoticeUrl}
+        averageTime={(surveyWithTime || survey).estimatedTime}
+        consentText={survey.consentScreen?.consentText}
+        consentConfig={{
+          title: survey.consentScreen?.title || 'Informed Consent',
+          showAnonymityNotice: survey.consentScreen?.showAnonymityNotice !== undefined ? 
+            survey.consentScreen.showAnonymityNotice : true,
+          anonymityNoticeText: survey.consentScreen?.anonymityNoticeText || 
+            'This survey is anonymous. Your responses cannot be linked back to you personally.',
+          privacyNoticeUrl: survey.consentScreen?.privacyNoticeUrl || '#',
+          privacyLinkText: survey.consentScreen?.privacyLinkText || 'Privacy Notice',
+          privacyInfoText: survey.consentScreen?.privacyInfoText || 'For more information, please see our',
+          continueButtonText: survey.consentScreen?.continueButtonText || 'Continue to Survey',
+          checkboxText: survey.consentScreen?.checkboxText || 
+            'I have read and understand the above information and consent to participate in this survey'
+        }}
         onConsent={handleConsent}
       />
     );
   }
+
+  // If submitted, show thank you screen using our wrapper
+  if (isSubmitted) {
+    return (
+      <ThankYouWrapper
+        logo={survey.logo}
+        totalResponses={Object.keys(responses).length}
+        unansweredQuestions={questions.filter(q => !responses[q._id]).length}
+        completionPercentage={100}
+        timeTaken={elapsedTime}
+        onTakeAgain={() => window.location.reload()}
+        color={survey.color}
+      />
+    );
+  }
   
-  // Determine which layout to use
-  const layout = survey.layout || 'stepByStep';
-  
-  // Render the appropriate layout
+  // Use the appropriate layout based on survey configuration
+  return layout === 'allOnOnePage' ? (
+    <StableAllOnOnePageLayout
+      survey={surveyWithTime || survey}
+      sections={sections}
+      questions={questions}
+      responses={responses}
+      onAnswer={handleQuestionAnswer}
+      onSubmit={handleSubmit}
+      isSubmitted={false} // Always false here since we handle isSubmitted above
+    />
+  ) : (
+    <StableStepByStepLayout
+      survey={surveyWithTime || survey}
+      sections={sections}
+      questions={questions}
+      currentStep={currentStep}
+      responses={responses}
+      onAnswer={handleQuestionAnswer}
+      onNext={handleNext}
+      onBack={handleBack}
+      onSubmit={handleSubmit}
+      isSubmitted={false} // Always false here since we handle isSubmitted above
+      onSetCurrentStep={handleSetCurrentStep}
+    />
+  );
+};
+
+const SurveyLayoutBridge: React.FC<SurveyLayoutBridgeProps> = (props) => {
   return (
-    <>
-      {layout === 'allOnOnePage' ? (
-        <AllOnOnePageLayout 
-          survey={survey}
-          sections={sections}
-          questions={questions}
-          responses={responses}
-          onAnswer={handleQuestionAnswer}
-          onSubmit={handleSubmit}
-          isSubmitted={isSubmitted}
-        />
-      ) : (
-        <StepByStepLayout 
-          survey={survey}
-          sections={sections}
-          questions={questions}
-          currentStep={currentStep}
-          responses={responses}
-          onAnswer={handleQuestionAnswer}
-          onNext={handleNext}
-          onBack={handleBack}
-          onSubmit={handleSubmit}
-          isSubmitted={isSubmitted}
-          onSetCurrentStep={(step) => setCurrentStep(step)}
-        />
-      )}
-    </>
+    <TimerProvider>
+      <SurveyLayoutBridgeContent {...props} />
+    </TimerProvider>
   );
 };
 

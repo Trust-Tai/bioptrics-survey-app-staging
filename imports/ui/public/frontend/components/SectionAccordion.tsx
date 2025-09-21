@@ -27,7 +27,7 @@ interface SectionAccordionProps {
   responses: Record<string, any>;
   onAnswer: (questionId: string, answer: any) => void;
   completionPercentage: number;
-  color?: string;
+  color?: string; // Kept for backward compatibility
 }
 
 const SectionAccordion: React.FC<SectionAccordionProps> = ({
@@ -36,7 +36,7 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
   responses,
   onAnswer,
   completionPercentage,
-  color = '#552A47'
+  color = '#552A47' // Kept for backward compatibility
 }) => {
   // Function to determine question type
   const getQuestionType = (question: Question) => {
@@ -54,12 +54,12 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
 
   return (
     <SectionContainer id={`section-${section.id}`}>
-      <SectionHeader color={color}>
+      <SectionHeader>
         <Title>{section.name}</Title>
         <Description>{section.description}</Description>
         <ProgressContainer>
           <ProgressBar>
-            <ProgressIndicator width={completionPercentage} color={color} />
+            <ProgressIndicator width={completionPercentage} />
           </ProgressBar>
           <ProgressText>{completionPercentage}% Completed</ProgressText>
         </ProgressContainer>
@@ -91,12 +91,13 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
 
 // Styled components
 const SectionContainer = styled.div`
-  margin-bottom: 3rem;
+ margin: 0 auto 2rem;
   scroll-margin-top: 2rem;
+  max-width: 800px;
 `;
 
-const SectionHeader = styled.div<{ color: string }>`
-  background-color: ${props => `${props.color}`};
+const SectionHeader = styled.div<{ color?: string }>`
+  background-color: ${props => props.color || 'var(--primary-color, #552A47)'};
   color: white;
   padding: 2rem;
   border-radius: 8px;
@@ -107,6 +108,7 @@ const Title = styled.h2`
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
+  font-family: var(--heading-font, 'Inter, sans-serif');
 `;
 
 const Description = styled.p`
@@ -114,6 +116,7 @@ const Description = styled.p`
   margin: 0 0 1.5rem 0;
   opacity: 0.9;
   line-height: 1.5;
+  font-family: var(--body-font, 'Inter, sans-serif');
 `;
 
 const ProgressContainer = styled.div`
@@ -129,7 +132,7 @@ const ProgressBar = styled.div`
   overflow: hidden;
 `;
 
-const ProgressIndicator = styled.div<{ width: number; color: string }>`
+const ProgressIndicator = styled.div<{ width: number; color?: string }>`
   height: 100%;
   width: ${props => props.width}%;
   background-color: white;
@@ -141,6 +144,7 @@ const ProgressText = styled.div`
   font-size: 0.8rem;
   font-weight: 500;
   text-align: right;
+  font-family: var(--body-font, 'Inter, sans-serif');
 `;
 
 const QuestionsContainer = styled.div`
@@ -155,12 +159,13 @@ const QuestionItem = styled.div`
   padding: 1.5rem;
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.1));
+  font-family: var(--body-font, 'Inter, sans-serif');
 `;
 
 const QuestionNumber = styled.div`
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-color, #6b7280);
   min-width: 2.5rem;
 `;
 

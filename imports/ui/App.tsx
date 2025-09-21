@@ -61,6 +61,7 @@ import Billing from '../pages/admin/Billing';
 import Subscription from '../pages/admin/Subscription';
 import WpsBuilderPage from './admin/WpsBuilderPage';
 import MigrationPanel from './admin/MigrationPanel';
+import ConsentScreenTest from './public/frontend/components/ConsentScreenTest';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -170,6 +171,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/public/:token" element={<ModernSurveyPublic />} />
       <Route path="/survey/section/:sectionIdx" element={<SectionIntroWrapper />} />
       <Route path="/survey/section/:sectionIdx/question/:questionIdx" element={<SurveyQuestionWrapper />} />
+      <Route path="/test/consent" element={<ConsentScreenTest />} />
       <Route path="/leadership" element={<LeadershipManagement />} />
       <Route path="/terms" element={<TermsOfUse />} />
       <Route path="/privacy" element={<PrivacyNotice />} />

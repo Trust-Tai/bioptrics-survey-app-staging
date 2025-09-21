@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 
 type QuestionType = 'likert' | 'radio' | 'text' | 'textarea' | 'checkbox' | 'rating' | 'rank' | 'date';
@@ -25,7 +25,7 @@ interface QuestionRendererProps {
   image?: string; // Add image property
 }
 
-const QuestionRenderer: React.FC<QuestionRendererProps> = ({
+const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
   questionType,
   questionText,
   options = [],
@@ -39,102 +39,9 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   totalSteps,
   image,
 }) => {
-  // Debug image data
-  React.useEffect(() => {
-    console.log('QuestionRenderer props:', {
-      questionText,
-      hasImage: !!image,
-      imageType: image ? typeof image : 'none',
-      imageLength: image ? image.length : 0,
-      imageStart: image ? image.substring(0, 50) + '...' : 'none',
-      startsWithData: image ? image.startsWith('data:') : false
-    });
-    
-    if (image) {
-      console.log('Question has image data:', image.substring(0, 50) + '...');
-      console.log('Image data type:', typeof image);
-      console.log('Image data length:', image.length);
-      console.log('Image starts with data:image?', image.startsWith('data:image'));
-    } else {
-      console.log('Question has no image data', questionText);
-    }
-  }, [image, questionText]);
-  // Render different question types based on questionType prop
-  const renderQuestionInput = () => {
-    switch (questionType) {
-      case 'likert':
-        return renderLikertScale();
-      case 'radio':
-        return renderRadioOptions();
-      case 'text':
-        return renderTextInput();
-      case 'textarea':
-        return renderTextareaInput();
-      case 'checkbox':
-        return renderCheckboxOptions();
-      case 'rating':
-        return renderRatingScale();
-      case 'rank':
-        return renderRankingOptions();
-      case 'date':
-        return renderDateInput();
-      default:
-        return renderTextInput();
-    }
-  };
-
-  // Implementation for Likert scale
-  const renderLikertScale = () => {
-    // Define the LikertContainer component inline if it's not found
-    const LikertContainer = styled.div`
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      width: 100%;
-      margin-top: 20px;
-      align-items: center;
-    `;
-
-    // Define the LikertEmoji component inline if it's not found
-    const LikertEmoji = styled.div<{ isSelected: boolean }>`
-      font-size: 28px;
-      margin-bottom: 12px;
-      transition: all 0.2s ease;
-      transform: ${props => props.isSelected ? 'scale(1.1)' : 'scale(1)'};
-      background-color: #f0f0f0;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 10px;
-    `;
-
-    // Define custom LikertOption component for this specific usage
-    const CustomLikertOption = styled.div<{ isSelected: boolean; bgColor: string }>`
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 15px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      background-color: ${props => props.isSelected ? props.bgColor : '#f9f9f9'};
-      border: 1px solid ${props => props.isSelected ? props.bgColor : '#e0e0e0'};
-      transition: all 0.2s ease;
-      flex: 1;
-      text-align: center;
-      height: 150px; /* Fixed height to ensure alignment */
-      
-      &:hover {
-        background-color: ${props => props.isSelected ? props.bgColor : '#f2f2f2'};
-        opacity: ${props => props.isSelected ? 1 : 0.9};
-      }
-    `;
-
-    // Get background color based on option text
-    const getBackgroundColor = (text: string, isSelected: boolean) => {
+    // Memoized background color function to prevent recreation on each render
+  const getBackgroundColor = useMemo(() => {
+    return (text: string, isSelected: boolean) => {
       if (!isSelected) return '#f9f9f9';
       
       const lowerText = text.toLowerCase();
@@ -144,27 +51,32 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       if (lowerText.includes('neutral')) return '#FFC107'; // Yellow
       if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '#8BC34A'; // Light green
       if (lowerText.includes('strongly agree')) return '#4CAF50'; // Full green
-      return '#f9f9f9'; // Default
+      return '#FFC107'; // Default
     };
+  }, []);
 
+  // Memoized emoji function to prevent recreation on each render
+  const getEmoji = useMemo(() => {
+    return (text: string) => {
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('neither agree nor disagree')) return '😶'; // Neutral face with open mouth
+      if (lowerText.includes('strongly disagree')) return '😡'; // Angry face
+      if (lowerText.includes('disagree')) return '😕'; // Confused face
+      if (lowerText.includes('neutral')) return '😶'; // Neutral face with open mouth
+      if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '😊'; // Smiling face
+      if (lowerText.includes('strongly agree')) return '🥰'; // Grinning face
+      return '😶'; // Default
+    };
+  }, []);
+
+  // Implementation of all render functions
+  const renderLikertScale = () => {
     return (
       <LikertContainer>
         {options.map((option: Option) => {
           const text = option.text || option.label || '';
           const isSelected = value === option.value;
           const bgColor = getBackgroundColor(text, isSelected);
-          
-          // Determine which emoji to show based on the option value/text
-          const getEmoji = () => {
-            const lowerText = text.toLowerCase();
-            if (lowerText.includes('neither agree nor disagree')) return '😶'; // Neutral face with open mouth
-            if (lowerText.includes('strongly disagree')) return '😡'; // Angry face
-            if (lowerText.includes('disagree')) return '😕'; // Confused face
-            if (lowerText.includes('neutral')) return '😶'; // Neutral face with open mouth
-            if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '😊'; // Smiling face
-            if (lowerText.includes('strongly agree')) return '🥰'; // Grinning face
-            return '😶'; // Default
-          };
           
           return (
             <CustomLikertOption 
@@ -174,7 +86,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               bgColor={bgColor}
             >
               <LikertEmoji isSelected={isSelected}>
-                {getEmoji()}
+                {getEmoji(text)}
               </LikertEmoji>
               <OptionLabel isSelected={isSelected}>
                 {text}
@@ -361,6 +273,33 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     );
   };
 
+  // Define renderQuestionInput after all render functions are defined
+  const renderQuestionInput = () => {
+    switch (questionType) {
+      case 'likert':
+        return renderLikertScale();
+      case 'radio':
+        return renderRadioOptions();
+      case 'text':
+        return renderTextInput();
+      case 'textarea':
+        return renderTextareaInput();
+      case 'checkbox':
+        return renderCheckboxOptions();
+      case 'rating':
+        return renderRatingScale();
+      case 'rank':
+        return renderRankingOptions();
+      case 'date':
+        return renderDateInput();
+      default:
+        return renderTextInput();
+    }
+  };
+
+  // Memoize the question input to prevent unnecessary re-renders
+  const questionInput = useMemo(() => renderQuestionInput(), [questionType, JSON.stringify(options), value, onChange]);
+
   return (
     <QuestionContainer>
       {/* {currentStep && totalSteps && (
@@ -368,7 +307,10 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           STEP {currentStep}/{totalSteps}
         </StepIndicator>
       )} */}
-      <QuestionText dangerouslySetInnerHTML={{ __html: questionText }} />
+      <QuestionTextContainer>
+        <QuestionText dangerouslySetInnerHTML={{ __html: questionText }} />
+        {required && <RequiredAsterisk>*</RequiredAsterisk>}
+      </QuestionTextContainer>
       
       {/* Display image if available */}
       {image && (
@@ -377,11 +319,9 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             src={image.startsWith('data:') ? image : `data:image/png;base64,${image}`} 
             alt="Question visual" 
             onError={(e) => {
-              console.error('Image failed to load:', e);
               // Try alternative format if initial load fails
               const imgElement = e.target as HTMLImageElement;
               if (!imgElement.src.startsWith('data:image/jpeg')) {
-                console.log('Trying JPEG format instead of PNG');
                 imgElement.src = `data:image/jpeg;base64,${image}`;
               }
             }}
@@ -389,11 +329,11 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         </QuestionImageContainer>
       )}
       
-      {renderQuestionInput()}
-      {required && !value && <RequiredIndicator>* Required</RequiredIndicator>}
+      {questionInput}
+      {required && !value && <RequiredIndicator>Please answer this required question</RequiredIndicator>}
     </QuestionContainer>
   );
-};
+});
 
 // Styled components
 const QuestionContainer = styled.div`
@@ -401,11 +341,25 @@ const QuestionContainer = styled.div`
   width: 100%;
 `;
 
+const QuestionTextContainer = styled.div`
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+`;
+
 const QuestionText = styled.div`
   font-size: 1.25rem;
   font-weight: 500;
-  margin-bottom: 1.5rem;
   color: #1a365d; /* Darker blue color from Figma */
+  line-height: 1.4;
+  flex: 1;
+`;
+
+const RequiredAsterisk = styled.span`
+  color: #d32f2f;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-left: 4px;
   line-height: 1.4;
 `;
 
@@ -428,6 +382,7 @@ const LikertContainer = styled.div`
   gap: 10px;
   width: 100%;
   margin-top: 20px;
+  align-items: center;
 `;
 
 const LikertOption = styled.div<{ isSelected: boolean; backgroundColor?: string; borderColor?: string }>`
@@ -458,16 +413,45 @@ const OptionIcon = styled.div<{ isSelected: boolean }>`
   align-items: center;
   justify-content: center;
   margin-right: 0.75rem;
-  background-color: ${props => props.isSelected ? '#552A47' : '#f2f2f2'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#f2f2f2'};
   color: ${props => props.isSelected ? 'white' : '#666'};
   font-size: 1.25rem;
 `;
 
 const LikertEmoji = styled.div<{ isSelected: boolean }>`
-  font-size: 32px;
-  margin-bottom: 8px;
+  font-size: 28px;
+  margin-bottom: 12px;
   transition: all 0.2s ease;
-  transform: ${props => props.isSelected ? 'scale(1.2)' : 'scale(1)'};
+  transform: ${props => props.isSelected ? 'scale(1.1)' : 'scale(1)'};
+  background-color: #f0f0f0;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+`;
+
+const CustomLikertOption = styled.div<{ isSelected: boolean; bgColor: string }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 15px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: ${props => props.isSelected ? props.bgColor : '#f9f9f9'};
+  border: 1px solid ${props => props.isSelected ? props.bgColor : '#e0e0e0'};
+  transition: all 0.2s ease;
+  flex: 1;
+  text-align: center;
+  height: 150px; /* Fixed height to ensure alignment */
+  
+  &:hover {
+    background-color: ${props => props.isSelected ? props.bgColor : '#f2f2f2'};
+    opacity: ${props => props.isSelected ? 1 : 0.9};
+  }
 `;
 
 const OptionLabel = styled.span<{ isSelected?: boolean }>`
@@ -483,13 +467,13 @@ const RadioOption = styled.div<{ isSelected: boolean }>`
   padding: 0.75rem 1.5rem;
   border-radius: 40px;
   cursor: pointer;
-  background-color: ${props => props.isSelected ? '#e6f7e6' : '#f9f9f9'};
-  border: 1px solid ${props => props.isSelected ? '#8BC34A' : '#e0e0e0'};
+  background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f9f9f9'};
+  border: 1px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#e0e0e0'};
   transition: all 0.2s ease;
   margin-bottom: 0.75rem;
   
   &:hover {
-    background-color: ${props => props.isSelected ? '#e6f7e6' : '#f2f2f2'};
+    background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f2f2f2'};
   }
 `;
 
@@ -497,12 +481,12 @@ const RadioButton = styled.div<{ isSelected: boolean }>`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid ${props => props.isSelected ? '#8BC34A' : '#999'};
+  border: 2px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#999'};
   margin-right: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.isSelected ? '#8BC34A' : 'transparent'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : 'transparent'};
 `;
 
 const RadioButtonInner = styled.div`
@@ -521,8 +505,8 @@ const TextInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
   }
 `;
 
@@ -536,8 +520,8 @@ const TextareaInput = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
   }
 `;
 
@@ -547,12 +531,12 @@ const CheckboxOption = styled.div<{ isSelected: boolean }>`
   padding: 0.75rem;
   border-radius: 8px;
   cursor: pointer;
-  background-color: ${props => props.isSelected ? '#f0e6f5' : '#f9f9f9'};
-  border: 1px solid ${props => props.isSelected ? '#552A47' : '#e0e0e0'};
+  background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f9f9f9'};
+  border: 1px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#e0e0e0'};
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.isSelected ? '#f0e6f5' : '#f2f2f2'};
+    background-color: ${props => props.isSelected ? 'rgba(var(--primary-color-rgb, 85, 42, 71), 0.1)' : '#f2f2f2'};
   }
 `;
 
@@ -560,12 +544,12 @@ const CheckboxButton = styled.div<{ isSelected: boolean }>`
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  border: 2px solid ${props => props.isSelected ? '#552A47' : '#999'};
+  border: 2px solid ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#999'};
   margin-right: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.isSelected ? '#552A47' : 'transparent'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : 'transparent'};
 `;
 
 const CheckboxButtonInner = styled.div`
@@ -585,7 +569,7 @@ const RatingButton = styled.button<{ isSelected: boolean }>`
   height: 40px;
   border-radius: 50%;
   border: none;
-  background-color: ${props => props.isSelected ? '#552A47' : '#f2f2f2'};
+  background-color: ${props => props.isSelected ? 'var(--primary-color, #552A47)' : '#f2f2f2'};
   color: ${props => props.isSelected ? 'white' : '#333'};
   font-size: 1rem;
   font-weight: ${props => props.isSelected ? 'bold' : 'normal'};
@@ -593,7 +577,7 @@ const RatingButton = styled.button<{ isSelected: boolean }>`
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.isSelected ? '#3d1e32' : '#e0e0e0'};
+    background-color: ${props => props.isSelected ? 'var(--button-hover, #3d1e32)' : '#e0e0e0'};
   }
 `;
 
@@ -622,7 +606,7 @@ const RankInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
+    border-color: var(--primary-color, #552A47);
   }
 `;
 
@@ -639,20 +623,21 @@ const DateInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552A47;
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
   }
 `;
 
 const RequiredIndicator = styled.div`
   color: #d32f2f;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-style: italic;
   margin-top: 0.5rem;
 `;
 
 const StepIndicator = styled.div`
-  background-color: #f8e6f3;
-  color: #9c2a7b; /* Brighter pink color from Figma */
+  background-color: rgba(var(--primary-color-rgb, 85, 42, 71), 0.1);
+  color: var(--primary-color, #552A47);
   font-size: 0.9rem;
   font-weight: 600;
   padding: 0.5rem 1.2rem;

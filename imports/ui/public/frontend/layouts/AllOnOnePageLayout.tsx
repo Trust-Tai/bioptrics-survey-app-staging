@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import SidebarNavigation from '../components/SidebarNavigation';
 import ScrollSpy from '../components/ScrollSpy';
@@ -49,63 +49,54 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
   isSubmitted
 }) => {
   const [startTime] = useState<number>(Date.now());
+  // Add state to track the active section
+  const [activeSectionId, setActiveSectionId] = useState<string>(sections.length > 0 ? sections[0].id : '');
   
-  // Calculate overall progress
-  const calculateProgress = () => {
-    const totalQuestions = questions.length;
+  // Group questions by section - memoized to prevent recreation on each render
+  const questionsBySection = useMemo(() => {
+    return sections.map(section => ({
+      section,
+      questions: questions.filter(q => q.sectionId === section.id)
+    }));
+  }, [sections, questions]);
+  
+  // Find questions that don't belong to any section - memoized to prevent recreation on each render
+  const unsectionedQuestions = useMemo(() => {
+    return questions.filter(q => !q.sectionId);
+  }, [questions]);
+  
+  // Calculate overall progress - memoized to prevent recreation on each render
+  const calculateProgress = useCallback(() => {
+    const totalQuestions = questions.length || 1; // Prevent division by zero
     const answeredQuestions = Object.keys(responses).length;
     return Math.round((answeredQuestions / totalQuestions) * 100);
-  };
+  }, [questions.length, responses]);
   
-  // Calculate section progress
-  const calculateSectionProgress = (sectionId: string) => {
+  // Calculate section progress - memoized to prevent recreation on each render
+  const calculateSectionProgress = useCallback((sectionId: string) => {
     const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+    if (sectionQuestions.length === 0) return 0;
     const answeredSectionQuestions = sectionQuestions.filter(q => responses[q._id]);
     return Math.round((answeredSectionQuestions.length / sectionQuestions.length) * 100) || 0;
-  };
-  
-  // If submitted, show thank you screen
-  if (isSubmitted) {
-    const completionTime = Math.round((Date.now() - startTime) / 1000); // in seconds
-    const minutes = Math.floor(completionTime / 60);
-    const seconds = completionTime % 60;
-    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds
-      .toString()
-      .padStart(2, '0')}`;
-    
-    return (
-      <ThankYouScreen 
-        logo={survey.logo}
-        totalResponses={Object.keys(responses).length}
-        unansweredQuestions={questions.filter(q => !responses[q._id]).length}
-        completionPercentage={calculateProgress()}
-        timeTaken={formattedTime}
-        onTakeAgain={() => window.location.reload()}
-        color={survey.color}
-      />
-    );
-  }
-  
-  // Group questions by section
-  const questionsBySection = sections.map(section => ({
-    section,
-    questions: questions.filter(q => q.sectionId === section.id)
-  }));
-  
-  // Find questions that don't belong to any section
-  const unsectionedQuestions = questions.filter(q => !q.sectionId);
+  }, [questions, responses]);
   
   // Prepare sections data for sidebar and scrollspy
-  const sectionData = sections.map(section => {
-    const progress = calculateSectionProgress(section.id);
-    
-    return {
-      id: section.id,
-      name: section.name,
-      isActive: false, // Will be updated by ScrollSpy
-      isCompleted: progress === 100
-    };
-  });
+  const sectionData = useMemo(() => {
+    return sections.map(section => {
+      const progress = calculateSectionProgress(section.id);
+      
+      return {
+        id: section.id,
+        name: section.name,
+        isActive: false, // Will be updated by ScrollSpy
+        isCompleted: progress === 100,
+        progress: progress // Pass the progress percentage
+      };
+    });
+  }, [sections, responses, calculateSectionProgress]);
+  
+  // We no longer handle the ThankYou screen here - it's moved to SurveyLayoutBridge
+  // This prevents hook order issues when transitioning to the submitted state // Add dependencies that affect section progress
   
   // Check if all required questions are answered (robust across types)
   const areAllRequiredQuestionsAnswered = () => {
@@ -122,17 +113,21 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
   };
   
   return (
-    <LayoutContainer>
+    <PageContainer>
       <HeaderBar 
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
         logo={survey.logo}
       />
+      <MainLayout>
       <SidebarNavigation 
         sections={sectionData}
-        currentSectionId=""
+        currentSectionId={activeSectionId}
         progress={calculateProgress()}
-        onSectionClick={(sectionId) => {
+        onSectionClick={useCallback((sectionId: string) => {
+          // Update the active section ID
+          setActiveSectionId(sectionId);
+          
           // Scroll to section
           const element = document.getElementById(`section-${sectionId}`);
           if (element) {
@@ -141,29 +136,39 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
               behavior: 'smooth'
             });
           }
-        }}
+        }, [])}
         color={survey.color}
         logo={survey.logo}
       />
       
       <ContentContainer>
         <ScrollSpy 
-          sections={sections.map(s => ({ id: s.id, name: s.name }))}
+          sections={useMemo(() => sections.map(s => ({ id: s.id, name: s.name })), [sections])}
           offset={100}
           color={survey.color}
+          // Disable ScrollSpy's ability to change active section
+          onActiveSectionChange={useCallback(() => {}, [])}
         />
         
-        {questionsBySection.map(({ section, questions }) => (
-          <SectionAccordion
-            key={section.id}
-            section={section}
-            questions={questions}
-            responses={responses}
-            onAnswer={onAnswer}
-            completionPercentage={calculateSectionProgress(section.id)}
-            color={survey.color}
-          />
-        ))}
+        {questionsBySection.map(({ section, questions }) => {
+          // Create a memoized onAnswer callback for each section
+          const sectionOnAnswer = useCallback(
+            (questionId: string, value: any) => onAnswer(questionId, value),
+            [onAnswer]
+          );
+          
+          return (
+            <SectionAccordion
+              key={section.id}
+              section={section}
+              questions={questions}
+              responses={responses}
+              onAnswer={sectionOnAnswer}
+              completionPercentage={calculateSectionProgress(section.id)}
+              color={survey.color}
+            />
+          );
+        })}
         
         {unsectionedQuestions.length > 0 && (
           <FinalThoughtsSection>
@@ -182,7 +187,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
                       questionText={question.text}
                       options={question.options || []}
                       value={responses[question._id]}
-                      onChange={(value) => onAnswer(question._id, value)}
+                      onChange={useCallback((value) => onAnswer(question._id, value), [question._id, onAnswer])}
                       required={!!question.required}
                       image={question.image || (question.currentVersion && question.currentVersion.image)} // Get image from question or currentVersion
                     />
@@ -207,7 +212,8 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
           This survey was created using Bioptrics Survey Platform
         </Footer>
       </ContentContainer>
-    </LayoutContainer>
+      </MainLayout>
+    </PageContainer>
   );
 };
 
@@ -228,22 +234,32 @@ const getQuestionType = (question: any) => {
 };
 
 // Styled components
-const LayoutContainer = styled.div`
+const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+`;
+
+const MainLayout = styled.div`
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
 `;
 
 const ContentContainer = styled.div`
   flex-grow: 1;
-  padding: 80px 10rem;
-  margin-left: 280px;
-  max-width: 1250px;
-  margin-top: 0px; /* Add space for the header */
+  padding: 100px 2rem 40px;
+  margin: 0 auto;
+  margin-left: 280px; /* Add margin to account for fixed sidebar */
+  width: calc(100% - 280px); /* Adjust width to account for sidebar */
   
   @media (max-width: 768px) {
     margin-left: 0;
-    padding: 1rem;
+    width: 100%;
+    padding: 100px 1rem 1rem;
   }
 `;
 
@@ -304,7 +320,7 @@ const SubmitButtonContainer = styled.div`
 `;
 
 const SubmitButton = styled.button<{ color: string; disabled: boolean }>`
-  background-color: ${props => props.disabled ? '#d1d5db' : (props.color || '#552A47')};
+  background-color: var(--primary-color, #552A47);
   color: white;
   border: none;
   font-size: 1rem;
@@ -315,7 +331,7 @@ const SubmitButton = styled.button<{ color: string; disabled: boolean }>`
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${props => props.disabled ? '#d1d5db' : '#3d1e32'};
+    background-color: var(--secondary-color, #3d1e32);
     transform: ${props => props.disabled ? 'none' : 'translateY(-1px)'};
   }
 `;

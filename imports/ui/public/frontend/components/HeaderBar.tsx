@@ -1,5 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
+import { FiClock } from 'react-icons/fi';
+import { useTimer } from '../contexts/TimerContext';
 
 interface HeaderBarProps {
   surveyTitle?: string;
@@ -8,20 +10,55 @@ interface HeaderBarProps {
 }
 
 const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo }) => {
+  // Get timer state from context
+  const { isRunning, elapsedTime } = useTimer();
+  // Use the logo from the public folder
+  const DefaultLogo = "/TeamsynerG.png"; // This logo already exists in your public folder
+  // Use memo for stable rendering
+  const timerDisplay = React.useMemo(() => {
+    if (isRunning || elapsedTime !== '00:00') {
+      return (
+        <TimerRunningTag>
+          <ClockIcon />
+          <span>{elapsedTime}</span>
+        </TimerRunningTag>
+      );
+    }
+    return null;
+  }, [isRunning, elapsedTime]);
+  
+  const averageTimeDisplay = React.useMemo(() => {
+    if (averageTime) {
+      return (
+        <AverageTimeTag>
+          <ClockIcon />
+          <span>{averageTime}</span>
+        </AverageTimeTag>
+      );
+    }
+    return null;
+  }, [averageTime]);
+  
   return (
     <HeaderContainer>
       <LeftSection>
         {logo ? (
           <LogoImage src={logo} alt="Logo" />
-        ) : (
+        ) : DefaultLogo ? (
+          <LogoImage src={DefaultLogo} alt="Logo" />
+        ):(
           <LogoText>TeamsynerG</LogoText>
         )}
       </LeftSection>
       <CenterSection>
-        <SurveyTitleText as="h1">{surveyTitle || 'Survey'}</SurveyTitleText>
+        <SurveyTitleContainer>
+          <SurveyTitleText as="h1">{surveyTitle || 'Survey'}</SurveyTitleText>
+          {timerDisplay}
+          {averageTimeDisplay}
+        </SurveyTitleContainer>
       </CenterSection>
       <RightSection>
-        {averageTime && <AverageTimeTag>{averageTime}</AverageTimeTag>}
+        {/* Right section can remain empty or be used for other elements in the future */}
       </RightSection>
     </HeaderContainer>
   );
@@ -42,6 +79,7 @@ const HeaderContainer = styled.div`
   z-index: 100;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   gap: 21px;
+  height: 80px; /* Fixed height for header */
 `;
 
 const LeftSection = styled.div`
@@ -53,7 +91,7 @@ const LeftSection = styled.div`
 const CenterSection = styled.div`
   flex-grow: 1;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center; /* Center the title */
   padding: 0;
 `;
 
@@ -73,33 +111,57 @@ const LogoImage = styled.img`
 const LogoText = styled.div`
   font-size: 18px;
   font-weight: 600;
-  color: #552A47;
-  font-family: 'Inter', sans-serif;
+  color: var(--primary-color, #552A47);
+  font-family: var(--heading-font, 'Inter, sans-serif');
+`;
+
+const SurveyTitleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
 `;
 
 const SurveyTitleText = styled.h1`
   font-size: 28px;
   font-weight: 600;
-  color: rgba(85, 42, 71, 1);
+  color: var(--primary-color, #552A47);
   margin: 0;
   padding: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--heading-font, 'Inter, sans-serif');
   text-align: left;
   line-height: 1.2;
   width: 100%;
 `;
 
 const AverageTimeTag = styled.div`
-  background-color: #f5f0f7;
-  color: #552A47;
-  font-size: 14px;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-weight: 500;
+  background-color: var(--primary-color, #552A47);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 18px;
+  color: #fff;
+  margin-left: 55px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+`;
+const TimerRunningTag = styled.div`
+  background-color: var(--primary-color, #552A47);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 18px;
+  color: #fff;
+  margin-left: 55px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 28px;
+  gap: 8px;
+  font-weight: 700;
+`;
+
+const ClockIcon = styled(FiClock)`
+  font-size: 18px;
+  color: #fff;
+  font-weight: 700;
 `;
 
 export default HeaderBar;

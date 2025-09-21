@@ -1,4 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+
+// Default consent text for new surveys
+const defaultConsentText = `
+<p>Thank you for participating in this survey. Your participation is voluntary and you may withdraw at any time.</p>
+<p><strong>Purpose:</strong> This survey is designed to gather feedback to improve our services and workplace environment.</p>
+<p><strong>Data Collection:</strong> We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.</p>
+<p><strong>Data Use:</strong> Your responses will be analyzed in aggregate to identify trends and areas for improvement. Individual responses will only be viewed by authorized research personnel.</p>
+<p><strong>Confidentiality:</strong> Your responses will be kept confidential and will only be reported in aggregate form where individual responses cannot be identified.</p>
+<p><strong>Contact:</strong> If you have questions about this survey or your rights as a participant, please contact our research team.</p>
+`;
 import styled from 'styled-components';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -430,7 +440,7 @@ interface EnhancedSurveyBuilderProps {
   surveyId?: string;
 }
 
-const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId: propSurveyId }) => {
+const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId: propSurveyId }): React.ReactNode => {
   const navigate = useNavigate();
   const { surveyId: paramSurveyId } = useParams<{ surveyId: string }>();
   
@@ -489,7 +499,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     icon: string;
     selected: boolean;
   }>>([{
-    title: 'Total Questions Answered',
+    title: 'Total Responses',
     subtitle: 'Total number of questions answered',
     icon: 'clipboard-check',
     selected: true
@@ -509,6 +519,33 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     icon: 'clock',
     selected: true
   }]);
+  
+  // Consent Screen state variables
+  const [consentTitle, setConsentTitle] = useState<string>(survey?.consentScreen?.title || 'Informed Consent');
+  const [consentText, setConsentText] = useState<string>(survey?.consentScreen?.consentText || defaultConsentText);
+  const [privacyNoticeUrl, setPrivacyNoticeUrl] = useState<string>(survey?.consentScreen?.privacyNoticeUrl || '#');
+  const [privacyLinkText, setPrivacyLinkText] = useState<string>(
+    survey?.consentScreen?.privacyLinkText || 'Privacy Notice'
+  );
+  const [privacyInfoText, setPrivacyInfoText] = useState<string>(
+    survey?.consentScreen?.privacyInfoText || 'For more information, please see our'
+  );
+  const [continueButtonText, setContinueButtonText] = useState<string>(
+    survey?.consentScreen?.continueButtonText || 'Continue to Survey'
+  );
+  const [checkboxText, setCheckboxText] = useState<string>(
+    survey?.consentScreen?.checkboxText || 
+    'I have read and understand the above information and consent to participate in this survey'
+  );
+  const [showAnonymityNotice, setShowAnonymityNotice] = useState<boolean>(
+    survey?.consentScreen?.showAnonymityNotice !== undefined ? 
+    survey?.consentScreen?.showAnonymityNotice : true
+  );
+  const [anonymityNoticeText, setAnonymityNoticeText] = useState<string>(
+    survey?.consentScreen?.anonymityNoticeText || 
+    'This survey is anonymous. Your responses cannot be linked back to you personally.'
+  );
+  
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [surveyOrder, setSurveyOrder] = useState<any[]>([]);
@@ -558,9 +595,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
   const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
 
-  
   // Helper function to get total question count in a survey
-  const getTotalQuestionCount = (survey: any) => {
+  const getTotalQuestionCount = (survey: any): number => {
     if (!survey) return 0;
     
     let count = 0;
@@ -1265,6 +1301,29 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         setThankYouIcon(currentSurvey.thankYouIcon);
       }
       
+      // Initialize consent screen fields if they exist in the survey
+      if (currentSurvey.consentScreen) {
+        if (currentSurvey.consentScreen.consentText) {
+          setConsentText(currentSurvey.consentScreen.consentText);
+        }
+        
+        if (currentSurvey.consentScreen.privacyNoticeUrl) {
+          setPrivacyNoticeUrl(currentSurvey.consentScreen.privacyNoticeUrl);
+        }
+        
+        if (currentSurvey.consentScreen.checkboxText) {
+          setCheckboxText(currentSurvey.consentScreen.checkboxText);
+        }
+        
+        if (currentSurvey.consentScreen.anonymityNoticeText) {
+          setAnonymityNoticeText(currentSurvey.consentScreen.anonymityNoticeText);
+        }
+        
+        if (currentSurvey.consentScreen.showAnonymityNotice !== undefined) {
+          setShowAnonymityNotice(currentSurvey.consentScreen.showAnonymityNotice);
+        }
+      }
+      
       if (currentSurvey.thankYouBoxes && Array.isArray(currentSurvey.thankYouBoxes) && currentSurvey.thankYouBoxes.length > 0) {
         setThankYouBoxes(currentSurvey.thankYouBoxes as { title: string; subtitle: string; icon: string; selected: boolean; }[]);
       } else {
@@ -1781,12 +1840,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           secondaryColor: selectedThemeObject.secondaryColor,
           accentColor: selectedThemeObject.accentColor,
           backgroundColor: selectedThemeObject.backgroundColor || '#ffffff',
-          textColor: selectedThemeObject.textColor || '#333',
-          headingFont: selectedThemeObject.headingFont || 'Inter, sans-serif',
-          bodyFont: selectedThemeObject.bodyFont || 'Inter, sans-serif'
+          textColor: selectedThemeObject.textColor || '#333'
         } : null
       };
       
+      // Create the survey data object
       const surveyData = {
         ...survey,
         title: survey?.title || 'Untitled Survey',
@@ -1794,45 +1852,38 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         logo: survey?.logo || '',
         image: survey?.image || '',
         featuredImage: survey?.featuredImage || '',
-        primaryColor: selectedThemeObject?.primaryColor || selectedThemeObject?.color || survey?.primaryColor || '#552a47',
-        welcomeTitle: survey?.welcomeTitle || '',
-        welcomeMessage: survey?.welcomeMessage || '',
-        completionMessage: survey?.completionMessage || '',
-        // Include the updated defaultSettings
-        defaultSettings,
-        // Use surveySections instead of sections to match the server-side property name
-        // Make sure to map section properties to match the expected server format
+        color: survey?.color || '',
+        selectedQuestions: survey?.selectedQuestions || {},
+        siteTextQuestions: survey?.siteTextQuestions || [],
+        siteTextQForm: survey?.siteTextQForm || {},
+        selectedDemographics: survey?.selectedDemographics || [],
+        // Include survey sections and section questions
         surveySections: sections.map(section => ({
           id: section.id,
           name: section.name,
           description: section.description,
-          isActive: section.isActive,
+          isActive: section.isActive !== undefined ? section.isActive : true,
           priority: section.priority,
           color: section.color,
           instructions: section.instructions,
-          isRequired: section.isRequired,
+          isRequired: section.isRequired !== undefined ? section.isRequired : false,
           // Include image and document fields
           image: section.image,
           document: section.document,
           documentName: section.documentName,
           documentType: section.documentType
         })),
-        sectionQuestions: surveyQuestions.map(q => {
-          const mappedQuestion = {
-            id: q.id,
-            sectionId: q.sectionId,
-            type: q.type,
-            order: q.order,
-            status: q.status,
-            text: q.text
-          };
-          console.log('Mapping question for save:', mappedQuestion);
-          return mappedQuestion;
-        }),
-        // Explicitly include surveyOrder to ensure it's saved with the survey
-        // Use the current surveyOrder from the survey state to ensure all questions are included
-        surveyOrder: survey.surveyOrder || [],
-        // Include demographics, themes, categories, and tags
+        sectionQuestions: surveyQuestions.map(q => ({
+          id: q.id,
+          sectionId: q.sectionId,
+          type: q.type,
+          order: q.order,
+          status: q.status,
+          text: q.text
+        })),
+        // Include default settings
+        defaultSettings,
+        // Include themes, categories, and tags
         selectedTheme,
         selectedCategories,
         selectedTags,
@@ -1840,6 +1891,20 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         expectations: survey?.expectations || [],
         expectationsTitle: survey?.expectationsTitle || '',
         startButtonLabel: survey?.startButtonLabel || '',
+        // Include consent screen configuration
+        consentScreen: {
+          title: consentTitle,
+          consentText: consentText,
+          privacyNoticeUrl: privacyNoticeUrl,
+          privacyLinkText: privacyLinkText,
+          privacyInfoText: privacyInfoText,
+          continueButtonText: continueButtonText,
+          checkboxText: checkboxText,
+          showAnonymityNotice: showAnonymityNotice,
+          anonymityNoticeText: anonymityNoticeText
+        },
+        // Include survey order
+        surveyOrder: survey.surveyOrder || [],
         updatedAt: new Date(),
       };
       
@@ -2033,9 +2098,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         });
       }
       
-      // Ensure React has processed the state update
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       // Prepare survey data for saving with the updated sections
       const updatedSurveyData = {
         ...survey,
@@ -2054,11 +2116,20 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           document: section.document,
           documentName: section.documentName,
           documentType: section.documentType
-        }))
+        })),
+        // Include consent screen configuration
+        consentScreen: {
+          title: consentTitle,
+          consentText: consentText,
+          privacyNoticeUrl: privacyNoticeUrl,
+          privacyLinkText: privacyLinkText,
+          privacyInfoText: privacyInfoText,
+          continueButtonText: continueButtonText,
+          checkboxText: checkboxText,
+          showAnonymityNotice: showAnonymityNotice,
+          anonymityNoticeText: anonymityNoticeText
+        }
       };
-      
-      // Save the survey directly with the updated sections
-      console.log('Saving survey with updated sections...', updatedSurveyData.surveySections);
       
       // Call Meteor method directly to ensure the save happens
       Meteor.call('surveys.update', survey._id, updatedSurveyData, (error: any, result: any) => {
@@ -2908,42 +2979,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     // Save changes immediately instead of waiting for auto-save
     try {
       // Ensure we have valid data before proceeding
-      if (!survey || !survey._id) {
-        return;
-      }
-      
-      // Prepare survey data with updated sections
-      const surveyData = {
-        title: String(survey.title || ''),
-        description: String(survey.description || ''),
-        status: String(survey.status || 'draft'),
-        surveySections: updatedSections.map(section => ({
-          id: String(section.id),
-          name: String(section.name || ''),
-          description: String(section.description || ''),
-          priority: Number(section.priority || 0),
-          displayOrder: Number(section.displayOrder || 0),
-          isActive: Boolean(section.isActive !== undefined ? section.isActive : true),
-          color: String(section.color || ''),
-          instructions: String(section.instructions || ''),
-          isRequired: Boolean(section.isRequired !== undefined ? section.isRequired : false)
-        })),
-        sectionQuestions: surveyQuestions.map(q => ({
-          id: String(q.id),
-          text: String(q.text || ''),
-          type: String(q.type || ''),
-          status: String(q.status || 'draft'),
-          sectionId: String(q.sectionId || ''),
-          order: Number(q.order || 0)
-        })),
-        selectedTheme: survey.selectedTheme || '',
-        selectedCategories: Array.isArray(survey.categories) ? survey.categories : [],
-        selectedTags: Array.isArray(selectedTags) ? selectedTags : []
-      };
-      
-      // Call the server method to update the survey
-      await Meteor.callAsync('surveys.update', survey._id, surveyData);
-      
       // Reset unsaved changes flag
       setHasUnsavedChanges(false);
     } catch (error) {
@@ -3280,6 +3315,24 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     setHasUnsavedChanges={setHasUnsavedChanges}
                     triggerAutoSave={triggerAutoSave}
                     handlePreview={handlePreview}
+                    consentTitle={consentTitle}
+                    setConsentTitle={setConsentTitle}
+                    consentText={consentText}
+                    setConsentText={setConsentText}
+                    privacyNoticeUrl={privacyNoticeUrl}
+                    setPrivacyNoticeUrl={setPrivacyNoticeUrl}
+                    privacyLinkText={privacyLinkText}
+                    setPrivacyLinkText={setPrivacyLinkText}
+                    privacyInfoText={privacyInfoText}
+                    setPrivacyInfoText={setPrivacyInfoText}
+                    continueButtonText={continueButtonText}
+                    setContinueButtonText={setContinueButtonText}
+                    checkboxText={checkboxText}
+                    setCheckboxText={setCheckboxText}
+                    showAnonymityNotice={showAnonymityNotice}
+                    setShowAnonymityNotice={setShowAnonymityNotice}
+                    anonymityNoticeText={anonymityNoticeText}
+                    setAnonymityNoticeText={setAnonymityNoticeText}
                   />
                   
                  

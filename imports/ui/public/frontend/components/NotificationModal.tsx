@@ -7,7 +7,7 @@ interface NotificationModalProps {
   onClose: () => void;
   message: string;
   title?: string;
-  color?: string;
+  color?: string; // Kept for backward compatibility
 }
 
 const NotificationModal: React.FC<NotificationModalProps> = ({
@@ -15,14 +15,14 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
   onClose,
   message,
   title = 'Please Note',
-  color = '#552A47'
+  color = '#552A47' // Kept for backward compatibility
 }) => {
   if (!isOpen) return null;
 
   return (
     <ModalOverlay onClick={onClose}>
-      <ModalContent onClick={(e) => e.stopPropagation()} color={color}>
-        <ModalHeader color={color}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
           <HeaderContent>
             <FiAlertCircle size={20} />
             <ModalTitle>{title}</ModalTitle>
@@ -35,7 +35,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
           <MessageText dangerouslySetInnerHTML={{ __html: message }} />
         </ModalBody>
         <ModalFooter>
-          <ConfirmButton onClick={onClose} color={color}>
+          <ConfirmButton onClick={onClose}>
             OK
           </ConfirmButton>
         </ModalFooter>
@@ -68,7 +68,7 @@ const ModalOverlay = styled.div`
   }
 `;
 
-const ModalContent = styled.div<{ color: string }>`
+const ModalContent = styled.div`
   background-color: white;
   border-radius: 8px;
   width: 100%;
@@ -76,7 +76,7 @@ const ModalContent = styled.div<{ color: string }>`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.2s ease-out;
   overflow: hidden;
-  border-top: 4px solid ${props => props.color};
+  border-top: 4px solid var(--primary-color, #552A47);
 
   @keyframes slideIn {
     from {
@@ -90,14 +90,14 @@ const ModalContent = styled.div<{ color: string }>`
   }
 `;
 
-const ModalHeader = styled.div<{ color: string }>`
+const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: ${props => `${props.color}10`};
-  color: ${props => props.color};
-  border-bottom: 1px solid ${props => `${props.color}20`};
+  background-color: rgba(var(--primary-color-rgb, 85, 42, 71), 0.1);
+  color: var(--primary-color, #552A47);
+  border-bottom: 1px solid rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
 `;
 
 const HeaderContent = styled.div`
@@ -147,8 +147,8 @@ const ModalFooter = styled.div`
   border-top: 1px solid #eee;
 `;
 
-const ConfirmButton = styled.button<{ color: string }>`
-  background-color: ${props => props.color};
+const ConfirmButton = styled.button`
+  background-color: var(--primary-color, #552A47);
   color: white;
   border: none;
   border-radius: 20px;
@@ -159,13 +159,7 @@ const ConfirmButton = styled.button<{ color: string }>`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: ${props => {
-      const hex = props.color.replace('#', '');
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, 0.8)`;
-    }};
+    background-color: var(--button-hover, #3d1e32);
   }
 `;
 
