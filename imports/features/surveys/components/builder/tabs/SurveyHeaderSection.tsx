@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { FiSave } from 'react-icons/fi';
+import { FiSave, FiShare2 } from 'react-icons/fi';
+import SurveyShareModal from '../../../components/SurveyShareModal';
 
 // Styled components
 const Header = styled.div`
@@ -201,6 +202,7 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
   handleGeneratePublicUrl,
 }) => {
   const [showActionDropdown, setShowActionDropdown] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Handle clicks outside dropdown to close it
@@ -262,147 +264,165 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
   };
 
   return (
-    <Header>
-      <TitleSection>
-        <Title>{survey?.title || 'Untitled Survey'}</Title>
-        {publicUrl && (
-          <UrlContainer>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <UrlText>{publicUrl}</UrlText>
-            {/* Copy URL icon */}
-            <IconButton
-              onClick={() => {
-                navigator.clipboard.writeText(publicUrl);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-                showSuccessAlert('URL copied to clipboard!');
-              }}
-              title="Copy URL"
-            >
+    <>
+      <Header>
+        <TitleSection>
+          <Title>{survey?.title || 'Untitled Survey'}</Title>
+          {publicUrl && (
+            <UrlContainer>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
-                  d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                  d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                <rect
-                  x="8"
-                  y="2"
-                  width="8"
-                  height="4"
-                  rx="1"
-                  ry="1"
+                <path
+                  d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </svg>
-            </IconButton>
-            {/* Preview icon */}
-            <IconButton onClick={handlePreview} title="Preview Survey">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </IconButton>
-          </UrlContainer>
-        )}
-      </TitleSection>
-      <Actions>
-        <SaveIndicator saving={saving}>
-          {saving ? (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <animateTransform
-                    attributeName="transform"
-                    attributeType="XML"
-                    type="rotate"
-                    from="0 12 12"
-                    to="360 12 12"
-                    dur="1s"
-                    repeatCount="indefinite"
-                  />
-                </path>
-              </svg>
-              <span>Saving...</span>
-            </>
-          ) : showSavedMessage ? (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Saved</span>
-            </>
-          ) : null}
-        </SaveIndicator>
-        <SaveButton onClick={() => handleSaveSurvey(false)} disabled={saving}>
-          <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
-        </SaveButton>
-        <DropdownContainer ref={dropdownRef}>
-          <DropdownButton onClick={() => setShowActionDropdown(!showActionDropdown)}>
-            &#8230;
-          </DropdownButton>
-          {showActionDropdown && (
-            <DropdownMenu>
-              <DropdownItem
+              <UrlText>{publicUrl}</UrlText>
+              {/* Copy URL icon */}
+              <IconButton
                 onClick={() => {
-                  setShowActionDropdown(false);
-                  handleGeneratePublicUrl();
+                  navigator.clipboard.writeText(publicUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                  showSuccessAlert('URL copied to clipboard!');
                 }}
-                disabled={!survey?._id}
+                title="Copy URL"
               >
-                {isPublished ? 'Publish Again' : 'Publish'}
-              </DropdownItem>
-            </DropdownMenu>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <rect
+                    x="8"
+                    y="2"
+                    width="8"
+                    height="4"
+                    rx="1"
+                    ry="1"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </IconButton>
+              {/* Preview icon */}
+              <IconButton onClick={handlePreview} title="Preview Survey">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </IconButton>
+            </UrlContainer>
           )}
-        </DropdownContainer>
-      </Actions>
-    </Header>
+        </TitleSection>
+        <Actions>
+          <SaveIndicator saving={saving}>
+            {saving ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <animateTransform
+                      attributeName="transform"
+                      attributeType="XML"
+                      type="rotate"
+                      from="0 12 12"
+                      to="360 12 12"
+                      dur="1s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+                </svg>
+                <span>Saving...</span>
+              </>
+            ) : showSavedMessage ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>Saved</span>
+              </>
+            ) : null}
+          </SaveIndicator>
+          <SaveButton onClick={() => handleSaveSurvey(false)} disabled={saving}>
+            <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
+          </SaveButton>
+          <SaveButton 
+            onClick={() => setShowShareModal(true)} 
+            disabled={!survey?._id}
+          >
+            <FiShare2 style={{ fontSize: '16px' }} /> Share
+          </SaveButton>
+          <DropdownContainer ref={dropdownRef}>
+            <DropdownButton onClick={() => setShowActionDropdown(!showActionDropdown)}>
+              &#8230;
+            </DropdownButton>
+            {showActionDropdown && (
+              <DropdownMenu>
+                <DropdownItem
+                  onClick={() => {
+                    setShowActionDropdown(false);
+                    handleGeneratePublicUrl();
+                  }}
+                  disabled={!survey?._id}
+                >
+                  {isPublished ? 'Publish Again' : 'Publish'}
+                </DropdownItem>
+              </DropdownMenu>
+            )}
+          </DropdownContainer>
+        </Actions>
+      </Header>
+      
+      {/* Survey Share Modal */}
+      {showShareModal && (
+        <SurveyShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          surveyId={survey?._id || ''}
+          surveyTitle={survey?.title || 'Untitled Survey'}
+        />
+      )}
+    </>
   );
 };
 

@@ -60,7 +60,6 @@ const QuillContainer = styled.div`
 
 const SelectContainer = styled.div`
   position: relative;
-  z-index: 1000;
   .react-select__menu {
     z-index: 9999;
     width: 100%;
