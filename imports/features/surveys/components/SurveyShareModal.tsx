@@ -347,6 +347,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [invitationsPerPage] = useState(10);
+  const [testMode, setTestMode] = useState(true);
   
   // Fetch invitations from the database
   const { invitations, invitationsLoading, invitationsCount } = useTracker(() => {
@@ -441,7 +442,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     console.log('Current user ID:', Meteor.userId());
     
     // Call the method to save invitations to the database
-    Meteor.call('surveys.sendInvitations', surveyId, emails, (error: Meteor.Error, result: any) => {
+    Meteor.call('surveys.sendInvitations', surveyId, emails, testMode, (error: Meteor.Error, result: any) => {
       setLoading(false);
       
       if (error) {
@@ -452,7 +453,18 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
         
         // Clear the input and show success message
         setEmailList('');
-        setSuccess(`Successfully sent ${result.count} invitation(s)`);
+        
+        // Create a more detailed success message
+        let successMessage = `Successfully processed ${result.count} invitation(s)`;
+        
+        // Add email sending status if not in test mode
+        if (!result.testMode && result.emailsSent > 0) {
+          successMessage += ` and sent ${result.emailsSent} email(s)`;
+        } else if (result.testMode) {
+          successMessage += ` (Test mode: no emails were sent)`;
+        }
+        
+        setSuccess(successMessage);
         
         // Switch to Invited tab
         setActiveTab('invited');
@@ -482,13 +494,25 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     setSuccess(null);
     
     // Call the server method to resend the invitation
-    Meteor.call('surveys.resendInvitation', invitationId, (error: Meteor.Error) => {
+    Meteor.call('surveys.resendInvitation', invitationId, testMode, (error: Meteor.Error, result: any) => {
       setLoading(false);
       
       if (error) {
         setError(`Failed to resend invitation: ${error.message}`);
+      } else if (result) {
+        // Create a more detailed success message
+        let successMessage = 'Invitation processed successfully';
+        
+        // Add email sending status if not in test mode
+        if (!result.testMode && result.emailSent) {
+          successMessage = 'Invitation resent successfully';
+        } else if (result.testMode) {
+          successMessage += ' (Test mode: no email was sent)';
+        }
+        
+        setSuccess(successMessage);
       } else {
-        setSuccess('Invitation resent successfully');
+        setSuccess('Invitation processed');
       }
     });
   };
@@ -543,6 +567,21 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                 />
                 <div style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>
                   You can enter multiple email addresses, one per line.
+                </div>
+              </FormGroup>
+              
+              <FormGroup>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                  <input
+                    type="checkbox"
+                    id="testMode"
+                    checked={testMode}
+                    onChange={(e) => setTestMode(e.target.checked)}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <label htmlFor="testMode" style={{ margin: 0, cursor: 'pointer' }}>
+                    Test Mode {testMode ? '(Emails will not be sent)' : '(Emails will be sent)'}
+                  </label>
                 </div>
               </FormGroup>
               
@@ -778,7 +817,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                       style={{ background: '#f5f5f5', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
                       onClick={() => {
                         // Get the editor element
-                        const editor = document.querySelector('.EditorContent');
+                        const editor = document.querySelector('.EditorContent') as HTMLElement;
                         if (editor) {
                           // Focus the editor first
                           editor.focus();

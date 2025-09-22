@@ -1,0 +1,11 @@
+{
+  "private": {
+    "mailtrap": {
+      "host": "sandbox.smtp.mailtrap.io",
+      "port": 2525,
+      "user": "6f9ec6e1eebb57",
+      "pass": "0cdfe96cfeff56",
+      "from": "Survey Team <shobajotaye@gmail.com>"
+    }
+  }
+}

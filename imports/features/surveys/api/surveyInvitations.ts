@@ -12,6 +12,7 @@ export interface SurveyInvitation {
   completedAt?: Date;
   lastReminderSentAt?: Date;
   reminderCount?: number;
+  token?: string; // Token for survey access
 }
 
 export const SurveyInvitations = new Mongo.Collection<SurveyInvitation>('surveyInvitations');
