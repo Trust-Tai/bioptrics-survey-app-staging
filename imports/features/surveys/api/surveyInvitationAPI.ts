@@ -81,6 +81,9 @@ Meteor.methods({
       // Process each email with rate limiting
       for (let i = 0; i < validEmails.length; i++) {
         const email = validEmails[i];
+        
+        // Calculate progress percentage
+        const progress = Math.round(((i + 1) / validEmails.length) * 100);
         try {
             console.log(`valid email: ${email}`);
           // Check if invitation already exists - using async version for server
@@ -200,13 +203,13 @@ Meteor.methods({
         }
       }
       
-      console.log(`Successfully processed ${invitationIds.length} invitations`);
+      console.log(`Successfully processed ${validEmails.length} invitations`);
       
       return {
-        success: true,
-        count: invitationIds.length,
+        count: validEmails.length,
         emailsSent: emailsSent.length,
-        testMode
+        testMode,
+        progress: 100 // Final progress is 100%
       };
     } catch (error) {
       console.error('Error in surveys.sendInvitations:', error);
