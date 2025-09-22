@@ -50,44 +50,6 @@ export interface SurveyResponseDoc {
 
 export const SurveyResponses = new Mongo.Collection<SurveyResponseDoc>('surveyResponses');
 
-// Helper function to update survey response statistics
-async function updateSurveyResponseStats(surveyId: string) {
-  try {
-    // Count total responses for this survey
-    const totalResponses = await SurveyResponses.find({ 
-      surveyId: surveyId 
-    }).countAsync();
-    
-    // Count completed responses for this survey
-    const completedResponses = await SurveyResponses.find({ 
-      surveyId: surveyId,
-      completed: true 
-    }).countAsync();
-    
-    // Calculate completion percentage
-    const completion = totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0;
-    
-    // Update the survey document with the new responseStats
-    await Surveys.updateAsync(surveyId, {
-      $set: {
-        responseStats: {
-          total: totalResponses,
-          completed: completedResponses,
-          completion: completion
-        }
-      }
-    });
-    
-    console.log(`Updated responseStats for survey ${surveyId}:`, {
-      total: totalResponses,
-      completed: completedResponses,
-      completion: completion
-    });
-  } catch (error) {
-    console.error('Error updating survey responseStats:', error);
-  }
-}
-
 if (Meteor.isServer) {
   // Publish recent survey responses
   Meteor.publish('surveyResponses.recent', function() {
@@ -485,20 +447,6 @@ if (Meteor.isServer) {
           completionTime: Match.Optional(Number)
         });
         
-        // Check if survey has reached maximum number of responses
-        const survey = await Surveys.findOneAsync({ _id: responseData.surveyId });
-        if (survey?.defaultSettings?.limitResponses && survey.defaultSettings?.maxResponses) {
-          const currentResponseCount = await SurveyResponses.find({ 
-            surveyId: responseData.surveyId,
-            completed: true 
-          }).countAsync();
-          
-          if (currentResponseCount >= survey.defaultSettings.maxResponses) {
-            throw new Meteor.Error('response-limit-reached', 
-              `This survey has reached its maximum number of responses (${survey.defaultSettings.maxResponses}). No more responses can be submitted.`);
-          }
-        }
-        
         // Get current timestamp
         const now = new Date();
         
@@ -623,10 +571,6 @@ if (Meteor.isServer) {
           }
           
           console.log(`Survey response updated successfully`);
-          
-          // Update survey responseStats
-          await updateSurveyResponseStats(responseData.surveyId);
-          
           return targetId;
         } else {
           // This is a new submission
@@ -771,10 +715,6 @@ if (Meteor.isServer) {
           // Use type assertion to satisfy TypeScript
           const responseId = await SurveyResponses.insertAsync(responseData as unknown as SurveyResponseDoc);
           console.log('New survey response inserted successfully with ID:', responseId);
-          
-          // Update survey responseStats
-          await updateSurveyResponseStats(responseData.surveyId);
-          
           return responseId;
         }
       } catch (error: unknown) {
