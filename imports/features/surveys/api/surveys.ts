@@ -5,6 +5,46 @@ import { Random } from 'meteor/random';
 import { Accounts } from 'meteor/accounts-base';
 import { findThemeIdByName } from '../../survey-themes/api/themeUtils';
 
+// Helper function to update survey response statistics
+async function updateSurveyResponseStats(surveyId: string) {
+  try {
+    const { SurveyResponses } = await import('./surveyResponses');
+    
+    // Count total responses for this survey
+    const totalResponses = await SurveyResponses.find({ 
+      surveyId: surveyId 
+    }).countAsync();
+    
+    // Count completed responses for this survey
+    const completedResponses = await SurveyResponses.find({ 
+      surveyId: surveyId,
+      completed: true 
+    }).countAsync();
+    
+    // Calculate completion percentage
+    const completion = totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0;
+    
+    // Update the survey document with the new responseStats
+    await Surveys.updateAsync(surveyId, {
+      $set: {
+        responseStats: {
+          total: totalResponses,
+          completed: completedResponses,
+          completion: completion
+        }
+      }
+    });
+    
+    console.log(`Updated responseStats for survey ${surveyId}:`, {
+      total: totalResponses,
+      completed: completedResponses,
+      completion: completion
+    });
+  } catch (error) {
+    console.error('Error updating survey responseStats:', error);
+  }
+}
+
 // Collaborator interface is defined below as an exported interface
 
 // Extend the User type to include roles
@@ -159,6 +199,10 @@ export interface SurveyDoc {
     accessPassword?: string;
     // Survey retake setting
     allowRetake?: boolean;
+    retakeMode?: 'replace' | 'new';
+    // Response limit settings
+    limitResponses?: boolean;
+    maxResponses?: number;
   };
   // Consent screen customization
   consentScreen?: {
@@ -175,6 +219,12 @@ export interface SurveyDoc {
   isActive?: boolean;
   priority?: number;
   keywords?: string[];
+  // Response statistics
+  responseStats?: {
+    total: number;
+    completed: number;
+    completion: number;
+  };
 }
 
 // Import SurveyResponseDoc from the dedicated file
@@ -1640,6 +1690,20 @@ Meteor.methods({
       throw new Meteor.Error('not-found', 'Survey not found');
     }
     
+    // Check if survey has reached maximum number of responses
+    if (survey.defaultSettings?.limitResponses && survey.defaultSettings?.maxResponses) {
+      const { SurveyResponses } = await import('./surveyResponses');
+      const currentResponseCount = await SurveyResponses.find({ 
+        surveyId: data.surveyId,
+        completed: true 
+      }).countAsync();
+      
+      if (currentResponseCount >= survey.defaultSettings.maxResponses) {
+        throw new Meteor.Error('response-limit-reached', 
+          `This survey has reached its maximum number of responses (${survey.defaultSettings.maxResponses}). No more responses can be submitted.`);
+      }
+    }
+    
     console.log('Received survey response submission:', {
       surveyId: data.surveyId,
       responseCount: Object.keys(data.responses).length,
@@ -1714,11 +1778,47 @@ Meteor.methods({
         );
       }
       
+      // Update survey responseStats
+      await updateSurveyResponseStats(data.surveyId);
+      
       return responseId;
     } catch (error) {
       console.error('Error saving survey response:', error);
       throw new Meteor.Error('db-error', 'Failed to save survey response');
     }
+  },
+  
+  /**
+   * Update response statistics for a survey
+   * @param surveyId - The ID of the survey to update
+   * @returns The updated response statistics
+   */
+  async 'surveys.updateResponseStats'(surveyId: string) {
+    check(surveyId, String);
+    
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to update response statistics');
+    }
+    
+    // Check if user has permission to update this survey
+    const survey = await Surveys.findOneAsync(surveyId);
+    if (!survey) {
+      throw new Meteor.Error('not-found', 'Survey not found');
+    }
+    
+    if (survey.createdBy !== this.userId) {
+      // Check if user is a collaborator
+      const isCollaborator = survey.collaborators?.some(collab => collab.userId === this.userId);
+      if (!isCollaborator) {
+        throw new Meteor.Error('not-authorized', 'You do not have permission to update this survey');
+      }
+    }
+    
+    await updateSurveyResponseStats(surveyId);
+    
+    // Return the updated survey with responseStats
+    const updatedSurvey = await Surveys.findOneAsync(surveyId);
+    return updatedSurvey?.responseStats;
   },
   
   /**

@@ -5,7 +5,7 @@ import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '../../features/surveys/api/surveys';
+import { Surveys, SurveyDoc } from '../../features/surveys/api/surveys';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
@@ -781,6 +781,8 @@ const AllSurveys: React.FC = () => {
         createdBy: 1,
         createdAt: 1,
         updatedAt: 1,
+        selectedTags: 1, // Include tags for display
+        responseStats: 1, // Include response statistics
         // Remove heavy fields that aren't needed for list view
         'surveySections.name': 1, // Only section names, not full objects
         'sectionQuestions.length': 1, // Only count, not full questions
@@ -830,7 +832,7 @@ const AllSurveys: React.FC = () => {
 
   // Define interface for survey data
   interface SurveyData {
-    _id: string;
+    _id?: string;
     title: string;
     description: string;
     published: boolean;
@@ -885,20 +887,18 @@ const AllSurveys: React.FC = () => {
       }
     });
     
-    return surveys.map((survey: SurveyData): ProcessedSurvey => {
+    return surveys.map((survey): ProcessedSurvey => {
       // Optimized calculations with early returns and caching
       const sectionsCount = survey.surveySections?.length || 0;
       
       // Use pre-calculated question count if available, otherwise calculate
       const questionCount = survey.sectionQuestions?.length || 0;
       
-      // Optimized response statistics calculation
-      const responses = survey.responses || [];
-      const totalResponses = responses.length;
-      const completedResponses = totalResponses > 0 ? 
-        responses.filter(r => r.completed).length : 0;
-      const completionRate = totalResponses > 0 ? 
-        Math.round((completedResponses / totalResponses) * 100) : 0;
+      // Use responseStats if available, otherwise calculate from responses
+      const responseStats = (survey as any).responseStats || { total: 0, completed: 0, completion: 0 };
+      const totalResponses = responseStats.total;
+      const completedResponses = responseStats.completed;
+      const completionRate = responseStats.completion;
       
       // Cached ownership calculations
       const isOwned = survey.createdBy === userId;
@@ -1557,6 +1557,8 @@ const AllSurveys: React.FC = () => {
               createdBy: 1,
               createdAt: 1,
               updatedAt: 1,
+              selectedTags: 1, // Include tags for display
+              responseStats: 1, // Include response statistics
               sections: 1,
               responses: 1,
               collaborators: 1,
