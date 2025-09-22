@@ -2,20 +2,24 @@ import { Meteor } from 'meteor/meteor';
 import nodemailer from 'nodemailer';
 import { Email } from 'meteor/email';
 
-// Create a transporter with Mailtrap SMTP credentials
+// Create a transporter with SMTP credentials
 export const createTransporter = () => {
-  // Check if we have settings, otherwise use defaults for development
-  const settings = Meteor.settings?.private?.mailtrap || {
-    host: 'sandbox.smtp.mailtrap.io',
-    port: 2525,
-    user: process.env.MAILTRAP_USER || 'default_user',
-    pass: process.env.MAILTRAP_PASS || 'default_pass'
+  // First check environment variables, then settings file, then defaults
+  console.log('Email settings from file:', JSON.stringify(Meteor.settings?.private?.email));
+  
+  const settings = {
+    host: process.env.SMTP_EMAIL_HOST || Meteor.settings?.private?.email?.host || 'smtp.example.com',
+    port: parseInt(process.env.SMTP_EMAIL_PORT || '') || Meteor.settings?.private?.email?.port || 587,
+    user: process.env.SMTP_EMAIL_USER || Meteor.settings?.private?.email?.user || 'default_user',
+    pass: process.env.SMTP_EMAIL_PASSWORD || Meteor.settings?.private?.email?.pass || 'default_pass'
   };
+  
+  console.log('Using email settings - Host:', settings.host, 'Port:', settings.port);
 
-  // Using Mailtrap SMTP credentials
+  // Create email transport configuration
   return nodemailer.createTransport({
-    host: settings.host || 'sandbox.smtp.mailtrap.io',
-    port: settings.port || 2525,
+    host: settings.host,
+    port: settings.port,
     auth: {
       user: settings.user,
       pass: settings.pass
@@ -47,9 +51,9 @@ export const sendEmail = async (
     const processedHtml = processTemplate(html, variables);
     const processedSubject = processTemplate(subject, variables);
     
-    const settings = Meteor.settings?.private?.mailtrap || {};
-    const from = settings.from || 
-      process.env.EMAIL_FROM || 
+    // Get from address from environment variables first, then settings file, then default
+    const from = process.env.SMTP_EMAIL_FROM || 
+      Meteor.settings?.private?.email?.from || 
       '"Survey Team" <surveys@bioptrics.com>';
     
     console.log(`Sending email to ${to} with subject: ${processedSubject}`);
@@ -83,9 +87,9 @@ export const sendEmailFallback = (
     const processedHtml = processTemplate(html, variables);
     const processedSubject = processTemplate(subject, variables);
     
-    const settings = Meteor.settings?.private?.mailtrap || {};
-    const from = settings.from || 
-      process.env.EMAIL_FROM || 
+    // Get from address from environment variables first, then settings file, then default
+    const from = process.env.SMTP_EMAIL_FROM || 
+      Meteor.settings?.private?.email?.from || 
       '"Survey Team" <surveys@bioptrics.com>';
     
     Email.send({
