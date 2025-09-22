@@ -227,23 +227,50 @@ const Button = styled.button`
   background-color: #552a47;
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-weight: 600;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: background-color 0.2s;
   
-  &:hover:not(:disabled) {
-    background-color: #6a3359;
+  &:hover {
+    background-color: #6d3a5d;
   }
   
   &:disabled {
-    background-color: #ccc;
+    background-color: #9e9e9e;
     cursor: not-allowed;
   }
+  
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const ProgressBarContainer = styled.div`
+  width: 100%;
+  height: 6px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+`;
+
+const ProgressBarFill = styled.div<{ progress: number }>`
+  height: 100%;
+  width: ${props => props.progress}%;
+  background-color: #552a47;
+  transition: width 0.3s ease;
 `;
 
 const Table = styled.table`
@@ -347,6 +374,10 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [invitationsPerPage] = useState(10);
+  const [testMode, setTestMode] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [totalEmails, setTotalEmails] = useState(0);
+  const [activeInvitationId, setActiveInvitationId] = useState<string | null>(null);
   
   // Fetch invitations from the database
   const { invitations, invitationsLoading, invitationsCount } = useTracker(() => {
@@ -419,6 +450,28 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     return null;
   }
 
+  // Function to simulate progress updates while waiting for server response
+  const simulateProgress = (emailCount: number) => {
+    // Start at 5% to show immediate feedback
+    let currentProgress = 5;
+    
+    // Calculate how many steps we need based on email count
+    const totalSteps = Math.min(emailCount * 2, 20); // Max 20 steps
+    const progressStep = 90 / totalSteps; // Go up to 95% (server will set 100%)
+    
+    const progressInterval = setInterval(() => {
+      if (currentProgress >= 95) {
+        clearInterval(progressInterval);
+        return;
+      }
+      
+      currentProgress += progressStep;
+      setProgress(Math.min(Math.round(currentProgress), 95));
+    }, 500); // Update every 500ms
+    
+    return progressInterval;
+  };
+  
   const handleSendInvites = () => {
     // Accept any input, even empty
     let emailsToSend = emailList.trim();
@@ -429,6 +482,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setActiveInvitationId(null);
     
     // Parse email list
     const emails = emailsToSend
@@ -440,19 +494,43 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     console.log('Emails to invite:', emails);
     console.log('Current user ID:', Meteor.userId());
     
+    // Set initial progress state
+    setProgress(5); // Start at 5% to show immediate feedback
+    setTotalEmails(emails.length);
+    
+    // Start simulating progress
+    const progressInterval = simulateProgress(emails.length);
+    
     // Call the method to save invitations to the database
-    Meteor.call('surveys.sendInvitations', surveyId, emails, (error: Meteor.Error, result: any) => {
+    Meteor.call('surveys.sendInvitations', surveyId, emails, testMode, (error: Meteor.Error, result: any) => {
+      // Clear the progress simulation interval
+      clearInterval(progressInterval);
       setLoading(false);
       
       if (error) {
         console.error('Error sending invitations:', error);
         setError(`Failed to send invitations: ${error.message}`);
+        setProgress(0);
       } else {
         console.log('Invitation result:', result);
         
+        // Set the final progress
+        setProgress(result.progress || 100);
+        
         // Clear the input and show success message
         setEmailList('');
-        setSuccess(`Successfully sent ${result.count} invitation(s)`);
+        
+        // Create a more detailed success message
+        let successMessage = `Successfully processed ${result.count} invitation(s)`;
+        
+        // Add email sending status if not in test mode
+        if (!result.testMode && result.emailsSent > 0) {
+          successMessage += ` and sent ${result.emailsSent} email(s)`;
+        } else if (result.testMode) {
+          successMessage += ` (Test mode: no emails were sent)`;
+        }
+        
+        setSuccess(successMessage);
         
         // Switch to Invited tab
         setActiveTab('invited');
@@ -480,15 +558,41 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setActiveInvitationId(invitationId);
     
-    // Call the server method to resend the invitation
-    Meteor.call('surveys.resendInvitation', invitationId, (error: Meteor.Error) => {
+    // Set initial progress
+    setProgress(5);
+    
+    // Start simulating progress for a single email
+    const progressInterval = simulateProgress(1);
+    
+    Meteor.call('surveys.resendInvitation', invitationId, testMode, (error: Meteor.Error, result: any) => {
+      // Clear the progress simulation interval
+      clearInterval(progressInterval);
       setLoading(false);
+      setActiveInvitationId(null);
       
       if (error) {
+        console.error('Error resending invitation:', error);
         setError(`Failed to resend invitation: ${error.message}`);
+        setProgress(0);
       } else {
-        setSuccess('Invitation resent successfully');
+        console.log('Resend result:', result);
+        
+        // Set final progress
+        setProgress(100);
+        
+        // Create a more detailed success message
+        let successMessage = 'Invitation processed successfully';
+        
+        // Add email sending status if not in test mode
+        if (!result.testMode && result.emailSent) {
+          successMessage = 'Invitation resent successfully';
+        } else if (result.testMode) {
+          successMessage += ' (Test mode: no email was sent)';
+        }
+        
+        setSuccess(successMessage);
       }
     });
   };
@@ -546,13 +650,29 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                 </div>
               </FormGroup>
               
+              <FormGroup>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                  <input
+                    type="checkbox"
+                    id="testMode"
+                    checked={testMode}
+                    onChange={(e) => setTestMode(e.target.checked)}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <label htmlFor="testMode" style={{ margin: 0, cursor: 'pointer' }}>
+                    Test Mode {testMode ? '(Emails will not be sent)' : '(Emails will be sent)'}
+                  </label>
+                </div>
+              </FormGroup>
+              
               <Button 
                 onClick={handleSendInvites}
                 disabled={loading}
+                title={loading ? `Sending... ${progress}% complete` : "Send invitations to the entered email addresses"}
               >
                 {loading ? (
                   <>
-                    <FiRefreshCw size={16} className="spin" /> Sending...
+                    <FiRefreshCw size={16} className="spin" /> Sending... {progress}%
                   </>
                 ) : (
                   <>
@@ -560,6 +680,12 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                   </>
                 )}
               </Button>
+              
+              {loading && (
+                <ProgressBarContainer>
+                  <ProgressBarFill progress={progress} />
+                </ProgressBarContainer>
+              )}
               
               {error && (
                 <div style={{ 
@@ -642,8 +768,16 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                             <Button 
                               onClick={() => handleResendInvitation(invitation._id)}
                               style={{ padding: '6px 10px', fontSize: '12px' }}
+                              disabled={loading}
+                              title={loading ? `Resending... ${progress}% complete` : "Resend this invitation"}
                             >
-                              Resend
+                              {loading && invitation._id === activeInvitationId ? (
+                                <>
+                                  <FiRefreshCw size={12} className="spin" /> {progress}%
+                                </>
+                              ) : (
+                                "Resend"
+                              )}
                             </Button>
                           </Td>
                         </tr>
@@ -670,6 +804,12 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                       Next
                     </PaginationButton>
                   </Pagination>
+                  
+                  {loading && (
+                    <ProgressBarContainer style={{ marginTop: '20px' }}>
+                      <ProgressBarFill progress={progress} />
+                    </ProgressBarContainer>
+                  )}
                 </>
               ) : (
                 <EmptyState>
@@ -778,7 +918,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                       style={{ background: '#f5f5f5', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
                       onClick={() => {
                         // Get the editor element
-                        const editor = document.querySelector('.EditorContent');
+                        const editor = document.querySelector('.EditorContent') as HTMLElement;
                         if (editor) {
                           // Focus the editor first
                           editor.focus();

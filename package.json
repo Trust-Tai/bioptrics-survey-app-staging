@@ -36,7 +36,7 @@
     "jsonwebtoken": "^9.0.2",
     "meteor-node-stubs": "^1.2.5",
     "moment": "^2.30.1",
-    "nodemailer": "^7.0.5",
+    "nodemailer": "^7.0.6",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-bootstrap": "^2.10.10",

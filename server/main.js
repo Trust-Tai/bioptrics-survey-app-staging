@@ -18,6 +18,7 @@ import '../imports/features/surveys/api/questionResponseMethods';
 import '../imports/api/surveyMethods';
 // Import survey invitation API
 import '../imports/features/surveys/api/surveyInvitationAPI';
+import '../imports/features/surveys/api/emailLogs';
 import '../imports/features/surveys/api/deviceUsageMethods';
 import '../imports/features/surveys/api/analyticsMetrics';
 import '../imports/features/surveys/api/surveyStats';

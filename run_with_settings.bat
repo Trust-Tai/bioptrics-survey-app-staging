@@ -1,0 +1,3 @@
+@echo off
+echo Running Meteor with email settings...
+meteor run --settings settings.email.json
