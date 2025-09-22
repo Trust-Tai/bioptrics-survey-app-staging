@@ -16,6 +16,8 @@ import '../imports/features/surveys/api/incompleteSurveyResponses';
 import '../imports/features/surveys/api/surveyMethods';
 import '../imports/features/surveys/api/questionResponseMethods';
 import '../imports/api/surveyMethods';
+// Import survey invitation API
+import '../imports/features/surveys/api/surveyInvitationAPI';
 import '../imports/features/surveys/api/deviceUsageMethods';
 import '../imports/features/surveys/api/analyticsMetrics';
 import '../imports/features/surveys/api/surveyStats';
@@ -95,6 +97,53 @@ Meteor.startup(async () => {
     } catch (error) {
       console.error('Error creating sample incomplete survey response:', error);
     }
+  }
+  
+  // Initialize SurveyInvitations and EmailTemplates collections
+  const { SurveyInvitations } = require('../imports/features/surveys/api/surveyInvitations');
+  const { EmailTemplates } = require('../imports/features/surveys/api/emailTemplates');
+  
+  // Create indexes for better query performance
+  try {
+    // Check if indexes already exist before creating them
+    const surveyInvIndexes = await SurveyInvitations.rawCollection().listIndexes().toArray();
+    const emailTemplateIndexes = await EmailTemplates.rawCollection().listIndexes().toArray();
+    
+    // Create SurveyInvitations indexes if they don't exist
+    if (!surveyInvIndexes.some(idx => idx.name === 'surveyId_1')) {
+      await SurveyInvitations.rawCollection().createIndex({ surveyId: 1 });
+      console.log('Created surveyId index for SurveyInvitations');
+    }
+    
+    if (!surveyInvIndexes.some(idx => idx.name === 'recipientEmail_1')) {
+      await SurveyInvitations.rawCollection().createIndex({ recipientEmail: 1 });
+      console.log('Created recipientEmail index for SurveyInvitations');
+    }
+    
+    if (!surveyInvIndexes.some(idx => idx.name === 'status_1')) {
+      await SurveyInvitations.rawCollection().createIndex({ status: 1 });
+      console.log('Created status index for SurveyInvitations');
+    }
+    
+    // Create EmailTemplates index if it doesn't exist
+    const indexName = 'surveyId_1_type_1';
+    if (!emailTemplateIndexes.some(idx => idx.name === indexName)) {
+      await EmailTemplates.rawCollection().createIndex({ surveyId: 1, type: 1 }, { unique: true });
+      console.log('Created surveyId_type index for EmailTemplates');
+    } else {
+      // Check if the existing index has the unique constraint
+      const existingIndex = emailTemplateIndexes.find(idx => idx.name === indexName);
+      if (!existingIndex.unique) {
+        // Drop and recreate with unique constraint
+        await EmailTemplates.rawCollection().dropIndex(indexName);
+        await EmailTemplates.rawCollection().createIndex({ surveyId: 1, type: 1 }, { unique: true });
+        console.log('Updated surveyId_type index for EmailTemplates with unique constraint');
+      }
+    }
+    
+    console.log('Verified indexes for SurveyInvitations and EmailTemplates collections');
+  } catch (error) {
+    console.error('Error managing indexes for survey sharing collections:', error);
   }
 
   // --- ONBOARDING STEPS SEEDING ---

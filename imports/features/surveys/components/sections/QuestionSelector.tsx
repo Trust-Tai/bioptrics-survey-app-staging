@@ -60,7 +60,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   onQuestionsRefresh,
   surveyId,
 }) => {
-  console.log("isOpen",isOpen)
+  // console.log("isOpen",isOpen)
   // State to handle closing animation
   const [isClosing, setIsClosing] = useState(false);
   
