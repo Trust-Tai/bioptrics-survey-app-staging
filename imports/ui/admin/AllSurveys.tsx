@@ -762,10 +762,10 @@ const AllSurveys: React.FC = () => {
   // Get the current user ID
   const userId = Meteor.userId();
 
-
-  // Fetch surveys data with dynamic pagination
+  // Optimized surveys data fetching with pagination support
   const { surveys, loading } = useTracker(() => {
-    // Calculate skip value based on current page and items per page
+    // Calculate skip based on current page and items per page
+
     const skip = (page - 1) * itemsPerPage;
     
     // Use dynamic limit and skip for proper pagination
@@ -970,9 +970,9 @@ const AllSurveys: React.FC = () => {
 
   // Server-side pagination - no need for client-side slicing
   const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
-  const paginated = filtered; // No client-side slicing since server handles pagination
 
   const paginatedSurveys = filtered;
+
 
   useEffect(() => {
     setPage(1);

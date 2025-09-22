@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiLock } from 'react-icons/fi';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 import { Meteor } from 'meteor/meteor';
 
@@ -277,6 +279,25 @@ interface AppearanceSectionProps {
   setHasUnsavedChanges: (has: boolean) => void;
   triggerAutoSave: () => void;
   handlePreview: (theme: Theme) => void;
+  // Consent Screen props
+  consentTitle: string;
+  setConsentTitle: (title: string) => void;
+  consentText: string;
+  setConsentText: (text: string) => void;
+  privacyNoticeUrl: string;
+  setPrivacyNoticeUrl: (url: string) => void;
+  privacyLinkText: string;
+  setPrivacyLinkText: (text: string) => void;
+  privacyInfoText: string;
+  setPrivacyInfoText: (text: string) => void;
+  continueButtonText: string;
+  setContinueButtonText: (text: string) => void;
+  checkboxText: string;
+  setCheckboxText: (text: string) => void;
+  showAnonymityNotice: boolean;
+  setShowAnonymityNotice: (show: boolean) => void;
+  anonymityNoticeText: string;
+  setAnonymityNoticeText: (text: string) => void;
 }
 
 // Component
@@ -307,6 +328,25 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   setHasUnsavedChanges,
   triggerAutoSave,
   handlePreview,
+  // Consent Screen props
+  consentTitle,
+  setConsentTitle,
+  consentText,
+  setConsentText,
+  privacyNoticeUrl,
+  setPrivacyNoticeUrl,
+  privacyLinkText,
+  setPrivacyLinkText,
+  privacyInfoText,
+  setPrivacyInfoText,
+  continueButtonText,
+  setContinueButtonText,
+  checkboxText,
+  setCheckboxText,
+  showAnonymityNotice,
+  setShowAnonymityNotice,
+  anonymityNoticeText,
+  setAnonymityNoticeText,
 }) => {
   const [showRemoveLogoConfirm, setShowRemoveLogoConfirm] = useState(false);
   const [showRemoveFeaturedImageConfirm, setShowRemoveFeaturedImageConfirm] = useState(false);
@@ -830,6 +870,238 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             </button>
           </div>
         )}
+      </Section>
+
+      {/* Consent Screen */}
+      <Section>
+        <SectionTitle>Consent Screen</SectionTitle>
+        <p style={{ marginBottom: 16, color: '#4a5568', fontSize: 14 }}>
+          Customize the consent information that appears before users start your survey.
+        </p>
+
+        {/* Consent Title */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="consentTitle" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Consent Screen Title
+          </label>
+          <Input
+            type="text"
+            id="consentTitle"
+            value={consentTitle}
+            onChange={(e) => {
+              setConsentTitle(e.target.value);
+              setSurvey(prev => ({
+                ...prev,
+                consentScreen: { ...prev?.consentScreen, title: e.target.value },
+              }) as Survey);
+              setHasUnsavedChanges(true);
+              triggerAutoSave();
+            }}
+            placeholder="Informed Consent"
+          />
+        </div>
+
+        {/* Anonymity Notice Toggle & Text */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <label style={{ fontWeight: 600, fontSize: 16, color: '#2d3748' }}>
+              Anonymity Notice
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showAnonymityNotice}
+                onChange={(e) => {
+                  setShowAnonymityNotice(e.target.checked);
+                  setSurvey(prev => ({
+                    ...prev,
+                    consentScreen: { 
+                      ...prev?.consentScreen, 
+                      showAnonymityNotice: e.target.checked 
+                    },
+                  }) as Survey);
+                  setHasUnsavedChanges(true);
+                  triggerAutoSave();
+                }}
+                style={{ marginRight: 8, accentColor: '#552a47', width: 16, height: 16 }}
+              />
+              <span>Show anonymity notice</span>
+            </label>
+          </div>
+          
+          {showAnonymityNotice && (
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="anonymityNoticeText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+                Anonymity Notice Text
+              </label>
+              <Input
+                type="text"
+                id="anonymityNoticeText"
+                value={anonymityNoticeText}
+                onChange={(e) => {
+                  setAnonymityNoticeText(e.target.value);
+                  setSurvey(prev => ({
+                    ...prev,
+                    consentScreen: { 
+                      ...prev?.consentScreen, 
+                      anonymityNoticeText: e.target.value 
+                    },
+                  }) as Survey);
+                  setHasUnsavedChanges(true);
+                  triggerAutoSave();
+                }}
+                placeholder="This survey is anonymous. Your responses cannot be linked back to you personally."
+              />
+              <div style={{ marginTop: 12, padding: 12, backgroundColor: 'rgb(168, 221, 71)', borderRadius: 8, display: 'flex', alignItems: 'center' }}>
+                <FiLock style={{ marginRight: 8 }} />
+                <span style={{ fontSize: 14 }}>{anonymityNoticeText || "This survey is anonymous. Your responses cannot be linked back to you personally."}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Consent Text Editor */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="consentText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Consent Text
+          </label>
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+            <ReactQuill
+              value={consentText}
+              onChange={(value) => {
+                setConsentText(value);
+                setSurvey(prev => ({
+                  ...prev,
+                  consentScreen: { ...prev?.consentScreen, consentText: value },
+                }) as Survey);
+                setHasUnsavedChanges(true);
+                triggerAutoSave();
+              }}
+              modules={{
+                toolbar: [
+                  [{ 'header': [1, 2, 3, false] }],
+                  ['bold', 'italic', 'underline'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  ['clean']
+                ]
+              }}
+              style={{ height: 300, backgroundColor: '#fff' }}
+            />
+          </div>
+          <div style={{ marginTop: 8, fontSize: 13, color: '#718096' }}>
+            Format your consent text with headings, bold, italic, and lists. Include sections for purpose, data collection, data use, confidentiality, and contact information.
+          </div>
+        </div>
+
+        {/* Privacy Notice URL */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="privacyNoticeUrl" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Privacy Notice URL
+          </label>
+          <Input
+            type="text"
+            id="privacyNoticeUrl"
+            value={privacyNoticeUrl}
+            onChange={(e) => {
+              setPrivacyNoticeUrl(e.target.value);
+              setSurvey(prev => ({
+                ...prev,
+                consentScreen: { ...prev?.consentScreen, privacyNoticeUrl: e.target.value },
+              }) as Survey);
+              setHasUnsavedChanges(true);
+              triggerAutoSave();
+            }}
+            placeholder="https://example.com/privacy-policy"
+          />
+        </div>
+
+        {/* Privacy Link Text */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="privacyLinkText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Privacy Link Text
+          </label>
+          <Input
+            type="text"
+            id="privacyLinkText"
+            value={privacyLinkText}
+            onChange={(e) => {
+              setPrivacyLinkText(e.target.value);
+              setSurvey(prev => ({
+                ...prev,
+                consentScreen: { ...prev?.consentScreen, privacyLinkText: e.target.value },
+              }) as Survey);
+              setHasUnsavedChanges(true);
+              triggerAutoSave();
+            }}
+            placeholder="Privacy Notice"
+          />
+        </div>
+
+        {/* Privacy Info Text */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="privacyInfoText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Privacy Info Text
+          </label>
+          <Input
+            type="text"
+            id="privacyInfoText"
+            value={privacyInfoText}
+            onChange={(e) => {
+              setPrivacyInfoText(e.target.value);
+              setSurvey(prev => ({
+                ...prev,
+                consentScreen: { ...prev?.consentScreen, privacyInfoText: e.target.value },
+              }) as Survey);
+              setHasUnsavedChanges(true);
+              triggerAutoSave();
+            }}
+            placeholder="For more information, please see our"
+          />
+        </div>
+
+        {/* Continue Button Text */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="continueButtonText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Continue Button Text
+          </label>
+          <Input
+            type="text"
+            id="continueButtonText"
+            value={continueButtonText}
+            onChange={(e) => {
+              setContinueButtonText(e.target.value);
+              setSurvey(prev => ({
+                ...prev,
+                consentScreen: { ...prev?.consentScreen, continueButtonText: e.target.value },
+              }) as Survey);
+              setHasUnsavedChanges(true);
+              triggerAutoSave();
+            }}
+            placeholder="Continue to Survey"
+          />
+        </div>
+
+        {/* Checkbox Text */}
+        <div style={{ marginBottom: 20 }}>
+          <label htmlFor="checkboxText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+            Consent Checkbox Text
+          </label>
+          <Input
+            type="text"
+            id="checkboxText"
+            value={checkboxText}
+            onChange={(e) => {
+              setCheckboxText(e.target.value);
+              setSurvey(prev => ({
+                ...prev,
+                consentScreen: { ...prev?.consentScreen, checkboxText: e.target.value },
+              }) as Survey);
+              setHasUnsavedChanges(true);
+              triggerAutoSave();
+            }}
+            placeholder="I have read and understand the above information and consent to participate in this survey"
+          />
+        </div>
       </Section>
 
       {/* Thank You Screen */}

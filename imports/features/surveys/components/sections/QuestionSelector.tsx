@@ -21,7 +21,6 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Layers, Layer } from '/imports/api/layers';
 import RichTextRenderer from './RichTextRenderer';
 import { Meteor } from 'meteor/meteor';
-import { Questions } from '../../../questions/api/questions';
 import { Surveys } from '../../../surveys/api/surveys';
 import TagBuilder from '../../../questions/components/admin/TagBuilder';
 import TomSelect from 'tom-select';
@@ -41,12 +40,15 @@ interface QuestionSelectorProps {
   sectionId: string;
   onSelectQuestions: (questionIds: string[], sectionId: string) => void;
   onQuestionsRefresh?: () => void; // Optional callback to refresh questions list
+  surveyId?: string; // For server-side pagination
 }
 
 // Extended QuestionItem interface with tags
 interface ExtendedQuestionItem extends QuestionItem {
   categoryTags?: string[];
 }
+
+import { Questions } from '../../../../features/questions/api/questions';
 
 const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   isOpen,
@@ -56,7 +58,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   sectionId,
   onSelectQuestions,
   onQuestionsRefresh,
+  surveyId,
 }) => {
+  // console.log("isOpen",isOpen)
   // State to handle closing animation
   const [isClosing, setIsClosing] = useState(false);
   
@@ -106,7 +110,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       });
       
       // Keep dropdown open when typing
-      tomSelect.on('type', function(str) {
+      tomSelect.on('type', function() {
         // Always keep dropdown open when interacting with tags
         tomSelect.open();
       });
@@ -128,6 +132,13 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Pagination state: 50 per page
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSizeOptions = [5, 10, 25, 50];
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [totalCount, setTotalCount] = useState<number>(questions?.length || 0);
+  const [isSubReady, setIsSubReady] = useState<boolean>(false);
   
   // State for tag input and menu control
   const [tagInputValue, setTagInputValue] = useState('');
@@ -202,7 +213,17 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Filter questions based on search term and filters
   const filteredQuestions = useMemo(() => {
-    return questions.filter(question => {
+    const source = isSubReady ? Questions.find({}, { sort: { createdAt: -1 } }).fetch().map((q: any) => {
+      // Map to QuestionItem shape quickly
+      const latest = (q.versions && q.versions.find((v: any) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
+      return {
+        id: q._id,
+        text: (latest.questionText || '').replace(/<[^>]*>/g, ''),
+        type: latest.responseType || 'text',
+        status: 'published',
+      } as QuestionItem;
+    }) : questions;
+    return source.filter(question => {
       // Filter by search term
       const matchesSearch = searchTerm === '' || 
         question.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -225,7 +246,32 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       // Only show questions that match all filters
       return matchesSearch && matchesType && matchesTags;
     });
-  }, [questions, searchTerm, selectedType, selectedTags]);
+  }, [questions, searchTerm, selectedType, selectedTags, isSubReady]);
+  
+  // Reset to first page when filters/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedType, selectedTags, questions]);
+  
+  // Compute pagination
+  const totalPages = Math.max(1, Math.ceil((isSubReady ? totalCount : filteredQuestions.length) / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const currentPageQuestions = useMemo(() => {
+    // When using server-side pagination, the subscription already gives us a page worth of docs
+    if (isSubReady) {
+      const docs = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
+      return docs.map((q: any) => {
+        const latest = (q.versions && q.versions.find((v: any) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
+        return {
+          id: q._id,
+          text: (latest.questionText || '').replace(/<[^>]*>/g, ''),
+          type: latest.responseType || 'text',
+          status: 'published',
+        } as QuestionItem;
+      });
+    }
+    return filteredQuestions.slice(startIndex, startIndex + pageSize);
+  }, [filteredQuestions, startIndex, pageSize, isSubReady]);
   
   // Toggle question selection
   const handleToggleQuestion = (questionId: string) => {
@@ -239,23 +285,55 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   // Toggle all filtered questions
   const handleToggleAll = (checked: boolean) => {
     if (checked) {
-      // Add all filtered question IDs that aren't already selected
-      const newIds = filteredQuestions
+      // Add all current page question IDs that aren't already selected
+      const newIds = currentPageQuestions
         .map(q => q.id || '')
         .filter(id => id && !selectedIds.includes(id));
       
       setSelectedIds(prev => [...prev, ...newIds]);
     } else {
-      // Remove all filtered question IDs from selection
-      const filteredIds = new Set(filteredQuestions.map(q => q.id || ''));
+      // Remove all current page question IDs from selection
+      const filteredIds = new Set(currentPageQuestions.map(q => q.id || ''));
       setSelectedIds(prev => prev.filter(id => !filteredIds.has(id)));
     }
   };
   
-  // Check if all filtered questions are selected
+  // Check if all current page questions are selected
   const areAllFilteredQuestionsSelected = () => {
-    return filteredQuestions.every(q => q.id && selectedIds.includes(q.id));
+    return currentPageQuestions.length > 0 && currentPageQuestions.every(q => q.id && selectedIds.includes(q.id));
   };
+
+  // Server-side subscription for pagination
+  useEffect(() => {
+    if (!isOpen) return;
+    // Fetch total count once per open
+    if (surveyId) {
+      Meteor.call('questions.count', surveyId, (err: any, count: number) => {
+        if (!err && typeof count === 'number') setTotalCount(count);
+      });
+    } else {
+      Meteor.call('questions.count', (err: any, count: number) => {
+        if (!err && typeof count === 'number') setTotalCount(count);
+      });
+    }
+  }, [isOpen, surveyId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsSubReady(false);
+    const skip = (currentPage - 1) * pageSize;
+    const limit = pageSize;
+    const handle = Meteor.subscribe('questions.all', surveyId, skip, limit, {
+      onReady: () => setIsSubReady(true),
+      onStop: () => setIsSubReady(false),
+    } as any);
+    return () => handle.stop();
+  }, [isOpen, surveyId, currentPage, pageSize]);
+
+  // Reset page when pageSize changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize]);
   
   // Handle filter changes
   const handleFilterChange = (filterType: 'type' | 'tags', value: string | string[]) => {
@@ -577,7 +655,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                   {areAllFilteredQuestionsSelected() && <FiCheck size={14} color="white" />}
                 </div>
                 <span style={{ fontSize: '14px', color: '#475569' }}>
-                  Select All ({filteredQuestions.length} questions)
+                  Select All (page {currentPage} of {totalPages})
                 </span>
                 <span style={{ marginLeft: 'auto', fontSize: '14px', color: '#64748b' }}>
                   {selectedIds.length} selected
@@ -590,8 +668,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 overflowY: 'auto',
                 padding: '16px 24px 0', /* Added top padding for spacing */
               }}>
-                {filteredQuestions.length > 0 ? (
-                  filteredQuestions.map((question) => (
+                {currentPageQuestions.length > 0 ? (
+                  currentPageQuestions.map((question) => (
                     <div 
                       key={question.id} 
                       className="question-item" 
@@ -746,6 +824,86 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     <p>Try adjusting your filters or search terms to find what you're looking for.</p>
                   </div>
                 )}
+              </div>
+              
+              {/* Pagination Controls (Rows per page + Prev/Next + Page numbers) */}
+              <div style={{
+                padding: '12px 24px 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                {/* Rows per page */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, color: '#64748b' }}>Rows per page</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    style={{
+                      padding: '6px 10px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      background: '#ffffff',
+                      color: '#334155'
+                    }}
+                  >
+                    {pageSizeOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Pager */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: currentPage === 1 ? '#f1f5f9' : '#ffffff',
+                      color: currentPage === 1 ? '#94a3b8' : '#475569',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: pageNum === currentPage ? '1px solid #4a2d4e' : '1px solid #e2e8f0',
+                        backgroundColor: pageNum === currentPage ? '#4a2d4e' : '#ffffff',
+                        color: pageNum === currentPage ? '#ffffff' : '#475569',
+                        cursor: 'pointer',
+                        minWidth: 34,
+                      }}
+                      aria-label={`Go to page ${pageNum}`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: currentPage === totalPages ? '#f1f5f9' : '#ffffff',
+                      color: currentPage === totalPages ? '#94a3b8' : '#475569',
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
               
               {/* Action Buttons */}

@@ -82,6 +82,7 @@ export interface SurveyDoc {
   layout?: 'multiStep'  // Questions data (ordering managed via surveyOrder only)
   selectedQuestions?: Record<string, any[]>;
   siteTextQuestions?: any[];
+  siteTextQForm?: Record<string, any>;
   selectedDemographics: string[];
   selectedTheme?: string;
   selectedCategories?: string[];
@@ -202,6 +203,18 @@ export interface SurveyDoc {
     // Response limit settings
     limitResponses?: boolean;
     maxResponses?: number;
+  };
+  // Consent screen customization
+  consentScreen?: {
+    title?: string;
+    consentText?: string;
+    privacyNoticeUrl?: string;
+    privacyLinkText?: string;
+    privacyInfoText?: string;
+    continueButtonText?: string;
+    checkboxText?: string;
+    showAnonymityNotice?: boolean;
+    anonymityNoticeText?: string;
   };
   isActive?: boolean;
   priority?: number;
@@ -633,6 +646,8 @@ Meteor.methods({
           selectedTheme: survey.selectedTheme,
           selectedCategories: survey.selectedCategories || [],
           selectedTags: survey.selectedTags || [],
+          // Include consent screen configuration
+          consentScreen: survey.consentScreen || {},
           published: false,
           updatedAt: now,
         },
@@ -659,6 +674,8 @@ Meteor.methods({
         selectedTheme: survey.selectedTheme,
         selectedCategories: survey.selectedCategories || [],
         selectedTags: survey.selectedTags || [],
+        // Include consent screen configuration
+        consentScreen: survey.consentScreen || {},
         published: false,
         createdAt: now,
         updatedAt: now,
@@ -1548,68 +1565,79 @@ Meteor.methods({
 
   // Update an existing survey with all data including sections and questions
   async 'surveys.update'(surveyId: string, survey: Partial<SurveyDoc>) {
-    check(surveyId, String);
+    console.log('surveys.update called with surveyId:', surveyId);
+    console.log('surveys.update called with survey data:', JSON.stringify(survey, null, 2));
     
-    if (!this.userId) throw new Meteor.Error('Not authorized');
+    try {
+      check(surveyId, String);
+      
+      if (!this.userId) throw new Meteor.Error('Not authorized');
     
-    // Validate the survey exists and user has permission
-    const existingSurvey = await Surveys.findOneAsync(surveyId);
-    if (!existingSurvey) throw new Meteor.Error('Survey not found');
-    
-    // Check if user is admin, survey creator, or editor collaborator
-    const user = await Meteor.users.findOneAsync(this.userId);
-    const isOwner = existingSurvey.createdBy === this.userId;
-    const isAdmin = user?.roles?.includes('admin');
-    const isEditorCollaborator = existingSurvey.collaborators?.some(c => 
-      c.userId === this.userId && c.role === 'editor'
-    );
-    
-    if (!isAdmin && !isOwner && !isEditorCollaborator) {
-      throw new Meteor.Error('Not authorized to update this survey');
+      // Validate the survey exists and user has permission
+      const existingSurvey = await Surveys.findOneAsync(surveyId);
+      if (!existingSurvey) throw new Meteor.Error('Survey not found');
+      
+      // Check if user is admin, survey creator, or editor collaborator
+      const user = await Meteor.users.findOneAsync(this.userId);
+      const isOwner = existingSurvey.createdBy === this.userId;
+      const isAdmin = user?.roles?.includes('admin');
+      const isEditorCollaborator = existingSurvey.collaborators?.some(c => 
+        c.userId === this.userId && c.role === 'editor'
+      );
+      
+      if (!isAdmin && !isOwner && !isEditorCollaborator) {
+        throw new Meteor.Error('Not authorized to update this survey');
+      }
+      
+      const now = new Date();
+      
+      await Surveys.updateAsync(surveyId, {
+        $set: {
+          title: survey.title || existingSurvey.title,
+          description: survey.description || existingSurvey.description,
+          logo: survey.logo !== undefined ? survey.logo : existingSurvey.logo,
+          image: survey.image !== undefined ? survey.image : existingSurvey.image,
+          featuredImage: survey.featuredImage !== undefined ? survey.featuredImage : existingSurvey.featuredImage,
+          color: survey.color !== undefined ? survey.color : existingSurvey.color,
+          selectedQuestions: survey.selectedQuestions || existingSurvey.selectedQuestions || {},
+          siteTextQuestions: survey.siteTextQuestions || existingSurvey.siteTextQuestions || [],
+          siteTextQForm: survey.siteTextQForm || existingSurvey.siteTextQForm || {},
+          selectedDemographics: survey.selectedDemographics || existingSurvey.selectedDemographics || [],
+          // Include survey sections (questions are managed via surveyOrder only)
+          surveySections: survey.surveySections || existingSurvey.surveySections || [],
+          // Include section questions to preserve section assignments
+          sectionQuestions: survey.sectionQuestions || existingSurvey.sectionQuestions || [],
+          // Include default settings
+          defaultSettings: survey.defaultSettings || existingSurvey.defaultSettings || {},
+          // Include themes, categories, and tags
+          selectedTheme: survey.selectedTheme !== undefined ? survey.selectedTheme : existingSurvey.selectedTheme,
+          selectedCategories: survey.selectedCategories || existingSurvey.selectedCategories || [],
+          selectedTags: survey.selectedTags || existingSurvey.selectedTags || [],
+          // Include Thank You screen customization fields
+          thankYouMessage: survey.thankYouMessage !== undefined ? survey.thankYouMessage : existingSurvey.thankYouMessage,
+          thankYouTitle: survey.thankYouTitle !== undefined ? survey.thankYouTitle : existingSurvey.thankYouTitle,
+          thankYouDetails: survey.thankYouDetails !== undefined ? survey.thankYouDetails : existingSurvey.thankYouDetails,
+          thankYouIcon: survey.thankYouIcon !== undefined ? survey.thankYouIcon : existingSurvey.thankYouIcon,
+          thankYouBoxes: survey.thankYouBoxes || existingSurvey.thankYouBoxes || [],
+          // Include layout setting
+          layout: survey.layout !== undefined ? survey.layout : existingSurvey.layout,
+          // Include expectations data
+          expectations: survey.expectations !== undefined ? survey.expectations : existingSurvey.expectations,
+          expectationsTitle: survey.expectationsTitle !== undefined ? survey.expectationsTitle : existingSurvey.expectationsTitle,
+          startButtonLabel: survey.startButtonLabel !== undefined ? survey.startButtonLabel : existingSurvey.startButtonLabel,
+          surveyOrder: survey.surveyOrder || existingSurvey.surveyOrder || [],
+          // Include consent screen configuration
+          consentScreen: survey.consentScreen || existingSurvey.consentScreen || {},
+          updatedAt: now,
+        },
+      });
+      
+      console.log('Survey updated successfully with ID:', surveyId);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating survey:', error);
+      throw new Meteor.Error('update-failed', `Failed to update survey: ${error.message}`);
     }
-    
-    const now = new Date();
-    
-    await Surveys.updateAsync(surveyId, {
-      $set: {
-        title: survey.title || existingSurvey.title,
-        description: survey.description || existingSurvey.description,
-        logo: survey.logo !== undefined ? survey.logo : existingSurvey.logo,
-        image: survey.image !== undefined ? survey.image : existingSurvey.image,
-        featuredImage: survey.featuredImage !== undefined ? survey.featuredImage : existingSurvey.featuredImage,
-        color: survey.color !== undefined ? survey.color : existingSurvey.color,
-        selectedQuestions: survey.selectedQuestions || existingSurvey.selectedQuestions || {},
-        siteTextQuestions: survey.siteTextQuestions || existingSurvey.siteTextQuestions || [],
-        siteTextQForm: survey.siteTextQForm || existingSurvey.siteTextQForm || {},
-        selectedDemographics: survey.selectedDemographics || existingSurvey.selectedDemographics || [],
-        // Include survey sections (questions are managed via surveyOrder only)
-        surveySections: survey.surveySections || existingSurvey.surveySections || [],
-        // Include section questions to preserve section assignments
-        sectionQuestions: survey.sectionQuestions || existingSurvey.sectionQuestions || [],
-        // Include default settings
-        defaultSettings: survey.defaultSettings || existingSurvey.defaultSettings || {},
-        // Include themes, categories, and tags
-        selectedTheme: survey.selectedTheme !== undefined ? survey.selectedTheme : existingSurvey.selectedTheme,
-        selectedCategories: survey.selectedCategories || existingSurvey.selectedCategories || [],
-        selectedTags: survey.selectedTags || existingSurvey.selectedTags || [],
-        // Include Thank You screen customization fields
-        thankYouMessage: survey.thankYouMessage !== undefined ? survey.thankYouMessage : existingSurvey.thankYouMessage,
-        thankYouTitle: survey.thankYouTitle !== undefined ? survey.thankYouTitle : existingSurvey.thankYouTitle,
-        thankYouDetails: survey.thankYouDetails !== undefined ? survey.thankYouDetails : existingSurvey.thankYouDetails,
-        thankYouIcon: survey.thankYouIcon !== undefined ? survey.thankYouIcon : existingSurvey.thankYouIcon,
-        thankYouBoxes: survey.thankYouBoxes || existingSurvey.thankYouBoxes || [],
-        // Include layout setting
-        layout: survey.layout !== undefined ? survey.layout : existingSurvey.layout,
-        // Include expectations data
-        expectations: survey.expectations !== undefined ? survey.expectations : existingSurvey.expectations,
-        expectationsTitle: survey.expectationsTitle !== undefined ? survey.expectationsTitle : existingSurvey.expectationsTitle,
-        startButtonLabel: survey.startButtonLabel !== undefined ? survey.startButtonLabel : existingSurvey.startButtonLabel,
-        surveyOrder: survey.surveyOrder || existingSurvey.surveyOrder || [],
-        updatedAt: now,
-      },
-    });
-    
-    return { success: true };
   },
   // Public method to fetch survey by ID
   async 'surveys.get'(surveyId: string) {

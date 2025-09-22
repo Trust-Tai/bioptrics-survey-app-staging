@@ -6,7 +6,7 @@ export function buildJSONExport(filteredQuestions: { question: string; standard:
   const standardOrderCount: Record<string, number> = {};
   type RatingQuestion = {
     text: string;
-    responseType: 'rating';
+    responseType: 'likert';
     sectionId: string;
     order: number;
     options: { value: string; label: string }[];
@@ -46,15 +46,15 @@ export function buildJSONExport(filteredQuestions: { question: string; standard:
     // Add question to questionsSet (filtered questions)
     questionsSet.push({
       text: q.question,
-      responseType: "rating",
+      responseType: "likert",
       sectionId: q.standard ? q.standard.toLowerCase().replace(/\s+/g, '-') : '',
       order: standardOrderCount[q.standard],
       options: [
-        { value: "1", label: "Strongly Disagree" },
-        { value: "2", label: "Disagree" },
-        { value: "3", label: "Neither Agree nor Disagree" },
-        { value: "4", label: "Agree" },
-        { value: "5", label: "Strongly Agree" }
+        { value: "Strongly Disagree", label: "Strongly Disagree" },
+        { value: "Disagree", label: "Disagree" },
+        { value: "Neither Agree nor Disagree", label: "Neither Agree nor Disagree" },
+        { value: "Agree", label: "Agree" },
+        { value: "Strongly Agree", label: "Strongly Agree" }
       ],
       required: true
     });

@@ -14,6 +14,29 @@ interface ResponseTrendDataPoint {
 
 if (Meteor.isServer) {
   Meteor.methods({
+    // Method to get the response count for a specific question
+    async 'getQuestionResponseCount'(surveyId: string, questionId: string) {
+      check(surveyId, String);
+      check(questionId, String);
+      
+      console.log(`Getting response count for question ${questionId} in survey ${surveyId}`);
+      
+      try {
+        // Count responses that have an answer for this question
+        const completedCount = await SurveyResponses.find({
+          surveyId: surveyId,
+          'responses.questionId': questionId,
+          'responses.answer': { $exists: true, $ne: null, $ne: '' }
+        }).countAsync();
+        
+        console.log(`Found ${completedCount} responses with answers for question ${questionId}`);
+        
+        return completedCount;
+      } catch (error) {
+        console.error(`Error getting response count for question ${questionId}:`, error);
+        return 0;
+      }
+    },
     // Method to get response data for a specific question
     async 'questions.getResponseData'(questionId: string) {
       check(questionId, String);
@@ -2123,10 +2146,19 @@ if (Meteor.isServer) {
         console.log(`Retrieved ${questions.length} question documents from database`);
         
         // For each question, add the current version as a property for easier access
+        // Also extract questionText and image from currentVersion to the top level
         const enhancedQuestions = questions.map(question => {
           const currentVersion = question.versions.find(v => v.version === question.currentVersion) || question.versions[0];
-          return { ...question, currentVersion };
+          return { 
+            ...question, 
+            currentVersion,
+            text: currentVersion.questionText,  // Extract questionText to top level
+            image: currentVersion.image         // Extract image to top level
+          };
         });
+        
+        console.log('Enhanced questions with image data:', 
+          enhancedQuestions.map(q => ({ id: q._id, hasImage: !!q.image, imageLength: q.image ? q.image.length : 0 })));
         
         return enhancedQuestions;
       } catch (error: unknown) {

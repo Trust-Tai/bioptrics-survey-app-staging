@@ -69,12 +69,13 @@ interface ProcessedQuestion {
 const getColorForOption = (optionName: string): string => {
   // Base color mapping for common response categories
   const baseColorMap: Record<string, string> = {
-    'Strongly Disagree': '#ef4444', // Red
-    'Disagree': '#f97316', // Orange
-    'Neutral': '#6b7280', // Gray
-    'Neither Agree nor Disagree': '#6b7280', // Gray (same as Neutral)
-    'Agree': '#10b981', // Green
-    'Strongly Agree': '#059669', // Dark Green
+    // Colors matching the screenshot exactly
+    'Strongly Disagree': '#F05454', // Red
+    'Disagree': '#F9C89B', // Light Orange/Peach
+    'Neither Agree nor Disagree': '#C7CDD8', // Gray
+    'Neutral': '#C7CDD8', // Gray (same as Neither Agree nor Disagree)
+    'Agree': '#A8F0C6', // Light Green
+    'Strongly Agree': '#27D67B', // Green
   };
 
   // First check if we have a predefined color
@@ -170,21 +171,40 @@ const customPdfStyles = `
   .chart-container {
     margin-top: 15px;
     margin-bottom: 15px;
+    width: 100%;
   }
   
-  /* Bar styling to match the horizontal bar in Question tab */
+  /* Bar styling to exactly match the horizontal bar in Question tab */
   .bar-chart {
     display: flex;
-    height: 32px;
+    height: 40px;
     width: 100%;
-    border-radius: 4px;
+    border-radius: 20px;
     overflow: hidden;
     margin-bottom: 16px;
+    background-color: #f1f5f9;
   }
   
   .bar {
     height: 100%;
     background-color: var(--bar-color);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+  }
+  
+  .percentage-label {
+    font-size: 12px;
+    color: white;
+    font-weight: 500;
+    text-shadow: 0 0 2px rgba(0,0,0,0.2);
+    position: absolute;
+  }
+  
+  .percentage-label.dark {
+    color: #333;
   }
   
   /* Legend styling */
@@ -380,9 +400,8 @@ const generatePDFWithSections = (
 // Function to process questions and calculate statistics
 const processQuestions = (questions: AnalyticsQuestion[], reportData: SurveyReportData) => {
   return questions.map(question => {
-    // Calculate total respondents (use the highest count from any option)
-    const respondents = Object.values(question.progress).reduce((max, count) => 
-      count > max ? count : max, 0);
+    // Calculate total respondents (sum all percentages to match QuestionsTab.tsx)
+    const respondents = Object.values(question.progress).reduce((sum, count) => sum + count, 0);
     
     // Update the total respondents count
     if (respondents > reportData.totalRespondents) {
@@ -530,6 +549,11 @@ const generatePDF = (reportData: SurveyReportData) => {
                           ${question.responseOverview}
                         </p>
                         
+                        <!-- Response count display -->
+                        <div style="display: flex; align-items: center; margin-bottom: 16px; background-color: #f8fafc; padding: 8px 12px; border-radius: 4px;">
+                          <span style="color: #64748b; font-size: 14px; font-weight: 500;">${question.respondents} responses</span>
+                        </div>
+                        
                         <div style="margin-top: 15px; margin-bottom: 15px;">
                           ${(() => {
                             // For text, textarea, and date questions, show latest responses
@@ -566,10 +590,34 @@ const generatePDF = (reportData: SurveyReportData) => {
                               
                               return `
                                 ${hasResponses ? `
-                                  <div style="display: flex; height: 32px; width: 100%; border-radius: 4px; overflow: hidden; margin-bottom: 16px;">
-                                    ${question.options.map(option => `
-                                      <div style="height: 100%; width: ${option.percentage}%; background-color: ${option.color};"></div>
-                                    `).join('')}
+                                  <div style="display: flex; height: 40px; width: 100%; border-radius: 20px; overflow: hidden; margin-bottom: 16px; background-color: #f1f5f9;">
+                                    ${question.options
+                                      .sort((a, b) => {
+                                        // Sort options in a logical order to match the screenshot
+                                        const order = {
+                                          'Strongly Agree': 1,
+                                          'Agree': 2,
+                                          'Neutral': 3,
+                                          'Neither Agree nor Disagree': 3, // Same level as Neutral
+                                          'Disagree': 4,
+                                          'Strongly Disagree': 5
+                                        };
+                                        
+                                        // Get the order value, default to 99 for unknown options
+                                        const orderA = order[a.label as keyof typeof order] || 99;
+                                        const orderB = order[b.label as keyof typeof order] || 99;
+                                        
+                                        return orderB - orderA; // Reverse the order to match the screenshot
+                                      })
+                                      .map(option => `
+                                        <div style="height: 100%; width: ${option.percentage}%; background-color: ${option.color}; position: relative; display: flex; align-items: center; justify-content: center;">
+                                          ${option.percentage > 5 ? `
+                                            <span style="position: absolute; font-size: 12px; color: ${option.label === 'Agree' || option.label === 'Neutral' || option.label === 'Neither Agree nor Disagree' ? '#333' : 'white'}; font-weight: 500; text-shadow: 0 0 2px rgba(0,0,0,0.2);">
+                                              ${option.percentage}%
+                                            </span>
+                                          ` : ''}
+                                        </div>
+                                      `).join('')}
                                   </div>
                                 ` : `
                                   <div style="padding: 20px; text-align: center; background-color: #f9fafb; border-radius: 4px; border: 1px solid #e5e7eb; margin-bottom: 16px;">
@@ -578,12 +626,30 @@ const generatePDF = (reportData: SurveyReportData) => {
                                 `}
                                 
                                 <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px;">
-                                  ${question.options.map(option => `
-                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
-                                      <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${option.color};"></div>
-                                      ${option.label}: ${option.percentage}%
-                                    </div>
-                                  `).join('')}
+                                  ${question.options
+                                    .sort((a, b) => {
+                                      // Sort options in a logical order to match the screenshot
+                                      const order = {
+                                        'Strongly Agree': 1,
+                                        'Agree': 2,
+                                        'Neutral': 3,
+                                        'Neither Agree nor Disagree': 3, // Same level as Neutral
+                                        'Disagree': 4,
+                                        'Strongly Disagree': 5
+                                      };
+                                      
+                                      // Get the order value, default to 99 for unknown options
+                                      const orderA = order[a.label as keyof typeof order] || 99;
+                                      const orderB = order[b.label as keyof typeof order] || 99;
+                                      
+                                      return orderB - orderA; // Reverse the order to match the screenshot
+                                    })
+                                    .map(option => `
+                                      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
+                                        <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${option.color};"></div>
+                                        ${option.label}: ${option.percentage}%
+                                      </div>
+                                    `).join('')}
                                 </div>
                               `;
                             } else {
@@ -669,9 +735,8 @@ const generatePDFWithoutSections = (
     
     // Process each question and add to the report
     const processedQuestions = analyticsQuestions.map(question => {
-      // Calculate total respondents (use the highest count from any option)
-      const respondents = Object.values(question.progress).reduce((max, count) => 
-        count > max ? count : max, 0);
+      // Calculate total respondents (sum all percentages to match QuestionsTab.tsx)
+      const respondents = Object.values(question.progress).reduce((sum, count) => sum + count, 0);
       
       // Update the total respondents count
       if (respondents > reportData.totalRespondents) {
@@ -888,6 +953,11 @@ const generatePDFWithoutSections = (
                         ${question.responseOverview}
                       </p>
                       
+                      <!-- Response count display that matches the tab implementation -->
+                      <div style="display: flex; align-items: center; margin-bottom: 16px; background-color: #f8fafc; padding: 8px 12px; border-radius: 4px;">
+                        <span style="color: #64748b; font-size: 14px; font-weight: 500;">${question.respondents} responses</span>
+                      </div>
+                      
                       <div class="chart-container">
                         ${(() => {
                           // For text, textarea, and date questions, show latest responses
@@ -919,19 +989,64 @@ const generatePDFWithoutSections = (
                           } else if (question.options && question.options.length > 0) {
                             // For other question types with options, show bar chart
                             return `
-                              <div class="bar-chart">
-                                ${question.options.map(option => `
-                                  <div class="bar" style="width: ${option.percentage}%; background-color: ${option.color};"></div>
-                                `).join('')}
+                              <!-- Bar chart that matches the QuestionsTab.tsx exactly -->
+                              <div class="bar-chart" style="height: 40px; border-radius: 20px; background-color: #f1f5f9;">
+                                ${question.options
+                                  .sort((a, b) => {
+                                    // Sort options in a logical order (Strongly Agree to Strongly Disagree)
+                                    const order = {
+                                        'Strongly Agree': 1,
+                                        'Agree': 2,
+                                        'Neutral': 3,
+                                        'Neither Agree nor Disagree': 3, // Same level as Neutral
+                                        'Disagree': 4,
+                                        'Strongly Disagree': 5
+                                    };
+                                    
+                                    // Get the order value, default to 99 for unknown options
+                                    const orderA = order[a.label as keyof typeof order] || 99;
+                                    const orderB = order[b.label as keyof typeof order] || 99;
+                                    
+                                    return orderB - orderA; // Reverse the order to match the screenshot
+                                  })
+                                  .map(option => {
+                                    return `
+                                      <div style="width: ${option.percentage}%; min-width: ${option.percentage > 0 ? '20px' : '0'}; display: flex; align-items: center;">
+                                        <div style="display: flex; align-items: center; font-size: 12px; color: #64748b;">
+                                          <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${option.color}; margin-right: 4px;"></div>
+                                          ${option.percentage}%
+                                        </div>
+                                      </div>
+                                    `;
+                                  }).join('')}
                               </div>
                               
-                              <div class="legend-container">
-                                ${question.options.map(option => `
-                                  <div class="legend-item">
-                                    <div class="legend-color" style="--legend-color: ${option.color};"></div>
-                                    ${option.label}: ${option.percentage}%
-                                  </div>
-                                `).join('')}
+                              <!-- Legend that matches the screenshot -->
+                              <div class="legend-container" style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px;">
+                                ${question.options
+                                  .sort((a, b) => {
+                                    // Sort options in a logical order (Strongly Disagree to Strongly Agree)
+                                    const order = {
+                                        'Strongly Agree': 1,
+                                        'Agree': 2,
+                                        'Neutral': 3,
+                                        'Neither Agree nor Disagree': 3, // Same level as Neutral
+                                        'Disagree': 4,
+                                        'Strongly Disagree': 5
+                                    };
+                                    
+                                    // Get the order value, default to 99 for unknown options
+                                    const orderA = order[a.label as keyof typeof order] || 99;
+                                    const orderB = order[b.label as keyof typeof order] || 99;
+                                    
+                                    return orderB - orderA; // Reverse the order to match the screenshot
+                                  })
+                                  .map(option => `
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;">
+                                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${option.color};"></div>
+                                      ${option.label}: ${option.percentage}%
+                                    </div>
+                                  `).join('')}
                               </div>
                             `;
                           } else {

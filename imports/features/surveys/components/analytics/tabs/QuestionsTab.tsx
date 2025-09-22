@@ -15,6 +15,7 @@ interface AnalyticsQuestion {
   questionText: string;
   questionType: string;
   progress: Record<string, number>;
+  responseCount?: number; // Add responseCount field
   latestResponses?: Array<{
     answer: string;
     date: Date;
@@ -74,10 +75,10 @@ const QuestionCard = styled.div`
 `;
 
 const QuestionText = styled.div`
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   color: #1e293b;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -101,21 +102,29 @@ const Flag = styled.div<{ type: string }>`
 `;
 
 const BarChartContainer = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  width: 100%;
 `;
 
 const BarContainer = styled.div`
   display: flex;
-  height: 32px;
+  height: 40px;
   width: 100%;
-  border-radius: 4px;
+  border-radius: 20px;
   overflow: hidden;
+  margin-bottom: 16px;
+  background-color: #f1f5f9;
 `;
 
 const Bar = styled.div<{ width: number; color: string }>`
   width: ${props => props.width}%;
   background-color: ${props => props.color};
   height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: ${props => props.width > 0 ? '30px' : '0'};
 `;
 
 const LegendContainer = styled.div`
@@ -123,6 +132,7 @@ const LegendContainer = styled.div`
   flex-wrap: wrap;
   gap: 16px;
   margin-top: 8px;
+  justify-content: flex-start;
 `;
 
 const LegendItem = styled.div`
@@ -131,6 +141,7 @@ const LegendItem = styled.div`
   gap: 6px;
   font-size: 12px;
   color: #64748b;
+  margin-right: 16px;
 `;
 
 const LegendColor = styled.div<{ color: string }>`
@@ -138,6 +149,7 @@ const LegendColor = styled.div<{ color: string }>`
   height: 12px;
   border-radius: 50%;
   background-color: ${props => props.color};
+  flex-shrink: 0;
 `;
 
 const StatsContainer = styled.div`
@@ -205,6 +217,22 @@ const ResponseDate = styled.div`
   font-style: italic;
 `;
 
+const ResponseCount = styled.div`
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 14px;
+  margin-bottom: 16px;
+`;
+
+const PercentageLabel = styled.div<{ dark?: boolean }>`
+  font-size: 12px;
+  color: ${props => props.dark ? '#333' : 'white'};
+  font-weight: 500;
+  text-shadow: 0 0 2px rgba(0,0,0,0.2);
+  pointer-events: none;
+`;
+
 // Define the ref interface
 export interface QuestionsTabRef {
   getAnalyticsQuestions: () => AnalyticsQuestion[];
@@ -235,12 +263,12 @@ const QuestionsTab = forwardRef<QuestionsTabRef, QuestionsTabProps>(({ isLoading
   
   // Base color mapping for common response categories
   const baseColorMap = {
-    'Strongly Disagree': '#ef4444', // Red
-    'Disagree': '#f97316', // Orange
-    'Neutral': '#6b7280', // Gray
-    'Neither Agree nor Disagree': '#6b7280', // Gray (same as Neutral)
-    'Agree': '#10b981', // Green
-    'Strongly Agree': '#059669', // Dark Green
+    'Strongly Agree': '#27D67B', // Green
+    'Agree': '#A8F0C6', // Light Green
+    'Neutral': '#C7CDD8', // Gray
+    'Neither Agree nor Disagree': '#C7CDD8', // Gray (same as Neutral)
+    'Disagree': '#F9C89B', // Light Orange
+    'Strongly Disagree': '#F05454', // Red
   };
   
   // Predefined colors for dynamic options
@@ -291,15 +319,58 @@ const QuestionsTab = forwardRef<QuestionsTabRef, QuestionsTabProps>(({ isLoading
         (error: any, result: AnalyticsQuestion[]) => {
           if (error) {
             console.error('Error fetching questions:', error);
+            setLoading(false);
           } else {
             console.log('Fetched questions:', result);
-            setAnalyticsQuestions(result);
-            // If we got questions, automatically show dynamic data
-            if (result && result.length > 0) {
-              setShowDynamicData(true);
+            
+            // Store questions temporarily
+            const questions = result;
+            
+            // If we got questions, fetch response counts for each question
+            if (questions && questions.length > 0) {
+              // Create an array of promises for fetching response counts
+              const countPromises = questions.map(question => {
+                return new Promise<number>((resolve) => {
+                  Meteor.call(
+                    'getQuestionResponseCount',
+                    surveyId,
+                    question.questionId,
+                    (countError: any, countResult: number) => {
+                      if (countError) {
+                        console.error(`Error fetching response count for question ${question.questionId}:`, countError);
+                        resolve(0); // Default to 0 on error
+                      } else {
+                        resolve(countResult);
+                      }
+                    }
+                  );
+                });
+              });
+              
+              // Wait for all response count promises to resolve
+              Promise.all(countPromises)
+                .then(responseCounts => {
+                  // Update each question with its response count
+                  const updatedQuestions = questions.map((question, index) => ({
+                    ...question,
+                    responseCount: responseCounts[index]
+                  }));
+                  
+                  setAnalyticsQuestions(updatedQuestions);
+                  setShowDynamicData(true);
+                  setLoading(false);
+                })
+                .catch(err => {
+                  console.error('Error fetching response counts:', err);
+                  setAnalyticsQuestions(questions); // Use questions without counts on error
+                  setShowDynamicData(true);
+                  setLoading(false);
+                });
+            } else {
+              setAnalyticsQuestions([]);
+              setLoading(false);
             }
           }
-          setLoading(false);
         }
       );
       
@@ -415,17 +486,51 @@ const QuestionsTab = forwardRef<QuestionsTabRef, QuestionsTabProps>(({ isLoading
             ) : (
               /* For other question types, show progress bars */
               <BarChartContainer>
+                {/* Response count display */}
+                <ResponseCount>
+                  {question.responseCount || Object.values(question.progress).reduce((sum, value) => sum + value, 0)} responses
+                </ResponseCount>
+                
                 {/* Check if there are any non-zero responses */}
                 {Object.values(question.progress).some(value => value > 0) ? (
                   <>
                     <BarContainer>
-                      {Object.entries(question.progress).map(([label, percentage]) => (
-                        <Bar 
-                          key={label} 
-                          width={percentage} 
-                          color={getColorForOption(label)}
-                        />
-                      ))}
+                      {/* Use the actual options from question.progress */}
+                      {Object.entries(question.progress)
+                        .sort((a, b) => {
+                          // Sort options in a logical order (Strongly Agree to Strongly Disagree)
+                          const order = {
+                            'Strongly Agree': 1,
+                            'Agree': 2,
+                            'Neutral': 3,
+                            'Neither Agree nor Disagree': 3, // Same level as Neutral
+                            'Disagree': 4,
+                            'Strongly Disagree': 5
+                          };
+                          
+                          // Get the order value, default to 99 for unknown options
+                          const orderA = order[a[0] as keyof typeof order] || 99;
+                          const orderB = order[b[0] as keyof typeof order] || 99;
+                          
+                          return orderA - orderB;
+                        })
+                        .map(([label, percentage]) => {
+                          // Determine if we should use dark text (for light backgrounds)
+                          const useDarkText = label === 'Agree' || label === 'Neutral' || label === 'Neither Agree nor Disagree';
+                          return (
+                            <Bar 
+                              key={label} 
+                              width={percentage} 
+                              color={getColorForOption(label)}
+                            >
+                              {percentage > 5 && (
+                                <PercentageLabel dark={useDarkText}>
+                                  {percentage}%
+                                </PercentageLabel>
+                              )}
+                            </Bar>
+                          );
+                        })}
                     </BarContainer>
                   </>
                 ) : (
@@ -443,12 +548,40 @@ const QuestionsTab = forwardRef<QuestionsTabRef, QuestionsTabProps>(({ isLoading
                 )}
                 
                 <LegendContainer>
-                  {Object.entries(question.progress).map(([label, percentage]) => (
-                    <LegendItem key={label}>
-                      <LegendColor color={getColorForOption(label)} />
-                      {label}: {percentage}%
-                    </LegendItem>
-                  ))}
+                  {/* Calculate the total responses */}
+                  {(() => {
+                    // Use the actual response count if available, otherwise fall back to sum of percentages
+                    const totalResponses = question.responseCount || 
+                      Object.values(question.progress).reduce((sum, value) => sum + value, 0);
+                    
+                    // Calculate actual count from percentage based on total responses
+                    const getCount = (percentage: number) => Math.round((percentage / 100) * totalResponses);
+                    
+                    return Object.entries(question.progress)
+                      .sort((a, b) => {
+                        // Sort options in a logical order (Strongly Agree to Strongly Disagree)
+                        const order = {
+                          'Strongly Agree': 1,
+                          'Agree': 2,
+                          'Neutral': 3,
+                          'Neither Agree nor Disagree': 3, // Same level as Neutral
+                          'Disagree': 4,
+                          'Strongly Disagree': 5
+                        };
+                        
+                        // Get the order value, default to 99 for unknown options
+                        const orderA = order[a[0] as keyof typeof order] || 99;
+                        const orderB = order[b[0] as keyof typeof order] || 99;
+                        
+                        return orderA - orderB;
+                      })
+                      .map(([label, percentage]) => (
+                        <LegendItem key={label}>
+                          <LegendColor color={getColorForOption(label)} />
+                          {label} ({getCount(percentage)})
+                        </LegendItem>
+                      ));
+                  })()} 
                 </LegendContainer>
               </BarChartContainer>
             )}

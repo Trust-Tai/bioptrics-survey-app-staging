@@ -20,9 +20,9 @@
   "startButtonLabel": "Begin Survey Now",
   "sections": [],
   "questions": [],
-  "logo": "https://example.com/logo.png",
-  "image": "https://example.com/image.png",
-  "featuredImage": "https://example.com/featured-image.png",
+  "logo": "",
+  "image": "",
+  "featuredImage": "",
   "layout": "multiStep",
   "layoutNote": "multiStep | allOnOnePage", 
   "selectedTheme": "Arctic Blue",
@@ -32,7 +32,7 @@
   "thankYouIcon": "",
   "thankYouBoxes": [
     {
-      "title": "Total Responses",
+      "title": "TOTAL Questions answered",
       "subtitle": "Total number of questions answered"
     },
     {
