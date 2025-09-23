@@ -507,16 +507,15 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           >
             TAGS {renderSortIcon('tags')}
           </TableHeaderCell>
-         
+
+          <TableHeaderCell>
+            RESPONSES
+          </TableHeaderCell>
           <TableHeaderCell 
             sortable 
             onClick={() => handleSort('status')}
           >
             STATUS {renderSortIcon('status')}
-          </TableHeaderCell>
-
-          <TableHeaderCell>
-            RESPONSES
           </TableHeaderCell>
           <TableHeaderCell 
             sortable 
@@ -598,10 +597,6 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               </TableCell>
               
               <TableCell>
-                <StatusBadge status={status}>{status}</StatusBadge>
-              </TableCell>
-              
-              <TableCell>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span>{responseCounts[survey._id] || 0}</span>
                   <span style={{ color: '#6c757d', margin: '0 4px' }}>of</span>
@@ -621,6 +616,9 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                     );
                   })()}
                 </div>
+              </TableCell>
+              <TableCell>
+                <StatusBadge status={status}>{status}</StatusBadge>
               </TableCell>
               <TableCell>
                 {updatedDate}
