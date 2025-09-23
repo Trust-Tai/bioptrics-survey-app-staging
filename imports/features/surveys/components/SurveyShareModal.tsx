@@ -450,6 +450,12 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     return null;
   }
 
+  // Function to validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
   // Function to simulate progress updates while waiting for server response
   const simulateProgress = (emailCount: number) => {
     // Start at 5% to show immediate feedback
@@ -480,30 +486,57 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
       return;
     }
     
+    // Parse email list
+    const emailLines = emailsToSend
+      .split('\n')
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
+    
+    // Validate email formats
+    const invalidEmails: string[] = [];
+    const validEmails: string[] = [];
+    
+    emailLines.forEach(email => {
+      if (isValidEmail(email)) {
+        validEmails.push(email);
+      } else {
+        invalidEmails.push(email);
+      }
+    });
+    
+    // If there are invalid emails, show error and don't proceed
+    if (invalidEmails.length > 0) {
+      setError(
+        `The following email(s) are invalid: ${invalidEmails.join(', ')}. ` +
+        'Please correct them and try again.'
+      );
+      return;
+    }
+    
+    // If no valid emails, show error
+    if (validEmails.length === 0) {
+      setError('Please enter at least one valid email address');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSuccess(null);
     setActiveInvitationId(null);
     
-    // Parse email list
-    const emails = emailsToSend
-      .split('\n')
-      .map(email => email.trim())
-      .filter(email => email.length > 0);
-    
     console.log('Sending invitations for survey:', surveyId);
-    console.log('Emails to invite:', emails);
+    console.log('Emails to invite:', validEmails);
     console.log('Current user ID:', Meteor.userId());
     
     // Set initial progress state
     setProgress(5); // Start at 5% to show immediate feedback
-    setTotalEmails(emails.length);
+    setTotalEmails(validEmails.length);
     
     // Start simulating progress
-    const progressInterval = simulateProgress(emails.length);
+    const progressInterval = simulateProgress(validEmails.length);
     
     // Call the method to save invitations to the database
-    Meteor.call('surveys.sendInvitations', surveyId, emails, testMode, (error: Meteor.Error, result: any) => {
+    Meteor.call('surveys.sendInvitations', surveyId, validEmails, testMode, (error: Meteor.Error, result: any) => {
       // Clear the progress simulation interval
       clearInterval(progressInterval);
       setLoading(false);
