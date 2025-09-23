@@ -699,7 +699,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         fontSize: '18px',
         color: '#555'
       }}>
-        Checking survey availability...
+        {/* Checking survey availability... */}
       </div>
     );
   }
