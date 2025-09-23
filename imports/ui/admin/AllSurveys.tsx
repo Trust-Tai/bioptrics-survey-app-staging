@@ -98,11 +98,14 @@ const FilterContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  max-width: 100%;
 `;
 
 const SelectContainer = styled.div`
   position: relative;
-  min-width: 200px;
+  min-width: 150px;
+  max-width: 100%;
   
   .react-select__menu {
     z-index: 9999;
@@ -122,6 +125,12 @@ const SelectContainer = styled.div`
   .react-select__multi-value {
     margin: 0 3px 3px 0;
     padding: 2px 6px;
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    border-radius: 4px;
+  }
+  .react-select__multi-value__label {
+    color: var(--color-primary);
+    font-weight: 500;
   }
   .react-select__control {
     padding: 4px 8px;
@@ -129,6 +138,24 @@ const SelectContainer = styled.div`
     border-radius: 8px;
     min-height: 44px;
     background: var(--color-background);
+    flex-wrap: wrap;
+  }
+  
+  /* Consistent dropdown indicator styling */
+  .react-select__dropdown-indicator {
+    color: var(--color-primary);
+    padding: 0 8px;
+  }
+  
+  /* Ensure consistent height across all select components */
+  .react-select__value-container {
+    padding: 2px 8px;
+  }
+  
+  /* Improve focus state */
+  .react-select__control--is-focused {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
   }
 `;
 
@@ -864,13 +891,29 @@ const AllSurveys: React.FC = () => {
     };
   }, []);
   
-  // Prepare tag options for react-select
+  // Prepare options for react-select dropdowns
   const tagOptions = useMemo(() => {
     return tags.map(tag => ({
       value: tag._id,
       label: tag.name
     }));
   }, [tags]);
+  
+  // Status filter options
+  const statusOptions = [
+    { value: 'all', label: 'All Status' },
+    { value: 'active', label: 'Active' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'inactive', label: 'Inactive' }
+  ];
+  
+  // Created by filter options
+  const createdByOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'owned', label: 'Survey I Own' },
+    { value: 'shared_by_me', label: 'Survey I\'ve Shared' },
+    { value: 'shared_with_me', label: 'Shared With Me' }
+  ];
 
   // Get total count for pagination
   useEffect(() => {
@@ -1155,31 +1198,59 @@ const AllSurveys: React.FC = () => {
             
             <FilterContainer>
               {/* Status Filter */}
-              <FilterSelect
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1); // Reset to first page when filter changes
-                }}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-                <option value="inactive">Inactive</option>
-              </FilterSelect>
+              <SelectContainer>
+                <Select
+                  options={statusOptions}
+                  value={statusOptions.find(option => option.value === statusFilter)}
+                  onChange={(selected) => {
+                    if (selected) {
+                      setStatusFilter(selected.value);
+                      setPage(1); // Reset to first page when filter changes
+                    }
+                  }}
+                  classNamePrefix="react-select"
+                  placeholder="All Status"
+                  hideSelectedOptions={true}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      width: '150px'
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      padding: '0 8px'
+                    })
+                  }}
+                />
+              </SelectContainer>
 
-              <FilterSelect
-                value={createdByFilter}
-                onChange={(e) => {
-                  setCreatedByFilter(e.target.value);
-                  setPage(1); // Reset to first page when filter changes
-                }}
-              >
-                <option value="all">All</option>
-                <option value="owned">Survey I Own</option>
-                <option value="shared_by_me">Survey I've Shared</option>
-                <option value="shared_with_me">Shared With Me</option>
-              </FilterSelect>
+              <SelectContainer>
+                <Select
+                  options={createdByOptions}
+                  value={createdByOptions.find(option => option.value === createdByFilter)}
+                  onChange={(selected) => {
+                    if (selected) {
+                      setCreatedByFilter(selected.value);
+                      setPage(1); // Reset to first page when filter changes
+                    }
+                  }}
+                  classNamePrefix="react-select"
+                  placeholder="All"
+                  hideSelectedOptions={true}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      width: '150px'
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      padding: '0 8px'
+                    })
+                  }}
+                />
+              </SelectContainer>
               
               {/* Tags Filter */}
               <SelectContainer>
@@ -1198,6 +1269,35 @@ const AllSurveys: React.FC = () => {
                   classNamePrefix="react-select"
                   closeMenuOnSelect={false}
                   hideSelectedOptions={true}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minWidth: '280px',
+                      maxWidth: '400px',
+                      width: 'auto'
+                    }),
+                    multiValue: (base) => ({
+                      ...base,
+                      backgroundColor: 'rgba(var(--color-primary-rgb), 0.1)',
+                      borderRadius: '4px'
+                    }),
+                    multiValueLabel: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      fontWeight: '500',
+                      padding: '2px 4px'
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: '2px 8px',
+                      flexWrap: 'wrap'
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      padding: '0 8px'
+                    })
+                  }}
                 />
               </SelectContainer>
             </FilterContainer>
