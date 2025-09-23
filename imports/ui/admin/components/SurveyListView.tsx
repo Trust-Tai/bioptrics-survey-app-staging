@@ -162,7 +162,7 @@ const ActionContainer = styled.div`
 
 // Styled components for tags display
 const TagsContainer = styled.div`
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
   position: relative;

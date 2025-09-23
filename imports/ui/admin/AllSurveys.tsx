@@ -1483,7 +1483,7 @@ const AllSurveys: React.FC = () => {
                                 setOpenDropdown(null);
                               }}
                             >
-                              <FaShare style={{ marginRight: '8px' }} /> Share
+                            Share
                             </button>
                             <button
                               style={{
