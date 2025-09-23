@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
+import Select from 'react-select';
 import DashboardBg from './DashboardBg';
 import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
+import { Layers } from '../../api/layers';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
@@ -96,6 +98,65 @@ const FilterContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  max-width: 100%;
+`;
+
+const SelectContainer = styled.div`
+  position: relative;
+  min-width: 150px;
+  max-width: 100%;
+  
+  .react-select__menu {
+    z-index: 9999;
+    width: 100%;
+    background-color: #ffffff;
+  }
+  .react-select__menu-list {
+    width: 100%;
+    background-color: #ffffff;
+  }
+  .react-select__option {
+    background-color: #ffffff;
+    &:hover {
+      background-color: #f0f0f0;
+    }
+  }
+  .react-select__multi-value {
+    margin: 0 3px 3px 0;
+    padding: 2px 6px;
+    background-color: rgba(var(--color-primary-rgb), 0.1);
+    border-radius: 4px;
+  }
+  .react-select__multi-value__label {
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+  .react-select__control {
+    padding: 4px 8px;
+    border: 1.5px solid var(--color-accent);
+    border-radius: 8px;
+    min-height: 44px;
+    background: var(--color-background);
+    flex-wrap: wrap;
+  }
+  
+  /* Consistent dropdown indicator styling */
+  .react-select__dropdown-indicator {
+    color: var(--color-primary);
+    padding: 0 8px;
+  }
+  
+  /* Ensure consistent height across all select components */
+  .react-select__value-container {
+    padding: 2px 8px;
+  }
+  
+  /* Improve focus state */
+  .react-select__control--is-focused {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
 `;
 
 const FilterSelect = styled.select`
@@ -712,6 +773,7 @@ const AllSurveys: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [createdByFilter, setCreatedByFilter] = useState('all');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
@@ -781,12 +843,14 @@ const AllSurveys: React.FC = () => {
         createdBy: 1,
         createdAt: 1,
         updatedAt: 1,
+        defaultSettings: 1, // Add defaultSettings for response limit display
         // Remove heavy fields that aren't needed for list view
         'surveySections.name': 1, // Only section names, not full objects
         'sectionQuestions.length': 1, // Only count, not full questions
         'responses.completed': 1, // Only completion status
         collaborators: 1,
-        scheduledFor: 1
+        scheduledFor: 1,
+        selectedTags: 1 // Add selectedTags for tag display
       }
     });
     
@@ -813,6 +877,43 @@ const AllSurveys: React.FC = () => {
   useTracker(() => {
     Meteor.subscribe('allUsersBasic');
   }, []);
+
+  // Subscribe to tags with location "Surveys"
+  const { tags, loadingTags } = useTracker(() => {
+    const handle = Meteor.subscribe('layers.all');
+    
+    // Filter tags by location "Surveys"
+    const tags = Layers.find().fetch();
+    
+    return {
+      tags,
+      loadingTags: !handle.ready()
+    };
+  }, []);
+  
+  // Prepare options for react-select dropdowns
+  const tagOptions = useMemo(() => {
+    return tags.map(tag => ({
+      value: tag._id,
+      label: tag.name
+    }));
+  }, [tags]);
+  
+  // Status filter options
+  const statusOptions = [
+    { value: 'all', label: 'All Status' },
+    { value: 'active', label: 'Active' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'inactive', label: 'Inactive' }
+  ];
+  
+  // Created by filter options
+  const createdByOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'owned', label: 'Survey I Own' },
+    { value: 'shared_by_me', label: 'Survey I\'ve Shared' },
+    { value: 'shared_with_me', label: 'Shared With Me' }
+  ];
 
   // Get total count for pagination
   useEffect(() => {
@@ -965,8 +1066,17 @@ const AllSurveys: React.FC = () => {
       });
     }
     
+    // Apply tag filter
+    if (selectedTagIds.length > 0) {
+      result = result.filter(survey => {
+        const surveyTags = survey.selectedTags || [];
+        // Check if any of the selected tags are in the survey's tags
+        return selectedTagIds.some(tagId => surveyTags.includes(tagId));
+      });
+    }
+    
     return result;
-  }, [processedSurveys, search, statusFilter, createdByFilter]);
+  }, [processedSurveys, search, statusFilter, createdByFilter, selectedTagIds]);
 
   // Server-side pagination - no need for client-side slicing
   const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
@@ -976,7 +1086,7 @@ const AllSurveys: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, createdByFilter]);
+  }, [search, statusFilter, createdByFilter, selectedTagIds]);
 
   return (
     <AdminLayout>
@@ -1064,7 +1174,7 @@ const AllSurveys: React.FC = () => {
               </AddButton>
               <AddButton
                 onClick={() => setShowImportPanel(true)}
-                style={{ backgroundColor: '#4a6fa5' }}
+                
               >
                 <FaFileImport style={{ fontSize: 14 }} />
                 <span style={{ marginLeft: 6 }}>Import</span>
@@ -1088,31 +1198,108 @@ const AllSurveys: React.FC = () => {
             
             <FilterContainer>
               {/* Status Filter */}
-              <FilterSelect
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1); // Reset to first page when filter changes
-                }}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-                <option value="inactive">Inactive</option>
-              </FilterSelect>
+              <SelectContainer>
+                <Select
+                  options={statusOptions}
+                  value={statusOptions.find(option => option.value === statusFilter)}
+                  onChange={(selected) => {
+                    if (selected) {
+                      setStatusFilter(selected.value);
+                      setPage(1); // Reset to first page when filter changes
+                    }
+                  }}
+                  classNamePrefix="react-select"
+                  placeholder="All Status"
+                  hideSelectedOptions={true}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      width: '150px'
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      padding: '0 8px'
+                    })
+                  }}
+                />
+              </SelectContainer>
 
-              <FilterSelect
-                value={createdByFilter}
-                onChange={(e) => {
-                  setCreatedByFilter(e.target.value);
-                  setPage(1); // Reset to first page when filter changes
-                }}
-              >
-                <option value="all">All</option>
-                <option value="owned">Survey I Own</option>
-                <option value="shared_by_me">Survey I've Shared</option>
-                <option value="shared_with_me">Shared With Me</option>
-              </FilterSelect>
+              <SelectContainer>
+                <Select
+                  options={createdByOptions}
+                  value={createdByOptions.find(option => option.value === createdByFilter)}
+                  onChange={(selected) => {
+                    if (selected) {
+                      setCreatedByFilter(selected.value);
+                      setPage(1); // Reset to first page when filter changes
+                    }
+                  }}
+                  classNamePrefix="react-select"
+                  placeholder="All"
+                  hideSelectedOptions={true}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      width: '150px'
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      padding: '0 8px'
+                    })
+                  }}
+                />
+              </SelectContainer>
+              
+              {/* Tags Filter */}
+              <SelectContainer>
+                <Select
+                  isMulti
+                  options={tagOptions}
+                  value={tagOptions.filter(option => selectedTagIds.includes(option.value))}
+                  onChange={(selected) => {
+                    if (Array.isArray(selected)) {
+                      setSelectedTagIds(selected.map(option => option.value));
+                      setPage(1); // Reset to first page when filter changes
+                    }
+                  }}
+                  placeholder="All Tags"
+                  isDisabled={loadingTags}
+                  classNamePrefix="react-select"
+                  closeMenuOnSelect={false}
+                  hideSelectedOptions={true}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minWidth: '280px',
+                      maxWidth: '400px',
+                      width: 'auto'
+                    }),
+                    multiValue: (base) => ({
+                      ...base,
+                      backgroundColor: 'rgba(var(--color-primary-rgb), 0.1)',
+                      borderRadius: '4px'
+                    }),
+                    multiValueLabel: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      fontWeight: '500',
+                      padding: '2px 4px'
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: '2px 8px',
+                      flexWrap: 'wrap'
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: 'var(--color-primary)',
+                      padding: '0 8px'
+                    })
+                  }}
+                />
+              </SelectContainer>
             </FilterContainer>
             </div>
             
@@ -1550,6 +1737,7 @@ const AllSurveys: React.FC = () => {
             limit: 100,
             fields: {
               _id: 1,
+              selectedTags: 1,
               title: 1,
               description: 1,
               published: 1,

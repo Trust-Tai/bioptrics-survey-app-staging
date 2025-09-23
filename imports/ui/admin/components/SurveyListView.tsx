@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Meteor } from 'meteor/meteor';
 import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
@@ -160,6 +160,55 @@ const ActionContainer = styled.div`
   position: relative;
 `;
 
+// Styled components for tags display
+const TagsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  position: relative;
+`;
+
+const Tag = styled.span`
+  background-color: #f0f4f8;
+  color: #4a6fa5;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+`;
+
+const MoreTagsIndicator = styled.span`
+  background-color: #e2e8f0;
+  color: #4a6fa5;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  
+  &:hover {
+    background-color: #cbd5e0;
+  }
+`;
+
+const TagsTooltip = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 1000;
+  min-width: 150px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
 interface SurveyListViewProps {
   surveys: any[];
   loading?: boolean;
@@ -172,10 +221,84 @@ interface SurveyListViewProps {
 }
 
 // Define type for sort field
-type SortField = 'title' | 'status' | 'structure' | 'createdBy' | 'updatedAt' | null;
+type SortField = 'title' | 'status' | 'tags' | 'createdBy' | 'updatedAt' | null;
 
 // Define type for sort direction
 type SortDirection = 'asc' | 'desc';
+
+// SurveyTags component to display tags with "more" indicator
+interface SurveyTagsProps {
+  tagIds?: string[];
+}
+
+const SurveyTags: React.FC<SurveyTagsProps> = ({ tagIds }) => {
+  const [showAllTags, setShowAllTags] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tags, setTags] = useState<Array<{ _id: string; name: string }>>([]);
+  
+  // Fetch tag names from layers collection using tag IDs
+  useEffect(() => {
+    if (tagIds && tagIds.length > 0) {
+      // Call existing Meteor method to get tag names from layers collection
+      Meteor.call('layers.getByIds', tagIds, (error: Meteor.Error | null, result: Array<{ _id: string; name: string }>) => {
+        if (error) {
+          console.error('Error fetching tag names:', error);
+        } else {
+          setTags(result || []);
+        }
+      });
+    }
+  }, [tagIds]);
+  
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowAllTags(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  
+  if (!tags || tags.length === 0) {
+    return <span style={{ color: '#6c757d', fontSize: '12px' }}>No tags</span>;
+  }
+  
+  const visibleTags = tags.slice(0, 2);
+  const hiddenTagsCount = tags.length - visibleTags.length;
+  
+  return (
+    <TagsContainer ref={containerRef} data-no-navigate="true">
+      {visibleTags.map((tag, index) => (
+        <Tag key={tag._id || index}>{tag.name}</Tag>
+      ))}
+      
+      {hiddenTagsCount > 0 && (
+        <MoreTagsIndicator 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAllTags(!showAllTags);
+          }}
+        >
+          +{hiddenTagsCount} more
+        </MoreTagsIndicator>
+      )}
+      
+      {showAllTags && (
+        <TagsTooltip onClick={(e) => e.stopPropagation()}>
+          {tags.map((tag, index) => (
+            <Tag key={tag._id || index} style={{ margin: '2px 0' }}>{tag.name}</Tag>
+          ))}
+        </TagsTooltip>
+      )}
+    </TagsContainer>
+  );
+};
 
 const SurveyListView: React.FC<SurveyListViewProps> = ({ 
   surveys, 
@@ -187,13 +310,10 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onViewResponses,
   onCopyLink
 }) => {
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
-  
-  // Create a ref for each dropdown menu
-  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
-  
-  // Add state for sorting
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+  const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
@@ -205,8 +325,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
         ref => ref && ref.contains(event.target as Node)
       );
       
-      if (clickedOutsideAll) {
-        setOpenDropdown(null);
+      if (clickedOutsideAll && openDropdownId) {
+        setOpenDropdownId(null);
       }
     };
     
@@ -214,7 +334,31 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [openDropdownId]);
+
+  // Fetch response counts for all surveys
+  React.useEffect(() => {
+    const fetchResponseCounts = async () => {
+      if (!surveys || surveys.length === 0) return;
+      
+      const counts: Record<string, number> = {};
+      
+      // Fetch counts for each survey
+      for (const survey of surveys) {
+        try {
+          const count = await Meteor.callAsync('getTotalResponsesCount', survey._id);
+          counts[survey._id] = count;
+        } catch (error) {
+          console.error(`Error fetching response count for survey ${survey._id}:`, error);
+          counts[survey._id] = 0;
+        }
+      }
+      
+      setResponseCounts(counts);
+    };
+    
+    fetchResponseCounts();
+  }, [surveys]);
   
   // Function to determine dropdown position based on available space
   const handleDropdownToggle = (e: React.MouseEvent, surveyId: string) => {
@@ -223,8 +367,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     console.log('Toggle dropdown for survey:', surveyId);
     
     // If already open, just close it
-    if (openDropdown === surveyId) {
-      setOpenDropdown(null);
+    if (openDropdownId === surveyId) {
+      setOpenDropdownId(null);
       return;
     }
     
@@ -238,9 +382,35 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     
     // If less than 30% of viewport height is available below, position dropdown above
     setDropdownPosition(spaceBelowPercentage < 30 ? 'top' : 'bottom');
-    setOpenDropdown(surveyId);
+    setOpenDropdownId(surveyId);
   };
   
+  // Function to get response limit display
+  const getResponseLimit = (survey: any) => {
+    try {
+      // Check if survey and defaultSettings exist
+      if (!survey || !survey.defaultSettings) {
+        return { isUnlimited: true, value: '∞' }; // Infinity symbol for unlimited
+      }
+      
+      // Check for the responseLimit directly
+      const limit = survey.defaultSettings.responseLimit;
+      
+      // If we have a valid positive number
+      if (limit !== undefined && limit !== null && limit !== -1 && limit > 0) {
+        // We have a valid limit, show it regardless of limitResponses flag
+        return { isUnlimited: false, value: limit };
+      }
+      
+      // In all other cases, show unlimited
+      return { isUnlimited: true, value: '∞' };
+    } catch (error) {
+      console.error('Error in getResponseLimit:', error);
+      // Default to unlimited in case of any errors
+      return { isUnlimited: true, value: '∞' };
+    }
+  };
+
   // Function to handle column sorting
   const handleSort = (field: SortField) => {
     // If clicking the same field, toggle direction
@@ -279,16 +449,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
         const statusB = b.status ? b.status.toUpperCase() : (b.published ? 'ACTIVE' : 'DRAFT');
         comparison = statusA.localeCompare(statusB);
         break;
-      case 'structure':
-        // Sort by section count, then by question count
-        const sectionsA = a.surveySections?.length || 0;
-        const sectionsB = b.surveySections?.length || 0;
-        comparison = sectionsA - sectionsB;
-        if (comparison === 0) {
-          const questionsA = a.sectionQuestions?.length || 0;
-          const questionsB = b.sectionQuestions?.length || 0;
-          comparison = questionsA - questionsB;
-        }
+      case 'tags':
+        // Sort by tag count first, checking both selectedTags and tags properties
+        const tagsA = a.selectedTags?.length || a.tags?.length || 0;
+        const tagsB = b.selectedTags?.length || b.tags?.length || 0;
+        comparison = tagsB - tagsA; // More tags first
         break;
       case 'createdBy':
         comparison = (a.createdByName || 'System').localeCompare(b.createdByName || 'System');
@@ -335,23 +500,22 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           >
             SURVEY {renderSortIcon('title')}
           </TableHeaderCell>
+          
+          <TableHeaderCell 
+            sortable 
+            onClick={() => handleSort('tags')}
+          >
+            TAGS {renderSortIcon('tags')}
+          </TableHeaderCell>
+
+          <TableHeaderCell>
+            RESPONSES
+          </TableHeaderCell>
           <TableHeaderCell 
             sortable 
             onClick={() => handleSort('status')}
           >
             STATUS {renderSortIcon('status')}
-          </TableHeaderCell>
-          <TableHeaderCell 
-            sortable 
-            onClick={() => handleSort('structure')}
-          >
-            STRUCTURE {renderSortIcon('structure')}
-          </TableHeaderCell>
-          <TableHeaderCell 
-            sortable 
-            onClick={() => handleSort('createdBy')}
-          >
-            CREATED BY {renderSortIcon('createdBy')}
           </TableHeaderCell>
           <TableHeaderCell 
             sortable 
@@ -365,7 +529,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
       <TableBody>
         {loading ? (
           <tr>
-            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0' }}>
+            <td colSpan={5} style={{ textAlign: 'center', padding: '30px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ width: '20px', height: '20px', border: '4px solid var(--color-accent)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
               </div>
@@ -379,7 +543,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           </tr>
         ) : sortedSurveys && sortedSurveys.length === 0 ? (
           <tr>
-            <td colSpan={6} style={{ textAlign: 'center', padding: '30px 0', color: 'var(--color-text)' }}>
+            <td colSpan={5} style={{ textAlign: 'center', padding: '30px 0', color: 'var(--color-text)' }}>
               No surveys found matching your filters.
             </td>
           </tr>
@@ -422,20 +586,40 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 {/* <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
                   {survey.description ? survey.description.substring(0, 100) + (survey.description.length > 100 ? '...' : '') : ''}
                 </div> */}
+                <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                  by {survey.createdByName || 'System'}
+                </div>
+              </TableCell>
+
+              <TableCell data-no-navigate="true">
+                {/* Check both selectedTags and tags properties */}
+                <SurveyTags tagIds={survey.selectedTags || survey.tags || []} />
+              </TableCell>
+              
+              <TableCell>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>{responseCounts[survey._id] || 0}</span>
+                  <span style={{ color: '#6c757d', margin: '0 4px' }}>of</span>
+                  {(() => {
+                    const responseLimit = getResponseLimit(survey);
+                    return responseLimit.isUnlimited ? (
+                      <span style={{ 
+                        fontSize: '28px', 
+                        lineHeight: '18px',
+                        fontWeight: '500',
+                        display: 'inline-block',
+                        width: '20px',
+                        textAlign: 'center'
+                      }}>∞</span>
+                    ) : (
+                      <span>{responseLimit.value}</span>
+                    );
+                  })()}
+                </div>
               </TableCell>
               <TableCell>
                 <StatusBadge status={status}>{status}</StatusBadge>
               </TableCell>
-
-              <TableCell>
-                <div>
-                  {survey.surveySections?.length || 0} {(survey.surveySections?.length || 0) === 1 ? 'Section' : 'Sections'}
-                </div>
-                <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                  {survey.sectionQuestions?.length || 0} {(survey.sectionQuestions?.length || 0) === 1 ? 'Question' : 'Questions'}
-                </div>
-              </TableCell>
-              <TableCell>{survey.createdByName || 'System'}</TableCell>
               <TableCell>
                 {updatedDate}
                 {isNewSurvey && (
@@ -469,7 +653,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                     <FaEllipsisV />
                   </DropdownButton>
                   
-                  {openDropdown === survey._id && (
+                  {openDropdownId === survey._id && (
                     <DropdownMenu position={dropdownPosition} data-no-navigate="true">
                       <button
                         style={{

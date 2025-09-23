@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 type SettingsTabProps = {
 	survey: any;
@@ -97,6 +97,80 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 										/>
 										<span>Add as new response</span>
 									</label>
+								</div>
+							</div>
+						)}
+					</div>
+
+					{/* Response Limit Setting */}
+					<div style={{ marginBottom: 12, marginTop: 20 }}>
+						<label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+							<input
+								type="checkbox"
+								checked={survey?.defaultSettings?.limitResponses === true}
+								onChange={() => {
+									const defaultSettings = survey.defaultSettings || {};
+									const currentValue = defaultSettings.limitResponses === true;
+									const updatedSurvey = {
+										...survey,
+										defaultSettings: {
+											...defaultSettings,
+											limitResponses: !currentValue,
+											// Keep existing responseLimit or set default to infinity (represented as -1)
+											responseLimit: defaultSettings.responseLimit || -1,
+										},
+									};
+									setSurvey(updatedSurvey);
+									setHasUnsavedChanges(true);
+									triggerAutoSave();
+								}}
+								style={{ width: 18, height: 18, accentColor: '#552a47' }}
+							/>
+							Limit Maximum Responses
+						</label>
+						<div style={{ marginLeft: 24, fontSize: 14, color: '#666', marginTop: 4 }}>
+							When enabled, the survey will stop accepting responses after reaching the limit
+						</div>
+
+						{survey?.defaultSettings?.limitResponses === true && (
+							<div style={{ marginLeft: 24, marginTop: 12, padding: 12, backgroundColor: '#f9f9f9', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+								<div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, color: '#4a5568' }}>
+									Maximum number of responses:
+								</div>
+								<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+									<input
+										type="number"
+										min="1"
+										value={survey?.defaultSettings?.responseLimit === -1 ? '' : (survey?.defaultSettings?.responseLimit || '')}
+										placeholder="Unlimited"
+										onChange={(e) => {
+											const defaultSettings = survey.defaultSettings || {};
+											const value = e.target.value.trim();
+											const responseLimit = value === '' ? -1 : parseInt(value, 10);
+											
+											setSurvey({
+												...survey,
+												defaultSettings: {
+													...defaultSettings,
+													responseLimit: responseLimit,
+												},
+											});
+											setHasUnsavedChanges(true);
+											triggerAutoSave();
+										}}
+										style={{
+											padding: '8px 12px',
+											borderRadius: 6,
+											border: '1px solid #d1d5db',
+											width: '120px',
+											fontSize: 14,
+										}}
+									/>
+									<div style={{ fontSize: 14, color: '#666' }}>
+										{survey?.defaultSettings?.responseLimit === -1 || !survey?.defaultSettings?.responseLimit ? 
+											'(Unlimited)' : 
+											`responses`}
+									</div>
 								</div>
 							</div>
 						)}

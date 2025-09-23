@@ -2726,5 +2726,60 @@ Meteor.methods({
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Meteor.Error('internal-error', `Error getting question titles: ${errorMessage}`);
     }
+  },
+
+  // Method to check if a survey has reached its response limit
+  async 'surveys.checkResponseLimit'(surveyId) {
+    check(surveyId, String);
+    
+    console.log(`Checking response limit for survey: ${surveyId}`);
+    
+    try {
+      // Find the survey directly by ID
+      let survey;
+      
+      // Find the survey
+      survey = await Surveys.findOneAsync(surveyId);
+      
+      if (!survey) {
+        console.log('Survey not found with ID:', surveyId);
+        throw new Meteor.Error('not-found', 'Survey not found');
+      }
+      
+      // Default response - no limit
+      const result = {
+        limitReached: false,
+        hasLimit: false,
+        currentCount: 0,
+        limit: -1
+      };
+      
+      // Count current responses
+      const currentCount = await SurveyResponses.find({ surveyId: survey._id }).countAsync();
+      result.currentCount = currentCount;
+      
+      // Check if survey has a response limit
+      if (survey.defaultSettings && 
+          survey.defaultSettings.limitResponses === true && 
+          survey.defaultSettings.responseLimit !== undefined && 
+          survey.defaultSettings.responseLimit !== null && 
+          survey.defaultSettings.responseLimit !== -1 && 
+          survey.defaultSettings.responseLimit > 0) {
+        
+        result.hasLimit = true;
+        result.limit = survey.defaultSettings.responseLimit;
+        
+        // Check if limit is reached
+        if (currentCount >= survey.defaultSettings.responseLimit) {
+          console.log(`Survey ${survey._id} has reached its response limit: ${currentCount}/${result.limit}`);
+          result.limitReached = true;
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error checking survey response limit:', error);
+      throw new Meteor.Error('check-limit-failed', 'Failed to check survey response limit');
+    }
   }
 });
