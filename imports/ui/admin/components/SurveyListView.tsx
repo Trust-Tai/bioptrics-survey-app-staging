@@ -264,6 +264,7 @@ const SurveyTags: React.FC<SurveyTagsProps> = ({ tagIds }) => {
     };
   }, []);
   
+  
   if (!tags || tags.length === 0) {
     return <span style={{ color: '#6c757d', fontSize: '12px' }}>No tags</span>;
   }
@@ -309,13 +310,10 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onViewResponses,
   onCopyLink
 }) => {
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
-  
-  // Create a ref for each dropdown menu
-  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
-  
-  // Add state for sorting
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+  const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [responseCounts, setResponseCounts] = useState<Record<string, number>>({});
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
@@ -327,8 +325,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
         ref => ref && ref.contains(event.target as Node)
       );
       
-      if (clickedOutsideAll) {
-        setOpenDropdown(null);
+      if (clickedOutsideAll && openDropdownId) {
+        setOpenDropdownId(null);
       }
     };
     
@@ -336,7 +334,31 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [openDropdownId]);
+
+  // Fetch response counts for all surveys
+  React.useEffect(() => {
+    const fetchResponseCounts = async () => {
+      if (!surveys || surveys.length === 0) return;
+      
+      const counts: Record<string, number> = {};
+      
+      // Fetch counts for each survey
+      for (const survey of surveys) {
+        try {
+          const count = await Meteor.callAsync('getTotalResponsesCount', survey._id);
+          counts[survey._id] = count;
+        } catch (error) {
+          console.error(`Error fetching response count for survey ${survey._id}:`, error);
+          counts[survey._id] = 0;
+        }
+      }
+      
+      setResponseCounts(counts);
+    };
+    
+    fetchResponseCounts();
+  }, [surveys]);
   
   // Function to determine dropdown position based on available space
   const handleDropdownToggle = (e: React.MouseEvent, surveyId: string) => {
@@ -345,8 +367,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     console.log('Toggle dropdown for survey:', surveyId);
     
     // If already open, just close it
-    if (openDropdown === surveyId) {
-      setOpenDropdown(null);
+    if (openDropdownId === surveyId) {
+      setOpenDropdownId(null);
       return;
     }
     
@@ -360,9 +382,34 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
     
     // If less than 30% of viewport height is available below, position dropdown above
     setDropdownPosition(spaceBelowPercentage < 30 ? 'top' : 'bottom');
-    setOpenDropdown(surveyId);
+    setOpenDropdownId(surveyId);
   };
   
+  // Function to get response limit display
+  const getResponseLimit = (survey: any) => {
+    // Check if defaultSettings exists
+    if (!survey.defaultSettings) {
+      return '∞'; // Infinity symbol for unlimited
+    }
+    
+    // Check if limiting is enabled
+    const limitingEnabled = survey.defaultSettings.limitResponses === true;
+    if (!limitingEnabled) {
+      return '∞'; // Not limiting responses
+    }
+    
+    // Check responseLimit value
+    const limit = survey.defaultSettings.responseLimit;
+    
+    // Handle all cases where we should show unlimited
+    if (limit === undefined || limit === null || limit === -1 || limit <= 0) {
+      return '∞';
+    }
+    
+    // If we have a valid positive number, return it
+    return limit;
+  };
+
   // Function to handle column sorting
   const handleSort = (field: SortField) => {
     // If clicking the same field, toggle direction
@@ -466,6 +513,10 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
           >
             STATUS {renderSortIcon('status')}
           </TableHeaderCell>
+
+          <TableHeaderCell>
+            RESPONSES
+          </TableHeaderCell>
           <TableHeaderCell 
             sortable 
             onClick={() => handleSort('updatedAt')}
@@ -548,6 +599,25 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               <TableCell>
                 <StatusBadge status={status}>{status}</StatusBadge>
               </TableCell>
+              
+              <TableCell>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>{responseCounts[survey._id] || 0}</span>
+                  <span style={{ color: '#6c757d', margin: '0 4px' }}>of</span>
+                  {getResponseLimit(survey) === '∞' ? (
+                    <span style={{ 
+                      fontSize: '28px', 
+                      lineHeight: '18px',
+                      fontWeight: '500',
+                      display: 'inline-block',
+                      width: '20px',
+                      textAlign: 'center'
+                    }}>∞</span>
+                  ) : (
+                    <span>{getResponseLimit(survey)}</span>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 {updatedDate}
                 {isNewSurvey && (
@@ -581,7 +651,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                     <FaEllipsisV />
                   </DropdownButton>
                   
-                  {openDropdown === survey._id && (
+                  {openDropdownId === survey._id && (
                     <DropdownMenu position={dropdownPosition} data-no-navigate="true">
                       <button
                         style={{
