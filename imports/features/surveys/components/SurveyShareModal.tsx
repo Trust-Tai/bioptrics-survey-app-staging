@@ -473,10 +473,11 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
   };
   
   const handleSendInvites = () => {
-    // Accept any input, even empty
+    // show notification if email list is empty
     let emailsToSend = emailList.trim();
     if (!emailsToSend) {
-      emailsToSend = 'test@example.com'; // Use a default email if empty
+      setError('Please enter at least one email address');
+      return;
     }
     
     setLoading(true);

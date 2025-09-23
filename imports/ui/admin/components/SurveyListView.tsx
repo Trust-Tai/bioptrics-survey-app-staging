@@ -169,8 +169,8 @@ const TagsContainer = styled.div`
 `;
 
 const Tag = styled.span`
-  background-color: #f0f4f8;
-  color: #4a6fa5;
+  background-color:#552a4726;
+  color: #552a47;
   border-radius: 12px;
   padding: 2px 8px;
   font-size: 11px;
@@ -179,8 +179,8 @@ const Tag = styled.span`
 `;
 
 const MoreTagsIndicator = styled.span`
-  background-color: #e2e8f0;
-  color: #4a6fa5;
+  background-color: #552a4726;
+  color: #552a47;
   border-radius: 12px;
   padding: 2px 8px;
   font-size: 11px;
@@ -189,7 +189,7 @@ const MoreTagsIndicator = styled.span`
   white-space: nowrap;
   
   &:hover {
-    background-color: #cbd5e0;
+    background-color: #552a4769;
   }
 `;
 
@@ -599,14 +599,14 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
               <TableCell>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span>{responseCounts[survey._id] || 0}</span>
-                  <span style={{ color: '#6c757d', margin: '0 4px' }}>of</span>
+                  <span style={{ color: '#6c757d', margin: '0px 0px' }}>/</span>
                   {(() => {
                     const responseLimit = getResponseLimit(survey);
                     return responseLimit.isUnlimited ? (
                       <span style={{ 
                         fontSize: '28px', 
                         lineHeight: '18px',
-                        fontWeight: '500',
+                        fontWeight: '300',
                         display: 'inline-block',
                         width: '20px',
                         textAlign: 'center'
