@@ -387,27 +387,28 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   
   // Function to get response limit display
   const getResponseLimit = (survey: any) => {
-    // Check if defaultSettings exists
-    if (!survey.defaultSettings) {
-      return '∞'; // Infinity symbol for unlimited
+    try {
+      // Check if survey and defaultSettings exist
+      if (!survey || !survey.defaultSettings) {
+        return { isUnlimited: true, value: '∞' }; // Infinity symbol for unlimited
+      }
+      
+      // Check for the responseLimit directly
+      const limit = survey.defaultSettings.responseLimit;
+      
+      // If we have a valid positive number
+      if (limit !== undefined && limit !== null && limit !== -1 && limit > 0) {
+        // We have a valid limit, show it regardless of limitResponses flag
+        return { isUnlimited: false, value: limit };
+      }
+      
+      // In all other cases, show unlimited
+      return { isUnlimited: true, value: '∞' };
+    } catch (error) {
+      console.error('Error in getResponseLimit:', error);
+      // Default to unlimited in case of any errors
+      return { isUnlimited: true, value: '∞' };
     }
-    
-    // Check if limiting is enabled
-    const limitingEnabled = survey.defaultSettings.limitResponses === true;
-    if (!limitingEnabled) {
-      return '∞'; // Not limiting responses
-    }
-    
-    // Check responseLimit value
-    const limit = survey.defaultSettings.responseLimit;
-    
-    // Handle all cases where we should show unlimited
-    if (limit === undefined || limit === null || limit === -1 || limit <= 0) {
-      return '∞';
-    }
-    
-    // If we have a valid positive number, return it
-    return limit;
   };
 
   // Function to handle column sorting
@@ -604,18 +605,21 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span>{responseCounts[survey._id] || 0}</span>
                   <span style={{ color: '#6c757d', margin: '0 4px' }}>of</span>
-                  {getResponseLimit(survey) === '∞' ? (
-                    <span style={{ 
-                      fontSize: '28px', 
-                      lineHeight: '18px',
-                      fontWeight: '500',
-                      display: 'inline-block',
-                      width: '20px',
-                      textAlign: 'center'
-                    }}>∞</span>
-                  ) : (
-                    <span>{getResponseLimit(survey)}</span>
-                  )}
+                  {(() => {
+                    const responseLimit = getResponseLimit(survey);
+                    return responseLimit.isUnlimited ? (
+                      <span style={{ 
+                        fontSize: '28px', 
+                        lineHeight: '18px',
+                        fontWeight: '500',
+                        display: 'inline-block',
+                        width: '20px',
+                        textAlign: 'center'
+                      }}>∞</span>
+                    ) : (
+                      <span>{responseLimit.value}</span>
+                    );
+                  })()}
                 </div>
               </TableCell>
               <TableCell>

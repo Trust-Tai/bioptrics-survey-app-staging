@@ -783,6 +783,7 @@ const AllSurveys: React.FC = () => {
         createdBy: 1,
         createdAt: 1,
         updatedAt: 1,
+        defaultSettings: 1, // Add defaultSettings for response limit display
         // Remove heavy fields that aren't needed for list view
         'surveySections.name': 1, // Only section names, not full objects
         'sectionQuestions.length': 1, // Only count, not full questions

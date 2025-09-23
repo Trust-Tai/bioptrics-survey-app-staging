@@ -4,6 +4,7 @@ import ConsentScreen from './components/ConsentScreen';
 import StepByStepLayout from './layouts/StepByStepLayout';
 import AllOnOnePageLayout from './layouts/AllOnOnePageLayout';
 import ThankYouWrapper from './components/ThankYouWrapper';
+import ResponseLimitMessage from './components/ResponseLimitMessage';
 import { TimerProvider, useTimer } from './contexts/TimerContext';
 
 // Define interfaces for the wrapper components
@@ -116,6 +117,15 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   // const [startTime, setStartTime] = useState<number | null>(null);
   // const [endTime, setEndTime] = useState<number | null>(null);
   
+  // State for response limit
+  const [responseLimitStatus, setResponseLimitStatus] = useState<{
+    limitReached: boolean;
+    hasLimit: boolean;
+    currentCount: number;
+    limit: number;
+  } | null>(null);
+  const [isCheckingLimit, setIsCheckingLimit] = useState(false);
+  
   // State for step navigation
   const [currentStep, setCurrentStep] = useState<CurrentStep>({ type: 'section', id: '' });
   
@@ -151,6 +161,26 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   // State to track if questions are loaded
   const [questionsLoaded, setQuestionsLoaded] = useState(false);
   const [initialNavigationDone, setInitialNavigationDone] = useState(false);
+  
+  // Check for response limit
+  useEffect(() => {
+    if (!survey || !survey._id || isPreviewMode) return;
+    
+    setIsCheckingLimit(true);
+    
+    // Check if the survey has reached its response limit
+    Meteor.call('surveys.checkResponseLimit', survey._id, (error: any, result: any) => {
+      setIsCheckingLimit(false);
+      
+      if (error) {
+        console.error('Error checking response limit:', error);
+        return;
+      }
+      
+      console.log('Response limit check result:', result);
+      setResponseLimitStatus(result);
+    });
+  }, [survey, isPreviewMode]);
   
   // Load survey data
   useEffect(() => {
@@ -596,6 +626,29 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     // Submit survey response
     if (!survey || !survey._id) return;
     
+    // Check if the survey has reached its response limit before submitting
+    Meteor.call('surveys.checkResponseLimit', survey._id, (error: any, result: any) => {
+      if (error) {
+        console.error('Error checking response limit before submission:', error);
+        // Continue with submission despite the error
+        submitFinalResponse();
+        return;
+      }
+      
+      // If limit is reached, show the limit message
+      if (result.limitReached) {
+        console.log('Cannot submit: Survey response limit reached');
+        setResponseLimitStatus(result);
+        return;
+      }
+      
+      // If limit is not reached, proceed with submission
+      submitFinalResponse();
+    });
+  };
+  
+  // Function to submit the final response
+  const submitFinalResponse = () => {
     // Create a final response
     Meteor.call(
       'surveys.submitResponse',
@@ -634,6 +687,35 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   }, []);
 
   // Render the appropriate content based on state
+  
+  // Show loading indicator while checking limit
+  if (isCheckingLimit) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px',
+        color: '#555'
+      }}>
+        Checking survey availability...
+      </div>
+    );
+  }
+  
+  // Show response limit message if limit is reached
+  if (responseLimitStatus?.limitReached) {
+    return (
+      <ResponseLimitMessage 
+        survey={survey}
+        currentCount={responseLimitStatus.currentCount}
+        limit={responseLimitStatus.limit}
+      />
+    );
+  }
+  
+  // Show consent screen if needed
   if (showConsentScreen) {
     return (
       <ConsentScreen
