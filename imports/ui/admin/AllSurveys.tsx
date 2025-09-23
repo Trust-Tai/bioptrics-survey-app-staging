@@ -310,6 +310,7 @@ const SurveyCard = styled.div`
   box-sizing: border-box;
   max-width: 100%;
   overflow: visible;
+  z-index: 1; /* Base z-index for the card */
   
   &:hover {
     transform: translateY(-4px);
@@ -323,6 +324,8 @@ const CardHeader = styled.div`
   align-items: center;
   width: 100%;
   margin-bottom: 16px;
+  position: relative;
+  z-index: 2; /* Higher than the card to ensure dropdown is visible */
 `;
 
 const StatusBadge = styled.div<{ status: string }>`
@@ -552,6 +555,7 @@ const DropdownItem = styled.button`
 const DropdownContainer = styled.div`
   position: relative;
   z-index: 1002; /* Ensure container is above other elements */
+  overflow: visible;
 `;
 
 const NoResultsText = styled.div`
@@ -1375,15 +1379,16 @@ const AllSurveys: React.FC = () => {
                           <div 
                             style={{
                               position: 'absolute',
-                              top: '100%',
-                              right: '0',
+                              top: '0',
+                              right: '30px',
                               background: 'var(--color-background)',
                               borderRadius: '8px',
                               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                               zIndex: 9999,
                               minWidth: '180px',
-                              overflow: 'hidden',
-                              marginTop: '4px'
+                              overflow: 'visible',
+                              marginTop: '0px',
+                              maxHeight: 'none'
                             }}
                           >
                             <button

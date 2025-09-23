@@ -20,7 +20,7 @@ const ModalOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 3500; /* Increased from 1000 to be higher than DropdownContainer's 1002 */
 `;
 
 const ModalContainer = styled.div`
@@ -33,6 +33,8 @@ const ModalContainer = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 3501; /* Added to ensure modal content is above the overlay */
 `;
 
 const ModalHeader = styled.div`
