@@ -700,6 +700,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         color: '#555'
       }}>
         {/* Checking survey availability... */}
+        
       </div>
     );
   }
