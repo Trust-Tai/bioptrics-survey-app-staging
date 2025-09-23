@@ -786,7 +786,8 @@ const AllSurveys: React.FC = () => {
         'sectionQuestions.length': 1, // Only count, not full questions
         'responses.completed': 1, // Only completion status
         collaborators: 1,
-        scheduledFor: 1
+        scheduledFor: 1,
+        selectedTags: 1 // Add selectedTags for tag display
       }
     });
     
@@ -1550,6 +1551,7 @@ const AllSurveys: React.FC = () => {
             limit: 100,
             fields: {
               _id: 1,
+              selectedTags: 1,
               title: 1,
               description: 1,
               published: 1,
