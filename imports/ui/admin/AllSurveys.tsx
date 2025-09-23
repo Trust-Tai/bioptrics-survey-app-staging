@@ -9,7 +9,8 @@ import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
 import { Layers } from '../../api/layers';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
-import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
+import SurveyShareModal from '../../features/surveys/components/SurveyShareModal';
+import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner, FaShare } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 // Using FaSpinner for loading indicator
 import TermLabel from '../components/TermLabel';
@@ -309,6 +310,7 @@ const SurveyCard = styled.div`
   box-sizing: border-box;
   max-width: 100%;
   overflow: visible;
+  z-index: 1; /* Base z-index for the card */
   
   &:hover {
     transform: translateY(-4px);
@@ -322,6 +324,8 @@ const CardHeader = styled.div`
   align-items: center;
   width: 100%;
   margin-bottom: 16px;
+  position: relative;
+  z-index: 2; /* Higher than the card to ensure dropdown is visible */
 `;
 
 const StatusBadge = styled.div<{ status: string }>`
@@ -551,6 +555,7 @@ const DropdownItem = styled.button`
 const DropdownContainer = styled.div`
   position: relative;
   z-index: 1002; /* Ensure container is above other elements */
+  overflow: visible;
 `;
 
 const NoResultsText = styled.div`
@@ -784,6 +789,11 @@ const AllSurveys: React.FC = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showImportPanel, setShowImportPanel] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [shareModal, setShareModal] = useState<{ isOpen: boolean; surveyId: string; surveyTitle: string }>({ 
+    isOpen: false, 
+    surveyId: '', 
+    surveyTitle: '' 
+  });
 
   // Functions for handling survey actions
   const onEdit = (id: string, title: string) => {
@@ -794,6 +804,15 @@ const AllSurveys: React.FC = () => {
   const onViewResponses = (id: string, title: string) => {
     console.log('Viewing analytics for survey:', id);
     navigate(`/admin/analytics/${id}`);
+  };
+  
+  const onShare = (id: string, title: string) => {
+    console.log('Opening share modal for survey:', id, title);
+    setShareModal({
+      isOpen: true,
+      surveyId: id,
+      surveyTitle: title
+    });
   };
   
   // Close dropdown when clicking outside
@@ -1360,15 +1379,16 @@ const AllSurveys: React.FC = () => {
                           <div 
                             style={{
                               position: 'absolute',
-                              top: '100%',
-                              right: '0',
+                              top: '0',
+                              right: '30px',
                               background: 'var(--color-background)',
                               borderRadius: '8px',
                               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                               zIndex: 9999,
                               minWidth: '180px',
-                              overflow: 'hidden',
-                              marginTop: '4px'
+                              overflow: 'visible',
+                              marginTop: '0px',
+                              maxHeight: 'none'
                             }}
                           >
                             <button
@@ -1431,6 +1451,40 @@ const AllSurveys: React.FC = () => {
                                 Analytics
                               </button>
                             )}
+                            {/* Share Button */}
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: 'var(--color-text)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('Opening share modal for survey:', s._id, s.title);
+                                setShareModal({
+                                  isOpen: true,
+                                  surveyId: s._id,
+                                  surveyTitle: s.title
+                                });
+                                setOpenDropdown(null);
+                              }}
+                            >
+                            Share
+                            </button>
                             <button
                               style={{
                                 display: 'block',
@@ -1567,6 +1621,14 @@ const AllSurveys: React.FC = () => {
                 onViewResponses={(id, title) => {
                   console.log('Navigating to analytics for survey:', id);
                   navigate(`/admin/analytics/${id}`);
+                }}
+                onShare={(id, title) => {
+                  console.log('Opening share modal for survey:', id, title);
+                  setShareModal({
+                    isOpen: true,
+                    surveyId: id,
+                    surveyTitle: title
+                  });
                 }}
                 onCopyLink={(id) => {
                   Meteor.call('surveys.generateEncryptedToken', id, (err: Meteor.Error | null, token: string) => {
@@ -1722,6 +1784,14 @@ const AllSurveys: React.FC = () => {
         onClose={() => setResponsesModal({ ...responsesModal, isOpen: false })}
         surveyId={responsesModal.surveyId}
         surveyTitle={responsesModal.surveyTitle}
+      />
+      
+      {/* Survey Share Modal */}
+      <SurveyShareModal
+        isOpen={shareModal.isOpen}
+        onClose={() => setShareModal({ ...shareModal, isOpen: false })}
+        surveyId={shareModal.surveyId}
+        surveyTitle={shareModal.surveyTitle}
       />
       
       {/* Survey Import Side Panel */}
