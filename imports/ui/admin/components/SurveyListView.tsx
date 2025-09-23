@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Meteor } from 'meteor/meteor';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown, FaShare } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -218,6 +218,7 @@ interface SurveyListViewProps {
   onPreview: (id: string, isPublic?: boolean) => void;
   onViewResponses: (id: string, title: string) => void;
   onCopyLink?: (id: string) => void;
+  onShare?: (id: string, title: string) => void;
 }
 
 // Define type for sort field
@@ -308,7 +309,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onPermanentDelete,
   onPreview,
   onViewResponses,
-  onCopyLink
+  onCopyLink,
+  onShare
 }) => {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
@@ -714,6 +716,38 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       >
                         <FaEye style={{ marginRight: '8px' }} /> Preview
                       </button>
+                      
+                      {onShare && (
+                        <button
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '10px 16px',
+                            textAlign: 'left',
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            transition: 'background-color 0.2s',
+                            color: 'var(--color-text)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            console.log('Share button clicked for survey:', survey._id, survey.title);
+                            safelyExecuteAction(onShare, 'Share', survey._id, survey.title);
+                          }}
+                          data-no-navigate="true"
+                        >
+                          <FaShare style={{ marginRight: '8px' }} /> Share
+                        </button>
+                      )}
                       
                       <button
                         style={{
