@@ -6,6 +6,7 @@ import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { Surveys } from '../../features/surveys/api/surveys';
+import { Layers } from '../../api/layers';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
@@ -712,6 +713,7 @@ const AllSurveys: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [createdByFilter, setCreatedByFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
@@ -813,6 +815,22 @@ const AllSurveys: React.FC = () => {
   // Subscribe to all users to ensure we have their data for creator names
   useTracker(() => {
     Meteor.subscribe('allUsersBasic');
+  }, []);
+
+  // Subscribe to tags with location "Surveys"
+  const { tags, loadingTags } = useTracker(() => {
+    const handle = Meteor.subscribe('layers.all');
+    
+    // Filter tags by location "Surveys"
+    const data = Layers.find({ location: "Surveys" }, { 
+      fields: { _id: 1, name: 1 },
+      sort: { name: 1 } // Sort alphabetically by name
+    }).fetch();
+    
+    return {
+      tags: data,
+      loadingTags: !handle.ready()
+    };
   }, []);
 
   // Get total count for pagination
@@ -966,8 +984,16 @@ const AllSurveys: React.FC = () => {
       });
     }
     
+    // Apply tag filter
+    if (tagFilter !== 'all') {
+      result = result.filter(survey => {
+        const surveyTags = survey.selectedTags || [];
+        return surveyTags.includes(tagFilter);
+      });
+    }
+    
     return result;
-  }, [processedSurveys, search, statusFilter, createdByFilter]);
+  }, [processedSurveys, search, statusFilter, createdByFilter, tagFilter]);
 
   // Server-side pagination - no need for client-side slicing
   const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
@@ -977,7 +1003,7 @@ const AllSurveys: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, createdByFilter]);
+  }, [search, statusFilter, createdByFilter, tagFilter]);
 
   return (
     <AdminLayout>
@@ -1113,6 +1139,23 @@ const AllSurveys: React.FC = () => {
                 <option value="owned">Survey I Own</option>
                 <option value="shared_by_me">Survey I've Shared</option>
                 <option value="shared_with_me">Shared With Me</option>
+              </FilterSelect>
+              
+              {/* Tags Filter */}
+              <FilterSelect
+                value={tagFilter}
+                onChange={(e) => {
+                  setTagFilter(e.target.value);
+                  setPage(1); // Reset to first page when filter changes
+                }}
+                disabled={loadingTags}
+              >
+                <option value="all">All Tags</option>
+                {tags && tags.map(tag => (
+                  <option key={tag._id} value={tag._id}>
+                    {tag.name}
+                  </option>
+                ))}
               </FilterSelect>
             </FilterContainer>
             </div>
