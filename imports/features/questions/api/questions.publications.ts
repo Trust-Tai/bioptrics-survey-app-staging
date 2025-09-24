@@ -35,13 +35,14 @@ Meteor.publish('questions.analytics', function () {
 Meteor.publish('questions.bySurvey', function (surveyId) {
   check(surveyId, String);
   
-  // Find the survey to get the selected questions
   const survey = Surveys.findOne(
     { _id: surveyId },
-    { fields: { selectedQuestions: 1, sectionQuestions: 1 } }
+    { fields: { selectedQuestions: 1, sectionQuestions: 1, surveyOrder: 1 } }
   );
   
-  if (!survey) return this.ready();
+  if (!survey) {
+    return this.ready();
+  }
   
   // Collect all question IDs from the survey
   let questionIds: string[] = [];
@@ -57,13 +58,24 @@ Meteor.publish('questions.bySurvey', function (surveyId) {
     questionIds = [...questionIds, ...sectionQuestionIds];
   }
   
+  // Add questions from surveyOrder
+  if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+    const orderQuestionIds = survey.surveyOrder
+      .filter(item => item.type === 'question')
+      .map(item => item.id);
+    questionIds = [...questionIds, ...orderQuestionIds];
+  }
+  
   // Remove duplicates
+  const originalCount = questionIds.length;
   questionIds = [...new Set(questionIds)];
   
-  if (questionIds.length === 0) return this.ready();
+  if (questionIds.length === 0) {
+    return this.ready();
+  }
   
   // Return only the questions used in this survey with optimized fields
-  return Questions.find(
+  const result = Questions.find(
     { _id: { $in: questionIds } },
     {
       fields: {
@@ -78,4 +90,5 @@ Meteor.publish('questions.bySurvey', function (surveyId) {
       }
     }
   );
+  return result;
 });

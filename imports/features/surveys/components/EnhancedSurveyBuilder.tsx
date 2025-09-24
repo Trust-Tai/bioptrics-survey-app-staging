@@ -3182,7 +3182,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   />
                 </div>
               )}
-              
               {/* Survey Questions Tab */}
               {activeStep === 'questions' && (
                 <Suspense fallback={<div style={{ padding: 20 }}>Loading questions…</div>}>
@@ -3354,7 +3353,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   setHasUnsavedChanges={setHasUnsavedChanges}
                   triggerAutoSave={triggerAutoSave}
                 />
-              ) : activeStep !== 'sections' && activeStep !== 'appearance' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'welcome' && (
+              ) : activeStep !== 'sections' && activeStep !== 'appearance' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'survey_questions' && activeStep !== 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">
