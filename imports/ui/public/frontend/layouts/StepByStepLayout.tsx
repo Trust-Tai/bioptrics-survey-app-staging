@@ -18,6 +18,7 @@ interface Question {
   options?: Array<any>;
   sectionId?: string;
   image?: string; // Add image property
+  order?: number; // Add order property for question ordering
   currentVersion?: {
     image?: string;
     // Add other currentVersion properties as needed
@@ -88,7 +89,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       if (currentStep.type === 'section' && sections.length > 0) {
         // Find the first section with questions
         for (const section of sections) {
-          const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+          const sectionQuestions = questions
+            .filter(q => q.sectionId === section.id)
+            .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
           if (sectionQuestions.length > 0) {
             console.log('Auto-navigating to first question in section:', section.name);
             
@@ -197,7 +200,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     
     // If we're on a question, check if we need special handling
     if (currentStep.type === 'question' && currentQuestion) {
-      const sectionQuestions = questions.filter(q => q.sectionId === currentQuestion.sectionId);
+      const sectionQuestions = questions
+        .filter(q => q.sectionId === currentQuestion.sectionId)
+        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
       const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
       
       // If this is the first question in a section and not the first section
@@ -206,7 +211,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         if (currentSectionIndex > 0) {
           // Get the previous section
           const prevSectionId = sections[currentSectionIndex - 1].id;
-          const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId);
+          const prevSectionQuestions = questions
+            .filter(q => q.sectionId === prevSectionId)
+            .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
           
           if (prevSectionQuestions.length > 0 && onSetCurrentStep) {
             // If previous section has questions, go directly to the last question
@@ -239,7 +246,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     
     // If we're on a section view, try to navigate directly to the first question
     if (currentStep.type === 'section' && currentSection) {
-      const sectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+      const sectionQuestions = questions
+        .filter(q => q.sectionId === currentSection.id)
+        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
       
       if (sectionQuestions.length > 0) {
         // If we have questions in this section, navigate to the first one
@@ -256,7 +265,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         if (currentSectionIndex < sections.length - 1) {
           // Get the next section
           const nextSectionId = sections[currentSectionIndex + 1].id;
-          const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+          const nextSectionQuestions = questions
+            .filter(q => q.sectionId === nextSectionId)
+            .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
           
           if (nextSectionQuestions.length > 0 && onSetCurrentStep) {
             // If next section has questions, go directly to first question
@@ -278,7 +289,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       if (currentSectionIndex < sections.length - 1) {
         // Get the next section
         const nextSectionId = sections[currentSectionIndex + 1].id;
-        const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+        const nextSectionQuestions = questions
+          .filter(q => q.sectionId === nextSectionId)
+          .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
         
         if (nextSectionQuestions.length > 0 && onSetCurrentStep) {
           console.log('Moving directly to first question of next section:', sections[currentSectionIndex + 1].name);
@@ -372,7 +385,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   const getQuestionPosition = () => {
     if (!currentQuestion || !currentSection) return { current: 1, total: 1 };
     
-    const sectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+    const sectionQuestions = questions
+      .filter(q => q.sectionId === currentSection.id)
+      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
     const currentIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
     
     return {
@@ -386,7 +401,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     if (!currentQuestion) return false;
     
     if (currentSection) {
-      const sectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+      const sectionQuestions = questions
+        .filter(q => q.sectionId === currentSection.id)
+        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
       const currentIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
       return currentIndex === sectionQuestions.length - 1;
     } else {
@@ -404,7 +421,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     if (!isFirstSection) return false;
     
     // Check if this is the first question in the section
-    const sectionQuestions = questions.filter(q => q.sectionId === currentSection.id);
+    const sectionQuestions = questions
+      .filter(q => q.sectionId === currentSection.id)
+      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
     const isFirstQuestion = sectionQuestions.findIndex(q => q._id === currentQuestion._id) === 0;
     
     return isFirstSection && isFirstQuestion;
@@ -414,7 +433,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   const getNextButtonLabel = () => {
     if (!currentQuestion) return 'Next';
     
-    const sectionQuestions = questions.filter(q => q.sectionId === currentQuestion.sectionId);
+    const sectionQuestions = questions
+      .filter(q => q.sectionId === currentQuestion.sectionId)
+      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
     const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
     const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
     
@@ -479,7 +500,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
               // Otherwise, check if all required questions in previous sections are answered
               for (let i = 0; i < sectionIndex; i++) {
                 const prevSectionId = sections[i].id;
-                const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId && q.required);
+                const prevSectionQuestions = questions
+                  .filter(q => q.sectionId === prevSectionId && q.required)
+                  .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
                 
                 // Check if all required questions in this section are answered
                 const allAnswered = prevSectionQuestions.every(q => {
@@ -506,7 +529,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
               if (selectedSection) {
                 // For one-question-at-a-time navigation, we want to go directly to the first question
                 // Get the first question in this section
-                const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+                const sectionQuestions = questions
+                  .filter(q => q.sectionId === sectionId)
+                  .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
                 
                 if (sectionQuestions.length > 0 && typeof onSetCurrentStep === 'function') {
                   // Navigate directly to the first question in this section
@@ -560,7 +585,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
               
               for (let i = 0; i < sectionIndex; i++) {
                 const prevSectionId = sections[i].id;
-                const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId && q.required);
+                const prevSectionQuestions = questions
+                  .filter(q => q.sectionId === prevSectionId && q.required)
+                  .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
                 
                 // Check if all required questions in this section are answered
                 const allAnswered = prevSectionQuestions.every(q => {
