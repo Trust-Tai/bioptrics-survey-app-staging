@@ -138,7 +138,7 @@ const ConsentCard = styled.div`
   background-color: white;
   border-radius: 10px;
   box-shadow: 0px 0px 12px 0px rgba(0, 0, 0, 0.15);
-  padding: 30px 25px;
+  padding: 30px 85px;
   width: 800px;
   max-width: 100%;
   margin: 0 auto;
