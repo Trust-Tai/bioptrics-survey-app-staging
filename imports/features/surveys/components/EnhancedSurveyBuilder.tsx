@@ -1778,12 +1778,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // For new surveys (no surveyId), immediately save when title or description is entered
       // This ensures the survey is created in the backend right away
       if (!surveyId && hasTitleOrDescription) {
+        // COMMENTED OUT: Immediate save for new surveys
         // Call silentSave directly for immediate save instead of using trackContentChange
-        silentSave(false).then(success => { // Use false for manual save to ensure it happens immediately
-          if (success) {
-            hasCreatedSurveyRef.current = true;
-          }
-        });
+        // silentSave(false).then(success => { // Use false for manual save to ensure it happens immediately
+        //   if (success) {
+        //     hasCreatedSurveyRef.current = true;
+        //   }
+        // });
+        
+        // Just mark that we have unsaved changes instead
+        setHasUnsavedChanges(true);
       } else {
         // For existing surveys, use normal auto-save flow
         trackContentChange();
@@ -1803,11 +1807,15 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   useEffect(() => {
     // If we have title/description but no surveyId, create the survey immediately
     if (!surveyId && !hasCreatedSurveyRef.current && (survey?.title || survey?.description)) {
-      silentSave(false).then(success => {
-        if (success) {
-          hasCreatedSurveyRef.current = true;
-        }
-      });
+      // COMMENTED OUT: Immediate save on component mount
+      // silentSave(false).then(success => {
+      //   if (success) {
+      //     hasCreatedSurveyRef.current = true;
+      //   }
+      // });
+      
+      // Just mark that we have unsaved changes instead
+      setHasUnsavedChanges(true);
     }
   }, []);
   
