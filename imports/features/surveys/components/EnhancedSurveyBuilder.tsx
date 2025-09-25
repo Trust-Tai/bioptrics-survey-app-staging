@@ -1822,7 +1822,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
     try {
-      setSaving(true);
+      // Only show saving indicator for manual saves
+      if (!isAutoSave) {
+        setSaving(true);
+      }
       
       // Prepare survey data for saving
       
@@ -1956,13 +1959,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // This helps React batch the updates properly
       setTimeout(() => {
         setLastSaved(now);
-        setSaving(false);
+        // Only reset saving indicator for manual saves
+        if (!isAutoSave) {
+          setSaving(false);
+        }
         setHasUnsavedChanges(false);
         
         // Only show success message for manual saves, not auto-saves
-        // if (!isAutoSave) {
-        //   showSuccessAlert('Survey saved successfully!');
-        // }
+        if (!isAutoSave) {
+          showSuccessAlert('Survey saved successfully!');
+        }
       }, 50);
       
       return true; // Return success
@@ -1972,9 +1978,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // Only show error for manual saves, not auto-saves
       if (!isAutoSave) {
         showErrorAlert(`Error saving survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Only reset saving indicator for manual saves
+        setSaving(false);
       }
       
-      setSaving(false);
       // Keep unsaved changes flag true since save failed
       setHasUnsavedChanges(true);
       
@@ -3104,12 +3111,21 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     key={step.id}
                     className={`survey-builder-step ${activeStep === step.id ? 'active' : ''}`}
                     onClick={() => {
-                      // Always trigger auto-save before changing tabs
-                      // This ensures any changes are saved, even if hasUnsavedChanges is not set
-                      silentSave(true).then(() => {
-                        // Only change the tab after the save is complete
+                      // If there are unsaved changes, save silently before changing tabs
+                      if (hasUnsavedChanges) {
+                        // Save without UI indicators by using handleSaveSurvey directly with isAutoSave=true
+                        // This bypasses the AUTO_SAVE_ENABLED check in silentSave
+                        handleSaveSurvey(true).then(() => {
+                          // Change the tab after the save is complete
+                          setActiveStep(step.id);
+                        }).catch(() => {
+                          // If save fails, still change the tab
+                          setActiveStep(step.id);
+                        });
+                      } else {
+                        // No unsaved changes, just change the tab
                         setActiveStep(step.id);
-                      });
+                      }
                     }}
                   >
                     <div className="survey-builder-step-label">
