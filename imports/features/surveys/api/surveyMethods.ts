@@ -1402,19 +1402,19 @@ if (Meteor.isServer) {
           return 0; // No responses with completion time
         }
         
-        // Calculate the sum of all completion times in minutes
+        // Calculate the sum of all completion times in seconds
         let totalCompletionTime = 0;
         for (const response of completedResponses) {
           if (response.completionTime !== undefined) {
-            // The database stores completion time in minutes (e.g., 5.309 means 5.309 minutes)
-            // We keep the calculation in minutes
+            // The database stores completion time in seconds
+            // We keep the calculation in seconds
             totalCompletionTime += response.completionTime;
           }
         }
         
-        // Calculate the average completion time in minutes
+        // Calculate the average completion time in seconds
         const averageCompletionTime = totalCompletionTime / completedResponses.length;
-        console.log(`Average completion time: ${averageCompletionTime} minutes`);
+        console.log(`Average completion time: ${averageCompletionTime} seconds`);
         
         return averageCompletionTime;
       } catch (error: unknown) {
