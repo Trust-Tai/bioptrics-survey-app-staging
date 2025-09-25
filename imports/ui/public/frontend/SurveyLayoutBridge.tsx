@@ -635,13 +635,25 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     }
   };
 
-  // Get timer stop function from context
-  const { stopTimer } = useTimer();
+  // Get timer functions and data from context
+  const { stopTimer, elapsedTime } = useTimer();
 
   // Handle survey submission
   const handleSubmit = () => {
     // Stop the timer when user submits
     stopTimer();
+    
+    // Extract the elapsed time string (e.g., "00:34")
+    // We need to get this BEFORE we call submitFinalResponse because hooks must be called at component level
+    let totalSeconds = 0;
+    if (elapsedTime) {
+      const [minutesStr, secondsStr] = elapsedTime.split(':');
+      const minutes = parseInt(minutesStr, 10);
+      const seconds = parseInt(secondsStr, 10);
+      totalSeconds = (minutes * 60) + seconds;
+    }
+    
+    console.log('Survey completion time:', elapsedTime, '(', totalSeconds, 'seconds)');
     
     // Submit survey response
     if (!survey || !survey._id) return;
@@ -651,7 +663,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       if (error) {
         console.error('Error checking response limit before submission:', error);
         // Continue with submission despite the error
-        submitFinalResponse();
+        submitFinalResponse(totalSeconds);
         return;
       }
       
@@ -663,19 +675,22 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       }
       
       // If limit is not reached, proceed with submission
-      submitFinalResponse();
+      submitFinalResponse(totalSeconds);
     });
   };
   
   // Function to submit the final response
-  const submitFinalResponse = () => {
+  const submitFinalResponse = (completionTimeSeconds: number) => {
+    console.log('Submitting survey with completion time:', completionTimeSeconds, 'seconds');
+    
     // Create a final response
     Meteor.call(
       'surveys.submitResponse',
       {
         surveyId: survey._id,
         responseId: responseId,
-        responses: responses
+        responses: responses,
+        completionTime: completionTimeSeconds  // Pass the actual completion time in seconds
       },
       (error: any, result: any) => {
         if (error) {
@@ -698,8 +713,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   // Show consent screen if needed
   const showConsentScreen = !hasConsented && !isPreviewMode;
   
-  // Get elapsed time from timer context
-  const { elapsedTime } = useTimer();
+  // We already have elapsedTime from the timer context above
 
   // Stable callback for onSetCurrentStep
   const handleSetCurrentStep = useCallback((step: CurrentStep) => {

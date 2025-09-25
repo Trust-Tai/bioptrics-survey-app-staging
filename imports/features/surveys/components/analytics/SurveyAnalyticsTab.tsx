@@ -561,16 +561,15 @@ interface CompletionTimeContentProps {
 const CompletionTimeContent: React.FC<CompletionTimeContentProps> = ({ surveyId }) => {
   const { time, trend, isLoading, error } = useCompletionTimeData(surveyId);
   
-  const formatTime = (minutes: number): string => {
-    if (minutes === 0) return '0:00';
+  const formatTime = (seconds: number): string => {
+    if (seconds === 0) return '0:00';
     
-    // The time is already in minutes (e.g., 5.309 means 5 minutes and 18.54 seconds)
-    const wholeMinutes = Math.floor(minutes);
-    const fractionalMinutes = minutes - wholeMinutes;
-    const seconds = Math.round(fractionalMinutes * 60);
+    // Convert seconds to minutes and seconds format
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
     
     // Format as M:SS
-    return `${wholeMinutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
   const formatTrend = (value: number) => {

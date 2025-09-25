@@ -1623,13 +1623,14 @@ Meteor.methods({
     return generateSurveyToken(surveyId);
   },
   
-  async 'surveys.submitResponse'(data: { surveyId: string, responses: Record<string, any>, token?: string, deviceType?: 'desktop' | 'tablet' | 'mobile' }) {
+  async 'surveys.submitResponse'(data: { surveyId: string, responses: Record<string, any>, token?: string, deviceType?: 'desktop' | 'tablet' | 'mobile', completionTime?: number }) {
     // Log the incoming data to verify deviceType is being received
     console.log('surveys.submitResponse received data:', { 
       surveyId: data.surveyId,
       responseCount: Object.keys(data.responses).length,
       deviceType: data.deviceType,
-      token: data.token
+      token: data.token,
+      completionTime: data.completionTime || 'not provided'
     });
     check(data.surveyId, String);
     check(data.responses, Object);
@@ -1675,15 +1676,27 @@ Meteor.methods({
     console.log('Creating metadata with deviceType:', metadata.deviceType);
     
     // Create a document that matches the SurveyResponseDoc interface
+    // Use the provided completion time if available, otherwise calculate it
+    const completionTimeSeconds = data.completionTime !== undefined ? 
+      data.completionTime : 
+      Math.floor((now.getTime() - startTime.getTime()) / 1000);
+    
+    console.log('Using completion time:', completionTimeSeconds, 'seconds');
+    
+    // If we have a provided completion time, adjust the start time accordingly
+    const adjustedStartTime = data.completionTime !== undefined ? 
+      new Date(now.getTime() - (data.completionTime * 1000)) : 
+      startTime;
+    
     const responseDoc = {
       surveyId: data.surveyId,
       userId: this.userId || undefined,
       respondentId: data.token, // Store the token as respondentId
       responses: responsesArray,
       completed: true,
-      startTime: startTime,
+      startTime: adjustedStartTime,
       endTime: now,
-      completionTime: Math.floor((now.getTime() - startTime.getTime()) / 1000), // in seconds
+      completionTime: completionTimeSeconds, // Use the provided or calculated completion time
       progress: 100,
       metadata: metadata, // Use the metadata object we created above
       createdAt: now,
