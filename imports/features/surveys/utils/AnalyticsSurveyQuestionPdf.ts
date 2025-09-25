@@ -550,7 +550,7 @@ const generatePDF = (reportData: SurveyReportData) => {
                         </p>
                         
                         <!-- Response count display -->
-                        <div style="display: flex; align-items: center; margin-bottom: 16px; background-color: #f8fafc; padding: 8px 12px; border-radius: 4px;">
+                        <div style="display: none; align-items: center; margin-bottom: 16px; background-color: #f8fafc; padding: 8px 12px; border-radius: 4px;">
                           <span style="color: #64748b; font-size: 14px; font-weight: 500;">${question.respondents} responses</span>
                         </div>
                         
@@ -954,7 +954,7 @@ const generatePDFWithoutSections = (
                       </p>
                       
                       <!-- Response count display that matches the tab implementation -->
-                      <div style="display: flex; align-items: center; margin-bottom: 16px; background-color: #f8fafc; padding: 8px 12px; border-radius: 4px;">
+                      <div style="display: none; align-items: center; margin-bottom: 16px; background-color: #f8fafc; padding: 8px 12px; border-radius: 4px;">
                         <span style="color: #64748b; font-size: 14px; font-weight: 500;">${question.respondents} responses</span>
                       </div>
                       
