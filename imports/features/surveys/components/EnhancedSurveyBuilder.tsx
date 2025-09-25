@@ -1778,12 +1778,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // For new surveys (no surveyId), immediately save when title or description is entered
       // This ensures the survey is created in the backend right away
       if (!surveyId && hasTitleOrDescription) {
+        // COMMENTED OUT: Immediate save for new surveys
         // Call silentSave directly for immediate save instead of using trackContentChange
-        silentSave(false).then(success => { // Use false for manual save to ensure it happens immediately
-          if (success) {
-            hasCreatedSurveyRef.current = true;
-          }
-        });
+        // silentSave(false).then(success => { // Use false for manual save to ensure it happens immediately
+        //   if (success) {
+        //     hasCreatedSurveyRef.current = true;
+        //   }
+        // });
+        
+        // Just mark that we have unsaved changes instead
+        setHasUnsavedChanges(true);
       } else {
         // For existing surveys, use normal auto-save flow
         trackContentChange();
@@ -1803,18 +1807,25 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   useEffect(() => {
     // If we have title/description but no surveyId, create the survey immediately
     if (!surveyId && !hasCreatedSurveyRef.current && (survey?.title || survey?.description)) {
-      silentSave(false).then(success => {
-        if (success) {
-          hasCreatedSurveyRef.current = true;
-        }
-      });
+      // COMMENTED OUT: Immediate save on component mount
+      // silentSave(false).then(success => {
+      //   if (success) {
+      //     hasCreatedSurveyRef.current = true;
+      //   }
+      // });
+      
+      // Just mark that we have unsaved changes instead
+      setHasUnsavedChanges(true);
     }
   }, []);
   
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
     try {
-      setSaving(true);
+      // Only show saving indicator for manual saves
+      if (!isAutoSave) {
+        setSaving(true);
+      }
       
       // Prepare survey data for saving
       
@@ -1948,13 +1959,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // This helps React batch the updates properly
       setTimeout(() => {
         setLastSaved(now);
-        setSaving(false);
+        // Only reset saving indicator for manual saves
+        if (!isAutoSave) {
+          setSaving(false);
+        }
         setHasUnsavedChanges(false);
         
         // Only show success message for manual saves, not auto-saves
-        // if (!isAutoSave) {
-        //   showSuccessAlert('Survey saved successfully!');
-        // }
+        if (!isAutoSave) {
+          showSuccessAlert('Survey saved successfully!');
+        }
       }, 50);
       
       return true; // Return success
@@ -1964,9 +1978,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       // Only show error for manual saves, not auto-saves
       if (!isAutoSave) {
         showErrorAlert(`Error saving survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Only reset saving indicator for manual saves
+        setSaving(false);
       }
       
-      setSaving(false);
       // Keep unsaved changes flag true since save failed
       setHasUnsavedChanges(true);
       
@@ -3096,12 +3111,21 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     key={step.id}
                     className={`survey-builder-step ${activeStep === step.id ? 'active' : ''}`}
                     onClick={() => {
-                      // Always trigger auto-save before changing tabs
-                      // This ensures any changes are saved, even if hasUnsavedChanges is not set
-                      silentSave(true).then(() => {
-                        // Only change the tab after the save is complete
+                      // If there are unsaved changes, save silently before changing tabs
+                      if (hasUnsavedChanges) {
+                        // Save without UI indicators by using handleSaveSurvey directly with isAutoSave=true
+                        // This bypasses the AUTO_SAVE_ENABLED check in silentSave
+                        handleSaveSurvey(true).then(() => {
+                          // Change the tab after the save is complete
+                          setActiveStep(step.id);
+                        }).catch(() => {
+                          // If save fails, still change the tab
+                          setActiveStep(step.id);
+                        });
+                      } else {
+                        // No unsaved changes, just change the tab
                         setActiveStep(step.id);
-                      });
+                      }
                     }}
                   >
                     <div className="survey-builder-step-label">
@@ -3182,7 +3206,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   />
                 </div>
               )}
-              
               {/* Survey Questions Tab */}
               {activeStep === 'questions' && (
                 <Suspense fallback={<div style={{ padding: 20 }}>Loading questions…</div>}>
@@ -3354,7 +3377,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                   setHasUnsavedChanges={setHasUnsavedChanges}
                   triggerAutoSave={triggerAutoSave}
                 />
-              ) : activeStep !== 'sections' && activeStep !== 'appearance' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'welcome' && (
+              ) : activeStep !== 'sections' && activeStep !== 'appearance' && activeStep !== 'settings' && activeStep !== 'questions' && activeStep !== 'survey_questions' && activeStep !== 'welcome' && (
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">

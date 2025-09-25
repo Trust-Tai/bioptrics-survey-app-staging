@@ -17,6 +17,7 @@ interface Question {
   options?: Array<any>;
   sectionId?: string;
   image?: string; // Add image property
+  order?: number; // Add order property for question ordering
   currentVersion?: {
     image?: string;
     // Add other currentVersion properties as needed
@@ -56,13 +57,17 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
   const questionsBySection = useMemo(() => {
     return sections.map(section => ({
       section,
-      questions: questions.filter(q => q.sectionId === section.id)
+      questions: questions
+        .filter(q => q.sectionId === section.id)
+        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)) // Sort by order, handling undefined values
     }));
   }, [sections, questions]);
   
   // Find questions that don't belong to any section - memoized to prevent recreation on each render
   const unsectionedQuestions = useMemo(() => {
-    return questions.filter(q => !q.sectionId);
+    return questions
+      .filter(q => !q.sectionId)
+      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
   }, [questions]);
   
   // Calculate overall progress - memoized to prevent recreation on each render

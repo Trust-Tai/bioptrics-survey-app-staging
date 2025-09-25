@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiUsers, FiUserPlus, FiMail, FiX, FiBold, FiItalic, FiList, FiAlignLeft, FiRefreshCw } from 'react-icons/fi';
-import { FaUnderline, FaListOl, FaListUl, FaHeading } from 'react-icons/fa';
+import { FiUsers, FiUserPlus, FiMail, FiX, FiBold, FiItalic, FiList, FiAlignLeft, FiRefreshCw, FiLink, FiShare2 } from 'react-icons/fi';
+import { SiX } from 'react-icons/si';
+import { FaUnderline, FaListOl, FaListUl, FaHeading, FaWhatsapp } from 'react-icons/fa';
+import { QRCodeSVG } from 'qrcode.react';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Counts } from 'meteor/tmeasday:publish-counts';
@@ -358,7 +360,7 @@ interface SurveyShareModalProps {
 const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, surveyId, surveyTitle }) => {
   // Debug log to verify the component is being rendered
   // console.log('Rendering SurveyShareModal:', { isOpen, surveyId, surveyTitle });
-  const [activeTab, setActiveTab] = useState<'invite' | 'invited' | 'email'>('invite');
+  const [activeTab, setActiveTab] = useState<'invite' | 'invited' | 'email' | 'link'>('invite');
   const [emailList, setEmailList] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [emailSubject, setEmailSubject] = useState(`You've been invited to participate in: ${surveyTitle}`);
@@ -380,6 +382,10 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
   const [progress, setProgress] = useState(0);
   const [totalEmails, setTotalEmails] = useState(0);
   const [activeInvitationId, setActiveInvitationId] = useState<string | null>(null);
+  
+  // Share Link tab state
+  const [surveyLink, setSurveyLink] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
   
   // Fetch invitations from the database
   const { invitations, invitationsLoading, invitationsCount } = useTracker(() => {
@@ -440,6 +446,69 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
     }
   }, [surveyId]);
   
+  // Fetch survey link when component mounts or surveyId changes
+  useEffect(() => {
+    if (surveyId && isOpen) {
+      // Use the existing method to get the public URL
+      Meteor.call('surveys.generateEncryptedToken', surveyId, (error: Meteor.Error | null, token: string) => {
+        if (error) {
+          console.error('Error generating survey token:', error);
+        } else {
+          const baseUrl = window.location.origin;
+          const publicUrl = `${baseUrl}/public/${token}`;
+          setSurveyLink(publicUrl);
+        }
+      });
+    }
+  }, [surveyId, isOpen]);
+
+  // Function to download QR code as image
+  const downloadQRCode = () => {
+    // Get the SVG element
+    const svgElement = document.getElementById('survey-qr-code');
+    
+    if (svgElement) {
+      // Create a canvas element
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas dimensions to match the SVG
+      canvas.width = 200;
+      canvas.height = 200;
+      
+      // Create an image from the SVG
+      const img = new Image();
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      img.onload = () => {
+        // Draw the image on the canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert canvas to PNG
+        const pngUrl = canvas.toDataURL('image/png');
+        
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pngUrl;
+        downloadLink.download = `${surveyTitle.replace(/\s+/g, '-')}-survey-qr.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up
+        URL.revokeObjectURL(svgUrl);
+      };
+      
+      img.src = svgUrl;
+    } else {
+      console.error('QR code SVG element not found');
+    }
+  };
+
   // Clear messages when changing tabs
   useEffect(() => {
     setError(null);
@@ -668,6 +737,13 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
             <FiMail size={16} />
             Email
           </Tab>
+          <Tab 
+            active={activeTab === 'link'} 
+            onClick={() => setActiveTab('link')}
+          >
+            <FiLink size={16} />
+            Share Link
+          </Tab>
         </TabContainer>
         
         <TabContent>
@@ -851,6 +927,111 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                 <EmptyState>
                   <p>No invitations have been sent yet.</p>
                 </EmptyState>
+              )}
+            </>
+          )}
+          
+          {activeTab === 'link' && (
+            <>
+              <FormGroup>
+                <Label>Survey Link</Label>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  background: '#f9f9f9'
+                }}>
+                  <input 
+                    type="text" 
+                    value={surveyLink} 
+                    readOnly
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      background: 'transparent',
+                      fontSize: '14px',
+                      padding: '4px 0'
+                    }}
+                  />
+                  <Button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(surveyLink);
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000);
+                    }}
+                    style={{ padding: '6px 10px' }}
+                  >
+                    {copySuccess ? 'Copied!' : 'Copy'}
+                  </Button>
+                </div>
+              </FormGroup>
+              
+              <FormGroup>
+                <Label>QR Code</Label>
+                <div style={{ textAlign: 'center', padding: '20px', background: '#fff', borderRadius: '6px', border: '1px solid #ddd' }}>
+                  {surveyLink && (
+                    <>
+                      <div style={{ marginBottom: '16px' }}>
+                        <QRCodeSVG id="survey-qr-code" value={surveyLink} size={200} />
+                      </div>
+                      <Button onClick={downloadQRCode}>
+                        Download QR Code
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </FormGroup>
+              
+              <FormGroup>
+                <Label>Share on Social Media</Label>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  {/* Social media sharing buttons */}
+                  <Button 
+                    style={{ background: '#000000' }}
+                    onClick={() => {
+                      const postText = `I'd like to invite you to participate in our survey: ${surveyTitle}. Your feedback is valuable to us!`;
+                      window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(surveyLink)}&text=${encodeURIComponent(postText)}`, '_blank', 'width=570,height=570');
+                    }}
+                  >
+                    <SiX size={16} style={{ marginRight: '6px' }} />
+                  </Button>
+                  <Button 
+                    style={{ background: '#25D366' }}
+                    onClick={() => {
+                      const whatsappText = `I'd like to invite you to participate in our survey: ${surveyTitle}\n\nYour feedback is important to us. Please click the link below to access the survey:\n${surveyLink}`;
+                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`, '_blank', 'width=570,height=570');
+                    }}
+                  >
+                    <FaWhatsapp size={16} style={{ marginRight: '6px' }} />
+                  </Button>
+                </div>
+              </FormGroup>
+              
+              {error && (
+                <div style={{ 
+                  marginTop: '16px', 
+                  padding: '12px', 
+                  backgroundColor: '#ffebee', 
+                  color: '#d32f2f',
+                  borderRadius: '4px'
+                }}>
+                  {error}
+                </div>
+              )}
+              
+              {success && (
+                <div style={{ 
+                  marginTop: '16px', 
+                  padding: '12px', 
+                  backgroundColor: '#e8f5e9', 
+                  color: '#388e3c',
+                  borderRadius: '4px'
+                }}>
+                  {success}
+                </div>
               )}
             </>
           )}

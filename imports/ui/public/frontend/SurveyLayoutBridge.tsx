@@ -79,6 +79,7 @@ interface Question {
   options?: Array<any>;
   sectionId?: string;
   image?: string; // Add image property
+  order?: number; // Add order property for question ordering
 }
 
 interface CurrentStep {
@@ -261,6 +262,10 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
             // This ensures we get the image data exactly as it is in the database
             const imageData = doc.image || (doc.versions && doc.versions[0] && doc.versions[0].image);
             
+            // Find the corresponding item in surveyOrder to get the order property
+            const orderItemForOrder = survey.surveyOrder.find((item: any) => item.id === doc._id);
+            const orderValue = orderItemForOrder ? orderItemForOrder.order : undefined;
+            
             return {
               _id: doc._id,
               id: doc._id,
@@ -271,6 +276,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
               options: version.options || [],
               required: version.required !== false,
               image: imageData, // Add image property directly from the raw document
+              order: orderValue || version.order || 0, // Use order from surveyOrder, version, or default to 0
             };
           });
           
@@ -436,7 +442,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     if (currentStep.type === 'section') {
       // When on a section view, we need to move to the first question in this section
       const currentSectionId = currentStep.id;
-      const sectionQuestions = questions.filter(q => q.sectionId === currentSectionId);
+      const sectionQuestions = questions
+        .filter(q => q.sectionId === currentSectionId)
+        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
       
       console.log('Section questions:', sectionQuestions.length);
       
@@ -455,7 +463,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         if (currentSectionIndex < sections.length - 1) {
           // Get the next section
           const nextSectionId = sections[currentSectionIndex + 1].id;
-          const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+          const nextSectionQuestions = questions
+            .filter(q => q.sectionId === nextSectionId)
+            .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
           
           if (nextSectionQuestions.length > 0) {
             // If next section has questions, go directly to first question
@@ -482,7 +492,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       
       if (currentQuestion) {
         const currentSectionId = currentQuestion.sectionId;
-        const sectionQuestions = questions.filter(q => q.sectionId === currentSectionId);
+        const sectionQuestions = questions
+          .filter(q => q.sectionId === currentSectionId)
+          .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
         const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestionId);
         
         // Check if current question is answered if it's required
@@ -508,7 +520,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
             if (currentSectionIndex < sections.length - 1) {
               // Get the next section
               const nextSectionId = sections[currentSectionIndex + 1].id;
-              const nextSectionQuestions = questions.filter(q => q.sectionId === nextSectionId);
+              const nextSectionQuestions = questions
+                .filter(q => q.sectionId === nextSectionId)
+                .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
               
               if (nextSectionQuestions.length > 0) {
                 // If next section has questions, go directly to first question
@@ -546,7 +560,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       if (currentSectionIndex > 0) {
         // Get the previous section
         const prevSectionId = sections[currentSectionIndex - 1].id;
-        const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId);
+        const prevSectionQuestions = questions
+          .filter(q => q.sectionId === prevSectionId)
+          .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
         
         if (prevSectionQuestions.length > 0) {
           // If previous section has questions, go directly to the last question
@@ -570,7 +586,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       
       if (currentQuestion) {
         const currentSectionId = currentQuestion.sectionId;
-        const sectionQuestions = questions.filter(q => q.sectionId === currentSectionId);
+        const sectionQuestions = questions
+          .filter(q => q.sectionId === currentSectionId)
+          .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
         const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestionId);
         
         if (currentQuestionIndex > 0) {
@@ -587,7 +605,9 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
           if (currentSectionIndex > 0) {
             // Get the previous section
             const prevSectionId = sections[currentSectionIndex - 1].id;
-            const prevSectionQuestions = questions.filter(q => q.sectionId === prevSectionId);
+            const prevSectionQuestions = questions
+              .filter(q => q.sectionId === prevSectionId)
+              .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
             
             if (prevSectionQuestions.length > 0) {
               // If previous section has questions, go directly to the last question

@@ -12,6 +12,7 @@ interface Question {
   options?: Array<any>;
   sectionId?: string;
   image?: string;
+  order?: number; // Add order property for question ordering
   currentVersion?: {
     image?: string;
   };
