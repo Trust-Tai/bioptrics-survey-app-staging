@@ -82,124 +82,144 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   // Add loading state to track subscription status
   const [isQuestionsLoading, setIsQuestionsLoading] = useState(false);
 
-  // Load existing survey questions and sections when component mounts or survey changes
-  useEffect(() => {
-    
-    // Load sections
-    if (survey && survey.surveySections && Array.isArray(survey.surveySections)) {
-      setSections(survey.surveySections);
-    }
+  // Add this state to store question documents with import status
+const [questionDocsMap, setQuestionDocsMap] = useState<Record<string, any>>({});
 
-    // Load surveyOrder - this is now the single source of truth
-    if (survey && survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
-      setSurveyOrder(survey.surveyOrder);
+// Load existing survey questions and sections when component mounts or survey changes
+useEffect(() => {
+  // Load sections
+  if (survey && survey.surveySections && Array.isArray(survey.surveySections)) {
+    setSections(survey.surveySections);
+  }
+
+  // Load surveyOrder - this is now the single source of truth
+  if (survey && survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+    setSurveyOrder(survey.surveyOrder);
+    
+    // Extract question IDs from surveyOrder
+    const questionIds = survey.surveyOrder
+      .filter((item: any) => item.type === 'question')
+      .map((item: any) => item.id);
+    
+    if (questionIds.length > 0) {
+      setIsQuestionsLoading(true);
       
-      // Extract question IDs from surveyOrder
-      const questionIds = survey.surveyOrder
-        .filter((item: any) => item.type === 'question')
-        .map((item: any) => item.id);
-      
-      if (questionIds.length > 0) {
-        setIsQuestionsLoading(true);
-        
-        // Create questions array from sectionQuestions
-        const questions = questionIds.map((id: string) => {
-          // Try to find question in Questions collection first (just in case)
-          const questionDoc = Questions.findOne(id);
-          
-          // Get section assignment and data from sectionQuestions
-          let sectionId = null;
-          let order = 0;
-          let text = '';
-          let type = 'text';
-          
-          // Find in sectionQuestions array
-          const sectionQuestion = survey.sectionQuestions?.find((sq: any) => 
-            sq.id === id || sq.questionId === id
-          );
-          
-          if (sectionQuestion) {
-            sectionId = sectionQuestion.sectionId;
-            order = sectionQuestion.order || 0;
-            text = sectionQuestion.text || '';
-            type = sectionQuestion.type || 'text';
-          }
-          
-          // Get order and sectionId from surveyOrder if available
-          const orderItem = survey.surveyOrder.find((item: any) => 
-            item.type === 'question' && item.id === id
-          );
-          
-          if (orderItem) {
-            order = orderItem.order || order;
-            // If sectionId is in the orderItem, use it
-            if (orderItem.sectionId) {
-              sectionId = orderItem.sectionId;
+      // FIRST: Fetch all question documents with import status
+      Meteor.call('questions.getImportStatus', questionIds, (error, result) => {
+        if (error) {
+          console.error('Error fetching questions:', error);
+        } else if (result) {
+          // Create a map for quick lookup
+          const docsMap: Record<string, any> = {};
+          result.forEach((doc: any) => {
+            if (doc && doc._id) {
+              docsMap[doc._id] = doc;
             }
-          }
+          });
           
-          // If question found in database, use that data
-          if (questionDoc) {
-            const questionItem = {
-              id: id,
-              text: extractQuestionText(questionDoc),
-              type: getLatestQuestionVersion(questionDoc)?.responseType || type,
-              status: 'published' as const,
-              sectionId: sectionId,
-              order: order
-            };
-            return questionItem;
-          } 
-          // If not found in database but found in sectionQuestions, create from sectionQuestions
-          else if (sectionQuestion) {
-            const questionItem = {
-              id: id,
-              text: text || 'Question text not available',
-              type: type,
-              status: 'published' as const,
-              sectionId: sectionId,
-              order: order
-            };
-            return questionItem;
-          }
-          // If not found anywhere, create a minimal placeholder
-          else {
-            return {
-              id: id,
-              text: `Question ${id}`,
-              type: 'text',
-              status: 'published' as const,
-              sectionId: sectionId,
-              order: order
-            };
-          }
-        }).filter(Boolean) as QuestionItem[];
-        
-        // Sort questions by their order in surveyOrder
-        questions.sort((a, b) => (a.order || 0) - (b.order || 0));
-        setSurveyQuestions(questions);
-        setIsQuestionsLoading(false);
-              
-        return () => {
-          // No subscription to clean up
-        };
-      } else {
-        setSurveyQuestions([]);
-        setIsQuestionsLoading(false);
-      }
+          console.log(`Loaded ${Object.keys(docsMap).length} question documents with import status`);
+          setQuestionDocsMap(docsMap);
+          
+          // THEN: Create questions array from sectionQuestions
+          const questions = questionIds.map((id: string) => {
+            // Use our fetched question doc from the map
+            const questionDoc = docsMap[id];
+            
+            // Get section assignment and data from sectionQuestions
+            let sectionId = null;
+            let order = 0;
+            let text = '';
+            let type = 'text';
+            
+            // Find in sectionQuestions array
+            const sectionQuestion = survey.sectionQuestions?.find((sq: any) => 
+              sq.id === id || sq.questionId === id
+            );
+            
+            if (sectionQuestion) {
+              sectionId = sectionQuestion.sectionId;
+              order = sectionQuestion.order || 0;
+              text = sectionQuestion.text || '';
+              type = sectionQuestion.type || 'text';
+            }
+            
+            // Get order and sectionId from surveyOrder if available
+            const orderItem = survey.surveyOrder.find((item: any) => 
+              item.type === 'question' && item.id === id
+            );
+            
+            if (orderItem) {
+              order = orderItem.order || order;
+              // If sectionId is in the orderItem, use it
+              if (orderItem.sectionId) {
+                sectionId = orderItem.sectionId;
+              }
+            }
+            
+            // If question found in our map, use that data
+            if (questionDoc) {
+              const questionItem = {
+                id: id,
+                text: extractQuestionText(questionDoc),
+                type: getLatestQuestionVersion(questionDoc)?.responseType || type,
+                status: 'published' as const,
+                sectionId: sectionId,
+                order: order
+              };
+              return questionItem;
+            } 
+            // If not found in database but found in sectionQuestions, create from sectionQuestions
+            else if (sectionQuestion) {
+              const questionItem = {
+                id: id,
+                text: text || 'Question text not available',
+                type: type,
+                status: 'published' as const,
+                sectionId: sectionId,
+                order: order
+              };
+              return questionItem;
+            }
+            // If not found anywhere, create a minimal placeholder
+            else {
+              return {
+                id: id,
+                text: `Question ${id}`,
+                type: 'text',
+                status: 'published' as const,
+                sectionId: sectionId,
+                order: order
+              };
+            }
+          }).filter(Boolean) as QuestionItem[];
+          
+          // Sort questions by their order in surveyOrder
+          questions.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setSurveyQuestions(questions);
+          setIsQuestionsLoading(false);
+        }
+      });
+      
+      return () => {
+        // No subscription to clean up
+      };
     } else {
-      // Clear questions if survey has no surveyOrder
       setSurveyQuestions([]);
-      setSurveyOrder([]);
       setIsQuestionsLoading(false);
     }
-  }, [
-    surveyId,
-    JSON.stringify(survey?.surveyOrder || []),
-    JSON.stringify(survey?.surveySections || []),
-    JSON.stringify(survey?.sectionQuestions || []),
-    survey?._id
-  ]);
+  } else {
+    // Clear questions if survey has no surveyOrder
+    setSurveyQuestions([]);
+    setSurveyOrder([]);
+    setIsQuestionsLoading(false);
+  }
+}, [
+  surveyId,
+  JSON.stringify(survey?.surveyOrder || []),
+  JSON.stringify(survey?.surveySections || []),
+  JSON.stringify(survey?.sectionQuestions || []),
+  survey?._id
+]);
 
   const handleCreateQuestion = () => {
     const onQuestionCreatedCallback = (questionId: string) => {
@@ -313,14 +333,18 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     }
     
     // Check if the question is imported (should not be editable)
-    const questionDoc = Questions.findOne(questionId);
-    if (questionDoc) {
-      const latestVersion = getLatestQuestionVersion(questionDoc);
-      const isImported = latestVersion?.creationSource === 'imported';
+    const isQuestionImported = (questionId: string) => {
+      const questionDoc = questionDocsMap[questionId];
+      if (!questionDoc) return false;
       
-      if (isImported) {
-        return; // Don't open the editor for imported questions
-      }
+      const latestVersion = getLatestQuestionVersion(questionDoc);
+      return latestVersion?.creationSource === 'imported';
+    };
+    
+    // Then use it like this:
+    const isImported = isQuestionImported(questionId);
+    if (isImported) {
+      return; // Don't open the editor for imported questions
     }
     
     // Check if the question has responses before editing
@@ -1240,11 +1264,16 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                     if (!question || question.sectionId) return null;
                     
                     // Check if the question is imported (should not be editable)
-                    const questionDoc = Questions.findOne(question.id);
-                    const latestVersion = questionDoc ? getLatestQuestionVersion(questionDoc) : null;
-                    const isImported = latestVersion?.creationSource === 'imported';
-                    
-                    
+                      const isQuestionImported = (questionId: string) => {
+                        const questionDoc = questionDocsMap[questionId];
+                        if (!questionDoc) return false;
+                        
+                        const latestVersion = getLatestQuestionVersion(questionDoc);
+                        return latestVersion?.creationSource === 'imported';
+                      };
+
+                    // Then use it like this:
+                    const isImported = isQuestionImported(question.id);
                     
                     return (
                       <div 
@@ -1271,7 +1300,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 500 }}>{question.text}</div>
                             <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                              {question.type}
+                              {question.type} {isImported}
                             </div>
                           </div>
                           <div className="question-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
@@ -1410,9 +1439,16 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
                               .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order property
                               .map(question => {
                                 // Check if the question is imported (should not be editable)
-                                const questionDoc = Questions.findOne(question.id);
-                                const latestVersion = questionDoc ? getLatestQuestionVersion(questionDoc) : null;
-                                const isImported = latestVersion?.creationSource === 'imported';
+                                const isQuestionImported = (questionId: string) => {
+                                  const questionDoc = questionDocsMap[questionId];
+                                  if (!questionDoc) return false;
+                                  
+                                  const latestVersion = getLatestQuestionVersion(questionDoc);
+                                  return latestVersion?.creationSource === 'imported';
+                                };
+
+                                // Then use it like this:
+                                const isImported = isQuestionImported(question.id);
                                 return (
                                   <div 
                                     key={question.id}

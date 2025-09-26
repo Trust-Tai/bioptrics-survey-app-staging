@@ -133,7 +133,9 @@ if (Meteor.isServer) {
         // Global questions (saved to Question Bank)
         { 'versions.saveToQuestionBank': { $ne: false } },
         { 'versions.saveToQuestionBank': { $exists: false } }
-      ]
+      ],
+      // Exclude imported questions
+      'versions.creationSource': { $ne: 'imported' }
     };
     
     // If surveyId is provided, also include survey-specific questions for this survey
@@ -184,22 +186,42 @@ if (Meteor.isServer) {
     return Questions.find({ _id: questionId });
   });
   
+  Meteor.publish('questions.checkimport', function(questionId) {
+    check(questionId, String);
+    return Questions.find({ _id: questionId });
+  });
+
   Meteor.methods({
+    'questions.getImportStatus': function(questionIds) {
+      check(questionIds, [String]);
+      return Questions.find(
+        { _id: { $in: questionIds } },
+        { fields: { _id: 1, versions: 1, currentVersion: 1 } }
+      ).fetch();
+    },
     'questions.getStats': async function() {
       try {
         console.log('[questions.getStats] Method called');
         // For stats, we only need counts and aggregates, not the full documents
         
         // Get total questions count - using countAsync instead of count
-        const totalQuestions = await Questions.find({}).countAsync();
-        console.log('[questions.getStats] Total questions count:', totalQuestions);
+        // Exclude imported questions from the count
+        const totalQuestions = await Questions.find({
+          'versions.saveToQuestionBank': { $ne: false },
+          'versions.creationSource': { $ne: 'imported' }
+        }).countAsync();
+        console.log('[questions.getStats] Total questions count (excluding imported):', totalQuestions);
         
         // Calculate average quality score
         let totalScore = 0;
         let scoredQuestions = 0;
         
         // Use a cursor to avoid loading all documents into memory at once
-        const cursor = Questions.find({}, {
+        const cursor = Questions.find({
+          // Exclude imported questions
+          'versions.saveToQuestionBank': { $ne: false },
+          'versions.creationSource': { $ne: 'imported' }
+        }, {
           fields: {
             'versions': 1,
             'currentVersion': 1
@@ -251,7 +273,10 @@ if (Meteor.isServer) {
           $or: [
             { 'versions.saveToQuestionBank': { $ne: false } },
             { 'versions.saveToQuestionBank': { $exists: false } }
-          ]
+          ],
+          // Exclude imported questions
+          'saveToQuestionBank': { $ne: false },
+          'versions.creationSource': { $ne: 'imported' }
         };
         if (surveyId) {
           query.$or.push({

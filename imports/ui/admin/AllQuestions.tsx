@@ -985,6 +985,9 @@ const AllQuestions: React.FC = () => {
       const latestVersion = getLatestVersion(q);
       if (!latestVersion) return false;
       
+      // Server now filters out imported questions, so we don't need this check anymore
+      // Keeping the code structure for potential future changes
+      
       // Apply search term filter
       if (searchTerm && !latestVersion.questionText.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
