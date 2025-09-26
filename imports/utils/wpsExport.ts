@@ -74,7 +74,7 @@ export function buildJSONExport(filteredQuestions: { question: string; standard:
       responseType: "text",
       sectionId: standardObj.id,
       order: maxOrder + 1,
-      required: true,
+      required: false,
       description: ""
     });
   });
