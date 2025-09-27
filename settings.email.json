@@ -1,11 +1,11 @@
 {
   "private": {
     "email": {
-      "host": "sandbox.smtp.mailtrap.io",
+      "host": "email-smtp.us-east-1.amazonaws.com",
       "port": 587,
-      "user": "6f9ec6e1eebb57",
-      "pass": "0cdfe96cfeff56",
-      "from": "Survey Team <shobajotaye@gmail.com>"
+      "user": "AKIAVNBWOWOEQ4IYVRYD",
+      "pass": "BM5guKbvXQpuWx0QyxJ2cJXaiYPeNJAc77sDvUwLrvoQ",
+      "from": "Bioptrics Survey <admin@teamsynerg.com>"
     }
   }
 }
