@@ -114,6 +114,84 @@ if (Meteor.isServer) {
         throw new Meteor.Error('server-error', `Failed to calculate question response stats: ${error.message}`);
       }
     },
+    // Method to calculate answered and skipped question percentages for all surveys
+    async 'surveys.getAllQuestionResponseStats'(): Promise<QuestionResponseStats> {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access survey data');
+      }
+      
+      try {
+        console.log(`[SERVER] Calculating question response stats for all surveys`);
+        
+        // Get all surveys
+        const surveys = await Surveys.find({}).fetchAsync();
+        
+        // Initialize counters
+        let totalQuestions = 0;
+        let answeredQuestions = 0;
+        let totalResponses = 0;
+        
+        // Process each survey
+        for (const survey of surveys) {
+          // Count questions in this survey
+          const questionIds: string[] = [];
+          
+          if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+            // Filter items with type 'question' and extract their IDs
+            survey.surveyOrder
+              .filter(item => item.type === 'question')
+              .forEach(item => questionIds.push(item.id));
+            
+            totalQuestions += questionIds.length;
+          }
+          
+          // Get all responses for this survey
+          const surveyResponses = await SurveyResponses.find({ surveyId: survey._id }).fetchAsync();
+          totalResponses += surveyResponses.length;
+          
+          // Track which questions have been answered
+          const answeredQuestionMap: Record<string, boolean> = {};
+          
+          // Check each response to see which questions were answered
+          surveyResponses.forEach(response => {
+            if (response.responses && Array.isArray(response.responses)) {
+              response.responses.forEach(answer => {
+                if (questionIds.includes(answer.questionId) && 
+                    answer.answer !== null && 
+                    answer.answer !== undefined && 
+                    answer.answer !== '') {
+                  answeredQuestionMap[answer.questionId] = true;
+                }
+              });
+            }
+          });
+          
+          // Count answered questions in this survey
+          answeredQuestions += Object.keys(answeredQuestionMap).length;
+        }
+        
+        // Calculate skipped questions and percentages
+        const skippedQuestions = totalQuestions - answeredQuestions;
+        const answeredPercentage = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
+        const skippedPercentage = totalQuestions > 0 ? Math.round((skippedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log(`[SERVER] All surveys stats: ${answeredQuestions}/${totalQuestions} questions answered (${answeredPercentage}%)`);
+        
+        return {
+          totalQuestions,
+          answeredQuestions,
+          skippedQuestions,
+          answeredPercentage,
+          skippedPercentage,
+          totalResponses
+        };
+      } catch (error: any) {
+        console.error('[SERVER] Error calculating question response stats for all surveys:', error);
+        throw new Meteor.Error('server-error', `Failed to calculate question response stats: ${error.message}`);
+      }
+    },
+    
     // Method to get total question count for a specific survey
     async 'surveys.getTotalQuestionCount'(surveyId: string) {
       // Check if user is logged in
@@ -141,6 +219,111 @@ if (Meteor.isServer) {
       } catch (error: any) {
         console.error('[SERVER] Error getting question count:', error);
         throw new Meteor.Error('server-error', `Failed to get question count: ${error.message}`);
+      }
+    },
+    // Method to calculate question response stats with filter parameters
+    async 'getFilteredQuestionResponseStats'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }): Promise<QuestionResponseStats> {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access survey data');
+      }
+      
+      try {
+        console.log(`[SERVER] Calculating filtered question response stats with filters:`, filterParams);
+        
+        // If specific surveyIds are provided, use those
+        // Otherwise, get all surveys
+        let surveys;
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          surveys = await Surveys.find({ _id: { $in: filterParams.surveyIds } }).fetchAsync();
+          console.log(`[SERVER] Found ${surveys.length} surveys matching filter criteria`);
+        } else {
+          surveys = await Surveys.find({}).fetchAsync();
+          console.log(`[SERVER] Using all ${surveys.length} surveys (no survey filter)`);
+        }
+        
+        // Initialize counters
+        let totalQuestions = 0;
+        let answeredQuestions = 0;
+        let totalResponses = 0;
+        
+        // Process each survey
+        for (const survey of surveys) {
+          // Count questions in this survey
+          const questionIds: string[] = [];
+          
+          if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+            // Filter items with type 'question' and extract their IDs
+            survey.surveyOrder
+              .filter(item => item.type === 'question')
+              .forEach(item => questionIds.push(item.id));
+            
+            totalQuestions += questionIds.length;
+          }
+          
+          // Build query for responses
+          const responseQuery: any = { surveyId: survey._id };
+          
+          // Add date filters if provided
+          if (filterParams?.startDate || filterParams?.endDate) {
+            responseQuery.createdAt = {};
+            if (filterParams.startDate) {
+              responseQuery.createdAt.$gte = new Date(filterParams.startDate);
+            }
+            if (filterParams.endDate) {
+              responseQuery.createdAt.$lte = new Date(filterParams.endDate);
+            }
+          }
+          
+          // Get all responses for this survey with filters
+          const surveyResponses = await SurveyResponses.find(responseQuery).fetchAsync();
+          totalResponses += surveyResponses.length;
+          
+          // Track which questions have been answered
+          const answeredQuestionMap: Record<string, boolean> = {};
+          
+          // Check each response to see which questions were answered
+          surveyResponses.forEach(response => {
+            if (response.responses && Array.isArray(response.responses)) {
+              response.responses.forEach(answer => {
+                if (questionIds.includes(answer.questionId) && 
+                    answer.answer !== null && 
+                    answer.answer !== undefined && 
+                    answer.answer !== '') {
+                  answeredQuestionMap[answer.questionId] = true;
+                }
+              });
+            }
+          });
+          
+          // Count answered questions in this survey
+          answeredQuestions += Object.keys(answeredQuestionMap).length;
+        }
+        
+        // Calculate skipped questions and percentages
+        const skippedQuestions = totalQuestions - answeredQuestions;
+        const answeredPercentage = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
+        const skippedPercentage = totalQuestions > 0 ? Math.round((skippedQuestions / totalQuestions) * 100) : 0;
+        
+        console.log(`[SERVER] Filtered stats: ${answeredQuestions}/${totalQuestions} questions answered (${answeredPercentage}%)`);
+        
+        return {
+          totalQuestions,
+          answeredQuestions,
+          skippedQuestions,
+          answeredPercentage,
+          skippedPercentage,
+          totalResponses
+        };
+      } catch (error: any) {
+        console.error('[SERVER] Error calculating filtered question response stats:', error);
+        throw new Meteor.Error('server-error', `Failed to calculate filtered question response stats: ${error.message}`);
       }
     },
     // Method to get response data for a specific question for export

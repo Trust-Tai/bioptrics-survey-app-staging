@@ -14,6 +14,277 @@ interface ResponseTrendDataPoint {
 
 if (Meteor.isServer) {
   Meteor.methods({
+    // Method to get all surveys
+    'surveys.getAllSurveys'() {
+      // Return all surveys with basic information
+      return Surveys.find({}, {
+        fields: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          status: 1
+        },
+        sort: { updatedAt: -1 }
+      }).fetch();
+    },
+    
+    // Method to get filtered analytics questions with pagination
+    async 'getFilteredAnalyticsQuestions'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }, paginationParams?: {
+      page: number,
+      limit: number
+    }) {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access analytics data');
+      }
+      
+      try {
+        console.log(`[SERVER] Getting filtered analytics questions with filters:`, filterParams);
+        console.log(`[SERVER] Pagination:`, paginationParams);
+        
+        // Default pagination values
+        const page = paginationParams?.page || 1;
+        const limit = paginationParams?.limit || 10;
+        const skip = (page - 1) * limit;
+        
+        // Get surveys based on filters
+        let surveyQuery = {};
+        
+        // Add survey ID filter if provided
+        if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+          surveyQuery = { _id: { $in: filterParams.surveyIds } };
+        }
+        
+        // Get surveys
+        const surveys = await Surveys.find(surveyQuery, {
+          fields: {
+            _id: 1,
+            title: 1,
+            surveyOrder: 1
+          },
+          sort: { updatedAt: -1 }
+        }).fetchAsync();
+        
+        console.log(`[SERVER] Found ${surveys.length} surveys matching filter criteria`);
+        
+        if (surveys.length === 0) {
+          return {
+            questions: [],
+            totalCount: 0,
+            page,
+            limit,
+            totalPages: 0
+          };
+        }
+        
+        // Collect all question IDs from all surveys
+        const allQuestionIds: string[] = [];
+        const questionSurveyMap: Record<string, { surveyId: string, surveyTitle: string }> = {};
+        
+        surveys.forEach(survey => {
+          if (survey.surveyOrder && Array.isArray(survey.surveyOrder)) {
+            survey.surveyOrder.forEach((item: any) => {
+              if (item && item.id && item.type === 'question') {
+                allQuestionIds.push(item.id);
+                questionSurveyMap[item.id] = {
+                  surveyId: survey._id,
+                  surveyTitle: survey.title || 'Untitled Survey'
+                };
+              }
+            });
+          }
+        });
+        
+        console.log(`[SERVER] Found ${allQuestionIds.length} total questions across all surveys`);
+        
+        // Calculate total count for pagination
+        const totalCount = allQuestionIds.length;
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        // Apply pagination to question IDs
+        const paginatedQuestionIds = allQuestionIds.slice(skip, skip + limit);
+        
+        console.log(`[SERVER] Paginated to ${paginatedQuestionIds.length} questions (page ${page} of ${totalPages})`);
+        
+        if (paginatedQuestionIds.length === 0) {
+          return {
+            questions: [],
+            totalCount,
+            page,
+            limit,
+            totalPages
+          };
+        }
+        
+        // Get question details for paginated IDs
+        const questions = await Questions.find(
+          { _id: { $in: paginatedQuestionIds } }
+        ).fetchAsync();
+        
+        // Process each question to get analytics data
+        const analyticsQuestions = [];
+        
+        for (const question of questions) {
+          // Get the current version of the question
+          const currentVersion = question?.versions?.[question?.currentVersion - 1] || 
+                               question?.versions?.[question?.versions?.length - 1];
+          
+          if (!currentVersion) {
+            console.log(`No version found for question ${question._id}, skipping`);
+            continue;
+          }
+          
+          // Get survey info for this question
+          const surveyInfo = questionSurveyMap[question._id];
+          
+          if (!surveyInfo) {
+            console.log(`No survey info found for question ${question._id}, skipping`);
+            continue;
+          }
+          
+          // Initialize progress tracking with counts
+          const progressCounts: Record<string, number> = {};
+          
+          // For text, textarea, and date types, we'll collect the latest responses instead of progress
+          const latestResponses: Array<{ answer: string; date: Date }> = [];
+          
+          // Initialize all possible options based on question type
+          if (currentVersion.responseType === 'text' || 
+              currentVersion.responseType === 'textarea' || 
+              currentVersion.responseType === 'date') {
+            // For these types, we don't need to initialize progress counts
+            // We'll collect the latest responses instead
+          } else if (currentVersion.responseType === 'likert') {
+            // Check if the question has custom Likert options defined
+            if (currentVersion.options && Array.isArray(currentVersion.options) && currentVersion.options.length > 0) {
+              // Use the custom options from the question definition
+              currentVersion.options.forEach((option: any) => {
+                if (option && option.value) {
+                  progressCounts[option.value] = 0;
+                }
+              });
+            } else {
+              // Fallback to standard Likert options
+              progressCounts['Strongly Disagree'] = 0;
+              progressCounts['Disagree'] = 0;
+              progressCounts['Neutral'] = 0;
+              progressCounts['Agree'] = 0;
+              progressCounts['Strongly Agree'] = 0;
+            }
+          } else if (currentVersion.responseType === 'rating') {
+            // For rating questions, initialize counts for each rating value
+            const maxRating = currentVersion.maxRating || 5;
+            for (let i = 1; i <= maxRating; i++) {
+              progressCounts[i.toString()] = 0;
+            }
+          } else if (currentVersion.responseType === 'multiple-choice' || currentVersion.responseType === 'checkbox') {
+            // For multiple choice questions, initialize counts for each option
+            if (currentVersion.options && Array.isArray(currentVersion.options)) {
+              currentVersion.options.forEach((option: any) => {
+                if (option && option.value) {
+                  progressCounts[option.value] = 0;
+                }
+              });
+            }
+          }
+          
+          // Build query for responses
+          const responseQuery: any = { 
+            surveyId: surveyInfo.surveyId,
+            completed: true,
+            'responses.questionId': question._id
+          };
+          
+          // Add date filters if provided
+          if (filterParams?.startDate || filterParams?.endDate) {
+            responseQuery.createdAt = {};
+            if (filterParams.startDate) {
+              responseQuery.createdAt.$gte = new Date(filterParams.startDate);
+            }
+            if (filterParams.endDate) {
+              responseQuery.createdAt.$lte = new Date(filterParams.endDate);
+            }
+          }
+          
+          // Get responses for this question
+          const responses = await SurveyResponses.find(responseQuery).fetchAsync();
+          
+          // Process responses
+          responses.forEach(response => {
+            if (response.responses && Array.isArray(response.responses)) {
+              const questionResponse = response.responses.find(r => r.questionId === question._id);
+              
+              if (questionResponse && questionResponse.answer !== undefined && questionResponse.answer !== null) {
+                if (currentVersion.responseType === 'text' || 
+                    currentVersion.responseType === 'textarea' || 
+                    currentVersion.responseType === 'date') {
+                  // For text, textarea, and date, collect the latest responses
+                  if (latestResponses.length < 5) { // Limit to 5 latest responses
+                    latestResponses.push({
+                      answer: questionResponse.answer.toString(),
+                      date: response.createdAt || new Date()
+                    });
+                  }
+                } else {
+                  // For other types, update the progress counts
+                  const answer = questionResponse.answer.toString();
+                  if (progressCounts.hasOwnProperty(answer)) {
+                    progressCounts[answer]++;
+                  }
+                }
+              }
+            }
+          });
+          
+          // Calculate percentages for progress
+          const totalResponses = responses.length;
+          const progress: Record<string, number> = {};
+          
+          if (totalResponses > 0) {
+            Object.entries(progressCounts).forEach(([key, count]) => {
+              progress[key] = Math.round((count / totalResponses) * 100);
+            });
+          } else {
+            // If no responses, set all percentages to 0
+            Object.keys(progressCounts).forEach(key => {
+              progress[key] = 0;
+            });
+          }
+          
+          // Create the analytics question object
+          analyticsQuestions.push({
+            questionId: question._id,
+            questionText: currentVersion.questionText || currentVersion.text || (question as any).title || 'Untitled Question',
+            questionType: currentVersion.responseType || 'unknown',
+            progress,
+            responseCount: totalResponses,
+            latestResponses: latestResponses.length > 0 ? latestResponses : undefined,
+            surveyId: surveyInfo.surveyId,
+            surveyTitle: surveyInfo.surveyTitle
+          });
+        }
+        
+        return {
+          questions: analyticsQuestions,
+          totalCount,
+          page,
+          limit,
+          totalPages
+        };
+      } catch (error: unknown) {
+        console.error('[SERVER] Error getting filtered analytics questions:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Meteor.Error('server-error', `Error getting filtered analytics questions: ${errorMessage}`);
+      }
+    },
     // Method to get the response count for a specific question
     async 'getQuestionResponseCount'(surveyId: string, questionId: string) {
       check(surveyId, String);
@@ -1607,8 +1878,8 @@ if (Meteor.isServer) {
         
         responses.forEach(response => {
           if (response.completionTime && response.completionTime > 0) {
-            // The database stores completion time in minutes (e.g., 5.309 means 5.309 minutes)
-            // We keep the calculation in minutes to match the Analytics Dashboard
+            // The database stores completion time in seconds
+            // We keep the calculation in seconds to be consistent with getCurrentCompletionTime
             totalCompletionTime += response.completionTime;
             validResponseCount++;
           }
@@ -1618,14 +1889,10 @@ if (Meteor.isServer) {
           return 0;
         }
         
-        // Calculate average completion time in minutes
-        const avgCompletionTimeMinutes = totalCompletionTime / validResponseCount;
+        // Calculate average completion time in seconds
+        const avgCompletionTimeSeconds = totalCompletionTime / validResponseCount;
         
-        // Convert to seconds for the Export Reports view
-        // This ensures the time is displayed consistently with the Analytics Dashboard
-        const avgCompletionTimeSeconds = avgCompletionTimeMinutes * 60;
-        
-        console.log(`Accurate average completion time: ${avgCompletionTimeMinutes.toFixed(1)} minutes (${avgCompletionTimeSeconds.toFixed(1)} seconds)`);
+        console.log(`Accurate average completion time: ${avgCompletionTimeSeconds.toFixed(1)} seconds`);
         
         return avgCompletionTimeSeconds;
       } catch (error: unknown) {
