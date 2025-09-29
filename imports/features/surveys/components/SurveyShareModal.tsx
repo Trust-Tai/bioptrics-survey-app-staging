@@ -378,7 +378,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [invitationsPerPage] = useState(10);
-  const [testMode, setTestMode] = useState(true);
+  const [testMode, setTestMode] = useState(false);
   const [progress, setProgress] = useState(0);
   const [totalEmails, setTotalEmails] = useState(0);
   const [activeInvitationId, setActiveInvitationId] = useState<string | null>(null);
@@ -628,11 +628,9 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
         // Create a more detailed success message
         let successMessage = `Successfully processed ${result.count} invitation(s)`;
         
-        // Add email sending status if not in test mode
-        if (!result.testMode && result.emailsSent > 0) {
+        // Add email sending status
+        if (result.emailsSent > 0) {
           successMessage += ` and sent ${result.emailsSent} email(s)`;
-        } else if (result.testMode) {
-          successMessage += ` (Test mode: no emails were sent)`;
         }
         
         setSuccess(successMessage);
@@ -690,11 +688,9 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
         // Create a more detailed success message
         let successMessage = 'Invitation processed successfully';
         
-        // Add email sending status if not in test mode
-        if (!result.testMode && result.emailSent) {
+        // Add email sending status
+        if (result.emailSent) {
           successMessage = 'Invitation resent successfully';
-        } else if (result.testMode) {
-          successMessage += ' (Test mode: no email was sent)';
         }
         
         setSuccess(successMessage);
@@ -762,20 +758,7 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                 </div>
               </FormGroup>
               
-              <FormGroup>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                  <input
-                    type="checkbox"
-                    id="testMode"
-                    checked={testMode}
-                    onChange={(e) => setTestMode(e.target.checked)}
-                    style={{ marginRight: '8px' }}
-                  />
-                  <label htmlFor="testMode" style={{ margin: 0, cursor: 'pointer' }}>
-                    Test Mode {testMode ? '(Emails will not be sent)' : '(Emails will be sent)'}
-                  </label>
-                </div>
-              </FormGroup>
+              {/* Test Mode option removed */}
               
               <Button 
                 onClick={handleSendInvites}

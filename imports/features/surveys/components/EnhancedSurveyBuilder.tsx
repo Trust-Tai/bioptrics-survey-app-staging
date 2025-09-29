@@ -431,18 +431,23 @@ const StatValue = styled.div`
 `;
 
 const StatLabel = styled.div`
-  font-size: 14px;
   color: #666;
   margin-top: 4px;
 `;
 
 interface EnhancedSurveyBuilderProps {
   surveyId?: string;
+  showAnalytics?: boolean;
 }
 
-const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId: propSurveyId }): React.ReactNode => {
+const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId: propSurveyId, showAnalytics }): React.ReactNode => {
   const navigate = useNavigate();
   const { surveyId: paramSurveyId } = useParams<{ surveyId: string }>();
+  const location = useLocation();
+  
+  // Get tab parameter from URL
+  const queryParams = new URLSearchParams(location.search);
+  const tabParam = queryParams.get('tab');
   
   // Use the prop if provided, otherwise fall back to the URL parameter
   const surveyId = propSurveyId || paramSurveyId;
@@ -464,7 +469,16 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
   // State for the survey builder
   const [expandedResponseIds, setExpandedResponseIds] = useState<string[]>([]);
   const [surveyData, setSurveyData] = useState<any>(null);
-  const [activeStep, setActiveStep] = useState('welcome');
+  // Set initial activeStep based on URL tab parameter or showAnalytics prop
+  const [activeStep, setActiveStep] = useState(() => {
+    if (tabParam && ['welcome', 'questions', 'sections', 'branching', 'appearance', 'responses', 'analytics', 'tags'].includes(tabParam)) {
+      return tabParam;
+    } else if (showAnalytics) {
+      return 'analytics';
+    } else {
+      return 'welcome';
+    }
+  });
   // State for question editing
   const [isQuestionBuilderOpen, setIsQuestionBuilderOpen] = useState<boolean>(false);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -557,6 +571,15 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       setActiveStep('welcome');
     }
   }, [surveyId]);
+  
+  // Set activeStep based on URL tab parameter or showAnalytics prop
+  useEffect(() => {
+    if (tabParam && ['welcome', 'questions', 'sections', 'branching', 'appearance', 'responses', 'analytics', 'tags'].includes(tabParam)) {
+      setActiveStep(tabParam);
+    } else if (showAnalytics) {
+      setActiveStep('analytics');
+    }
+  }, [tabParam, showAnalytics]);
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [showRemoveLogoConfirm, setShowRemoveLogoConfirm] = useState(false);
   const [showRemoveFeaturedImageConfirm, setShowRemoveFeaturedImageConfirm] = useState(false);
@@ -1666,10 +1689,6 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     };
   }, [hasUnsavedChanges, lastUserActivity]);
   
-  // Get React Router location and navigation context
-  const location = useLocation();
-  const navigationContext = React.useContext(UNSAFE_NavigationContext);
-  
   // Function to update last user activity timestamp
   // Only tracks activity without marking changes
   const updateUserActivity = () => {
@@ -1988,50 +2007,15 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       return false; // Return failure
     }
   };
-  
-  // Set up navigation blocker for React Router
+  // Simple navigation warning for unsaved changes
   useEffect(() => {
     if (!hasUnsavedChanges) return;
     
-    // Get the navigator object from context
-    const navigator = navigationContext.navigator as any;
+    // We'll use the beforeunload event handler below instead of a complex navigation blocker
+    // This simplifies the code and avoids issues with navigationContext
     
-    // Save the original push method
-    const originalPush = navigator.push;
-    
-    // Override the push method
-    navigator.push = (to: any, state: any) => {
-      const currentPath = location.pathname;
-      const targetPath = typeof to === 'string' ? to : to.pathname;
-      
-      // Check if we're navigating away from the survey builder completely
-      // This checks if we're leaving the /admin/surveys/builder route
-      const isSurveyBuilderPath = currentPath.includes('/admin/surveys/builder');
-      const isTargetSurveyBuilderPath = targetPath.includes('/admin/surveys/builder');
-      
-      // Only prompt if navigating away from survey builder to a different section
-      if (isSurveyBuilderPath && !isTargetSurveyBuilderPath) {
-        const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?');
-        if (confirmed) {
-          // Auto-save before navigating
-          handleSaveSurvey(true).then(() => {
-            // Restore original push and navigate
-            navigator.push = originalPush;
-            originalPush.call(navigator, to, state);
-          });
-        }
-        return;
-      }
-      
-      // If staying on survey builder or confirmed, proceed with navigation
-      originalPush.call(navigator, to, state);
-    };
-    
-    // Cleanup function to restore original push method
-    return () => {
-      navigator.push = originalPush;
-    };
-  }, [hasUnsavedChanges, location.pathname, navigationContext, navigate, handleSaveSurvey]);
+    return () => {};
+  }, [hasUnsavedChanges]);
   
   // Add beforeunload event handler to save survey before page refresh
   useEffect(() => {
