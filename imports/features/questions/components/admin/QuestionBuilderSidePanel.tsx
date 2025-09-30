@@ -715,15 +715,24 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
         feedback: currentQuestion.feedback || 'none',
       };
       
+      // When in questionBank context (All Questions page), always force save to question bank
+      // Create a new variable that we can modify
+      let effectiveSaveToQuestionBank = saveToQuestionBank;
+      if (context === 'questionBank') {
+        // Override effectiveSaveToQuestionBank to always be true in this context
+        // This ensures questions created from All Questions page are always saved properly
+        effectiveSaveToQuestionBank = true;
+      }
+      
       // Map the question to the version format expected by the API
       // Include saveToQuestionBank flag and surveyId if in survey builder context
       // Use type assertion to handle the customFields type mismatch
-      const questionVersion = mapQuestionToVersion(questionToSave as any, saveToQuestionBank, surveyId, userId);
+      const questionVersion = mapQuestionToVersion(questionToSave as any, effectiveSaveToQuestionBank, surveyId, userId);
       
-      console.log(`Saving question with saveToQuestionBank=${saveToQuestionBank}, surveyId=${surveyId || 'none'}`);
+      console.log(`Saving question with saveToQuestionBank=${effectiveSaveToQuestionBank}, surveyId=${surveyId || 'none'}`);
       
       // Check if we're trying to save a survey-specific question without a surveyId
-      if (!saveToQuestionBank && !surveyId) {
+      if (!effectiveSaveToQuestionBank && !surveyId) {
         showErrorAlert('Error saving question: surveyId is not defined');
         console.error('Cannot save survey-specific question without a surveyId');
         return;
@@ -817,14 +826,23 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
         feedback: currentQuestion.feedback || 'none',
       };
       
+      // When in questionBank context (All Questions page), always force save to question bank
+      // Create a new variable that we can modify
+      let effectiveSaveToQuestionBank = saveToQuestionBank;
+      if (context === 'questionBank') {
+        // Override effectiveSaveToQuestionBank to always be true in this context
+        // This ensures questions created from All Questions page are always saved properly
+        effectiveSaveToQuestionBank = true;
+      }
+      
       // Map the question to the version format expected by the API
       // Include saveToQuestionBank flag and surveyId if in survey builder context
-      const questionVersion = mapQuestionToVersion(questionToPublish, saveToQuestionBank, surveyId, userId);
+      const questionVersion = mapQuestionToVersion(questionToPublish, effectiveSaveToQuestionBank, surveyId, userId);
       
-      console.log(`Publishing question with saveToQuestionBank=${saveToQuestionBank}, surveyId=${surveyId || 'none'}`);
+      console.log(`Publishing question with saveToQuestionBank=${effectiveSaveToQuestionBank}, surveyId=${surveyId || 'none'}`);
       
       // Check if we're trying to save a survey-specific question without a surveyId
-      if (!saveToQuestionBank && !surveyId) {
+      if (!effectiveSaveToQuestionBank && !surveyId) {
         showErrorAlert('Error publishing question: surveyId is not defined');
         console.error('Cannot save survey-specific question without a surveyId');
         return;

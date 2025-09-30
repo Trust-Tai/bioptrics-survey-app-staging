@@ -803,7 +803,7 @@ const AllSurveys: React.FC = () => {
   
   const onViewResponses = (id: string, title: string) => {
     console.log('Viewing analytics for survey:', id);
-    navigate(`/admin/analytics/${id}`);
+    navigate(`/admin/surveys/builder/${id}?tab=analytics`);
   };
   
   const onShare = (id: string, title: string) => {
@@ -1444,7 +1444,7 @@ const AllSurveys: React.FC = () => {
                                   e.stopPropagation();
                                   e.preventDefault();
                                   console.log('Navigating to analytics for survey:', s._id);
-                                  navigate(`/admin/analytics/${s._id}`);
+                                  navigate(`/admin/surveys/builder/${s._id}?tab=analytics`);
                                   setOpenDropdown(null);
                                 }}
                               >
@@ -1620,7 +1620,7 @@ const AllSurveys: React.FC = () => {
                 }}
                 onViewResponses={(id, title) => {
                   console.log('Navigating to analytics for survey:', id);
-                  navigate(`/admin/analytics/${id}`);
+                  navigate(`/admin/surveys/builder/${id}?tab=analytics`);
                 }}
                 onShare={(id, title) => {
                   console.log('Opening share modal for survey:', id, title);

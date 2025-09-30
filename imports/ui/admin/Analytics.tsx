@@ -1,1931 +1,1503 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { useTracker } from 'meteor/react-meteor-data';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Tracker } from 'meteor/tracker';
+import ProgressModal from '../components/ProgressModal';
+import { progressTracker, ProgressStage } from '../services/ProgressTracker';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
-import AllSurveyResponses from './components/AllSurveyResponses';
-import { Layers, Layer } from '/imports/api/layers';
-import { Surveys } from '/imports/features/surveys/api/surveys';
-import { Questions } from '/imports/features/questions/api/questions';
-import TomSelect from 'tom-select';
-import 'tom-select/dist/css/tom-select.bootstrap4.css';
+import { 
+  FiFilter, 
+  FiX, 
+  FiMessageSquare, 
+  FiUser, 
+  FiBarChart2,
+  FiFileText,
+  FiActivity,
+  FiUsers,
+  FiDownload
+} from 'react-icons/fi';
+import { 
+  FaUsers, 
+  FaPercentage, 
+  FaChartPie, 
+  FaClock,
+  FaChartBar
+} from 'react-icons/fa';
+import { useResponseRateData } from './hooks/useResponseRateData';
+import { useParticipantData } from './hooks/useParticipantData';
+import { useCompletionTimeData } from './hooks/useCompletionTimeData';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { SurveyResponses } from '/imports/features/surveys/api/surveyResponses';
-import ReactSelect, { components } from 'react-select';
-import {
-  FiFilter,
-  FiDownload,
-  FiPieChart,
-  FiBarChart2,
-  FiTrendingUp,
-  FiMessageSquare,
-  FiCalendar,
-  FiUsers,
-  FiList,
-  FiX,
-  FiCheckCircle,
-  FiAlertCircle
-} from 'react-icons/fi';
-import AdminLayout from '/imports/layouts/AdminLayout/AdminLayout';
-import ResponseTrendsChart from '/imports/features/analytics/components/admin/ResponseTrendsChart';
-import DeviceUsageChart from '/imports/features/analytics/components/admin/DeviceUsageChart';
-import QuestionPerformanceChart from '/imports/features/analytics/components/admin/QuestionPerformanceChart';
-import ResponseRateChart from '/imports/features/analytics/components/admin/ResponseRateChart';
-import CompletionTimeChart from '/imports/features/analytics/components/admin/CompletionTimeChart';
-import CompletionRateChart from '/imports/features/analytics/components/admin/CompletionRateChart';
-import FunnelChart from '/imports/features/analytics/components/admin/FunnelChart';
-import DropoutAnalysis from '/imports/features/analytics/components/admin/DropoutAnalysis';
 
-// Props interface for Analytics component
+// Import tab components
+import AllTabsContainer, { TabItem } from './AllTabsContainer';
+import AllOverviewTab from './tabs/AllOverviewTab';
+import AllQuestionsTab, { QuestionsTabRef } from './tabs/AllQuestionsTab';
+import { exportQuestionsToPDF } from './hooks/AllAnalyticsSurveyQuestionPdf';
+// import GroupsTab from './tabs/GroupsTab';
+import AllCommentsTab from './tabs/AllCommentsTab';
+import AllActivityTab from './tabs/AllActivityTab';
+import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+
+
+// Define interfaces for props and state
 interface AnalyticsProps {
-  surveyFilter?: string; // Survey ID to filter by
-  embedded?: boolean; // Whether the component is embedded in another component
+  surveyId?: string; // Make surveyId optional
 }
 
-// Styled components for the Analytics dashboard
-const DashboardContainer = styled.div<{ embedded?: boolean }>`
-  max-width: 100%;
-  margin: ${props => props.embedded ? '0' : '0 auto'};
-  background: #fff;
-  min-height: ${props => props.embedded ? 'auto' : '100vh'};
-  padding: 1.5rem;
-  box-shadow: ${props => props.embedded ? 'none' : '0px 0px 10px 0px #0000001A'};
-  border-radius: ${props => props.embedded ? '0' : '20px'};
+export interface FilterParams {
+  surveyIds?: string[];
+}
 
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
+interface AnalyticsData {
+  completedSurveysCount: number;
+  participationRate: number;
+  responseRate: number;
+  engagementScore: number;
+  completionTime: number;
+  responseTrends: Array<{
+    date: string;
+    responses: number;
+    completions: number;
+  }>;
+}
+
+// ResponseRateContent component will be defined after the styled components
+
+// Styled components
+const AnalyticsDashboard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0 0 24px 0;
 `;
 
-const PageHeader = styled.div`
+const FilterSection = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+`;
+
+const FilterHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #334155;
   }
 `;
 
-const PageTitle = styled.h1`
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin: 0;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 12px;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: space-between;
-  }
-`;
-
-const Button = styled.button<{ primary?: boolean }>`
+const ResetFiltersButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: ${(props) => (props.primary ? 'var(--color-primary)' : 'var(--color-background)')};
-  color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
-  border: ${(props) => (props.primary ? 'none' : '1px solid var(--color-primary)')};
-  border-radius: 8px;
-  font-weight: 600;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #6b7280;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 
   &:hover {
-    background: ${(props) => (props.primary ? 'var(--color-secondary)' : 'color-mix(in srgb, var(--color-primary) 10%, transparent)')};
-    color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
-    transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-  }
-
-  &:active {
-    color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
-  }
-
-  &:focus {
-    color: ${(props) => (props.primary ? '#ffffff !important' : 'var(--color-primary)')};
-  }
-
-  /* Ensure white text on primary buttons regardless of theme */
-  ${(props) => props.primary && `
-    & * {
-      color: #ffffff !important;
-    }
-  `}
-
-  /* Fallback for browsers that don't support color-mix */
-  @supports not (background: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
-    &:hover {
-      background: ${(props) => (props.primary ? 'var(--color-secondary)' : 'rgba(84, 42, 70, 0.1)')};
-    }
-  }
-
-  svg {
-    font-size: 16px;
+    background-color: #f1f5f9;
   }
 `;
 
-const FilterBar = styled.div`
-  background: var(--color-background);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 16px;
-  margin-bottom: 24px;
+const FilterControls = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const FilterRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  border: 1px solid var(--color-accent);
 
   @media (max-width: 768px) {
     flex-direction: column;
-  }
-  
-  /* Tom Select Styling */
-  .tom-select-container .ts-wrapper {
-    width: 100%;
-    border-radius: 6px;
-  }
-  
-  .tom-select-container .ts-control {
-    border: 1px solid var(--color-accent);
-    border-radius: 6px;
-    padding: 8px;
-    min-height: 38px;
-    background-color: var(--color-background);
-    color: var(--color-text);
-  }
-  
-  .tom-select-container .ts-control:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 1px var(--color-primary);
-  }
-  
-  .tom-select-container .ts-dropdown {
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    background-color: var(--color-background);
-  }
-  
-  .tom-select-container .ts-dropdown .option {
-    padding: 8px 10px;
-    color: var(--color-text);
-  }
-  
-  .tom-select-container .ts-dropdown .active {
-    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
-  }
-  
-  /* Fallback for browsers that don't support color-mix */
-  @supports not (background-color: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
-    .tom-select-container .ts-dropdown .active {
-      background-color: rgba(84, 42, 70, 0.1);
-      color: var(--color-primary);
-    }
-  }
-  
-  .tom-select-container .ts-control input {
-    color: var(--color-text);
-  }
-  
-  .tom-select-container .item {
-    background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
-    border-radius: 4px;
-    padding: 2px 6px;
-    margin: 2px;
-  }
-  
-  /* Fallback for browsers that don't support color-mix */
-  @supports not (background-color: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
-    .tom-select-container .item {
-      background-color: rgba(84, 42, 70, 0.1);
-    }
-  }
-  
-  /* Date Picker Styling */
-  .date-picker {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--color-accent);
-    border-radius: 6px;
-    font-size: 14px;
-    color: var(--color-text);
-    background-color: var(--color-background);
-  }
-  
-  .date-picker:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 1px var(--color-primary);
-  }
-  
-  .react-datepicker-wrapper {
-    width: 100%;
-  }
-  
-  .react-datepicker__input-container {
-    width: 100%;
   }
 `;
 
 const FilterGroup = styled.div`
   flex: 1;
-  min-width: 180px;
-
-  @media (max-width: 768px) {
-    min-width: 100%;
-  }
-`;
-
-const FilterLabel = styled.label`
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  color: var(--color-accent);
-  font-weight: 500;
-`;
-
-const StyledSelect = styled.select`
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--color-accent);
-  border-radius: 6px;
-  background-color: var(--color-background);
-  color: var(--color-text);
-  font-size: 14px;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 1px var(--color-primary);
-  }
-`;
-
-const FilterTopRow = styled.div`
+  min-width: 200px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  width: 100%;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const FilterBottomRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  width: 100%;
-  margin-top: 16px;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const FilterButtons = styled.div`
-  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-left: auto;
-  align-items: flex-end;
+
+  label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #4b5563;
+  }
 `;
 
-const DateRangeContainer = styled.div`
+const DateRangePicker = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+`;
+
+const DateInput = styled.input`
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1f2937;
+  background-color: white;
+`;
+
+const ToLabel = styled.span`
+  color: #6b7280;
+  font-size: 14px;
+`;
+
+const CustomSelect = styled.div`
+  position: relative;
   width: 100%;
 `;
 
-const DateRangeText = styled.span`
+const FilterSelect = styled.select`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
-  color: var(--color-accent);
-  margin: 0 4px 0 25px;
+  color: #1f2937;
+  background-color: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  
+  &[multiple] {
+    background-image: none;
+    overflow-y: auto;
+    padding: 0;
+    
+    option {
+      padding: 8px 12px;
+      
+      &:checked {
+        background-color: #552a47;
+        color: white;
+      
+      &:hover:not(:checked) {
+        background-color: #f3f4f6;
+      }
+    }
 `;
 
-const DashboardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 24px;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+// Custom dropdown components
+const DropdownContainer = styled.div`
+  position: relative;
+  width: 100%;
 `;
 
-const Card = styled.div<{ cols?: number }>`
-  grid-column: span ${(props) => props.cols || 1};
-  background: var(--color-background);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  border: 1px solid var(--color-accent);
-
-  @media (max-width: 1200px) {
-    grid-column: span ${(props) => Math.min(props.cols || 1, 6)};
-  }
-
-  @media (max-width: 768px) {
-    grid-column: 1;
-  }
-`;
-
-const CardHeader = styled.div`
+const DropdownButton = styled.button`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1f2937;
+  background-color: white;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-`;
-
-const CardTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-primary);
-  margin: 0;
-`;
-
-const CardIcon = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border-radius: 8px;
-  color: var(--color-primary);
-  
-  /* Fallback for browsers that don't support color-mix */
-  @supports not (background: color-mix(in srgb, var(--color-primary) 10%, transparent)) {
-    background: rgba(84, 42, 70, 0.1);
-  }
-`;
-
-const StatCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
-  border-radius: 12px;
-  padding: 24px 16px;
-  text-align: center;
-  transition: all 0.2s;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Fallback for browsers that don't support color-mix */
-  @supports not (background: color-mix(in srgb, var(--color-primary) 5%, transparent)) {
-    background: rgba(84, 42, 70, 0.05);
-  }
-`;
-
-const ResponseRateKPI = styled(StatCard)`
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s ease;
-  
-  &:after {
-    content: 'Click to view chart';
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    color: var(--color-accent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
   
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-color: #9ca3af;
   }
-  
-  &:hover:after {
-    opacity: 1;
-  }
-  
-  &:active {
-    transform: translateY(-2px);
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin-bottom: 8px;
-`;
-
-const StatLabel = styled.div`
-  font-size: 14px;
-  color: var(--color-accent);
-  margin-top: 4px;
-`;
-
-const KPIContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-  grid-column: 1 / -1;
-  
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ThemeCard = styled.div`
-  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
-  border-radius: 10px;
-  padding: 16px;
-  text-align: center;
-  transition: all 0.2s;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  
-  /* Fallback for browsers that don't support color-mix */
-  @supports not (background: color-mix(in srgb, var(--color-primary) 5%, transparent)) {
-    background: rgba(84, 42, 70, 0.05);
-  }
-`;
-
-const ThemeName = styled.div`
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-primary);
-  margin-bottom: 8px;
-`;
-
-const ThemeScore = styled.div`
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 4px;
-  color: var(--color-primary);
-`;
-
-const ThemeLabel = styled.div`
-  font-size: 13px;
-  color: var(--color-accent);
-`;
-
-const ChartContainer = styled.div`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-accent);
-  font-weight: 500;
-`;
-
-const TabsContainer = styled.div`
-  display: flex;
-  border-bottom: 1px solid var(--color-accent);
-  margin-bottom: 16px;
-`;
-
-const Tab = styled.button<{ active?: boolean }>`
-  padding: 12px 16px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid ${(props) => (props.active ? 'var(--color-primary)' : 'transparent')};
-  color: ${(props) => (props.active ? 'var(--color-primary)' : 'var(--color-accent)')};
-  font-weight: ${(props) => (props.active ? '600' : '400')};
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    color: var(--color-primary);
-  }
-`;
-
-const IconButton = styled.button`
-  background: none;
-  border: none;
-  color: var(--color-accent);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &:hover {
-    background: var(--color-accent);
-    color: var(--color-text);
-  }
-`;
-
-const ExportButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(3px);
-  animation: fadeIn 0.2s ease-in-out;
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-`;
-
-const ModalContent = styled.div`
-  background-color: var(--color-background);
-  padding: 28px 40px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 900px;
-  position: relative;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  animation: slideIn 0.3s ease-out;
-  border: 1px solid var(--color-accent);
-  
-  @keyframes slideIn {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-`;
-
-const ModalTitle = styled.h2`
-  margin-top: 0;
-  color: var(--color-primary);
-  margin-bottom: 20px;
-  font-size: 24px;
-  font-weight: 600;
-`;
-
-const ModalDescription = styled.p`
-  color: var(--color-accent);
-  margin-bottom: 24px;
-  font-size: 15px;
-  line-height: 1.5;
-`;
-
-const ModalCloseButton = styled.button`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: var(--color-accent);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-  cursor: pointer;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
- 
   
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px var(--color-primary);
+    border-color: #552a47;
+    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
   }
 `;
 
-const Analytics: React.FC<AnalyticsProps> = ({ surveyFilter, embedded = false }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showQuestionPerformance, setShowQuestionPerformance] = useState(false);
-  
-  // State for response rate chart modal
-  const [showResponseRateChart, setShowResponseRateChart] = useState(false);
-  const [responseRateData, setResponseRateData] = useState<Array<{date: string; count: number}>>([]);
-  
-  // State for completion time chart modal
-  const [showCompletionTimeChart, setShowCompletionTimeChart] = useState(false);
-  const [completionTimeData, setCompletionTimeData] = useState<Array<{date: string; minutes: number}>>([]);
-  
-  // State for completion rate chart modal
-  const [showCompletionRateChart, setShowCompletionRateChart] = useState(false);
-  const [completionRateData, setCompletionRateData] = useState<{completed: number; incomplete: number}>({completed: 0, incomplete: 0});
-  const [selectedDateRange, setSelectedDateRange] = useState('last_7_days');
-  
-  // Fetch completion time data when the modal is opened
-  useEffect(() => {
-    if (showCompletionTimeChart) {
-      // Reset data while loading
-      setCompletionTimeData([]);
-      
-      // Fetch completion time data with date range
-      console.log('Fetching completion time data for date range:', selectedDateRange);
-      Meteor.call('getSurveyCompletionTimeByDate', selectedDateRange, (error: Error, result: Array<{date: string; minutes: number}>) => {
-        if (error) {
-          console.error('Error fetching completion time data:', error);
-          // Show empty array instead of loading indefinitely
-          setCompletionTimeData([]);
-        } else {
-          console.log('Completion time data received:', result);
-          
-          // If we get no data, create sample data for testing
-          if (!result || result.length === 0) {
-            const today = new Date();
-            const sampleData = [];
-            
-            // Generate sample data for the last 7 days
-            for (let i = 6; i >= 0; i--) {
-              const date = new Date(today);
-              date.setDate(today.getDate() - i);
-              const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-              
-              sampleData.push({
-                date: dateString,
-                minutes: Math.random() * 0.8 + 0.2 // Random value between 0.2 and 1.0
-              });
-            }
-            
-            console.log('Using sample completion time data:', sampleData);
-            setCompletionTimeData(sampleData);
-          } else {
-            setCompletionTimeData(result);
-          }
-        }
-      });
-    }
-  }, [showCompletionTimeChart, selectedDateRange]);
-  
-  // Fetch completion rate data when the modal is opened or date range changes
-  useEffect(() => {
-    if (showCompletionRateChart) {
-      // Reset data while loading
-      setCompletionRateData({completed: 0, incomplete: 0});
-      
-      // Prepare filter parameters based on date range
-      const filterParams: any = {};
-      
-      // Convert selectedDateRange to actual date objects
-      const today = new Date();
-      let startDate: Date | undefined;
-      let endDate: Date | undefined = new Date(today);
-      
-      switch (selectedDateRange) {
-        case 'today':
-          startDate = new Date(today);
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case 'current_week':
-          startDate = new Date(today);
-          startDate.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case 'last_7_days':
-          startDate = new Date(today);
-          startDate.setDate(today.getDate() - 7);
-          break;
-        case 'last_week':
-          startDate = new Date(today);
-          startDate.setDate(today.getDate() - today.getDay() - 7); // Start of last week
-          startDate.setHours(0, 0, 0, 0);
-          endDate = new Date(startDate);
-          endDate.setDate(startDate.getDate() + 6); // End of last week
-          endDate.setHours(23, 59, 59, 999);
-          break;
-        case 'current_month':
-          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-          break;
-        case 'last_month':
-          startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-          endDate = new Date(today.getFullYear(), today.getMonth(), 0);
-          break;
-        case 'last_3_months':
-          startDate = new Date(today);
-          startDate.setMonth(today.getMonth() - 3);
-          break;
-      }
-      
-      if (startDate) filterParams.startDate = startDate.toISOString();
-      if (endDate) filterParams.endDate = endDate.toISOString();
-      
-      // Use our new filtered methods to get completion rate data
-      Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, completedCount: number) => {
-        if (error) {
-          console.error('Error fetching completed surveys count:', error);
-        } else {
-          // Calculate incomplete surveys by getting the difference between total surveys and completed surveys
-          // We need to get both completed and incomplete surveys to calculate the completion rate
-          const filterParamsForIncomplete = { ...filterParams, includeIncomplete: true };
-          
-          // Get total surveys count (both completed and incomplete)
-          Meteor.call('getFilteredSurveysCount', filterParamsForIncomplete, (error: Error, totalCount: number) => {
-            if (error) {
-              console.error('Error fetching total surveys count:', error);
-            } else {
-              const incompleteCount = totalCount - completedCount;
-              console.log('Completion rate data received for range', selectedDateRange, ':', { 
-                completed: completedCount, 
-                incomplete: incompleteCount,
-                total: totalCount
-              });
-              setCompletionRateData({ completed: completedCount, incomplete: incompleteCount });
-            }
-          });
-        }
-      });
-    }
-  }, [showCompletionRateChart, selectedDateRange]);
-  
-  // State for KPI metrics
-  const [completedSurveysCount, setCompletedSurveysCount] = useState<number>(0);
-  // State for filters and UI
-  const [filterVisible, setFilterVisible] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // State for selected filters
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedSurveys, setSelectedSurveys] = useState<string[]>([]);
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-  const startDate = dateRange[0];
-  const endDate = dateRange[1];
-  
-  // State for metrics
-  const [participationRate, setParticipationRate] = useState<number>(0);
-  const [completionRate, setCompletionRate] = useState<number>(0);
-  const [avgEngagementScore, setAvgEngagementScore] = useState<number>(0);
-  const [avgCompletionTime, setAvgCompletionTime] = useState<number>(0);
-  const [responseRate, setResponseRate] = useState<number>(0);
-  const [responseTrendsData, setResponseTrendsData] = useState<any[]>([]);
-  
-  // Function to apply filters and update metrics
-  // Memoize the function to prevent unnecessary re-renders
-  const applyFilters = useCallback(() => {
-    setIsLoading(true);
-    
-    // Prepare filter parameters
-    const filterParams = {
-      // If in embedded mode and surveyFilter is provided, use it instead of selectedSurveys
-      surveyIds: embedded && surveyFilter ? [surveyFilter] : 
-                (selectedSurveys.length > 0 ? selectedSurveys : undefined),
-      tagIds: selectedTags.length > 0 ? selectedTags : undefined,
-      questionIds: selectedQuestions.length > 0 ? selectedQuestions : undefined,
-      startDate: startDate ? startDate.toISOString() : undefined,
-      endDate: endDate ? endDate.toISOString() : undefined
-    };
-    
-    // Fetch completed surveys count with filters
-    Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
-      if (error) {
-        console.error('Error fetching completed surveys count:', error);
-      } else {
-        setCompletedSurveysCount(result);
-      }
-    });
-    
-    // Fetch participation rate with filters
-    Meteor.call('getFilteredParticipationRate', filterParams, (error: Error, result: number) => {
-      if (error) {
-        console.error('Error fetching enhanced participation rate:', error);
-      } else {
-        setParticipationRate(result);
-      }
-    });
-    
-    // Fetch question completion rate with filters
-    Meteor.call('getQuestionCompletionRate', filterParams, (error: Error, result: number) => {
-      if (error) {
-        console.error('Error fetching question completion rate:', error);
-      } else {
-        setCompletionRate(result);
-      }
-    });
-    
-    // Fetch average engagement score with filters
-    Meteor.call('getFilteredEngagementScore', filterParams, (error: Error, result: number) => {
-      if (error) {
-        console.error('Error fetching enhanced engagement score:', error);
-      } else {
-        setAvgEngagementScore(result || 0);
-      }
-    });
-    
-    // Fetch average completion time with filters
-    Meteor.call('getFilteredCompletionTime', filterParams, (error: Error, result: number) => {
-      if (error) {
-        console.error('Error fetching filtered completion time:', error);
-      } else {
-        setAvgCompletionTime(result);
-      }
-    });
-    
-    // Fetch response rate with filters
-    Meteor.call('getFilteredResponseRate', filterParams, (error: Error, result: number) => {
-      if (error) {
-        console.error('Error fetching filtered response rate:', error);
-      } else {
-        setResponseRate(result);
-      }
-    });
-    
-    // Fetch response trends data with filters
-    Meteor.call('getResponseTrendsData', filterParams, (error: Error, result: any[]) => {
-      if (error) {
-        console.error('Error fetching response trends data:', error);
-      } else {
-        // Transform the data for the ResponseRateChart component
-        const chartData = result.map((item: any) => ({
-          date: item.date,
-          count: item.responses
-        }));
-        setResponseTrendsData(result);
-        setResponseRateData(chartData);
-      }
-      setIsLoading(false);
-    });
-  }, [embedded, surveyFilter, selectedSurveys, selectedTags, selectedQuestions, startDate, endDate]);
-  
-  // Fetch KPI metrics on component mount
-  useEffect(() => {
-    // Initial data load with survey filter if in embedded mode
-    applyFilters();
-  }, [applyFilters]); // Only depend on the memoized applyFilters function
+const DropdownIcon = styled.div<{ isOpen: boolean }>`
+  transform: ${props => props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)'};
+  transition: transform 0.2s ease;
+`;
 
-  // Default organization data
-  const organizations = ['All Organizations', 'Bioptrics'];
+const DropdownMenu = styled.div<{ isOpen: boolean }>`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  display: ${props => props.isOpen ? 'block' : 'none'};
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #1f2937;
   
-  // Ensure selectedTags is always an array
-  useEffect(() => {
-    if (!Array.isArray(selectedTags)) {
-      console.warn('selectedTags is not an array, resetting to empty array');
-      setSelectedTags([]);
-    }
-  }, [selectedTags]);
-  
-  // Use useTracker for subscription
-  const { loading } = useTracker(() => {
-    const subscription = Meteor.subscribe('responses.all');
-    return {
-      loading: !subscription.ready()
-    };
-  }, []);
-  
-  // Response rate chart data state
-  // const [responseRateData, setResponseRateData] = useState<any[]>([]);
-  
-  const surveySelectRef = useRef<HTMLSelectElement>(null);
-  const questionSelectRef = useRef<HTMLSelectElement>(null);
-  const tomSelectInstance = useRef<{[key: string]: any}>({});
-  
-  // We're using the Layer interface imported from '/imports/api/layers'
-  
-  // Interface for hierarchical layer structure
-  interface LayerWithChildren extends Layer {
-    children?: LayerWithChildren[];
-    depth?: number;
+  &:focus {
+    outline: none;
+    border-color: #552a47;
   }
+`;
 
-  // Fetch tags from the Layers collection and determine their usage context
-  const { tags, tagsLoading } = useTracker(() => {
-    const subscription = Meteor.subscribe('layers.all');
-    const surveysSubscription = Meteor.subscribe('surveys.all');
-    const questionsSubscription = Meteor.subscribe('questions.all');
-    
-    const allTags = Layers.find({ active: true }, { sort: { name: 1 } }).fetch();
-    
-    // Get all surveys and questions to check tag usage
-    const allSurveys = Surveys.find({}).fetch();
-    const allQuestions = Questions.find({}).fetch();
-    
-    // Create a map to track tag usage
-    const tagUsageMap: Record<string, { inSurveys: boolean, inQuestions: boolean }> = {};
-    
-    // Initialize usage map for all tags
-    allTags.forEach(tag => {
-      if (tag && tag._id) {
-        tagUsageMap[tag._id] = { inSurveys: false, inQuestions: false };
-      }
-    });
-    
-    // Check which tags are used in surveys - based on AllLayers.tsx logic
-    allSurveys.forEach(survey => {
-      // Check in selectedTags
-      if (survey.selectedTags && Array.isArray(survey.selectedTags)) {
-        survey.selectedTags.forEach(tagId => {
-          if (tagId && tagUsageMap[tagId]) {
-            tagUsageMap[tagId].inSurveys = true;
-          }
-        });
-      }
-      
-      // Check in templateTags
-      if (survey.templateTags && Array.isArray(survey.templateTags)) {
-        survey.templateTags.forEach(tagId => {
-          if (tagId && tagUsageMap[tagId]) {
-            tagUsageMap[tagId].inSurveys = true;
-          }
-        });
-      }
-    });
-    
-    // Check which tags are used in questions - based on AllLayers.tsx logic
-    allQuestions.forEach(question => {
-      // Get the current version of the question
-      const currentVersion = question.versions && question.currentVersion ? 
-        question.versions[question.currentVersion - 1] : null;
-      
-      if (currentVersion) {
-        // Check in categoryTags
-        if (currentVersion.categoryTags && Array.isArray(currentVersion.categoryTags)) {
-          currentVersion.categoryTags.forEach(tagId => {
-            if (tagId && tagUsageMap[tagId]) {
-              tagUsageMap[tagId].inQuestions = true;
-            }
-          });
-        }
-        
-        // Check in labels
-        if ((currentVersion as any).labels && Array.isArray((currentVersion as any).labels)) {
-          (currentVersion as any).labels.forEach((tagId: string) => {
-            if (tagId && tagUsageMap[tagId]) {
-              tagUsageMap[tagId].inQuestions = true;
-            }
-          });
-        }
-      }
-    });
-    
-    console.log('Tag usage map:', tagUsageMap);
-    
-    // Process tags into hierarchical structure
-    const tagsWithChildren: LayerWithChildren[] = [];
-    const tagMap: Record<string, LayerWithChildren> = {};
-    
-    // First pass: create a map of all tags
-    allTags.forEach(tag => {
-      if (tag && tag._id) { // Check if tag and tag._id exist
-        // Add usage context to the tag
-        const usage = tagUsageMap[tag._id] || { inSurveys: false, inQuestions: false };
-        tagMap[tag._id] = { 
-          ...tag, 
-          children: [],
-          // Add usage context to the tag
-          usageContext: {
-            inSurveys: usage.inSurveys,
-            inQuestions: usage.inQuestions
-          }
-        };
-      }
-    });
-    
-    // Second pass: build the hierarchy
-    allTags.forEach(tag => {
-      if (!tag || !tag._id) return; // Skip invalid tags
-      
-      if (tag.parentId && tagMap[tag.parentId]) {
-        // This tag has a parent, add it to the parent's children
-        tagMap[tag.parentId].children = tagMap[tag.parentId].children || [];
-        tagMap[tag.parentId].children?.push(tagMap[tag._id]);
-      } else {
-        // This is a root tag
-        tagsWithChildren.push(tagMap[tag._id]);
-      }
-    });
-    
-    return {
-      tags: tagsWithChildren,
-      tagsLoading: !subscription.ready() || !surveysSubscription.ready() || !questionsSubscription.ready()
-    };
-  }, []);
+const OptionsList = styled.div`
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const OptionItem = styled.div<{ isSelected: boolean }>`
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #1f2937;
+  cursor: pointer;
+  background-color: ${props => props.isSelected ? '#f3f4f6' : 'transparent'};
+  display: flex;
+  align-items: center;
   
-  // Function to build a flat list of tags with depth information
-  const buildFlatTagList = (tags: LayerWithChildren[] | undefined, depth = 0): LayerWithChildren[] => {
-    if (!tags || !Array.isArray(tags)) {
-      return [];
-    }
-    
-    let result: LayerWithChildren[] = [];
-    
-    tags.forEach(tag => {
-      if (!tag) return; // Skip undefined/null tags
-      
-      // Add the current tag with its depth
-      result.push({ ...tag, depth });
-      
-      // Recursively add children if any
-      if (tag.children && Array.isArray(tag.children) && tag.children.length > 0) {
-        result = result.concat(buildFlatTagList(tag.children, depth + 1));
-      }
-    });
-    
-    return result;
+  &:hover {
+    background-color: #f9fafb;
+  }
+`;
+
+const Checkbox = styled.div<{ isSelected: boolean }>`
+  width: 16px;
+  height: 16px;
+  border: 1px solid ${props => props.isSelected ? '#552a47' : '#d1d5db'};
+  border-radius: 3px;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${props => props.isSelected ? '#552a47' : 'transparent'};
+  
+  &:after {
+    content: '';
+    display: ${props => props.isSelected ? 'block' : 'none'};
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
+  }
+`;
+
+const SelectedCount = styled.div`
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+`;
+
+const ChipContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+`;
+
+const Chip = styled.div`
+  background-color: #f3f4f6;
+  border-radius: 16px;
+  padding: 2px 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const ChipRemove = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  padding: 0;
+  font-size: 14px;
+  
+  &:hover {
+    color: #ef4444;
+  }
+`;
+
+const KpiSection = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+`;
+
+const KpiCard = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+`;
+
+const KpiIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: #f1f5f9;
+  color: #552a47;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const KpiContent = styled.div`
+  flex: 1;
+  
+  h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+`;
+
+const KpiValue = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+`;
+
+const KpiTrend = styled.div<{ trend: 'positive' | 'negative' | 'neutral' }>`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${props => 
+    props.trend === 'positive' ? '#10b981' : 
+    props.trend === 'negative' ? '#ef4444' : 
+    '#6b7280'
   };
+
+  span {
+    color: #6b7280;
+    font-weight: 400;
+  }
+`;
+
+const ChartsSection = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+`;
+
+const ChartContainer = styled.div<{ size?: 'large' | 'medium' | 'small' }>`
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  grid-column: ${props => props.size === 'large' ? 'span 2' : 'span 1'};
+
+  @media (max-width: 768px) {
+    grid-column: span 1;
+  }
+`;
+
+const ChartHeader = styled.div`
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #334155;
+  }
+`;
+
+const ChartPlaceholder = styled.div`
+  min-height: 200px;
+`;
+
+const ModernLineChart = styled.div`
+  position: relative;
+  height: 200px;
+`;
+
+const ChartYAxis = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+`;
+
+const YAxisLabel = styled.div`
+  position: absolute;
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6b7280;
+`;
+
+const ChartContent = styled.div`
+  position: absolute;
+  left: 40px;
+  right: 0;
+  top: 0;
+  bottom: 20px;
+`;
+
+const ChartXAxis = styled.div`
+  position: absolute;
+  left: 40px;
+  right: 0;
+  bottom: 0;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+`;
+
+const XAxisLabel = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+`;
+
+const DonutChartContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+const DonutChartLegend = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const LegendColor = styled.div`
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+`;
+
+const LegendText = styled.div`
+  font-size: 14px;
+  color: #4b5563;
+  flex: 1;
+`;
+
+const LegendCount = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+`;
+
+const LegendTotal = styled.div`
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+`;
+
+const MockBarChart = styled.div`
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 200px;
+  padding: 0 10px;
+`;
+
+const MockBar = styled.div`
+  width: 30px;
+  background-color: #552a47;
+  border-radius: 4px 4px 0 0;
+`;
+
+const ActivitySection = styled.div`
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #334155;
+  }
+`;
+
+const ActivityList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const ActivityItem = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+`;
+
+const ActivityIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  color: #552a47;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ActivityContent = styled.div`
+  flex: 1;
+`;
+
+const ActivityTitle = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 4px;
+`;
+
+const ActivityMeta = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+`;
+
+const LoadingIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #6b7280;
+  font-size: 14px;
+`;
+
+const ExportButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #552a47;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
   
-  // Fetch surveys data
-  const { surveys, surveysLoading } = useTracker(() => {
-    const subscription = Meteor.subscribe('surveys.all');
-    const allSurveys = Surveys.find({}, { sort: { title: 1 } }).fetch();
-    
-    return {
-      surveys: allSurveys,
-      surveysLoading: !subscription.ready()
-    };
-  }, []);
-  
-  // Fetch questions data
-  const { questions, questionsLoading } = useTracker(() => {
-    const subscription = Meteor.subscribe('questions.all');
-    const allQuestions = Questions.find({}).fetch();
-    
-    console.log('Questions data from MongoDB:', allQuestions);
-    if (allQuestions.length > 0) {
-      console.log('First question structure:', JSON.stringify(allQuestions[0], null, 2));
-      console.log('Question fields available:', Object.keys(allQuestions[0]));
-      
-      // Extract the questionText from the first question to verify the structure
-      const firstQuestion = allQuestions[0];
-      if (firstQuestion.versions && firstQuestion.versions.length > 0) {
-        console.log('First version questionText:', firstQuestion.versions[0].questionText);
-        console.log('HTML content of questionText:', firstQuestion.versions[0].questionText);
-      }
-    }
-    
-    // Process questions to extract text from versions array
-    const processedQuestions = allQuestions.map(q => {
-      // Extract text from HTML if needed
-      let displayText = 'Untitled Question';
-      
-      if (q.versions && q.versions.length > 0 && q.versions[0].questionText) {
-        // Remove HTML tags if present
-        const htmlText = q.versions[0].questionText;
-        displayText = htmlText.replace(/<[^>]*>/g, '');
-        if (!displayText.trim()) {
-          displayText = 'Untitled Question'; // Fallback if text is empty after removing HTML
-        }
-      }
-      
-      return {
-        ...q,
-        displayText: displayText
-      };
-    });
-    
-    return {
-      questions: processedQuestions,
-      questionsLoading: !subscription.ready()
-    };
-  }, []);
-  
-  // Initialize tom-select instances for surveys and questions when data is loaded
-  useEffect(() => {
-    // Skip if any of the required refs are missing or instances already initialized
-    if (!surveySelectRef.current || 
-        !questionSelectRef.current || 
-        (tomSelectInstance.current.surveys && tomSelectInstance.current.questions) || 
-        surveysLoading || 
-        questionsLoading) {
-      return;
-    }
-    
-    try {
-      // Common configuration for tom-select instances
-      const createTomSelect = (ref: HTMLSelectElement, placeholder: string, data: any[], valueField: string, textField: string, onChangeHandler: (values: string[]) => void) => {
-        const config: any = {
-          plugins: ['remove_button'],
-          placeholder: placeholder,
-          create: false,
-          maxItems: null, // Allow multiple selections
-          sortField: { field: 'text', direction: 'asc' },
-          onChange: function(values: string[]) {
-            onChangeHandler(values);
-          },
-          // Only show dropdown when typing
-          shouldOpen: false,
-          openOnFocus: false,
-          closeAfterSelect: true,
-          // Show dropdown when typing
-          onType: function(str: string) {
-            console.log('Typing in dropdown:', str);
-            console.log('Available options count:', Object.keys(this.options).length);
-            console.log('First few options:', Object.keys(this.options).slice(0, 3).map(key => this.options[key]));
-            console.log('Matching options:', this.search(str).items);
-            
-            if (str.length > 0) {
-              console.log('Opening dropdown with search:', str);
-              this.open();
-            } else {
-              console.log('Closing dropdown');
-              this.close();
-            }
-          },
-          // Remove dropdown indicator
-          render: {
-            dropdown: function() {
-              return '<div></div>';
-            }
-          }
-        };
-        
-        // Initialize tom-select
-        const ts = new TomSelect(ref, config);
-        
-        // Add options
-        if (data && data.length > 0) {
-          data.forEach(item => {
-            if (item && item[valueField]) {
-              ts.addOption({
-                value: item[valueField],
-                text: item[textField]
-              });
-            }
-          });
-        }
-        
-        return ts;
-      };
-      
-      // Initialize Surveys tom-select
-      tomSelectInstance.current.surveys = createTomSelect(
-        surveySelectRef.current,
-        'Select surveys...',
-        surveys,
-        '_id',
-        'title',
-        setSelectedSurveys
-      );
-      
-      // Initialize Questions tom-select
-      // Questions are already formatted in the useTracker hook
-      console.log('Questions ready for TomSelect:', questions);
-      
-      // Initialize Questions tom-select
-      tomSelectInstance.current.questions = createTomSelect(
-        questionSelectRef.current,
-        'Select questions...',
-        questions,
-        '_id',
-        'displayText',
-        setSelectedQuestions
-      );
-      
-    } catch (error) {
-      console.error('Error initializing TomSelect instances:', error);
-    }
-    
-    // Clean up tom-select instances when component unmounts
-    return () => {
-      Object.values(tomSelectInstance.current).forEach((instance: any) => {
-        if (instance) {
-          try {
-            instance.destroy();
-          } catch (error) {
-            console.error('Error destroying TomSelect instance:', error);
-          }
-        }
-      });
-      tomSelectInstance.current = {};
-    };
-  }, [surveys, surveysLoading, questions, questionsLoading, setSelectedSurveys, setSelectedQuestions]);
-  
-  // React Select component for hierarchical tag selection
-  interface SelectOption {
-    value: string;
-    label: string;
-    depth?: number;
-    isDisabled?: boolean;
+  &:hover {
+    background-color: #46223b;
   }
   
-  // Custom option component for hierarchical display
-  const CustomOption = ({ children, ...props }: any) => {
-    const { data } = props;
-    const depth = data.depth || 0;
-    const indent = '  '.repeat(depth);
-    const prefix = depth > 0 ? '└── ' : '';
-    
-    // Context indicator styles
-    const contextStyle = {
-      display: 'inline-block',
-      fontSize: '0.7rem',
-      padding: '1px 4px',
-      borderRadius: '2px',
-      marginLeft: '4px',
-      fontWeight: 'normal',
-      border: '1px solid var(--color-accent)',
-      whiteSpace: 'nowrap',
-      color: 'var(--color-text-secondary)'
-    };
-    
-    // Different styles based on context
-    const getContextStyle = (context: string) => {
-      switch(context) {
-        case 'Survey':
-          return { ...contextStyle, backgroundColor: 'var(--color-background)' };
-        case 'Question':
-          return { ...contextStyle, backgroundColor: 'var(--color-background)' };
-        case 'Not Used':
-          return { ...contextStyle, backgroundColor: 'var(--color-background)', opacity: 0.7 };
-        default:
-          return { ...contextStyle, backgroundColor: 'var(--color-background)', opacity: 0.7 };
-      }
-    };
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+`;
 
-    // Get contexts to show
-    const contexts = data.contexts || [];
-    const showNotUsed = contexts.length === 0;
+// Main component
+// ResponseRateContent component to display dynamic response rate
+interface ResponseRateContentProps {
+  surveyId?: string; // Original surveyId (if any)
+  filterParams?: FilterParams; // Filter parameters including selected survey IDs
+}
 
-    return (
-      <components.Option {...props}>
-        <div style={{ 
-          fontFamily: 'monospace', 
-          whiteSpace: 'pre', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          width: '100%' 
-        }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{indent}{prefix}{data.label}</span>
-          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-            {contexts.map((context, index) => (
-              <span key={index} style={getContextStyle(context)}>{context}</span>
-            ))}
-            {showNotUsed && <span style={getContextStyle('Not Used')}>Not Used</span>}
-          </div>
-        </div>
-      </components.Option>
-    );
+const ResponseRateContent: React.FC<ResponseRateContentProps> = ({ surveyId, filterParams }) => {
+  // If filterParams has surveyIds, use those; otherwise fall back to the original surveyId
+  const effectiveSurveyId = filterParams?.surveyIds?.length ? undefined : surveyId;
+  const { rate, trend, isLoading, error } = useResponseRateData(effectiveSurveyId, filterParams);
+  
+  const formatTrend = (value: number) => {
+    return value > 0 ? `+${value}` : value.toString();
   };
   
-  // TagSelect component for hierarchical tag selection
-  interface TagSelectProps {
-    tags: LayerWithChildren[];
-    selectedTagIds: string[];
-    onChange: (selectedIds: string[]) => void;
-    isLoading: boolean;
-    openMenuOnClick?: boolean;
-    openMenuOnFocus?: boolean;
-    filterOption?: (option: any, inputValue: string) => boolean;
-    onInputChange?: (inputValue: string, actionMeta: any) => string;
-    components?: any;
+  if (isLoading) {
+    return (
+      <>
+        <KpiValue>Loading...</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
   }
   
-  const TagSelect: React.FC<TagSelectProps> = ({ tags, selectedTagIds, onChange, isLoading, openMenuOnClick, openMenuOnFocus, filterOption, onInputChange, components }) => {
-    // Prepare options for React Select
-    const options = useMemo(() => {
-      // Get flat list of tags with depth information
-      const flatTagList = buildFlatTagList(tags);
-      console.log('Flat tag list:', flatTagList);
-      
-      // Map to React Select options format with context information
-      return flatTagList.map(tag => {
-        // Determine tag context (Survey, Question, or Both)
-        let context = '';
-        
-        // Use the actual usage context data
-        const contexts = [];
-        
-        if (tag.usageContext) {
-          // Add Survey context if used in surveys
-          if (tag.usageContext.inSurveys) {
-            contexts.push('Survey');
-          }
-          
-          // Add Question context if used in questions
-          if (tag.usageContext.inQuestions) {
-            contexts.push('Question');
-          }
-          
-          // If no contexts, tag is not used
-          if (contexts.length === 0) {
-            contexts.push('Not Used');
-          }
-        } else {
-          // No usage context available
-          contexts.push('Not Used');
-        }
-        
-        return {
-          value: tag._id,
-          label: tag.name,
-          depth: tag.depth || 0,
-          isDisabled: false,
-          contexts: contexts // Add contexts array instead of single context
-        };
-      });
-    }, [tags]);
-    
-    // Find selected options
-    const selectedOptions = useMemo(() => {
-      if (!Array.isArray(selectedTagIds)) {
-        console.warn('selectedTagIds is not an array:', selectedTagIds);
-        return [];
-      }
-      return options.filter(option => option.value && selectedTagIds.includes(option.value));
-    }, [options, selectedTagIds]);
-    
-    // Handle selection change
-    const handleChange = (selectedOptions: any) => {
-      const selectedIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : [];
-      onChange(selectedIds);
-    };
-    
+  if (error) {
     return (
-      <ReactSelect
-        isMulti
-        options={options}
-        value={selectedOptions}
-        onChange={handleChange}
-        placeholder="Select tags..."
-        isLoading={isLoading}
-        hideSelectedOptions={false}
-        openMenuOnClick={openMenuOnClick}
-        openMenuOnFocus={openMenuOnFocus}
-        filterOption={filterOption}
-        onInputChange={onInputChange}
-        components={{
-          Option: CustomOption,
-          NoOptionsMessage: ({ selectProps }) => (
-            <div style={{ 
-              padding: '8px 12px', 
-              color: 'var(--color-text-secondary)',
-              textAlign: 'center'
-            }}>
-              No matching tags found
-            </div>
-          )
-        }}
-        className="react-select-container"
-        classNamePrefix="react-select"
-        menuPortalTarget={document.body} // Render menu in a portal to avoid containment issues
-        menuPosition="fixed"
-        styles={{
-          option: (provided, state) => ({
-            ...provided,
-            padding: '8px 12px',
-            width: '270px',
-            minWidth: '100%',
-            backgroundColor: state.isFocused ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'var(--color-background)',
-            color: state.isFocused ? 'var(--color-primary)' : 'var(--color-text)',
-            '&:hover': {
-              backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
-              color: 'var(--color-primary)',
-            },
-          }),
-          menu: (provided) => ({
-            ...provided,
-            backgroundColor: 'var(--color-background)',
-            width: '100%',
-            minWidth: '100%',
-            border: '1px solid var(--color-accent)',
-            borderTop: 'none', // Remove top border
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', // Add subtle shadow instead of border
-            marginTop: '0', // Remove gap between input and dropdown
-            borderRadius: '0 0 4px 4px', // Round only bottom corners
-          }),
-          menuPortal: (base) => ({
-            ...base,
-            zIndex: 9999,
-          }),
-          container: (provided) => ({
-            ...provided,
-            width: '100%', // Ensure container takes full width
-          }),
-          control: (provided) => ({
-            ...provided,
-            width: '100%', // Ensure control takes full width
-          }),
-          menuList: (provided) => ({
-            ...provided,
-            padding: '4px 0',
-          }),
-          control: (provided) => ({
-            ...provided,
-            minHeight: '38px',
-            backgroundColor: 'var(--color-background)',
-            borderColor: 'var(--color-accent)',
-            borderRadius: '4px',
-          }),
-          multiValue: (provided) => ({
-            ...provided,
-            backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
-          }),
-          multiValueLabel: (provided) => ({
-            ...provided,
-            color: 'var(--color-primary)',
-          }),
-          multiValueRemove: (provided) => ({
-            ...provided,
-            color: 'var(--color-primary)',
-            ':hover': {
-              backgroundColor: 'var(--color-primary)',
-              color: 'var(--color-background)',
-            },
-          }),
-        }}
-      />
+      <>
+        <KpiValue>--</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
     );
-  };
-
-  // Create a content component to avoid duplication
-  const AnalyticsContent = () => {
-    // Initialize the current survey data when in embedded mode
-    useEffect(() => {
-      if (embedded && surveyFilter) {
-        // Pre-select the current survey and apply filters
-        setSelectedSurveys([surveyFilter]);
-        
-        // Force immediate data load for the current survey
-        const filterParams = {
-          surveyIds: [surveyFilter],
-          tagIds: undefined,
-          questionIds: undefined,
-          startDate: undefined,
-          endDate: undefined
-        };
-        
-        // Load data for the current survey
-        Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
-          if (!error) setCompletedSurveysCount(result);
-        });
-        
-        Meteor.call('getFilteredParticipationRate', filterParams, (error: Error, result: number) => {
-          if (!error) setParticipationRate(result);
-        });
-        
-        Meteor.call('getQuestionCompletionRate', filterParams, (error: Error, result: number) => {
-          if (!error) setCompletionRate(result);
-        });
-        
-        Meteor.call('getFilteredEngagementScore', filterParams, (error: Error, result: number) => {
-          if (!error) setAvgEngagementScore(result || 0);
-        });
-        
-        Meteor.call('getFilteredCompletionTime', filterParams, (error: Error, result: number) => {
-          if (!error) setAvgCompletionTime(result);
-        });
-        
-        Meteor.call('getFilteredResponseRate', filterParams, (error: Error, result: number) => {
-          if (!error) setResponseRate(result);
-        });
-      }
-    }, [embedded, surveyFilter]);
-    
-    return (
-    <DashboardContainer embedded={embedded}>
-        <PageHeader>
-          <PageTitle>Analytics Dashboard</PageTitle>
-          <ActionButtons>
-              <Button primary as={Link} to="/admin/analytics/compare-cohorts">
-                Compare Cohorts
-              </Button>
-              <Button primary as={Link} to="/admin/analytics/export-reports">
-              Export Reports
-            </Button>
-            <Button onClick={() => setFilterVisible(!filterVisible)}>
-              <FiFilter />
-              {filterVisible ? 'Hide Filters' : 'Show Filters'}
-            </Button>
-          </ActionButtons>
-        </PageHeader>
-
-        {filterVisible && (
-          <FilterBar>
-            <FilterTopRow>
-              <FilterGroup>
-                <FilterLabel>Organization</FilterLabel>
-                <StyledSelect className="form-control">
-                  {organizations.map((organization) => (
-                    <option key={organization} value={organization}>
-                      {organization}
-                    </option>
-                  ))}
-                </StyledSelect>
-              </FilterGroup>
-              <FilterGroup>
-                <FilterLabel>Tags</FilterLabel>
-                <div className="react-select-container">
-                  <TagSelect
-                    tags={tags}
-                    selectedTagIds={selectedTags}
-                    onChange={setSelectedTags}
-                    isLoading={tagsLoading}
-                    openMenuOnClick={false}
-                    openMenuOnFocus={false}
-                    filterOption={(option, inputValue) => {
-                      if (!inputValue) return false;
-                      return option.label.toLowerCase().includes(inputValue.toLowerCase());
-                    }}
-                    onInputChange={(inputValue, { action }) => {
-                      // Only open menu when typing
-                      if (action === 'input-change' && inputValue) {
-                        return inputValue;
-                      }
-                      return inputValue;
-                    }}
-                    components={{ 
-                      Option: CustomOption,
-                      DropdownIndicator: () => null, // Remove dropdown icon
-                      IndicatorSeparator: () => null // Remove separator
-                    }}
-                  />
-                </div>
-              </FilterGroup>
-              {!embedded && (
-                <FilterGroup>
-                  <FilterLabel>Surveys</FilterLabel>
-                  <div className="tom-select-container">
-                    <select 
-                      ref={surveySelectRef} 
-                      multiple 
-                      style={{ width: '100%' }}
-                      data-placeholder="Select surveys..."
-                    />
-                  </div>
-                </FilterGroup>
-              )}
-              <FilterGroup>
-                <FilterLabel>Questions</FilterLabel>
-                <div className="tom-select-container">
-                  <select 
-                    ref={questionSelectRef} 
-                    multiple 
-                    style={{ width: '100%' }}
-                    data-placeholder="Select questions..."
-                  />
-                </div>
-              </FilterGroup>
-            </FilterTopRow>
-            
-            <FilterBottomRow>
-              <FilterGroup>
-                <FilterLabel>Date Range</FilterLabel>
-                <DateRangeContainer>
-                  <div style={{ width: '160px' }}>
-                    <DatePicker
-                      selected={startDate}
-                      onChange={(date: Date | null) => setDateRange([date, endDate])}
-                      startDate={startDate}
-                      endDate={endDate}
-                      selectsStart
-                      placeholderText="Start Date"
-                      className="date-picker"
-                      dateFormat="MMM d, yyyy"
-                    />
-                  </div>
-                  <DateRangeText>to</DateRangeText>
-                  <div style={{ width: '160px' }}>
-                    <DatePicker
-                      selected={endDate}
-                      onChange={(date: Date | null) => setDateRange([startDate, date])}
-                      startDate={startDate}
-                      endDate={endDate}
-                      selectsEnd
-                      minDate={startDate || undefined}
-                      placeholderText="End Date"
-                      className="date-picker"
-                      dateFormat="MMM d, yyyy"
-                    />
-                  </div>
-                </DateRangeContainer>
-              </FilterGroup>
-              <FilterButtons>
-                <Button primary onClick={() => applyFilters()}>Apply Filters</Button>
-                <Button onClick={() => {
-                  // Reset all filters
-                  setSelectedTags([]);
-                  setSelectedSurveys([]);
-                  setSelectedQuestions([]);
-                  setDateRange([null, null]);
-                  
-                  // Reset tom-select instances
-                  if (tomSelectInstance.current.surveys) {
-                    tomSelectInstance.current.surveys.clear();
-                  }
-                  if (tomSelectInstance.current.questions) {
-                    tomSelectInstance.current.questions.clear();
-                  }
-                  
-                  applyFilters();
-                }}>Reset</Button>
-              </FilterButtons>
-            </FilterBottomRow>
-          </FilterBar>
-        )}
-
-        <TabsContainer>
-          <Tab
-            active={activeTab === 'overview'}
-            onClick={() => setActiveTab('overview')}
-          >
-            Overview
-          </Tab>
-          {/* 
-          <Tab
-            active={activeTab === 'surveys'}
-            onClick={() => setActiveTab('surveys')}
-          >
-            Surveys
-          </Tab>
-          <Tab
-            active={activeTab === 'completionSurvey'}
-            onClick={() => setActiveTab('completionSurvey')}
-          >
-            Completion based Survey
-          </Tab> */}
-          <Tab
-            active={activeTab === 'questions'}
-            onClick={() => setActiveTab('questions')}
-            data-tab="questions"
-          >
-            Questions
-          </Tab>
-          <Tab
-            active={activeTab === 'responses'}
-            onClick={() => setActiveTab('responses')}
-          >
-            Responses
-          </Tab>
-          {/* <Tab
-            active={activeTab === 'insights'}
-            onClick={() => setActiveTab('insights')}
-          >
-            Insights
-          </Tab>
-          <Tab
-            active={activeTab === 'mavinai'}
-            onClick={() => setActiveTab('mavinai')}
-          >
-            Mavin AI
-          </Tab> */}
-        </TabsContainer>
-
-        {activeTab === 'overview' && (
-          <DashboardGrid>
-            {/* KPI Cards - Single Row */}
-            <KPIContainer>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Participation</CardTitle>
-                  <CardIcon>
-                    <FiUsers />
-                  </CardIcon>
-                </CardHeader>
-                <StatCard>
-                  <StatValue>{completedSurveysCount}</StatValue>
-                  <StatLabel>Responses</StatLabel>
-                </StatCard>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Completion Rate</CardTitle>
-                  <CardIcon>
-                    <FiPieChart />
-                  </CardIcon>
-                </CardHeader>
-                <StatCard 
-                  onClick={() => setShowCompletionRateChart(true)} 
-                  style={{ cursor: 'pointer' }}
-                  title="Click to view completion rate chart"
-                >
-                  <StatValue>{isLoading ? '...' : `${completionRate}%`}</StatValue>
-                  <StatLabel>Answered / Total Questions</StatLabel>
-                </StatCard>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Avg. Engagement</CardTitle>
-                  <CardIcon>
-                    <FiBarChart2 />
-                  </CardIcon>
-                </CardHeader>
-                <StatCard>
-                  <StatValue>{isLoading ? '...' : avgEngagementScore.toFixed(1)}</StatValue>
-                  <StatLabel>Out of 5.0</StatLabel>
-                </StatCard>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Time to Complete</CardTitle>
-                  <CardIcon>
-                    <FiCalendar />
-                  </CardIcon>
-                </CardHeader>
-                <StatCard 
-                  onClick={() => setShowCompletionTimeChart(true)} 
-                  style={{ cursor: 'pointer' }}
-                  title="Click to view completion time chart"
-                >
-                  <StatValue>{isLoading ? '...' : avgCompletionTime.toFixed(1)}</StatValue>
-                  <StatLabel>Minutes (Average)</StatLabel>
-                </StatCard>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Response Rate</CardTitle>
-                  <CardIcon>
-                    <FiTrendingUp />
-                  </CardIcon>
-                </CardHeader>
-                <ResponseRateKPI 
-                  onClick={() => setShowResponseRateChart(true)} 
-                  style={{ cursor: 'pointer' }}
-                  
-                >
-                  <StatValue>{isLoading ? '...' : `${responseRate}%`}</StatValue>
-                  <StatLabel>Completed / Total Surveys Responses</StatLabel>
-                </ResponseRateKPI>
-              </Card>
-            </KPIContainer>
-
-            {/* Response Trends - 70% width */}
-            <Card cols={8}>
-              <ResponseTrendsChart />
-            </Card>
-
-            {/* Device Usage Chart - 30% width */}
-            <Card cols={4}>
-              <DeviceUsageChart />
-            </Card>
-
-            {/* Open-text Insights */}
-            {/* <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Open-text Insights</CardTitle>
-                <CardIcon>
-                  <FiMessageSquare />
-                </CardIcon>
-              </CardHeader>
-              <ChartContainer>
-                <div>NLP Topic Modeling Coming Soon</div>
-              </ChartContainer>
-            </Card> */}
-            
-            {/* Dropout Analysis Section */} 
-            {/* <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Dropout Analysis</CardTitle>
-                <CardIcon>
-                  <FiAlertCircle />
-                </CardIcon>
-              </CardHeader>
-              <ChartContainer style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-                <div style={{ flex: '1 1 48%', minWidth: '300px' }}>
-                  <FunnelChart />
-                </div>
-                <div style={{ flex: '1 1 48%', minWidth: '300px' }}>
-                  <DropoutAnalysis />
-                </div>
-              </ChartContainer>
-            </Card> */}
-            
-            {/* Question Performance */}
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Question Performance</CardTitle>
-                <CardIcon>
-                  <FiList />
-                </CardIcon>
-              </CardHeader>
-              <ChartContainer>
-                <QuestionPerformanceChart isOverview={true} />
-              </ChartContainer>
-            </Card>
-          </DashboardGrid>
-        )}
-
-        
-        {activeTab === 'responses' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <AllSurveyResponses />
-            </Card>
-          </DashboardGrid>
-        )}
-        
-        {activeTab === 'questions' && (
-          <DashboardGrid>
-            <Card cols={12}>
-              <CardHeader>
-                <CardTitle>Question Performance Analysis</CardTitle>
-                <CardIcon>
-                  <FiList />
-                </CardIcon>
-              </CardHeader>
-              <QuestionPerformanceChart />
-            </Card>
-          </DashboardGrid>
-        )}
-        
-        
-        
-        {/* Response Rate Chart Modal */}
-        {showResponseRateChart && (
-          <ModalOverlay onClick={() => setShowResponseRateChart(false)}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-              <ModalCloseButton onClick={() => setShowResponseRateChart(false)}>
-                <FiX />
-              </ModalCloseButton>
-              {responseRateData.length > 0 ? (
-                <ResponseRateChart 
-                  data={responseRateData} 
-                  title="Daily Survey Response Rate" 
-                />
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>Loading chart data...</div>
-              )}
-            </ModalContent>
-          </ModalOverlay>
-        )}
-        
-        {/* Completion Time Chart Modal */}
-        {showCompletionTimeChart && (
-          <ModalOverlay onClick={() => setShowCompletionTimeChart(false)}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-              <ModalCloseButton onClick={() => setShowCompletionTimeChart(false)}>
-                <FiX />
-              </ModalCloseButton>
-              <CompletionTimeChart 
-                data={completionTimeData} 
-                title="Survey Completion Time" 
-              />
-            </ModalContent>
-          </ModalOverlay>
-        )}
-        
-        {/* Completion Rate Chart Modal */}
-        {showCompletionRateChart && (
-          <ModalOverlay onClick={() => setShowCompletionRateChart(false)}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-              <ModalCloseButton onClick={() => setShowCompletionRateChart(false)}>
-                <FiX />
-              </ModalCloseButton>
-              <CompletionRateChart 
-                data={completionRateData} 
-                title="Survey Completion Rate" 
-                initialDateRange={selectedDateRange as 'today' | 'current_week' | 'last_7_days' | 'last_week' | 'current_month' | 'last_month' | 'last_3_months'}
-                onDateRangeChange={(dateRange) => {
-                  console.log('Date range changed to:', dateRange);
-                  setSelectedDateRange(dateRange);
-                }}
-              />
-            </ModalContent>
-          </ModalOverlay>
-        )}
-      </DashboardContainer>
-    );
-  };
-
+  }
+  
   return (
     <>
-      {!embedded ? (
-        <AdminLayout>
-          <AnalyticsContent />
-        </AdminLayout>
-      ) : (
-        <AnalyticsContent />
-      )}
+      <KpiValue>{rate}%</KpiValue>
+      <KpiTrend trend={trend.direction}>
+        {formatTrend(trend.value)}% <span>vs prev. period</span>
+      </KpiTrend>
     </>
+  );
+};
+
+// ParticipantsContent component to display dynamic participant count
+interface ParticipantsContentProps {
+  surveyId?: string; // Original surveyId (if any)
+  filterParams?: FilterParams; // Filter parameters including selected survey IDs
+}
+
+const ParticipantsContent: React.FC<ParticipantsContentProps> = ({ surveyId, filterParams }) => {
+  // If filterParams has surveyIds, use those; otherwise fall back to the original surveyId
+  const effectiveSurveyId = filterParams?.surveyIds?.length ? undefined : surveyId;
+  const { count, trend, isLoading, error } = useParticipantData(effectiveSurveyId, filterParams);
+  
+  const formatTrend = (value: number) => {
+    return value > 0 ? `+${value}` : value.toString();
+  };
+  
+  if (isLoading) {
+    return (
+      <>
+        <KpiValue>Loading...</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  if (error) {
+    return (
+      <>
+        <KpiValue>--</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  return (
+    <>
+      <KpiValue>{count}</KpiValue>
+      <KpiTrend trend={trend.direction}>
+        {formatTrend(trend.value)}% <span>vs prev. period</span>
+      </KpiTrend>
+    </>
+  );
+};
+
+
+// CompletionTimeContent component to display dynamic completion time
+interface CompletionTimeContentProps {
+  surveyId?: string; // Original surveyId (if any)
+  filterParams?: FilterParams; // Filter parameters including selected survey IDs
+}
+
+const CompletionTimeContent: React.FC<CompletionTimeContentProps> = ({ surveyId, filterParams }) => {
+  // If filterParams has surveyIds, use those; otherwise fall back to the original surveyId
+  const effectiveSurveyId = filterParams?.surveyIds?.length ? undefined : surveyId;
+  const { time, trend, isLoading, error } = useCompletionTimeData(effectiveSurveyId, filterParams);
+  
+  const formatTime = (seconds: number): string => {
+    if (seconds === 0) return '0:00';
+    
+    // Convert seconds to minutes and seconds format
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    
+    // Format as M:SS
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+  
+  const formatTrend = (value: number) => {
+    return value > 0 ? `+${value}` : value.toString();
+  };
+  
+  if (isLoading) {
+    return (
+      <>
+        <KpiValue>Loading...</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  if (error) {
+    return (
+      <>
+        <KpiValue>--</KpiValue>
+        <KpiTrend trend="neutral">-- <span>vs prev. period</span></KpiTrend>
+      </>
+    );
+  }
+  
+  return (
+    <>
+      <KpiValue>{formatTime(time)}</KpiValue>
+      <KpiTrend trend={trend.direction}>
+        {formatTrend(trend.value)}% <span>vs prev. period</span>
+      </KpiTrend>
+    </>
+  );
+};
+
+// MultiSelectDropdown component
+interface MultiSelectDropdownProps {
+  options: Array<{ _id: string; title: string }>;
+  selectedValues: string[];
+  onChange: (selectedValues: string[]) => void;
+  placeholder?: string;
+  label?: string;
+}
+
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
+  options,
+  selectedValues,
+  onChange,
+  placeholder = 'Select options',
+  label
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Filter options based on search term
+  const filteredOptions = options.filter(option =>
+    option.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Toggle selection of an option
+  const toggleOption = (optionId: string) => {
+    if (optionId === '') {
+      // If "All" option is clicked, clear selection
+      onChange([]);
+    } else {
+      const newSelectedValues = selectedValues.includes(optionId)
+        ? selectedValues.filter(id => id !== optionId)
+        : [...selectedValues, optionId];
+      onChange(newSelectedValues);
+    }
+  };
+  
+  // Get display text for the button
+  const getDisplayText = () => {
+    if (selectedValues.length === 0) {
+      return 'All Surveys';
+    } else if (selectedValues.length === 1) {
+      const selectedOption = options.find(option => option._id === selectedValues[0]);
+      return selectedOption ? selectedOption.title : placeholder;
+    } else {
+      return `${selectedValues.length} surveys selected`;
+    }
+  };
+  
+  // Remove a selected option
+  const removeOption = (optionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(selectedValues.filter(id => id !== optionId));
+  };
+  
+  return (
+    <DropdownContainer ref={dropdownRef}>
+      {label && <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#4b5563' }}>{label}</label>}
+      
+      <DropdownButton onClick={() => setIsOpen(!isOpen)}>
+        <span>{getDisplayText()}</span>
+        <DropdownIcon isOpen={isOpen}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </DropdownIcon>
+      </DropdownButton>
+      
+      {selectedValues.length > 0 && (
+        <ChipContainer>
+          {selectedValues.map(id => {
+            const option = options.find(opt => opt._id === id);
+            return option ? (
+              <Chip key={id}>
+                {option.title}
+                <ChipRemove onClick={(e) => removeOption(id, e)}>
+                  ×
+                </ChipRemove>
+              </Chip>
+            ) : null;
+          })}
+        </ChipContainer>
+      )}
+      
+      <DropdownMenu isOpen={isOpen}>
+        <SearchInput 
+          placeholder="Search surveys..." 
+          value={searchTerm} 
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+        />
+        
+        <OptionsList>
+          <OptionItem 
+            isSelected={selectedValues.length === 0} 
+            onClick={() => toggleOption('')}
+          >
+            <Checkbox isSelected={selectedValues.length === 0} />
+            All Surveys
+          </OptionItem>
+          
+          {filteredOptions.map(option => (
+            <OptionItem 
+              key={option._id} 
+              isSelected={selectedValues.includes(option._id)}
+              onClick={() => toggleOption(option._id)}
+            >
+              <Checkbox isSelected={selectedValues.includes(option._id)} />
+              {option.title}
+            </OptionItem>
+          ))}
+          
+          {filteredOptions.length === 0 && (
+            <div style={{ padding: '8px 12px', color: '#6b7280', fontSize: '14px' }}>
+              No surveys found
+            </div>
+          )}
+        </OptionsList>
+        
+        {selectedValues.length > 0 && (
+          <SelectedCount>
+            {selectedValues.length} {selectedValues.length === 1 ? 'survey' : 'surveys'} selected
+          </SelectedCount>
+        )}
+      </DropdownMenu>
+    </DropdownContainer>
+  );
+};
+
+const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
+  // Ref for QuestionsTab component
+  const questionsTabRef = useRef<QuestionsTabRef>(null);
+  
+  // State for PDF export
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [surveyTitle, setSurveyTitle] = useState('');
+  const [surveyDescription, setSurveyDescription] = useState('');
+  
+  // State for surveys
+  const [availableSurveys, setAvailableSurveys] = useState<Array<{_id: string, title: string}>>([]);
+  const [selectedSurveyIds, setSelectedSurveyIds] = useState<string[]>(surveyId ? [surveyId] : []);
+  
+  // State for analytics data
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
+    completedSurveysCount: 0,
+    participationRate: 0,
+    responseRate: 0,
+    engagementScore: 0,
+    completionTime: 0,
+    responseTrends: []
+  });
+
+  // State for filters
+  const [filterParams, setFilterParams] = useState<FilterParams>({
+    surveyIds: selectedSurveyIds // Use selectedSurveyIds
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Fetch analytics data
+  const fetchAnalyticsData = useCallback(async () => {
+    setIsLoading(true);
+    
+    try {
+      // Use Promise.all to fetch all data in parallel
+      const [
+        completedSurveysCount,
+        participationRate,
+        responseRate,
+        engagementScore,
+        completionTime,
+        responseTrends
+      ] = await Promise.all([
+        new Promise<number>((resolve, reject) => {
+          Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        }),
+        new Promise<number>((resolve, reject) => {
+          Meteor.call('getFilteredParticipationRate', filterParams, (error: Error, result: number) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        }),
+        new Promise<number>((resolve, reject) => {
+          Meteor.call('getFilteredResponseRate', filterParams, (error: Error, result: number) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        }),
+        new Promise<number>((resolve, reject) => {
+          Meteor.call('getFilteredEngagementScore', filterParams, (error: Error, result: number) => {
+            if (error) reject(error);
+            else resolve(result || 0);
+          });
+        }),
+        new Promise<number>((resolve, reject) => {
+          Meteor.call('getFilteredCompletionTime', filterParams, (error: Error, result: number) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        }),
+        new Promise<any[]>((resolve, reject) => {
+          Meteor.call('getResponseTrendsData', filterParams, (error: Error, result: any[]) => {
+            if (error) reject(error);
+            else resolve(result || []);
+          });
+        })
+      ]);
+      
+      // Update analytics data state
+      setAnalyticsData({
+        completedSurveysCount,
+        participationRate,
+        responseRate,
+        engagementScore,
+        completionTime,
+        responseTrends
+      });
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filterParams, surveyId]);
+
+  // No handlers for date range, tags, or status since we removed those filters
+
+  // Reset filters
+  const resetFilters = () => {
+    // Reset to initial survey selection based on surveyId prop
+    const initialSurveyIds = surveyId ? [surveyId] : [];
+    setSelectedSurveyIds(initialSurveyIds);
+    setFilterParams({
+      surveyIds: initialSurveyIds
+    });
+  };
+
+  // Format time for display (e.g., 4:32)
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Function to handle PDF export
+  const handleExportPDF = () => {
+    setExportingPDF(true);
+    
+    // Start progress tracking
+    progressTracker.start();
+    
+    // Function to check if questions data is loaded
+    const isQuestionsDataLoaded = async () => {
+      if (questionsTabRef.current) {
+        try {
+          const questions = await questionsTabRef.current.getAnalyticsQuestions();
+          return questions && questions.length > 0;
+        } catch (error) {
+          console.error('Error checking if questions data is loaded:', error);
+          return false;
+        }
+      }
+      return false;
+    };
+    
+    // Function to wait for data to load with multiple attempts
+    const waitForQuestionsData = async (attempts = 0, maxAttempts = 5) => {
+      try {
+        const dataLoaded = await isQuestionsDataLoaded();
+        if (dataLoaded) {
+          // Data is loaded, continue with export
+          continueExport();
+        } else if (attempts < maxAttempts) {
+          // Wait longer and try again
+          console.log(`Waiting for questions data to load... Attempt ${attempts + 1}/${maxAttempts}`);
+          setTimeout(() => {
+            waitForQuestionsData(attempts + 1, maxAttempts);
+          }, 1000); // Wait 1 second between attempts
+        } else {
+          // Give up after max attempts
+          console.error('Failed to load questions data after multiple attempts');
+          alert('Unable to load questions data. Please try again.');
+          setExportingPDF(false);
+        }
+      } catch (error) {
+        console.error('Error in waitForQuestionsData:', error);
+        alert('Error checking questions data. Please try again.');
+        setExportingPDF(false);
+      }
+    };
+    
+    // Always switch to the Questions tab first to ensure data is loaded
+    const questionsTabIndex = tabs.findIndex(tab => tab.id === 'questions');
+    if (questionsTabIndex !== -1) {
+      const tabsContainer = document.querySelector('[role="tablist"]');
+      const tabButtons = tabsContainer?.querySelectorAll('button[role="tab"]');
+      if (tabButtons && tabButtons[questionsTabIndex]) {
+        // Check if we're already on the Questions tab
+        const isActive = tabButtons[questionsTabIndex].getAttribute('aria-selected') === 'true';
+        if (!isActive) {
+          // Click the Questions tab and wait for data to load
+          console.log('Switching to Questions tab...');
+          (tabButtons[questionsTabIndex] as HTMLButtonElement).click();
+          
+          // Wait for questions data to load with multiple attempts
+          setTimeout(() => {
+            console.log('Starting to check for questions data after tab switch...');
+            waitForQuestionsData();
+          }, 2000); // Increased wait time after tab switch to ensure data starts loading
+          return;
+        }
+      }
+    }
+    
+    // If we're already on the Questions tab, check if data is loaded
+    isQuestionsDataLoaded().then(dataLoaded => {
+      if (dataLoaded) {
+        continueExport();
+      } else {
+        // Data not loaded yet, wait for it
+        waitForQuestionsData();
+      }
+    }).catch(error => {
+      console.error('Error checking if questions data is loaded:', error);
+      waitForQuestionsData();
+    });
+    
+    // Function to continue with export after ensuring we're on the Questions tab
+    async function continueExport() {
+      try {
+        // Update progress - Initializing
+        progressTracker.setStage('INITIALIZING');
+        
+        // Get all available surveys if "All Surveys" is selected
+        const getAllSurveys = async () => {
+          return new Promise<string[]>((resolve) => {
+            Meteor.call('surveys.getAllSurveys', (error: any, result: any) => {
+              if (error) {
+                console.error('Error fetching all surveys:', error);
+                resolve([]);
+              } else {
+                // Extract survey IDs from the result
+                const allSurveyIds = result.map((survey: any) => survey.id || survey._id);
+                resolve(allSurveyIds);
+              }
+            });
+          });
+        };
+        
+        // Determine which surveys to export
+        const getSurveysToExport = async () => {
+          if (surveyId) {
+            // If we have a specific surveyId from the URL, use that
+            return [surveyId];
+          } else if (filterParams.surveyIds && filterParams.surveyIds.length > 0) {
+            // Use the selected surveys from the filter
+            return filterParams.surveyIds;
+          } else {
+            // If no surveys are explicitly selected, get all available surveys
+            return await getAllSurveys();
+          }
+        };
+        
+        // Update progress - Fetching surveys
+        progressTracker.setStage('FETCHING_SURVEYS');
+        progressTracker.updateStageProgress('FETCHING_SURVEYS', 30);
+        
+        // Get surveys to export
+        const surveysToExport = await getSurveysToExport();
+        
+        // Check if we have any surveys to export
+        if (!surveysToExport || surveysToExport.length === 0) {
+          alert('No surveys available to export');
+          setExportingPDF(false);
+          progressTracker.complete();
+          return;
+        }
+        
+        // Update progress - Fetching surveys complete
+        progressTracker.updateStageProgress('FETCHING_SURVEYS', 100);
+        
+        // Show loading message for fetching all questions
+        setExportingPDF(true);
+        
+        // Update progress - Fetching questions
+        progressTracker.setStage('FETCHING_QUESTIONS', `Fetching data for ${surveysToExport.length} survey(s)`);
+        
+        // Get all questions data - this will fetch all questions, not just the current page
+        const refQuestions = await questionsTabRef.current?.getAnalyticsQuestions();
+        
+        // Double-check that we have questions data
+        if (!refQuestions || refQuestions.length === 0) {
+          console.error('Questions data still not available after waiting');
+          alert('Unable to load questions data. Please try again.');
+          setExportingPDF(false);
+          progressTracker.complete();
+          return;
+        }
+        
+        // Update progress - Questions fetched
+        progressTracker.updateStageProgress('FETCHING_QUESTIONS', 100);
+        progressTracker.setStage('PROCESSING_QUESTIONS', `Processing ${refQuestions.length} questions`);
+        
+        console.log(`Preparing to export PDF with ${refQuestions.length} questions`);
+        
+        // Update progress - Processing questions
+        let processedCount = 0;
+        const totalQuestions = refQuestions.length;
+        const updateInterval = setInterval(() => {
+          processedCount += Math.floor(totalQuestions / 10); // Simulate processing 10% of questions at a time
+          if (processedCount >= totalQuestions) {
+            clearInterval(updateInterval);
+            processedCount = totalQuestions;
+          }
+          const progressPercent = Math.min(100, Math.round((processedCount / totalQuestions) * 100));
+          progressTracker.updateStageProgress('PROCESSING_QUESTIONS', progressPercent);
+          progressTracker.setAdditionalInfo(`Processing ${processedCount} of ${totalQuestions} questions`);
+        }, 300);
+        
+        // Update progress - Generating charts
+        setTimeout(() => {
+          clearInterval(updateInterval);
+          progressTracker.updateStageProgress('PROCESSING_QUESTIONS', 100);
+          progressTracker.setStage('GENERATING_CHARTS', 'Generating charts and visualizations');
+          
+          // Simulate chart generation progress
+          let chartProgress = 0;
+          const chartInterval = setInterval(() => {
+            chartProgress += 10;
+            if (chartProgress >= 100) {
+              clearInterval(chartInterval);
+              chartProgress = 100;
+              
+              // Final stage - Compiling PDF
+              progressTracker.updateStageProgress('GENERATING_CHARTS', 100);
+              progressTracker.setStage('COMPILING_PDF', 'Finalizing PDF document');
+              
+              // Proceed with actual export
+              setTimeout(() => {
+                // Proceed with export based on number of surveys
+                if (surveysToExport.length > 1) {
+                  // For multiple surveys
+                  exportQuestionsToPDF(refQuestions, {
+                    surveyTitle: 'Multiple Surveys',
+                    surveyDescription: `Export of ${surveysToExport.length} selected surveys`,
+                    surveyIds: surveysToExport // Pass all survey IDs for better organization
+                  });
+                } else {
+                  // For a single survey
+                  const singleSurveyId = surveysToExport[0];
+                  exportQuestionsToPDF(refQuestions, {
+                    surveyTitle: surveyTitle,
+                    surveyDescription: surveyDescription,
+                    surveyId: singleSurveyId
+                  });
+                }
+                
+                // Complete the progress tracking
+                setTimeout(() => {
+                  progressTracker.complete();
+                  // Reset the exporting state to return the button to normal
+                  setExportingPDF(false);
+                }, 1000);
+              }, 1000);
+            }
+            progressTracker.updateStageProgress('GENERATING_CHARTS', chartProgress);
+          }, 200);
+        }, 1000);
+      } catch (error) {
+        console.error('Error in PDF export process:', error);
+        alert('Error preparing PDF export. Please try again.');
+        setExportingPDF(false);
+        progressTracker.complete();
+      }
+    }
+  };
+
+  // Fetch available surveys
+  const fetchAvailableSurveys = useCallback(() => {
+    Meteor.call('surveys.getAllSurveys', (error: any, result: any) => {
+      if (error) {
+        console.error('Error fetching available surveys:', error);
+      } else {
+        console.log('Fetched available surveys:', result);
+        setAvailableSurveys(result);
+      }
+    });
+  }, []);
+
+  // Handle survey selection - now handled directly by the MultiSelectDropdown component
+  // The useEffect below will update filterParams when selectedSurveyIds changes
+
+  // Update filterParams when selectedSurveyIds changes
+  useEffect(() => {
+    setFilterParams(prev => ({
+      ...prev,
+      surveyIds: selectedSurveyIds
+    }));
+  }, [selectedSurveyIds]);
+
+  // Fetch survey details
+  useEffect(() => {
+    // Fetch all available surveys
+    fetchAvailableSurveys();
+    
+    // Fetch survey details for PDF export only if a specific survey is selected
+    if (surveyId) {
+      Meteor.call(
+        'surveys.getSurvey',
+        surveyId,
+        (error: any, result: any) => {
+          if (error) {
+            console.error('Error fetching survey details:', error);
+          } else {
+            console.log('Fetched survey details:', result);
+            setSurveyTitle(result.title || '');
+            setSurveyDescription(result.description || '');
+          }
+        }
+      );
+    } else {
+      // Set default title for all surveys view
+      setSurveyTitle('All Surveys');
+      setSurveyDescription('Analytics for all surveys');
+    }
+    
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData, surveyId, fetchAvailableSurveys, filterParams]);
+
+  // We no longer need this check since we want to show all survey data when no specific survey is selected
+  // if (!surveyId) {
+  //   return <div>No survey selected</div>;
+  // }
+
+  // Define tabs for the TabsContainer
+  const tabs: TabItem[] = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      icon: <FiBarChart2 size={16} />,
+      content: (
+        <>
+          {/* Only show KPI Cards if there are participants */}
+          {analyticsData.completedSurveysCount > 0 ? (
+            <KpiSection>
+              <KpiCard>
+                <KpiIcon>
+                  <FaUsers size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Total Participants</h4>
+                  <ParticipantsContent surveyId={surveyId} filterParams={filterParams} />
+                </KpiContent>
+              </KpiCard>
+              
+              <KpiCard>
+                <KpiIcon>
+                  <FaPercentage size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Response Rate</h4>
+                  <ResponseRateContent surveyId={surveyId} filterParams={filterParams} />
+                </KpiContent>
+              </KpiCard>
+              
+              {/* <KpiCard>
+                <KpiIcon>
+                  <FaChartPie size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Engagement Score</h4>
+                  <KpiValue>{analyticsData.engagementScore.toFixed(1)}</KpiValue>
+                  <KpiTrend trend="negative">-0.3 <span>vs prev. period</span></KpiTrend>
+                </KpiContent>
+              </KpiCard> */}
+              
+              <KpiCard>
+                <KpiIcon>
+                  <FaClock size={24} />
+                </KpiIcon>
+                <KpiContent>
+                  <h4>Avg. Completion Time</h4>
+                  <CompletionTimeContent surveyId={surveyId} filterParams={filterParams} />
+                </KpiContent>
+              </KpiCard>
+            </KpiSection>
+          ) : null}
+          
+          <AllOverviewTab analyticsData={analyticsData} isLoading={isLoading} surveyId={surveyId} filterParams={filterParams} />
+          
+          {/* No additional components needed */}
+        </>
+      )
+    },
+    {
+      id: 'questions',
+      label: 'Questions',
+      icon: <FiFileText size={16} />,
+      content: <AllQuestionsTab ref={questionsTabRef} isLoading={isLoading} surveyId={surveyId} filterParams={filterParams} />
+    },
+    // {
+    //   id: 'groups',
+    //   label: 'Groups',
+    //   icon: <FiUsers size={16} />,
+    //   content: <GroupsTab isLoading={isLoading} />
+    // },
+    {
+      id: 'comments',
+      label: 'Comments',
+      icon: <FiMessageSquare size={16} />,
+      content: <AllCommentsTab isLoading={isLoading} />
+    },
+    {
+      id: 'activity',
+      label: 'Activity',
+      icon: <FiActivity size={16} />,
+      content: <AllActivityTab isLoading={isLoading} />
+    }
+  ];
+
+  // Track progress for the modal
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [showProgressModal, setShowProgressModal] = useState(false);
+
+  // Set up reactive tracking of progress
+  useEffect(() => {
+    // Create a tracker to update our state when progress changes
+    const progressComputation = Tracker.autorun(() => {
+      setProgress(progressTracker.getProgress());
+      setCurrentStep(progressTracker.getStageMessage());
+      setAdditionalInfo(progressTracker.getAdditionalInfo());
+      setShowProgressModal(progressTracker.isInProgress());
+      
+      // Reset exportingPDF state when progress is complete
+      if (progressTracker.getProgress() === 100 && !progressTracker.isInProgress()) {
+        setExportingPDF(false);
+      }
+    });
+    
+    return () => {
+      // Clean up the tracker when component unmounts
+      progressComputation.stop();
+    };
+  }, []);
+
+  return (
+    <AdminLayout>
+      {/* Progress Modal */}
+      <ProgressModal 
+        isOpen={showProgressModal}
+        progress={progress}
+        currentStep={currentStep}
+        additionalInfo={additionalInfo}
+      />
+      <AnalyticsDashboard>
+        {/* Filter Section */}
+        <FilterSection>
+          <FilterHeader>
+            <h3>Filter Data</h3>
+            <ResetFiltersButton onClick={resetFilters}>
+              <FiX size={14} /> Reset Filters
+            </ResetFiltersButton>
+          </FilterHeader>
+          <FilterControls>
+            <FilterRow>
+              <FilterGroup>
+                <MultiSelectDropdown
+                  label="Surveys"
+                  options={availableSurveys}
+                  selectedValues={selectedSurveyIds}
+                  onChange={setSelectedSurveyIds}
+                  placeholder="Select surveys"
+                />
+              </FilterGroup>
+            </FilterRow>
+          </FilterControls>
+        </FilterSection>
+        
+        {isLoading ? (
+          <LoadingIndicator>Loading analytics data...</LoadingIndicator>
+        ) : (
+          <AllTabsContainer 
+            tabs={tabs} 
+            defaultActiveTab="overview" 
+            headerActions={(activeTabId) => {
+              // Only show Export button when Questions tab is active
+              return activeTabId === 'questions' ? (
+                <ExportButton 
+                  onClick={handleExportPDF} 
+                  disabled={exportingPDF}
+                >
+                  <FiDownload size={16} />
+                  {exportingPDF ? 'Exporting...' : 'Export PDF'}
+                </ExportButton>
+              ) : null;
+            }}
+          />
+        )}
+      </AnalyticsDashboard>
+    </AdminLayout>
   );
 };
 

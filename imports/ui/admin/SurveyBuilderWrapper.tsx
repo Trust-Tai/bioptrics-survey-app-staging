@@ -7,12 +7,17 @@ import { QuestionBuilderPanelProvider } from '../../features/questions/contexts/
 // and passes it to the EnhancedSurveyBuilder component
 // It also wraps the EnhancedSurveyBuilder with QuestionBuilderPanelProvider
 // to enable the use of the QuestionBuilderPanelContext
-const SurveyBuilderWrapper: React.FC = () => {
+
+interface SurveyBuilderWrapperProps {
+  showAnalytics?: boolean;
+}
+
+const SurveyBuilderWrapper: React.FC<SurveyBuilderWrapperProps> = ({ showAnalytics }) => {
   const { surveyId } = useParams<{ surveyId: string }>();
   
   return (
     <QuestionBuilderPanelProvider>
-      <EnhancedSurveyBuilder surveyId={surveyId} />
+      <EnhancedSurveyBuilder surveyId={surveyId} showAnalytics={showAnalytics} />
     </QuestionBuilderPanelProvider>
   );
 };

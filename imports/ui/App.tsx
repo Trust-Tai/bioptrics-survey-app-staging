@@ -197,6 +197,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/analytics" element={<Navigate to="/admin/analytics/dashboard" replace />} />
         <Route path="/admin/analytics/dashboard" element={<AnalyticsDashboard />} />
         <Route path="/admin/analytics/compare-cohorts" element={<AnalyticsCompareCohorts />} />
+        <Route path="/admin/analytics/:surveyId" element={<SurveyAnalyticsPage />} />
         <Route path="/admin/analytics/export-reports" element={<AnalyticsExportReports />} />
         <Route path="/admin/tags/create" element={<LayerBuilder />} />
         <Route path="/admin/tags/create/:id" element={<LayerBuilder />} />
@@ -262,6 +263,7 @@ const App: React.FC = () => (
 
 // Wrapper for SurveyBuilder to extract :id param
 import SurveyBuilderWrapper from './admin/SurveyBuilderWrapper';
+import SurveyAnalyticsPage from './admin/SurveyAnalyticsPage';
 
 // Wrapper for SurveyManagementDashboard to extract :surveyId param
 const SurveyManagementDashboardWrapper: React.FC = () => {
