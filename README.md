@@ -1,4 +1,4 @@
-# Bioptrics Survey Application
+# Bioptrics Pulse Application
 
 ## Project Structure
 

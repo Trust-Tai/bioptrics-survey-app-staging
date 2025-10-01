@@ -58,7 +58,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
   }
   
   const mailOptions = {
-    from: process.env.MAIL_FROM || '"Bioptrics Survey App" <surveys@bioptrics.com>',
+    from: process.env.MAIL_FROM || '"Bioptrics Pulse App" <surveys@bioptrics.com>',
     to,
     subject,
     html,
@@ -131,7 +131,7 @@ export const sendCollaboratorInvitation = async (
       
       <p>If you have any questions, please contact ${inviterName} directly.</p>
       
-      <p>Thank you,<br>The Bioptrics Survey Team</p>
+      <p>Thank you,<br>The Bioptrics Pulse Team</p>
       
       <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
         <p>This is an automated message. Please do not reply to this email.</p>

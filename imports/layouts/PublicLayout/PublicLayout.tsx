@@ -14,7 +14,7 @@ interface PublicLayoutProps {
  */
 const PublicLayout: React.FC<PublicLayoutProps> = ({ 
   children, 
-  title = 'Bioptrics Survey', 
+  title = 'Bioptrics Pulse', 
   showHeader = true, 
   showFooter = true 
 }) => {
