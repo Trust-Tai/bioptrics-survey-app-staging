@@ -651,7 +651,7 @@ const UIPreferences: React.FC = () => {
           About Themes
         </h3>
         <p style={{ color: 'var(--color-text)', lineHeight: '1.5', fontSize: '16px' }}>
-          Application themes change the appearance of the entire Bioptrics Survey App interface. 
+          Application themes change the appearance of the entire Bioptrics Pulse App interface. 
           Select a theme that provides the most comfortable viewing experience for your needs.
           The selected theme will persist across your sessions and apply to all areas of the application.
         </p>

@@ -228,7 +228,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
         </SubmitButtonContainer>
         
         <Footer>
-          This survey was created using Bioptrics Survey Platform
+          This survey was created using Bioptrics Pulse Platform
         </Footer>
       </ContentContainer>
       </MainLayout>

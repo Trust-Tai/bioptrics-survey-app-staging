@@ -50,7 +50,7 @@ class ErrorBoundary extends React.Component {
 // Fallback component to display when routing fails
 const FallbackComponent = () => (
   <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-    <h2>Bioptrics Survey Application</h2>
+    <h2>Bioptrics Pulse Application</h2>
     <p>If you're seeing this page, the application is loading or encountered an issue.</p>
     <div style={{ marginTop: '20px', padding: '10px', background: '#f5f5f5', borderRadius: '5px' }}>
       <a href="/admin-login" style={{ color: '#552a47', fontWeight: 'bold', textDecoration: 'none' }}>

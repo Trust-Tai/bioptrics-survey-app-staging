@@ -380,7 +380,7 @@ const ModernSurveyPublic: React.FC = () => {
             />
           </MainContent>
           <Footer>
-            © {new Date().getFullYear()} Bioptrics Survey Platform. All rights reserved.
+            © {new Date().getFullYear()} Bioptrics Pulse Platform. All rights reserved.
           </Footer>
         </PageContainer>
       </SurveyThemeProvider>
