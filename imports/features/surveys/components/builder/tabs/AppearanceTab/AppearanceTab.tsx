@@ -262,6 +262,8 @@ interface AppearanceSectionProps {
   setCurrentThemePage: (page: number) => void;
   selectedTheme: string;
   setSelectedTheme: (theme: string) => void;
+  showLikertEmojis: boolean;
+  setShowLikertEmojis: (show: boolean) => void;
   thankYouTitle: string;
   setThankYouTitle: (title: string) => void;
   thankYouDetails: string;
@@ -311,6 +313,8 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   setCurrentThemePage,
   selectedTheme,
   setSelectedTheme,
+  showLikertEmojis,
+  setShowLikertEmojis,  
   thankYouTitle,
   setThankYouTitle,
   thankYouDetails,
@@ -578,7 +582,56 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
           </LayoutOption>
         </Grid>
       </Section>
-
+      {/* Question Display Options */}
+      <Section>
+        <SectionTitle>Question Display Options</SectionTitle>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 16 }}>Show Emojis in Likert Scale Questions</div>
+            <div style={{ fontSize: 14, color: '#6c757d', marginTop: 4 }}>
+              When enabled, Likert scale questions will display emojis to represent different levels of agreement.
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: 10, color: showLikertEmojis ? '#6c757d' : '#552a47', fontWeight: showLikertEmojis ? 400 : 600 }}>Hide</span>
+            <div 
+              onClick={() => {
+                const newValue = !showLikertEmojis;
+                setShowLikertEmojis(newValue);
+                setSurvey(prev => {
+                  return { ...prev, showLikertEmojis: newValue };
+                });                setHasUnsavedChanges(true);
+                triggerAutoSave();
+              }}
+              style={{ 
+                width: 50, 
+                height: 24, 
+                backgroundColor: showLikertEmojis ? '#552a47' : '#e0e0e0',
+                borderRadius: 12,
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background-color 0.3s',
+                display: 'inline-block',
+              }}
+            >
+              <div 
+                style={{
+                  width: 20,
+                  height: 20,
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  position: 'absolute',
+                  top: 2,
+                  left: showLikertEmojis ? 28 : 2,
+                  transition: 'left 0.3s',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                }}
+              />
+            </div>
+            <span style={{ marginLeft: 10, color: showLikertEmojis ? '#552a47' : '#6c757d', fontWeight: showLikertEmojis ? 600 : 400 }}>Show</span>
+          </div>
+        </div>
+      </Section>
       {/* Theme Selection */}
       <Section>
         <SectionTitle>Survey Theme</SectionTitle>

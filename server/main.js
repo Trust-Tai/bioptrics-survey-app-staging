@@ -99,7 +99,21 @@ Meteor.startup(async () => {
       console.error('Error creating sample incomplete survey response:', error);
     }
   }
-  
+  // Inside Meteor.startup() function
+  // Add migration for showLikertEmojis field
+  const { Surveys } = require('../imports/features/surveys/api/surveys');
+  console.log('Running migration: Setting default value for showLikertEmojis field');
+  try {
+    // Set default value for existing surveys
+    const result = await Surveys.updateAsync(
+      { showLikertEmojis: { $exists: false } },
+      { $set: { showLikertEmojis: true } },
+      { multi: true }
+    );
+    console.log(`Migration complete: Updated ${result.modifiedCount} surveys with default showLikertEmojis value`);
+  } catch (error) {
+    console.error('Error during showLikertEmojis migration:', error);
+  }
   // Initialize SurveyInvitations and EmailTemplates collections
   const { SurveyInvitations } = require('../imports/features/surveys/api/surveyInvitations');
   const { EmailTemplates } = require('../imports/features/surveys/api/emailTemplates');
