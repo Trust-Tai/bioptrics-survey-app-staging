@@ -18,6 +18,7 @@ interface Question {
   sectionId?: string;
   image?: string; // Add image property
   order?: number; // Add order property for question ordering
+  isUnsectioned?: boolean; // Flag to identify questions without a real section
   currentVersion?: {
     image?: string;
     // Add other currentVersion properties as needed
@@ -58,7 +59,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
     return sections.map(section => ({
       section,
       questions: questions
-        .filter(q => q.sectionId === section.id)
+        .filter(q => q.sectionId === section.id && !q.isUnsectioned)
         .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)) // Sort by order, handling undefined values
     }));
   }, [sections, questions]);
@@ -66,7 +67,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
   // Find questions that don't belong to any section - memoized to prevent recreation on each render
   const unsectionedQuestions = useMemo(() => {
     return questions
-      .filter(q => !q.sectionId)
+      .filter(q => q.isUnsectioned || !q.sectionId)
       .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
   }, [questions]);
   
@@ -84,6 +85,13 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
     const answeredSectionQuestions = sectionQuestions.filter(q => responses[q._id]);
     return Math.round((answeredSectionQuestions.length / sectionQuestions.length) * 100) || 0;
   }, [questions, responses]);
+  
+  // Calculate progress for unsectioned questions
+  const calculateUnsectionedProgress = useCallback(() => {
+    if (unsectionedQuestions.length === 0) return 0;
+    const answeredQuestions = unsectionedQuestions.filter(q => responses[q._id]);
+    return Math.round((answeredQuestions.length / unsectionedQuestions.length) * 100) || 0;
+  }, [unsectionedQuestions, responses]);
   
   // Prepare sections data for sidebar and scrollspy
   const sectionData = useMemo(() => {
@@ -163,23 +171,31 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
           );
           
           return (
-            <SectionAccordion
-              key={section.id}
-              section={section}
-              questions={questions}
-              responses={responses}
-              onAnswer={sectionOnAnswer}
-              completionPercentage={calculateSectionProgress(section.id)}
-              color={survey.color}
-            />
+            <SectionContainer key={section.id} id={`section-${section.id}`}>
+              <SectionAccordion
+                key={section.id}
+                section={section}
+                questions={questions}
+                responses={responses}
+                onAnswer={sectionOnAnswer}
+                completionPercentage={calculateSectionProgress(section.id)}
+                color={survey.color}
+              />
+            </SectionContainer>
           );
         })}
         
         {unsectionedQuestions.length > 0 && (
-          <FinalThoughtsSection>
-            <SectionHeader color={survey.color}>
-              <Title>Final Thoughts</Title>
-              <Description>Is there anything else you would like to share about your experience?</Description>
+          <SectionContainer id="section-unsectioned">
+            <SectionHeader style={{display: 'none'}} color={survey.color}>
+              <Title>Additional Questions</Title>
+              <Description>Please answer the following questions to complete the survey.</Description>
+              <ProgressContainer>
+                <ProgressBar>
+                  <ProgressIndicator width={calculateUnsectionedProgress()} />
+                </ProgressBar>
+                <ProgressText>{calculateUnsectionedProgress()}% Completed</ProgressText>
+              </ProgressContainer>
             </SectionHeader>
             
             <QuestionsContainer>
@@ -200,7 +216,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
                 </QuestionItem>
               ))}
             </QuestionsContainer>
-          </FinalThoughtsSection>
+          </SectionContainer>
         )}
         
         <SubmitButtonContainer>
@@ -260,6 +276,9 @@ const ContentContainer = styled.div`
   margin: 0 auto;
   margin-left: 280px; /* Add margin to account for fixed sidebar */
   width: calc(100% - 280px); /* Adjust width to account for sidebar */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   
   @media (max-width: 768px) {
     margin-left: 0;
@@ -268,12 +287,15 @@ const ContentContainer = styled.div`
   }
 `;
 
-const FinalThoughtsSection = styled.div`
+const SectionContainer = styled.div`
   margin-bottom: 3rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 `;
 
 const SectionHeader = styled.div<{ color: string }>`
-  background-color: ${props => `${props.color}DD`};
+  background-color: ${props => props.color || 'var(--primary-color, #552A47)'};
   color: white;
   padding: 2rem;
   border-radius: 8px;
@@ -339,6 +361,34 @@ const SubmitButton = styled.button<{ color: string; disabled: boolean }>`
     background-color: var(--secondary-color, #3d1e32);
     transform: ${props => props.disabled ? 'none' : 'translateY(-1px)'};
   }
+`;
+
+const ProgressContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+`;
+
+const ProgressBar = styled.div`
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+`;
+
+const ProgressIndicator = styled.div<{ width: number }>`
+  height: 100%;
+  width: ${props => props.width}%;
+  background-color: white;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+`;
+
+const ProgressText = styled.div`
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: right;
 `;
 
 const Footer = styled.div`
