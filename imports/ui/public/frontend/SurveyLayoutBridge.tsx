@@ -80,6 +80,7 @@ interface Question {
   sectionId?: string;
   image?: string; // Add image property
   order?: number; // Add order property for question ordering
+  isUnsectioned?: boolean; // Flag to identify questions without a real section
 }
 
 interface CurrentStep {
@@ -257,6 +258,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
               }
             }
             
+            // Create a virtual section ID for tracking unsectioned questions
+            const VIRTUAL_SECTION_ID = `__unsectioned_${survey._id}`;
+            const isUnsectioned = !sectionId;
+            
+            // If no sectionId found, use the virtual section ID for internal logic
+            if (isUnsectioned) {
+              sectionId = VIRTUAL_SECTION_ID;
+            }
             
             // IMPORTANT: Get the image directly from the raw document
             // This ensures we get the image data exactly as it is in the database
@@ -277,6 +286,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
               required: version.required !== false,
               image: imageData, // Add image property directly from the raw document
               order: orderValue || version.order || 0, // Use order from surveyOrder, version, or default to 0
+              isUnsectioned: isUnsectioned, // Flag to identify questions without a real section
             };
           });
           
@@ -300,11 +310,25 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
             let firstQuestionId = null;
             
             for (const section of sections) {
-              const sectionQuestions = processedQuestions.filter((q: Question) => q.sectionId === section.id);
+              const sectionQuestions = processedQuestions.filter((q: Question) => 
+                q.sectionId === section.id && !q.isUnsectioned
+              );
               if (sectionQuestions.length > 0) {
                 firstSectionWithQuestions = section;
                 firstQuestionId = sectionQuestions[0]._id;
                 break;
+              }
+            }
+            
+            // If no questions in real sections, check for unsectioned questions
+            if (!firstQuestionId) {
+              const unsectionedQuestions = processedQuestions
+                .filter((q: Question) => q.isUnsectioned)
+                .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+              
+              if (unsectionedQuestions.length > 0) {
+                firstQuestionId = unsectionedQuestions[0]._id;
+                console.log('Starting with unsectioned question:', unsectionedQuestions[0].text);
               }
             }
             
@@ -319,8 +343,19 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
                 });
                 setInitialNavigationDone(true);
               }, 300); // Longer delay to ensure state updates properly
+            } else if (firstQuestionId) {
+              // We have an unsectioned question to start with
+              console.log('FORCE navigating to first unsectioned question');
+              
+              setTimeout(() => {
+                setCurrentStep({
+                  type: 'question',
+                  id: firstQuestionId
+                });
+                setInitialNavigationDone(true);
+              }, 300);
             } else {
-              // If no sections have questions, just mark as done
+              // If no questions at all, just mark as done
               setInitialNavigationDone(true);
             }
           } else {
@@ -438,13 +473,50 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     console.log('Current sections:', sections.map(s => `${s.name} (${s.id})`));
     console.log('Current questions count:', questions.length);
     
+    // Special case for unsectioned questions
+    if (currentStep.type === 'question') {
+      const currentQuestionId = currentStep.id;
+      const currentQuestion = questions.find(q => q._id === currentQuestionId);
+      
+      if (currentQuestion?.isUnsectioned) {
+        // Get all unsectioned questions in order
+        const unsectionedQuestions = questions
+          .filter(q => q.isUnsectioned)
+          .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+        
+        const currentIndex = unsectionedQuestions.findIndex(q => q._id === currentQuestionId);
+        
+        // Check if current question is answered if it's required
+        const isCurrentQuestionAnswered = !currentQuestion.required || (
+          responses[currentQuestionId] !== undefined && 
+          responses[currentQuestionId] !== null && 
+          responses[currentQuestionId] !== '' && 
+          !(Array.isArray(responses[currentQuestionId]) && responses[currentQuestionId].length === 0)
+        );
+        
+        if (isCurrentQuestionAnswered) {
+          if (currentIndex < unsectionedQuestions.length - 1) {
+            // Move to next unsectioned question
+            setCurrentStep({
+              type: 'question',
+              id: unsectionedQuestions[currentIndex + 1]._id
+            });
+          } else {
+            // This was the last unsectioned question, submit
+            handleSubmit();
+          }
+          return;
+        }
+      }
+    }
+    
     // For question-by-question navigation
     if (currentStep.type === 'section') {
       // When on a section view, we need to move to the first question in this section
       const currentSectionId = currentStep.id;
       const sectionQuestions = questions
         .filter(q => q.sectionId === currentSectionId)
-        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
       
       console.log('Section questions:', sectionQuestions.length);
       
@@ -465,7 +537,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
           const nextSectionId = sections[currentSectionIndex + 1].id;
           const nextSectionQuestions = questions
             .filter(q => q.sectionId === nextSectionId)
-            .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
+            .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order, handling undefined values
           
           if (nextSectionQuestions.length > 0) {
             // If next section has questions, go directly to first question
@@ -522,7 +594,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
               const nextSectionId = sections[currentSectionIndex + 1].id;
               const nextSectionQuestions = questions
                 .filter(q => q.sectionId === nextSectionId)
-                .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+                .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
               
               if (nextSectionQuestions.length > 0) {
                 // If next section has questions, go directly to first question
@@ -553,6 +625,57 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     console.log('Current sections:', sections.map(s => `${s.name} (${s.id})`));
     console.log('Current questions count:', questions.length);
     
+    // Special case for unsectioned questions
+    if (currentStep.type === 'question') {
+      const currentQuestionId = currentStep.id;
+      const currentQuestion = questions.find(q => q._id === currentQuestionId);
+      
+      if (currentQuestion?.isUnsectioned) {
+        // Get all unsectioned questions in order
+        const unsectionedQuestions = questions
+          .filter(q => q.isUnsectioned)
+          .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+        
+        const currentIndex = unsectionedQuestions.findIndex(q => q._id === currentQuestionId);
+        
+        if (currentIndex > 0) {
+          // Move to previous unsectioned question
+          setCurrentStep({
+            type: 'question',
+            id: unsectionedQuestions[currentIndex - 1]._id
+          });
+          return;
+        } else {
+          // This is the first unsectioned question
+          // Try to find the last question of the last section
+          if (sections.length > 0) {
+            const lastSection = sections[sections.length - 1];
+            const lastSectionQuestions = questions
+              .filter(q => q.sectionId === lastSection.id && !q.isUnsectioned)
+              .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+            
+            if (lastSectionQuestions.length > 0) {
+              // Navigate to the last question of the last section
+              setCurrentStep({
+                type: 'question',
+                id: lastSectionQuestions[lastSectionQuestions.length - 1]._id
+              });
+              return;
+            } else {
+              // Navigate to the last section
+              setCurrentStep({
+                type: 'section',
+                id: lastSection.id
+              });
+              return;
+            }
+          }
+          // If no sections, do nothing
+          return;
+        }
+      }
+    }
+    
     if (currentStep.type === 'section') {
       // Find current section
       const currentSectionIndex = sections.findIndex(s => s.id === currentStep.id);
@@ -562,7 +685,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         const prevSectionId = sections[currentSectionIndex - 1].id;
         const prevSectionQuestions = questions
           .filter(q => q.sectionId === prevSectionId)
-          .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+          .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
         
         if (prevSectionQuestions.length > 0) {
           // If previous section has questions, go directly to the last question
@@ -607,7 +730,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
             const prevSectionId = sections[currentSectionIndex - 1].id;
             const prevSectionQuestions = questions
               .filter(q => q.sectionId === prevSectionId)
-              .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+              .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
             
             if (prevSectionQuestions.length > 0) {
               // If previous section has questions, go directly to the last question

@@ -19,6 +19,7 @@ interface Question {
   sectionId?: string;
   image?: string; // Add image property
   order?: number; // Add order property for question ordering
+  isUnsectioned?: boolean; // Flag to identify questions without a real section
   currentVersion?: {
     image?: string;
     // Add other currentVersion properties as needed
@@ -144,17 +145,30 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       console.log('Found question:', question);
       setCurrentQuestion(question || null);
       
-      if (question?.sectionId) {
-        const section = sections.find(s => s.id === question.sectionId);
-        console.log('Found section for question:', section);
-        setCurrentSection(section || null);
-        
-        // Update sidebar highlighting when section changes via question navigation
-        if (section && setActiveSectionRef.current) {
-          setActiveSectionRef.current(section.id);
+      if (question) {
+        if (question.isUnsectioned) {
+          // Create a virtual section for unsectioned questions
+          const virtualSection: Section = {
+            id: 'virtual_section',
+            name: 'Additional Questions',
+            description: 'These questions are not associated with any specific section.'
+          };
+          console.log('Created virtual section for unsectioned question');
+          setCurrentSection(virtualSection);
+        } else if (question.sectionId) {
+          const section = sections.find(s => s.id === question.sectionId);
+          console.log('Found section for question:', section);
+          setCurrentSection(section || null);
+          
+          // Update sidebar highlighting when section changes via question navigation
+          if (section && setActiveSectionRef.current) {
+            setActiveSectionRef.current(section.id);
+          }
+        } else {
+          console.log('Question has no sectionId');
+          setCurrentSection(null);
         }
       } else {
-        console.log('Question has no sectionId');
         setCurrentSection(null);
       }
     } else {
@@ -383,11 +397,27 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   
   // Get current question index and total questions in section
   const getQuestionPosition = () => {
-    if (!currentQuestion || !currentSection) return { current: 1, total: 1 };
+    if (!currentQuestion) return { current: 1, total: 1 };
+    
+    // Handle unsectioned questions
+    if (currentQuestion.isUnsectioned) {
+      const unsectionedQuestions = questions
+        .filter(q => q.isUnsectioned)
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+      const currentIndex = unsectionedQuestions.findIndex(q => q._id === currentQuestion._id);
+      
+      return {
+        current: currentIndex + 1,
+        total: unsectionedQuestions.length
+      };
+    }
+    
+    // Handle regular sectioned questions
+    if (!currentSection) return { current: 1, total: 1 };
     
     const sectionQuestions = questions
-      .filter(q => q.sectionId === currentSection.id)
-      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+      .filter(q => q.sectionId === currentSection.id && !q.isUnsectioned)
+      .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
     const currentIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
     
     return {
@@ -400,10 +430,20 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   const isLastQuestion = () => {
     if (!currentQuestion) return false;
     
+    // Handle unsectioned questions
+    if (currentQuestion.isUnsectioned) {
+      const unsectionedQuestions = questions
+        .filter(q => q.isUnsectioned)
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+      const currentIndex = unsectionedQuestions.findIndex(q => q._id === currentQuestion._id);
+      return currentIndex === unsectionedQuestions.length - 1;
+    }
+    
+    // Handle regular sectioned questions
     if (currentSection) {
       const sectionQuestions = questions
-        .filter(q => q.sectionId === currentSection.id)
-        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+        .filter(q => q.sectionId === currentSection.id && !q.isUnsectioned)
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
       const currentIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
       return currentIndex === sectionQuestions.length - 1;
     } else {
@@ -414,7 +454,39 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   
   // Determine if current question is the first question of the first section
   const isFirstQuestionOfFirstSection = () => {
-    if (!currentQuestion || !currentSection) return false;
+    if (!currentQuestion) return false;
+    
+    // Handle unsectioned questions
+    if (currentQuestion.isUnsectioned) {
+      // For unsectioned questions, check if it's the first unsectioned question
+      // and there are no regular sections with questions before it
+      const unsectionedQuestions = questions
+        .filter(q => q.isUnsectioned)
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+      
+      // If it's not the first unsectioned question, it's not the first question overall
+      if (unsectionedQuestions.findIndex(q => q._id === currentQuestion._id) !== 0) {
+        return false;
+      }
+      
+      // Check if there are any sections with questions before this
+      for (const section of sections) {
+        const sectionQuestions = questions
+          .filter(q => q.sectionId === section.id && !q.isUnsectioned)
+          .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+        
+        if (sectionQuestions.length > 0) {
+          // There's a section with questions before this unsectioned question
+          return false;
+        }
+      }
+      
+      // This is the first question overall
+      return true;
+    }
+    
+    // Handle regular sectioned questions
+    if (!currentSection) return false;
     
     // Check if this is the first section
     const isFirstSection = sections.findIndex(s => s.id === currentSection.id) === 0;
@@ -422,8 +494,8 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     
     // Check if this is the first question in the section
     const sectionQuestions = questions
-      .filter(q => q.sectionId === currentSection.id)
-      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+      .filter(q => q.sectionId === currentSection.id && !q.isUnsectioned)
+      .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
     const isFirstQuestion = sectionQuestions.findIndex(q => q._id === currentQuestion._id) === 0;
     
     return isFirstSection && isFirstQuestion;
@@ -433,9 +505,25 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   const getNextButtonLabel = () => {
     if (!currentQuestion) return 'Next';
     
+    // Handle unsectioned questions
+    if (currentQuestion.isUnsectioned) {
+      const unsectionedQuestions = questions
+        .filter(q => q.isUnsectioned)
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+      const currentIndex = unsectionedQuestions.findIndex(q => q._id === currentQuestion._id);
+      const isLastUnsectionedQuestion = currentIndex === unsectionedQuestions.length - 1;
+      
+      if (isLastUnsectionedQuestion) {
+        return 'Submit';
+      } else {
+        return 'Next';
+      }
+    }
+    
+    // Handle regular sectioned questions
     const sectionQuestions = questions
-      .filter(q => q.sectionId === currentQuestion.sectionId)
-      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+      .filter(q => q.sectionId === currentQuestion.sectionId && !q.isUnsectioned)
+      .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
     const currentQuestionIndex = sectionQuestions.findIndex(q => q._id === currentQuestion._id);
     const isLastQuestionInSection = currentQuestionIndex === sectionQuestions.length - 1;
     
@@ -444,8 +532,15 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
       const isLastSection = currentSectionIndex === sections.length - 1;
       
+      // Check if there are unsectioned questions after this section
+      const hasUnsectionedQuestions = questions.some(q => q.isUnsectioned);
+      
       if (isLastSection) {
-        return 'Submit';
+        if (hasUnsectionedQuestions) {
+          return 'Next Section: Additional Questions';
+        } else {
+          return 'Submit';
+        }
       } else {
         return `Next Section: ${getNextSectionName()}`;
       }
@@ -647,12 +742,15 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         {/* Show a fallback view if we're in a section but there are no questions */}
         {!isLoading && currentStep.type === 'section' && currentSection && questions.filter(q => q.sectionId === currentSection.id).length === 0 && (
           <>
-            <SectionHeader 
-              title={currentSection.name}
-              description={currentSection.description}
-              progress={100}
-              color={survey.color}
-            />
+            {/* Only show section header if it's not the virtual section for unsectioned questions */}
+            {currentSection.id !== 'virtual_section' && (
+              <SectionHeader 
+                title={currentSection.name}
+                description={currentSection.description}
+                progress={100}
+                color={survey.color}
+              />
+            )}
             
             <QuestionsContainer>
               <QuestionItem>
@@ -686,12 +784,15 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         
         {!isLoading && currentStep.type === 'question' && currentQuestion && currentSection && (
           <>
-            <SectionHeader 
-              title={currentSection.name}
-              description={currentSection.description}
-              progress={calculateSectionProgress(currentSection.id)}
-              color={survey.color}
-            />
+            {/* Hide section header for unsectioned questions */}
+            {!currentQuestion.isUnsectioned && (
+              <SectionHeader 
+                title={currentSection.name}
+                description={currentSection.description}
+                progress={calculateSectionProgress(currentSection.id)}
+                color={survey.color}
+              />
+            )}
             
             {/* Display current question */}
             <QuestionsContainer>
