@@ -40,6 +40,7 @@ export interface SurveyDoc {
   featuredImage?: string;
   color?: string;
   layout?: 'multiStep'  // Questions data (ordering managed via surveyOrder only)
+  showLikertEmojis?: boolean; // Add this line - whether to show emojis in Likert scale questions
   selectedQuestions?: Record<string, any[]>;
   siteTextQuestions?: any[];
   siteTextQForm?: Record<string, any>;
@@ -1571,6 +1572,8 @@ Meteor.methods({
           thankYouBoxes: survey.thankYouBoxes || existingSurvey.thankYouBoxes || [],
           // Include layout setting
           layout: survey.layout !== undefined ? survey.layout : existingSurvey.layout,
+          // Include showLikertEmojis setting
+          showLikertEmojis: survey.showLikertEmojis !== undefined ? survey.showLikertEmojis : existingSurvey.showLikertEmojis,
           // Include expectations data
           expectations: survey.expectations !== undefined ? survey.expectations : existingSurvey.expectations,
           expectationsTitle: survey.expectationsTitle !== undefined ? survey.expectationsTitle : existingSurvey.expectationsTitle,

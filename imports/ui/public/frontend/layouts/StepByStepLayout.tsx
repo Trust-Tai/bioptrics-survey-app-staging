@@ -574,9 +574,9 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
           currentSectionId={currentSection?.id || ''}
           progress={calculateProgress()}
           deferHighlighting={true} // Prevent automatic highlighting
-          onSetActiveSection={useCallback((callback: (sectionId: string) => void) => {
+          onSetActiveSection={(callback: (sectionId: string) => void) => {
             setActiveSectionRef.current = callback;
-          }, [])}
+          }}
           onSectionClick={(sectionId) => {
           // Navigate to the selected section
           if (sectionId) {
@@ -801,6 +801,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
                 <QuestionContent>
                   <QuestionRenderer
                     questionType={getQuestionType(currentQuestion)}
+                    showEmojis={survey.showLikertEmojis}
                     questionText={currentQuestion.text}
                     options={currentQuestion.options || []}
                     value={responses[currentQuestion._id]}

@@ -137,7 +137,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
         sections={sectionData}
         currentSectionId={activeSectionId}
         progress={calculateProgress()}
-        onSectionClick={useCallback((sectionId: string) => {
+        onSectionClick={(sectionId: string) => {
           // Update the active section ID
           setActiveSectionId(sectionId);
           
@@ -149,7 +149,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
               behavior: 'smooth'
             });
           }
-        }, [])}
+        }}
         color={survey.color}
         logo={survey.logo}
       />
@@ -160,15 +160,12 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
           offset={100}
           color={survey.color}
           // Disable ScrollSpy's ability to change active section
-          onActiveSectionChange={useCallback(() => {}, [])}
+          onActiveSectionChange={() => {}}
         />
         
         {questionsBySection.map(({ section, questions }) => {
-          // Create a memoized onAnswer callback for each section
-          const sectionOnAnswer = useCallback(
-            (questionId: string, value: any) => onAnswer(questionId, value),
-            [onAnswer]
-          );
+          // Define a simple function to handle answers for this section
+          const sectionOnAnswer = (questionId: string, value: any) => onAnswer(questionId, value);
           
           return (
             <SectionContainer key={section.id} id={`section-${section.id}`}>
@@ -205,10 +202,11 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
                   <QuestionContent>
                     <QuestionRenderer
                       questionType={getQuestionType(question)}
+                      showEmojis={survey.showLikertEmojis}
                       questionText={question.text}
                       options={question.options || []}
                       value={responses[question._id]}
-                      onChange={useCallback((value) => onAnswer(question._id, value), [question._id, onAnswer])}
+                      onChange={(value) => onAnswer(question._id, value)}
                       required={!!question.required}
                       image={question.image || (question.currentVersion && question.currentVersion.image)} // Get image from question or currentVersion
                     />

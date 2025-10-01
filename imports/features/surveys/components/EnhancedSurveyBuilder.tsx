@@ -559,7 +559,10 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     survey?.consentScreen?.anonymityNoticeText || 
     'This survey is anonymous. Your responses cannot be linked back to you personally.'
   );
-  
+  // Likert emoji display setting
+  const [showLikertEmojis, setShowLikertEmojis] = useState<boolean>(
+    survey?.showLikertEmojis !== undefined ? survey?.showLikertEmojis : true
+  );
   const [sections, setSections] = useState<SurveySectionItem[]>([]);
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
   const [surveyOrder, setSurveyOrder] = useState<any[]>([]);
@@ -571,7 +574,13 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
       setActiveStep('welcome');
     }
   }, [surveyId]);
-  
+  // Update showLikertEmojis state when survey data changes
+useEffect(() => {
+  if (survey?.showLikertEmojis !== undefined) {
+    console.log('Updating showLikertEmojis from survey:', survey.showLikertEmojis);
+    setShowLikertEmojis(survey.showLikertEmojis);
+  }
+}, [survey?.showLikertEmojis]);
   // Set activeStep based on URL tab parameter or showAnalytics prop
   useEffect(() => {
     if (tabParam && ['welcome', 'questions', 'sections', 'branching', 'appearance', 'responses', 'analytics', 'tags'].includes(tabParam)) {
@@ -1884,6 +1893,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         featuredImage: survey?.featuredImage || '',
         color: survey?.color || '',
         layout: survey?.layout || 'multiStep', // Ensure layout always has a default value
+        showLikertEmojis: showLikertEmojis, // Control whether to show emojis in Likert questions
         selectedQuestions: survey?.selectedQuestions || {},
         siteTextQuestions: survey?.siteTextQuestions || [],
         siteTextQForm: survey?.siteTextQForm || {},
@@ -1951,7 +1961,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
           ...surveyData,
           createdAt: new Date(),
           createdBy: Meteor.userId() || 'anonymous',
-          status: 'draft'
+          status: 'draft',
+          showLikertEmojis: true, // Default to showing emojis for new surveys
         };
         
         const result = await Meteor.callAsync('surveys.saveDraft', newSurveyData);
@@ -3300,6 +3311,8 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
                     survey={survey}
                     setSurvey={setSurvey}
                     surveyThemes={surveyThemes}
+                    showLikertEmojis={showLikertEmojis}
+                    setShowLikertEmojis={setShowLikertEmojis}
                     themeSearchQuery={themeSearchQuery}
                     setThemeSearchQuery={setThemeSearchQuery}
                     currentThemePage={currentThemePage}

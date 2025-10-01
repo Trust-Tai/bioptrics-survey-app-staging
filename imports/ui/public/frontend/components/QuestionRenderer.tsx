@@ -12,6 +12,7 @@ interface Option {
 
 interface QuestionRendererProps {
   questionType: QuestionType;
+  showEmojis?: boolean;
   questionText: string;
   options?: Array<Option>;
   value: any;
@@ -27,6 +28,7 @@ interface QuestionRendererProps {
 
 const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
   questionType,
+  showEmojis = true,
   questionText,
   options = [],
   value,
@@ -71,6 +73,34 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
 
   // Implementation of all render functions
   const renderLikertScale = () => {
+    if (!showEmojis) {
+      // Use existing radio button style when emojis are hidden
+      return (
+        <RadioOptionsContainer>
+          {options.map((option: Option) => {
+            const text = option.text || option.label || option.value;
+            const isSelected = value === option.value;
+            return (
+              <RadioOption 
+                key={option.value}
+                isSelected={isSelected}
+                onClick={() => onChange(option.value)}
+                style={{ flex: '0 0 calc(50% - 0.5rem)' }} // Set width to roughly 50% to show 2 per row
+              >
+                <RadioButton isSelected={isSelected}>
+                  {isSelected && <RadioButtonInner />}
+                </RadioButton>
+                <OptionLabel style={{ fontWeight: isSelected ? '500' : 'normal' }}>
+                  {text}
+                </OptionLabel>
+              </RadioOption>
+            );
+          })}
+        </RadioOptionsContainer>
+      );
+    }
+    
+    // Original emoji-based Likert style
     return (
       <LikertContainer>
         {options.map((option: Option) => {
