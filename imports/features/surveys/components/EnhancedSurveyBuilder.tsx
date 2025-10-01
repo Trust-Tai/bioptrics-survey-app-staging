@@ -1883,7 +1883,7 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
         image: survey?.image || '',
         featuredImage: survey?.featuredImage || '',
         color: survey?.color || '',
-        layout: survey?.layout || 'stepByStep', // Ensure layout always has a default value
+        layout: survey?.layout || 'multiStep', // Ensure layout always has a default value
         selectedQuestions: survey?.selectedQuestions || {},
         siteTextQuestions: survey?.siteTextQuestions || [],
         siteTextQForm: survey?.siteTextQForm || {},
