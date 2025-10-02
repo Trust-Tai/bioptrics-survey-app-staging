@@ -30,6 +30,7 @@ import TabsContainer, { TabItem } from './TabsContainer';
 import OverviewTab from './tabs/OverviewTab';
 import QuestionsTab, { QuestionsTabRef } from './tabs/QuestionsTab';
 import { exportQuestionsToPDF } from '/imports/features/surveys/utils/AnalyticsSurveyQuestionPdf';
+import ExportOptionsModal from './ExportOptionsModal';
 // import GroupsTab from './tabs/GroupsTab';
 import CommentsTab from './tabs/CommentsTab';
 import ActivityTab from './tabs/ActivityTab';
@@ -612,6 +613,7 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
   const [exportingPDF, setExportingPDF] = useState(false);
   const [surveyTitle, setSurveyTitle] = useState('');
   const [surveyDescription, setSurveyDescription] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
   
   // State for analytics data
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
@@ -759,8 +761,14 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Function to handle PDF export
-  const handleExportPDF = () => {
+  // Function to handle export button click - show modal
+  const handleExportButtonClick = () => {
+    setShowExportModal(true);
+  };
+  
+  // Function to handle export type selection and PDF generation
+  const handleExportPDF = (exportType: 'standard' | 'ranked') => {
+    setShowExportModal(false);
     setExportingPDF(true);
     
     // Check if we can get questions from the ref
@@ -783,7 +791,8 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
         exportQuestionsToPDF(refQuestions, {
           surveyTitle: surveyTitle,
           surveyDescription: surveyDescription,
-          surveyId: surveyId
+          surveyId: surveyId,
+          exportType: exportType
         });
         setExportingPDF(false);
       } catch (error) {
@@ -805,7 +814,8 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
               exportQuestionsToPDF(result, {
                 surveyTitle: surveyTitle,
                 surveyDescription: surveyDescription,
-                surveyId: surveyId
+                surveyId: surveyId,
+                exportType: exportType
               });
             } catch (exportError) {
               console.error('Error generating PDF:', exportError);
@@ -985,13 +995,22 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
           tabs={tabs} 
           defaultActiveTab="overview" 
           headerActions={
-            <ExportButton 
-              onClick={handleExportPDF} 
-              disabled={exportingPDF}
-            >
-              <FiDownload size={16} />
-              {exportingPDF ? 'Exporting...' : 'Export PDF'}
-            </ExportButton>
+            <>
+              <ExportButton 
+                onClick={handleExportButtonClick} 
+                disabled={exportingPDF}
+              >
+                <FiDownload size={16} />
+                {exportingPDF ? 'Exporting...' : 'Export PDF'}
+              </ExportButton>
+              
+              {/* Export Options Modal */}
+              <ExportOptionsModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                onExport={handleExportPDF}
+              />
+            </>
           }
         />
       )}

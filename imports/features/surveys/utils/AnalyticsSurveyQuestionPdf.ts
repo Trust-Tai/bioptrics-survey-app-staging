@@ -1,4 +1,5 @@
 import { generateSurveyReportPDF, SurveyReportData as BaseSurveyReportData } from '/imports/ui/admin/SurveyReportPDF';
+import { rankQuestionsBySection, RankedQuestion, AnalyticsQuestion } from './RankedPdfHelpers';
 
 // Extended interface for SurveyReportData that includes latestResponses
 interface SurveyReportData extends BaseSurveyReportData {
@@ -33,19 +34,7 @@ interface SurveyReportData extends BaseSurveyReportData {
   }>;
 }
 
-// Interface for analytics question data
-interface AnalyticsQuestion {
-  questionId: string;
-  questionText: string;
-  questionType: string;
-  progress: Record<string, number>;
-  latestResponses?: Array<{
-    answer: string;
-    date: Date;
-  }>;
-}
-
-// Interface for processed question in PDF report
+// Interface for processed question in PDF report - different from AnalyticsQuestion
 interface ProcessedQuestion {
   id: string;
   title: string;
@@ -235,6 +224,7 @@ export interface ExportQuestionsToPDFOptions {
   surveyTitle?: string;
   surveyDescription?: string;
   surveyId?: string; // Add surveyId to fetch complete survey data
+  exportType?: 'standard' | 'ranked'; // Add export type option
 }
 
 export const exportQuestionsToPDF = (
@@ -245,6 +235,9 @@ export const exportQuestionsToPDF = (
     // Debug logging for input data
     console.log('PDF Export - Input questions:', analyticsQuestions);
     console.log('PDF Export - Options:', options);
+    
+    const exportType = options?.exportType || 'standard';
+    console.log('PDF Export Type:', exportType);
     
     // If surveyId is provided, fetch the complete survey data
     if (options?.surveyId) {
@@ -258,8 +251,12 @@ export const exportQuestionsToPDF = (
             resolve();
           } else {
             console.log('Fetched survey data:', surveyData);
-            // Generate PDF with sections
-            generatePDFWithSections(analyticsQuestions, surveyData, options);
+            // Generate PDF with sections based on export type
+            if (exportType === 'ranked') {
+              generatePDFWithRankedSections(analyticsQuestions, surveyData, options);
+            } else {
+              generatePDFWithSections(analyticsQuestions, surveyData, options);
+            }
             resolve();
           }
         });
@@ -270,6 +267,225 @@ export const exportQuestionsToPDF = (
     }
   } catch (error) {
     console.error('Error in exportQuestionsToPDF:', error);
+  }
+};
+
+// Function to generate PDF with ranked sections
+const generatePDFWithRankedSections = (
+  analyticsQuestions: AnalyticsQuestion[],
+  surveyData: any,
+  options?: ExportQuestionsToPDFOptions
+): void => {
+  try {
+    console.log('Generating PDF with ranked sections');
+    
+    // Extract sections from survey data
+    const surveySections = surveyData.surveySections || [];
+    
+    console.log('Survey sections:', surveySections);
+    
+    // Rank questions by section
+    const rankedQuestionsBySection = rankQuestionsBySection(analyticsQuestions, surveyData);
+    console.log('Ranked questions by section:', rankedQuestionsBySection);
+    
+    // Create the report data structure with dynamic sections
+    const reportData: SurveyReportData = {
+      reportTitle: 'Survey Questions Analysis (Ranked)',
+      reportSubtitle: options?.surveyTitle || 'Response Data Visualization',
+      description: options?.surveyDescription || 'Questions are ranked by positive response rates within each section',
+      date: new Date().toLocaleDateString(),
+      logoUrl: '/bioptrics_fixed_black.png',
+      totalRespondents: 0, // Will be calculated below
+      parentTags: []
+    };
+    
+    // Create parent tags for each section
+    surveySections.forEach((section: any) => {
+      if (section.id && rankedQuestionsBySection[section.id]) {
+        const sectionRankedQuestions = rankedQuestionsBySection[section.id];
+        const allSectionQuestions = [
+          ...sectionRankedQuestions.likert,
+          ...sectionRankedQuestions.radio,
+          ...sectionRankedQuestions.text
+        ];
+        
+        // Skip empty sections
+        if (allSectionQuestions.length === 0) return;
+        
+        // Process all questions to calculate stats
+        const processedQuestions = processQuestions(allSectionQuestions, reportData);
+        
+        // Create section tag
+        let sectionName = '';
+        if(section.name){sectionName = "Standard : "+section.name}else{sectionName = 'Section'};
+        
+        // Create child tags for each question type
+        const childTags = [];
+        
+        // Add Likert questions if any
+        if (sectionRankedQuestions.likert.length > 0) {
+          const likertProcessed = processQuestions(sectionRankedQuestions.likert, reportData);
+          childTags.push({
+            id: `${section.id}-likert`,
+            name: 'Likert Scale Questions',
+            description: 'Ranked by positive response rate (Agree % + Strongly Agree %)',
+            questions: likertProcessed
+          });
+        }
+        
+        // Add Radio questions if any
+        if (sectionRankedQuestions.radio.length > 0) {
+          const radioProcessed = processQuestions(sectionRankedQuestions.radio, reportData);
+          childTags.push({
+            id: `${section.id}-radio`,
+            name: 'Radio/Choice Questions',
+            description: 'Ranked by highest selected option percentage',
+            questions: radioProcessed
+          });
+        }
+        
+        // Add Text questions if any
+        if (sectionRankedQuestions.text.length > 0) {
+          const textProcessed = processQuestions(sectionRankedQuestions.text, reportData);
+          childTags.push({
+            id: `${section.id}-text`,
+            name: 'Text/Freeform Questions',
+            description: 'Latest responses from participants',
+            questions: textProcessed
+          });
+        }
+        
+        reportData.parentTags.push({
+          id: section.id,
+          name: sectionName,
+          description: section.description || 'Survey section',
+          childTags: childTags
+        });
+      }
+    });
+    
+    // Add a section for questions not assigned to any section
+    if (rankedQuestionsBySection['unsectioned']) {
+      const unsectionedRankedQuestions = rankedQuestionsBySection['unsectioned'];
+      const allUnsectionedQuestions = [
+        ...unsectionedRankedQuestions.likert,
+        ...unsectionedRankedQuestions.radio,
+        ...unsectionedRankedQuestions.text
+      ];
+      
+      // Skip if no unsectioned questions
+      if (allUnsectionedQuestions.length > 0) {
+        // Create child tags for each question type
+        const childTags = [];
+        
+        // Add Likert questions if any
+        if (unsectionedRankedQuestions.likert.length > 0) {
+          const likertProcessed = processQuestions(unsectionedRankedQuestions.likert, reportData);
+          childTags.push({
+            id: 'unsectioned-likert',
+            name: 'Likert Scale Questions',
+            description: 'Ranked by positive response rate (Agree % + Strongly Agree %)',
+            questions: likertProcessed
+          });
+        }
+        
+        // Add Radio questions if any
+        if (unsectionedRankedQuestions.radio.length > 0) {
+          const radioProcessed = processQuestions(unsectionedRankedQuestions.radio, reportData);
+          childTags.push({
+            id: 'unsectioned-radio',
+            name: 'Radio/Choice Questions',
+            description: 'Ranked by highest selected option percentage',
+            questions: radioProcessed
+          });
+        }
+        
+        // Add Text questions if any
+        if (unsectionedRankedQuestions.text.length > 0) {
+          const textProcessed = processQuestions(unsectionedRankedQuestions.text, reportData);
+          childTags.push({
+            id: 'unsectioned-text',
+            name: 'Text/Freeform Questions',
+            description: 'Latest responses from participants',
+            questions: textProcessed
+          });
+        }
+        
+        reportData.parentTags.push({
+          id: 'unsectioned',
+          name: 'General Questions',
+          description: 'Questions not assigned to any specific section',
+          childTags: childTags
+        });
+      }
+    }
+    
+    // If no sections were created (empty survey or error), create a default section
+    if (reportData.parentTags.length === 0) {
+      const { likertQuestions, radioQuestions, textQuestions } = 
+        analyticsQuestions.reduce<{likertQuestions: AnalyticsQuestion[], radioQuestions: AnalyticsQuestion[], textQuestions: AnalyticsQuestion[]}>(
+          (acc, question) => {
+            if (['text', 'textarea', 'date'].includes(question.questionType)) {
+              acc.textQuestions.push(question);
+            } else if (question.questionType === 'likert') {
+              acc.likertQuestions.push(question);
+            } else {
+              acc.radioQuestions.push(question);
+            }
+            return acc;
+          }, 
+          { likertQuestions: [], radioQuestions: [], textQuestions: [] }
+        );
+      
+      const childTags = [];
+      
+      // Add Likert questions if any
+      if (likertQuestions.length > 0) {
+        const likertProcessed = processQuestions(likertQuestions, reportData);
+        childTags.push({
+          id: 'default-likert',
+          name: 'Likert Scale Questions',
+          description: 'Response visualization for likert scale questions',
+          questions: likertProcessed
+        });
+      }
+      
+      // Add Radio questions if any
+      if (radioQuestions.length > 0) {
+        const radioProcessed = processQuestions(radioQuestions, reportData);
+        childTags.push({
+          id: 'default-radio',
+          name: 'Radio/Choice Questions',
+          description: 'Response visualization for radio/choice questions',
+          questions: radioProcessed
+        });
+      }
+      
+      // Add Text questions if any
+      if (textQuestions.length > 0) {
+        const textProcessed = processQuestions(textQuestions, reportData);
+        childTags.push({
+          id: 'default-text',
+          name: 'Text/Freeform Questions',
+          description: 'Latest responses from participants',
+          questions: textProcessed
+        });
+      }
+      
+      reportData.parentTags.push({
+        id: 'survey-questions',
+        name: 'Survey Questions',
+        description: 'Comprehensive analysis of all question responses',
+        childTags: childTags
+      });
+    }
+    
+    // Generate the PDF with the structured data
+    generatePDF(reportData);
+  } catch (error) {
+    console.error('Error in generatePDFWithRankedSections:', error);
+    // Fall back to the original implementation
+    generatePDFWithSections(analyticsQuestions, surveyData, options);
   }
 };
 
