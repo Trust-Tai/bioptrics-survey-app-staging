@@ -173,6 +173,8 @@ if (Meteor.isServer) {
         'versions.saveToQuestionBank': 1,
         'versions.surveyId': 1,
         'versions.image': 1,
+        'versions.showEmojis': 1,
+        'versions.options': 1,
         'versions.creationSource': 1
       },
       sort: { createdAt: -1 },

@@ -44,7 +44,7 @@ interface QuestionCustomField {
 interface Question {
   _id?: string;
   text: string;
-  description: string; // Make description required to fix TypeScript error
+  description?: string;
   answerType: string;
   answers: any[]; // Make answers required to fix TypeScript error
   required: boolean; // Make required non-optional to fix TypeScript error
@@ -58,6 +58,7 @@ interface Question {
   categoryDetails?: string; // Details about the selected category
   themes?: string[];
   reusable?: boolean;
+  tags?: string[];
   priority?: number;
   active?: boolean;
   keywords?: string[];
@@ -68,6 +69,7 @@ interface Question {
   correctAnswers?: any[]; // Array of correct answers for assessment questions
   points?: number; // Optional points value for weighted scoring
   estimatedTimeSeconds?: number; // Estimated time to answer the question in seconds
+  showEmojis?: boolean; // Controls whether to show emojis for Likert questions
   [key: string]: any;
 }
 
@@ -464,6 +466,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
       status: 'draft',
       estimatedTimeSeconds: 30,
       folderId: null, // Default to no folder
+      showEmojis: true, // Default to showing emojis for Likert questions
     },
     isExpanded: true,
     isNew: true,
@@ -596,6 +599,8 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
           isActive: currentVersionData.isActive === undefined ? true : !!currentVersionData.isActive,
           priority: currentVersionData.priority || 0,
           feedback: currentVersionData.feedback || 'none',
+          // Likert question display options
+          showEmojis: currentVersionData.showEmojis === false ? false : true, // Default to true if undefined
         },
         isExpanded: true,
         isNew: false,
@@ -839,7 +844,6 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
       // Include saveToQuestionBank flag and surveyId if in survey builder context
       const questionVersion = mapQuestionToVersion(questionToPublish, effectiveSaveToQuestionBank, surveyId, userId);
       
-      console.log(`Publishing question with saveToQuestionBank=${effectiveSaveToQuestionBank}, surveyId=${surveyId || 'none'}`);
       
       // Check if we're trying to save a survey-specific question without a surveyId
       if (!effectiveSaveToQuestionBank && !surveyId) {
@@ -1293,6 +1297,13 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.answerType = newAnswerType;
                     
+                    // Initialize showEmojis property for Likert questions
+                    if (newAnswerType === 'likert') {
+                      updatedQuestions[0].question.showEmojis = true; // Default to showing emojis
+                    } else {
+                      delete updatedQuestions[0].question.showEmojis; // Remove property for non-Likert questions
+                    }
+                    
                     // Set default answers based on the question type
                     switch (newAnswerType) {
                       case 'radio':
@@ -1445,6 +1456,59 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                   </QuestionBuilderDndProvider>
                 )}
               </div>
+
+              {/* Question Display Options - Only shown for Likert questions */}
+              {!readOnly && questions[0].question.answerType === 'likert' && (
+                <div className="form-group" style={{ marginTop: '20px' }}>
+                  <label>Question Display Options</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '15px' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 16 }}>Show Emojis in This Question</div>
+                      <div style={{ fontSize: 14, color: '#6c757d', marginTop: 4 }}>
+                        When enabled, this Likert scale question will display emojis to represent different levels of agreement.
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span style={{ marginRight: 10, color: questions[0].question.showEmojis ? '#6c757d' : '#552a47', fontWeight: questions[0].question.showEmojis ? 400 : 600 }}>Hide</span>
+                      <div 
+                        onClick={() => {
+                          if (readOnly) return;
+                          const newValue = !questions[0].question.showEmojis;
+                          const updatedQuestions = [...questions];
+                          updatedQuestions[0].question.showEmojis = newValue;
+                          setQuestions(updatedQuestions);
+                        }}
+                        style={{ 
+                          width: 50, 
+                          height: 24, 
+                          backgroundColor: questions[0].question.showEmojis ? '#552a47' : '#e0e0e0',
+                          borderRadius: 12,
+                          position: 'relative',
+                          cursor: readOnly ? 'not-allowed' : 'pointer',
+                          transition: 'background-color 0.3s',
+                          display: 'inline-block',
+                          opacity: readOnly ? 0.6 : 1
+                        }}
+                      >
+                        <div 
+                          style={{
+                            width: 20,
+                            height: 20,
+                            backgroundColor: 'white',
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: 2,
+                            left: questions[0].question.showEmojis ? 28 : 2,
+                            transition: 'left 0.3s',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                          }}
+                        />
+                      </div>
+                      <span style={{ marginLeft: 10, color: questions[0].question.showEmojis ? '#552a47' : '#6c757d', fontWeight: questions[0].question.showEmojis ? 600 : 400 }}>Show</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Tag Builder */}
               <div className="form-group">

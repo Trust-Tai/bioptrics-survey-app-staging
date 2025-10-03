@@ -12,6 +12,7 @@ interface Question {
   options?: Array<any>;
   sectionId?: string;
   image?: string;
+  showEmojis?: boolean;
   order?: number; // Add order property for question ordering
   currentVersion?: {
     image?: string;
@@ -77,6 +78,7 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
               <QuestionRenderer
                 questionType={getQuestionType(question)}
                 questionText={question.text}
+                showEmojis={question.showEmojis}
                 options={question.options || []}
                 value={responses[question._id]}
                 onChange={(value) => onAnswer(question._id, value)}

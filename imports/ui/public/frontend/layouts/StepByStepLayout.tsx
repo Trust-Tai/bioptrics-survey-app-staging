@@ -17,13 +17,14 @@ interface Question {
   required?: boolean;
   options?: Array<any>;
   sectionId?: string;
-  image?: string; // Add image property
-  order?: number; // Add order property for question ordering
-  isUnsectioned?: boolean; // Flag to identify questions without a real section
+  image?: string;
+  order?: number;
+  isUnsectioned?: boolean;
   currentVersion?: {
     image?: string;
     // Add other currentVersion properties as needed
   };
+  showEmojis?: boolean; // Add showEmojis property for Likert questions
 }
 
 interface Section {
@@ -801,7 +802,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
                 <QuestionContent>
                   <QuestionRenderer
                     questionType={getQuestionType(currentQuestion)}
-                    showEmojis={survey.showLikertEmojis}
+                    showEmojis={currentQuestion.showEmojis === false ? false : true}
                     questionText={currentQuestion.text}
                     options={currentQuestion.options || []}
                     value={responses[currentQuestion._id]}
