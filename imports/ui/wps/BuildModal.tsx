@@ -273,8 +273,17 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
   const [filter, setFilter] = useState<'Workforce' | 'Leaders' | 'Both'>('Workforce');
   // Survey title input
   const [customTitle, setCustomTitle] = useState<string>('');
+  // Time frame selector
+  const [timeFrame, setTimeFrame] = useState<string>('1 month');
+  const timeFrameOptions = React.useMemo(() => [
+    // 1-11 months
+    ...Array.from({ length: 11 }, (_, i) => `${i + 1} month${i === 0 ? '' : 's'}`),
+    // Then yearly steps 1-5 years
+    '1 year', '2 years', '3 years', '4 years', '5 years'
+  ], []);
   // Loading state for buttons
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
 
   const handleRadioChange = (value: 'Workforce' | 'Leaders' | 'Both') => {
     setFilter(value);
@@ -366,6 +375,59 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
             />
           </div>
         </div>
+        {/* Time Frame row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 160, minWidth: 160 }}>
+            <label
+              htmlFor="survey-time-frame"
+              style={{ fontWeight: 600, fontSize: 16, color: '#2d2d2d', margin: 0, whiteSpace: 'nowrap' }}
+            >
+              Select Time Frame:
+            </label>
+          </div>
+          <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+            <select
+              id="survey-time-frame"
+              value={timeFrame}
+              onChange={e => setTimeFrame(e.target.value)}
+              style={{
+                width: '100%',
+                background: '#fff',
+                padding: '10px 44px 10px 12px',
+                borderRadius: 6,
+                border: '1px solid #dcdcdc',
+                outline: 'none',
+                fontSize: 15,
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                appearance: 'none',
+                lineHeight: 1.4,
+                cursor: 'pointer'
+              }}
+            >
+              {timeFrameOptions.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 14,
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                color: '#6c47b6'
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 7L10 12L15 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
         {/* Second row: Select Audience */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 160, minWidth: 160 }}>
@@ -405,15 +467,6 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
       </div>
     </div>
   );
-
-  // Helper to build and download a survey JSON
-  function buildAndDownloadSurvey(questions: { question: string; standard: string }[], filename: string) {
-    const { standardsSet, questionsSet } = buildJSONExport(questions);
-    const survey = JSON.parse(JSON.stringify(wpsSurveyTemplate));
-    survey.sections = standardsSet;
-    survey.questions = questionsSet;
-    downloadJSON(survey, filename);
-  }
 
   const confirmHandler = () => {
     // Prepare arrays for each group
@@ -575,7 +628,7 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
     filename: string,
     title: string
   ) {
-    const { standardsSet, questionsSet } = buildJSONExport(questions);
+  const { standardsSet, questionsSet } = buildJSONExport(questions, timeFrame);
     const survey = JSON.parse(JSON.stringify(wpsSurveyTemplate));
     survey.title = title;
     survey.sections = standardsSet;

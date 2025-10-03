@@ -1,7 +1,7 @@
 // Utility for building WPS export JSON from selected questions
 // Accepts filteredQuestions: { question: string; standard: string }[]
 // Returns { standardsSet, questionsSet }
-export function buildJSONExport(filteredQuestions: { question: string; standard: string }[]) {
+export function buildJSONExport(filteredQuestions: { question: string; standard: string }[], timeFrame?: string) {
   const standardsMap = new Map<string, { id: string; title: string; description: string; instructions: string }>();
   const standardOrderCount: Record<string, number> = {};
   type RatingQuestion = {
@@ -70,7 +70,7 @@ export function buildJSONExport(filteredQuestions: { question: string; standard:
       .filter(q => q.sectionId === standardObj.id)
       .reduce((max, q) => q.order > max ? q.order : max, 0);
     questionsSet.push({
-      text: `${standardTitle}: Feedback`,
+      text: `What enhancement in ${standardTitle} should be improved in the next ${timeFrame || 'phase'}?`,
       responseType: "text",
       sectionId: standardObj.id,
       order: maxOrder + 1,

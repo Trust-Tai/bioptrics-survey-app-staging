@@ -10,11 +10,11 @@ import { useTheme } from '/imports/contexts/ThemeContext';
 
 // Centralized zones
 const ZONES = [
-  { id: 'SZN-1', label: 'Behavior' },
-  { id: 'SZN-2', label: 'Workplace' },
-  { id: 'SZN-3', label: 'Equity' },
-  { id: 'SZN-4', label: 'Well-Being' },
-  { id: 'SZN-5', label: 'Built Environment' },
+  { id: 'SZN-1', label: 'Built Environment' },
+  { id: 'SZN-2', label: 'Equity' },
+  { id: 'SZN-3', label: 'Well-Being' },
+  { id: 'SZN-4', label: 'Behavior' },
+  { id: 'SZN-5', label: 'Workplace' },
   { id: 'SZN-6', label: 'Inclusion' },
 ];
 
@@ -224,6 +224,35 @@ const computeSznCounts = (selected: string[], bank: typeof wpsQuestions) => {
   return sznCounts;
 };
 
+// Count distinct indicators represented in the current selection
+const computeSelectedIndicatorCount = (selected: string[], bank: typeof wpsQuestions) => {
+  if (!selected.length) return 0;
+  const indicatorSelected = new Set<string>();
+  bank.forEach(item => {
+    if (selected.includes(item.WPSID)) indicatorSelected.add(item.INDICATOR);
+  });
+  return indicatorSelected.size;
+};
+
+// Interpolated color for counter across thresholds (0,16,40,60)
+const interpolateCountColor = (value: number) => {
+  const stops = [[0,'#6c757d'],[16,'#198754'],[40,'#fd7e14'],[60,'#dc3545']] as const;
+  if (value <= stops[0][0]) return stops[0][1];
+  if (value >= stops[stops.length - 1][0]) return stops[stops.length - 1][1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    const [v1,c1] = stops[i];
+    const [v2,c2] = stops[i+1];
+    if (value <= v2) {
+      const t = (value - v1) / (v2 - v1);
+      const hexToRgb = (h: string) => h.slice(1).match(/../g)!.map(x => parseInt(x,16));
+      const [r1,g1,b1] = hexToRgb(c1); const [r2,g2,b2] = hexToRgb(c2);
+      const lerp = (a:number,b:number)=>Math.round(a + (b-a)*t);
+      return `rgb(${lerp(r1,r2)}, ${lerp(g1,g2)}, ${lerp(b1,b2)})`;
+    }
+  }
+  return stops[stops.length - 1][1];
+};
+
 const getStandardCellStyle = (hovered: boolean): React.CSSProperties => ({
   ...STYLES.standardCellBase,
   backgroundColor: hovered ? '#f1eaff' : undefined,
@@ -255,6 +284,16 @@ const WpsBuilderPage: React.FC = () => {
   const [detailsDescription, setDetailsDescription] = useState<string | undefined>(undefined);
   const [detailsRelevance, setDetailsRelevance] = useState<string | undefined>(undefined);
 
+  // Counter tooltip state
+  const [showCounterTooltip, setShowCounterTooltip] = useState(false);
+  const counterTooltipRef = useRef<HTMLDivElement | null>(null);
+  const counterTooltipText = 'WPS surveys provide the most value at 16 indicators. Going below does not guarantee sufficient user data for effective decision-making, while going above may cause respondent fatigue and skew final results.';
+  const counterTooltipMarkup = (
+    <>
+  WPS surveys provide the most value at <strong>16 indicators</strong>. Going <strong style={{ color: '#6c757d' }}>below</strong> does not guarantee sufficient user data for effective decision-making, while going <strong style={{ color: '#dc3545' }}>above</strong> may cause respondent fatigue and skew final results.
+    </>
+  );
+
   const handleShowDetails = (indicator: string) => {
     // Find the first matching entry for this indicator in wpsQuestionsBank
     const found = wpsQuestions.find(item => item.INDICATOR === indicator);
@@ -269,6 +308,18 @@ const WpsBuilderPage: React.FC = () => {
   const sznCounts = useMemo(
     () => computeSznCounts(selectedWPSIDs, wpsQuestions),
     [selectedWPSIDs]
+  );
+
+  // Total distinct indicators selected (across all zones)
+  const selectedIndicatorCount = useMemo(
+    () => computeSelectedIndicatorCount(selectedWPSIDs, wpsQuestions),
+    [selectedWPSIDs]
+  );
+
+  // Dynamic color for the selected indicator counter
+  const selectionCountColor = useMemo(
+    () => interpolateCountColor(selectedIndicatorCount),
+    [selectedIndicatorCount]
   );
 
   // Build button handler
@@ -297,7 +348,7 @@ const WpsBuilderPage: React.FC = () => {
 
   // Render helpers to keep return minimal
   const renderZoneFilters = () => (
-    <div className="d-flex gap-2">
+    <div className="d-flex gap-2 align-items-center">
       {ZONES.map(({ id, label }) => (
         <div key={id} style={STYLES.zoneWrapper}>
           <Button
@@ -309,9 +360,47 @@ const WpsBuilderPage: React.FC = () => {
           >
             {label}
           </Button>
-          {sznCounts[id] > 0 && <span style={STYLES.zoneBadge}>{sznCounts[id]}</span>}
+            {sznCounts[id] > 0 && <span style={STYLES.zoneBadge}>{sznCounts[id]}</span>}
         </div>
       ))}
+      {/* Total selected indicators counter */}
+      <div className="d-flex align-items-center ms-2 ps-3" style={{ borderLeft: '1px solid #ddd', lineHeight: 1 }}>
+        <div
+          ref={counterTooltipRef}
+          className="d-inline-flex align-items-baseline"
+          style={{
+            color: selectionCountColor,
+            textDecoration: 'underline dotted',
+            cursor: 'pointer',
+            transition: 'color 160ms linear'
+          }}
+          onClick={() => setShowCounterTooltip(v => !v)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCounterTooltip(v => !v); }
+            if (e.key === 'Escape') { setShowCounterTooltip(false); }
+          }}
+          tabIndex={0}
+          role="button"
+          aria-haspopup="dialog"
+          aria-expanded={showCounterTooltip}
+          aria-label={counterTooltipText}
+        >
+          <span>Selected Indicators:&nbsp;</span>
+          <span className="fw-bold">{selectedIndicatorCount}</span>
+        </div>
+        <Overlay
+          target={counterTooltipRef.current}
+          show={showCounterTooltip}
+          placement="bottom"
+          rootClose
+          onHide={() => setShowCounterTooltip(false)}
+        >
+          <Tooltip id="tooltip-selected-indicators" style={STYLES.tooltipBox}>
+            <div style={{ fontWeight: 600, color: '#6c47b6', marginBottom: 4 }}>Guidance</div>
+            <div>{counterTooltipMarkup}</div>
+          </Tooltip>
+        </Overlay>
+      </div>
     </div>
   );
 
