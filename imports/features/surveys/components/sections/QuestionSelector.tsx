@@ -335,6 +335,13 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     setCurrentPage(1);
   }, [pageSize]);
   
+  // Reset isClosing state when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setIsClosing(false);
+    }
+  }, [isOpen]);
+  
   // Handle filter changes
   const handleFilterChange = (filterType: 'type' | 'tags', value: string | string[]) => {
     if (filterType === 'type') {
