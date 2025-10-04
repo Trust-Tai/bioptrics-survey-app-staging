@@ -53,6 +53,24 @@ Meteor.publish('wpsCategories', function () {
 });
 
 Meteor.startup(async () => {
+  // Migration: Set creationSource field for existing surveys
+  try {
+    console.log('Running migration: Setting creationSource field for existing surveys');
+    const surveysWithoutCreationSource = await Surveys.find({ creationSource: { $exists: false } }).countAsync();
+    console.log(`Found ${surveysWithoutCreationSource} surveys without creationSource field`);
+    
+    if (surveysWithoutCreationSource > 0) {
+      // Set all existing surveys without creationSource to 'manual'
+      const result = await Surveys.updateAsync(
+        { creationSource: { $exists: false } },
+        { $set: { creationSource: 'manual' } },
+        { multi: true }
+      );
+      console.log(`Migration complete: Set creationSource to 'manual' for ${result.modifiedCount || 'unknown number of'} surveys`);
+    }
+  } catch (error) {
+    console.error('Error during survey creationSource migration:', error);
+  }
   // Ensure unique index on name
   WPSCategories.rawCollection().createIndex({ name: 1 }, { unique: true }).catch(err => {
     if (err.code !== 11000) { // ignore duplicate key error on index creation

@@ -32,6 +32,8 @@ export interface Collaborator {
 export type SurveyStatus = 'active' | 'draft' | 'inactive';
 
 export interface SurveyDoc {
+  // Added to track if survey is imported or manually created
+  creationSource?: 'imported' | 'manual';
   _id?: string;
   title: string;
   description: string;
@@ -479,6 +481,8 @@ Meteor.methods({
     
     // Create a new survey based on the template
     const surveyId = await Surveys.insertAsync({
+      // Set creationSource to 'manual' for surveys created from templates
+      creationSource: 'manual' as 'manual',
       title: customizations.title || `${template.title} (from template)`,
       description: customizations.description || template.description,
       logo: template.logo,
@@ -671,6 +675,8 @@ Meteor.methods({
     try {
       // Transform imported data to match application survey structure
       const surveyDoc: Omit<SurveyDoc, '_id'> = {
+        // Set creationSource to 'imported' for imported surveys
+        creationSource: 'imported' as 'imported',
         title: importData.title || 'Imported Survey',
         description: importData.description || '',
         logo: importData.logo || null,
@@ -1467,6 +1473,8 @@ Meteor.methods({
       return { _id: survey._id, shareToken };
     } else {
       const doc = {
+        // Set creationSource to 'manual' for surveys created through the UI
+        creationSource: 'manual' as 'manual',
         title: survey.title || '',
         description: survey.description || '',
         logo: survey.logo,
