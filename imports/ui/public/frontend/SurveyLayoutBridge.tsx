@@ -81,6 +81,7 @@ interface Question {
   image?: string; // Add image property
   order?: number; // Add order property for question ordering
   isUnsectioned?: boolean; // Flag to identify questions without a real section
+  showEmojis?: boolean; // Add showEmojis property for Likert questions
 }
 
 interface CurrentStep {
@@ -287,6 +288,8 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
               image: imageData, // Add image property directly from the raw document
               order: orderValue || version.order || 0, // Use order from surveyOrder, version, or default to 0
               isUnsectioned: isUnsectioned, // Flag to identify questions without a real section
+              // Add showEmojis property with explicit default for Likert questions
+              showEmojis: version.responseType === 'likert' ? (version.showEmojis === false ? false : true) : undefined,
             };
           });
           

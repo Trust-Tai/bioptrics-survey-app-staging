@@ -672,14 +672,14 @@ const BuildModal: React.FC<BuildModalProps> = ({ show, onHide, wpsids, onImportS
           <Button variant="secondary" onClick={onHide} style={{ minWidth: 90 }}>
             Close
           </Button>
-          <Button
+          {/* <Button
             variant="primary"
             style={{ minWidth: 90, marginLeft: 12 }}
             disabled={wpsids.length === 0 || isLoading}
             onClick={confirmHandler}
           >
             Build
-          </Button>
+          </Button> */}
           <Button
             variant="primary"
             style={{ minWidth: 120, marginLeft: 12 }}

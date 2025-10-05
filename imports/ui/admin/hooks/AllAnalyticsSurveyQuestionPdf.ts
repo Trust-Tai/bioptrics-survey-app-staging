@@ -1,6 +1,8 @@
 import { Meteor } from 'meteor/meteor';
 import { progressTracker } from '../../services/ProgressTracker';
 import { generateSurveyReportPDF, SurveyReportData as BaseSurveyReportData } from '/imports/ui/admin/SurveyReportPDF';
+import { rankQuestionsBySection, rankQuestionsBySurvey, AnalyticsQuestion as RankedAnalyticsQuestion } from './RankedPdfHelpers';
+import { generateRankedPDF, generateRankedPDFMultipleSurveys, categorizeAndScoreQuestions } from './RankedPdfFunctions';
 
 // Extended interface for SurveyReportData that includes latestResponses
 interface SurveyReportData extends BaseSurveyReportData {
@@ -35,8 +37,11 @@ interface SurveyReportData extends BaseSurveyReportData {
   }>;
 }
 
-// Interface for analytics question data
-interface AnalyticsQuestion {
+// Use the AnalyticsQuestion interface from RankedPdfHelpers
+type AnalyticsQuestion = RankedAnalyticsQuestion;
+
+// Interface for analytics question data - keeping for reference
+interface AnalyticsQuestionOld {
   questionId: string;
   questionText: string;
   questionType: string;
@@ -236,8 +241,9 @@ const customPdfStyles = `
 export interface ExportQuestionsToPDFOptions {
   surveyTitle?: string;
   surveyDescription?: string;
-  surveyId?: string; // Single survey ID
-  surveyIds?: string[]; // Add support for multiple survey IDs
+  surveyId?: string;
+  surveyIds?: string[];
+  exportType?: 'standard' | 'ranked';
 }
 
 // Function to fetch multiple surveys and generate a combined PDF
@@ -245,6 +251,8 @@ const fetchMultipleSurveysAndGenerate = (
   analyticsQuestions: AnalyticsQuestion[],
   options: ExportQuestionsToPDFOptions
 ): void => {
+  // Get export type (default to standard)
+  const exportType = options?.exportType || 'standard';
   // Create a combined survey data structure with proper typing
   const combinedSurveyData: {
     surveySections: Array<{id: string, name: string, description: string}>,
@@ -308,7 +316,20 @@ const fetchMultipleSurveysAndGenerate = (
       if (surveysProcessed === totalSurveys) {
         console.log('All surveys processed, generating PDF with sections');
         console.log('Combined survey data:', combinedSurveyData);
-        generatePDFWithSections(analyticsQuestions, combinedSurveyData, options);
+        
+        // Use the appropriate generator based on export type
+        if (exportType === 'ranked') {
+          generateRankedPDFMultipleSurveys(
+            analyticsQuestions, 
+            combinedSurveyData, 
+            options,
+            processQuestions,
+            generatePDF,
+            generatePDFWithSections
+          );
+        } else {
+          generatePDFWithSections(analyticsQuestions, combinedSurveyData, options);
+        }
       }
     });
   });
@@ -322,6 +343,10 @@ export const exportQuestionsToPDF = (
     // Debug logging for input data
     console.log('PDF Export - Input questions:', analyticsQuestions);
     console.log('PDF Export - Options:', options);
+    
+    // Get export type (default to standard)
+    const exportType = options?.exportType || 'standard';
+    console.log('PDF Export Type:', exportType);
     
     // Handle multiple surveys case
     if (options?.surveyIds && options.surveyIds.length > 1) {
@@ -342,8 +367,19 @@ export const exportQuestionsToPDF = (
             resolve();
           } else {
             console.log('Fetched survey data:', surveyData);
-            // Generate PDF with sections
-            generatePDFWithSections(analyticsQuestions, surveyData, options);
+            // Generate PDF with sections based on export type
+            if (exportType === 'ranked') {
+              generateRankedPDF(
+                analyticsQuestions, 
+                surveyData, 
+                options,
+                processQuestions,
+                generatePDF,
+                generatePDFWithSections
+              );
+            } else {
+              generatePDFWithSections(analyticsQuestions, surveyData, options);
+            }
             resolve();
           }
         });

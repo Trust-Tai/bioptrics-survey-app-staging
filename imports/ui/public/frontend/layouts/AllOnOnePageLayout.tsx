@@ -16,13 +16,14 @@ interface Question {
   required?: boolean;
   options?: Array<any>;
   sectionId?: string;
-  image?: string; // Add image property
-  order?: number; // Add order property for question ordering
-  isUnsectioned?: boolean; // Flag to identify questions without a real section
+  image?: string;
+  order?: number;
+  isUnsectioned?: boolean;
   currentVersion?: {
     image?: string;
     // Add other currentVersion properties as needed
   };
+  showEmojis?: boolean; // Add showEmojis property for Likert questions
 }
 
 interface Section {
@@ -202,7 +203,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
                   <QuestionContent>
                     <QuestionRenderer
                       questionType={getQuestionType(question)}
-                      showEmojis={survey.showLikertEmojis}
+                      showEmojis={question.showEmojis === false ? false : true}
                       questionText={question.text}
                       options={question.options || []}
                       value={responses[question._id]}

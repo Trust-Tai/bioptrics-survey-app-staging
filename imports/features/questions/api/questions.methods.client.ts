@@ -41,6 +41,8 @@ export interface Question {
   selectedDemographics?: string[];
   // Estimated time to answer the question in seconds
   estimatedTimeSeconds?: number;
+  // Likert question display options
+  showEmojis?: boolean;
 }
 
 // Define the QuestionVersion interface to match what's expected by the DB
@@ -75,6 +77,8 @@ export interface QuestionVersion {
   feedbackPrompt?: string;
   // Creation source tracking
   creationSource?: string; // 'manual' or 'imported'
+  // Likert question display options
+  showEmojis?: boolean;
 }
 
 // Helper to map QuestionBuilder state to QuestionVersion
@@ -108,7 +112,6 @@ export function mapQuestionToVersion(q: Question, saveToQuestionBank: boolean = 
     feedbackPrompt: q.feedbackPrompt || '',
     // Estimated time
     estimatedTimeSeconds: q.estimatedTimeSeconds,
-    // Question status (active/inactive)
     isActive: q.isActive !== undefined ? !!q.isActive : true,
     // Creation source tracking
     creationSource: 'manual',
@@ -117,12 +120,13 @@ export function mapQuestionToVersion(q: Question, saveToQuestionBank: boolean = 
     // Always include surveyId if it exists, regardless of saveToQuestionBank setting
     // This ensures questions are associated with both the question bank and the current survey
     surveyId: surveyId || undefined,
+    // Likert question display options
+    showEmojis: q.answerType === 'likert' ? (q.showEmojis === false ? false : true) : undefined,
   };
 }
 
 export async function saveQuestionsToDB(editId: string | null, questionVersion: QuestionVersion) {
   if (editId) {
-    // Update existing question
     await Meteor.callAsync('questions.update', editId, {
       ...questionVersion,
       published: false

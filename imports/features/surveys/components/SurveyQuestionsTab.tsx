@@ -955,7 +955,18 @@ useEffect(() => {
   };
 
   // Handle editing a section
+  // Helper function to check if the survey is imported
+  const isSurveyImported = () => {
+    return survey?.creationSource === 'imported';
+  };
+
   const handleEditSection = (section: any) => {
+    // Check if survey is imported - don't allow editing sections in imported surveys
+    if (isSurveyImported()) {
+      console.log('Cannot edit section in imported survey');
+      return;
+    }
+    
     console.log('Editing section with data:', section);
     console.log('Document fields in passed section:', {
       document: section.document ? 'exists' : 'missing',
@@ -1395,21 +1406,40 @@ useEffect(() => {
                             </h3>
                           </div>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button
-                              onClick={() => handleEditSection(section)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#6b7280',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center'
-                              }}
-                              title="Edit section"
-                            >
-                              <FiEdit2 size={14} />
-                            </button>
+                            {!isSurveyImported() ? (
+                              <button
+                                onClick={() => handleEditSection(section)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Edit section"
+                              >
+                                <FiEdit2 size={14} />
+                              </button>
+                            ) : (
+                              <button
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'not-allowed',
+                                  color: '#6b7280',
+                                  opacity: 0.5,
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Cannot edit section in imported survey"
+                                disabled
+                              >
+                                <FiLock size={14} />
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1547,32 +1577,66 @@ useEffect(() => {
 
                         {/* Section Action Buttons */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '16px' }}>
-                          <div 
-                            className="survey-section-add-question"
-                            onClick={() => handleChooseFromQuestionBankForSection(section.id)}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              fontSize: '14px',
-                              padding: '8px 12px'
-                            }}
-                          >
-                            <FiPlus size={14} /> Choose from Question Bank
-                          </div>
-                          <div 
-                            className="survey-section-add-question"
-                            onClick={() => handleCreateQuestionForSection(section.id)}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px',
-                              fontSize: '14px',
-                              padding: '8px 12px'
-                            }}
-                          >
-                            <FiPlus size={14} /> Create Question
-                          </div>
+                          {!isSurveyImported() ? (
+                            <div 
+                              className="survey-section-add-question"
+                              onClick={() => handleChooseFromQuestionBankForSection(section.id)}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                padding: '8px 12px'
+                              }}
+                            >
+                              <FiPlus size={14} /> Choose from Question Bank
+                            </div>
+                          ) : (
+                            <div 
+                              className="survey-section-add-question"
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                padding: '8px 12px',
+                                opacity: 0.5,
+                                cursor: 'not-allowed'
+                              }}
+                              title="Cannot add questions to imported survey"
+                            >
+                              <FiLock size={14} /> <span style={{ marginLeft: '8px' }}>Choose from Question Bank</span>
+                            </div>
+                          )}
+                          {!isSurveyImported() ? (
+                            <div 
+                              className="survey-section-add-question"
+                              onClick={() => handleCreateQuestionForSection(section.id)}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                fontSize: '14px',
+                                padding: '8px 12px'
+                              }}
+                            >
+                              <FiPlus size={14} /> Create Question
+                            </div>
+                          ) : (
+                            <div 
+                              className="survey-section-add-question"
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                fontSize: '14px',
+                                padding: '8px 12px',
+                                opacity: 0.5,
+                                cursor: 'not-allowed'
+                              }}
+                              title="Cannot create questions in imported survey"
+                            >
+                              <FiLock size={14} /> Create Question
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1585,27 +1649,75 @@ useEffect(() => {
 
           {/* Action Buttons */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-            <div 
-              className="survey-section-add-question"
-              onClick={handleAddSection}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <FiLayers size={16} /> Add Section
-            </div>
-            <div 
-              className="survey-section-add-question"
-              onClick={handleChooseFromQuestionBank}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <FiPlus size={16} /> Choose from Question Bank
-            </div>
-            <div 
-              className="survey-section-add-question"
-              onClick={handleCreateQuestion}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <FiPlus size={16} /> Create Question
-            </div>
+            {!isSurveyImported() ? (
+              <div 
+                className="survey-section-add-question"
+                onClick={handleAddSection}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <FiLayers size={16} /> Add Section
+              </div>
+            ) : (
+              <div 
+                className="survey-section-add-question"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  opacity: 0.5,
+                  cursor: 'not-allowed'
+                }}
+                title="Cannot add sections to imported survey"
+              >
+                <FiLock size={16} /> Add Section
+              </div>
+            )}
+            {!isSurveyImported() ? (
+              <div 
+                className="survey-section-add-question"
+                onClick={handleChooseFromQuestionBank}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <FiPlus size={16} /> Choose from Question Bank
+              </div>
+            ) : (
+              <div 
+                className="survey-section-add-question"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  opacity: 0.5,
+                  cursor: 'not-allowed'
+                }}
+                title="Cannot add questions to imported survey"
+              >
+                <FiLock size={16} /> Choose from Question Bank
+              </div>
+            )}
+            {!isSurveyImported() ? (
+              <div 
+                className="survey-section-add-question"
+                onClick={handleCreateQuestion}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <FiPlus size={16} /> Create Question
+              </div>
+            ) : (
+              <div 
+                className="survey-section-add-question"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  opacity: 0.5,
+                  cursor: 'not-allowed'
+                }}
+                title="Cannot create questions in imported survey"
+              >
+                <FiLock size={16} /> Create Question
+              </div>
+            )}
             
           </div>
         </div>

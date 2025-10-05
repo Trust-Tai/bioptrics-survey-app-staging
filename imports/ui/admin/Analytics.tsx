@@ -9,7 +9,7 @@ import {
   FiX, 
   FiMessageSquare, 
   FiUser, 
-  FiBarChart2,
+  FiBarChart2, 
   FiFileText,
   FiActivity,
   FiUsers,
@@ -33,6 +33,7 @@ import AllTabsContainer, { TabItem } from './AllTabsContainer';
 import AllOverviewTab from './tabs/AllOverviewTab';
 import AllQuestionsTab, { QuestionsTabRef } from './tabs/AllQuestionsTab';
 import { exportQuestionsToPDF } from './hooks/AllAnalyticsSurveyQuestionPdf';
+import ExportOptionsModal from './components/ExportOptionsModal';
 // import GroupsTab from './tabs/GroupsTab';
 import AllCommentsTab from './tabs/AllCommentsTab';
 import AllActivityTab from './tabs/AllActivityTab';
@@ -931,6 +932,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
   const [exportingPDF, setExportingPDF] = useState(false);
   const [surveyTitle, setSurveyTitle] = useState('');
   const [surveyDescription, setSurveyDescription] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
   
   // State for surveys
   const [availableSurveys, setAvailableSurveys] = useState<Array<{_id: string, title: string}>>([]);
@@ -1040,8 +1042,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Function to show export options modal
+  const handleExportButtonClick = () => {
+    setShowExportModal(true);
+  };
+  
   // Function to handle PDF export
-  const handleExportPDF = () => {
+  const handleExportPDF = (exportType: 'standard' | 'ranked' = 'standard') => {
+    setShowExportModal(false);
     setExportingPDF(true);
     
     // Start progress tracking
@@ -1241,7 +1249,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
                   exportQuestionsToPDF(refQuestions, {
                     surveyTitle: 'Multiple Surveys',
                     surveyDescription: `Export of ${surveysToExport.length} selected surveys`,
-                    surveyIds: surveysToExport // Pass all survey IDs for better organization
+                    surveyIds: surveysToExport, // Pass all survey IDs for better organization
+                    exportType: exportType // Add export type
                   });
                 } else {
                   // For a single survey
@@ -1249,7 +1258,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
                   exportQuestionsToPDF(refQuestions, {
                     surveyTitle: surveyTitle,
                     surveyDescription: surveyDescription,
-                    surveyId: singleSurveyId
+                    surveyId: singleSurveyId,
+                    exportType: exportType // Add export type
                   });
                 }
                 
@@ -1485,13 +1495,21 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
             headerActions={(activeTabId) => {
               // Only show Export button when Questions tab is active
               return activeTabId === 'questions' ? (
-                <ExportButton 
-                  onClick={handleExportPDF} 
-                  disabled={exportingPDF}
-                >
-                  <FiDownload size={16} />
-                  {exportingPDF ? 'Exporting...' : 'Export PDF'}
-                </ExportButton>
+                <>
+                  <ExportButton 
+                    onClick={handleExportButtonClick} 
+                    disabled={exportingPDF}
+                  >
+                    <FiDownload size={16} />
+                    {exportingPDF ? 'Exporting...' : 'Export PDF'}
+                  </ExportButton>
+                  
+                  <ExportOptionsModal
+                    isOpen={showExportModal}
+                    onClose={() => setShowExportModal(false)}
+                    onExport={handleExportPDF}
+                  />
+                </>
               ) : null;
             }}
           />
