@@ -846,13 +846,12 @@ const AllSurveys: React.FC = () => {
   // Optimized surveys data fetching with pagination support
   const { surveys, loading } = useTracker(() => {
     // Calculate skip based on current page and items per page
-
     const skip = (page - 1) * itemsPerPage;
     
     // Use dynamic limit and skip for proper pagination
     const handle = Meteor.subscribe('surveys.ownedAndCollaborated', {
-      limit: itemsPerPage, // Dynamic limit based on items per page
-      skip: skip, // Dynamic skip based on current page
+      limit: 100, // Fetch more surveys to ensure we have enough for filtering
+      skip: 0, // Start from the beginning to get all surveys
       fields: { // Only fetch the fields we need initially
         _id: 1,
         title: 1,
@@ -874,21 +873,17 @@ const AllSurveys: React.FC = () => {
     });
     
     const data = Surveys.find({}, { 
-      sort: { updatedAt: -1 },
-
+      sort: { updatedAt: -1 }
     }).fetch();
     
-    // Get total count from the current data length for now
-    // This is a temporary fix - ideally we'd have a proper count subscription
-    const totalSurveys = data.length;
+    console.log('Fetched surveys count:', data.length);
     
     return {
       loading: !handle.ready(),
-      surveys: data,
-      totalCount: totalSurveys
+      surveys: data
     };
 
-  }, [page, itemsPerPage]); // Add page and itemsPerPage as dependencies
+  }, []); // Remove page and itemsPerPage as dependencies to fetch all surveys
 
 
 
@@ -930,8 +925,8 @@ const AllSurveys: React.FC = () => {
   const createdByOptions = [
     { value: 'all', label: 'All' },
     { value: 'owned', label: 'Survey I Own' },
-    { value: 'shared_by_me', label: 'Survey I\'ve Shared' },
-    { value: 'shared_with_me', label: 'Shared With Me' }
+    { value: 'shared-by-me', label: 'Survey I\'ve Shared' },
+    { value: 'shared-with-me', label: 'Shared With Me' }
   ];
 
   // Get total count for pagination
@@ -939,6 +934,7 @@ const AllSurveys: React.FC = () => {
     const getTotalCount = async () => {
       try {
         const count = await Meteor.callAsync('surveys.getTotalCount');
+        console.log('Total surveys count from server:', count);
         setTotalCount(count);
       } catch (error) {
         console.error('Error getting total count:', error);
@@ -1083,6 +1079,8 @@ const AllSurveys: React.FC = () => {
           default: return true;
         }
       });
+      // Log for debugging
+      console.log('Filtered by ownership:', createdByFilter, result.length);
     }
     
     // Apply tag filter
@@ -1097,10 +1095,27 @@ const AllSurveys: React.FC = () => {
     return result;
   }, [processedSurveys, search, statusFilter, createdByFilter, selectedTagIds]);
 
-  // Server-side pagination - no need for client-side slicing
-  const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
-
-  const paginatedSurveys = filtered;
+  // Calculate filtered count for pagination
+  const filteredCount = filtered.length;
+  console.log('Filtered surveys count:', filteredCount);
+  
+  // Calculate page count based on filtered results
+  const pageCount = Math.ceil(filteredCount / itemsPerPage);
+  console.log('Page count:', pageCount);
+  
+  // Apply pagination to filtered results
+  const paginatedSurveys = filtered.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+  console.log('Paginated surveys count:', paginatedSurveys.length, 'Page:', page, 'Items per page:', itemsPerPage);
+  
+  // Ensure current page is valid for filtered results
+  useEffect(() => {
+    if (filteredCount > 0 && page > Math.ceil(filteredCount / itemsPerPage)) {
+      setPage(1);
+    }
+  }, [filteredCount, itemsPerPage, page]);
 
 
   useEffect(() => {
@@ -1720,7 +1735,11 @@ const AllSurveys: React.FC = () => {
                 <option value={25}>25</option>
                 <option value={50}>50</option>
               </select>
-              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, totalCount)} - {Math.min(page * itemsPerPage, totalCount)} of {totalCount}</span>
+              <span>
+                {filteredCount > 0 ? 
+                  `Showing ${Math.min((page - 1) * itemsPerPage + 1, filteredCount)} - ${Math.min(page * itemsPerPage, filteredCount)} of ${filteredCount}` : 
+                  'No results to show'}
+              </span>
             </div>
             
             <div>
