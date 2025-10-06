@@ -1227,6 +1227,7 @@ const AllSurveys: React.FC = () => {
                       setPage(1); // Reset to first page when filter changes
                     }
                   }}
+                  isSearchable={false}
                   classNamePrefix="react-select"
                   placeholder="All Status"
                   hideSelectedOptions={true}
@@ -1254,6 +1255,7 @@ const AllSurveys: React.FC = () => {
                       setPage(1); // Reset to first page when filter changes
                     }
                   }}
+                  isSearchable={false}
                   classNamePrefix="react-select"
                   placeholder="All"
                   hideSelectedOptions={true}
@@ -1283,6 +1285,7 @@ const AllSurveys: React.FC = () => {
                       setPage(1); // Reset to first page when filter changes
                     }
                   }}
+                  isSearchable={false}
                   placeholder="All Tags"
                   isDisabled={loadingTags}
                   classNamePrefix="react-select"
