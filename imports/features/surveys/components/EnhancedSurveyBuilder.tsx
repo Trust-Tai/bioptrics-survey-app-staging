@@ -3303,7 +3303,7 @@ useEffect(() => {
                 <div className="survey-builder-panel">
                   <div className="survey-builder-panel-header">
                     <h2 className="survey-builder-panel-title">
-                      {steps.find(step => step.id === activeStep)?.label}
+                      {/* {steps.find(step => step.id === activeStep)?.label} */}
                     </h2>
                   </div>
                   
