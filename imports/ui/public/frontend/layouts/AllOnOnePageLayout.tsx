@@ -30,6 +30,10 @@ interface Section {
   id: string;
   name: string;
   description: string;
+  image?: string; // Add image property for section images
+  document?: string; // Add document property for section documents (PDF/Word)
+  documentName?: string; // Document filename
+  documentType?: string; // Document MIME type (e.g., 'application/pdf')
 }
 
 interface AllOnOnePageLayoutProps {

@@ -7,6 +7,7 @@ import NavigationControls from '../components/NavigationControls';
 import ThankYouScreen from '../components/ThankYouScreen';
 import HeaderBar from '../components/HeaderBar';
 import NotificationModal from '../components/NotificationModal';
+import DocumentViewer from '../components/DocumentViewer';
 
 interface Question {
   _id: string;
@@ -31,6 +32,10 @@ interface Section {
   id: string;
   name: string;
   description: string;
+  image?: string; // Add image property for section images
+  document?: string; // Add document property for section documents (PDF/Word)
+  documentName?: string; // Document filename
+  documentType?: string; // Document MIME type (e.g., 'application/pdf')
 }
 
 interface CurrentStep {
@@ -315,6 +320,13 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
             type: 'question',
             id: nextSectionQuestions[0]._id
           });
+          
+          // Scroll to top when navigating to a new section
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+          
           return;
         }
       }
@@ -750,8 +762,23 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
                 description={currentSection.description}
                 progress={100}
                 color={survey.color}
+                image={currentSection.image}
               />
             )}
+            
+            {/* Display document if available */}
+            {currentSection.id !== 'virtual_section' && currentSection.document && (currentSection.documentType === 'application/pdf' || currentSection.documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || currentSection.documentType === 'application/msword') && (
+              <DocumentViewerContainer>
+                <DocumentViewer 
+                  document={currentSection.document} 
+                  documentName={currentSection.documentName || 'document.pdf'} 
+                  documentType={currentSection.documentType} 
+                />
+              </DocumentViewerContainer>
+            )}
+            
+            {/* Add a visual separator */}
+            <Separator />
             
             <QuestionsContainer>
               <QuestionItem>
@@ -792,8 +819,23 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
                 description={currentSection.description}
                 progress={calculateSectionProgress(currentSection.id)}
                 color={survey.color}
+                image={currentSection.image}
               />
             )}
+            
+            {/* Display document if available */}
+            {!currentQuestion.isUnsectioned && currentSection.document && (currentSection.documentType === 'application/pdf' || currentSection.documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || currentSection.documentType === 'application/msword') && (
+              <DocumentViewerContainer>
+                <DocumentViewer 
+                  document={currentSection.document} 
+                  documentName={currentSection.documentName || 'document.pdf'} 
+                  documentType={currentSection.documentType} 
+                />
+              </DocumentViewerContainer>
+            )}
+            
+            {/* Add a visual separator */}
+            <Separator />
             
             {/* Display current question */}
             <QuestionsContainer>
@@ -873,7 +915,7 @@ const QuestionsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  margin: 2rem auto;
+  margin: 3rem auto 2rem; /* Increased top margin to 3rem */
   width: 100%;
   max-width: 800px;
 `;
@@ -928,6 +970,21 @@ const SectionIntro = styled.div`
     color: #6b7280;
     margin-bottom: 0.75rem;
   }
+`;
+
+const Separator = styled.div`
+  height: 1px;
+  background-color: #e5e7eb;
+  width: 100%;
+  max-width: 800px;
+  margin: 1rem auto;
+  opacity: 0.6;
+`;
+
+const DocumentViewerContainer = styled.div`
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 `;
 
 export default StepByStepLayout;

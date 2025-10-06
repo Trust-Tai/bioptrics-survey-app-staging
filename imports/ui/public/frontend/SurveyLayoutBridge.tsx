@@ -93,6 +93,10 @@ interface Section {
   id: string;
   name: string;
   description: string;
+  image?: string; // Add image property for section images
+  document?: string; // Add document property for section documents (PDF/Word)
+  documentName?: string; // Document filename
+  documentType?: string; // Document MIME type (e.g., 'application/pdf')
 }
 
 interface SurveyLayoutBridgeProps {
@@ -206,7 +210,11 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       setSections(survey.surveySections.map((section: any) => ({
         id: section._id || section.id,
         name: section.name,
-        description: section.description || ''
+        description: section.description || '',
+        image: section.image || '', // Include section image
+        document: section.document || '', // Include section document
+        documentName: section.documentName || '', // Include document name
+        documentType: section.documentType || '' // Include document type
       })));
     }
     
@@ -548,12 +556,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
               type: 'question',
               id: nextSectionQuestions[0]._id
             });
+            
           } else {
             // If next section has no questions, just go to the section
             setCurrentStep({
               type: 'section',
               id: nextSectionId
             });
+            
           }
         } else {
           // If last section and no questions, submit
@@ -606,12 +616,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
                   type: 'question',
                   id: nextSectionQuestions[0]._id
                 });
+                
               } else {
                 // If next section has no questions, just go to the section view
                 setCurrentStep({
                   type: 'section',
                   id: nextSectionId
                 });
+                
               }
             } else {
               // This was the last question in the last section, submit
