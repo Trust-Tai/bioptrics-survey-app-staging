@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import styled from 'styled-components';
 import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 
@@ -27,6 +27,21 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
   nextSectionName,
   color = '#552A47' // Kept for backward compatibility
 }) => {
+  // Handle next button click with scroll to top for section navigation
+  const handleNextClick = useCallback(() => {
+    // Call the original onNext function
+    onNext();
+    
+    // If this is a section navigation button, scroll to top after a delay
+    if (nextLabel?.includes('Next Section')) {
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }, 300);
+    }
+  }, [onNext, nextLabel]);
   return (
     <ControlsContainer>
       <BackButton 
@@ -38,8 +53,9 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
       </BackButton>
       
       <NextButton 
-        onClick={onNext} 
+        onClick={handleNextClick} 
         disabled={isNextDisabled}
+        className={nextLabel?.includes('Next Section') ? 'nextbuttonSectionFrontend' : ''}
       >
         {isLastQuestion ? 'Submit' : (nextSectionName ? `${nextSectionName}` : nextLabel)}
         <FiArrowRight size={18} style={{ marginLeft: '8px' }} />

@@ -435,6 +435,15 @@ useEffect(() => {
   };
 
   const handleDeleteQuestion = (questionId: string, event?: React.MouseEvent) => {
+    // Check if the question is imported
+    const questionDoc = questionDocsMap[questionId];
+    if (questionDoc) {
+      const latestVersion = getLatestQuestionVersion(questionDoc);
+      if (latestVersion?.creationSource === 'imported') {
+        console.log('Cannot delete imported question');
+        return;
+      }
+    }
     if (event) {
       const rect = event.currentTarget.getBoundingClientRect();
       setDeleteConfirmation({
@@ -448,6 +457,16 @@ useEffect(() => {
   };
 
   const confirmDeleteQuestion = (questionId: string) => {
+    // Double-check if the question is imported
+    const questionDoc = questionDocsMap[questionId];
+    if (questionDoc) {
+      const latestVersion = getLatestQuestionVersion(questionDoc);
+      if (latestVersion?.creationSource === 'imported') {
+        console.log('Cannot delete imported question');
+        setDeleteConfirmation(null);
+        return;
+      }
+    }
     try {
       // Remove question from local state
       setSurveyQuestions(prev => prev.filter(q => q.id !== questionId));
@@ -1013,6 +1032,11 @@ useEffect(() => {
 
   // Handle deleting a section
   const handleDeleteSection = (sectionId: string, event?: React.MouseEvent) => {
+    // Don't allow deleting sections in imported surveys
+    if (isSurveyImported()) {
+      console.log('Cannot delete section in imported survey');
+      return;
+    }
     if (event) {
       const rect = event.currentTarget.getBoundingClientRect();
       setDeleteSectionConfirmation({
@@ -1026,6 +1050,12 @@ useEffect(() => {
   };
 
   const confirmDeleteSection = (sectionId: string) => {
+    // Double-check we're not deleting sections in imported surveys
+    if (isSurveyImported()) {
+      console.log('Cannot delete section in imported survey');
+      setDeleteSectionConfirmation(null);
+      return;
+    }
     try {
       // Remove section from local state
       setSections(prev => prev.filter(s => s.id !== sectionId));
@@ -1352,24 +1382,43 @@ useEffect(() => {
                                 <FiLock size={14} />
                               </button>
                             )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteQuestion(question.id, e);
-                              }}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#dc2626',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center'
-                              }}
-                              title="Delete question"
-                            >
-                              <FiTrash2 size={14} />
-                            </button>
+                            {!isImported ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteQuestion(question.id, e);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#dc2626',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Delete question"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            ) : (
+                              <button
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'not-allowed',
+                                  color: '#dc2626',
+                                  opacity: 0.5,
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Cannot delete imported question"
+                                disabled
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1440,24 +1489,43 @@ useEffect(() => {
                                 <FiLock size={14} />
                               </button>
                             )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteSection(section.id, e);
-                              }}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#dc2626',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center'
-                              }}
-                              title="Delete section"
-                            >
-                              <FiTrash2 size={14} />
-                            </button>
+                            {!isSurveyImported() ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSection(section.id, e);
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#dc2626',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Delete section"
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            ) : (
+                              <button
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'not-allowed',
+                                  color: '#dc2626',
+                                  opacity: 0.5,
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}
+                                title="Cannot delete section in imported survey"
+                                disabled
+                              >
+                                <FiTrash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -1545,24 +1613,43 @@ useEffect(() => {
                                             <FiLock size={14} />
                                           </button>
                                         )}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteQuestion(question.id, e);
-                                          }}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            color: '#dc2626',
-                                            padding: '4px',
-                                            display: 'flex',
-                                            alignItems: 'center'
-                                          }}
-                                          title="Delete question"
-                                        >
-                                          <FiTrash2 size={14} />
-                                        </button>
+                                        {!isImported ? (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteQuestion(question.id, e);
+                                            }}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              color: '#dc2626',
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                            title="Delete question"
+                                          >
+                                            <FiTrash2 size={14} />
+                                          </button>
+                                        ) : (
+                                          <button
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'not-allowed',
+                                              color: '#dc2626',
+                                              opacity: 0.5,
+                                              padding: '4px',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
+                                            title="Cannot delete imported question"
+                                            disabled
+                                          >
+                                            <FiTrash2 size={14} />
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   </div>

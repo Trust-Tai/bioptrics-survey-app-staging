@@ -142,6 +142,47 @@ Meteor.methods({
     }
   },
   
+  'users.updateProfile': function(formData) {
+    // Check if the user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to update your profile');
+    }
+    
+    // Validate input
+    check(formData, {
+      firstName: String,
+      lastName: String,
+      email: String,
+      company: Match.Maybe(String),
+      phone: Match.Maybe(String),
+      address: Match.Maybe(String),
+      city: Match.Maybe(String),
+      country: Match.Maybe(String),
+      postalCode: Match.Maybe(String)
+    });
+    
+    try {
+      // Update user profile
+      Meteor.users.updateAsync(this.userId, {
+        $set: {
+          'profile.firstName': formData.firstName,
+          'profile.lastName': formData.lastName,
+          'profile.company': formData.company || '',
+          'profile.phone': formData.phone || '',
+          'profile.address': formData.address || '',
+          'profile.city': formData.city || '',
+          'profile.country': formData.country || '',
+          'profile.postalCode': formData.postalCode || ''
+        }
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error updating user profile:', error);
+      throw new Meteor.Error('update-failed', error.message || 'Failed to update profile');
+    }
+  },
+  
   'users.remove': async function(userId) {
     // Validate input
     check(userId, String);

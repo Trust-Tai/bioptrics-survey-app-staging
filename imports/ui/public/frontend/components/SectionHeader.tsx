@@ -1,11 +1,16 @@
 import React from 'react';
 import styled from 'styled-components';
+import DocumentViewer from './DocumentViewer';
 
 interface SectionHeaderProps {
   title: string;
   description: string;
   progress: number; // percentage for this section
   color?: string; // Kept for backward compatibility
+  image?: string; // Add image property for section images
+  document?: string; // Add document property for section documents (PDF/Word)
+  documentName?: string; // Document filename
+  documentType?: string; // Document MIME type (e.g., 'application/pdf')
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({
@@ -13,10 +18,15 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   description,
   progress,
   // color prop is kept for backward compatibility but not used directly
-  color = '#552A47'
+  color = '#552A47',
+  image,
+  document,
+  documentName,
+  documentType
 }) => {
   return (
     <HeaderContainer>
+      {image && <SectionImage src={image} alt={title} />}
       <Title>{title}</Title>
       <Description>{description}</Description>
       <ProgressContainer>
@@ -81,6 +91,14 @@ const ProgressText = styled.div`
   font-size: 0.8rem;
   font-weight: 500;
   text-align: right;
+`;
+
+const SectionImage = styled.img`
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 1rem;
 `;
 
 export default SectionHeader;

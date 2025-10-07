@@ -10,7 +10,7 @@ import { Surveys } from '../../features/surveys/api/surveys';
 import { Layers } from '../../api/layers';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import SurveyShareModal from '../../features/surveys/components/SurveyShareModal';
-import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner, FaShare } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner, FaShare, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 // Using FaSpinner for loading indicator
 import TermLabel from '../components/TermLabel';
@@ -20,6 +20,7 @@ import SurveyStatsSummary from './components/SurveyStatsSummary';
 import SurveyListView from './components/SurveyListView';
 import ViewToggle from './components/ViewToggle';
 import SurveyResponsesModal from './components/SurveyResponsesModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // Import the survey stats method
 import '../../features/surveys/api/surveyStats';
@@ -801,6 +802,48 @@ const AllSurveys: React.FC = () => {
     navigate(`/admin/surveys/builder/${id}`);
   };
   
+  // State for status change confirmation modal
+  const [statusConfirmModal, setStatusConfirmModal] = useState({
+    isOpen: false,
+    surveyId: '',
+    surveyTitle: '',
+    newStatus: '' as 'active' | 'inactive' | 'draft'
+  });
+
+  // Function to handle changing survey status
+  const handleStatusChange = (id: string, title: string, newStatus: 'active' | 'inactive' | 'draft') => {
+    // For inactive status, show confirmation modal
+    if (newStatus === 'inactive') {
+      setStatusConfirmModal({
+        isOpen: true,
+        surveyId: id,
+        surveyTitle: title,
+        newStatus
+      });
+    } else {
+      // For other statuses, proceed directly
+      updateSurveyStatus(id, title, newStatus);
+    }
+  };
+  
+  // Function to handle the actual status update
+  const updateSurveyStatus = (id: string, title: string, newStatus: 'active' | 'inactive' | 'draft') => {
+    Meteor.call('surveys.updateStatus', id, newStatus, (err: Meteor.Error | null) => {
+      if (err) {
+        console.error('Error updating survey status:', err);
+        setNotification({ 
+          type: 'error', 
+          message: `Error changing survey status: ${err.reason || err.message || 'Unknown error'}` 
+        });
+      } else {
+        setNotification({ 
+          type: 'success', 
+          message: `Survey "${title}" has been set to ${newStatus}` 
+        });
+      }
+    });
+  };
+  
   const onViewResponses = (id: string, title: string) => {
     console.log('Viewing analytics for survey:', id);
     navigate(`/admin/surveys/builder/${id}?tab=analytics`);
@@ -846,13 +889,12 @@ const AllSurveys: React.FC = () => {
   // Optimized surveys data fetching with pagination support
   const { surveys, loading } = useTracker(() => {
     // Calculate skip based on current page and items per page
-
     const skip = (page - 1) * itemsPerPage;
     
     // Use dynamic limit and skip for proper pagination
     const handle = Meteor.subscribe('surveys.ownedAndCollaborated', {
-      limit: itemsPerPage, // Dynamic limit based on items per page
-      skip: skip, // Dynamic skip based on current page
+      limit: 100, // Fetch more surveys to ensure we have enough for filtering
+      skip: 0, // Start from the beginning to get all surveys
       fields: { // Only fetch the fields we need initially
         _id: 1,
         title: 1,
@@ -874,21 +916,17 @@ const AllSurveys: React.FC = () => {
     });
     
     const data = Surveys.find({}, { 
-      sort: { updatedAt: -1 },
-
+      sort: { updatedAt: -1 }
     }).fetch();
     
-    // Get total count from the current data length for now
-    // This is a temporary fix - ideally we'd have a proper count subscription
-    const totalSurveys = data.length;
+    console.log('Fetched surveys count:', data.length);
     
     return {
       loading: !handle.ready(),
-      surveys: data,
-      totalCount: totalSurveys
+      surveys: data
     };
 
-  }, [page, itemsPerPage]); // Add page and itemsPerPage as dependencies
+  }, []); // Remove page and itemsPerPage as dependencies to fetch all surveys
 
 
 
@@ -930,8 +968,8 @@ const AllSurveys: React.FC = () => {
   const createdByOptions = [
     { value: 'all', label: 'All' },
     { value: 'owned', label: 'Survey I Own' },
-    { value: 'shared_by_me', label: 'Survey I\'ve Shared' },
-    { value: 'shared_with_me', label: 'Shared With Me' }
+    { value: 'shared-by-me', label: 'Survey I\'ve Shared' },
+    { value: 'shared-with-me', label: 'Shared With Me' }
   ];
 
   // Get total count for pagination
@@ -939,6 +977,7 @@ const AllSurveys: React.FC = () => {
     const getTotalCount = async () => {
       try {
         const count = await Meteor.callAsync('surveys.getTotalCount');
+        console.log('Total surveys count from server:', count);
         setTotalCount(count);
       } catch (error) {
         console.error('Error getting total count:', error);
@@ -1083,6 +1122,8 @@ const AllSurveys: React.FC = () => {
           default: return true;
         }
       });
+      // Log for debugging
+      console.log('Filtered by ownership:', createdByFilter, result.length);
     }
     
     // Apply tag filter
@@ -1097,10 +1138,27 @@ const AllSurveys: React.FC = () => {
     return result;
   }, [processedSurveys, search, statusFilter, createdByFilter, selectedTagIds]);
 
-  // Server-side pagination - no need for client-side slicing
-  const pageCount = Math.ceil((totalCount || 0) / itemsPerPage);
-
-  const paginatedSurveys = filtered;
+  // Calculate filtered count for pagination
+  const filteredCount = filtered.length;
+  console.log('Filtered surveys count:', filteredCount);
+  
+  // Calculate page count based on filtered results
+  const pageCount = Math.ceil(filteredCount / itemsPerPage);
+  console.log('Page count:', pageCount);
+  
+  // Apply pagination to filtered results
+  const paginatedSurveys = filtered.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+  console.log('Paginated surveys count:', paginatedSurveys.length, 'Page:', page, 'Items per page:', itemsPerPage);
+  
+  // Ensure current page is valid for filtered results
+  useEffect(() => {
+    if (filteredCount > 0 && page > Math.ceil(filteredCount / itemsPerPage)) {
+      setPage(1);
+    }
+  }, [filteredCount, itemsPerPage, page]);
 
 
   useEffect(() => {
@@ -1157,6 +1215,7 @@ const AllSurveys: React.FC = () => {
                 </span>
               </ModalText>
               <ModalButtons>
+                <CancelButton onClick={() => setConfirmPermanentDelete(null)}>Cancel</CancelButton>
                 <DeleteButton
                   onClick={async () => {
                     try {
@@ -1170,15 +1229,33 @@ const AllSurveys: React.FC = () => {
                 >
                   Delete Permanently
                 </DeleteButton>
-                <CancelButton
-                  onClick={() => setConfirmPermanentDelete(null)}
-                >
-                  Cancel
-                </CancelButton>
               </ModalButtons>
             </ModalContent>
           </Modal>
         )}
+        
+        {/* Status Change Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={statusConfirmModal.isOpen}
+          title="Change Survey Status"
+          message={`Are you sure you want to set "${statusConfirmModal.surveyTitle}" as inactive? It will no longer be accessible to respondents.`}
+          confirmText="Set Inactive"
+          cancelText="Cancel"
+          type="warning"
+          icon={<FaToggleOff />}
+          onConfirm={() => {
+            updateSurveyStatus(
+              statusConfirmModal.surveyId, 
+              statusConfirmModal.surveyTitle, 
+              statusConfirmModal.newStatus
+            );
+            setStatusConfirmModal({ isOpen: false, surveyId: '', surveyTitle: '', newStatus: '' as 'active' | 'inactive' | 'draft' });
+          }}
+          onCancel={() => {
+            setStatusConfirmModal({ isOpen: false, surveyId: '', surveyTitle: '', newStatus: '' as 'active' | 'inactive' | 'draft' });
+          }}
+        />
+        
         <Container>
           <TitleRow>
             <Title>All {surveyLabelPlural}</Title>
@@ -1227,6 +1304,7 @@ const AllSurveys: React.FC = () => {
                       setPage(1); // Reset to first page when filter changes
                     }
                   }}
+                  isSearchable={false}
                   classNamePrefix="react-select"
                   placeholder="All Status"
                   hideSelectedOptions={true}
@@ -1254,6 +1332,7 @@ const AllSurveys: React.FC = () => {
                       setPage(1); // Reset to first page when filter changes
                     }
                   }}
+                  isSearchable={false}
                   classNamePrefix="react-select"
                   placeholder="All"
                   hideSelectedOptions={true}
@@ -1283,6 +1362,7 @@ const AllSurveys: React.FC = () => {
                       setPage(1); // Reset to first page when filter changes
                     }
                   }}
+                  isSearchable={false}
                   placeholder="All Tags"
                   isDisabled={loadingTags}
                   classNamePrefix="react-select"
@@ -1514,6 +1594,70 @@ const AllSurveys: React.FC = () => {
                             >
                               Preview
                             </button>
+                            
+                            {/* Set Inactive option - only show for active surveys */}
+                            {s.status === 'active' && (
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: '#d32f2f',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleStatusChange(s._id, s.title, 'inactive');
+                                  setOpenDropdown(null);
+                                }}
+                              >
+                                <FaToggleOff style={{ marginRight: '8px' }} /> Set Inactive
+                              </button>
+                            )}
+                            
+                            {/* Set Active option - only show for inactive surveys */}
+                            {s.status === 'inactive' && (
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  transition: 'background-color 0.2s',
+                                  color: '#0a8043',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(10, 128, 67, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleStatusChange(s._id, s.title, 'active');
+                                  setOpenDropdown(null);
+                                }}
+                              >
+                                <FaToggleOn style={{ marginRight: '8px' }} /> Set Active
+                              </button>
+                            )}
                             {s.status !== 'inactive' && (
                               <button
                                 style={{
@@ -1618,6 +1762,7 @@ const AllSurveys: React.FC = () => {
                   console.log('Permanently deleting survey:', id, title);
                   setConfirmPermanentDelete({ _id: id, title });
                 }}
+                onStatusChange={handleStatusChange}
                 onViewResponses={(id, title) => {
                   console.log('Navigating to analytics for survey:', id);
                   navigate(`/admin/surveys/builder/${id}?tab=analytics`);
@@ -1717,7 +1862,11 @@ const AllSurveys: React.FC = () => {
                 <option value={25}>25</option>
                 <option value={50}>50</option>
               </select>
-              <span>Showing {Math.min((page - 1) * itemsPerPage + 1, totalCount)} - {Math.min(page * itemsPerPage, totalCount)} of {totalCount}</span>
+              <span>
+                {filteredCount > 0 ? 
+                  `Showing ${Math.min((page - 1) * itemsPerPage + 1, filteredCount)} - ${Math.min(page * itemsPerPage, filteredCount)} of ${filteredCount}` : 
+                  'No results to show'}
+              </span>
             </div>
             
             <div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import QuestionRenderer from './QuestionRenderer';
+import DocumentViewer from './DocumentViewer';
 
 interface Question {
   _id: string;
@@ -24,6 +25,10 @@ interface SectionAccordionProps {
     id: string;
     name: string;
     description: string;
+    image?: string; // Add image property for section images
+    document?: string; // Add document property for section documents (PDF/Word)
+    documentName?: string; // Document filename
+    documentType?: string; // Document MIME type (e.g., 'application/pdf')
   };
   questions: Question[];
   responses: Record<string, any>;
@@ -57,6 +62,7 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
   return (
     <SectionContainer id={`section-${section.id}`}>
       <SectionHeader>
+        {section.image && <SectionImage src={section.image} alt={section.name} />}
         <Title>{section.name}</Title>
         <Description>{section.description}</Description>
         <ProgressContainer>
@@ -66,6 +72,19 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
           <ProgressText>{completionPercentage}% Completed</ProgressText>
         </ProgressContainer>
       </SectionHeader>
+      
+      {/* Display document if available */}
+      {section.document && (section.documentType === 'application/pdf' || section.documentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || section.documentType === 'application/msword') && (
+        <DocumentViewerContainer>
+          <DocumentViewer 
+            document={section.document} 
+            documentName={section.documentName || 'document.pdf'} 
+            documentType={section.documentType} 
+          />
+        </DocumentViewerContainer>
+      )}
+      
+      <Separator />
       
       <QuestionsContainer>
         {/* Filter questions to only show those belonging to this section */}
@@ -154,6 +173,7 @@ const QuestionsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  margin-top: 2rem; /* Add top margin for spacing between section header and questions */
 `;
 
 const QuestionItem = styled.div`
@@ -174,6 +194,29 @@ const QuestionNumber = styled.div`
 
 const QuestionContent = styled.div`
   flex-grow: 1;
+`;
+
+const SectionImage = styled.img`
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 1rem;
+`;
+
+const Separator = styled.div`
+  height: 1px;
+  background-color: #e5e7eb;
+  width: 100%;
+  max-width: 800px;
+  margin: 1rem auto;
+  opacity: 0.6;
+`;
+
+const DocumentViewerContainer = styled.div`
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 `;
 
 export default SectionAccordion;
