@@ -5,6 +5,7 @@ import StepByStepLayout from './layouts/StepByStepLayout';
 import AllOnOnePageLayout from './layouts/AllOnOnePageLayout';
 import ThankYouWrapper from './components/ThankYouWrapper';
 import ResponseLimitMessage from './components/ResponseLimitMessage';
+import ModernSurveyError from '../components/ModernSurveyError';
 import { TimerProvider, useTimer } from './contexts/TimerContext';
 
 // Define interfaces for the wrapper components
@@ -874,6 +875,17 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         {/* Checking survey availability... */}
         
       </div>
+    );
+  }
+  
+  // Check if survey is inactive
+  if (survey && survey.status === 'inactive') {
+    return (
+      <ModernSurveyError
+        title="Survey Unavailable"
+        message="This survey is no longer accepting responses."
+        icon="closed"
+      />
     );
   }
   

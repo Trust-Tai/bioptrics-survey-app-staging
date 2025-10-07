@@ -274,6 +274,10 @@ const ModernSurveyPublic: React.FC = () => {
     if (!isPreviewMode) {
       setIsLoading(dbLoading);
       if (dbSurvey) {
+        // Check if survey is inactive
+        if (dbSurvey.status === 'inactive') {
+          setLoadError('This survey is no longer accepting responses.');
+        }
         setSurveyData(dbSurvey as unknown as Survey);
         
         // Extract theme ID from database survey data
@@ -367,17 +371,18 @@ const ModernSurveyPublic: React.FC = () => {
           </Header>
           <MainContent>
             <ModernSurveyError 
-              message={"You are not authorized to view this survey preview"} 
+              title={loadError === 'This survey is no longer accepting responses.' ? 'Survey Unavailable' : 'Error'}
+              message={loadError}
+              icon={loadError === 'This survey is no longer accepting responses.' ? 'closed' : 'error'}
             />
           </MainContent>
           <Footer>
-            © {new Date().getFullYear()} Bioptrics Pulse Platform. All rights reserved.
+            © {new Date().getFullYear()} Bioptrics Platform. All rights reserved.
           </Footer>
         </PageContainer>
       </SurveyThemeProvider>
     );
   }
-  
   // Render the survey content
   return (
     <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>

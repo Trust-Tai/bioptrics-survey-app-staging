@@ -1,9 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiAlertTriangle } from 'react-icons/fi';
+import { FiAlertTriangle, FiLock, FiClock, FiXCircle } from 'react-icons/fi';
 
 interface ModernSurveyErrorProps {
   message: string;
+  title?: string;
+  icon?: 'error' | 'lock' | 'clock' | 'closed';
 }
 
 const ErrorContainer = styled.div`
@@ -74,7 +76,11 @@ const BackButton = styled.button`
   }
 `;
 
-const ModernSurveyError: React.FC<ModernSurveyErrorProps> = ({ message }) => {
+const ModernSurveyError: React.FC<ModernSurveyErrorProps> = ({ 
+  message, 
+  title = "Something went wrong",
+  icon = "error"
+ }) => {
   const handleGoBack = () => {
     window.history.back();
   };
@@ -83,9 +89,12 @@ const ModernSurveyError: React.FC<ModernSurveyErrorProps> = ({ message }) => {
     <ErrorContainer>
       <ErrorCard>
         <IconWrapper>
-          <FiAlertTriangle />
+          {icon === 'lock' && <FiLock />}
+          {icon === 'clock' && <FiClock />}
+          {icon === 'closed' && <FiXCircle />}
+          {icon === 'error' && <FiAlertTriangle />}
         </IconWrapper>
-        <ErrorTitle>Something went wrong</ErrorTitle>
+        <ErrorTitle>{title}</ErrorTitle>
         <ErrorMessage>{message}</ErrorMessage>
         <BackButton onClick={handleGoBack}>
           Go Back

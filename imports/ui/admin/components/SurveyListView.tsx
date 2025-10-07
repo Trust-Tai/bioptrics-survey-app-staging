@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Meteor } from 'meteor/meteor';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown, FaShare } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown, FaShare, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -219,6 +219,7 @@ interface SurveyListViewProps {
   onViewResponses: (id: string, title: string) => void;
   onCopyLink?: (id: string) => void;
   onShare?: (id: string, title: string) => void;
+  onStatusChange?: (id: string, title: string, status: 'active' | 'inactive' | 'draft') => void;
 }
 
 // Define type for sort field
@@ -310,7 +311,8 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
   onPreview,
   onViewResponses,
   onCopyLink,
-  onShare
+  onShare,
+  onStatusChange
 }) => {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
@@ -883,6 +885,70 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       
                       {!survey.deleted && (
                         <>
+                          {/* Set Inactive option - only show for active surveys */}
+                          {survey.status === 'active' && onStatusChange && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#d32f2f',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                safelyExecuteAction(onStatusChange, 'Set Inactive', survey._id, survey.title, 'inactive');
+                              }}
+                              data-no-navigate="true"
+                            >
+                              <FaToggleOff style={{ marginRight: '8px' }} /> Set Inactive
+                            </button>
+                          )}
+                          
+                          {/* Set Active option - only show for inactive surveys */}
+                          {survey.status === 'inactive' && onStatusChange && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                transition: 'background-color 0.2s',
+                                color: '#0a8043',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(10, 128, 67, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                safelyExecuteAction(onStatusChange, 'Set Active', survey._id, survey.title, 'active');
+                              }}
+                              data-no-navigate="true"
+                            >
+                              <FaToggleOn style={{ marginRight: '8px' }} /> Set Active
+                            </button>
+                          )}
+                          
                           {survey.status !== 'inactive' && (
                             <button
                               style={{
