@@ -12,6 +12,9 @@ interface HeaderBarProps {
 const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo }) => {
   // Get timer state from context
   const { isRunning, elapsedTime } = useTimer();
+  
+  // Log props for debugging
+  console.log('[HeaderBar] Rendering with props:', { surveyTitle, averageTime, logo, isRunning, elapsedTime });
   // Use the logo from the public folder
   const DefaultLogo = "/TeamsynerG.png"; // This logo already exists in your public folder
   // Use memo for stable rendering
@@ -29,10 +32,33 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo })
   
   const averageTimeDisplay = React.useMemo(() => {
     if (averageTime) {
+      // Format the time for display
+      let displayTime = averageTime;
+      
+      // If it's in MM:SS format, convert to "X min" format
+      if (averageTime.includes(':')) {
+        const [minutes, seconds] = averageTime.split(':');
+        const mins = parseInt(minutes, 10);
+        const secs = parseInt(seconds, 10);
+        
+        if (mins === 0) {
+          // Less than a minute
+          displayTime = `${secs} sec`;
+        } else if (secs === 0) {
+          // Exact minutes
+          displayTime = `${mins} min`;
+        } else {
+          // Minutes and seconds
+          displayTime = `${mins}:${seconds} min`;
+        }
+      }
+      
+      console.log('[HeaderBar] Displaying average time:', { original: averageTime, formatted: displayTime });
+      
       return (
         <AverageTimeTag>
           <ClockIcon />
-          <span>{averageTime}</span>
+          <span>{displayTime}</span>
         </AverageTimeTag>
       );
     }
