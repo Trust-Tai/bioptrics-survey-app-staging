@@ -194,6 +194,28 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   useEffect(() => {
     if (!survey || !survey._id) return;
     
+    // For preview mode, ensure we have an estimated time
+    if (isPreviewMode && survey.surveyOrder && survey.surveyOrder.length > 0) {
+      console.log('[SurveyLayoutBridge] Preview mode detected, checking for estimated time');
+      // If we already have estimatedTime, use it
+      if (survey.estimatedTime) {
+        console.log('[SurveyLayoutBridge] Using existing estimated time:', survey.estimatedTime);
+        setSurveyWithTime(survey);
+      } else {
+        // Calculate an estimated time based on question count
+        const questionCount = survey.surveyOrder.filter((item: any) => item.type === 'question').length;
+        const estimatedSeconds = questionCount * 30 + 30; // 30 seconds per question + 30 seconds buffer
+        const minutes = Math.floor(estimatedSeconds / 60);
+        const seconds = estimatedSeconds % 60;
+        const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        console.log('[SurveyLayoutBridge] Calculated estimated time for preview mode:', formattedTime, 'based on', questionCount, 'questions');
+        
+        // Store the formatted time in a new survey object
+        const updatedSurvey = { ...survey, estimatedTime: formattedTime };
+        setSurveyWithTime(updatedSurvey);
+      }
+    }
+    
     // Initialize with the first section if available
     if (survey.surveySections && survey.surveySections.length > 0) {
       // Get the first section ID
@@ -794,7 +816,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     
     console.log('Survey completion time:', elapsedTime, '(', totalSeconds, 'seconds)');
     
-    // Submit survey response
+    // For preview mode, just show the thank you screen without saving to database
+    if (isPreviewMode) {
+      console.log('Preview mode detected - skipping database submission');
+      setIsSubmitted(true);
+      return;
+    }
+    
+    // Submit survey response (only for non-preview mode)
     if (!survey || !survey._id) return;
     
     // Check if the survey has reached its response limit before submitting
@@ -942,6 +971,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   }
   
   // Use the appropriate layout based on survey configuration
+  // Log the survey object being passed to layout components
+  console.log('[SurveyLayoutBridge] Rendering layout with survey:', {
+    layout,
+    isPreviewMode,
+    hasEstimatedTime: !!(surveyWithTime || survey).estimatedTime,
+    estimatedTime: (surveyWithTime || survey).estimatedTime
+  });
+  
   return layout === 'allOnOnePage' ? (
     <StableAllOnOnePageLayout
       survey={surveyWithTime || survey}

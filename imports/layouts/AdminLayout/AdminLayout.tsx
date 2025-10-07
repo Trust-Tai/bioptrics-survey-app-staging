@@ -163,7 +163,7 @@ const Sidebar = styled.aside<SidebarProps>`
   left: 0;
   top: 0;
   height: max-content;
-  z-index: 120;
+  z-index: 0;
   transition: all 0.3s ease;
   overflow-x: visible;
   overflow-y: visible;
