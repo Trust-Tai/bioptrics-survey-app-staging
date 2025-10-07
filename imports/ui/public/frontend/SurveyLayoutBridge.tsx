@@ -816,7 +816,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     
     console.log('Survey completion time:', elapsedTime, '(', totalSeconds, 'seconds)');
     
-    // Submit survey response
+    // For preview mode, just show the thank you screen without saving to database
+    if (isPreviewMode) {
+      console.log('Preview mode detected - skipping database submission');
+      setIsSubmitted(true);
+      return;
+    }
+    
+    // Submit survey response (only for non-preview mode)
     if (!survey || !survey._id) return;
     
     // Check if the survey has reached its response limit before submitting
