@@ -559,6 +559,11 @@ const EnhancedSurveyBuilder: React.FC<EnhancedSurveyBuilderProps> = ({ surveyId:
     survey?.consentScreen?.anonymityNoticeText || 
     'This survey is anonymous. Your responses cannot be linked back to you personally.'
   );
+  // Control whether to show the consent screen at all
+  const [showConsentScreen, setShowConsentScreen] = useState<boolean>(
+    survey?.consentScreen?.showConsentScreen !== undefined ? 
+    survey?.consentScreen?.showConsentScreen : true
+  );
   // Likert emoji display setting
   const [showLikertEmojis, setShowLikertEmojis] = useState<boolean>(
     survey?.showLikertEmojis !== undefined ? survey?.showLikertEmojis : true
@@ -1346,7 +1351,6 @@ useEffect(() => {
         if (currentSurvey.consentScreen.checkboxText) {
           setCheckboxText(currentSurvey.consentScreen.checkboxText);
         }
-        
         if (currentSurvey.consentScreen.anonymityNoticeText) {
           setAnonymityNoticeText(currentSurvey.consentScreen.anonymityNoticeText);
         }
@@ -1354,10 +1358,11 @@ useEffect(() => {
         if (currentSurvey.consentScreen.showAnonymityNotice !== undefined) {
           setShowAnonymityNotice(currentSurvey.consentScreen.showAnonymityNotice);
         }
-      }
-      
-      if (currentSurvey.thankYouBoxes && Array.isArray(currentSurvey.thankYouBoxes) && currentSurvey.thankYouBoxes.length > 0) {
-        setThankYouBoxes(currentSurvey.thankYouBoxes as { title: string; subtitle: string; icon: string; selected: boolean; }[]);
+        
+        // Set showConsentScreen state if it exists in the survey
+        if (currentSurvey.consentScreen.showConsentScreen !== undefined) {
+          setShowConsentScreen(currentSurvey.consentScreen.showConsentScreen);
+        }
       } else {
         // Ensure we have default boxes if none exist in the survey
         const defaultBoxes: { title: string; subtitle: string; icon: string; selected: boolean; }[] = [
@@ -1942,7 +1947,8 @@ useEffect(() => {
           continueButtonText: continueButtonText,
           checkboxText: checkboxText,
           showAnonymityNotice: showAnonymityNotice,
-          anonymityNoticeText: anonymityNoticeText
+          anonymityNoticeText: anonymityNoticeText,
+          showConsentScreen: showConsentScreen
         },
         // Include survey order
         surveyOrder: survey.surveyOrder || [],
@@ -2138,7 +2144,8 @@ useEffect(() => {
           continueButtonText: continueButtonText,
           checkboxText: checkboxText,
           showAnonymityNotice: showAnonymityNotice,
-          anonymityNoticeText: anonymityNoticeText
+          anonymityNoticeText: anonymityNoticeText,
+          showConsentScreen: showConsentScreen
         }
       };
       
@@ -3354,6 +3361,8 @@ useEffect(() => {
                     setShowAnonymityNotice={setShowAnonymityNotice}
                     anonymityNoticeText={anonymityNoticeText}
                     setAnonymityNoticeText={setAnonymityNoticeText}
+                    showConsentScreen={showConsentScreen}
+                    setShowConsentScreen={setShowConsentScreen}
                   />
                   
                  

@@ -174,6 +174,7 @@ export interface SurveyDoc {
     checkboxText?: string;
     showAnonymityNotice?: boolean;
     anonymityNoticeText?: string;
+    showConsentScreen?: boolean; // Controls whether to show the consent screen at all
   };
   isActive?: boolean;
   priority?: number;

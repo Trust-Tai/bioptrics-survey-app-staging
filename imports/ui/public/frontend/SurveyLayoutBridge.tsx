@@ -445,9 +445,16 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
     }
   }, [survey, startTimer]);
   
-  // Check if user has already consented
+  // Check if user has already consented or if consent screen is disabled
   useEffect(() => {
     if (!survey || !survey._id) return;
+    
+    // If consent screen is disabled, automatically set hasConsented to true
+    if (survey.consentScreen?.showConsentScreen === false) {
+      setHasConsented(true);
+      startTimer();
+      return;
+    }
     
     try {
       const storedConsent = localStorage.getItem(`survey_consent_${survey._id}`);
@@ -878,8 +885,8 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   // Determine which layout to use
   const layout = survey.layout || 'multiStep';
   
-  // Show consent screen if needed
-  const showConsentScreen = !hasConsented && !isPreviewMode;
+  // Show consent screen if needed and enabled
+  const showConsentScreen = !hasConsented && !isPreviewMode && survey.consentScreen?.showConsentScreen !== false;
   
   // We already have elapsedTime from the timer context above
 
@@ -941,6 +948,8 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
           title: survey.consentScreen?.title || 'Informed Consent',
           showAnonymityNotice: survey.consentScreen?.showAnonymityNotice !== undefined ? 
             survey.consentScreen.showAnonymityNotice : true,
+          showConsentScreen: survey.consentScreen?.showConsentScreen !== undefined ? 
+            survey.consentScreen.showConsentScreen : true,
           anonymityNoticeText: survey.consentScreen?.anonymityNoticeText || 
             'This survey is anonymous. Your responses cannot be linked back to you personally.',
           privacyNoticeUrl: survey.consentScreen?.privacyNoticeUrl || '#',

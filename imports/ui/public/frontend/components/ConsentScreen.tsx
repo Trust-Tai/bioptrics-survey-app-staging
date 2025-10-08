@@ -17,6 +17,7 @@ interface ConsentScreenProps {
     privacyInfoText?: string;
     continueButtonText?: string;
     checkboxText: string;
+    showConsentScreen: boolean;
   };
   onConsent: () => void;
 }
@@ -39,6 +40,7 @@ const ConsentScreen: React.FC<ConsentScreenProps> = ({
   consentConfig = {
     title: 'Informed Consent',
     showAnonymityNotice: true,
+    showConsentScreen: true,
     anonymityNoticeText: 'This survey is anonymous. Your responses cannot be linked back to you personally.',
     privacyNoticeUrl: '#',
     privacyLinkText: 'Privacy Notice',
