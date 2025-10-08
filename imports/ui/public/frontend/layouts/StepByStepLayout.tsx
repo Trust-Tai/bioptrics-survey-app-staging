@@ -577,6 +577,8 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
         logo={survey.logo}
+        progress={calculateProgress()}
+        color={'var(--primary-color, #552A47)'}
       />
       
       {/* Main Layout with Sidebar and Content */}

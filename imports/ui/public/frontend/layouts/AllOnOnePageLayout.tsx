@@ -1,9 +1,9 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
-import SidebarNavigation from '../components/SidebarNavigation';
+// import SidebarNavigation from '../components/SidebarNavigation';
 import ScrollSpy from '../components/ScrollSpy';
 import SectionAccordion from '../components/SectionAccordion';
-import ThankYouScreen from '../components/ThankYouScreen';
+// import ThankYouScreen from '../components/ThankYouScreen';
 import QuestionRenderer from '../components/QuestionRenderer';
 import HeaderBar from '../components/HeaderBar';
 
@@ -136,36 +136,19 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
         logo={survey.logo}
-      />
-      <MainLayout>
-      <SidebarNavigation 
-        sections={sectionData}
-        currentSectionId={activeSectionId}
         progress={calculateProgress()}
-        onSectionClick={(sectionId: string) => {
-          // Update the active section ID
-          setActiveSectionId(sectionId);
-          
-          // Scroll to section
-          const element = document.getElementById(`section-${sectionId}`);
-          if (element) {
-            window.scrollTo({
-              top: element.offsetTop - 100,
-              behavior: 'smooth'
-            });
-          }
-        }}
-        color={survey.color}
-        logo={survey.logo}
+        color={'var(--primary-color, #552A47)'}
       />
-      
-      <ContentContainer>
+      <MainLayout>      
+      <ContentContainer fullWidth={true}>
         <ScrollSpy 
           sections={useMemo(() => sections.map(s => ({ id: s.id, name: s.name })), [sections])}
           offset={100}
           color={survey.color}
-          // Disable ScrollSpy's ability to change active section
-          onActiveSectionChange={() => {}}
+          // Update active section when scrolling
+          onActiveSectionChange={(sectionId) => {
+            setActiveSectionId(sectionId);
+          }}
         />
         
         {questionsBySection.map(({ section, questions }) => {
@@ -271,14 +254,16 @@ const MainLayout = styled.div`
   flex-grow: 1;
   position: relative;
   width: 100%;
+  max-width: 1200px; /* Add a max-width for better readability on large screens */
+  margin: 0 auto; /* Center the content */
 `;
 
-const ContentContainer = styled.div`
+const ContentContainer = styled.div<{ fullWidth?: boolean }>`
   flex-grow: 1;
   padding: 100px 2rem 40px;
   margin: 0 auto;
-  margin-left: 280px; /* Add margin to account for fixed sidebar */
-  width: calc(100% - 280px); /* Adjust width to account for sidebar */
+  margin-left: ${props => props.fullWidth ? '0' : '280px'}; /* No margin when fullWidth is true */
+  width: ${props => props.fullWidth ? '100%' : 'calc(100% - 280px)'}; /* Full width when sidebar is hidden */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -292,17 +277,16 @@ const ContentContainer = styled.div`
 
 const SectionContainer = styled.div`
   margin-bottom: 3rem;
-  max-width: 800px;
+  max-width: 900px;
   margin-left: auto;
   margin-right: auto;
-`;
-
-const SectionHeader = styled.div<{ color: string }>`
-  background-color: ${props => props.color || 'var(--primary-color, #552A47)'};
-  color: white;
-  padding: 2rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  width: 100%;
+  padding: 0 1rem;
+  scroll-margin-top: 120px; /* Add scroll margin for better scrolling with fixed header */
+  
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;
 
 const Title = styled.h2`
