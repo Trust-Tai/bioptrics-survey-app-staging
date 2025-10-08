@@ -11,6 +11,7 @@ interface ThankYouScreenProps {
   onTakeAgain?: () => void;
   onViewResults?: () => void;
   color?: string; // Kept for backward compatibility
+  allowRetake?: boolean; // Control whether to show the Take Survey Again button
 }
 
 // Helper function to adjust color brightness
@@ -67,7 +68,8 @@ const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
   timeTaken,
   onTakeAgain,
   onViewResults,
-  color = '#552A47' // Kept for backward compatibility
+  color = '#552A47', // Kept for backward compatibility
+  allowRetake = true // Default to true for backward compatibility
 }) => {
   return (
     <ThankYouContainer>
@@ -150,7 +152,7 @@ const ThankYouScreen: React.FC<ThankYouScreenProps> = ({
       </StatsContainer>
       
       <ThankYouActions>
-        {onTakeAgain && (
+        {onTakeAgain && allowRetake && (
           <RestartButton primaryColor={color} onClick={onTakeAgain}>
             <ButtonIcon>
               <FiRefreshCw size={16} />

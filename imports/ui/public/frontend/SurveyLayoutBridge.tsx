@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, useCallback } from 'react';
+import React, { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { Meteor } from 'meteor/meteor';
 import ConsentScreen from './components/ConsentScreen';
 import StepByStepLayout from './layouts/StepByStepLayout';
@@ -120,6 +120,13 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
+  // Create a ref to store the current responseId for use in the thank you screen
+  const currentResponseIdRef = useRef<string | null>(null);
+  
+  // Keep the ref updated with the latest responseId
+  useEffect(() => {
+    currentResponseIdRef.current = responseId;
+  }, [responseId]);
   const [surveyWithTime, setSurveyWithTime] = useState<any>(survey);
   // We no longer need these states as they're managed by the TimerContext
   // const [startTime, setStartTime] = useState<number | null>(null);
@@ -409,22 +416,45 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       setQuestionsLoaded(true);
     }
     
-    // Check for existing incomplete response
-    const storedResponseId = localStorage.getItem(`survey_response_${survey._id}`);
-    if (storedResponseId) {
-      setResponseId(storedResponseId);
+    // Check if we're in replace mode from a previous submission
+    const retakeMode = localStorage.getItem(`survey_response_mode_${survey._id}`);
+    const responseIdToReplace = localStorage.getItem(`survey_response_id_to_replace_${survey._id}`);
+    
+    if (retakeMode === 'replace' && responseIdToReplace) {
+      console.log('Retaking survey in replace mode with responseId:', responseIdToReplace);
+      setResponseId(responseIdToReplace);
       
-      // Load saved responses
-      Meteor.call('getIncompleteResponse', storedResponseId, (error: any, result: any) => {
-        if (error) {
-          console.error('Error loading incomplete response:', error);
-          return;
-        }
+      // Clear the stored mode and ID after using them
+      localStorage.removeItem(`survey_response_mode_${survey._id}`);
+      localStorage.removeItem(`survey_response_id_to_replace_${survey._id}`);
+      
+      // No need to load previous responses as we're starting fresh
+      // but we keep the responseId to replace the submission later
+    } else {
+      // Check for existing incomplete response (normal flow)
+      const storedResponseId = localStorage.getItem(`survey_response_${survey._id}`);
+      if (storedResponseId) {
+        console.log('Found stored incomplete response ID:', storedResponseId);
+        setResponseId(storedResponseId);
         
-        if (result && result.responses) {
-          setResponses(result.responses);
+        // Load saved responses
+        Meteor.call('getIncompleteResponse', storedResponseId, (error: any, result: any) => {
+          if (error) {
+            console.error('Error loading incomplete response:', error);
+            return;
+          }
+          
+          if (result && result.responses) {
+            setResponses(result.responses);
+          }
+        });
+      } else {
+        // If no stored responseId and we're in replace mode, generate a new one
+        // This ensures we have a responseId ready for replacement later
+        if (survey.defaultSettings?.retakeMode === 'replace') {
+          console.log('No stored responseId found, but survey is in replace mode. Will generate one when saving responses.');
         }
-      });
+      }
     }
   }, [survey]);
   
@@ -857,13 +887,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
   // Function to submit the final response
   const submitFinalResponse = (completionTimeSeconds: number) => {
     console.log('Submitting survey with completion time:', completionTimeSeconds, 'seconds');
+    console.log('Using responseId:', responseId);
     
     // Create a final response
     Meteor.call(
       'surveys.submitResponse',
       {
         surveyId: survey._id,
-        responseId: responseId,
+        responseId: responseId, // This will be used for replace mode if it exists
         responses: responses,
         completionTime: completionTimeSeconds  // Pass the actual completion time in seconds
       },
@@ -873,7 +904,15 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
           return;
         }
         
-        console.log('Survey submitted successfully');
+        console.log('Survey submitted successfully with result:', result);
+        
+        // Store the responseId from the server response
+        if (result && result.responseId) {
+          console.log('Setting responseId from server response:', result.responseId);
+          setResponseId(result.responseId);
+        }
+        
+        // Mark the survey as submitted
         setIsSubmitted(true);
         
         // Remove incomplete response from localStorage
@@ -966,6 +1005,14 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
 
   // If submitted, show thank you screen using our wrapper
   if (isSubmitted) {
+    // Get allowRetake setting from survey defaultSettings
+    const allowRetake = survey.defaultSettings?.allowRetake !== false; // Default to true if not explicitly set to false
+    // Get retakeMode setting from survey defaultSettings
+    const retakeMode = survey.defaultSettings?.retakeMode || 'new'; // Default to 'new' if not specified
+    
+    // Log the current responseId for debugging
+    console.log('Current responseId for potential replacement:', responseId);
+    
     return (
       <ThankYouWrapper
         logo={survey.logo}
@@ -973,8 +1020,25 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
         unansweredQuestions={questions.filter(q => !responses[q._id]).length}
         completionPercentage={100}
         timeTaken={elapsedTime}
-        onTakeAgain={() => window.location.reload()}
+        onTakeAgain={() => {
+          // Handle different retake modes
+          if (retakeMode === 'replace' && currentResponseIdRef.current) {
+            // For replace mode, store the current responseId to replace it
+            localStorage.setItem(`survey_response_mode_${survey._id}`, 'replace');
+            localStorage.setItem(`survey_response_id_to_replace_${survey._id}`, currentResponseIdRef.current);
+            console.log('Retake mode: replace - will update response ID:', currentResponseIdRef.current);
+          } else {
+            // For new mode, clear any stored responseId
+            localStorage.removeItem(`survey_response_mode_${survey._id}`);
+            localStorage.removeItem(`survey_response_id_to_replace_${survey._id}`);
+            console.log('Retake mode: new - will create new response');
+          }
+          
+          // Reset the timer and reload the page
+          window.location.reload();
+        }}
         color={survey.color}
+        allowRetake={allowRetake}
       />
     );
   }
