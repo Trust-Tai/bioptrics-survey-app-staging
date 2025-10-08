@@ -1,9 +1,9 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
-// import SidebarNavigation from '../components/SidebarNavigation';
+import SidebarNavigation from '../components/SidebarNavigation';
 import ScrollSpy from '../components/ScrollSpy';
 import SectionAccordion from '../components/SectionAccordion';
-// import ThankYouScreen from '../components/ThankYouScreen';
+import ThankYouScreen from '../components/ThankYouScreen';
 import QuestionRenderer from '../components/QuestionRenderer';
 import HeaderBar from '../components/HeaderBar';
 
@@ -376,6 +376,14 @@ const ProgressText = styled.div`
   font-size: 0.8rem;
   font-weight: 500;
   text-align: right;
+`;
+
+const SectionHeader = styled.div<{ color: string }>`
+  background-color: ${props => props.color || 'var(--primary-color, #552A47)'};
+  color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
 `;
 
 const Footer = styled.div`
