@@ -1781,6 +1781,46 @@ Meteor.methods({
   },
   
   /**
+   * Get the latest response ID for a survey from the current user/device
+   * @param surveyId - The ID of the survey to check
+   * @returns The latest response ID if found
+   */
+  async 'surveys.getLatestResponseId'(surveyId: string) {
+    check(surveyId, String);
+    
+    // Get token from the connection if available
+    const token = this.connection?.httpHeaders?.['x-survey-token'] || undefined;
+    
+    // Build the query based on available identifiers
+    const query: any = { surveyId };
+    
+    // Add user ID if logged in
+    if (this.userId) {
+      query.userId = this.userId;
+    } 
+    // Otherwise use token if available
+    else if (token) {
+      query.respondentId = token;
+    }
+    // If neither is available, use client IP as a fallback
+    else if (this.connection?.clientAddress) {
+      // Use a hash of the IP address as a basic identifier
+      const ipHash = this.connection.clientAddress;
+      query['metadata.ipAddress'] = ipHash;
+    }
+    
+    // Find the latest response for this user/device
+    const response = await SurveyResponses.findOneAsync(
+      query,
+      { sort: { createdAt: -1 } }
+    );
+    
+    console.log('Latest response found:', response ? response._id : 'none');
+    
+    return response ? { responseId: response._id } : null;
+  },
+  
+  /**
    * Make a survey public by generating a share token
    * @param surveyId - The ID of the survey to make public
    * @returns The updated survey document
