@@ -12,20 +12,82 @@ interface ResponseTrendDataPoint {
   completions: number;
 }
 
+// Helper function to create a query that filters by ownership
+export function createOwnershipQuery(userId: string, additionalQuery: Record<string, any> = {}) {
+  // Build a query that finds surveys owned by or shared with the user
+  const ownershipCondition = {
+    $or: [
+      { createdBy: userId }, // Surveys created by the user
+      { 'collaborators.userId': userId } // Surveys shared with the user
+    ]
+  };
+  
+  // If there are additional query conditions, combine them with the ownership condition
+  if (Object.keys(additionalQuery).length > 0) {
+    return { $and: [ownershipCondition, additionalQuery] };
+  }
+  
+  // Otherwise just return the ownership condition
+  return ownershipCondition;
+}
+
 if (Meteor.isServer) {
   Meteor.methods({
+    // Method to get survey IDs filtered by ownership
+    'surveys.getAccessibleSurveyIds'(filterParams?: { surveyIds?: string[] }) {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access surveys');
+      }
+      
+      // Build query based on provided survey IDs (if any)
+      let surveyQuery = {};
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        surveyQuery = { _id: { $in: filterParams.surveyIds } };
+      }
+      
+      // Apply ownership filtering
+      const ownershipQuery = createOwnershipQuery(this.userId, surveyQuery);
+      
+      // Return IDs of surveys the user has access to
+      return Surveys.find(ownershipQuery, { fields: { _id: 1 } })
+        .fetch()
+        .map(survey => survey._id);
+    },
     // Method to get all surveys
-    'surveys.getAllSurveys'() {
-      // Return all surveys with basic information
-      return Surveys.find({}, {
-        fields: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          status: 1
-        },
+    'surveys.getAllSurveys'(options?: { includeCollaborators?: boolean }) {
+      // Check if user is logged in
+      if (!this.userId) {
+        throw new Meteor.Error('not-authorized', 'You must be logged in to access surveys');
+      }
+      
+      // Build query to find surveys owned by or shared with the current user
+      const query = {
+        $or: [
+          { createdBy: this.userId }, // Surveys created by the current user
+          { 'collaborators.userId': this.userId } // Surveys where the user is a collaborator
+        ]
+      };
+      
+      // Fields to return
+      const fields: Record<string, number> = {
+        _id: 1,
+        title: 1,
+        description: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        status: 1,
+        createdBy: 1
+      };
+      
+      // Include collaborators if requested
+      if (options?.includeCollaborators) {
+        fields.collaborators = 1;
+      }
+      
+      // Return filtered surveys with basic information
+      return Surveys.find(query, {
+        fields,
         sort: { updatedAt: -1 }
       }).fetch();
     },
@@ -55,7 +117,7 @@ if (Meteor.isServer) {
         const limit = paginationParams?.limit || 10;
         const skip = (page - 1) * limit;
         
-        // Get surveys based on filters
+        // First, ensure we're only working with surveys the user has access to
         let surveyQuery = {};
         
         // Add survey ID filter if provided
@@ -63,8 +125,11 @@ if (Meteor.isServer) {
           surveyQuery = { _id: { $in: filterParams.surveyIds } };
         }
         
-        // Get surveys
-        const surveys = await Surveys.find(surveyQuery, {
+        // Apply ownership filtering
+        const ownershipQuery = createOwnershipQuery(this.userId || '', surveyQuery);
+        
+        // Get surveys the user has access to
+        const surveys = await Surveys.find(ownershipQuery, {
           fields: {
             _id: 1,
             title: 1,
@@ -845,14 +910,36 @@ if (Meteor.isServer) {
     },
     
     // Filtered response rate calculation that considers both completed and incomplete surveys
-    async 'getFilteredResponseRate'(surveyIds?: string[], tagIds?: string[], questionIds?: string[], startDate?: string, endDate?: string) {
-      // Create a filter params object with default values to avoid undefined errors
-      const filterParams = {
-        surveyIds: surveyIds || [],
-        tagIds: tagIds || [],
-        questionIds: questionIds || [],
-        startDate: startDate || null,
-        endDate: endDate || null
+    async 'getFilteredResponseRate'(filterParams?: { 
+      surveyIds?: string[], 
+      tagIds?: string[], 
+      questionIds?: string[],
+      startDate?: string,
+      endDate?: string
+    }) {
+      // First, ensure we're only working with surveys the user has access to
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        // The surveyIds have already been filtered by ownership in the client
+        // No additional filtering needed here
+      } else {
+        // If no specific surveys were provided, get all surveys the user has access to
+        const ownershipQuery = createOwnershipQuery(this.userId || '');
+        const accessibleSurveys = await Surveys.find(ownershipQuery, { fields: { _id: 1 } }).fetchAsync();
+        const accessibleSurveyIds = accessibleSurveys.map(survey => survey._id);
+        
+        // Update filterParams with the accessible survey IDs
+        filterParams = filterParams || {};
+        // Ensure we have a valid array of strings
+        filterParams.surveyIds = accessibleSurveyIds.filter((id): id is string => typeof id === 'string');
+      }
+      
+      // Ensure filterParams is defined with default values
+      filterParams = filterParams || {
+        surveyIds: [],
+        tagIds: [],
+        questionIds: [],
+        startDate: undefined,
+        endDate: undefined
       };
       console.log('getFilteredResponseRate method called with filters:', filterParams);
       
@@ -1058,8 +1145,25 @@ if (Meteor.isServer) {
       questionIds?: string[],
       startDate?: string,
       endDate?: string,
-      includeIncomplete?: boolean
+      includeIncomplete?: boolean,
+      ownershipFilter?: 'all' | 'owned' | 'shared-with-me'
     }) {
+      // First, ensure we're only working with surveys the user has access to
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        // The surveyIds have already been filtered by ownership in the client
+        // No additional filtering needed here
+      } else {
+        // If no specific surveys were provided, get all surveys the user has access to
+        const ownershipQuery = createOwnershipQuery(this.userId || '');
+        const accessibleSurveys = await Surveys.find(ownershipQuery, { fields: { _id: 1 } }).fetchAsync();
+        const accessibleSurveyIds = accessibleSurveys.map(survey => survey._id);
+        
+        // Update filterParams with the accessible survey IDs
+        filterParams = filterParams || {};
+        // Ensure we have a valid array of strings
+        filterParams.surveyIds = accessibleSurveyIds.filter((id): id is string => typeof id === 'string');
+      }
+      
       // Ensure filterParams is defined with default values
       filterParams = filterParams || {
         surveyIds: [],
@@ -1374,6 +1478,21 @@ if (Meteor.isServer) {
       startDate?: string,
       endDate?: string
     }) {
+      // First, ensure we're only working with surveys the user has access to
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        // The surveyIds have already been filtered by ownership in the client
+        // No additional filtering needed here
+      } else {
+        // If no specific surveys were provided, get all surveys the user has access to
+        const ownershipQuery = createOwnershipQuery(this.userId || '');
+        const accessibleSurveys = await Surveys.find(ownershipQuery, { fields: { _id: 1 } }).fetchAsync();
+        const accessibleSurveyIds = accessibleSurveys.map(survey => survey._id);
+        
+        // Update filterParams with the accessible survey IDs
+        filterParams = filterParams || {};
+        // Ensure we have a valid array of strings
+        filterParams.surveyIds = accessibleSurveyIds.filter((id): id is string => typeof id === 'string');
+      }
       // Ensure filterParams is defined with default values
       filterParams = filterParams || {
         surveyIds: [],
@@ -1483,6 +1602,22 @@ if (Meteor.isServer) {
       startDate?: string,
       endDate?: string
     }) {
+      // First, ensure we're only working with surveys the user has access to
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        // The surveyIds have already been filtered by ownership in the client
+        // No additional filtering needed here
+      } else {
+        // If no specific surveys were provided, get all surveys the user has access to
+        const ownershipQuery = createOwnershipQuery(this.userId || '');
+        const accessibleSurveys = await Surveys.find(ownershipQuery, { fields: { _id: 1 } }).fetchAsync();
+        const accessibleSurveyIds = accessibleSurveys.map(survey => survey._id);
+        
+        // Update filterParams with the accessible survey IDs
+        filterParams = filterParams || {};
+        // Ensure we have a valid array of strings
+        filterParams.surveyIds = accessibleSurveyIds.filter((id): id is string => typeof id === 'string');
+      }
+      
       console.log('getFilteredEngagementScore method called with filters:', JSON.stringify(filterParams));
       
       if (!this.userId) {
@@ -1703,6 +1838,22 @@ if (Meteor.isServer) {
       startDate?: string,
       endDate?: string
     }) {
+      // First, ensure we're only working with surveys the user has access to
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        // The surveyIds have already been filtered by ownership in the client
+        // No additional filtering needed here
+      } else {
+        // If no specific surveys were provided, get all surveys the user has access to
+        const ownershipQuery = createOwnershipQuery(this.userId || '');
+        const accessibleSurveys = await Surveys.find(ownershipQuery, { fields: { _id: 1 } }).fetchAsync();
+        const accessibleSurveyIds = accessibleSurveys.map(survey => survey._id);
+        
+        // Update filterParams with the accessible survey IDs
+        filterParams = filterParams || {};
+        // Ensure we have a valid array of strings
+        filterParams.surveyIds = accessibleSurveyIds.filter((id): id is string => typeof id === 'string');
+      }
+      
       console.log('getFilteredCompletionTime method called with filters:', filterParams);
       
       if (!this.userId) {
@@ -1910,6 +2061,22 @@ if (Meteor.isServer) {
       startDate?: string,
       endDate?: string
     }) {
+      // First, ensure we're only working with surveys the user has access to
+      if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
+        // The surveyIds have already been filtered by ownership in the client
+        // No additional filtering needed here
+      } else {
+        // If no specific surveys were provided, get all surveys the user has access to
+        const ownershipQuery = createOwnershipQuery(this.userId || '');
+        const accessibleSurveys = await Surveys.find(ownershipQuery, { fields: { _id: 1 } }).fetchAsync();
+        const accessibleSurveyIds = accessibleSurveys.map(survey => survey._id);
+        
+        // Update filterParams with the accessible survey IDs
+        filterParams = filterParams || {};
+        // Ensure we have a valid array of strings
+        filterParams.surveyIds = accessibleSurveyIds.filter((id): id is string => typeof id === 'string');
+      }
+      
       console.log('getResponseTrendsData method called with filters:', filterParams);
       
       if (!this.userId) {
