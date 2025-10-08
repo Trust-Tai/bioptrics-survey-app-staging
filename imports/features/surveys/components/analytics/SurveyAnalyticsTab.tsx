@@ -917,25 +917,25 @@ const SurveyAnalyticsTab: React.FC<SurveyAnalyticsTabProps> = ({ surveyId }) => 
       label: 'Questions',
       icon: <FiFileText size={16} />,
       content: <QuestionsTab ref={questionsTabRef} isLoading={isLoading} surveyId={surveyId} />
-    },
+    }
     // {
     //   id: 'groups',
     //   label: 'Groups',
     //   icon: <FiUsers size={16} />,
     //   content: <GroupsTab isLoading={isLoading} />
     // },
-    {
-      id: 'comments',
-      label: 'Comments',
-      icon: <FiMessageSquare size={16} />,
-      content: <CommentsTab isLoading={isLoading} />
-    },
-    {
-      id: 'activity',
-      label: 'Activity',
-      icon: <FiActivity size={16} />,
-      content: <ActivityTab isLoading={isLoading} />
-    }
+    // {
+    //   id: 'comments',
+    //   label: 'Comments',
+    //   icon: <FiMessageSquare size={16} />,
+    //   content: <CommentsTab isLoading={isLoading} />
+    // },
+    // {
+    //   id: 'activity',
+    //   label: 'Activity',
+    //   icon: <FiActivity size={16} />,
+    //   content: <ActivityTab isLoading={isLoading} />
+    // }
   ];
 
   return (

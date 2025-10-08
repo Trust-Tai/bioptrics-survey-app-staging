@@ -1469,25 +1469,25 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
       label: 'Questions',
       icon: <FiFileText size={16} />,
       content: <AllQuestionsTab ref={questionsTabRef} isLoading={isLoading} surveyId={surveyId} filterParams={filterParams} />
-    },
+    }
     // {
     //   id: 'groups',
     //   label: 'Groups',
     //   icon: <FiUsers size={16} />,
     //   content: <GroupsTab isLoading={isLoading} />
     // },
-    {
-      id: 'comments',
-      label: 'Comments',
-      icon: <FiMessageSquare size={16} />,
-      content: <AllCommentsTab isLoading={isLoading} />
-    },
-    {
-      id: 'activity',
-      label: 'Activity',
-      icon: <FiActivity size={16} />,
-      content: <AllActivityTab isLoading={isLoading} />
-    }
+    // {
+    //   id: 'comments',
+    //   label: 'Comments',
+    //   icon: <FiMessageSquare size={16} />,
+    //   content: <AllCommentsTab isLoading={isLoading} />
+    // },
+    // {
+    //   id: 'activity',
+    //   label: 'Activity',
+    //   icon: <FiActivity size={16} />,
+    //   content: <AllActivityTab isLoading={isLoading} />
+    // }
   ];
 
   // Track progress for the modal
