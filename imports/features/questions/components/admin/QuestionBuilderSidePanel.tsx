@@ -9,24 +9,24 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import styled from 'styled-components';
 import { FaTimes, FaInfoCircle, FaCog, FaCloudUploadAlt, FaHistory, FaExclamationTriangle, FaSpinner, FaCheck } from 'react-icons/fa';
-import TagBuilder from './TagBuilder';
-import FolderSelector from './FolderSelector';
-import ToggleSwitch from './ToggleSwitch';
+// import TagBuilder from './TagBuilder';
+// import FolderSelector from './FolderSelector';
+// import ToggleSwitch from './ToggleSwitch';
 import VersionHistoryModal from './VersionHistoryModal';
 import LoadingButton from '/imports/shared/components/LoadingButton';
 
 // Import enhanced components
 import QuestionBuilderDndProvider from './QuestionBuilderDndProvider';
-import QuestionBuilderStateManager from './QuestionBuilderStateManager';
+// import QuestionBuilderStateManager from './QuestionBuilderStateManager';
 import QuestionBuilderAnswerOptions from './QuestionBuilderAnswerOptions';
-import QuestionBuilderBranchingTab from './QuestionBuilderBranchingTab';
-import QuestionBuilderPreview from './QuestionBuilderPreview';
-import EnhancedQuestionPreviewModal from './EnhancedQuestionPreviewModal';
-import SaveAsTemplateModal from './SaveAsTemplateModal';
-import QuestionTemplatesModal from './QuestionTemplatesModal';
+// import QuestionBuilderBranchingTab from './QuestionBuilderBranchingTab';
+// import QuestionBuilderPreview from './QuestionBuilderPreview';
+// import EnhancedQuestionPreviewModal from './EnhancedQuestionPreviewModal';
+// import SaveAsTemplateModal from './SaveAsTemplateModal';
+// import QuestionTemplatesModal from './QuestionTemplatesModal';
 
 // Import Question type from API
-import { Question as ApiQuestion } from '/imports/features/questions/api/questions.methods.client';
+// import { Question as ApiQuestion } from '/imports/features/questions/api/questions.methods.client';
 
 // Import styles
 import './EnhancedQuestionBuilder.css';
@@ -976,13 +976,13 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
 
   // Create portal for the side panel
   return createPortal(
-    <div>
+    <div data-testid="question-builder-side-panel">
       {/* Overlay */}
       <div style={{
         ...sidePanelStyles.overlay as React.CSSProperties,
         opacity: isOpen ? 1 : 0,
         pointerEvents: isOpen ? 'auto' : 'none',
-      }} />
+       }} />
       
       {/* Side Panel */}
       <div 
@@ -991,7 +991,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
           ...sidePanelStyles.panel as React.CSSProperties,
           transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
         }}
-      >
+       >
         {/* Close button */}
         <button 
           style={sidePanelStyles.closeButton as React.CSSProperties} 
@@ -1078,7 +1078,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
             </div>
           ) : !readOnly && <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center' }}>
             {/* Only show the toggle in survey builder context */}
-            {context === 'surveyBuilder' && (
+            {/* {context === 'surveyBuilder' && (
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -1107,7 +1107,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                   }
                 />
               </div>
-            )}
+            )} */}
 
             {/* Version History Button - Only show for existing questions */}
             {questionId && editingDoc?.versions && editingDoc.versions.length > 0 && (
@@ -1287,7 +1287,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
               
               {/* Question Type Dropdown */}
               <div className="form-group">
-                <label>Question Type <span className="required-asterisk">*</span></label>
+                <label>Answer Type <span className="required-asterisk">*</span></label>
                 <select
                   disabled={readOnly}
                   value={readOnly && versionData ? versionData.answerType : questions[0].question.answerType}
@@ -1510,37 +1510,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                 </div>
               )}
               
-              {/* Tag Builder */}
-              <div className="form-group">
-                <TagBuilder 
-                  selectedTagIds={readOnly && versionData ? (versionData.labels || []) : (questions[0].question.labels || [])} 
-                  onTagChange={(labels) => {
-                    if (readOnly) return;
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.labels = labels;
-                    // Make sure to update both labels and tags fields for backward compatibility
-                    updatedQuestions[0].question.tags = labels;
-                    setQuestions(updatedQuestions);
-                    console.log('Tags updated:', labels);
-                  }}
-                  readOnly={readOnly}
-                />
-              </div>
-              
-              {/* Folder Selector */}
-              <div className="form-group">
-                <FolderSelector
-                  selectedFolderId={readOnly && versionData ? (versionData.folderId || null) : (questions[0].question.folderId || null)}
-                  onFolderChange={(folderId) => {
-                    if (readOnly) return;
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.folderId = folderId;
-                    setQuestions(updatedQuestions);
-                    console.log('Folder updated:', folderId);
-                  }}
-                  readOnly={readOnly}
-                />
-              </div>
+             
               
               {/* Question Image moved to Advanced tab */}
               
@@ -1722,111 +1692,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                 </div>
               </div>
               
-              <div className="form-group">
-                <label>Feedback Collection</label>
-                <select
-                  value={readOnly && versionData ? versionData.feedback || 'none' : questions[0].question.feedback || 'none'}
-                  onChange={(e) => {
-                    if (readOnly) return;
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.feedback = e.target.value;
-                    setQuestions(updatedQuestions);
-                  }}
-                  className="form-control"
-                  disabled={readOnly}
-                >
-                  <option value="none">No Feedback</option>
-                  <option value="optional">Optional Feedback</option>
-                  <option value="required">Required Feedback</option>
-                  <option value="rating">Rating Feedback</option>
-                  <option value="rating_comment">Rating with Comment</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label>Estimated Time to Answer</label>
-                <div className="estimated-time-container" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <input
-                      type="number"
-                      min="0"
-                      max="60"
-                      value={readOnly && versionData ? Math.floor((versionData.estimatedTimeSeconds || 30) / 60) : Math.floor((questions[0].question.estimatedTimeSeconds || 30) / 60)}
-                      onChange={(e) => {
-                        if (readOnly) return;
-                        const mins = parseInt(e.target.value);
-                        if (!isNaN(mins) && mins >= 0) {
-                          const secs = (questions[0].question.estimatedTimeSeconds || 30) % 60;
-                          const totalSecs = (mins * 60) + secs;
-                          const updatedQuestions = [...questions];
-                          updatedQuestions[0].question.estimatedTimeSeconds = totalSecs;
-                          setQuestions(updatedQuestions);
-                        }
-                      }}
-                      className="form-control"
-                      style={{ width: '70px' }}
-                      disabled={readOnly}
-                    />
-                    <span style={{ margin: '0 5px' }}>min</span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={readOnly && versionData ? (versionData.estimatedTimeSeconds || 30) % 60 : (questions[0].question.estimatedTimeSeconds || 30) % 60}
-                      onChange={(e) => {
-                        if (readOnly) return;
-                        const secs = parseInt(e.target.value);
-                        if (!isNaN(secs) && secs >= 0 && secs < 60) {
-                          const mins = Math.floor((questions[0].question.estimatedTimeSeconds || 30) / 60);
-                          const totalSecs = (mins * 60) + secs;
-                          const updatedQuestions = [...questions];
-                          updatedQuestions[0].question.estimatedTimeSeconds = totalSecs;
-                          setQuestions(updatedQuestions);
-                        }
-                      }}
-                      className="form-control"
-                      style={{ width: '70px' }}
-                      disabled={readOnly}
-                    />
-                    <span style={{ margin: '0 5px' }}>sec</span>
-                  </div>
-                </div>
-                <small className="form-text text-muted">
-                  Set the estimated time it takes to answer this question. This helps in calculating the total survey completion time.
-                </small>
-              </div>
-              
-              <div className="form-group toggle-group">
-                <ToggleSwitch
-                  checked={readOnly && versionData ? !!versionData.reusable : !!questions[0].question.reusable}
-                  onChange={() => {
-                    if (readOnly) return;
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.reusable = !updatedQuestions[0].question.reusable;
-                    setQuestions(updatedQuestions);
-                  }}
-                  disabled={readOnly}
-                  label="Reusable Question (can be used in multiple surveys)"
-                />
-              </div>
-              
-              <div className="form-group toggle-group">
-                <ToggleSwitch
-                  checked={readOnly && versionData ? (versionData.isActive === undefined ? true : !!versionData.isActive) : (questions[0].question.isActive === undefined ? true : !!questions[0].question.isActive)}
-                  onChange={() => {
-                    if (readOnly) return;
-                    const updatedQuestions = [...questions];
-                    updatedQuestions[0].question.isActive = !updatedQuestions[0].question.isActive;
-                    setQuestions(updatedQuestions);
-                  }}
-                  disabled={readOnly}
-                  label="Active Question"
-                />
-              </div>
-              </div>
+            </div>
           </TabPanel>
 
         </Tabs>
@@ -1845,9 +1711,9 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
           questionId={questionId} /* Pass the current question ID */
         />
       )}
-    </div>,
-    document.body
-  );
-};
+      </div>,
+      document.body
+      );
+}
 
 export default QuestionBuilderSidePanel;

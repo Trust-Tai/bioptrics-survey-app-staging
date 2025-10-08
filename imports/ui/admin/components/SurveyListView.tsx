@@ -505,12 +505,12 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
             SURVEY {renderSortIcon('title')}
           </TableHeaderCell>
           
-          <TableHeaderCell 
+          {/* <TableHeaderCell 
             sortable 
             onClick={() => handleSort('tags')}
           >
             TAGS {renderSortIcon('tags')}
-          </TableHeaderCell>
+          </TableHeaderCell> */}
 
           <TableHeaderCell>
             RESPONSES
@@ -595,10 +595,9 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 </div>
               </TableCell>
 
-              <TableCell data-no-navigate="true">
-                {/* Check both selectedTags and tags properties */}
+              {/* <TableCell data-no-navigate="true">
                 <SurveyTags tagIds={survey.selectedTags || survey.tags || []} />
-              </TableCell>
+              </TableCell> */}
               
               <TableCell>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

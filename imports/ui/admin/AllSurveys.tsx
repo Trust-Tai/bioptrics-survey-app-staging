@@ -1351,7 +1351,7 @@ const AllSurveys: React.FC = () => {
               </SelectContainer>
               
               {/* Tags Filter */}
-              <SelectContainer>
+              {/* <SelectContainer>
                 <Select
                   isMulti
                   options={tagOptions}
@@ -1398,7 +1398,7 @@ const AllSurveys: React.FC = () => {
                     })
                   }}
                 />
-              </SelectContainer>
+              </SelectContainer> */}
             </FilterContainer>
             </div>
             

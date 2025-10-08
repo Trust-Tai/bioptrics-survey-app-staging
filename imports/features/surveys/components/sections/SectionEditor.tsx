@@ -555,7 +555,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
             />
           </FormGroup>
           
-          <FormGroup>
+          {/* <FormGroup>
             <FormLabel>
               Instructions for Respondents
             </FormLabel>
@@ -565,7 +565,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
               onChange={handleInputChange}
               placeholder="Enter instructions for survey respondents"
             />
-          </FormGroup>
+          </FormGroup> */}
           
           <FormGroup>
             <FormLabel>
