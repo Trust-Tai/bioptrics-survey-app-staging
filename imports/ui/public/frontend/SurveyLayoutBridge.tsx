@@ -1072,16 +1072,7 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       />
     );
   }
-  
-  // Use the appropriate layout based on survey configuration
-  // Log the survey object being passed to layout components
-  console.log('[SurveyLayoutBridge] Rendering layout with survey:', {
-    layout,
-    isPreviewMode,
-    hasEstimatedTime: !!(surveyWithTime || survey).estimatedTime,
-    estimatedTime: (surveyWithTime || survey).estimatedTime
-  });
-  
+
   return layout === 'allOnOnePage' ? (
     <StableAllOnOnePageLayout
       survey={surveyWithTime || survey}

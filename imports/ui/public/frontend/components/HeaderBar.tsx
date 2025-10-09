@@ -15,8 +15,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo, p
   // Get timer state from context
   const { isRunning, elapsedTime } = useTimer();
   
-  // Log props for debugging
-  console.log('[HeaderBar] Rendering with props:', { surveyTitle, averageTime, logo, progress, color, isRunning, elapsedTime });
   // Use the logo from the public folder
   const DefaultLogo = "/TeamsynerG.png"; // This logo already exists in your public folder
   // Use memo for stable rendering
