@@ -19,6 +19,11 @@ import '../imports/api/surveyMethods';
 import '../imports/features/surveys/api/deviceUsageMethods';
 import '../imports/features/surveys/api/analyticsMetrics';
 import '../imports/features/surveys/api/surveyStats';
+// Import survey invitation system
+import '../imports/features/surveys/api/surveyInvitations';
+import '../imports/features/surveys/api/emailTemplates';
+import '../imports/features/surveys/api/emailLogs';
+import '../imports/features/surveys/api/surveyInvitationAPI';
 import { WPSCategories } from '../imports/api/wpsCategories';
 import '../imports/api/wpsCategories.methods';
 import { seedWPSCategories } from '../imports/api/wpsCategories.seed';
@@ -29,6 +34,7 @@ import { seedDefaultThemes } from '../imports/features/survey-themes/api/seedThe
 import { seedAdditionalThemes } from '../imports/features/survey-themes/api/seedAdditionalThemes';
 import '../imports/features/survey-themes/api/publications';
 import '../imports/features/surveys/api/surveys';
+import { Surveys } from '../imports/features/surveys/api/surveys';
 import '../imports/api/users.methods';
 import '../imports/features/organization/api/organizationSettings';
 // Import Question Tags API
