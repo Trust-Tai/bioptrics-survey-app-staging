@@ -3027,10 +3027,7 @@ useEffect(() => {
         <DashboardBg>
           <Spinner />
         </DashboardBg>
-
-        
-        <Toast alert={alert} onClose={() => setAlert(null)} variant="brand" zIndex={1100} />
-        
+        
         {/* Theme Creation Modal (extracted) */}
         <ThemeCreationModal
           isOpen={showThemeModal}
@@ -3062,10 +3059,7 @@ useEffect(() => {
           setAlert={setAlert}
           setHasUnsavedChanges={setHasUnsavedChanges}
           triggerAutoSave={() => triggerAutoSave()}
-        />
-        
-        <Toast alert={alert} onClose={() => setAlert(null)} variant="brand" zIndex={9999} />
-        
+        />        
         {/* Theme preview modal */}
         {showPreview && previewTheme && (
           <ThemePreview theme={previewTheme} open={showPreview} onClose={closePreview} />
@@ -3600,7 +3594,7 @@ useEffect(() => {
           triggerAutoSave={() => triggerAutoSave()}
         />
         
-        <Toast alert={alert} onClose={() => setAlert(null)} variant="emerald" zIndex={1001} />
+        <Toast alert={alert} onClose={() => setAlert(null)} variant="emerald" zIndex={9001} />
         
         {/* Theme preview modal */}
         {showPreview && previewTheme && (
