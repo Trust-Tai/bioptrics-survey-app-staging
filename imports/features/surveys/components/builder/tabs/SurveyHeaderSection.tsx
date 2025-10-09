@@ -389,6 +389,7 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
           <SaveButton 
             onClick={() => setShowShareModal(true)} 
             disabled={!survey?._id}
+            style={{ cursor: !survey?._id ? 'not-allowed' : 'pointer' }}
           >
             <FiShare2 style={{ fontSize: '16px' }} /> Share
           </SaveButton>

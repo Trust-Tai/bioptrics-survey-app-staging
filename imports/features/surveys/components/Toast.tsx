@@ -32,10 +32,11 @@ const Toast: React.FC<ToastProps> = ({ alert, onClose, variant = 'brand', zIndex
   const bg = isSuccess ? palette.successBg : palette.errorBg;
 
   return (
-    <div 
+    <>
+      <div 
       style={{
         position: 'fixed',
-        bottom: 20,
+        top: 20,
         right: 20,
         padding: '12px 20px',
         borderRadius: 8,
@@ -46,7 +47,7 @@ const Toast: React.FC<ToastProps> = ({ alert, onClose, variant = 'brand', zIndex
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        animation: 'slideUp 0.3s ease-out'
+        animation: 'slideDown 0.3s ease-out'
       }}
     >
       {isSuccess ? (
@@ -74,6 +75,19 @@ const Toast: React.FC<ToastProps> = ({ alert, onClose, variant = 'brand', zIndex
         ×
       </button>
     </div>
+    <style>{`
+      @keyframes slideDown {
+        from {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    `}</style>
+    </>
   );
 };
 
