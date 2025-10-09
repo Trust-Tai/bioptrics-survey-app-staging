@@ -361,6 +361,20 @@ const ModernSurveyPublic: React.FC = () => {
   
   // Only show error after authentication check is complete
   if (!surveyData || !isAuthorized) {
+    // For survey not found errors, show a clean error page without header/footer
+    if (loadError === 'Survey not found') {
+      return (
+        <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
+          <ModernSurveyError 
+            title="Survey not found"
+            message="The survey you're looking for doesn't exist or may have been removed."
+            icon="error"
+          />
+        </SurveyThemeProvider>
+      );
+    }
+    
+    // For other errors, keep the header/footer structure
     return (
       <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
         <PageContainer>
@@ -372,7 +386,7 @@ const ModernSurveyPublic: React.FC = () => {
           <MainContent>
             <ModernSurveyError 
               title={loadError === 'This survey is no longer accepting responses.' ? 'Survey Unavailable' : 'Error'}
-              message={loadError}
+              message={loadError || 'An error occurred while loading the survey'}
               icon={loadError === 'This survey is no longer accepting responses.' ? 'closed' : 'error'}
             />
           </MainContent>
