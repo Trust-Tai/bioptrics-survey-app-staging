@@ -34,17 +34,12 @@ import { useQuestionBuilderPanel } from '../../../features/questions/contexts/Qu
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
-import SurveyAnalyticsTab from './analytics/SurveyAnalyticsTab';
-
 import { SettingsTab } from './builder/tabs/SettingsTab/SettingsTab';
 import AppearanceTab from './builder/tabs/AppearanceTab/AppearanceTab';
 import BasicSurveyWelcomeSection from './builder/tabs/BasicSurveyWelcomeSection';
 import SectionsTab from './builder/tabs/SectionsTab';
-import { lazy, Suspense } from 'react';
-
 import AnalyticsTab from "./builder/tabs/AnalyticsTab"
-
-const CollaborationTab = lazy(() => import('./builder/tabs/CollaborationTab/CollaborationTab'));
+import CollaborationTab from './builder/tabs/CollaborationTab/CollaborationTab';
 
 // Import existing components we'll reuse
 import SurveyBranchingLogic from '../../../ui/admin/SurveyBranchingLogic';
@@ -3205,7 +3200,6 @@ useEffect(() => {
               )}
               {/* Survey Questions Tab */}
               {activeStep === 'questions' && (
-                <Suspense fallback={<div style={{ padding: 20 }}>Loading questions…</div>}>
                   <SurveyQuestionsTab
                     surveyId={surveyId}
                     survey={survey}
@@ -3259,7 +3253,6 @@ useEffect(() => {
                   }}
                   onHasUnsavedChanges={setHasUnsavedChanges}
                 />
-                </Suspense>
               )}
               
               {/* Other steps would be implemented here */}
@@ -3293,7 +3286,7 @@ useEffect(() => {
                     <h2 className="survey-builder-panel-title">Analytics Dashboard</h2>
                   </div>
                   {survey?._id ? (
-                    <SurveyAnalyticsTab surveyId={survey._id} />
+                    <SurveyAnalytics surveyId={survey._id} embedded={true} />
                   ) : (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
                       <p>Please save the survey to view analytics.</p>
@@ -3357,20 +3350,16 @@ useEffect(() => {
                     setAnonymityNoticeText={setAnonymityNoticeText}
                     showConsentScreen={showConsentScreen}
                     setShowConsentScreen={setShowConsentScreen}
-                  />
-                  
                  
                 </div>
               ) : activeStep === 'collaboration' ? (
-                <Suspense fallback={<div className="spinner-border" role="status"><span className="sr-only">Loading...</span></div>}>
-                  <CollaborationTab
-                    surveyId={surveyId || ''}
-                    setHasUnsavedChanges={setHasUnsavedChanges}
-                    triggerAutoSave={triggerAutoSave}
-                    showErrorAlert={showErrorAlert}
-                    showSuccessAlert={showSuccessAlert}
-                  />
-                </Suspense>
+                <CollaborationTab
+                  surveyId={surveyId || ''}
+                  setHasUnsavedChanges={setHasUnsavedChanges}
+                  triggerAutoSave={triggerAutoSave}
+                  showErrorAlert={showErrorAlert}
+                  showSuccessAlert={showSuccessAlert}
+                />
               ) : activeStep === 'settings' ? (
                 <SettingsTab
                   survey={survey}
