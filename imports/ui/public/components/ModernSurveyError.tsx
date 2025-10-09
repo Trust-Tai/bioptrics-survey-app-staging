@@ -115,6 +115,8 @@ const ModernSurveyError: React.FC<ModernSurveyErrorProps> = ({
     window.history.back();
   };
 
+  // No need for toggle functionality as we're always showing Survey Expired
+
   return (
     <ErrorContainer>
       <ErrorCard>
