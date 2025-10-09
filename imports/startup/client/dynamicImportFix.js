@@ -39,11 +39,28 @@ function applyDynamicImportFix() {
       
       window.fetch = function(url, options) {
         // Check if this is a dynamic import request
-        if (typeof url === 'string' && url.includes('localhost/__meteor__/dynamic-import')) {
-          // Replace localhost with the current origin
-          const newUrl = url.replace('http://localhost/__meteor__/dynamic-import', currentOrigin + '/__meteor__/dynamic-import');
-          console.log(`[dynamicImportFix] Redirecting fetch from ${url} to ${newUrl}`);
-          return originalFetch.call(this, newUrl, options);
+        if (typeof url === 'string') {
+          let newUrl = url;
+          let shouldRedirect = false;
+          
+          // Handle various localhost patterns
+          if (url.includes('localhost/__meteor__/dynamic-import')) {
+            newUrl = url.replace('http://localhost/__meteor__/dynamic-import', currentOrigin + '/__meteor__/dynamic-import');
+            shouldRedirect = true;
+          } else if (url.includes('127.0.0.1/__meteor__/dynamic-import')) {
+            newUrl = url.replace('http://127.0.0.1/__meteor__/dynamic-import', currentOrigin + '/__meteor__/dynamic-import');
+            shouldRedirect = true;
+          } else if (url.includes('/__meteor__/dynamic-import') && !url.startsWith(currentOrigin)) {
+            // Handle any other dynamic import URLs that don't match current origin
+            const dynamicImportPath = url.substring(url.indexOf('/__meteor__/dynamic-import'));
+            newUrl = currentOrigin + dynamicImportPath;
+            shouldRedirect = true;
+          }
+          
+          if (shouldRedirect) {
+            console.log(`[dynamicImportFix] Redirecting fetch from ${url} to ${newUrl}`);
+            return originalFetch.call(this, newUrl, options);
+          }
         }
         
         // Otherwise, proceed with the original fetch
@@ -62,12 +79,37 @@ function applyDynamicImportFix() {
         return originalDynamicImport.call(this, moduleId)
           .catch(error => {
             console.error(`[dynamicImportFix] Error importing ${moduleId}:`, error);
-            // If we still get CORS errors, provide helpful debug info
-            if (error.message && error.message.includes('CORS')) {
-              console.error('[dynamicImportFix] CORS error detected. Check network tab for request details.');
-              console.error('[dynamicImportFix] Current origin:', currentOrigin);
-              console.error('[dynamicImportFix] Current DYNAMIC_IMPORT_ROOT:', window.__meteor_runtime_config__.DYNAMIC_IMPORT_ROOT);
+            
+            // If we get a fetch error, try to retry with corrected URL
+            if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('CORS'))) {
+              console.log(`[dynamicImportFix] Attempting retry for ${moduleId} with corrected URL...`);
+              
+              // Try to construct the correct URL manually
+              const correctedUrl = `${currentOrigin}/__meteor__/dynamic-import/${moduleId}`;
+              console.log(`[dynamicImportFix] Retry URL: ${correctedUrl}`);
+              
+              return fetch(correctedUrl)
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                  }
+                  return response.text();
+                })
+                .then(code => {
+                  // Execute the module code
+                  const module = { exports: {} };
+                  const func = new Function('module', 'exports', 'require', code);
+                  func(module, module.exports, require);
+                  return module.exports;
+                })
+                .catch(retryError => {
+                  console.error(`[dynamicImportFix] Retry also failed for ${moduleId}:`, retryError);
+                  console.error('[dynamicImportFix] Current origin:', currentOrigin);
+                  console.error('[dynamicImportFix] Current DYNAMIC_IMPORT_ROOT:', window.__meteor_runtime_config__.DYNAMIC_IMPORT_ROOT);
+                  throw retryError;
+                });
             }
+            
             throw error;
           });
       };
@@ -83,6 +125,39 @@ function applyDynamicImportFix() {
       return url;
     };
 
+    // 5. Patch React.lazy to handle dynamic import failures
+    if (window.React && window.React.lazy) {
+      const originalLazy = window.React.lazy;
+      
+      window.React.lazy = function(importFunction) {
+        return originalLazy(() => {
+          return importFunction().catch(error => {
+            console.error('[dynamicImportFix] React.lazy import failed:', error);
+            
+            if (error.message && error.message.includes('Failed to fetch')) {
+              console.log('[dynamicImportFix] Attempting to retry React.lazy import...');
+              
+              // Wait a bit and retry
+              return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                  importFunction()
+                    .then(resolve)
+                    .catch(retryError => {
+                      console.error('[dynamicImportFix] React.lazy retry failed:', retryError);
+                      reject(retryError);
+                    });
+                }, 1000);
+              });
+            }
+            
+            throw error;
+          });
+        });
+      };
+      
+      console.log('[dynamicImportFix] Successfully patched React.lazy');
+    }
+
     console.log('[dynamicImportFix] All patches applied successfully');
   } catch (error) {
     console.error('[dynamicImportFix] Error applying fixes:', error);
@@ -97,6 +172,42 @@ if (Meteor.isClient) {
   Meteor.startup(() => {
     // Re-apply the fix to ensure it's active after all Meteor initialization
     applyDynamicImportFix();
+    
+    // Apply React.lazy fix after a delay to ensure React is loaded
+    setTimeout(() => {
+      if (window.React && window.React.lazy && !window.React.lazy._patched) {
+        const originalLazy = window.React.lazy;
+        
+        window.React.lazy = function(importFunction) {
+          return originalLazy(() => {
+            return importFunction().catch(error => {
+              console.error('[dynamicImportFix] React.lazy import failed (delayed patch):', error);
+              
+              if (error.message && error.message.includes('Failed to fetch')) {
+                console.log('[dynamicImportFix] Attempting to retry React.lazy import (delayed patch)...');
+                
+                // Wait a bit and retry
+                return new Promise((resolve, reject) => {
+                  setTimeout(() => {
+                    importFunction()
+                      .then(resolve)
+                      .catch(retryError => {
+                        console.error('[dynamicImportFix] React.lazy retry failed (delayed patch):', retryError);
+                        reject(retryError);
+                      });
+                  }, 1000);
+                });
+              }
+              
+              throw error;
+            });
+          });
+        };
+        
+        window.React.lazy._patched = true;
+        console.log('[dynamicImportFix] Successfully applied delayed React.lazy patch');
+      }
+    }, 2000);
     
     // Add a MutationObserver to detect any dynamic script insertions
     if (typeof MutationObserver !== 'undefined') {
