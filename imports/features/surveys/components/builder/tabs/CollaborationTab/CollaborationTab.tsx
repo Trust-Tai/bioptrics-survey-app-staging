@@ -259,7 +259,6 @@ const CollaborationTab: React.FC<CollaborationTabProps> = ({
           {isLoadingCollaborators && (
             <div style={{ padding: '24px 0', textAlign: 'center', color: '#666' }}>
               <div className="spinner-border" role="status">
-                <span className="sr-only">Loading...</span>
               </div>
               <div style={{ marginTop: 12 }}>Loading collaborators...</div>
             </div>
