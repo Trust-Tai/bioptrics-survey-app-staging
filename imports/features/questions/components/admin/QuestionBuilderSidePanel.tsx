@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import AnswerTypeSelector from './AnswerTypeSelector';
 import { notificationManager } from '/imports/shared/components/GlobalNotification';
 import { createPortal } from 'react-dom';
 import { Meteor } from 'meteor/meteor';
@@ -1285,15 +1286,13 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
               
               {/* Description field removed as requested */}
               
-              {/* Question Type Dropdown */}
+              {/* Question Type Selector */}
               <div className="form-group">
                 <label>Answer Type <span className="required-asterisk">*</span></label>
-                <select
-                  disabled={readOnly}
-                  value={readOnly && versionData ? versionData.answerType : questions[0].question.answerType}
-                  onChange={(e) => {
+                <AnswerTypeSelector
+                  selectedType={readOnly && versionData ? versionData.answerType : questions[0].question.answerType}
+                  onChange={(newAnswerType) => {
                     if (readOnly) return;
-                    const newAnswerType = e.target.value;
                     const updatedQuestions = [...questions];
                     updatedQuestions[0].question.answerType = newAnswerType;
                     
@@ -1358,18 +1357,8 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                     // Keep user on the Basic Information tab since Answer Options are now there
                     setActiveTabIndex(0); // Index 0 is the Basic Information tab
                   }}
-                  className="form-control"
-                >
-                  <option value="radio">Single Choice (Radio)</option>
-                  <option value="checkbox">Multiple Choice (Checkbox)</option>
-                  <option value="dropdown">Dropdown</option>
-                  <option value="text">Short Text</option>
-                  <option value="textarea">Long Text</option>
-                  <option value="rating">Rating Scale</option>
-                  <option value="likert">Likert Scale</option>
-                  <option value="ranking">Ranking</option>
-                  <option value="date">Date</option>
-                </select>
+                  disabled={readOnly}
+                />
               </div>
               
               {/* Answer Options - Moved from Answer Options tab */}
