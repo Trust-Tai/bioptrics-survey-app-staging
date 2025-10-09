@@ -755,8 +755,6 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 overflowY: 'auto',
                 padding: '16px 24px 0', /* Added top padding for spacing */
               }}>
-                {/* Debug log for rendering */}
-                {(() => { console.log('Rendering questions list with', currentPageQuestions.length, 'questions'); return null; })()} 
                 {currentPageQuestions.length > 0 ? (
                   currentPageQuestions.map((question) => (
                     <div 
