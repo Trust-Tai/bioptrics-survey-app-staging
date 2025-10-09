@@ -1369,7 +1369,6 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                   <option value="likert">Likert Scale</option>
                   <option value="ranking">Ranking</option>
                   <option value="date">Date</option>
-                  <option value="file">File Upload</option>
                 </select>
               </div>
               

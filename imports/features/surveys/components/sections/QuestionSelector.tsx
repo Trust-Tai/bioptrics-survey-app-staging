@@ -64,10 +64,25 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   // State to handle closing animation
   const [isClosing, setIsClosing] = useState(false);
   
+  // State for search and filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Pagination state: 50 per page
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSizeOptions = [5, 10, 25, 50];
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [totalCount, setTotalCount] = useState<number>(questions?.length || 0);
+  const [isSubReady, setIsSubReady] = useState<boolean>(false);
+  
   // Initialize Tom Select on dropdowns
   useEffect(() => {
+    console.log('Initializing TomSelect with selectedType:', selectedType);
+    
     // Initialize Tom Select on all dropdowns with the tom-select class
-    const dropdowns = document.querySelectorAll('select.tom-select');
+    // Exclude the typeFilter which now uses a standard select
+    const dropdowns = document.querySelectorAll('select.tom-select:not(#typeFilter)');
     
     // Destroy existing instances first
     dropdowns.forEach(dropdown => {
@@ -81,6 +96,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     dropdowns.forEach(dropdown => {
       // For tag select elements, we need special handling to only show options when typing
       const isTags = dropdown.classList.contains('tag-filter-select');
+      
+      console.log('Initializing dropdown:', dropdown.id, { isTags });
       
       const tomSelect = new TomSelect(dropdown, {
         plugins: ['remove_button'],
@@ -103,18 +120,20 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       if (isTags) {
         // For tag selects, configure for proper tag display and selection
       
-      // Don't prevent dropdown from opening on click for tags
-      tomSelect.on('focus', function() {
-        // Allow dropdown to open on focus for tags
-        tomSelect.open();
-      });
-      
-      // Keep dropdown open when typing
-      tomSelect.on('type', function() {
-        // Always keep dropdown open when interacting with tags
-        tomSelect.open();
-      });
+        // Don't prevent dropdown from opening on click for tags
+        tomSelect.on('focus', function() {
+          // Allow dropdown to open on focus for tags
+          tomSelect.open();
+        });
+        
+        // Keep dropdown open when typing
+        tomSelect.on('type', function() {
+          // Always keep dropdown open when interacting with tags
+          tomSelect.open();
+        });
       }
+      
+      // No special handling for type filter needed anymore as we're using a standard select
     });
     
     // Cleanup function to destroy instances when component unmounts
@@ -126,19 +145,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         }
       });
     };
-  }, []); // No dependencies since we only need this on unmount
-  
-  // State for search and filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  
-  // Pagination state: 50 per page
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSizeOptions = [5, 10, 25, 50];
-  const [pageSize, setPageSize] = useState<number>(25);
-  const [totalCount, setTotalCount] = useState<number>(questions?.length || 0);
-  const [isSubReady, setIsSubReady] = useState<boolean>(false);
+  }, []); // No need to reinitialize when selectedType changes anymore
   
   // State for tag input and menu control
   const [tagInputValue, setTagInputValue] = useState('');
@@ -150,7 +157,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   // State to track if a question was just created
   const [questionSaved, setQuestionSaved] = useState(false);
   
-  // Get all available question types from the questions
+  // We're now using hardcoded question types in the dropdown
+  // This array is kept for reference but not used in the UI
   const availableTypes = useMemo(() => {
     const types = new Set<string>();
     questions.forEach(question => {
@@ -160,6 +168,11 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     });
     return Array.from(types);
   }, [questions]);
+  
+  // Log available types for debugging
+  useEffect(() => {
+    console.log('Available question types in data:', availableTypes);
+  }, [availableTypes]);
   
   // Get all available tags - using the same approach as TagBuilder
   const { allTags, loading: tagsLoading } = useTracker(() => {
@@ -248,8 +261,16 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     });
   }, [questions, searchTerm, selectedType, selectedTags, isSubReady]);
   
+  // Debug logging for filtered questions
+  useEffect(() => {
+    console.log('Filtered questions count:', filteredQuestions.length);
+    console.log('First 3 filtered questions:', filteredQuestions.slice(0, 3));
+    console.log('Current filters:', { searchTerm, selectedType, selectedTags });
+  }, [filteredQuestions, searchTerm, selectedType, selectedTags]);
+
   // Reset to first page when filters/search change
   useEffect(() => {
+    console.log('Resetting to page 1 due to filter change');
     setCurrentPage(1);
   }, [searchTerm, selectedType, selectedTags, questions]);
   
@@ -257,10 +278,15 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   const totalPages = Math.max(1, Math.ceil((isSubReady ? totalCount : filteredQuestions.length) / pageSize));
   const startIndex = (currentPage - 1) * pageSize;
   const currentPageQuestions = useMemo(() => {
-    // When using server-side pagination, the subscription already gives us a page worth of docs
+    // When using server-side pagination, we need to apply filters manually
     if (isSubReady) {
+      console.log('Using server-side pagination with filters:', { searchTerm, selectedType });
+      
+      // Get all questions from the subscription
       const docs = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
-      return docs.map((q: any) => {
+      
+      // Map to QuestionItem format
+      const mappedDocs = docs.map((q: any) => {
         const latest = (q.versions && q.versions.find((v: any) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
         return {
           id: q._id,
@@ -269,9 +295,35 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
           status: 'published',
         } as QuestionItem;
       });
+      
+      // Apply the same filtering logic as in filteredQuestions
+      return mappedDocs.filter(question => {
+        // Filter by search term
+        const matchesSearch = searchTerm === '' || 
+          question.text?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Filter by type
+        const matchesType = selectedType === '' || question.type === selectedType;
+        
+        // Only show questions that match all filters
+        const matches = matchesSearch && matchesType;
+        
+        // Debug individual question filtering
+        if (searchTerm || selectedType) {
+          console.log(`Server-side question ${question.id} (${question.text?.substring(0, 20)}...)`, { 
+            matchesSearch, 
+            matchesType,
+            included: matches
+          });
+        }
+        
+        return matches;
+      });
     }
+    
+    // For client-side pagination, use the already filtered questions
     return filteredQuestions.slice(startIndex, startIndex + pageSize);
-  }, [filteredQuestions, startIndex, pageSize, isSubReady]);
+  }, [filteredQuestions, startIndex, pageSize, isSubReady, searchTerm, selectedType, selectedTags]);
   
   // Toggle question selection
   const handleToggleQuestion = (questionId: string) => {
@@ -344,11 +396,28 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Handle filter changes
   const handleFilterChange = (filterType: 'type' | 'tags', value: string | string[]) => {
+    console.log(`Filter change: ${filterType}`, value);
+    
     if (filterType === 'type') {
-      setSelectedType(typeof value === 'string' ? value : '');
+      // For type filter, ensure we have a string value
+      const typeValue = typeof value === 'string' ? value : '';
+      console.log('Setting selectedType to:', typeValue);
+      setSelectedType(typeValue);
     } else {
-      setSelectedTags(typeof value === 'string' ? [value] : value);
+      // For tags filter, ensure we have an array value
+      const tagsValue = typeof value === 'string' ? [value] : value;
+      console.log('Setting selectedTags to:', tagsValue);
+      setSelectedTags(tagsValue);
     }
+    
+    // Log the current filter state after the update
+    setTimeout(() => {
+      console.log('Current filter state:', { 
+        searchTerm, 
+        selectedType: typeof value === 'string' && filterType === 'type' ? value : selectedType,
+        selectedTags: filterType === 'tags' ? (typeof value === 'string' ? [value] : value) : selectedTags
+      });
+    }, 0);
   };
   
   // Handle saving selected questions
@@ -538,28 +607,39 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     </label>
                     <select
                       id="typeFilter"
-                      className="tom-select"
-                      multiple
-                      data-placeholder="Filter by question type"
+                      className="standard-select"
+                      value={selectedType}
                       onChange={(e) => {
-                        const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-                        handleFilterChange('type', selectedOptions);
+                        console.log('Type filter changed:', e.target.value);
+                        handleFilterChange('type', e.target.value);
                       }}
                       style={{
                         width: '100%',
-                        backgroundColor: '#ffffff'
+                        padding: '10px',
+                        borderRadius: '6px',
+                        border: '1px solid #e2e8f0',
+                        backgroundColor: '#ffffff',
+                        fontSize: '14px',
+                        color: '#334155',
+                        appearance: 'auto',
+                        height: '42px'
                       }}
-                    >
-                      {availableTypes.map(type => (
-                        <option key={type} value={type}>
-                          {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </option>
-                      ))}
+>
+                      <option value="">All Types</option>
+                      <option value="radio">Single Choice (Radio)</option>
+                      <option value="checkbox">Multiple Choice (Checkbox)</option>
+                      <option value="dropdown">Dropdown</option>
+                      <option value="text">Short Text</option>
+                      <option value="textarea">Long Text</option>
+                      <option value="rating">Rating Scale</option>
+                      <option value="likert">Likert Scale</option>
+                      <option value="ranking">Ranking</option>
+                      <option value="date">Date</option>
                     </select>
                   </div>
                   
                   {/* Tag Filter */}
-                  <div className="filter-group" style={{
+                  {/* <div className="filter-group" style={{
                     flex: '1 1 auto',
                     maxWidth: '250px'
                   }}>
@@ -632,7 +712,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                         })
                       }}
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
               
@@ -675,6 +755,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 overflowY: 'auto',
                 padding: '16px 24px 0', /* Added top padding for spacing */
               }}>
+                {/* Debug log for rendering */}
+                {(() => { console.log('Rendering questions list with', currentPageQuestions.length, 'questions'); return null; })()} 
                 {currentPageQuestions.length > 0 ? (
                   currentPageQuestions.map((question) => (
                     <div 
