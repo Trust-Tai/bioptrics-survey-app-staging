@@ -201,7 +201,8 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
 
   // Check if this question type supports assessment
   const supportsAssessment = () => {
-    const assessmentTypes = ['radio', 'checkbox', 'dropdown', 'text', 'date'];
+    // const assessmentTypes = ['radio', 'checkbox', 'dropdown', 'text', 'date'];
+    const assessmentTypes = ['null'];
     return assessmentTypes.includes(answerType);
   };
 

@@ -111,7 +111,7 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
               isCompleted={section.isCompleted}
               onClick={() => handleSectionClick(section.id)}
               color={color}
-              style={index === 0 ? { marginTop: '55px' } : {}}
+              style={index === 0 ? { } : {}}
             >
               <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 {/* Status Icon based on completion */}
@@ -160,14 +160,7 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         })}
       </SectionsList>
       
-      {progress > 0 && (
-        <ProgressContainer>
-          <ProgressBar>
-            <ProgressIndicator width={progress} color={color} />
-          </ProgressBar>
-          <ProgressText>{progress}% Completed</ProgressText>
-        </ProgressContainer>
-      )}
+      {/* Progress bar moved to header */}
     </SidebarContainer>
   );
 };

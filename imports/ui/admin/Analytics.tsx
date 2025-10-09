@@ -39,7 +39,6 @@ import AllCommentsTab from './tabs/AllCommentsTab';
 import AllActivityTab from './tabs/AllActivityTab';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 
-
 // Define interfaces for props and state
 interface AnalyticsProps {
   surveyId?: string; // Make surveyId optional
@@ -782,7 +781,7 @@ const CompletionTimeContent: React.FC<CompletionTimeContentProps> = ({ surveyId,
 
 // MultiSelectDropdown component
 interface MultiSelectDropdownProps {
-  options: Array<{ _id: string; title: string }>;
+  options: Array<{ _id: string; title: string; isOwned?: boolean; isSharedWithMe?: boolean }>;
   selectedValues: string[];
   onChange: (selectedValues: string[]) => void;
   placeholder?: string;
@@ -815,14 +814,14 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   }, []);
   
   // Filter options based on search term
-  const filteredOptions = options.filter(option =>
-    option.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOptions = options.filter((option: { _id: string; title: string }) => 
+    !searchTerm || option.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  // Toggle selection of an option
+  // Toggle option selection
   const toggleOption = (optionId: string) => {
     if (optionId === '') {
-      // If "All" option is clicked, clear selection
+      // If 'All Surveys' is selected, clear the selection
       onChange([]);
     } else {
       const newSelectedValues = selectedValues.includes(optionId)
@@ -888,6 +887,17 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         />
         
         <OptionsList>
+          <div style={{ 
+            padding: '8px 12px', 
+            borderBottom: '1px solid #e5e7eb',
+            marginBottom: '8px',
+            fontSize: '12px', 
+            fontWeight: 600, 
+            color: '#6b7280'
+          }}>
+            Select surveys:
+          </div>
+          
           <OptionItem 
             isSelected={selectedValues.length === 0} 
             onClick={() => toggleOption('')}
@@ -903,7 +913,15 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               onClick={() => toggleOption(option._id)}
             >
               <Checkbox isSelected={selectedValues.includes(option._id)} />
-              {option.title}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span>{option.title}</span>
+                {option.isOwned && (
+                  <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 500 }}>My Survey</span>
+                )}
+                {option.isSharedWithMe && (
+                  <span style={{ fontSize: '11px', color: '#4b5563', fontWeight: 500 }}>Shared with me</span>
+                )}
+              </div>
             </OptionItem>
           ))}
           
@@ -935,8 +953,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
   const [showExportModal, setShowExportModal] = useState(false);
   
   // State for surveys
-  const [availableSurveys, setAvailableSurveys] = useState<Array<{_id: string, title: string}>>([]);
+  const [availableSurveys, setAvailableSurveys] = useState<Array<{_id: string, title: string, isOwned?: boolean, isSharedWithMe?: boolean}>>([]);
   const [selectedSurveyIds, setSelectedSurveyIds] = useState<string[]>(surveyId ? [surveyId] : []);
+  
+  // No longer using ownership filter state
   
   // State for analytics data
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
@@ -954,12 +974,37 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
+  
   // Fetch analytics data
   const fetchAnalyticsData = useCallback(async () => {
     setIsLoading(true);
     
     try {
+      // First, get the survey IDs that the user has access to
+      let accessibleSurveyIds: string[] = [];
+      try {
+        accessibleSurveyIds = await new Promise<string[]>((resolve, reject) => {
+          Meteor.call('surveys.getAccessibleSurveyIds', { surveyIds: filterParams.surveyIds }, (error: Error, result: string[]) => {
+            if (error) {
+              console.error('Error fetching accessible survey IDs:', error);
+              reject(error);
+            } else {
+              console.log('Accessible survey IDs:', result);
+              resolve(result);
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Failed to get accessible survey IDs:', error);
+        // Continue with empty array if there's an error
+      }
+      
+      // Create effective filter params with the accessible survey IDs
+      const effectiveFilterParams = {
+        ...filterParams,
+        surveyIds: accessibleSurveyIds
+      };
+      
       // Use Promise.all to fetch all data in parallel
       const [
         completedSurveysCount,
@@ -970,37 +1015,37 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
         responseTrends
       ] = await Promise.all([
         new Promise<number>((resolve, reject) => {
-          Meteor.call('getFilteredSurveysCount', filterParams, (error: Error, result: number) => {
+          Meteor.call('getFilteredSurveysCount', effectiveFilterParams, (error: Error, result: number) => {
             if (error) reject(error);
             else resolve(result);
           });
         }),
         new Promise<number>((resolve, reject) => {
-          Meteor.call('getFilteredParticipationRate', filterParams, (error: Error, result: number) => {
+          Meteor.call('getFilteredParticipationRate', effectiveFilterParams, (error: Error, result: number) => {
             if (error) reject(error);
             else resolve(result);
           });
         }),
         new Promise<number>((resolve, reject) => {
-          Meteor.call('getFilteredResponseRate', filterParams, (error: Error, result: number) => {
+          Meteor.call('getFilteredResponseRate', effectiveFilterParams, (error: Error, result: number) => {
             if (error) reject(error);
             else resolve(result);
           });
         }),
         new Promise<number>((resolve, reject) => {
-          Meteor.call('getFilteredEngagementScore', filterParams, (error: Error, result: number) => {
+          Meteor.call('getFilteredEngagementScore', effectiveFilterParams, (error: Error, result: number) => {
             if (error) reject(error);
             else resolve(result || 0);
           });
         }),
         new Promise<number>((resolve, reject) => {
-          Meteor.call('getFilteredCompletionTime', filterParams, (error: Error, result: number) => {
+          Meteor.call('getFilteredCompletionTime', effectiveFilterParams, (error: Error, result: number) => {
             if (error) reject(error);
             else resolve(result);
           });
         }),
         new Promise<any[]>((resolve, reject) => {
-          Meteor.call('getResponseTrendsData', filterParams, (error: Error, result: any[]) => {
+          Meteor.call('getResponseTrendsData', effectiveFilterParams, (error: Error, result: any[]) => {
             if (error) reject(error);
             else resolve(result || []);
           });
@@ -1021,8 +1066,18 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [filterParams, surveyId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surveyId]);
 
+  // Fetch analytics data when filterParams changes
+  useEffect(() => {
+    // Only fetch if we're not in the initial render
+    if (Object.keys(filterParams).length > 0) {
+      fetchAnalyticsData();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterParams]);
+  
   // No handlers for date range, tags, or status since we removed those filters
 
   // Reset filters
@@ -1285,12 +1340,22 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
 
   // Fetch available surveys
   const fetchAvailableSurveys = useCallback(() => {
-    Meteor.call('surveys.getAllSurveys', (error: any, result: any) => {
+    Meteor.call('surveys.getAllSurveys', { includeCollaborators: true }, (error: any, result: any) => {
       if (error) {
         console.error('Error fetching available surveys:', error);
       } else {
         console.log('Fetched available surveys:', result);
-        setAvailableSurveys(result);
+        
+        // Process surveys to add ownership information
+        const userId = Meteor.userId();
+        const processedSurveys = result.map((survey: any) => ({
+          ...survey,
+          isOwned: survey.createdBy === userId,
+          isSharedWithMe: survey.createdBy !== userId && 
+                        (survey.collaborators || []).some((c: any) => c.userId === userId)
+        }));
+        
+        setAvailableSurveys(processedSurveys);
       }
     });
   }, []);
@@ -1332,13 +1397,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
       setSurveyDescription('Analytics for all surveys');
     }
     
+  }, [surveyId, fetchAvailableSurveys]);
+  // Initial data fetch on component mount
+  useEffect(() => {
     fetchAnalyticsData();
-  }, [fetchAnalyticsData, surveyId, fetchAvailableSurveys, filterParams]);
-
-  // We no longer need this check since we want to show all survey data when no specific survey is selected
-  // if (!surveyId) {
-  //   return <div>No survey selected</div>;
-  // }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Define tabs for the TabsContainer
   const tabs: TabItem[] = [
@@ -1405,25 +1469,25 @@ const Analytics: React.FC<AnalyticsProps> = ({ surveyId }) => {
       label: 'Questions',
       icon: <FiFileText size={16} />,
       content: <AllQuestionsTab ref={questionsTabRef} isLoading={isLoading} surveyId={surveyId} filterParams={filterParams} />
-    },
+    }
     // {
     //   id: 'groups',
     //   label: 'Groups',
     //   icon: <FiUsers size={16} />,
     //   content: <GroupsTab isLoading={isLoading} />
     // },
-    {
-      id: 'comments',
-      label: 'Comments',
-      icon: <FiMessageSquare size={16} />,
-      content: <AllCommentsTab isLoading={isLoading} />
-    },
-    {
-      id: 'activity',
-      label: 'Activity',
-      icon: <FiActivity size={16} />,
-      content: <AllActivityTab isLoading={isLoading} />
-    }
+    // {
+    //   id: 'comments',
+    //   label: 'Comments',
+    //   icon: <FiMessageSquare size={16} />,
+    //   content: <AllCommentsTab isLoading={isLoading} />
+    // },
+    // {
+    //   id: 'activity',
+    //   label: 'Activity',
+    //   icon: <FiActivity size={16} />,
+    //   content: <AllActivityTab isLoading={isLoading} />
+    // }
   ];
 
   // Track progress for the modal

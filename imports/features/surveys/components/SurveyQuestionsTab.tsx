@@ -1735,7 +1735,7 @@ useEffect(() => {
           )}
 
           {/* Action Buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '20px' }}>
             {!isSurveyImported() ? (
               <div 
                 className="survey-section-add-question"
@@ -1759,7 +1759,7 @@ useEffect(() => {
                 <FiLock size={16} /> Add Section
               </div>
             )}
-            {!isSurveyImported() ? (
+            {/* {!isSurveyImported() ? (
               <div 
                 className="survey-section-add-question"
                 onClick={handleChooseFromQuestionBank}
@@ -1781,8 +1781,8 @@ useEffect(() => {
               >
                 <FiLock size={16} /> Choose from Question Bank
               </div>
-            )}
-            {!isSurveyImported() ? (
+            )} */}
+            {/* {!isSurveyImported() ? (
               <div 
                 className="survey-section-add-question"
                 onClick={handleCreateQuestion}
@@ -1804,7 +1804,7 @@ useEffect(() => {
               >
                 <FiLock size={16} /> Create Question
               </div>
-            )}
+            )} */}
             
           </div>
         </div>

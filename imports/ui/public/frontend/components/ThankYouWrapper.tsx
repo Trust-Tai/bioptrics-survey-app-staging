@@ -9,6 +9,7 @@ interface ThankYouWrapperProps {
   timeTaken: string;
   onTakeAgain: () => void;
   color?: string;
+  allowRetake?: boolean;
 }
 
 /**
@@ -22,7 +23,8 @@ const ThankYouWrapper = memo(({
   completionPercentage, 
   timeTaken, 
   onTakeAgain, 
-  color 
+  color,
+  allowRetake = true // Default to true for backward compatibility
 }: ThankYouWrapperProps) => {
   const DefaultLogo = "/TeamsynerG.png";
   const mainLogo = logo || DefaultLogo;
@@ -36,6 +38,7 @@ const ThankYouWrapper = memo(({
       timeTaken={timeTaken}
       onTakeAgain={onTakeAgain}
       color={color}
+      allowRetake={allowRetake}
     />
   );
 });

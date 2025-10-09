@@ -389,7 +389,7 @@ const SectionsTab: React.FC<SectionsTabProps> = ({
           >
             <FiPlus size={16} /> Add Section
           </div>
-          <div 
+          {/* <div 
             className="survey-section-add-question"
             onClick={() => handleAddQuestion(null)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -402,7 +402,7 @@ const SectionsTab: React.FC<SectionsTabProps> = ({
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <FiPlus size={16} /> Create Question
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

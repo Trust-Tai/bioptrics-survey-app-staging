@@ -341,7 +341,7 @@ const BasicSurveyWelcomeSection: React.FC<BasicSurveyWelcomeSectionProps> = ({
         </QuillContainer>
       </FormGroup>
 
-      <FormGroup>
+      {/* <FormGroup>
         <p style={{ fontSize: 15, color: '#555', margin: '0 0 16px 0' }}>
           Select tags to associate with this survey. Tags help with filtering and organizing surveys.
         </p>
@@ -556,7 +556,7 @@ const BasicSurveyWelcomeSection: React.FC<BasicSurveyWelcomeSectionProps> = ({
         <SaveButton onClick={handleSaveAndContinue} disabled={saving}>
           {saving ? 'Saving...' : 'Save and Continue'}
         </SaveButton>
-      </FormActions>
+      </FormActions> */}
     </Panel>
   );
 };

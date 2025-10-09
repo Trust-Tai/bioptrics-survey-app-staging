@@ -237,16 +237,22 @@ if (Meteor.isServer) {
       try {
         console.log(`[SERVER] Calculating filtered question response stats with filters:`, filterParams);
         
-        // If specific surveyIds are provided, use those
-        // Otherwise, get all surveys
-        let surveys;
+        // Import the createOwnershipQuery function from surveyMethods.ts
+        const { createOwnershipQuery } = await import('./surveyMethods');
+        
+        // First, ensure we're only working with surveys the user has access to
+        let surveyQuery = {};
         if (filterParams?.surveyIds && filterParams.surveyIds.length > 0) {
-          surveys = await Surveys.find({ _id: { $in: filterParams.surveyIds } }).fetchAsync();
-          console.log(`[SERVER] Found ${surveys.length} surveys matching filter criteria`);
-        } else {
-          surveys = await Surveys.find({}).fetchAsync();
-          console.log(`[SERVER] Using all ${surveys.length} surveys (no survey filter)`);
+          // If specific survey IDs are provided, filter by those
+          surveyQuery = { _id: { $in: filterParams.surveyIds } };
         }
+        
+        // Apply ownership filtering
+        const ownershipQuery = createOwnershipQuery(this.userId || '', surveyQuery);
+        
+        // Get surveys the user has access to
+        const surveys = await Surveys.find(ownershipQuery).fetchAsync();
+        console.log(`[SERVER] Found ${surveys.length} accessible surveys matching filter criteria`);
         
         // Initialize counters
         let totalQuestions = 0;

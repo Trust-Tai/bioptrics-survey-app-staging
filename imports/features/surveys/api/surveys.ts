@@ -174,6 +174,7 @@ export interface SurveyDoc {
     checkboxText?: string;
     showAnonymityNotice?: boolean;
     anonymityNoticeText?: string;
+    showConsentScreen?: boolean; // Controls whether to show the consent screen at all
   };
   isActive?: boolean;
   priority?: number;
@@ -1634,10 +1635,11 @@ Meteor.methods({
     return generateSurveyToken(surveyId);
   },
   
-  async 'surveys.submitResponse'(data: { surveyId: string, responses: Record<string, any>, token?: string, deviceType?: 'desktop' | 'tablet' | 'mobile', completionTime?: number }) {
+  async 'surveys.submitResponse'(data: { surveyId: string, responseId?: string | null, responses: Record<string, any>, token?: string, deviceType?: 'desktop' | 'tablet' | 'mobile', completionTime?: number }) {
     // Log the incoming data to verify deviceType is being received
     console.log('surveys.submitResponse received data:', { 
       surveyId: data.surveyId,
+      responseId: data.responseId || 'not provided',
       responseCount: Object.keys(data.responses).length,
       deviceType: data.deviceType,
       token: data.token,
@@ -1719,11 +1721,43 @@ Meteor.methods({
     console.log('Inserting survey response document:', responseDoc);
     
     try {
-      // We've already created the metadata object above, so no need to redefine it here
-      console.log('Final response document with metadata:', responseDoc);
+      let responseId;
       
-      const responseId = await SurveyResponses.insertAsync(responseDoc);
-      console.log('Survey response saved with ID:', responseId);
+      // Check if we're updating an existing response (replace mode)
+      if (data.responseId) {
+        console.log('Checking for existing response to replace:', data.responseId);
+        const existingResponse = await SurveyResponses.findOneAsync(data.responseId);
+        
+        if (existingResponse) {
+          console.log('Found existing response, updating it:', data.responseId);
+          
+          // Update the existing response
+          await SurveyResponses.updateAsync(data.responseId, {
+            $set: {
+              responses: responsesArray,
+              completed: true,
+              endTime: now,
+              completionTime: completionTimeSeconds,
+              progress: 100,
+              metadata: metadata,
+              updatedAt: now
+            }
+          });
+          
+          responseId = data.responseId;
+          console.log('Updated existing survey response with ID:', responseId);
+        } else {
+          // If responseId was provided but not found, create a new response
+          console.log('Existing response not found, creating new one instead');
+          responseId = await SurveyResponses.insertAsync(responseDoc);
+          console.log('Created new survey response with ID:', responseId);
+        }
+      } else {
+        // Normal flow - create a new response
+        console.log('Final response document with metadata:', responseDoc);
+        responseId = await SurveyResponses.insertAsync(responseDoc);
+        console.log('Survey response saved with ID:', responseId);
+      }
       
       // Verify the response was saved correctly
       const savedResponse = await SurveyResponses.findOneAsync(responseId);
@@ -1738,11 +1772,52 @@ Meteor.methods({
         );
       }
       
-      return responseId;
+      // Return the responseId in a consistent format
+      return { responseId };
     } catch (error) {
       console.error('Error saving survey response:', error);
       throw new Meteor.Error('db-error', 'Failed to save survey response');
     }
+  },
+  
+  /**
+   * Get the latest response ID for a survey from the current user/device
+   * @param surveyId - The ID of the survey to check
+   * @returns The latest response ID if found
+   */
+  async 'surveys.getLatestResponseId'(surveyId: string) {
+    check(surveyId, String);
+    
+    // Get token from the connection if available
+    const token = this.connection?.httpHeaders?.['x-survey-token'] || undefined;
+    
+    // Build the query based on available identifiers
+    const query: any = { surveyId };
+    
+    // Add user ID if logged in
+    if (this.userId) {
+      query.userId = this.userId;
+    } 
+    // Otherwise use token if available
+    else if (token) {
+      query.respondentId = token;
+    }
+    // If neither is available, use client IP as a fallback
+    else if (this.connection?.clientAddress) {
+      // Use a hash of the IP address as a basic identifier
+      const ipHash = this.connection.clientAddress;
+      query['metadata.ipAddress'] = ipHash;
+    }
+    
+    // Find the latest response for this user/device
+    const response = await SurveyResponses.findOneAsync(
+      query,
+      { sort: { createdAt: -1 } }
+    );
+    
+    console.log('Latest response found:', response ? response._id : 'none');
+    
+    return response ? { responseId: response._id } : null;
   },
   
   /**

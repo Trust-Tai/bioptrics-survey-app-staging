@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
-import { FiX, FiLock } from 'react-icons/fi';
+import { FiX, FiLock, FiLayout, FiPenTool, FiFileText, FiCheckCircle, FiToggleRight, FiToggleLeft } from 'react-icons/fi';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -10,6 +10,37 @@ import { Meteor } from 'meteor/meteor';
 
 let Survey : any;
 let Theme : any;
+
+const TabNavigation = styled.div`
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+const TabButton = styled.button<{ isActive: boolean }>`
+  padding: 12px 20px;
+  background: ${({ isActive }) => (isActive ? '#fff' : 'transparent')};
+  border: none;
+  border-bottom: 3px solid ${({ isActive }) => (isActive ? '#552a47' : 'transparent')};
+  color: ${({ isActive }) => (isActive ? '#552a47' : '#4a5568')};
+  font-weight: ${({ isActive }) => (isActive ? '600' : '500')};
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  
+  &:hover {
+    color: #552a47;
+    background: ${({ isActive }) => (isActive ? '#fff' : '#f8f9fa')};
+  }
+`;
 
 const Panel = styled.div`
   padding: 20px;
@@ -251,6 +282,30 @@ const TooltipContent = styled.div`
   }
 `;
 
+const ToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const ToggleSwitch = styled.div<{ isActive: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  
+  svg {
+    color: ${({ isActive }) => (isActive ? '#552a47' : '#a0aec0')};
+    font-size: 32px;
+  }
+`;
+
+const ToggleLabel = styled.span`
+  margin-left: 8px;
+  font-size: 14px;
+  color: #4a5568;
+  font-weight: 500;
+`;
+
 // Props interface
 interface AppearanceSectionProps {
   survey: Survey | any;
@@ -300,6 +355,8 @@ interface AppearanceSectionProps {
   setShowAnonymityNotice: (show: boolean) => void;
   anonymityNoticeText: string;
   setAnonymityNoticeText: (text: string) => void;
+  showConsentScreen: boolean;
+  setShowConsentScreen: (show: boolean) => void;
 }
 
 // Component
@@ -351,7 +408,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   setShowAnonymityNotice,
   anonymityNoticeText,
   setAnonymityNoticeText,
+  showConsentScreen,
+  setShowConsentScreen,
 }) => {
+  const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'consent' | 'thankYou'>('branding');
   const [showRemoveLogoConfirm, setShowRemoveLogoConfirm] = useState(false);
   const [showRemoveFeaturedImageConfirm, setShowRemoveFeaturedImageConfirm] = useState(false);
 
@@ -360,7 +420,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
     const filteredThemes = surveyThemes.filter(theme =>
       !themeSearchQuery || theme.name.toLowerCase().includes(themeSearchQuery.toLowerCase())
     );
-    const perPage = 10;
+    const perPage = 6;
     const totalPages = Math.ceil(filteredThemes.length / perPage);
     const start = (currentThemePage - 1) * perPage;
     const paginatedThemes = filteredThemes.slice(start, start + perPage);
@@ -457,140 +517,192 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
     },
     [setSelectedTheme, setSurvey, setHasUnsavedChanges, triggerAutoSave]
   );
+  
+  // Handle consent screen toggle
+  const handleToggleConsentScreen = useCallback(() => {
+    const newValue = !showConsentScreen;
+    setShowConsentScreen(newValue);
+    setSurvey(prev => ({
+      ...prev,
+      consentScreen: { 
+        ...prev?.consentScreen, 
+        showConsentScreen: newValue 
+      },
+    }) as Survey);
+    setHasUnsavedChanges(true);
+    triggerAutoSave();
+  }, [showConsentScreen, setSurvey, setHasUnsavedChanges, triggerAutoSave]);
 
   return (
     <Panel>
       <Header>
         <Title>Appearance</Title>
-        <AddThemeButton onClick={() => setShowThemeModal(true)}>
-          <span style={{ fontSize: 18, marginRight: 2 }}>+</span> Add Theme
-        </AddThemeButton>
+        {activeTab === 'theme' && (
+          <AddThemeButton onClick={() => setShowThemeModal(true)}>
+            <span style={{ fontSize: 18, marginRight: 2 }}>+</span> Add Theme
+          </AddThemeButton>
+        )}
       </Header>
+      
+      <TabNavigation>
+        <TabButton 
+          isActive={activeTab === 'branding'} 
+          onClick={() => setActiveTab('branding')}
+        >
+          <FiLayout size={16} />
+          Branding & Layout
+        </TabButton>
+        <TabButton 
+          isActive={activeTab === 'theme'} 
+          onClick={() => setActiveTab('theme')}
+        >
+          <FiPenTool size={16} />
+          Theme Selection
+        </TabButton>
+        <TabButton 
+          isActive={activeTab === 'consent'} 
+          onClick={() => setActiveTab('consent')}
+        >
+          <FiFileText size={16} />
+          Consent Screen
+        </TabButton>
+        <TabButton 
+          isActive={activeTab === 'thankYou'} 
+          onClick={() => setActiveTab('thankYou')}
+        >
+          <FiCheckCircle size={16} />
+          Thank You Screen
+        </TabButton>
+      </TabNavigation>
 
-      {/* Survey Branding */}
-      <Section>
-        <SectionTitle>Survey Branding</SectionTitle>
-        <Grid>
-          {/* Logo Upload */}
-          <div>
-            <label htmlFor="surveyLogo" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
-              Logo
-            </label>
-            <FileUploadContainer>
-              <FileInput
-                type="file"
-                id="surveyLogo"
-                onChange={(e) => handleFileUpload(e, 'logo')}
-                accept="image/*"
-              />
-              <FileUploadButton htmlFor="surveyLogo">Choose Logo</FileUploadButton>
-              <span style={{ fontSize: 13, color: '#6c757d' }}>{survey?.logo ? 'Logo selected' : 'No file selected'}</span>
-            </FileUploadContainer>
-            {survey?.logo && (
-              <ImagePreview>
-                <img src={survey.logo} alt="Logo Preview" style={{ maxWidth: 180, maxHeight: 80 }} />
-                <RemoveButton onClick={() => setShowRemoveLogoConfirm(true)} title="Remove logo">
-                  <FiX />
-                </RemoveButton>
-              </ImagePreview>
-            )}
-          </div>
+      {/* Branding & Layout Tab */}
+      {activeTab === 'branding' && (
+        <>
+          {/* Survey Branding */}
+          <Section>
+            <SectionTitle>Survey Branding</SectionTitle>
+            <Grid>
+              {/* Logo Upload */}
+              <div>
+                <label htmlFor="surveyLogo" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+                  Logo
+                </label>
+                <FileUploadContainer>
+                  <FileInput
+                    type="file"
+                    id="surveyLogo"
+                    onChange={(e) => handleFileUpload(e, 'logo')}
+                    accept="image/*"
+                  />
+                  <FileUploadButton htmlFor="surveyLogo">Choose Logo</FileUploadButton>
+                  <span style={{ fontSize: 13, color: '#6c757d' }}>{survey?.logo ? 'Logo selected' : 'No file selected'}</span>
+                </FileUploadContainer>
+                {survey?.logo && (
+                  <ImagePreview>
+                    <img src={survey.logo} alt="Logo Preview" style={{ maxWidth: 180, maxHeight: 80 }} />
+                    <RemoveButton onClick={() => setShowRemoveLogoConfirm(true)} title="Remove logo">
+                      <FiX />
+                    </RemoveButton>
+                  </ImagePreview>
+                )}
+              </div>
 
-          {/* Featured Image Upload */}
-          <div>
-            <label htmlFor="surveyFeaturedImage" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
-              Featured Image
-            </label>
-            <FileUploadContainer>
-              <FileInput
-                type="file"
-                id="surveyFeaturedImage"
-                onChange={(e) => handleFileUpload(e, 'featuredImage')}
-                accept="image/*"
-              />
-              <FileUploadButton htmlFor="surveyFeaturedImage">Choose Image</FileUploadButton>
-              <span style={{ fontSize: 13, color: '#6c757d' }}>{survey?.featuredImage ? 'Image selected' : 'No file selected'}</span>
-            </FileUploadContainer>
-            {survey?.featuredImage && (
-              <ImagePreview>
-                <img src={survey.featuredImage} alt="Featured Image Preview" style={{ maxWidth: 180, maxHeight: 120 }} />
-                <RemoveButton onClick={() => setShowRemoveFeaturedImageConfirm(true)} title="Remove featured image">
-                  <FiX />
-                </RemoveButton>
-              </ImagePreview>
-            )}
-          </div>
-        </Grid>
-      </Section>
+              {/* Featured Image Upload */}
+              <div>
+                <label htmlFor="surveyFeaturedImage" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+                  Featured Image
+                </label>
+                <FileUploadContainer>
+                  <FileInput
+                    type="file"
+                    id="surveyFeaturedImage"
+                    onChange={(e) => handleFileUpload(e, 'featuredImage')}
+                    accept="image/*"
+                  />
+                  <FileUploadButton htmlFor="surveyFeaturedImage">Choose Image</FileUploadButton>
+                  <span style={{ fontSize: 13, color: '#6c757d' }}>{survey?.featuredImage ? 'Image selected' : 'No file selected'}</span>
+                </FileUploadContainer>
+                {survey?.featuredImage && (
+                  <ImagePreview>
+                    <img src={survey.featuredImage} alt="Featured Image Preview" style={{ maxWidth: 180, maxHeight: 120 }} />
+                    <RemoveButton onClick={() => setShowRemoveFeaturedImageConfirm(true)} title="Remove featured image">
+                      <FiX />
+                    </RemoveButton>
+                  </ImagePreview>
+                )}
+              </div>
+            </Grid>
+          </Section>
 
-      {/* Survey Layout */}
-      <Section>
-        <SectionTitle>Survey Layout</SectionTitle>
-        <p style={{ fontSize: 14, color: '#495057', marginBottom: 12 }}>
-          Select how questions will be displayed to respondents.
-        </p>
-        <Grid style={{ gridTemplateColumns: '1fr 1fr' }}>
-          <LayoutOption isSelected={survey?.layout === 'multiStep' || !survey?.layout}>
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 16 }}>Multi Step</div>
-              <input
-                type="radio"
-                name="surveyLayout"
-                value="multiStep"
-                checked={survey?.layout === 'multiStep' || !survey?.layout}
-                onChange={() => handleLayoutChange('multiStep')}
-                style={{ accentColor: '#552a47', cursor: 'pointer', width: 18, height: 18 }}
-              />
-            </div>
-            <div style={{ width: '100%', height: 80, backgroundColor: '#f8f9fa', borderRadius: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12, border: '1px solid #e9ecef' }}>
-              <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="10" width="100" height="10" rx="2" fill="#552a47" fillOpacity="0.7" />
-                <rect x="10" y="25" width="100" height="5" rx="1" fill="#dee2e6" />
-                <rect x="10" y="35" width="60" height="5" rx="1" fill="#dee2e6" />
-                <rect x="10" y="45" width="30" height="5" rx="1" fill="#dee2e6" />
-              </svg>
-            </div>
-            <div style={{ fontSize: 13, color: '#6c757d', textAlign: 'center' }}>
-              Questions are shown step-by-step, one section at a time.
-            </div>
-          </LayoutOption>
-          <LayoutOption isSelected={survey?.layout === 'allOnOnePage'}>
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 16 }}>All on One Page</div>
-              <input
-                type="radio"
-                name="surveyLayout"
-                value="allOnOnePage"
-                checked={survey?.layout === 'allOnOnePage'}
-                onChange={() => handleLayoutChange('allOnOnePage')}
-                style={{ accentColor: '#552a47', cursor: 'pointer', width: 18, height: 18 }}
-              />
-            </div>
-            <div style={{ width: '100%', height: 80, backgroundColor: '#f8f9fa', borderRadius: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12, border: '1px solid #e9ecef' }}>
-              <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="5" width="100" height="8" rx="2" fill="#552a47" fillOpacity="0.7" />
-                <rect x="10" y="18" width="100" height="4" rx="1" fill="#dee2e6" />
-                <rect x="10" y="27" width="100" height="4" rx="1" fill="#dee2e6" />
-                <rect x="10" y="36" width="60" height="4" rx="1" fill="#dee2e6" />
-                <rect x="10" y="45" width="80" height="4" rx="1" fill="#dee2e6" />
-                <rect x="10" y="54" width="40" height="4" rx="1" fill="#dee2e6" />
-              </svg>
-            </div>
-            <div style={{ fontSize: 13, color: '#6c757d', textAlign: 'center' }}>
-              Displays all questions on a single page, like a traditional form.
-            </div>
-          </LayoutOption>
-        </Grid>
-      </Section>
-      {/* Question Display Options */}
-      {/* Question Display Options section removed - now handled at individual question level */}
-      {/* Theme Selection */}
-      <Section>
-        <SectionTitle>Survey Theme</SectionTitle>
-        <p style={{ fontSize: 15, margin: 0, marginBottom: 16 }}>
-          Select a theme for your survey. The theme will affect the appearance and feel of your survey.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '8px 12px', backgroundColor: '#f8f9fa', border: '1px solid #e2e8f0', borderRadius: 6 }}>
+          {/* Survey Layout */}
+          <Section>
+            <SectionTitle>Survey Layout</SectionTitle>
+            <p style={{ fontSize: 14, color: '#495057', marginBottom: 12 }}>
+              Select how questions will be displayed to respondents.
+            </p>
+            <Grid style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <LayoutOption isSelected={survey?.layout === 'multiStep' || !survey?.layout}>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontWeight: 600, fontSize: 16 }}>Multi Step</div>
+                  <input
+                    type="radio"
+                    name="surveyLayout"
+                    value="multiStep"
+                    checked={survey?.layout === 'multiStep' || !survey?.layout}
+                    onChange={() => handleLayoutChange('multiStep')}
+                    style={{ accentColor: '#552a47', cursor: 'pointer', width: 18, height: 18 }}
+                  />
+                </div>
+                <div style={{ width: '100%', height: 80, backgroundColor: '#f8f9fa', borderRadius: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12, border: '1px solid #e9ecef' }}>
+                  <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="10" width="100" height="10" rx="2" fill="#552a47" fillOpacity="0.7" />
+                    <rect x="10" y="25" width="100" height="5" rx="1" fill="#dee2e6" />
+                    <rect x="10" y="35" width="60" height="5" rx="1" fill="#dee2e6" />
+                    <rect x="10" y="45" width="30" height="5" rx="1" fill="#dee2e6" />
+                  </svg>
+                </div>
+                <div style={{ fontSize: 13, color: '#6c757d', textAlign: 'center' }}>
+                  Questions are shown step-by-step, one section at a time.
+                </div>
+              </LayoutOption>
+              <LayoutOption isSelected={survey?.layout === 'allOnOnePage'}>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontWeight: 600, fontSize: 16 }}>All on One Page</div>
+                  <input
+                    type="radio"
+                    name="surveyLayout"
+                    value="allOnOnePage"
+                    checked={survey?.layout === 'allOnOnePage'}
+                    onChange={() => handleLayoutChange('allOnOnePage')}
+                    style={{ accentColor: '#552a47', cursor: 'pointer', width: 18, height: 18 }}
+                  />
+                </div>
+                <div style={{ width: '100%', height: 80, backgroundColor: '#f8f9fa', borderRadius: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12, border: '1px solid #e9ecef' }}>
+                  <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="5" width="100" height="8" rx="2" fill="#552a47" fillOpacity="0.7" />
+                    <rect x="10" y="18" width="100" height="4" rx="1" fill="#dee2e6" />
+                    <rect x="10" y="27" width="100" height="4" rx="1" fill="#dee2e6" />
+                    <rect x="10" y="36" width="60" height="4" rx="1" fill="#dee2e6" />
+                    <rect x="10" y="45" width="80" height="4" rx="1" fill="#dee2e6" />
+                    <rect x="10" y="54" width="40" height="4" rx="1" fill="#dee2e6" />
+                  </svg>
+                </div>
+                <div style={{ fontSize: 13, color: '#6c757d', textAlign: 'center' }}>
+                  Displays all questions on a single page, like a traditional form.
+                </div>
+              </LayoutOption>
+            </Grid>
+          </Section>
+        </>
+      )}
+      {/* Theme Selection Tab */}
+      {activeTab === 'theme' && (
+        <Section>
+          <SectionTitle>Survey Theme</SectionTitle>
+          <p style={{ fontSize: 15, margin: 0, marginBottom: 16 }}>
+            Select a theme for your survey. The theme will affect the appearance and feel of your survey.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '8px 12px', backgroundColor: '#f8f9fa', border: '1px solid #e2e8f0', borderRadius: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, marginRight: 8 }}>Currently Selected:</span>
             <span
@@ -876,13 +988,33 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
           </div>
         )}
       </Section>
+      )}
 
-      {/* Consent Screen */}
-      <Section>
-        <SectionTitle>Consent Screen</SectionTitle>
-        <p style={{ marginBottom: 16, color: '#4a5568', fontSize: 14 }}>
-          Customize the consent information that appears before users start your survey.
-        </p>
+      {/* Consent Screen Tab */}
+      {activeTab === 'consent' && (
+        <Section>
+          <SectionTitle>Consent Screen</SectionTitle>
+          
+          {/* Consent Screen Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div>
+              <h4 style={{ margin: 0, fontWeight: 600, fontSize: 16 }}>Enable Consent Screen</h4>
+              <p style={{ margin: '4px 0 0 0', fontSize: 14, color: '#666' }}>
+                When enabled, participants must agree to consent terms before taking the survey
+              </p>
+            </div>
+            <ToggleContainer>
+              <ToggleSwitch isActive={showConsentScreen} onClick={handleToggleConsentScreen}>
+                {showConsentScreen ? <FiToggleRight size={36} /> : <FiToggleLeft size={36} />}
+              </ToggleSwitch>
+              <ToggleLabel>{showConsentScreen ? 'Enabled' : 'Disabled'}</ToggleLabel>
+            </ToggleContainer>
+          </div>
+          
+          <div style={{ opacity: showConsentScreen ? 1 : 0.5, pointerEvents: showConsentScreen ? 'auto' : 'none' }}>
+            <p style={{ marginBottom: 16, color: '#4a5568', fontSize: 14 }}>
+              Customize the consent information that appears before users start your survey.
+            </p>
 
         {/* Consent Title */}
         <div style={{ marginBottom: 20 }}>
@@ -1107,14 +1239,17 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             placeholder="I have read and understand the above information and consent to participate in this survey"
           />
         </div>
+          </div>
       </Section>
+      )}
 
-      {/* Thank You Screen */}
-      <Section>
-        <SectionTitle>Thank You Screen</SectionTitle>
-        <p style={{ marginBottom: 16, color: '#4a5568', fontSize: 14 }}>
-          Customize the message that appears when users complete your survey.
-        </p>
+      {/* Thank You Screen Tab */}
+      {activeTab === 'thankYou' && (
+        <Section>
+          <SectionTitle>Thank You Screen</SectionTitle>
+          <p style={{ marginBottom: 16, color: '#4a5568', fontSize: 14 }}>
+            Customize the message that appears when users complete your survey.
+          </p>
 
         {/* Thank You Icon */}
         <div style={{ marginBottom: 20 }}>
@@ -1303,23 +1438,22 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
               </div>
             ))}
           </Grid>
-        </div>
-
-        {/* Preview Button */}
-        <div style={{ marginTop: 30, marginBottom: 20 }}>
-          <button
-            onClick={() => setShowThankYouPreview(!showThankYouPreview)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#552a47',
-              color: 'white',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 14,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
+        </div>    
+          {/* Preview Button */}
+          <div style={{ marginTop: 30, marginBottom: 20 }}>
+            <button
+              onClick={() => setShowThankYouPreview(!showThankYouPreview)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#552a47',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 14,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1392,6 +1526,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
           <p>This preview shows how your thank you screen will appear to users after they complete the survey.</p>
         </div>
       </Section>
+      )}
 
       {/* Modals for Remove Confirmation (implement as needed) */}
       {showRemoveLogoConfirm && (
