@@ -69,16 +69,24 @@ const Actions = styled.div`
   }
 `;
 
-const SaveIndicator = styled.div`
+interface SaveIndicatorProps {
+  saving: boolean;
+}
+
+const SaveIndicator = styled.div<SaveIndicatorProps>`
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: ${(props: { saving: boolean }) => (props.saving ? '#f39c12' : '#2ecc71')};
+  color: ${props => (props.saving ? '#f39c12' : '#2ecc71')};
   margin-right: 8px;
 `;
 
-const SaveButton = styled.button`
+interface ButtonProps {
+  disabled?: boolean;
+}
+
+const SaveButton = styled.button<ButtonProps>`
   padding: 10px 15px;
   border-radius: 8px;
   border: none;
@@ -86,8 +94,8 @@ const SaveButton = styled.button`
   color: #fff;
   font-weight: 600;
   font-size: 15px;
-  cursor: ${(props: { disabled: boolean }) => (props.disabled ? 'wait' : 'pointer')};
-  opacity: ${(props) => (props.disabled ? 0.7 : 1)};
+  cursor: ${props => (props.disabled ? 'wait' : 'pointer')};
+  opacity: ${props => (props.disabled ? 0.7 : 1)};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,6 +117,53 @@ const SaveButton = styled.button`
   @media (max-width: 480px) {
     font-size: 14px;
     padding: 8px 16px;
+  }
+`;
+
+const SaveButtonMain = styled(SaveButton)`
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  flex: 1;
+  transform: none !important; /* Prevent individual transform */
+  box-shadow: none; /* Remove individual box shadow */
+  
+  &:hover {
+    transform: none !important; /* Override the individual button hover */
+    box-shadow: none;
+  }
+`;
+
+const SaveButtonDropdown = styled(SaveButton)`
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 10px 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  transform: none !important; /* Prevent individual transform */
+  box-shadow: none; /* Remove individual box shadow */
+  
+  &:hover {
+    transform: none !important; /* Override the individual button hover */
+    box-shadow: none;
+  }
+`;
+
+const SaveButtonGroup = styled.div`
+  display: flex;
+  position: relative;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(85, 42, 71, 0.4) !important;
+  }
+  
+  /* Target child buttons using descendant selector */
+  &:hover button {
+    background-color: #6a3559;
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
   }
 `;
 
@@ -149,10 +204,14 @@ const DropdownMenu = styled.div`
   overflow: hidden;
 `;
 
-const DropdownItem = styled.div`
+interface DropdownItemProps {
+  disabled?: boolean;
+}
+
+const DropdownItem = styled.div<DropdownItemProps>`
   padding: 12px 16px;
-  cursor: ${(props: { disabled: boolean }) => (props.disabled ? 'not-allowed' : 'pointer')};
-  opacity: ${(props) => (props.disabled ? 0.7 : 1)};
+  cursor: ${props => (props.disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${props => (props.disabled ? 0.7 : 1)};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -383,20 +442,37 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
               </>
             ) : null}
           </SaveIndicator>
-          <SaveButton onClick={() => handleSaveSurvey(false)} disabled={saving}>
-            <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
-          </SaveButton>
-          <SaveButton 
-            onClick={() => setShowShareModal(true)} 
-            disabled={!survey?._id}
-            style={{ cursor: !survey?._id ? 'not-allowed' : 'pointer' }}
+          <SaveButtonGroup 
+            ref={dropdownRef}
+            className="save-button-group"
+            style={{
+              boxShadow: '0 2px 4px rgba(85, 42, 71, 0.3)',
+              borderRadius: '8px'
+            }}
           >
-            <FiShare2 style={{ fontSize: '16px' }} /> Share
-          </SaveButton>
-          <DropdownContainer ref={dropdownRef}>
-            <DropdownButton onClick={() => setShowActionDropdown(!showActionDropdown)}>
-              &#8230;
-            </DropdownButton>
+            <SaveButtonMain onClick={() => handleSaveSurvey(false)} disabled={saving}>
+              <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
+            </SaveButtonMain>
+            <SaveButtonDropdown 
+              onClick={() => setShowActionDropdown(!showActionDropdown)} 
+              disabled={saving}
+            >
+              <svg 
+                width="12" 
+                height="12" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path 
+                  d="M6 9l6 6 6-6" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </SaveButtonDropdown>
             {showActionDropdown && (
               <DropdownMenu>
                 <DropdownItem
@@ -408,9 +484,28 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
                 >
                   {isPublished ? 'Publish Again' : 'Publish'}
                 </DropdownItem>
+                <DropdownItem
+                  onClick={() => {
+                    setShowActionDropdown(false);
+                    handleSaveSurvey(false);
+                  }}
+                  disabled={saving}
+                >
+                  Save as Draft
+                </DropdownItem>
               </DropdownMenu>
             )}
-          </DropdownContainer>
+          </SaveButtonGroup>
+          <SaveButton 
+            onClick={() => setShowShareModal(true)} 
+            disabled={!survey?._id}
+            style={{ 
+              cursor: !survey?._id ? 'not-allowed' : 'pointer',
+              borderRadius: '8px' // Ensure Share button has rounded corners
+            }}
+          >
+            <FiShare2 style={{ fontSize: '16px' }} /> Share
+          </SaveButton>
         </Actions>
       </Header>
       
