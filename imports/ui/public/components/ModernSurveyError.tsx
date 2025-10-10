@@ -16,6 +16,7 @@ const ErrorContainer = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 20px;
+  width: 100%;
 `;
 
 const ErrorCard = styled.div`
@@ -29,6 +30,7 @@ const ErrorCard = styled.div`
   animation: fadeInUp 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
   
   &::before {
     content: '';
@@ -111,6 +113,11 @@ const ModernSurveyError: React.FC<ModernSurveyErrorProps> = ({
   title = "Something went wrong",
   icon = "error"
  }) => {
+  // Set default title based on icon type
+  let displayTitle = title;
+  if (icon === 'closed' && title === "Something went wrong") {
+    displayTitle = "Survey Inactive";
+  }
   const handleGoBack = () => {
     window.history.back();
   };
@@ -126,7 +133,7 @@ const ModernSurveyError: React.FC<ModernSurveyErrorProps> = ({
           {icon === 'closed' && <FiXCircle />}
           {icon === 'error' && <FiAlertTriangle />}
         </IconWrapper>
-        <ErrorTitle>{title}</ErrorTitle>
+        <ErrorTitle>{displayTitle}</ErrorTitle>
         <ErrorMessage>{message}</ErrorMessage>
         {/* <BackButton onClick={handleGoBack}>
           Go Back
