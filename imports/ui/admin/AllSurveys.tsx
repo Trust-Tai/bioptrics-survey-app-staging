@@ -10,7 +10,7 @@ import { Surveys } from '../../features/surveys/api/surveys';
 import { Layers } from '../../api/layers';
 import SurveyImportSidePanel from '../../features/surveys/components/admin/SurveyImportSidePanel';
 import SurveyShareModal from '../../features/surveys/components/SurveyShareModal';
-import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner, FaShare, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaEllipsisV, FaChartBar, FaEye, FaEdit, FaTrash, FaList, FaTh, FaAngleLeft, FaAngleRight, FaCheck, FaExclamationTriangle, FaFileImport, FaSpinner, FaShare, FaToggleOn, FaToggleOff, FaGlobe } from 'react-icons/fa';
 import { useOrganization } from '/imports/features/organization/contexts/OrganizationContext';
 // Using FaSpinner for loading indicator
 import TermLabel from '../components/TermLabel';
@@ -597,6 +597,10 @@ const GlobalStyle = createGlobalStyle`
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+  
+  .fa-spin {
+    animation: spin 1s linear infinite;
+  }
 `;
 
 const Notification = styled.div<{ type: 'success' | 'error' }>`
@@ -784,17 +788,18 @@ const AllSurveys: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [confirmDelete, setConfirmDelete] = useState<{ _id: string; title: string } | null>(null);
   const [confirmPermanentDelete, setConfirmPermanentDelete] = useState<{ _id: string; title: string } | null>(null);
+  const [shareModal, setShareModal] = useState<{ isOpen: boolean; surveyId: string; surveyTitle: string }>({ 
+    isOpen: false, 
+    surveyId: '', 
+    surveyTitle: '' 
+  });
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showResponsesModal, setShowResponsesModal] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('list');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showImportPanel, setShowImportPanel] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const [shareModal, setShareModal] = useState<{ isOpen: boolean; surveyId: string; surveyTitle: string }>({ 
-    isOpen: false, 
-    surveyId: '', 
-    surveyTitle: '' 
-  });
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   // Functions for handling survey actions
   const onEdit = (id: string, title: string) => {
@@ -844,6 +849,28 @@ const AllSurveys: React.FC = () => {
     });
   };
   
+  // Function to handle publishing a survey
+  const handlePublishSurvey = (id: string, title: string) => {
+    setPublishingId(id);
+    
+    // Use the existing updateStatus method to set the survey to active
+    Meteor.call('surveys.updateStatus', id, 'active', (err: Meteor.Error | null) => {
+      if (err) {
+        console.error('Error publishing survey:', err);
+        setNotification({ 
+          type: 'error', 
+          message: `Error publishing survey: ${err.reason || err.message || 'Unknown error'}` 
+        });
+      } else {
+        setNotification({ 
+          type: 'success', 
+          message: `Survey "${title}" has been published successfully!` 
+        });
+      }
+      setPublishingId(null);
+    });
+  };
+
   const onViewResponses = (id: string, title: string) => {
     console.log('Viewing analytics for survey:', id);
     navigate(`/admin/surveys/builder/${id}?tab=analytics`);
@@ -1256,6 +1283,7 @@ const AllSurveys: React.FC = () => {
           }}
         />
         
+        
         <Container>
           <TitleRow>
             <Title>All {surveyLabelPlural}</Title>
@@ -1471,6 +1499,47 @@ const AllSurveys: React.FC = () => {
                               maxHeight: 'none'
                             }}
                           >
+                            {/* Publish button - only show for draft surveys */}
+                            {(s.status === 'draft' || (!s.status && !s.published)) && (
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '10px 16px',
+                                  textAlign: 'left',
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  transition: 'background-color 0.2s',
+                                  color: '#0a8043', // Green color for positive action
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(10, 128, 67, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handlePublishSurvey(s._id, s.title);
+                                  setOpenDropdown(null);
+                                }}
+                                disabled={publishingId === s._id}
+                              >
+                                {publishingId === s._id ? (
+                                  <>
+                                     Publishing...
+                                  </>
+                                ) : (
+                                  <>
+                                    Publish
+                                  </>
+                                )}
+                              </button>
+                            )}
                             <button
                               style={{
                                 display: 'block',
@@ -1763,6 +1832,11 @@ const AllSurveys: React.FC = () => {
                   setConfirmPermanentDelete({ _id: id, title });
                 }}
                 onStatusChange={handleStatusChange}
+                onPublish={(id, title) => {
+                  console.log('Publishing survey:', id, title);
+                  handlePublishSurvey(id, title);
+                }}
+                publishingId={publishingId}
                 onViewResponses={(id, title) => {
                   console.log('Navigating to analytics for survey:', id);
                   navigate(`/admin/surveys/builder/${id}?tab=analytics`);

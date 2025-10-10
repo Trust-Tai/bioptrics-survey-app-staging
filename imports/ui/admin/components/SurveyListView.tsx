@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Meteor } from 'meteor/meteor';
-import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown, FaShare, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCopy, FaExternalLinkAlt, FaChartBar, FaEllipsisV, FaUndo, FaSort, FaSortUp, FaSortDown, FaShare, FaToggleOn, FaToggleOff, FaCheck, FaSpinner, FaGlobe } from 'react-icons/fa';
 
 // Styled components
 const Table = styled.table`
@@ -46,6 +46,18 @@ const pulse = keyframes`
   0% { background-color: rgba(108, 71, 182, 0.08); }
   50% { background-color: rgba(108, 71, 182, 0.15); }
   100% { background-color: rgba(108, 71, 182, 0.08); }
+`;
+
+// Define spin animation for loading indicators
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+// Styled component for spinner
+const SpinnerIcon = styled(FaSpinner)`
+  animation: ${spin} 1s linear infinite;
+  margin-right: 8px;
 `;
 
 const TableRow = styled.tr`
@@ -220,6 +232,8 @@ interface SurveyListViewProps {
   onCopyLink?: (id: string) => void;
   onShare?: (id: string, title: string) => void;
   onStatusChange?: (id: string, title: string, status: 'active' | 'inactive' | 'draft') => void;
+  onPublish?: (id: string, title: string) => void;
+  publishingId?: string | null;
 }
 
 // Define type for sort field
@@ -302,17 +316,19 @@ const SurveyTags: React.FC<SurveyTagsProps> = ({ tagIds }) => {
   );
 };
 
-const SurveyListView: React.FC<SurveyListViewProps> = ({ 
-  surveys, 
+const SurveyListView: React.FC<SurveyListViewProps> = ({
+  surveys,
   loading = false,
-  onEdit, 
-  onDelete, 
+  onEdit,
+  onDelete,
   onPermanentDelete,
   onPreview,
   onViewResponses,
   onCopyLink,
   onShare,
-  onStatusChange
+  onStatusChange,
+  onPublish,
+  publishingId
 }) => {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
@@ -884,6 +900,48 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                       
                       {!survey.deleted && (
                         <>
+                          {/* Publish button - only show for draft surveys */}
+                          {(survey.status === 'draft' || (!survey.status && !survey.published)) && onPublish && (
+                            <button
+                              style={{
+                                display: 'block',
+                                width: '100%',
+                                padding: '10px 16px',
+                                textAlign: 'left',
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                transition: 'background-color 0.2s',
+                                color: '#0a8043', // Green color for positive action
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(10, 128, 67, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                safelyExecuteAction(onPublish, 'Publish', survey._id, survey.title);
+                              }}
+                              data-no-navigate="true"
+                              disabled={publishingId === survey._id}
+                            >
+                              {publishingId === survey._id ? (
+                                <>
+                                  <SpinnerIcon /> Publishing...
+                                </>
+                              ) : (
+                                <>
+                                  <FaGlobe style={{ marginRight: '8px' }} /> Publish
+                                </>
+                              )}
+                            </button>
+                          )}
+
                           {/* Set Inactive option - only show for active surveys */}
                           {survey.status === 'active' && onStatusChange && (
                             <button

@@ -89,7 +89,81 @@ const [questionDocsMap, setQuestionDocsMap] = useState<Record<string, any>>({});
 useEffect(() => {
   // Load sections
   if (survey && survey.surveySections && Array.isArray(survey.surveySections)) {
-    setSections(survey.surveySections);
+    if (survey.surveySections.length === 0) {
+      // Create a default section if no sections exist
+      const defaultSection = {
+        id: `section_default_${Date.now()}`,
+        name: 'Default Section',
+        description: '',
+        displayOrder: 0,
+        createdAt: new Date(),
+        isActive: true,
+        isRequired: false,
+        color: '#552a47',
+        priority: 0,
+        instructions: ''
+      };
+      
+      // Update local state with default section
+      setSections([defaultSection]);
+      
+      // Update survey with default section
+      if (onSurveyUpdate) {
+        const updatedSurveyOrder = [...(survey.surveyOrder || [])];
+        const newOrderItem = {
+          id: defaultSection.id,
+          type: 'section' as const,
+          order: updatedSurveyOrder.length
+        };
+        updatedSurveyOrder.push(newOrderItem);
+        
+        const updatedSurvey = {
+          ...survey,
+          surveySections: [defaultSection],
+          surveyOrder: updatedSurveyOrder
+        };
+        
+        onSurveyUpdate(updatedSurvey);
+      }
+    } else {
+      setSections(survey.surveySections);
+    }
+  } else if (survey) {
+    // If survey exists but has no sections array, create a default section
+    const defaultSection = {
+      id: `section_default_${Date.now()}`,
+      name: 'Default Section',
+      description: '',
+      displayOrder: 0,
+      createdAt: new Date(),
+      isActive: true,
+      isRequired: false,
+      color: '#552a47',
+      priority: 0,
+      instructions: ''
+    };
+    
+    // Update local state with default section
+    setSections([defaultSection]);
+    
+    // Update survey with default section
+    if (onSurveyUpdate) {
+      const updatedSurveyOrder = [...(survey.surveyOrder || [])];
+      const newOrderItem = {
+        id: defaultSection.id,
+        type: 'section' as const,
+        order: updatedSurveyOrder.length
+      };
+      updatedSurveyOrder.push(newOrderItem);
+      
+      const updatedSurvey = {
+        ...survey,
+        surveySections: [defaultSection],
+        surveyOrder: updatedSurveyOrder
+      };
+      
+      onSurveyUpdate(updatedSurvey);
+    }
   }
 
   // Load surveyOrder - this is now the single source of truth

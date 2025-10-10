@@ -38,6 +38,8 @@ interface Survey {
   }>;
   shareToken?: string;
   published?: boolean;
+  status?: string;
+  expirationDate?: string | Date;
 }
 
 const PageContainer = styled.div`
@@ -207,11 +209,11 @@ const ModernSurveyPublic: React.FC = () => {
           }
         } else {
           console.log('[ModernSurveyPublic] No preview data found in localStorage for token:', token);
-          setLoadError('Preview data not found');
+          setLoadError('Survey expired');
         }
       } catch (e) {
         console.error('[ModernSurveyPublic] Error loading preview data:', e);
-        setLoadError('Error loading preview data');
+        setLoadError('Survey expired');
       } finally {
         setIsLoading(false);
       }
@@ -274,9 +276,20 @@ const ModernSurveyPublic: React.FC = () => {
     if (!isPreviewMode) {
       setIsLoading(dbLoading);
       if (dbSurvey) {
-        // Check if survey is inactive
+        // Check if survey is inactive or expired
         if (dbSurvey.status === 'inactive') {
-          setLoadError('This survey is no longer accepting responses.');
+          // Use Survey Expired message for inactive surveys too
+          setLoadError('Survey expired');
+        } else if (dbSurvey.expirationDate) {
+          // Check if survey has expired based on expirationDate
+          const expirationDate = new Date(dbSurvey.expirationDate);
+          const currentDate = new Date();
+          
+          if (currentDate > expirationDate) {
+            console.log('Survey has expired. Expiration date:', expirationDate);
+            setLoadError("Survey expired");
+            return;
+          }
         }
         setSurveyData(dbSurvey as unknown as Survey);
         
@@ -334,7 +347,9 @@ const ModernSurveyPublic: React.FC = () => {
           setThemeObject(null);
         }
       } else if (!dbLoading) {
-        setLoadError('Survey not found');
+        // Always show 'Survey expired' message instead of 'Survey not found'
+        // as requested by the client
+        setLoadError("Survey expired");
       }
     }
   }, [dbLoading, dbSurvey, isPreviewMode]);
@@ -361,25 +376,17 @@ const ModernSurveyPublic: React.FC = () => {
   
   // Only show error after authentication check is complete
   if (!surveyData || !isAuthorized) {
+    // No need for specific error condition checks since we show the same message for all errors
+    // Just return the Survey Expired message directly
+    
+    // For all errors, show the Survey Expired message without header/footer
     return (
       <SurveyThemeProvider themeId={themeId} themeObject={themeObject}>
-        <PageContainer>
-          <Header>
-            <HeaderContent>
-              {/* No logo in this state */}
-            </HeaderContent>
-          </Header>
-          <MainContent>
-            <ModernSurveyError 
-              title={loadError === 'This survey is no longer accepting responses.' ? 'Survey Unavailable' : 'Error'}
-              message={loadError}
-              icon={loadError === 'This survey is no longer accepting responses.' ? 'closed' : 'error'}
-            />
-          </MainContent>
-          <Footer>
-            © {new Date().getFullYear()} Bioptrics Platform. All rights reserved.
-          </Footer>
-        </PageContainer>
+        <ModernSurveyError 
+          title="Survey Expired"
+          message="This survey is no longer available as it has expired."
+          icon="clock"
+        />
       </SurveyThemeProvider>
     );
   }
