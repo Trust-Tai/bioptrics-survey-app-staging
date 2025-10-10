@@ -34,6 +34,8 @@ import { useQuestionBuilderPanel } from '../../../features/questions/contexts/Qu
 import SectionEditor from './sections/SectionEditor';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
+import SurveyAnalyticsTab from './analytics/SurveyAnalyticsTab';
+
 import { SettingsTab } from './builder/tabs/SettingsTab/SettingsTab';
 import AppearanceTab from './builder/tabs/AppearanceTab/AppearanceTab';
 import BasicSurveyWelcomeSection from './builder/tabs/BasicSurveyWelcomeSection';
@@ -3022,7 +3024,8 @@ useEffect(() => {
         <DashboardBg>
           <Spinner />
         </DashboardBg>
-        
+
+        
         {/* Theme Creation Modal (extracted) */}
         <ThemeCreationModal
           isOpen={showThemeModal}
@@ -3286,7 +3289,7 @@ useEffect(() => {
                     <h2 className="survey-builder-panel-title">Analytics Dashboard</h2>
                   </div>
                   {survey?._id ? (
-                    <SurveyAnalytics surveyId={survey._id} embedded={true} />
+                    <SurveyAnalyticsTab surveyId={survey._id} />
                   ) : (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
                       <p>Please save the survey to view analytics.</p>
@@ -3350,16 +3353,17 @@ useEffect(() => {
                     setAnonymityNoticeText={setAnonymityNoticeText}
                     showConsentScreen={showConsentScreen}
                     setShowConsentScreen={setShowConsentScreen}
+                  />
                  
                 </div>
               ) : activeStep === 'collaboration' ? (
-                <CollaborationTab
-                  surveyId={surveyId || ''}
-                  setHasUnsavedChanges={setHasUnsavedChanges}
-                  triggerAutoSave={triggerAutoSave}
-                  showErrorAlert={showErrorAlert}
-                  showSuccessAlert={showSuccessAlert}
-                />
+                  <CollaborationTab
+                    surveyId={surveyId || ''}
+                    setHasUnsavedChanges={setHasUnsavedChanges}
+                    triggerAutoSave={triggerAutoSave}
+                    showErrorAlert={showErrorAlert}
+                    showSuccessAlert={showSuccessAlert}
+                  />
               ) : activeStep === 'settings' ? (
                 <SettingsTab
                   survey={survey}
