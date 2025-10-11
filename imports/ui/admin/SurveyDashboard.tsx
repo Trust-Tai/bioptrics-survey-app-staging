@@ -1203,7 +1203,7 @@ const SurveyDashboard: React.FC = () => {
                       <td>{row.createdAt}</td>
                       <td>
                         <button
-                          onClick={() => navigate(`/admin/surveys/${row.id}`)}
+                          onClick={() => navigate(`/admin/surveys/builder/${row.id}`)}
                           style={{
                             background: '#552a47',
                             color: 'white',

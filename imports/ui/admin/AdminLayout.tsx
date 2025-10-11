@@ -25,7 +25,7 @@ import styled from 'styled-components';
 const getSidebarLinks = (getTerminology: (key: any) => string) => [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2 },
   { to: '/admin/analytics', label: 'Analytics', icon: FaChartPie },
-  { to: '/admin/surveys', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
+  { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard, submenu: [
     { to: '/admin/surveys/all', label: `All ${getTerminology('surveyLabel')}s` },
     { to: '/admin/surveys/builder', label: `${getTerminology('surveyLabel')} Builder` },
     { to: '/admin/surveys/responses', label: `${getTerminology('surveyLabel')} Responses` },
