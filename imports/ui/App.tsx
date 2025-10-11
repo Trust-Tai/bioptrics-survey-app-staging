@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import NotFoundPage from './public/components/NotFoundPage';
 import GlobalNotification from '../shared/components/GlobalNotification';
 import { QuestionBuilderPanelProvider } from '../features/questions/contexts/QuestionBuilderPanelContext';
 import { useState, useEffect } from 'react';
@@ -178,7 +179,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/surveys/all')} />} />
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/questions')} />} />
       <Route element={<RequireAdminAuth />}>
-         <Route path="/admin/surveys" element={<SurveyPage />} />
+         {/* Redirect from /admin/surveys to /admin/surveys/all */}
+         <Route path="/admin/surveys" element={<Navigate to="/admin/surveys/all" replace />} />
          <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
         <Route path="/admin/surveys/all" element={<AllSurveys />} />
         <Route path="/admin/surveys/responses" element={<SurveyResponses />} />
@@ -244,6 +246,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/marketplace/wps-builder" element={<WpsBuilderPage />} />
         <Route path="/admin/migration" element={<MigrationPanel />} />
       </Route>
+      {/* Catch-all route for 404 pages */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

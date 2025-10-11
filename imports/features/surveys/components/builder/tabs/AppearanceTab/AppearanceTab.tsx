@@ -904,7 +904,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                       padding: '6px 12px',
                       fontSize: 14,
                       color: '#fff',
-                      background: theme.color || '#552a47',
+                      background: (theme.color === 'rgb(248, 249, 250)' || theme.color === '#f8f9fa') ? '#552a47' : (theme.color || '#552a47'),
                       border: 'none',
                       borderRadius: 6,
                       cursor: 'pointer',
