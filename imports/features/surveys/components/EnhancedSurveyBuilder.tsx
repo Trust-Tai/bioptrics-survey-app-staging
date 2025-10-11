@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useUrlChangeEffect } from '../../../hooks/useUrlChangeEffect';
 
 // Default consent text for new surveys
 const defaultConsentText = `
 <p>Thank you for participating in this survey. Your participation is voluntary and you may withdraw at any time.</p>
 <p><strong>Purpose:</strong> This survey is designed to gather feedback to improve our services and workplace environment.</p>
+{{ ... }}
 <p><strong>Data Collection:</strong> We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.</p>
 <p><strong>Data Use:</strong> Your responses will be analyzed in aggregate to identify trends and areas for improvement. Individual responses will only be viewed by authorized research personnel.</p>
 <p><strong>Confidentiality:</strong> Your responses will be kept confidential and will only be reported in aggregate form where individual responses cannot be identified.</p>
@@ -14,7 +17,7 @@ import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { components } from 'react-select';
 import { FaEye } from 'react-icons/fa';
-import { useNavigate, useParams, useLocation, UNSAFE_NavigationContext } from 'react-router-dom';
+// Router imports already added above
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
 import { FiUser, FiCalendar, FiMessageSquare, FiDownload, FiBarChart2, FiSettings, FiPlus, FiX, FiCheck, FiTrash2, FiEdit, FiEdit2, FiChevronRight, FiChevronDown, FiChevronUp, FiSave, FiMove, FiUserPlus, FiUsers } from 'react-icons/fi';
@@ -2063,11 +2066,27 @@ useEffect(() => {
     };
   }, [hasUnsavedChanges, handleSaveSurvey]);
   
-  // Handle adding a new section
-  const handleAddSection = () => {
-    setCurrentSection(undefined);
-    setShowSectionEditor(true);
-  };
+  // Use our custom hook to detect URL changes
+  useUrlChangeEffect((previousPath, currentPath) => {
+    // Only save if there are unsaved changes
+    if (hasUnsavedChanges) {
+      // Check if we're navigating away from the survey builder
+      const isSurveyBuilderPath = (path: string) => path.includes('/admin/surveys/builder');
+      const leavingSurveyBuilder = isSurveyBuilderPath(previousPath) && !isSurveyBuilderPath(currentPath);
+      
+      // If we're leaving the survey builder or changing to a different survey
+      if (leavingSurveyBuilder || (isSurveyBuilderPath(previousPath) && isSurveyBuilderPath(currentPath) && previousPath !== currentPath)) {
+        console.log('URL changed, saving survey...', {
+          from: previousPath,
+          to: currentPath,
+          leavingSurveyBuilder
+        });
+        
+        // Save the survey silently
+        handleSaveSurvey(true);
+      }
+    }
+  }, [hasUnsavedChanges, handleSaveSurvey]);
   
   // Handle editing a section
   const handleEditSection = (section: SurveySectionItem) => {
