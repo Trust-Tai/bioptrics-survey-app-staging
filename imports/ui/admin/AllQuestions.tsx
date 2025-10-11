@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import FEATURE_FLAGS from '../../config/featureFlags';
+import NotFoundPage from '../public/components/NotFoundPage';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useQuestionBuilderPanel } from '../../features/questions/contexts/QuestionBuilderPanelContext';
@@ -764,6 +766,10 @@ const truncateText = (text: string, maxLength: number = 100): string => {
   return cleanText.substring(0, maxLength) + '...';
 };
 
+/**
+ * AllQuestions component displays a list of all questions in the system.
+ * Currently conditionally rendered based on the SHOW_ALL_QUESTIONS feature flag.
+ */
 const AllQuestions: React.FC = () => {
   const navigate = useNavigate();
   const { openPanel } = useQuestionBuilderPanel();
@@ -1095,6 +1101,22 @@ const AllQuestions: React.FC = () => {
     }
   };
   
+  // If the feature flag is disabled, show the 404 page instead
+  if (!FEATURE_FLAGS.SHOW_ALL_QUESTIONS) {
+    return (
+      <NotFoundPage 
+        config={{
+          title: "Feature Coming Soon",
+          message: "The All Questions feature is currently under development and will be available soon.",
+          showHomeButton: false,
+          customHeaderContent: '<div style="margin-bottom: 20px; font-size: 14px; color: #666;">Admin Portal</div>',
+          customFooterContent: '<div style="margin-top: 30px; font-size: 14px; color: #666;">Please check back later or contact your administrator for more information.</div>'
+        }}
+      />
+    );
+  }
+
+  // Otherwise, render the original component
   return (
     <AdminLayout>
       <DashboardBg>

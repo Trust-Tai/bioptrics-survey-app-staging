@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import NotFoundPage from './public/components/NotFoundPage';
 import GlobalNotification from '../shared/components/GlobalNotification';
 import { QuestionBuilderPanelProvider } from '../features/questions/contexts/QuestionBuilderPanelContext';
 import { useState, useEffect } from 'react';
@@ -244,6 +245,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/marketplace/wps-builder" element={<WpsBuilderPage />} />
         <Route path="/admin/migration" element={<MigrationPanel />} />
       </Route>
+      {/* Catch-all route for 404 pages */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };
