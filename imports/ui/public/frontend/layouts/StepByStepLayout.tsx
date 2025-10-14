@@ -372,19 +372,27 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
   
   // Prepare sections data for sidebar - with more stable dependencies
   const sidebarSections = useMemo(() => {
-    return sections.map(section => {
-      const progress = calculateSectionProgress(section.id);
-      const currentSectionId = currentSection?.id || '';
-      
-      return {
-        id: section.id,
-        name: section.name,
-        isActive: currentSectionId === section.id,
-        isCompleted: progress === 100,
-        progress: progress // Pass the progress percentage
-      };
-    });
-  }, [sections, calculateSectionProgress, currentSection?.id]);
+    return sections
+      .map(section => {
+        // Get questions for this section
+        const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+        
+        // Skip sections without questions (should not happen with our filtering, but just in case)
+        if (sectionQuestions.length === 0) return null;
+        
+        const progress = calculateSectionProgress(section.id);
+        const currentSectionId = currentSection?.id || '';
+        
+        return {
+          id: section.id,
+          name: section.name,
+          isActive: currentSectionId === section.id,
+          isCompleted: progress === 100,
+          progress: progress // Pass the progress percentage
+        };
+      })
+      .filter(Boolean); // Remove null entries (sections without questions)
+  }, [sections, calculateSectionProgress, currentSection?.id, questions]);
   
   // We no longer handle the ThankYou screen here - it's moved to SurveyLayoutBridge
   // This prevents hook order issues when transitioning to the submitted state
@@ -396,16 +404,34 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     const currentIndex = sections.findIndex(s => s.id === currentSection.id);
     if (currentIndex <= 0) return '';
     
-    return sections[currentIndex - 1].name;
+    // Find the previous section that has questions
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevSection = sections[i];
+      const prevSectionQuestions = questions.filter(q => q.sectionId === prevSection.id && !q.isUnsectioned);
+      if (prevSectionQuestions.length > 0) {
+        return prevSection.name;
+      }
+    }
+    
+    return ''; // No previous section with questions found
   };
   
   const getNextSectionName = () => {
     if (!currentSection) return '';
     
     const currentIndex = sections.findIndex(s => s.id === currentSection.id);
-    if (currentIndex === -1 || currentIndex >= sections.length - 1) return '';
+    if (currentIndex === -1) return '';
     
-    return sections[currentIndex + 1].name;
+    // Find the next section that has questions
+    for (let i = currentIndex + 1; i < sections.length; i++) {
+      const nextSection = sections[i];
+      const nextSectionQuestions = questions.filter(q => q.sectionId === nextSection.id && !q.isUnsectioned);
+      if (nextSectionQuestions.length > 0) {
+        return nextSection.name;
+      }
+    }
+    
+    return ''; // No next section with questions found
   };
   
   // Get current question index and total questions in section
@@ -542,20 +568,17 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     
     if (isLastQuestionInSection) {
       // If this is the last question in the section
-      const currentSectionIndex = sections.findIndex(s => s.id === currentQuestion.sectionId);
-      const isLastSection = currentSectionIndex === sections.length - 1;
+      const nextSectionName = getNextSectionName();
       
       // Check if there are unsectioned questions after this section
       const hasUnsectionedQuestions = questions.some(q => q.isUnsectioned);
       
-      if (isLastSection) {
-        if (hasUnsectionedQuestions) {
-          return 'Next Section: Additional Questions';
-        } else {
-          return 'Submit';
-        }
+      if (nextSectionName) {
+        return `Next Section: ${nextSectionName}`;
+      } else if (hasUnsectionedQuestions) {
+        return 'Next Section: Additional Questions';
       } else {
-        return `Next Section: ${getNextSectionName()}`;
+        return 'Submit';
       }
     } else {
       return 'Next Question';

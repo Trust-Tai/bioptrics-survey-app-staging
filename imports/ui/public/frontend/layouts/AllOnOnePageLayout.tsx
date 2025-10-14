@@ -61,12 +61,21 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
   
   // Group questions by section - memoized to prevent recreation on each render
   const questionsBySection = useMemo(() => {
-    return sections.map(section => ({
-      section,
-      questions: questions
-        .filter(q => q.sectionId === section.id && !q.isUnsectioned)
-        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)) // Sort by order, handling undefined values
-    }));
+    return sections
+      .map(section => {
+        const sectionQuestions = questions
+          .filter(q => q.sectionId === section.id && !q.isUnsectioned)
+          .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
+        
+        // Skip sections without questions
+        if (sectionQuestions.length === 0) return null;
+        
+        return {
+          section,
+          questions: sectionQuestions
+        };
+      })
+      .filter(Boolean); // Remove null entries (sections without questions)
   }, [sections, questions]);
   
   // Find questions that don't belong to any section - memoized to prevent recreation on each render
@@ -142,10 +151,14 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
       <MainLayout>      
       <ContentContainer fullWidth={true}>
         <ScrollSpy 
-          sections={useMemo(() => sections.map(s => ({ id: s.id, name: s.name })), [sections])}
+          sections={useMemo(() => 
+            sections
+              .filter(s => questions.some(q => q.sectionId === s.id)) // Only include sections with questions
+              .map(s => ({ id: s.id, name: s.name })), 
+            [sections, questions]
+          )}
           offset={100}
           color={survey.color}
-          // Update active section when scrolling
           onActiveSectionChange={(sectionId) => {
             setActiveSectionId(sectionId);
           }}

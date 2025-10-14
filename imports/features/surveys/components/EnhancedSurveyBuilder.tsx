@@ -6,7 +6,6 @@ import { useUrlChangeEffect } from '../../../hooks/useUrlChangeEffect';
 const defaultConsentText = `
 <p>Thank you for participating in this survey. Your participation is voluntary and you may withdraw at any time.</p>
 <p><strong>Purpose:</strong> This survey is designed to gather feedback to improve our services and workplace environment.</p>
-{{ ... }}
 <p><strong>Data Collection:</strong> We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.</p>
 <p><strong>Data Use:</strong> Your responses will be analyzed in aggregate to identify trends and areas for improvement. Individual responses will only be viewed by authorized research personnel.</p>
 <p><strong>Confidentiality:</strong> Your responses will be kept confidential and will only be reported in aggregate form where individual responses cannot be identified.</p>

@@ -240,17 +240,8 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       }
     }
     
-    // Initialize with the first section if available
-    if (survey.surveySections && survey.surveySections.length > 0) {
-      // Get the first section ID
-      const firstSectionId = survey.surveySections[0]._id || survey.surveySections[0].id;
-      
-      // We'll load the section first, then navigate to its first question after questions are loaded
-      setCurrentStep({
-        type: 'section',
-        id: firstSectionId
-      });
-    }
+    // We'll initialize navigation after questions are loaded
+    // This will ensure we start with a section that has questions
     
     // Load sections
     if (survey.surveySections) {
@@ -298,16 +289,21 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
             
             // Get the section ID from either the question version or from the survey structure
             let sectionId = version.sectionId;
+            console.log(`Processing question ${doc._id} (${version.questionText || version.text}), initial sectionId: ${sectionId}`);
             
             // If we don't have a sectionId in the question itself, try to determine it from the survey structure
             if (!sectionId && orderItem) {
+              console.log(`Question ${doc._id} has no sectionId, looking in surveyOrder...`);
               // Look at the previous items in the survey order to find the most recent section
               const orderIndex = survey.surveyOrder.findIndex((item: any) => item.id === doc._id);
+              console.log(`Question ${doc._id} found at index ${orderIndex} in surveyOrder`);
               if (orderIndex > 0) {
                 for (let i = orderIndex - 1; i >= 0; i--) {
                   const prevItem = survey.surveyOrder[i];
+                  console.log(`Checking previous item at index ${i}: type=${prevItem.type}, id=${prevItem.id}`);
                   if (prevItem.type === 'section') {
                     sectionId = prevItem.id;
+                    console.log(`Found section ${sectionId} for question ${doc._id}`);
                     break;
                   }
                 }
@@ -361,6 +357,35 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
           
           console.log('Questions loaded, processedQuestions.length:', processedQuestions.length);
           
+          // Filter out sections without questions
+          const sectionsWithQuestions = sections.filter(section => {
+            const sectionQuestions = processedQuestions.filter((q: Question) => q.sectionId === section.id && !q.isUnsectioned);
+            console.log(`Section ${section.name} (${section.id}) has ${sectionQuestions.length} questions after filtering`);
+            console.log(`Questions for section ${section.id}:`, sectionQuestions.map((q: Question) => `${q._id}: ${q.text} (sectionId: ${q.sectionId})`));
+            return sectionQuestions.length > 0;
+          });
+
+          console.log(`Filtered sections: ${sections.length} -> ${sectionsWithQuestions.length} (removed ${sections.length - sectionsWithQuestions.length} empty sections)`);
+          console.log('Sections with questions:', sectionsWithQuestions.map(s => s.name));
+          console.log('All processed questions:', processedQuestions.length);
+          console.log('Questions with sectionId:', processedQuestions.filter((q: Question) => q.sectionId && !q.isUnsectioned).length);
+          console.log('Unsectioned questions:', processedQuestions.filter((q: Question) => q.isUnsectioned).length);
+          console.log('All questions by sectionId:', processedQuestions.reduce((acc: any, q: Question) => {
+            const sectionKey = q.sectionId || 'no-section';
+            if (!acc[sectionKey]) acc[sectionKey] = [];
+            acc[sectionKey].push(q.text);
+            return acc;
+          }, {}));
+
+          // If no sections have questions, keep all sections to avoid breaking the survey
+          // This is a safety measure - we'll only filter if we have at least one section with questions
+          if (sectionsWithQuestions.length === 0) {
+            console.warn('No sections found with questions - keeping all sections to avoid breaking survey');
+            // Don't filter sections if none have questions
+          } else {
+            // Update sections to only include those with questions
+            setSections(sectionsWithQuestions);
+          }
           // FORCE navigation to the first question regardless of current step
           if (processedQuestions.length > 0) {
             // Find the first section with questions
@@ -557,7 +582,17 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       }
     );
   };
-  
+  // Helper function to get the next section with questions
+  const getNextSectionWithQuestions = (currentSectionIndex: number) => {
+    for (let i = currentSectionIndex + 1; i < sections.length; i++) {
+      const sectionId = sections[i].id;
+      const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+      if (sectionQuestions.length > 0) {
+        return sections[i];
+      }
+    }
+    return null;
+  };
   // Navigation handlers
   const handleNext = () => {
     console.log('handleNext called, currentStep:', currentStep);
@@ -682,31 +717,24 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
             // Move to the next section or submit if this was the last section
             const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
             
-            if (currentSectionIndex < sections.length - 1) {
-              // Get the next section
-              const nextSectionId = sections[currentSectionIndex + 1].id;
+            // Find the next section with questions
+            const nextSection = getNextSectionWithQuestions(currentSectionIndex);
+            if (nextSection) {
+              // Get the next section's questions
               const nextSectionQuestions = questions
-                .filter(q => q.sectionId === nextSectionId)
+                .filter(q => q.sectionId === nextSection.id)
                 .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
               
               if (nextSectionQuestions.length > 0) {
                 // If next section has questions, go directly to first question
-                console.log('Moving directly to first question of next section:', sections[currentSectionIndex + 1].name);
+                console.log('Moving directly to first question of next section:', nextSection.name);
                 setCurrentStep({
                   type: 'question',
                   id: nextSectionQuestions[0]._id
                 });
-                
-              } else {
-                // If next section has no questions, just go to the section view
-                setCurrentStep({
-                  type: 'section',
-                  id: nextSectionId
-                });
-                
               }
             } else {
-              // This was the last question in the last section, submit
+              // This was the last question in the last section with questions, submit
               handleSubmit();
             }
           }
@@ -714,7 +742,17 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
       }
     }
   };
-  
+  // Helper function to get the previous section with questions
+  const getPreviousSectionWithQuestions = (currentSectionIndex: number) => {
+    for (let i = currentSectionIndex - 1; i >= 0; i--) {
+      const sectionId = sections[i].id;
+      const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
+      if (sectionQuestions.length > 0) {
+        return sections[i];
+      }
+    }
+    return null;
+  };
   const handleBack = () => {
     console.log('handleBack called in SurveyLayoutBridge, currentStep:', currentStep);
     console.log('Current sections:', sections.map(s => `${s.name} (${s.id})`));
@@ -820,29 +858,24 @@ const SurveyLayoutBridgeContent: React.FC<SurveyLayoutBridgeProps> = ({
           // Find the previous section
           const currentSectionIndex = sections.findIndex(s => s.id === currentSectionId);
           
-          if (currentSectionIndex > 0) {
-            // Get the previous section
-            const prevSectionId = sections[currentSectionIndex - 1].id;
+          // Find the previous section with questions
+          const prevSection = getPreviousSectionWithQuestions(currentSectionIndex);
+          if (prevSection) {
+            // Get the previous section's questions
             const prevSectionQuestions = questions
-              .filter(q => q.sectionId === prevSectionId)
+              .filter(q => q.sectionId === prevSection.id)
               .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity)); // Sort by order
             
             if (prevSectionQuestions.length > 0) {
               // If previous section has questions, go directly to the last question
-              console.log('Moving to last question of previous section:', sections[currentSectionIndex - 1].name);
+              console.log('Moving to last question of previous section:', prevSection.name);
               setCurrentStep({
                 type: 'question',
                 id: prevSectionQuestions[prevSectionQuestions.length - 1]._id
               });
-            } else {
-              // If previous section has no questions, just go to the section view
-              setCurrentStep({
-                type: 'section',
-                id: prevSectionId
-              });
             }
           } else {
-            // This is the first section, just go to the section view
+            // This is the first section with questions, just go to the section view
             setCurrentStep({
               type: 'section',
               id: currentSectionId || ''
