@@ -6,6 +6,12 @@
   overflow: hidden;
 }
 
+/* Body scroll lock for side panels */
+body.panel-open {
+  overflow: hidden !important;
+  position: relative;
+}
+
 /* Edit mode styles */
 .edit-mode-header {
   background-color: var(--color-background);
@@ -461,7 +467,6 @@
   background: color-mix(in srgb, var(--color-accent) 15%, transparent);
   border-radius: 8px 8px 0 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
   scrollbar-width: thin;
 }
 

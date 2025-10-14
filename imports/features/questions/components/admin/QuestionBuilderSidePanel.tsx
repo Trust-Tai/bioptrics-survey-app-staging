@@ -335,6 +335,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
   }, [readOnly, versionData]);
   
   const panelRef = useRef<HTMLDivElement>(null);
+  const scrollLockRef = useRef<boolean>(false); // Track scroll lock state
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [alert, setAlert] = useState<{ type: 'success' | 'error' | 'progress'; message: string; progress?: number } | null>(null);
   // Add state for version history modal
@@ -358,7 +359,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
     setAlert({ type: 'progress', message, progress });
   };
 
-  // Handle escape key to close panel
+  // Handle escape key and body scroll lock
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
@@ -368,18 +369,36 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
 
     document.addEventListener('keydown', handleEscapeKey);
     
-    // Prevent body scrolling when panel is open
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
-      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
+  
+  // Separate effect for body scroll management to prevent conflicts
+  useEffect(() => {
+    console.log('Scroll lock effect triggered. isOpen:', isOpen, 'scrollLockRef.current:', scrollLockRef.current);
+    
+    if (isOpen && !scrollLockRef.current) {
+      // Lock scrolling
+      document.body.classList.add('panel-open');
+      scrollLockRef.current = true;
+      console.log('✅ SCROLL LOCKED - Added panel-open class');
+    } else if (!isOpen && scrollLockRef.current) {
+      // Unlock scrolling
+      document.body.classList.remove('panel-open');
+      scrollLockRef.current = false;
+      console.log('✅ SCROLL UNLOCKED - Removed panel-open class');
+    }
+    
+    // Cleanup function
+    return () => {
+      if (scrollLockRef.current) {
+        document.body.classList.remove('panel-open');
+        scrollLockRef.current = false;
+        console.log('🧹 CLEANUP - Removed panel-open class');
+      }
+    };
+  }, [isOpen]);
 
   // Handle clicks outside the panel to close it
   useEffect(() => {
