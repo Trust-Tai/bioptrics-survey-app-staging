@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { FiUsers, FiUserPlus, FiMail, FiX, FiBold, FiItalic, FiList, FiAlignLeft, FiRefreshCw, FiLink, FiShare2 } from 'react-icons/fi';
 import { SiX } from 'react-icons/si';
@@ -387,6 +387,11 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
   const [surveyLink, setSurveyLink] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   
+  // Store cursor position for variable insertion
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [isInsertingVariable, setIsInsertingVariable] = useState(false);
+  
   // Fetch invitations from the database
   const { invitations, invitationsLoading, invitationsCount } = useTracker(() => {
     console.log('Getting invitations for survey:', surveyId);
@@ -461,6 +466,16 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
       });
     }
   }, [surveyId, isOpen]);
+
+  // Initialize editor content when modal opens and template is available
+  useEffect(() => {
+    if (editorRef.current && isOpen && activeTab === 'email') {
+      // Set initial content when switching to email tab or opening modal
+      if (emailTemplate && emailTemplate.trim() !== '') {
+        editorRef.current.innerHTML = emailTemplate;
+      }
+    }
+  }, [isOpen, activeTab]); // Only run when modal opens or email tab is selected
 
   // Function to download QR code as image
   const downloadQRCode = () => {
@@ -1096,9 +1111,39 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                   </EditorToolbar>
                   
                   <EditorContent
+                    ref={editorRef}
                     contentEditable
-                    dangerouslySetInnerHTML={{ __html: emailTemplate }}
-                    onBlur={(e) => setEmailTemplate(e.currentTarget.innerHTML)}
+                    onBlur={(e) => {
+                      if (!isInsertingVariable) {
+                        setEmailTemplate(e.currentTarget.innerHTML);
+                      }
+                      // Save cursor position when editor loses focus
+                      const selection = window.getSelection();
+                      if (selection && selection.rangeCount > 0) {
+                        setSavedRange(selection.getRangeAt(0).cloneRange());
+                      }
+                    }}
+                    onInput={(e) => {
+                      if (!isInsertingVariable) {
+                        // Update template state without triggering re-render
+                        const newContent = e.currentTarget.innerHTML;
+                        setEmailTemplate(newContent);
+                      }
+                    }}
+                    onKeyUp={() => {
+                      // Update saved range on cursor movement
+                      const selection = window.getSelection();
+                      if (selection && selection.rangeCount > 0) {
+                        setSavedRange(selection.getRangeAt(0).cloneRange());
+                      }
+                    }}
+                    onClick={() => {
+                      // Update saved range on click
+                      const selection = window.getSelection();
+                      if (selection && selection.rangeCount > 0) {
+                        setSavedRange(selection.getRangeAt(0).cloneRange());
+                      }
+                    }}
                     suppressContentEditableWarning={true}
                   />
                 </RichTextEditorContainer>
@@ -1117,17 +1162,71 @@ const SurveyShareModal: React.FC<SurveyShareModalProps> = ({ isOpen, onClose, su
                       key={variable.name}
                       style={{ background: '#f5f5f5', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
                       onClick={() => {
-                        // Get the editor element
-                        const editor = document.querySelector('.EditorContent') as HTMLElement;
+                        const editor = editorRef.current;
                         if (editor) {
+                          // Set flag to prevent dangerouslySetInnerHTML updates
+                          setIsInsertingVariable(true);
+                          
                           // Focus the editor first
                           editor.focus();
                           
-                          // Insert the variable text at cursor position
-                          document.execCommand('insertText', false, variable.display);
+                          const selection = window.getSelection();
                           
-                          // Update the template state with the new content
-                          setEmailTemplate(editor.innerHTML);
+                          // Try to restore saved range if it exists
+                          if (savedRange && selection) {
+                            try {
+                              selection.removeAllRanges();
+                              selection.addRange(savedRange);
+                            } catch (error) {
+                              console.warn('Could not restore saved range:', error);
+                            }
+                          }
+                          
+                          // Get current selection after potential restoration
+                          if (selection && selection.rangeCount > 0) {
+                            try {
+                              // Use execCommand to insert text at current cursor position
+                              const success = document.execCommand('insertText', false, variable.display);
+                              
+                              if (success) {
+                                // Save new cursor position
+                                if (selection.rangeCount > 0) {
+                                  setSavedRange(selection.getRangeAt(0).cloneRange());
+                                }
+                                
+                                // Update template state and clear flag
+                                setEmailTemplate(editor.innerHTML);
+                                setIsInsertingVariable(false);
+                              } else {
+                                throw new Error('execCommand failed');
+                              }
+                              
+                            } catch (error) {
+                              console.warn('execCommand failed, using manual insertion:', error);
+                              
+                              // Manual fallback insertion
+                              const range = selection.getRangeAt(0);
+                              const textNode = document.createTextNode(variable.display);
+                              
+                              range.deleteContents();
+                              range.insertNode(textNode);
+                              
+                              // Position cursor after inserted text
+                              range.setStartAfter(textNode);
+                              range.setEndAfter(textNode);
+                              selection.removeAllRanges();
+                              selection.addRange(range);
+                              
+                              setSavedRange(range.cloneRange());
+                              setEmailTemplate(editor.innerHTML);
+                              setIsInsertingVariable(false);
+                            }
+                          } else {
+                            // No selection available - append to end
+                            editor.innerHTML += variable.display;
+                            setEmailTemplate(editor.innerHTML);
+                            setIsInsertingVariable(false);
+                          }
                         }
                       }}
                     >
