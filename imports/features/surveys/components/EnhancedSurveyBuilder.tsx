@@ -34,6 +34,7 @@ import SurveyQuestionsTab from './SurveyQuestionsTab';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import SectionEditor from './sections/SectionEditor';
+import ValidationErrorModal from './ValidationErrorModal';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
 import SurveyAnalyticsTab from './analytics/SurveyAnalyticsTab';
@@ -630,6 +631,13 @@ useEffect(() => {
   const [newThemeHeadingFont, setNewThemeHeadingFont] = useState<string>('Inter');
   const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
   const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
+
+  // Validation modal state
+  const [showValidationModal, setShowValidationModal] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Create a ref for the validation function from SurveyQuestionsTab
+  const validationCheckRef = useRef<(() => { isValid: boolean; errors: string[] }) | null>(null);
 
   // Helper function to get total question count in a survey
   const getTotalQuestionCount = (survey: any): number => {
@@ -1854,6 +1862,19 @@ useEffect(() => {
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
     try {
+      // Skip validation for auto-saves
+      if (!isAutoSave) {
+        // Run validation before saving
+        if (validationCheckRef.current) {
+          const validation = validationCheckRef.current();
+          if (!validation.isValid) {
+            setValidationErrors(validation.errors);
+            setShowValidationModal(true);
+            return false;
+          }
+        }
+      }
+
       // Only show saving indicator for manual saves
       if (!isAutoSave) {
         setSaving(true);
@@ -3273,6 +3294,7 @@ useEffect(() => {
                     console.log('Updated survey with order:', surveyWithOrder);
                   }}
                   onHasUnsavedChanges={setHasUnsavedChanges}
+                  onValidationCheck={validationCheckRef}
                 />
               )}
               
@@ -3744,10 +3766,17 @@ useEffect(() => {
           </div>
         )}
         
+        {/* Validation Error Modal */}
+        <ValidationErrorModal
+          isOpen={showValidationModal}
+          onClose={() => setShowValidationModal(false)}
+          errors={validationErrors}
+          title="Survey Validation Errors"
+        />
       
       </DashboardBg>
     </AdminLayout>
   );
-}
+};
 
 export default EnhancedSurveyBuilder;

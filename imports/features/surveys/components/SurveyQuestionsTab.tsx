@@ -14,6 +14,7 @@ interface SurveyQuestionsTabProps {
   survey?: any;
   onSurveyUpdate?: (survey: any) => void;
   onHasUnsavedChanges?: (hasChanges: boolean) => void;
+  onValidationCheck?: React.MutableRefObject<(() => { isValid: boolean; errors: string[] }) | null>;
 }
 
 const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
@@ -21,6 +22,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   survey,
   onSurveyUpdate,
   onHasUnsavedChanges,
+  onValidationCheck,
 }) => {
   const { openPanel } = useQuestionBuilderPanel();
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
@@ -102,6 +104,24 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     
     console.log('✅ Section-question order validation completed');
   };
+
+  // Validation function to check for empty sections
+  const validateSectionsHaveQuestions = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    // Check each section to see if it has questions
+    sections.forEach(section => {
+      const sectionQuestions = surveyQuestions.filter(q => q.sectionId === section.id);
+      if (sectionQuestions.length === 0) {
+        errors.push(`Section "${section.name}" has no questions`);
+      }
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     questionId: string;
@@ -144,6 +164,15 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Add this state to store question documents with import status
 const [questionDocsMap, setQuestionDocsMap] = useState<Record<string, any>>({});
+
+// Expose validation function to parent component
+useEffect(() => {
+  if (onValidationCheck) {
+    onValidationCheck.current = () => {
+      return validateSectionsHaveQuestions();
+    };
+  }
+}, [sections, surveyQuestions, onValidationCheck]);
 
 // Load existing survey questions and sections when component mounts or survey changes
 useEffect(() => {
