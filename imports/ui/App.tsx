@@ -187,6 +187,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/surveys/builder" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/surveys/builder/:surveyId" element={<SurveyBuilderWrapper />} />
         <Route path="/admin/surveys/manage/:surveyId" element={<SurveyManagementDashboardWrapper />} />
+        {/* Redirect from /admin/questions/ to /admin/surveys/all */}
+        <Route path="/admin/questions/" element={<Navigate to="/admin/surveys/all" replace />} />
         <Route path="/admin/questions" element={<AdminQuestionBank />} />
 <Route path="/user/questions" element={<UserQuestionBank />} />
         <Route path="/admin/questions/all" element={<AllQuestions />} />
