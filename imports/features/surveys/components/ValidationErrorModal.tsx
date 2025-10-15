@@ -162,7 +162,7 @@ const ValidationErrorModal: React.FC<ValidationErrorModalProps> = ({
           padding: '16px 24px',
           borderTop: '1px solid #e5e7eb',
           backgroundColor: '#f9fafb',
-          display: 'flex',
+          display: 'none',
           justifyContent: 'flex-end'
         }}>
           <button
