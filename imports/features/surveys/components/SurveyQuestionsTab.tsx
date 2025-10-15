@@ -1268,7 +1268,7 @@ useEffect(() => {
     return sectionItems.length > 0 && sectionItems[sectionItems.length - 1].id === sectionId;
   };
 
-  // Update survey with new order - Enhanced to sync all related data
+  // Update survey with new order - Enhanced to sync all related data including surveySections
   const updateSurveyWithNewOrder = (reorderedItems: SurveyOrderItem[]) => {
     if (survey && onSurveyUpdate) {
       // Update section displayOrder to match surveyOrder
@@ -1292,16 +1292,33 @@ useEffect(() => {
         };
       });
       
+      // 🆕 REORDER surveySections ARRAY to match the new section order
+      const reorderedSurveySections = [];
+      const sectionOrderItems = reorderedItems.filter(item => item.type === 'section');
+      
+      // Build the new surveySections array in the correct order
+      for (const orderItem of sectionOrderItems) {
+        const sectionData = (survey.surveySections || []).find((s: any) => s.id === orderItem.id);
+        if (sectionData) {
+          // Update the section with new displayOrder
+          reorderedSurveySections.push({
+            ...sectionData,
+            displayOrder: orderItem.order
+          });
+        }
+      }
+      
       const updatedSurvey = {
         ...survey,
-        surveySections: updatedSections,
+        surveySections: reorderedSurveySections, // 🆕 Use reordered array
         sectionQuestions: updatedSectionQuestions,
         surveyOrder: reorderedItems
       };
       
-      console.log('=== ENHANCED ORDER UPDATE ===');
+      console.log('=== ENHANCED ORDER UPDATE WITH SURVEYSECTIONS ===');
       console.log('Updated surveyOrder:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}:${item.sectionId || 'none'}`));
       console.log('Updated sectionQuestions orders:', updatedSectionQuestions.map(sq => `${sq.id}:${sq.order}`));
+      console.log('🆕 Reordered surveySections:', reorderedSurveySections.map(s => `${s.name}:${s.id}:${s.displayOrder}`));
       
       // Validate the order consistency
       const orderValues = reorderedItems.map(item => item.order);
@@ -1311,6 +1328,9 @@ useEffect(() => {
       if (!isSequential) {
         console.error('❌ Order values are not sequential:', orderValues);
       }
+      
+      // Update local sections state to match the new order
+      setSections(updatedSections.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
       
       onSurveyUpdate(updatedSurvey);
     }
