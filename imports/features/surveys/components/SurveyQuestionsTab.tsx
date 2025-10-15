@@ -39,9 +39,69 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
     type: 'question' | 'section';
     id: string;
     order: number;
+    sectionId?: string; // For questions: which section they belong to. For sections: their own ID
   };
   
   const [surveyOrder, setSurveyOrder] = useState<Array<SurveyOrderItem>>([]);
+
+  // Helper function to get all items (section + questions) that belong to a section group
+  const getSectionGroup = (sectionId: string): SurveyOrderItem[] => {
+    // Find the section first
+    const sectionItem = surveyOrder.find(item => 
+      item.type === 'section' && item.id === sectionId
+    );
+    
+    if (!sectionItem) {
+      console.warn(`Section ${sectionId} not found in surveyOrder`);
+      return [];
+    }
+    
+    // Get all questions that belong to this section
+    const sectionQuestions = surveyOrder.filter(item => 
+      item.type === 'question' && item.sectionId === sectionId
+    );
+    
+    // Return section + its questions, sorted by order
+    const group = [sectionItem, ...sectionQuestions].sort((a, b) => a.order - b.order);
+    
+    console.log(`📋 Section group for ${sectionId}:`, group.map(item => `${item.type}:${item.id}:${item.order}`));
+    return group;
+  };
+
+  // Helper function to get the next available order number
+  const getNextOrderNumber = (): number => {
+    return surveyOrder.length > 0 ? Math.max(...surveyOrder.map(item => item.order)) + 1 : 0;
+  };
+
+  // Helper function to recalculate all order values sequentially
+  const recalculateAllOrders = (items: SurveyOrderItem[]): SurveyOrderItem[] => {
+    return items.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+  };
+
+  // Helper function to validate section-question order consistency
+  const validateSectionQuestionOrder = () => {
+    const sections = surveyOrder.filter(item => item.type === 'section');
+    
+    sections.forEach(section => {
+      const sectionQuestions = surveyOrder.filter(item => 
+        item.type === 'question' && item.sectionId === section.id
+      );
+      
+      // Check that questions immediately follow their parent section
+      const sectionIndex = surveyOrder.findIndex(item => item.id === section.id);
+      sectionQuestions.forEach((question, index) => {
+        const expectedOrder = sectionIndex + index + 1;
+        if (question.order !== expectedOrder) {
+          console.warn(`❌ Question ${question.id} order mismatch: expected ${expectedOrder}, got ${question.order}`);
+        }
+      });
+    });
+    
+    console.log('✅ Section-question order validation completed');
+  };
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     questionId: string;
@@ -630,7 +690,8 @@ useEffect(() => {
           updatedSurveyOrder.splice(insertIndex + index, 0, {
             id: question.id,
             type: 'question',
-            order: insertIndex + index
+            order: insertIndex + index,
+            sectionId: sectionId // Add sectionId to track which section this question belongs to
           });
         });
         
@@ -646,7 +707,8 @@ useEffect(() => {
           updatedSurveyOrder.push({
             id: question.id,
             type: 'question',
-            order: ++maxOrder
+            order: ++maxOrder,
+            sectionId: sectionId // Add sectionId even for fallback case
           });
         });
       }
@@ -658,7 +720,8 @@ useEffect(() => {
         updatedSurveyOrder.push({
           id: question.id,
           type: 'question',
-          order: ++maxOrder
+          order: ++maxOrder,
+          sectionId: sectionId || undefined // Add sectionId (null for no-section questions)
         });
       });
     }
@@ -713,8 +776,14 @@ useEffect(() => {
     // Adjust target order if needed
     const adjustedTargetOrder = Math.min(targetOrder, newOrder.length);
     
-    // Insert at new position
-    newOrder.splice(adjustedTargetOrder, 0, { type: draggedType, id: draggedId, order: adjustedTargetOrder });
+    // Insert at new position with proper sectionId
+    const insertItem: SurveyOrderItem = {
+      type: draggedType,
+      id: draggedId,
+      order: adjustedTargetOrder,
+      sectionId: draggedType === 'question' ? newSectionId : draggedId // For questions: use newSectionId, for sections: use their own ID
+    };
+    newOrder.splice(adjustedTargetOrder, 0, insertItem);
     
     // Reorder all items
     const reorderedItems = newOrder.map((item, index) => ({ ...item, order: index }));
@@ -988,7 +1057,8 @@ useEffect(() => {
       const newOrderItem = {
         id: newSection.id,
         type: 'section' as const,
-        order: surveyOrder.length
+        order: surveyOrder.length,
+        sectionId: newSection.id // For sections, sectionId is their own ID
       };
       updatedSurveyOrder = [...surveyOrder, newOrderItem];
       setSurveyOrder(updatedSurveyOrder);
@@ -1198,13 +1268,50 @@ useEffect(() => {
     return sectionItems.length > 0 && sectionItems[sectionItems.length - 1].id === sectionId;
   };
 
-  // Update survey with new order
+  // Update survey with new order - Enhanced to sync all related data
   const updateSurveyWithNewOrder = (reorderedItems: SurveyOrderItem[]) => {
     if (survey && onSurveyUpdate) {
+      // Update section displayOrder to match surveyOrder
+      const updatedSections = sections.map(s => {
+        const orderItem = reorderedItems.find(item => item.type === 'section' && item.id === s.id);
+        return orderItem ? { ...s, displayOrder: orderItem.order } : s;
+      });
+      
+      // Update question orders to match surveyOrder
+      const updatedSectionQuestions = surveyQuestions.map(q => {
+        const orderItem = reorderedItems.find(item => 
+          item.type === 'question' && item.id === q.id
+        );
+        return {
+          id: q.id,
+          sectionId: q.sectionId,
+          type: q.type,
+          order: orderItem ? orderItem.order : q.order || 0,
+          status: q.status,
+          text: q.text
+        };
+      });
+      
       const updatedSurvey = {
         ...survey,
+        surveySections: updatedSections,
+        sectionQuestions: updatedSectionQuestions,
         surveyOrder: reorderedItems
       };
+      
+      console.log('=== ENHANCED ORDER UPDATE ===');
+      console.log('Updated surveyOrder:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}:${item.sectionId || 'none'}`));
+      console.log('Updated sectionQuestions orders:', updatedSectionQuestions.map(sq => `${sq.id}:${sq.order}`));
+      
+      // Validate the order consistency
+      const orderValues = reorderedItems.map(item => item.order);
+      const isSequential = orderValues.every((order, index) => order === index);
+      console.log(`🔍 Order validation: ${isSequential ? '✅ Sequential' : '❌ Non-sequential'}`);
+      
+      if (!isSequential) {
+        console.error('❌ Order values are not sequential:', orderValues);
+      }
+      
       onSurveyUpdate(updatedSurvey);
     }
     
@@ -1213,67 +1320,134 @@ useEffect(() => {
     }
   };
 
-  // Arrow control handlers for sections
+  // Arrow control handlers for sections - Enhanced to move sections WITH their questions
   const handleMoveSectionUp = (sectionId: string) => {
-    const currentIndex = surveyOrder.findIndex(item => 
+    console.log(`🔼 Moving section ${sectionId} UP`);
+    
+    const sectionGroup = getSectionGroup(sectionId);
+    if (sectionGroup.length === 0) {
+      console.warn(`No section group found for ${sectionId}`);
+      return;
+    }
+    
+    // Find the current position of the section group in surveyOrder
+    const sectionIndex = surveyOrder.findIndex(item => 
       item.type === 'section' && item.id === sectionId
     );
     
-    if (currentIndex <= 0) return; // Already at top or not found
-    
-    const newOrder = [...surveyOrder];
-    const sectionItem = newOrder[currentIndex];
-    
-    // Find previous section (skip questions)
-    let targetIndex = currentIndex - 1;
-    while (targetIndex >= 0 && newOrder[targetIndex].type !== 'section') {
-      targetIndex--;
+    if (sectionIndex <= 0) {
+      console.log('Section is already at the top');
+      return; // Already at top
     }
     
-    if (targetIndex >= 0) {
-      // Remove section from current position
-      newOrder.splice(currentIndex, 1);
-      // Insert before previous section
-      newOrder.splice(targetIndex, 0, sectionItem);
+    // Find the previous section to move before
+    let previousSectionIndex = -1;
+    for (let i = sectionIndex - 1; i >= 0; i--) {
+      if (surveyOrder[i].type === 'section') {
+        previousSectionIndex = i;
+        break;
+      }
+    }
+    
+    if (previousSectionIndex === -1) {
+      console.log('No previous section found, moving to top');
+      // Move to the very beginning
+      const newOrder = [...surveyOrder];
       
-      // Reorder all items
-      const reorderedItems = newOrder.map((item, index) => ({ ...item, order: index }));
+      // Remove the section group from current position
+      const groupToMove = sectionGroup.map(item => ({ ...item }));
+      newOrder.splice(sectionIndex, sectionGroup.length);
+      
+      // Insert at the beginning
+      newOrder.splice(0, 0, ...groupToMove);
+      
+      // Recalculate all orders
+      const reorderedItems = recalculateAllOrders(newOrder);
+      
+      console.log('🔄 Reordered items:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}`));
+      
       setSurveyOrder(reorderedItems);
+      updateSurveyWithNewOrder(reorderedItems);
+    } else {
+      // Move before the previous section
+      const newOrder = [...surveyOrder];
       
-      // Update survey
+      // Remove the section group from current position
+      const groupToMove = sectionGroup.map(item => ({ ...item }));
+      newOrder.splice(sectionIndex, sectionGroup.length);
+      
+      // Insert before the previous section (adjust index after removal)
+      const adjustedInsertIndex = previousSectionIndex < sectionIndex ? previousSectionIndex : previousSectionIndex - sectionGroup.length;
+      newOrder.splice(adjustedInsertIndex, 0, ...groupToMove);
+      
+      // Recalculate all orders
+      const reorderedItems = recalculateAllOrders(newOrder);
+      
+      console.log('🔄 Reordered items:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}`));
+      
+      setSurveyOrder(reorderedItems);
       updateSurveyWithNewOrder(reorderedItems);
     }
   };
 
   const handleMoveSectionDown = (sectionId: string) => {
-    const currentIndex = surveyOrder.findIndex(item => 
+    console.log(`🔽 Moving section ${sectionId} DOWN`);
+    
+    const sectionGroup = getSectionGroup(sectionId);
+    if (sectionGroup.length === 0) {
+      console.warn(`No section group found for ${sectionId}`);
+      return;
+    }
+    
+    // Find the current position of the section in surveyOrder
+    const sectionIndex = surveyOrder.findIndex(item => 
       item.type === 'section' && item.id === sectionId
     );
     
-    if (currentIndex === -1) return;
+    if (sectionIndex === -1) {
+      console.warn(`Section ${sectionId} not found in surveyOrder`);
+      return;
+    }
+    
+    // Find the next section to move after
+    let nextSectionIndex = -1;
+    for (let i = sectionIndex + 1; i < surveyOrder.length; i++) {
+      if (surveyOrder[i].type === 'section') {
+        nextSectionIndex = i;
+        break;
+      }
+    }
+    
+    if (nextSectionIndex === -1) {
+      console.log('Section is already at the bottom');
+      return; // Already at bottom
+    }
+    
+    // Get the next section's group
+    const nextSectionId = surveyOrder[nextSectionIndex].id;
+    const nextSectionGroup = getSectionGroup(nextSectionId);
     
     const newOrder = [...surveyOrder];
-    const sectionItem = newOrder[currentIndex];
     
-    // Find next section (skip questions)
-    let targetIndex = currentIndex + 1;
-    while (targetIndex < newOrder.length && newOrder[targetIndex].type !== 'section') {
-      targetIndex++;
-    }
+    // Remove the current section group
+    const groupToMove = sectionGroup.map(item => ({ ...item }));
+    newOrder.splice(sectionIndex, sectionGroup.length);
     
-    if (targetIndex < newOrder.length) {
-      // Remove section from current position
-      newOrder.splice(currentIndex, 1);
-      // Insert after next section
-      newOrder.splice(targetIndex, 0, sectionItem);
-      
-      // Reorder all items
-      const reorderedItems = newOrder.map((item, index) => ({ ...item, order: index }));
-      setSurveyOrder(reorderedItems);
-      
-      // Update survey
-      updateSurveyWithNewOrder(reorderedItems);
-    }
+    // Find where to insert after the next section group
+    // Since we removed items, we need to adjust the index
+    const adjustedNextSectionIndex = nextSectionIndex > sectionIndex ? 
+      nextSectionIndex - sectionGroup.length : nextSectionIndex;
+    
+    const insertIndex = adjustedNextSectionIndex + nextSectionGroup.length;
+    newOrder.splice(insertIndex, 0, ...groupToMove);
+    
+    // Recalculate all orders
+    const reorderedItems = recalculateAllOrders(newOrder);
+    
+    console.log('🔄 Reordered items:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}`));
+    
+    setSurveyOrder(reorderedItems);
+    updateSurveyWithNewOrder(reorderedItems);
   };
 
   // Handle creating a question for a specific section
@@ -1313,7 +1487,8 @@ useEffect(() => {
           const newOrderItem = {
             id: questionId,
             type: 'question' as const,
-            order: surveyOrder.length
+            order: surveyOrder.length,
+            sectionId: sectionId // Add sectionId to track which section this question belongs to
           };
           updatedSurveyOrder.push(newOrderItem);
           setSurveyOrder(updatedSurveyOrder);
