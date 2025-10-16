@@ -3,15 +3,87 @@ import styled from 'styled-components';
 import { FiClock } from 'react-icons/fi';
 import { useTimer } from '../contexts/TimerContext';
 
+// Helper function to generate encouraging progress messages
+const getProgressMessage = (
+  progress: number,
+  completedQuestions?: number,
+  totalQuestions?: number,
+  completedSections?: number,
+  totalSections?: number
+): string => {
+  // Mixed approach: Use encouraging percentage messages at key milestones
+  if (completedQuestions !== undefined && totalQuestions !== undefined && totalQuestions > 0) {
+    const remaining = totalQuestions - completedQuestions;
+    
+    // Completion messages
+    if (remaining === 0) return "All done! 🎉";
+    
+    // Near completion - use encouraging messages
+    if (progress >= 90) return "Almost there! 🏁";
+    if (progress >= 75) return "You're nearly done!";
+    
+    // Specific question count messages for small remaining counts
+    if (remaining === 1) return "Just 1 question left!";
+    if (remaining <= 3) return `Only ${remaining} questions to go!`;
+    
+    // Mid-progress encouraging messages
+    if (progress >= 60) return "Getting close to the end!";
+    if (progress >= 50) return "More than halfway there!";
+    if (progress >= 40) return "Halfway there!";
+    if (progress >= 25) return "You're making great progress!";
+    
+    // Early progress - show question count for context
+    if (progress > 0) return `You've completed ${completedQuestions} of ${totalQuestions} questions`;
+  }
+  
+  // Section-based messages (fallback when no question data)
+  if (completedSections !== undefined && totalSections !== undefined && totalSections > 0) {
+    const remaining = totalSections - completedSections;
+    if (remaining === 0) return "Survey complete! 🎉";
+    if (remaining === 1) return "Final section!";
+    return `${completedSections} of ${totalSections} sections done`;
+  }
+  
+  // Pure percentage-based messages (final fallback)
+  if (progress >= 90) return "Almost there! 🏁";
+  if (progress >= 75) return "You're nearly done!";
+  if (progress >= 60) return "Getting close to the end!";
+  if (progress >= 50) return "More than halfway there!";
+  if (progress >= 40) return "Halfway there!";
+  if (progress >= 25) return "You're making great progress!";
+  if (progress > 0) return "Great start! Keep going!";
+  
+  return "Let's get started!";
+};
+
 interface HeaderBarProps {
   surveyTitle?: string;
   averageTime?: string;
   logo?: string;
-  progress?: number; // Add progress prop
-  color?: string; // Add color prop for consistent styling
+  progress?: number; // Progress percentage (0-100)
+  color?: string; // Progress bar color
+  // New props for enhanced progress display
+  totalQuestions?: number;
+  completedQuestions?: number;
+  totalSections?: number;
+  completedSections?: number;
+  showProgressText?: boolean; // Allow hiding text entirely
+  progressStyle?: 'percentage' | 'encouraging' | 'question-count' | 'visual-only';
 }
 
-const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo, progress = 0, color = '#552A47' }) => {
+const HeaderBar: React.FC<HeaderBarProps> = ({ 
+  surveyTitle, 
+  averageTime, 
+  logo, 
+  progress = 0, 
+  color = '#552A47',
+  totalQuestions,
+  completedQuestions,
+  totalSections,
+  completedSections,
+  showProgressText = true,
+  progressStyle = 'encouraging'
+}) => {
   // Get timer state from context
   const { isRunning, elapsedTime } = useTimer();
   
@@ -65,6 +137,24 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo, p
     return null;
   }, [averageTime]);
   
+  // Generate progress message based on style and available data
+  const progressMessage = React.useMemo(() => {
+    if (!showProgressText || progressStyle === 'visual-only') return null;
+    
+    switch (progressStyle) {
+      case 'percentage':
+        return `${progress}% Completed`;
+      case 'question-count':
+        if (completedQuestions !== undefined && totalQuestions !== undefined && totalQuestions > 0) {
+          return `${completedQuestions} of ${totalQuestions} questions`;
+        }
+        return `${progress}% Completed`;
+      case 'encouraging':
+      default:
+        return getProgressMessage(progress, completedQuestions, totalQuestions, completedSections, totalSections);
+    }
+  }, [progress, completedQuestions, totalQuestions, completedSections, totalSections, showProgressText, progressStyle]);
+  
   return (
     <HeaderContainer>
       <LeftSection>
@@ -92,7 +182,11 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ surveyTitle, averageTime, logo, p
         <HeaderProgressBar>
           <HeaderProgressIndicator width={progress} color={color} />
         </HeaderProgressBar>
-        <HeaderProgressText>{progress}% Completed</HeaderProgressText>
+        {progressMessage && (
+          <HeaderProgressText progressStyle={progressStyle}>
+            {progressMessage}
+          </HeaderProgressText>
+        )}
       </HeaderProgressContainer>
     </HeaderContainer>
   );
@@ -258,16 +352,42 @@ const HeaderProgressIndicator = styled.div<{ width: number; color: string }>`
   }
 `;
 
-const HeaderProgressText = styled.div`
+const HeaderProgressText = styled.div<{ progressStyle?: string }>`
   position: absolute;
   right: 20px;
   bottom: -18px; /* Position it below the progress bar */
-  font-size: 11px;
-  color: #6b7280;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 2px 6px;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-size: ${props => props.progressStyle === 'encouraging' ? '12px' : '11px'};
+  font-weight: ${props => props.progressStyle === 'encouraging' ? '600' : '400'};
+  color: ${props => {
+    switch (props.progressStyle) {
+      case 'encouraging':
+        return '#059669'; /* Green for encouraging messages */
+      case 'question-count':
+        return '#3b82f6'; /* Blue for question count */
+      default:
+        return '#6b7280'; /* Gray for percentage */
+    }
+  }};
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: ${props => props.progressStyle === 'encouraging' ? '4px 8px' : '2px 6px'};
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  max-width: 250px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  /* Add subtle animation for encouraging messages */
+  ${props => props.progressStyle === 'encouraging' && `
+    animation: subtle-pulse 3s ease-in-out infinite;
+    
+    @keyframes subtle-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+  `}
 `;
 
 export default HeaderBar;

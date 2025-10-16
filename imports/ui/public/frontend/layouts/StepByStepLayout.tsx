@@ -190,6 +190,27 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     return Math.round((answeredQuestions / totalQuestions) * 100);
   }, [questions.length, responses]);
 
+  // Calculate progress data for enhanced HeaderBar
+  const progressData = useMemo(() => {
+    const totalQuestions = questions.length;
+    const completedQuestions = Object.keys(responses).length;
+    const progress = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+    
+    // Calculate completed sections (sections where all questions are answered)
+    const completedSections = sections.filter(section => {
+      const sectionQuestions = questions.filter(q => q.sectionId === section.id);
+      return sectionQuestions.length > 0 && sectionQuestions.every(q => responses[q._id]);
+    }).length;
+    
+    return {
+      progress,
+      totalQuestions,
+      completedQuestions,
+      totalSections: sections.length,
+      completedSections
+    };
+  }, [questions, responses, sections]);
+
   // Calculate section progress - memoized with safer calculation
   const calculateSectionProgress = useCallback((sectionId: string) => {
     const sectionQuestions = questions.filter(q => q.sectionId === sectionId);
@@ -600,8 +621,13 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
         surveyTitle={survey.title}
         averageTime={survey.estimatedTime}
         logo={survey.logo}
-        progress={calculateProgress()}
+        progress={progressData.progress}
         color={'var(--primary-color, #552A47)'}
+        totalQuestions={progressData.totalQuestions}
+        completedQuestions={progressData.completedQuestions}
+        totalSections={progressData.totalSections}
+        completedSections={progressData.completedSections}
+        progressStyle="encouraging"
       />
       
       {/* Main Layout with Sidebar and Content */}
