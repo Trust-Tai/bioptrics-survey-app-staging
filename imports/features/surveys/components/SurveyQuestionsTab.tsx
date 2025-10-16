@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiMove, FiLayers, FiLock } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiMove, FiLayers, FiLock, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Questions } from '../../../features/questions/api/questions';
@@ -14,6 +14,7 @@ interface SurveyQuestionsTabProps {
   survey?: any;
   onSurveyUpdate?: (survey: any) => void;
   onHasUnsavedChanges?: (hasChanges: boolean) => void;
+  onValidationCheck?: React.MutableRefObject<(() => { isValid: boolean; errors: string[] }) | null>;
 }
 
 const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
@@ -21,6 +22,7 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   survey,
   onSurveyUpdate,
   onHasUnsavedChanges,
+  onValidationCheck,
 }) => {
   const { openPanel } = useQuestionBuilderPanel();
   const [surveyQuestions, setSurveyQuestions] = useState<QuestionItem[]>([]);
@@ -29,19 +31,97 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
   const [questionSelectorItems, setQuestionSelectorItems] = useState<QuestionItem[]>([]);
   const [draggingQuestionId, setDraggingQuestionId] = useState<string | null>(null);
   const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
-  const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
+  // Section drop zone for empty sections
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | 'inside' | null>(null);
-  const [dragType, setDragType] = useState<'question' | 'section' | null>(null);
+  const [dragType, setDragType] = useState<'question' | null>(null);
   const [sections, setSections] = useState<any[]>([]);
   // Define SurveyOrderItem type to fix TypeScript errors
   type SurveyOrderItem = {
     type: 'question' | 'section';
     id: string;
     order: number;
+    sectionId?: string; // For questions: which section they belong to. For sections: their own ID
   };
   
   const [surveyOrder, setSurveyOrder] = useState<Array<SurveyOrderItem>>([]);
+
+  // Helper function to get all items (section + questions) that belong to a section group
+  const getSectionGroup = (sectionId: string): SurveyOrderItem[] => {
+    // Find the section first
+    const sectionItem = surveyOrder.find(item => 
+      item.type === 'section' && item.id === sectionId
+    );
+    
+    if (!sectionItem) {
+      console.warn(`Section ${sectionId} not found in surveyOrder`);
+      return [];
+    }
+    
+    // Get all questions that belong to this section
+    const sectionQuestions = surveyOrder.filter(item => 
+      item.type === 'question' && item.sectionId === sectionId
+    );
+    
+    // Return section + its questions, sorted by order
+    const group = [sectionItem, ...sectionQuestions].sort((a, b) => a.order - b.order);
+    
+    console.log(`📋 Section group for ${sectionId}:`, group.map(item => `${item.type}:${item.id}:${item.order}`));
+    return group;
+  };
+
+  // Helper function to get the next available order number
+  const getNextOrderNumber = (): number => {
+    return surveyOrder.length > 0 ? Math.max(...surveyOrder.map(item => item.order)) + 1 : 0;
+  };
+
+  // Helper function to recalculate all order values sequentially
+  const recalculateAllOrders = (items: SurveyOrderItem[]): SurveyOrderItem[] => {
+    return items.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+  };
+
+  // Helper function to validate section-question order consistency
+  const validateSectionQuestionOrder = () => {
+    const sections = surveyOrder.filter(item => item.type === 'section');
+    
+    sections.forEach(section => {
+      const sectionQuestions = surveyOrder.filter(item => 
+        item.type === 'question' && item.sectionId === section.id
+      );
+      
+      // Check that questions immediately follow their parent section
+      const sectionIndex = surveyOrder.findIndex(item => item.id === section.id);
+      sectionQuestions.forEach((question, index) => {
+        const expectedOrder = sectionIndex + index + 1;
+        if (question.order !== expectedOrder) {
+          console.warn(`❌ Question ${question.id} order mismatch: expected ${expectedOrder}, got ${question.order}`);
+        }
+      });
+    });
+    
+    console.log('✅ Section-question order validation completed');
+  };
+
+  // Validation function to check for empty sections
+  const validateSectionsHaveQuestions = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    // Check each section to see if it has questions
+    sections.forEach(section => {
+      const sectionQuestions = surveyQuestions.filter(q => q.sectionId === section.id);
+      if (sectionQuestions.length === 0) {
+        errors.push(`Section "${section.name}" has no questions`);
+      }
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     questionId: string;
@@ -84,6 +164,15 @@ const SurveyQuestionsTab: React.FC<SurveyQuestionsTabProps> = ({
 
   // Add this state to store question documents with import status
 const [questionDocsMap, setQuestionDocsMap] = useState<Record<string, any>>({});
+
+// Expose validation function to parent component
+useEffect(() => {
+  if (onValidationCheck) {
+    onValidationCheck.current = () => {
+      return validateSectionsHaveQuestions();
+    };
+  }
+}, [sections, surveyQuestions, onValidationCheck]);
 
 // Load existing survey questions and sections when component mounts or survey changes
 useEffect(() => {
@@ -630,7 +719,8 @@ useEffect(() => {
           updatedSurveyOrder.splice(insertIndex + index, 0, {
             id: question.id,
             type: 'question',
-            order: insertIndex + index
+            order: insertIndex + index,
+            sectionId: sectionId // Add sectionId to track which section this question belongs to
           });
         });
         
@@ -646,7 +736,8 @@ useEffect(() => {
           updatedSurveyOrder.push({
             id: question.id,
             type: 'question',
-            order: ++maxOrder
+            order: ++maxOrder,
+            sectionId: sectionId // Add sectionId even for fallback case
           });
         });
       }
@@ -658,7 +749,8 @@ useEffect(() => {
         updatedSurveyOrder.push({
           id: question.id,
           type: 'question',
-          order: ++maxOrder
+          order: ++maxOrder,
+          sectionId: sectionId || undefined // Add sectionId (null for no-section questions)
         });
       });
     }
@@ -713,8 +805,14 @@ useEffect(() => {
     // Adjust target order if needed
     const adjustedTargetOrder = Math.min(targetOrder, newOrder.length);
     
-    // Insert at new position
-    newOrder.splice(adjustedTargetOrder, 0, { type: draggedType, id: draggedId, order: adjustedTargetOrder });
+    // Insert at new position with proper sectionId
+    const insertItem: SurveyOrderItem = {
+      type: draggedType,
+      id: draggedId,
+      order: adjustedTargetOrder,
+      sectionId: draggedType === 'question' ? newSectionId : draggedId // For questions: use newSectionId, for sections: use their own ID
+    };
+    newOrder.splice(adjustedTargetOrder, 0, insertItem);
     
     // Reorder all items
     const reorderedItems = newOrder.map((item, index) => ({ ...item, order: index }));
@@ -820,30 +918,25 @@ useEffect(() => {
     }
   };
 
-  // Handle drag start
-  const handleDragStart = (e: React.DragEvent, type: 'question' | 'section', id: string) => {
-    setDragType(type);
-    if (type === 'question') {
-      setDraggingQuestionId(id);
-    } else {
-      setDraggingSectionId(id);
-    }
+  // Handle drag start (questions only)
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDragType('question');
+    setDraggingQuestionId(id);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', JSON.stringify({ type, id }));
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'question', id }));
   };
 
   // Handle drag end
   const handleDragEnd = () => {
     setDragType(null);
     setDraggingQuestionId(null);
-    setDraggingSectionId(null);
     setDragOverQuestionId(null);
     setDragOverSectionId(null);
     setDragOverPosition(null);
   };
 
-  // Handle drag over with position detection
-  const handleDragOver = (e: React.DragEvent, targetType: 'question' | 'section', targetId: string) => {
+  // Handle drag over with position detection (questions only)
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
@@ -851,77 +944,92 @@ useEffect(() => {
     const y = e.clientY - rect.top;
     const height = rect.height;
     
-    let position: 'before' | 'after' | 'inside';
-    
-    if (targetType === 'section') {
-      // For sections, determine if dropping before, inside, or after
-      if (y < height * 0.25) {
-        position = 'before';
-      } else if (y > height * 0.75) {
-        position = 'after';
-      } else {
-        position = 'inside';
-      }
-      setDragOverSectionId(targetId);
-    } else {
-      // For questions, determine if dropping before or after
-      position = y < height * 0.5 ? 'before' : 'after';
-      setDragOverQuestionId(targetId);
-    }
-    
+    // For questions, determine if dropping before or after
+    const position = y < height * 0.5 ? 'before' : 'after';
+    setDragOverQuestionId(targetId);
     setDragOverPosition(position);
   };
 
-  // Handle drop with unified ordering logic
-  const handleDrop = (e: React.DragEvent, targetType: 'question' | 'section', targetId: string) => {
+  // Handle drop (questions only)
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     
     const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-    const { type: draggedType, id: draggedId } = dragData;
+    const { id: draggedId } = dragData;
 
-    // Find target position in unified order
-    const targetOrderItem = surveyOrder.find(item => item.type === targetType && item.id === targetId);
-    if (!targetOrderItem) return;
-
-    let targetOrder = targetOrderItem.order;
-    let newSectionId: string | undefined;
-
-    if (draggedType === 'question') {
-      if (targetType === 'section') {
-        if (dragOverPosition === 'inside') {
-          // Move question into section
-          newSectionId = targetId;
-          // Place after section header
-          targetOrder = targetOrderItem.order + 1;
-        } else if (dragOverPosition === 'before') {
-          // Place before section
-          newSectionId = undefined;
-          targetOrder = targetOrderItem.order;
-        } else {
-          // Place after section (and its questions)
-          newSectionId = undefined;
-          // Find the last item in this section
-          const sectionQuestions = surveyOrder.filter(item => 
-            item.order > targetOrderItem.order && 
-            (surveyOrder.find(nextSection => nextSection.type === 'section' && nextSection.order > item.order)?.order || Infinity) > item.order
-          );
-          targetOrder = sectionQuestions.length > 0 ? 
-            Math.max(...sectionQuestions.map(q => q.order)) + 1 : 
-            targetOrderItem.order + 1;
-        }
-      } else {
-        // Dropping question on question
-        const targetQuestion = surveyQuestions.find(q => q.id === targetId);
-        newSectionId = targetQuestion?.sectionId;
-        targetOrder = dragOverPosition === 'before' ? targetOrderItem.order : targetOrderItem.order + 1;
-      }
-    } else {
-      // Dropping section
-      targetOrder = dragOverPosition === 'before' ? targetOrderItem.order : targetOrderItem.order + 1;
-    }
-
-    handleMoveInOrder(draggedType, draggedId, targetOrder, newSectionId);
+    // Find target question
+    const targetQuestion = surveyQuestions.find(q => q.id === targetId);
+    const targetOrderItem = surveyOrder.find(item => 
+      item.type === 'question' && item.id === targetId
+    );
+    
+    if (!targetOrderItem || !targetQuestion) return;
+    
+    const targetOrder = dragOverPosition === 'before' ? 
+      targetOrderItem.order : targetOrderItem.order + 1;
+    
+    // Move question and assign to same section as target
+    handleMoveInOrder('question', draggedId, targetOrder, targetQuestion.sectionId);
     handleDragEnd();
+  };
+
+  // Handle section drop zone events for empty sections
+  const handleSectionDragOver = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSectionId(sectionId);
+  };
+
+  const handleSectionDrop = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    
+    const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const { id: draggedId } = dragData;
+    
+    // Update question's section assignment
+    const updatedQuestions = surveyQuestions.map(q => 
+      q.id === draggedId ? { ...q, sectionId: sectionId } : q
+    );
+    setSurveyQuestions(updatedQuestions);
+    
+    // Find the section in surveyOrder to place question after it
+    const sectionOrderItem = surveyOrder.find(item => 
+      item.type === 'section' && item.id === sectionId
+    );
+    
+    if (sectionOrderItem) {
+      // Place question right after the section
+      const targetOrder = sectionOrderItem.order + 1;
+      handleMoveInOrder('question', draggedId, targetOrder, sectionId);
+    }
+    
+    // Update survey with new section assignment
+    if (survey && onSurveyUpdate) {
+      const updatedSectionQuestions = (survey.sectionQuestions || []).map((sq: any) => 
+        sq.id === draggedId ? { ...sq, sectionId: sectionId } : sq
+      );
+      
+      const updatedSurvey = {
+        ...survey,
+        sectionQuestions: updatedSectionQuestions,
+        surveyOrder: surveyOrder
+      };
+      onSurveyUpdate(updatedSurvey);
+    }
+    
+    // Trigger unsaved changes
+    if (onHasUnsavedChanges) {
+      onHasUnsavedChanges(true);
+    }
+    
+    setDragOverSectionId(null);
+    handleDragEnd();
+  };
+
+  const handleSectionDragLeave = (e: React.DragEvent, sectionId: string) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverSectionId(null);
+    }
   };
 
   // Handle adding a new section
@@ -978,7 +1086,8 @@ useEffect(() => {
       const newOrderItem = {
         id: newSection.id,
         type: 'section' as const,
-        order: surveyOrder.length
+        order: surveyOrder.length,
+        sectionId: newSection.id // For sections, sectionId is their own ID
       };
       updatedSurveyOrder = [...surveyOrder, newOrderItem];
       setSurveyOrder(updatedSurveyOrder);
@@ -1177,6 +1286,219 @@ useEffect(() => {
       .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort by order property
   };
 
+  // Helper functions for section position checking
+  const isFirstSection = (sectionId: string): boolean => {
+    const sectionItems = surveyOrder.filter(item => item.type === 'section');
+    return sectionItems.length > 0 && sectionItems[0].id === sectionId;
+  };
+
+  const isLastSection = (sectionId: string): boolean => {
+    const sectionItems = surveyOrder.filter(item => item.type === 'section');
+    return sectionItems.length > 0 && sectionItems[sectionItems.length - 1].id === sectionId;
+  };
+
+  // Update survey with new order - Enhanced to sync all related data including surveySections
+  const updateSurveyWithNewOrder = (reorderedItems: SurveyOrderItem[]) => {
+    if (survey && onSurveyUpdate) {
+      // Update section displayOrder to match surveyOrder
+      const updatedSections = sections.map(s => {
+        const orderItem = reorderedItems.find(item => item.type === 'section' && item.id === s.id);
+        return orderItem ? { ...s, displayOrder: orderItem.order } : s;
+      });
+      
+      // Update question orders to match surveyOrder
+      const updatedSectionQuestions = surveyQuestions.map(q => {
+        const orderItem = reorderedItems.find(item => 
+          item.type === 'question' && item.id === q.id
+        );
+        return {
+          id: q.id,
+          sectionId: q.sectionId,
+          type: q.type,
+          order: orderItem ? orderItem.order : q.order || 0,
+          status: q.status,
+          text: q.text
+        };
+      });
+      
+      // 🆕 REORDER surveySections ARRAY to match the new section order
+      const reorderedSurveySections = [];
+      const sectionOrderItems = reorderedItems.filter(item => item.type === 'section');
+      
+      // Build the new surveySections array in the correct order
+      for (const orderItem of sectionOrderItems) {
+        const sectionData = (survey.surveySections || []).find((s: any) => s.id === orderItem.id);
+        if (sectionData) {
+          // Update the section with new displayOrder
+          reorderedSurveySections.push({
+            ...sectionData,
+            displayOrder: orderItem.order
+          });
+        }
+      }
+      
+      const updatedSurvey = {
+        ...survey,
+        surveySections: reorderedSurveySections, // 🆕 Use reordered array
+        sectionQuestions: updatedSectionQuestions,
+        surveyOrder: reorderedItems
+      };
+      
+      console.log('=== ENHANCED ORDER UPDATE WITH SURVEYSECTIONS ===');
+      console.log('Updated surveyOrder:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}:${item.sectionId || 'none'}`));
+      console.log('Updated sectionQuestions orders:', updatedSectionQuestions.map(sq => `${sq.id}:${sq.order}`));
+      console.log('🆕 Reordered surveySections:', reorderedSurveySections.map(s => `${s.name}:${s.id}:${s.displayOrder}`));
+      
+      // Validate the order consistency
+      const orderValues = reorderedItems.map(item => item.order);
+      const isSequential = orderValues.every((order, index) => order === index);
+      console.log(`🔍 Order validation: ${isSequential ? '✅ Sequential' : '❌ Non-sequential'}`);
+      
+      if (!isSequential) {
+        console.error('❌ Order values are not sequential:', orderValues);
+      }
+      
+      // Update local sections state to match the new order
+      setSections(updatedSections.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
+      
+      onSurveyUpdate(updatedSurvey);
+    }
+    
+    if (onHasUnsavedChanges) {
+      onHasUnsavedChanges(true);
+    }
+  };
+
+  // Arrow control handlers for sections - Enhanced to move sections WITH their questions
+  const handleMoveSectionUp = (sectionId: string) => {
+    console.log(`🔼 Moving section ${sectionId} UP`);
+    
+    const sectionGroup = getSectionGroup(sectionId);
+    if (sectionGroup.length === 0) {
+      console.warn(`No section group found for ${sectionId}`);
+      return;
+    }
+    
+    // Find the current position of the section group in surveyOrder
+    const sectionIndex = surveyOrder.findIndex(item => 
+      item.type === 'section' && item.id === sectionId
+    );
+    
+    if (sectionIndex <= 0) {
+      console.log('Section is already at the top');
+      return; // Already at top
+    }
+    
+    // Find the previous section to move before
+    let previousSectionIndex = -1;
+    for (let i = sectionIndex - 1; i >= 0; i--) {
+      if (surveyOrder[i].type === 'section') {
+        previousSectionIndex = i;
+        break;
+      }
+    }
+    
+    if (previousSectionIndex === -1) {
+      console.log('No previous section found, moving to top');
+      // Move to the very beginning
+      const newOrder = [...surveyOrder];
+      
+      // Remove the section group from current position
+      const groupToMove = sectionGroup.map(item => ({ ...item }));
+      newOrder.splice(sectionIndex, sectionGroup.length);
+      
+      // Insert at the beginning
+      newOrder.splice(0, 0, ...groupToMove);
+      
+      // Recalculate all orders
+      const reorderedItems = recalculateAllOrders(newOrder);
+      
+      console.log('🔄 Reordered items:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}`));
+      
+      setSurveyOrder(reorderedItems);
+      updateSurveyWithNewOrder(reorderedItems);
+    } else {
+      // Move before the previous section
+      const newOrder = [...surveyOrder];
+      
+      // Remove the section group from current position
+      const groupToMove = sectionGroup.map(item => ({ ...item }));
+      newOrder.splice(sectionIndex, sectionGroup.length);
+      
+      // Insert before the previous section (adjust index after removal)
+      const adjustedInsertIndex = previousSectionIndex < sectionIndex ? previousSectionIndex : previousSectionIndex - sectionGroup.length;
+      newOrder.splice(adjustedInsertIndex, 0, ...groupToMove);
+      
+      // Recalculate all orders
+      const reorderedItems = recalculateAllOrders(newOrder);
+      
+      console.log('🔄 Reordered items:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}`));
+      
+      setSurveyOrder(reorderedItems);
+      updateSurveyWithNewOrder(reorderedItems);
+    }
+  };
+
+  const handleMoveSectionDown = (sectionId: string) => {
+    console.log(`🔽 Moving section ${sectionId} DOWN`);
+    
+    const sectionGroup = getSectionGroup(sectionId);
+    if (sectionGroup.length === 0) {
+      console.warn(`No section group found for ${sectionId}`);
+      return;
+    }
+    
+    // Find the current position of the section in surveyOrder
+    const sectionIndex = surveyOrder.findIndex(item => 
+      item.type === 'section' && item.id === sectionId
+    );
+    
+    if (sectionIndex === -1) {
+      console.warn(`Section ${sectionId} not found in surveyOrder`);
+      return;
+    }
+    
+    // Find the next section to move after
+    let nextSectionIndex = -1;
+    for (let i = sectionIndex + 1; i < surveyOrder.length; i++) {
+      if (surveyOrder[i].type === 'section') {
+        nextSectionIndex = i;
+        break;
+      }
+    }
+    
+    if (nextSectionIndex === -1) {
+      console.log('Section is already at the bottom');
+      return; // Already at bottom
+    }
+    
+    // Get the next section's group
+    const nextSectionId = surveyOrder[nextSectionIndex].id;
+    const nextSectionGroup = getSectionGroup(nextSectionId);
+    
+    const newOrder = [...surveyOrder];
+    
+    // Remove the current section group
+    const groupToMove = sectionGroup.map(item => ({ ...item }));
+    newOrder.splice(sectionIndex, sectionGroup.length);
+    
+    // Find where to insert after the next section group
+    // Since we removed items, we need to adjust the index
+    const adjustedNextSectionIndex = nextSectionIndex > sectionIndex ? 
+      nextSectionIndex - sectionGroup.length : nextSectionIndex;
+    
+    const insertIndex = adjustedNextSectionIndex + nextSectionGroup.length;
+    newOrder.splice(insertIndex, 0, ...groupToMove);
+    
+    // Recalculate all orders
+    const reorderedItems = recalculateAllOrders(newOrder);
+    
+    console.log('🔄 Reordered items:', reorderedItems.map(item => `${item.type}:${item.id}:${item.order}`));
+    
+    setSurveyOrder(reorderedItems);
+    updateSurveyWithNewOrder(reorderedItems);
+  };
+
   // Handle creating a question for a specific section
   const handleCreateQuestionForSection = (sectionId: string) => {
     const onQuestionCreatedCallback = (questionId: string) => {
@@ -1214,7 +1536,8 @@ useEffect(() => {
           const newOrderItem = {
             id: questionId,
             type: 'question' as const,
-            order: surveyOrder.length
+            order: surveyOrder.length,
+            sectionId: sectionId // Add sectionId to track which section this question belongs to
           };
           updatedSurveyOrder.push(newOrderItem);
           setSurveyOrder(updatedSurveyOrder);
@@ -1262,18 +1585,15 @@ useEffect(() => {
     setShowQuestionSelector(true);
   };
 
-  // Get drop zone classes for visual feedback
-  const getDropZoneClasses = (type: 'question' | 'section', id: string) => {
+  // Get drop zone classes for visual feedback (questions only)
+  const getDropZoneClasses = (id: string) => {
     const classes = [];
     
-    if (type === 'question' && dragOverQuestionId === id) {
-      classes.push(`drag-over-${dragOverPosition}`);
-    } else if (type === 'section' && dragOverSectionId === id) {
+    if (dragOverQuestionId === id) {
       classes.push(`drag-over-${dragOverPosition}`);
     }
     
-    if ((type === 'question' && draggingQuestionId === id) || 
-        (type === 'section' && draggingSectionId === id)) {
+    if (draggingQuestionId === id) {
       classes.push('dragging');
     }
     
@@ -1324,23 +1644,6 @@ useEffect(() => {
             .section-container {
               transition: all 0.2s ease;
             }
-            .section-container.dragging {
-              opacity: 0.5;
-              transform: rotate(1deg);
-              z-index: 1000;
-            }
-            .section-container.drag-over-before {
-              border-top: 3px solid #28a745;
-              margin-top: 8px;
-            }
-            .section-container.drag-over-after {
-              border-bottom: 3px solid #28a745;
-              margin-bottom: 8px;
-            }
-            .section-container.drag-over-inside {
-              border: 2px solid #28a745;
-              background-color: rgba(40, 167, 69, 0.05);
-            }
             .drop-zone {
               height: 4px;
               background-color: transparent;
@@ -1353,8 +1656,47 @@ useEffect(() => {
               border-radius: 4px;
               margin: 4px 0;
             }
-            .drop-zone.section-target {
-              background-color: #28a745;
+            .arrow-button {
+              background: none;
+              border: 1px solid #d1d5db;
+              border-radius: 4px;
+              cursor: pointer;
+              color: #6b7280;
+              padding: 4px;
+              display: flex;
+              align-items: center;
+              transition: all 0.2s ease;
+            }
+            .arrow-button:hover:not(:disabled) {
+              background-color: #f3f4f6;
+              border-color: #9ca3af;
+            }
+            .arrow-button:disabled {
+              cursor: not-allowed;
+              opacity: 0.5;
+              color: #9ca3af;
+            }
+            .section-drop-zone {
+              min-height: 60px;
+              border: 2px dashed #d1d5db;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: #9ca3af;
+              font-size: 14px;
+              margin: 12px 0;
+              transition: all 0.2s ease;
+              background-color: transparent;
+            }
+            .section-drop-zone.drag-over {
+              border-color: #3b82f6;
+              background-color: rgba(59, 130, 246, 0.05);
+              color: #3b82f6;
+            }
+            .section-drop-zone:not(.drag-over):hover {
+              border-color: #9ca3af;
+              background-color: rgba(156, 163, 175, 0.05);
             }
             .drag-handle {
               cursor: grab;
@@ -1393,20 +1735,20 @@ useEffect(() => {
                     return (
                       <div 
                         key={question.id}
-                        className={`question-item ${getDropZoneClasses('question', question.id)}`}
+                        className={`question-item ${getDropZoneClasses(question.id)}`}
                         onClick={isImported ? undefined : () => handleEditQuestion(question.id)}
                         style={{ cursor: isImported ? 'not-allowed' : 'pointer' }}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                        onDragStart={(e) => handleDragStart(e, question.id)}
                         onDragEnd={handleDragEnd}
-                        onDragOver={(e) => handleDragOver(e, 'question', question.id)}
+                        onDragOver={(e) => handleDragOver(e, question.id)}
                         onDragLeave={(e) => {
                           if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                             setDragOverQuestionId(null);
                             setDragOverPosition(null);
                           }
                         }}
-                        onDrop={(e) => handleDrop(e, 'question', question.id)}
+                        onDrop={(e) => handleDrop(e, question.id)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
                           <div className="drag-handle">
@@ -1504,31 +1846,38 @@ useEffect(() => {
                     return (
                       <div 
                         key={section.id} 
-                        className={`section-container ${getDropZoneClasses('section', section.id)}`}
+                        className="section-container"
                         style={{ marginBottom: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', backgroundColor: '#f8fafc' }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'section', section.id)}
-                        onDragEnd={handleDragEnd}
-                        onDragOver={(e) => handleDragOver(e, 'section', section.id)}
-                        onDragLeave={(e) => {
-                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                            setDragOverSectionId(null);
-                            setDragOverPosition(null);
-                          }
-                        }}
-                        onDrop={(e) => handleDrop(e, 'section', section.id)}
                       >
                         {/* Section Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                            <div className="drag-handle">
-                              <FiMove size={16} />
-                            </div>
                             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
                               {section.name}
                             </h3>
                           </div>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {/* Section Movement Controls */}
+                            {!isSurveyImported() && (
+                              <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
+                                <button
+                                  onClick={() => handleMoveSectionUp(section.id)}
+                                  disabled={isFirstSection(section.id)}
+                                  className="arrow-button"
+                                  title="Move section up"
+                                >
+                                  <FiChevronUp size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleMoveSectionDown(section.id)}
+                                  disabled={isLastSection(section.id)}
+                                  className="arrow-button"
+                                  title="Move section down"
+                                >
+                                  <FiChevronDown size={14} />
+                                </button>
+                              </div>
+                            )}
                             {!isSurveyImported() ? (
                               <button
                                 onClick={() => handleEditSection(section)}
@@ -1624,20 +1973,20 @@ useEffect(() => {
                                 return (
                                   <div 
                                     key={question.id}
-                                    className={`question-item ${getDropZoneClasses('question', question.id)}`}
+                                    className={`question-item ${getDropZoneClasses(question.id)}`}
                                     onClick={isImported ? undefined : () => handleEditQuestion(question.id)}
                                     style={{ cursor: isImported ? 'not-allowed' : 'pointer' }}
                                     draggable
-                                    onDragStart={(e) => handleDragStart(e, 'question', question.id)}
+                                    onDragStart={(e) => handleDragStart(e, question.id)}
                                     onDragEnd={handleDragEnd}
-                                    onDragOver={(e) => handleDragOver(e, 'question', question.id)}
+                                    onDragOver={(e) => handleDragOver(e, question.id)}
                                     onDragLeave={(e) => {
                                       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                                         setDragOverQuestionId(null);
                                         setDragOverPosition(null);
                                       }
                                     }}
-                                    onDrop={(e) => handleDrop(e, 'question', question.id)}
+                                    onDrop={(e) => handleDrop(e, question.id)}
                                   >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
                                       <div className="drag-handle">
@@ -1730,8 +2079,13 @@ useEffect(() => {
                                 );
                               })
                           ) : (
-                            <div style={{ color: '#666', fontStyle: 'italic', padding: '16px 0' }}>
-                              No questions in this section yet
+                            <div 
+                              className={`section-drop-zone ${dragOverSectionId === section.id ? 'drag-over' : ''}`}
+                              onDragOver={(e) => handleSectionDragOver(e, section.id)}
+                              onDrop={(e) => handleSectionDrop(e, section.id)}
+                              onDragLeave={(e) => handleSectionDragLeave(e, section.id)}
+                            >
+                              {dragOverSectionId === section.id ? 'Drop question here' : 'Drag questions here'}
                             </div>
                           )}
                         </div>

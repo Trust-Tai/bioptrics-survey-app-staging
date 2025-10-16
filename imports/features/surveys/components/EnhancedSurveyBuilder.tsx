@@ -34,6 +34,7 @@ import SurveyQuestionsTab from './SurveyQuestionsTab';
 import QuestionBuilderSidePanel from '../../../features/questions/components/admin/QuestionBuilderSidePanel';
 import { useQuestionBuilderPanel } from '../../../features/questions/contexts/QuestionBuilderPanelContext';
 import SectionEditor from './sections/SectionEditor';
+import ValidationErrorModal from './ValidationErrorModal';
 import ResponsesTab from './ResponsesTab';
 import { SurveyAnalytics } from '/imports/features/analytics/components/admin';
 import SurveyAnalyticsTab from './analytics/SurveyAnalyticsTab';
@@ -96,15 +97,14 @@ import ThemePreview from './ThemePreview';
 import Toast from './Toast';
 
 
-// Define the steps for the survey builder
-const steps = [
+// Define the base steps for the survey builder
+const baseSteps = [
   { id: 'welcome', label: 'Survey Basics', icon: 'FiHome' },
   { id: 'questions', label: 'Questions', icon: 'FiHelpCircle' },
   // { id: 'sections', label: 'Questions', icon: 'FiLayers' },
   // { id: 'tags', label: 'Tags', icon: 'FiTag' },
   // { id: 'demographics', label: 'Demographics', icon: 'FiUsers' },
   { id: 'appearance', label: 'Appearance', icon: 'FiTag' },
-  { id: 'responses', label: 'Responses', icon: 'FiMessageSquare' },
   { id: 'analytics', label: 'Analytics', icon: 'FiPieChart' },
   // { id: 'branching', label: 'Branching Logic', icon: 'FiGitBranch' },
   // { id: 'completion', label: 'Completion', icon: 'FiCheckCircle' },
@@ -631,6 +631,13 @@ useEffect(() => {
   const [newThemeBodyFont, setNewThemeBodyFont] = useState<string>('Inter');
   const [newThemeHeaderStyle, setNewThemeHeaderStyle] = useState<string>('Solid');
 
+  // Validation modal state
+  const [showValidationModal, setShowValidationModal] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Create a ref for the validation function from SurveyQuestionsTab
+  const validationCheckRef = useRef<(() => { isValid: boolean; errors: string[] }) | null>(null);
+
   // Helper function to get total question count in a survey
   const getTotalQuestionCount = (survey: any): number => {
     if (!survey) return 0;
@@ -756,7 +763,39 @@ useEffect(() => {
     return baseScore + answerScore;
   };
 
+  // Create dynamic steps array based on survey responses
+  const steps = React.useMemo(() => {
+    const dynamicSteps = [...baseSteps];
+    
+    // Only show Responses and Analytics tabs if there are survey responses
+    if (surveyResponses.length > 0 || responseStats.totalResponses > 0) {
+      // Insert Responses tab after Appearance and before Analytics
+      const analyticsIndex = dynamicSteps.findIndex(step => step.id === 'analytics');
+      if (analyticsIndex !== -1) {
+        dynamicSteps.splice(analyticsIndex, 0, { 
+          id: 'responses', 
+          label: 'Responses', 
+          icon: 'FiMessageSquare' 
+        });
+      }
+    } else {
+      // Remove Analytics tab if there are no responses
+      const analyticsIndex = dynamicSteps.findIndex(step => step.id === 'analytics');
+      if (analyticsIndex !== -1) {
+        dynamicSteps.splice(analyticsIndex, 1);
+      }
+    }
+    return dynamicSteps;
+  }, [surveyResponses.length, responseStats.totalResponses, surveyId]);
   
+  // Handle case where user is on responses or analytics tab but they become unavailable
+  React.useEffect(() => {
+    if ((activeStep === 'responses' && !steps.some(step => step.id === 'responses')) ||
+        (activeStep === 'analytics' && !steps.some(step => step.id === 'analytics'))) {
+      // If user is on responses or analytics tab but they're no longer available, redirect to appearance
+      setActiveStep('appearance');
+    }
+  }, [activeStep, steps]);
   
   // Function to build hierarchical tag structure
   const buildTagHierarchy = (layers: Layer[]) => {
@@ -996,15 +1035,16 @@ useEffect(() => {
   const [copied, setCopied] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   // Removed showPublicUrl state as we no longer need the popup
-  
-  // Load survey responses when the responses tab is active
+
+  // Load survey responses to check if Responses tab should be shown
   useEffect(() => {
-    if (activeStep === 'responses' && surveyId) {
+    if (surveyId) {
       setIsLoadingResponses(true);
-      
+
       // Create a combined subscription for both completed and incomplete responses
       const completedSubscription = Meteor.subscribe('surveyResponses.bySurvey', surveyId);
       const incompleteSubscription = Meteor.subscribe('incompleteSurveyResponses.all');
+
       
       // Check subscription status periodically
       const checkSubscription = setInterval(() => {
@@ -1186,12 +1226,12 @@ useEffect(() => {
         }
       }, 300);
       
-      // Clean up the interval when component unmounts or step changes
+      // Clean up the interval when component unmounts or surveyId changes
       return () => {
         clearInterval(checkSubscription);
       };
     }
-  }, [activeStep, surveyId]);
+  }, [surveyId]);
 
   // Use Meteor's reactive data system to load questions and survey data
   const { isLoading, allQuestions, surveyThemes, wpsCategories } = useTracker(() => {
@@ -1854,6 +1894,19 @@ useEffect(() => {
   // Handle saving the survey
   const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
     try {
+      // Skip validation for auto-saves
+      if (!isAutoSave) {
+        // Run validation before saving
+        if (validationCheckRef.current) {
+          const validation = validationCheckRef.current();
+          if (!validation.isValid) {
+            setValidationErrors(validation.errors);
+            setShowValidationModal(true);
+            return false;
+          }
+        }
+      }
+
       // Only show saving indicator for manual saves
       if (!isAutoSave) {
         setSaving(true);
@@ -3273,6 +3326,7 @@ useEffect(() => {
                     console.log('Updated survey with order:', surveyWithOrder);
                   }}
                   onHasUnsavedChanges={setHasUnsavedChanges}
+                  onValidationCheck={validationCheckRef}
                 />
               )}
               
@@ -3744,10 +3798,17 @@ useEffect(() => {
           </div>
         )}
         
+        {/* Validation Error Modal */}
+        <ValidationErrorModal
+          isOpen={showValidationModal}
+          onClose={() => setShowValidationModal(false)}
+          errors={validationErrors}
+          title="Survey Validation Errors"
+        />
       
       </DashboardBg>
     </AdminLayout>
   );
-}
+};
 
 export default EnhancedSurveyBuilder;

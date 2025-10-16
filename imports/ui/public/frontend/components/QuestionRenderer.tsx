@@ -41,33 +41,83 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
   totalSteps,
   image,
 }) => {
-    // Memoized background color function to prevent recreation on each render
+  // Enhanced background color function with position-based and text-based mapping
   const getBackgroundColor = useMemo(() => {
-    return (text: string, isSelected: boolean) => {
+    return (text: string, isSelected: boolean, optionIndex?: number, totalOptions?: number) => {
       if (!isSelected) return '#f9f9f9';
       
       const lowerText = text.toLowerCase();
-      if (lowerText.includes('neither agree nor disagree')) return '#FFC107'; // Yellow
-      if (lowerText.includes('strongly disagree')) return '#FF5252'; // Red
-      if (lowerText.includes('disagree')) return '#FF9800'; // Orange
-      if (lowerText.includes('neutral')) return '#FFC107'; // Yellow
+      
+      // Text-based matching for standard and custom patterns
+      if (lowerText.includes('neither agree nor disagree') || 
+          lowerText.includes('neither relevant nor irrelevant') ||
+          lowerText.includes('neutral')) return '#FFC107'; // Yellow
+      if (lowerText.includes('strongly disagree') || 
+          lowerText.includes('strongly irrelevant')) return '#FF5252'; // Red
+      if (lowerText.includes('disagree') || 
+          lowerText.includes('irrelevant')) return '#FF9800'; // Orange
       if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '#8BC34A'; // Light green
-      if (lowerText.includes('strongly agree')) return '#4CAF50'; // Full green
-      return '#FFC107'; // Default
+      if (lowerText.includes('relevant') && !lowerText.includes('strongly') && !lowerText.includes('irrelevant')) return '#8BC34A'; // Light green
+      if (lowerText.includes('strongly agree') || 
+          lowerText.includes('strongly relevant')) return '#4CAF50'; // Full green
+      
+      // Fallback to position-based color mapping
+      if (optionIndex !== undefined && totalOptions !== undefined) {
+        const colorScale = ['#FF5252', '#FF9800', '#FFC107', '#8BC34A', '#4CAF50']; // Red to Green
+        const colorScale3 = ['#FF9800', '#FFC107', '#8BC34A']; // Orange to Light Green
+        const colorScale7 = ['#FF5252', '#FF7043', '#FF9800', '#FFC107', '#8BC34A', '#66BB6A', '#4CAF50']; // Extended scale
+        
+        if (totalOptions === 3) {
+          return colorScale3[optionIndex] || '#FFC107';
+        } else if (totalOptions === 7) {
+          return colorScale7[optionIndex] || '#FFC107';
+        } else {
+          // Map to 5-point scale or interpolate
+          const mappedIndex = Math.floor((optionIndex / (totalOptions - 1)) * (colorScale.length - 1));
+          return colorScale[mappedIndex] || '#FFC107';
+        }
+      }
+      
+      return '#FFC107'; // Default yellow
     };
   }, []);
 
-  // Memoized emoji function to prevent recreation on each render
+  // Enhanced emoji function with position-based and text-based mapping
   const getEmoji = useMemo(() => {
-    return (text: string) => {
+    return (text: string, optionIndex?: number, totalOptions?: number) => {
       const lowerText = text.toLowerCase();
-      if (lowerText.includes('neither agree nor disagree')) return '😶'; // Neutral face with open mouth
-      if (lowerText.includes('strongly disagree')) return '😡'; // Angry face
-      if (lowerText.includes('disagree')) return '😕'; // Confused face
-      if (lowerText.includes('neutral')) return '😶'; // Neutral face with open mouth
+      
+      // First try text-based matching for standard patterns
+      if (lowerText.includes('neither agree nor disagree') || 
+          lowerText.includes('neither relevant nor irrelevant') ||
+          lowerText.includes('neutral')) return '😶'; // Neutral face
+      if (lowerText.includes('strongly disagree') || 
+          lowerText.includes('strongly irrelevant')) return '😡'; // Angry face
+      if (lowerText.includes('disagree') || 
+          lowerText.includes('irrelevant')) return '😕'; // Confused face
       if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '😊'; // Smiling face
-      if (lowerText.includes('strongly agree')) return '🥰'; // Grinning face
-      return '😶'; // Default
+      if (lowerText.includes('relevant') && !lowerText.includes('strongly') && !lowerText.includes('irrelevant')) return '😊'; // Smiling face
+      if (lowerText.includes('strongly agree') || 
+          lowerText.includes('strongly relevant')) return '🥰'; // Grinning face
+      
+      // Fallback to position-based mapping for custom options
+      if (optionIndex !== undefined && totalOptions !== undefined) {
+        const emojiScale = ['😡', '😕', '😶', '😊', '🥰']; // 5-point scale
+        const emojiScale3 = ['😕', '😶', '😊']; // 3-point scale
+        const emojiScale7 = ['😡', '😟', '😕', '😶', '😊', '😄', '🥰']; // 7-point scale
+        
+        if (totalOptions === 3) {
+          return emojiScale3[optionIndex] || '😶';
+        } else if (totalOptions === 7) {
+          return emojiScale7[optionIndex] || '😶';
+        } else {
+          // Default 5-point scale or map to closest
+          const mappedIndex = Math.floor((optionIndex / (totalOptions - 1)) * (emojiScale.length - 1));
+          return emojiScale[mappedIndex] || '😶';
+        }
+      }
+      
+      return '😶'; // Default neutral
     };
   }, []);
 
@@ -103,10 +153,10 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
     // Original emoji-based Likert style
     return (
       <LikertContainer>
-        {options.map((option: Option) => {
+        {options.map((option: Option, index: number) => {
           const text = option.text || option.label || '';
           const isSelected = value === option.value;
-          const bgColor = getBackgroundColor(text, isSelected);
+          const bgColor = getBackgroundColor(text, isSelected, index, options.length);
           
           return (
             <CustomLikertOption 
@@ -116,7 +166,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
               bgColor={bgColor}
             >
               <LikertEmoji isSelected={isSelected}>
-                {getEmoji(text)}
+                {getEmoji(text, index, options.length)}
               </LikertEmoji>
               <OptionLabel isSelected={isSelected}>
                 {text}

@@ -173,19 +173,6 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({
     );
   };
 
-  // Filter responses based on search term
-  const filteredResponses = surveyResponses.filter(response => {
-    if (!searchTerm) return true;
-    
-    const respondentId = response.respondentId || response._id || '';
-    return respondentId.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-
-  // Get current page items
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentResponses = filteredResponses.slice(indexOfFirstItem, indexOfLastItem);
-  
   // Helper function to get question details
   const getQuestionDetails = (questionId: string, sectionId: string, surveyData: any) => {
     let questionText = 'Question not found';
@@ -262,6 +249,64 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({
     return { questionText, sectionName };
   };
 
+  // Filter responses based on search term
+  const filteredResponses = surveyResponses.filter(response => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Search in respondent ID
+    const respondentId = (response.respondentId || response._id || '').toLowerCase();
+    if (respondentId.includes(searchLower)) return true;
+    
+    // Search in response content (sections, questions, answers)
+    if (response.responses && Array.isArray(response.responses)) {
+      return response.responses.some((item: any) => {
+        // Get question and section details for this response item
+        const { questionText, sectionName } = getQuestionDetails(
+          item.questionId,
+          item.sectionId,
+          surveyData
+        );
+        
+        // Search in section name
+        if (sectionName && sectionName.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // Search in question text
+        if (questionText && questionText.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // Search in answer content
+        const answer = item.answer || '';
+        const answers = item.answers || [];
+        
+        // Search in single answer
+        if (typeof answer === 'string' && answer.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // Search in multiple answers
+        if (Array.isArray(answers)) {
+          return answers.some((ans: string) => 
+            typeof ans === 'string' && ans.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        return false;
+      });
+    }
+    
+    return false;
+  });
+
+  // Get current page items
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentResponses = filteredResponses.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
     <div className="survey-responses-container">
       {isLoadingResponses ? (
@@ -318,12 +363,13 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input 
                   type="text" 
-                  placeholder="Search responses..." 
+                  placeholder="Search by respondent ID, section, question, or answer..." 
                   style={{ 
                     padding: '8px 12px', 
                     border: '1px solid #e2e8f0', 
                     borderRadius: '6px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    width: '350px'
                   }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

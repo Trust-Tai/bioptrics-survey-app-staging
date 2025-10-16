@@ -123,7 +123,7 @@ const DraggableAnswerOption: React.FC<DraggableAnswerOptionProps> = ({
         </div>
       )}
       <div className="answer-option-content">
-        <div className="answer-option-index">{index + 1}</div>
+        {/* <div className="answer-option-index">{index + 1}</div> */}
         <input 
           type="text" 
           value={answer.text} 
