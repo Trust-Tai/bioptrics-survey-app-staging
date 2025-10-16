@@ -11,6 +11,16 @@ import { Meteor } from 'meteor/meteor';
 let Survey : any;
 let Theme : any;
 
+// Default consent text if none provided
+const defaultConsentText = `
+<p>Thank you for participating in this survey. Your participation is voluntary and you may withdraw at any time.</p>
+<p><strong>Purpose:</strong> This survey is designed to gather feedback to improve our services and workplace environment.</p>
+<p><strong>Data Collection:</strong> We will collect your responses to the survey questions. If this survey is anonymous, no personally identifiable information will be linked to your responses.</p>
+<p><strong>Data Use:</strong> Your responses will be analyzed in aggregate to identify trends and areas for improvement. Individual responses will only be viewed by authorized research personnel.</p>
+<p><strong>Confidentiality:</strong> Your responses will be kept confidential and will only be reported in aggregate form where individual responses cannot be identified.</p>
+<p><strong>Contact:</strong> If you have questions about this survey or your rights as a participant, please contact our research team.</p>
+`;
+
 const TabNavigation = styled.div`
   display: flex;
   border-bottom: 1px solid #e2e8f0;
@@ -414,6 +424,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'consent' | 'thankYou'>('branding');
   const [showRemoveLogoConfirm, setShowRemoveLogoConfirm] = useState(false);
   const [showRemoveFeaturedImageConfirm, setShowRemoveFeaturedImageConfirm] = useState(false);
+  const [showConsentPreview, setShowConsentPreview] = useState(false);
 
   // Memoized filtered and paginated themes
   const getFilteredAndPaginatedThemes = useMemo(() => {
@@ -1239,6 +1250,153 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             placeholder="I have read and understand the above information and consent to participate in this survey"
           />
         </div>
+
+        {/* Preview Button */}
+        <div style={{ marginTop: 30, marginBottom: 20 }}>
+          <button
+            onClick={() => setShowConsentPreview(!showConsentPreview)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#552a47',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.03711 12.3224C2.03711 12.3224 5.03711 5.32239 12.0371 5.32239C19.0371 5.32239 22.0371 12.3224 22.0371 12.3224C22.0371 12.3224 19.0371 19.3224 12.0371 19.3224C5.03711 19.3224 2.03711 12.3224 2.03711 12.3224Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12.0371 15.3224C13.6939 15.3224 15.0371 13.9793 15.0371 12.3224C15.0371 10.6656 13.6939 9.32239 12.0371 9.32239C10.3802 9.32239 9.03711 10.6656 9.03711 12.3224C9.03711 13.9793 10.3802 15.3224 12.0371 15.3224Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {showConsentPreview ? 'Hide Preview' : 'Show Preview'}
+          </button>
+        </div>
+
+        {/* Preview Section */}
+        {showConsentPreview && (
+          <PreviewContainer>
+            <h4 style={{ marginBottom: 12, fontSize: 16, fontWeight: 600, color: '#2d3748' }}>Preview</h4>
+            
+            {/* Simulated ConsentScreen Preview */}
+            <div style={{ 
+              backgroundColor: 'white',
+              borderRadius: 10,
+              boxShadow: '0px 0px 12px 0px rgba(0, 0, 0, 0.15)',
+              padding: '30px 40px',
+              maxWidth: 800,
+              margin: '0 auto'
+            }}>
+              
+              {/* Anonymity Notice Preview */}
+              {showAnonymityNotice && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: 'rgb(168, 221, 71)',
+                  borderRadius: 10,
+                  padding: 10,
+                  marginBottom: 20,
+                  maxWidth: 600
+                }}>
+                  <FiLock style={{ marginRight: 10 }} />
+                  <span style={{ fontSize: 14 }}>
+                    {anonymityNoticeText || "This survey is anonymous. Your responses cannot be linked back to you personally."}
+                  </span>
+                </div>
+              )}
+              
+              {/* Title Preview */}
+              <h2 style={{
+                fontSize: 32,
+                fontWeight: 600,
+                color: '#222222',
+                margin: '20px 0',
+                textAlign: 'left'
+              }}>
+                {consentTitle || 'Informed Consent'}
+              </h2>
+              
+              {/* Consent Text Preview */}
+              <div style={{
+                marginBottom: 20,
+                lineHeight: '26px',
+                color: '#333333',
+                fontSize: 16,
+                textAlign: 'left',
+                maxWidth: 600
+              }}>
+                <div dangerouslySetInnerHTML={{ 
+                  __html: consentText || defaultConsentText 
+                }} />
+              </div>
+              
+              {/* Checkbox Preview */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                margin: '20px 0',
+                paddingTop: 20,
+                borderTop: '1px solid #eee',
+                borderBottom: '1px solid #eee',
+                paddingBottom: 20
+              }}>
+                <input 
+                  type="checkbox" 
+                  style={{ marginTop: '0.25rem', marginRight: '0.75rem' }}
+                  disabled
+                />
+                <label style={{
+                  lineHeight: 1.5,
+                  color: '#666666',
+                  fontSize: 15
+                }}>
+                  {checkboxText || 'I have read and understand the above information and consent to participate in this survey'}
+                </label>
+              </div>
+              
+              {/* Footer Preview */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '100%'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span>{privacyInfoText || 'For more information, please see our'}</span>
+                  <a href="#" style={{
+                    color: '#552A47',
+                    textDecoration: 'underline',
+                    fontWeight: 600,
+                    paddingLeft: 5
+                  }}>
+                    {privacyLinkText || 'Privacy Notice'}
+                  </a>
+                </div>
+                <button style={{
+                  backgroundColor: '#552A47',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 20,
+                  padding: '10px 20px',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: 'not-allowed',
+                  opacity: 0.6
+                }}>
+                  {continueButtonText || 'Continue to Survey'}
+                </button>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: 16, fontSize: 13, color: '#718096' }}>
+              <p>This preview shows how your consent screen will appear to users before they start the survey.</p>
+            </div>
+          </PreviewContainer>
+        )}
           </div>
       </Section>
       )}
