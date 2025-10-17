@@ -1156,7 +1156,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
             {/* Save Draft button is hidden as requested */}
             
             {/* Publish Button - Saves, publishes, and closes panel */}
-            <div style={{ position: 'relative' }} title="Save, publish to question bank, and close panel">
+            <div style={{ position: 'relative' }} title="Update the question and publish it to Question Bank">
               <LoadingButton
                 onClick={context === 'surveyBuilder' ? handleSaveQuestion : handlePublishQuestion}
                 isLoading={isSubmitting}

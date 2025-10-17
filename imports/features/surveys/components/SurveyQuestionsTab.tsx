@@ -663,6 +663,39 @@ useEffect(() => {
     }
   };
 
+  // Handle real-time question removal from sections
+  const handleRemoveQuestionsFromSection = (questionIds: string[], targetSectionId: string) => {
+    console.log('Real-time removing questions:', questionIds, 'from section:', targetSectionId);
+    
+    // Remove questions from local state immediately
+    setSurveyQuestions(prev => prev.filter(q => 
+      !(questionIds.includes(q.id) && q.sectionId === targetSectionId)
+    ));
+    
+    // Update surveyOrder
+    const updatedSurveyOrder = surveyOrder.filter(item => 
+      !(item.type === 'question' && questionIds.includes(item.id) && item.sectionId === targetSectionId)
+    );
+    setSurveyOrder(updatedSurveyOrder);
+    
+    // Update survey data
+    if (survey && onSurveyUpdate) {
+      const updatedSurvey = {
+        ...survey,
+        sectionQuestions: survey.sectionQuestions?.filter((sq: any) => 
+          !(questionIds.includes(sq.id) && sq.sectionId === targetSectionId)
+        ) || [],
+        surveyOrder: updatedSurveyOrder
+      };
+      onSurveyUpdate(updatedSurvey);
+    }
+    
+    // Trigger unsaved changes
+    if (onHasUnsavedChanges) {
+      onHasUnsavedChanges(true);
+    }
+  };
+
   // Handle selecting questions from the Question Selector modal
   const handleSelectQuestions = (selectedQuestionIds: string[], sectionId: string) => {
     
@@ -1580,7 +1613,11 @@ useEffect(() => {
 
   // Handle choosing from question bank for a specific section
   const handleChooseFromQuestionBankForSection = (sectionId: string) => {
+    console.log('Opening question selector for section:', sectionId);
+    
+    // Set the current section ID for the selector
     setCurrentSectionId(sectionId);
+    
     // Open selector; it will handle its own paginated subscription
     setShowQuestionSelector(true);
   };
@@ -2243,8 +2280,11 @@ useEffect(() => {
         isOpen={showQuestionSelector}
         onClose={() => setShowQuestionSelector(false)}
         questions={questionSelectorItems}
-        selectedQuestionIds={surveyQuestions.map(q => q.id)}
+        selectedQuestionIds={currentSectionId ? getQuestionsForSection(currentSectionId).map(q => q.id) : []}
         onSelectQuestions={handleSelectQuestions}
+        onRemoveQuestions={handleRemoveQuestionsFromSection}
+        allSurveyQuestions={surveyQuestions}
+        sections={sections}
         sectionId={currentSectionId || ''}
         surveyId={surveyId}
       />

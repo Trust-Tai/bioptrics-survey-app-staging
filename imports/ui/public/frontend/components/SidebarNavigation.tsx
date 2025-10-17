@@ -25,6 +25,8 @@ interface SidebarNavigationProps {
   averageTime?: string; // Average completion time
   deferHighlighting?: boolean; // If true, don't update active section until parent confirms
   onSetActiveSection?: (callback: (sectionId: string) => void) => void; // Method to provide a callback for setting active section
+  currentQuestionNumber?: number; // Current question number across all sections
+  totalQuestions?: number; // Total number of questions in the survey
 }
 
 // Helper function to get the appropriate icon for each section
@@ -50,7 +52,9 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   surveyTitle,
   averageTime,
   deferHighlighting = false,
-  onSetActiveSection
+  onSetActiveSection,
+  currentQuestionNumber,
+  totalQuestions
 }) => {
   // Use state to track the active section
   const [activeSection, setActiveSection] = useState<string>(currentSectionId || (sections.length > 0 ? sections[0].id : ''));
@@ -152,8 +156,8 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 </SectionProgressBar>
               </SectionProgressContainer>
               
-              {section.id === activeSection && (
-                <StepIndicator>STEP {sections.findIndex(s => s.id === section.id) + 1}/{sections.length}</StepIndicator>
+              {section.id === activeSection && currentQuestionNumber && totalQuestions && (
+                <StepIndicator>Question {currentQuestionNumber} of {totalQuestions}</StepIndicator>
               )}
             </SectionItem>
           );

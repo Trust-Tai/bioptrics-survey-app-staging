@@ -485,6 +485,32 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       total: sectionQuestions.length
     };
   };
+
+  // Get current question number across all sections (for sidebar)
+  const getCurrentQuestionNumber = () => {
+    if (!currentQuestion) return 1;
+    
+    // Get all questions sorted by section order and question order
+    const allQuestions: Question[] = [];
+    
+    // Add sectioned questions in section order
+    sections.forEach(section => {
+      const sectionQuestions = questions
+        .filter(q => q.sectionId === section.id && !q.isUnsectioned)
+        .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+      allQuestions.push(...sectionQuestions);
+    });
+    
+    // Add unsectioned questions at the end
+    const unsectionedQuestions = questions
+      .filter(q => q.isUnsectioned)
+      .sort((a: Question, b: Question) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    allQuestions.push(...unsectionedQuestions);
+    
+    // Find current question index
+    const currentIndex = allQuestions.findIndex(q => q._id === currentQuestion._id);
+    return currentIndex + 1;
+  };
   
   // Determine if current question is the last one
   const isLastQuestion = () => {
@@ -638,6 +664,8 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
           currentSectionId={currentSection?.id || ''}
           progress={calculateProgress()}
           deferHighlighting={true} // Prevent automatic highlighting
+          currentQuestionNumber={getQuestionPosition().current}
+          totalQuestions={getQuestionPosition().total}
           onSetActiveSection={(callback: (sectionId: string) => void) => {
             setActiveSectionRef.current = callback;
           }}
@@ -891,16 +919,24 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
             {/* Display current question */}
             <QuestionsContainer>
               <QuestionItem>
-                <QuestionNumber>Q{getQuestionPosition().current}/{getQuestionPosition().total}</QuestionNumber>
+                <QuestionHeader>
+                  <QuestionBadge>Question {getQuestionPosition().current} of {getQuestionPosition().total}</QuestionBadge>
+                  <QuestionTitle>
+                    <QuestionTextContent 
+                      dangerouslySetInnerHTML={{ __html: currentQuestion.text }} 
+                    />
+                    {currentQuestion.required && <RequiredIndicator>*</RequiredIndicator>}
+                  </QuestionTitle>
+                </QuestionHeader>
                 <QuestionContent>
                   <QuestionRenderer
                     questionType={getQuestionType(currentQuestion)}
                     showEmojis={currentQuestion.showEmojis === false ? false : true}
-                    questionText={currentQuestion.text}
+                    questionText="" // Empty since we're showing it in the header
                     options={currentQuestion.options || []}
                     value={responses[currentQuestion._id]}
                     onChange={(value) => onAnswer(currentQuestion._id, value)}
-                    required={!!currentQuestion.required}
+                    required={false} // Handle required indicator in header
                     currentStep={getQuestionPosition().current}
                     totalSteps={getQuestionPosition().total}
                     image={currentQuestion.image || (currentQuestion.currentVersion && currentQuestion.currentVersion.image)}
@@ -973,7 +1009,7 @@ const QuestionsContainer = styled.div`
 
 const QuestionItem = styled.div`
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
   padding: 1.8rem;
   background-color: white;
   border-radius: 12px;
@@ -981,14 +1017,70 @@ const QuestionItem = styled.div`
   width: 100%;
 `;
 
-const QuestionNumber = styled.div`
-  font-weight: 600;
+const QuestionHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const QuestionBadge = styled.div`
+  background-color: #f3f4f6;
   color: #6b7280;
-  min-width: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+`;
+
+const QuestionTitle = styled.div`
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.5;
+  flex-grow: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-top: 5px;
+`;
+
+const QuestionTextContent = styled.div`
+  flex-grow: 1;
+  
+  /* Reset default paragraph margins for clean display */
+  p {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Handle other HTML elements that might be in question text */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  
+  /* Ensure proper line height and spacing */
+  * {
+    line-height: inherit;
+  }
+`;
+
+const RequiredIndicator = styled.span`
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
 `;
 
 const QuestionContent = styled.div`
-  flex-grow: 1;
+  width: 100%;
 `;
 
 const StepIndicator = styled.div`

@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FiSearch, 
   FiX, 
   FiCheck, 
   FiTag, 
-  FiPlus, 
-  FiUpload, 
   FiList, 
   FiType, 
   FiStar, 
@@ -13,24 +11,14 @@ import {
   FiChevronDown, 
   FiHelpCircle 
 } from 'react-icons/fi';
-import Select from 'react-select';
-import CreatableSelect from 'react-select/creatable';
-import { components } from 'react-select';
 import { QuestionItem } from '../../types';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Layers, Layer } from '/imports/api/layers';
-import RichTextRenderer from './RichTextRenderer';
 import { Meteor } from 'meteor/meteor';
-import { Surveys } from '../../../surveys/api/surveys';
-import TagBuilder from '../../../questions/components/admin/TagBuilder';
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
 import './QuestionSelector.css';
 
-// Interface for the callback when a new question is created
-interface QuestionCreatedCallback {
-  (questionId: string): void;
-}
 
 interface QuestionSelectorProps {
   isOpen: boolean;
@@ -39,7 +27,10 @@ interface QuestionSelectorProps {
   selectedQuestionIds: string[];
   sectionId: string;
   onSelectQuestions: (questionIds: string[], sectionId: string) => void;
+  onRemoveQuestions?: (questionIds: string[], sectionId: string) => void; // NEW: Real-time removal
   onQuestionsRefresh?: () => void; // Optional callback to refresh questions list
+  allSurveyQuestions?: QuestionItem[]; // NEW: All questions across sections for indicators
+  sections?: Array<{ id: string; name: string }>; // NEW: Section data for indicators
   surveyId?: string; // For server-side pagination
 }
 
@@ -57,7 +48,10 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   selectedQuestionIds,
   sectionId,
   onSelectQuestions,
+  onRemoveQuestions,
   onQuestionsRefresh,
+  allSurveyQuestions,
+  sections,
   surveyId,
 }) => {
   // console.log("isOpen",isOpen)
@@ -86,7 +80,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     
     // Destroy existing instances first
     dropdowns.forEach(dropdown => {
-      const tomSelectInstance = (dropdown as any).tomselect;
+      const tomSelectInstance = (dropdown as HTMLSelectElement & { tomselect?: any }).tomselect;
       if (tomSelectInstance) {
         tomSelectInstance.destroy();
       }
@@ -99,7 +93,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       
       console.log('Initializing dropdown:', dropdown.id, { isTags });
       
-      const tomSelect = new TomSelect(dropdown, {
+      const tomSelect = new TomSelect(dropdown as HTMLSelectElement, {
         plugins: ['remove_button'],
         create: false,
         sortField: { field: 'text', direction: 'asc' },
@@ -139,7 +133,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     // Cleanup function to destroy instances when component unmounts
     return () => {
       dropdowns.forEach(dropdown => {
-        const tomSelectInstance = (dropdown as any).tomselect;
+        const tomSelectInstance = (dropdown as HTMLSelectElement & { tomselect?: any }).tomselect;
         if (tomSelectInstance) {
           tomSelectInstance.destroy();
         }
@@ -147,15 +141,32 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     };
   }, []); // No need to reinitialize when selectedType changes anymore
   
-  // State for tag input and menu control
-  const [tagInputValue, setTagInputValue] = useState('');
-  const [tagMenuIsOpen, setTagMenuIsOpen] = useState(false);
   
   // State for selected question IDs (internal to this component)
   const [selectedIds, setSelectedIds] = useState<string[]>(selectedQuestionIds || []);
   
+  // Only update if the modal is opening or if there are significant changes
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  useEffect(() => {
+    if (isOpen && isInitialLoad) {
+      setSelectedIds(selectedQuestionIds || []);
+      setIsInitialLoad(false);
+    }
+  }, [isOpen, selectedQuestionIds, isInitialLoad]);
+  
+  // Reset initial load flag when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsInitialLoad(true);
+    }
+  }, [isOpen]);
+  
   // State to track if a question was just created
   const [questionSaved, setQuestionSaved] = useState(false);
+  
+  // Suppress unused variable warning for questionSaved
+  void questionSaved;
   
   // We're now using hardcoded question types in the dropdown
   // This array is kept for reference but not used in the UI
@@ -175,7 +186,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   }, [availableTypes]);
   
   // Get all available tags - using the same approach as TagBuilder
-  const { allTags, loading: tagsLoading } = useTracker(() => {
+  const { allTags } = useTracker(() => {
     const subscription = Meteor.subscribe('layers.all');
     
     // Get all layers
@@ -188,8 +199,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     // This matches the approach in TagBuilder which doesn't filter by type
     
     return {
-      allTags: rawTags,
-      loading: !subscription.ready()
+      allTags: rawTags
     };
   }, []);
   
@@ -226,9 +236,9 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Filter questions based on search term and filters
   const filteredQuestions = useMemo(() => {
-    const source = isSubReady ? Questions.find({}, { sort: { createdAt: -1 } }).fetch().map((q: any) => {
+    const source = isSubReady ? Questions.find({}, { sort: { createdAt: -1 } }).fetch().map((q: Record<string, any>) => {
       // Map to QuestionItem shape quickly
-      const latest = (q.versions && q.versions.find((v: any) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
+      const latest = (q.versions && q.versions.find((v: Record<string, any>) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
       return {
         id: q._id,
         text: (latest.questionText || '').replace(/<[^>]*>/g, ''),
@@ -286,8 +296,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       const docs = Questions.find({}, { sort: { createdAt: -1 } }).fetch();
       
       // Map to QuestionItem format
-      const mappedDocs = docs.map((q: any) => {
-        const latest = (q.versions && q.versions.find((v: any) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
+      const mappedDocs = docs.map((q: Record<string, any>) => {
+        const latest = (q.versions && q.versions.find((v: Record<string, any>) => v.version === q.currentVersion)) || (q.versions || [])[0] || {};
         return {
           id: q._id,
           text: (latest.questionText || '').replace(/<[^>]*>/g, ''),
@@ -325,12 +335,65 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     return filteredQuestions.slice(startIndex, startIndex + pageSize);
   }, [filteredQuestions, startIndex, pageSize, isSubReady, searchTerm, selectedType, selectedTags]);
   
+  // Helper function to get question's current section
+  const getQuestionSection = (questionId: string): string | null => {
+    const question = allSurveyQuestions?.find(q => q.id === questionId);
+    return question?.sectionId || null;
+  };
+  
+  // Helper function to get section name
+  const getSectionName = (sectionId: string): string => {
+    const section = sections?.find(s => s.id === sectionId);
+    return section?.name || 'Unknown Section';
+  };
+  
+  // State to track pending removals to avoid conflicts
+  const [pendingRemovals, setPendingRemovals] = useState<Set<string>>(new Set());
+  
   // Toggle question selection
   const handleToggleQuestion = (questionId: string) => {
+    const questionSection = getQuestionSection(questionId);
+    
+    // Check if question is already in a different section
+    if (questionSection && questionSection !== sectionId) {
+      console.warn(`Question already selected in ${getSectionName(questionSection)}`);
+      return; // Prevent selection
+    }
+    
+    // Check if this question is pending removal
+    if (pendingRemovals.has(questionId)) {
+      console.log('Question is pending removal, ignoring toggle');
+      return;
+    }
+    
     setSelectedIds(prev => {
-      return prev.includes(questionId)
-        ? prev.filter(id => id !== questionId)
-        : [...prev, questionId];
+      const wasSelected = prev.includes(questionId);
+      const wasPreSelected = selectedQuestionIds.includes(questionId);
+      
+      if (wasSelected) {
+        // Deselecting - only trigger real-time removal if it was pre-selected
+        if (wasPreSelected && onRemoveQuestions) {
+          // Add to pending removals to prevent conflicts
+          setPendingRemovals(current => new Set([...current, questionId]));
+          
+          // Question was removed - notify parent with debouncing
+          setTimeout(() => {
+            onRemoveQuestions([questionId], sectionId);
+            // Remove from pending after a delay
+            setTimeout(() => {
+              setPendingRemovals(current => {
+                const newSet = new Set(current);
+                newSet.delete(questionId);
+                return newSet;
+              });
+            }, 1000);
+          }, 100);
+        }
+        return prev.filter(id => id !== questionId);
+      } else {
+        // Selecting - no real-time update, just local state
+        return [...prev, questionId];
+      }
     });
   };
   
@@ -360,11 +423,11 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     if (!isOpen) return;
     // Fetch total count once per open
     if (surveyId) {
-      Meteor.call('questions.count', surveyId, (err: any, count: number) => {
+      Meteor.call('questions.count', surveyId, (err: Error | null, count: number) => {
         if (!err && typeof count === 'number') setTotalCount(count);
       });
     } else {
-      Meteor.call('questions.count', (err: any, count: number) => {
+      Meteor.call('questions.count', (err: Error | null, count: number) => {
         if (!err && typeof count === 'number') setTotalCount(count);
       });
     }
@@ -378,7 +441,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     const handle = Meteor.subscribe('questions.all', surveyId, skip, limit, {
       onReady: () => setIsSubReady(true),
       onStop: () => setIsSubReady(false),
-    } as any);
+    });
     return () => handle.stop();
   }, [isOpen, surveyId, currentPage, pageSize]);
 
@@ -422,29 +485,32 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   
   // Handle saving selected questions
   const handleSave = () => {
-    onSelectQuestions(selectedIds, sectionId);
+    // Only add newly selected questions (removals are handled real-time)
+    const newlySelectedIds = selectedIds.filter(id => !selectedQuestionIds.includes(id));
+    if (newlySelectedIds.length > 0) {
+      onSelectQuestions(newlySelectedIds, sectionId);
+    }
+    
+    // Clear pending removals and reset state
+    setPendingRemovals(new Set());
     onClose();
   };
   
-  // Handle question creation callback
-  const handleQuestionCreated = (questionId: string) => {
-    // Fetch the newly created question
-    Meteor.call('questions.getOne', questionId, (error: any, result: any) => {
-      if (error) {
-        console.error('Error fetching new question:', error);
-        return;
-      }
-      
-      // Add the new question to the selected questions
-      const newSelectedIds = [...selectedIds, questionId];
-      setSelectedIds(newSelectedIds);
-      
-      // Refresh the questions list if a callback was provided
-      if (onQuestionsRefresh) {
-        onQuestionsRefresh();
-      }
-    });
+  // Check if Add button should be disabled
+  const newSelections = selectedIds.filter(id => !selectedQuestionIds.includes(id));
+  const isAddButtonDisabled = newSelections.length === 0;
+  
+  // Get button text based on selection
+  const getAddButtonText = () => {
+    if (selectedIds.length === 0) {
+      return 'No Questions Selected';
+    }
+    if (newSelections.length === 0) {
+      return `${selectedIds.length} Already Selected`;
+    }
+    return `Add Selected (${newSelections.length})`;
   };
+  
 
   return (
     <div className="question-selector-modal" style={{
@@ -731,7 +797,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     height: '20px',
                     borderRadius: '4px',
                     border: '2px solid #cbd5e1',
-                    backgroundColor: areAllFilteredQuestionsSelected() ? '#4a2d4e' : '#ffffff',
+                    backgroundColor: areAllFilteredQuestionsSelected() ? '#552a47' : '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -739,7 +805,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                     marginRight: '12px'
                   }}
                 >
-                  {areAllFilteredQuestionsSelected() && <FiCheck size={14} color="white" />}
+                  {areAllFilteredQuestionsSelected() && <FiCheck size={14} color="#ffffff" />}
                 </div>
                 <span style={{ fontSize: '14px', color: '#475569' }}>
                   Select All (page {currentPage} of {totalPages})
@@ -756,7 +822,12 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 padding: '16px 24px 0', /* Added top padding for spacing */
               }}>
                 {currentPageQuestions.length > 0 ? (
-                  currentPageQuestions.map((question) => (
+                  currentPageQuestions.map((question) => {
+                    const currentSection = getQuestionSection(question.id);
+                    const isInDifferentSection = currentSection && currentSection !== sectionId;
+                    const isSelected = selectedIds.includes(question.id || '');
+                    
+                    return (
                     <div 
                       key={question.id} 
                       className="question-item" 
@@ -766,46 +837,55 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: '12px',
-                        cursor: 'pointer',
-                        backgroundColor: selectedIds.includes(question.id || '') ? 'rgba(74, 45, 78, 0.05)' : 'transparent',
-                        transition: 'background-color 0.2s ease'
+                        cursor: isInDifferentSection ? 'not-allowed' : 'pointer',
+                        backgroundColor: isSelected 
+                          ? 'rgba(85, 42, 71, 0.05)' 
+                          : isInDifferentSection 
+                            ? 'rgba(85, 42, 71, 0.03)'
+                            : 'transparent',
+                        opacity: isInDifferentSection ? 0.8 : 1,
+                        transition: 'all 0.2s ease'
                       }}
                       onClick={() => {
-                        handleToggleQuestion(question.id || '');
+                        if (!isInDifferentSection) {
+                          handleToggleQuestion(question.id || '');
+                        }
                       }}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          handleToggleQuestion(question.id);
+                          if (!isInDifferentSection) {
+                            handleToggleQuestion(question.id);
+                          }
                         }
                       }}
                     >
                       <div className="question-checkbox" style={{
                         marginTop: '4px'
                       }}>
-                        {selectedIds.includes(question.id) ? (
+                        {isSelected ? (
                           <div className="custom-checkbox checkbox-checked" style={{
                             width: '20px',
                             height: '20px',
                             borderRadius: '4px',
-                            backgroundColor: '#4a2d4e',
+                            backgroundColor: '#552a47',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            cursor: 'pointer'
+                            cursor: isInDifferentSection ? 'not-allowed' : 'pointer'
                           }}>
-                            <FiCheck size={14} color="white" />
+                            <FiCheck size={14} color="#ffffff" />
                           </div>
                         ) : (
                           <div className="custom-checkbox checkbox-unchecked" style={{
                             width: '20px',
                             height: '20px',
                             borderRadius: '4px',
-                            border: '2px solid #cbd5e1',
+                            border: `2px solid ${isInDifferentSection ? '#552a47' : '#cbd5e1'}`,
                             backgroundColor: '#ffffff',
-                            cursor: 'pointer'
+                            cursor: isInDifferentSection ? 'not-allowed' : 'pointer'
                           }} />
                         )}
                       </div>
@@ -813,12 +893,14 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                         flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '6px'
+                        gap: '6px',
+                        position: 'relative'
                       }}>
                         <div className="question-title" style={{
                           fontSize: '15px',
                           fontWeight: 500,
-                          color: '#334155'
+                          color: '#334155',
+                          paddingRight: isInDifferentSection ? '120px' : '0'
                         }}>
                           {question.text || 'Untitled Question'}
                         </div>
@@ -892,9 +974,30 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                             }
                           })()}
                         </div>
+                        
+                        {/* Section indicator - positioned as a badge */}
+                        {isInDifferentSection && (
+                          <div className="section-indicator" style={{
+                            position: 'absolute',
+                            top: '0',
+                            right: '0',
+                            fontSize: '11px',
+                            color: '#ffffff',
+                            backgroundColor: '#552a47',
+                            padding: '3px 6px',
+                            borderRadius: '12px',
+                            border: '1px solid #552a47',
+                            whiteSpace: 'nowrap',
+                            zIndex: 1,
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}>
+                            In {getSectionName(currentSection)}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 ) : (
                   <div className="no-questions" style={{
                     display: 'flex',
@@ -908,7 +1011,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                   }}>
                     <FiSearch size={40} />
                     <h3>No Questions Found</h3>
-                    <p>Try adjusting your filters or search terms to find what you're looking for.</p>
+                    <p>Try adjusting your filters or search terms to find what you&apos;re looking for.</p>
                   </div>
                 )}
               </div>
@@ -965,8 +1068,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                       style={{
                         padding: '6px 10px',
                         borderRadius: '6px',
-                        border: pageNum === currentPage ? '1px solid #4a2d4e' : '1px solid #e2e8f0',
-                        backgroundColor: pageNum === currentPage ? '#4a2d4e' : '#ffffff',
+                        border: pageNum === currentPage ? '1px solid #552a47' : '1px solid #e2e8f0',
+                        backgroundColor: pageNum === currentPage ? '#552a47' : '#ffffff',
                         color: pageNum === currentPage ? '#ffffff' : '#475569',
                         cursor: 'pointer',
                         minWidth: 34,
@@ -1006,7 +1109,7 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
               }}>
                 <button 
                   className="cancel-button"
-                  onClick={(e) => {
+                  onClick={() => {
                     // Only close if we're not in the middle of creating a question
                     if (!questionSaved) {
                       onClose();
@@ -1032,20 +1135,22 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 <button 
                   className="select-button"
                   onClick={handleSave}
+                  disabled={isAddButtonDisabled}
                   aria-label="Select questions"
                   style={{
                     padding: '10px 20px',
-                    backgroundColor: '#4a2d4e',
+                    backgroundColor: isAddButtonDisabled ? '#94a3b8' : '#552a47',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '6px',
                     fontWeight: 500,
-                    cursor: 'pointer',
+                    cursor: isAddButtonDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    boxShadow: isAddButtonDisabled ? 'none' : '0 2px 4px rgba(0,0,0,0.1)',
+                    opacity: isAddButtonDisabled ? 0.6 : 1
                   }}
                 >
-                  Add Selected ({selectedIds.length})
+                  {getAddButtonText()}
                 </button>
               </div>
           </div>
