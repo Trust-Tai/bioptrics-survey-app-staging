@@ -242,6 +242,16 @@ type SortField = 'title' | 'status' | 'tags' | 'createdBy' | 'updatedAt' | null;
 // Define type for sort direction
 type SortDirection = 'asc' | 'desc';
 
+// Status display mapping utility function
+const getStatusDisplayLabel = (status: string): string => {
+  const statusMapping = {
+    'active': 'Published',
+    'inactive': 'Disabled', 
+    'draft': 'Draft'
+  };
+  return statusMapping[status.toLowerCase()] || status;
+};
+
 // SurveyTags component to display tags with "more" indicator
 interface SurveyTagsProps {
   tagIds?: string[];
@@ -637,7 +647,7 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                 </div>
               </TableCell>
               <TableCell>
-                <StatusBadge status={status}>{status}</StatusBadge>
+                <StatusBadge status={status}>{getStatusDisplayLabel(status)}</StatusBadge>
               </TableCell>
               <TableCell>
                 {updatedDate}
@@ -942,23 +952,27 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                             </button>
                           )}
 
-                          {/* Set Inactive option - only show for active surveys */}
+                          {/* Set Disabled option - only show for active surveys */}
                           {survey.status === 'active' && onStatusChange && (
                             <button
                               style={{
                                 display: 'block',
                                 width: '100%',
-                                padding: '10px 16px',
-                                textAlign: 'left',
+                                padding: '8px 12px',
                                 border: 'none',
                                 background: 'none',
+                                textAlign: 'left',
                                 cursor: 'pointer',
                                 fontSize: '14px',
+                                color: '#333',
+                                borderRadius: '4px',
                                 transition: 'background-color 0.2s',
-                                color: '#d32f2f',
+                                ':hover': {
+                                  backgroundColor: '#f5f5f5'
+                                }
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                                e.currentTarget.style.backgroundColor = '#f5f5f5';
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
@@ -966,15 +980,15 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                safelyExecuteAction(onStatusChange, 'Set Inactive', survey._id, survey.title, 'inactive');
+                                safelyExecuteAction(onStatusChange, 'Set Disabled', survey._id, survey.title, 'inactive');
                               }}
                               data-no-navigate="true"
                             >
-                              <FaToggleOff style={{ marginRight: '8px' }} /> Set Inactive
+                              <FaToggleOff style={{ marginRight: '8px' }} /> Set Disabled
                             </button>
                           )}
                           
-                          {/* Set Active option - only show for inactive surveys */}
+                          {/* Set Published option - only show for inactive surveys */}
                           {survey.status === 'inactive' && onStatusChange && (
                             <button
                               style={{
@@ -998,11 +1012,11 @@ const SurveyListView: React.FC<SurveyListViewProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                safelyExecuteAction(onStatusChange, 'Set Active', survey._id, survey.title, 'active');
+                                safelyExecuteAction(onStatusChange, 'Set Published', survey._id, survey.title, 'active');
                               }}
                               data-no-navigate="true"
                             >
-                              <FaToggleOn style={{ marginRight: '8px' }} /> Set Active
+                              <FaToggleOn style={{ marginRight: '8px' }} /> Set Published
                             </button>
                           )}
                           

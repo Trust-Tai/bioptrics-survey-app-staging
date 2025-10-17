@@ -841,9 +841,10 @@ const AllSurveys: React.FC = () => {
           message: `Error changing survey status: ${err.reason || err.message || 'Unknown error'}` 
         });
       } else {
+        const statusDisplayLabel = newStatus === 'active' ? 'published' : newStatus === 'inactive' ? 'disabled' : newStatus;
         setNotification({ 
           type: 'success', 
-          message: `Survey "${title}" has been set to ${newStatus}` 
+          message: `Survey "${title}" has been set to ${statusDisplayLabel}` 
         });
       }
     });
@@ -986,10 +987,20 @@ const AllSurveys: React.FC = () => {
   // Status filter options
   const statusOptions = [
     { value: 'all', label: 'All Status' },
-    { value: 'active', label: 'Active' },
+    { value: 'active', label: 'Published' },
     { value: 'draft', label: 'Draft' },
-    { value: 'inactive', label: 'Inactive' }
+    { value: 'inactive', label: 'Disabled' }
   ];
+
+  // Status display mapping utility function
+  const getStatusDisplayLabel = (status: string): string => {
+    const statusMapping = {
+      'active': 'Published',
+      'inactive': 'Disabled', 
+      'draft': 'Draft'
+    };
+    return statusMapping[status.toLowerCase()] || status;
+  };
   
   // Created by filter options
   const createdByOptions = [
@@ -1265,8 +1276,8 @@ const AllSurveys: React.FC = () => {
         <ConfirmationModal
           isOpen={statusConfirmModal.isOpen}
           title="Change Survey Status"
-          message={`Are you sure you want to set "${statusConfirmModal.surveyTitle}" as inactive? It will no longer be accessible to respondents.`}
-          confirmText="Set Inactive"
+          message={`Are you sure you want to set "${statusConfirmModal.surveyTitle}" as disabled? It will no longer be accessible to respondents.`}
+          confirmText="Set Disabled"
           cancelText="Cancel"
           type="warning"
           icon={<FaToggleOff />}
@@ -1470,7 +1481,7 @@ const AllSurveys: React.FC = () => {
                   >
                     <CardHeader>
                       <StatusBadge status={s.status || (s.published ? 'active' : 'draft')}>
-                        {s.status ? s.status.charAt(0).toUpperCase() + s.status.slice(1) : (s.published ? 'Active' : 'Draft')}
+                        {s.status ? getStatusDisplayLabel(s.status) : (s.published ? 'Published' : 'Draft')}
                       </StatusBadge>
                       <DropdownContainer ref={openDropdown === s._id ? dropdownRef : null}>
                         <DropdownButton
@@ -1664,39 +1675,7 @@ const AllSurveys: React.FC = () => {
                               Preview
                             </button>
                             
-                            {/* Set Inactive option - only show for active surveys */}
-                            {s.status === 'active' && (
-                              <button
-                                style={{
-                                  display: 'block',
-                                  width: '100%',
-                                  padding: '10px 16px',
-                                  textAlign: 'left',
-                                  border: 'none',
-                                  background: 'none',
-                                  cursor: 'pointer',
-                                  fontSize: '14px',
-                                  transition: 'background-color 0.2s',
-                                  color: '#d32f2f',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  handleStatusChange(s._id, s.title, 'inactive');
-                                  setOpenDropdown(null);
-                                }}
-                              >
-                                <FaToggleOff style={{ marginRight: '8px' }} /> Set Inactive
-                              </button>
-                            )}
-                            
-                            {/* Set Active option - only show for inactive surveys */}
+                            {/* Set Published option - only show for inactive surveys */}
                             {s.status === 'inactive' && (
                               <button
                                 style={{
@@ -1708,8 +1687,9 @@ const AllSurveys: React.FC = () => {
                                   background: 'none',
                                   cursor: 'pointer',
                                   fontSize: '14px',
-                                  transition: 'background-color 0.2s',
-                                  color: '#0a8043',
+                                  color: '#333',
+                                  borderRadius: '4px',
+                                  transition: 'background-color 0.2s'
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.backgroundColor = 'rgba(10, 128, 67, 0.1)';
@@ -1717,14 +1697,43 @@ const AllSurveys: React.FC = () => {
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.backgroundColor = 'transparent';
                                 }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
+                                onClick={() => {
                                   handleStatusChange(s._id, s.title, 'active');
                                   setOpenDropdown(null);
                                 }}
                               >
-                                <FaToggleOn style={{ marginRight: '8px' }} /> Set Active
+                                <FaToggleOn style={{ marginRight: '8px' }} /> Set Published
+                              </button>
+                            )}
+                            
+                            {/* Set Disabled option - only show for active surveys */}
+                            {s.status === 'active' && (
+                              <button
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '8px 12px',
+                                  border: 'none',
+                                  background: 'none',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  color: '#333',
+                                  borderRadius: '4px',
+                                  transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f5f5f5';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onClick={() => {
+                                  handleStatusChange(s._id, s.title, 'inactive');
+                                  setOpenDropdown(null);
+                                }}
+                              >
+                                <FaToggleOff style={{ marginRight: '8px' }} /> Set Disabled
                               </button>
                             )}
                             {s.status !== 'inactive' && (
