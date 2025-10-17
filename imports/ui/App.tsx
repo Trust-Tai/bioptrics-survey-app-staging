@@ -63,6 +63,7 @@ import Subscription from '../pages/admin/Subscription';
 import WpsBuilderPage from './admin/WpsBuilderPage';
 import MigrationPanel from './admin/MigrationPanel';
 import ConsentScreenTest from './public/frontend/components/ConsentScreenTest';
+import { NewAdminDashboard } from './admin/dashboard';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -179,6 +180,8 @@ const AppRoutes: React.FC = () => {
       <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/surveys/all')} />} />
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/questions')} />} />
       <Route element={<RequireAdminAuth />}>
+         {/* Dashboard Route */}
+         <Route path="/admin/dashboard" element={<NewAdminDashboard />} />
          {/* Redirect from /admin/surveys to /admin/surveys/all */}
          <Route path="/admin/surveys" element={<Navigate to="/admin/surveys/all" replace />} />
          <Route path="/admin/surveys/goals" element={<SurveyGoalsPage />} />
