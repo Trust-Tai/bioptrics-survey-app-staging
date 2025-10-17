@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { FiSave, FiShare2 } from 'react-icons/fi';
+import { FiSave, FiShare2, FiCheck } from 'react-icons/fi';
 import SurveyShareModal from '../../../components/SurveyShareModal';
 
 // Styled components
@@ -167,6 +167,39 @@ const SaveButtonGroup = styled.div`
   }
 `;
 
+const PublishedButton = styled.button`
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: none;
+  background-color: #552a47;
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(85, 42, 71, 0.3);
+
+  &:hover {
+    background-color: #6a3559;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(85, 42, 71, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+`;
+
 const DropdownContainer = styled.div`
   position: relative;
 `;
@@ -238,7 +271,7 @@ interface SurveyHeaderSectionProps {
   setCopied: (copied: boolean) => void;
   showSuccessAlert: (message: string) => void;
   showErrorAlert: (message: string) => void;
-  handleSaveSurvey: (isAutoSave: boolean) => void;
+  handleSaveSurvey: (isAutoSave: boolean) => Promise<boolean>;
   handleGeneratePublicUrl: () => void;
 }
 
@@ -442,60 +475,84 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
               </>
             ) : null}
           </SaveIndicator>
-          <SaveButtonGroup 
-            ref={dropdownRef}
-            className="save-button-group"
-            style={{
-              boxShadow: '0 2px 4px rgba(85, 42, 71, 0.3)',
-              borderRadius: '8px'
-            }}
-          >
-            <SaveButtonMain onClick={() => handleSaveSurvey(false)} disabled={saving}>
-              <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
-            </SaveButtonMain>
-            <SaveButtonDropdown 
-              onClick={() => setShowActionDropdown(!showActionDropdown)} 
-              disabled={saving}
+          
+          {/* Conditional rendering: Show Published button if published, otherwise show Save button */}
+          {isPublished ? (
+            <PublishedButton onClick={async () => {
+              try {
+                // Save first and check if successful
+                const saveSuccess = await handleSaveSurvey(false);
+                
+                if (saveSuccess) {
+                  // Only publish if save was successful
+                  handleGeneratePublicUrl();
+                } else {
+                  // Don't publish if save failed (validation errors shown by parent)
+                  console.log('Save failed - skipping publish');
+                }
+              } catch (error) {
+                console.error('Error during save:', error);
+                showErrorAlert('Failed to save survey. Please try again.');
+              }
+            }}>
+              <FiSave style={{ fontSize: '16px' }} /> Published
+            </PublishedButton>
+          ) : (
+            <SaveButtonGroup 
+              ref={dropdownRef}
+              className="save-button-group"
+              style={{
+                boxShadow: '0 2px 4px rgba(85, 42, 71, 0.3)',
+                borderRadius: '8px'
+              }}
             >
-              <svg 
-                width="12" 
-                height="12" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
+              <SaveButtonMain onClick={() => handleSaveSurvey(false)} disabled={saving}>
+                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
+              </SaveButtonMain>
+              <SaveButtonDropdown 
+                onClick={() => setShowActionDropdown(!showActionDropdown)} 
+                disabled={saving}
               >
-                <path 
-                  d="M6 9l6 6 6-6" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </SaveButtonDropdown>
-            {showActionDropdown && (
-              <DropdownMenu>
-                <DropdownItem
-                  onClick={() => {
-                    setShowActionDropdown(false);
-                    handleGeneratePublicUrl();
-                  }}
-                  disabled={!survey?._id}
+                <svg 
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  {isPublished ? 'Publish Again' : 'Publish'}
-                </DropdownItem>
-                <DropdownItem
-                  onClick={() => {
-                    setShowActionDropdown(false);
-                    handleSaveSurvey(false);
-                  }}
-                  disabled={saving}
-                >
-                  Save as Draft
-                </DropdownItem>
-              </DropdownMenu>
-            )}
-          </SaveButtonGroup>
+                  <path 
+                    d="M6 9l6 6 6-6" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </SaveButtonDropdown>
+              {showActionDropdown && (
+                <DropdownMenu>
+                  <DropdownItem
+                    onClick={() => {
+                      setShowActionDropdown(false);
+                      handleGeneratePublicUrl();
+                    }}
+                    disabled={!survey?._id}
+                  >
+                    {isPublished ? 'Publish Again' : 'Publish'}
+                  </DropdownItem>
+                  <DropdownItem
+                    onClick={() => {
+                      setShowActionDropdown(false);
+                      handleSaveSurvey(false);
+                    }}
+                    disabled={saving}
+                  >
+                    Save as Draft
+                  </DropdownItem>
+                </DropdownMenu>
+              )}
+            </SaveButtonGroup>
+          )}
           <SaveButton 
             onClick={() => setShowShareModal(true)} 
             disabled={!survey?._id}
