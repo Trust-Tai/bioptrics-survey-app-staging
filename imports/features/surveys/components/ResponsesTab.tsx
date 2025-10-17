@@ -442,7 +442,6 @@ const ResponsesTab: React.FC<ResponsesTabProps> = ({
                             <>
                               <div style={{ marginBottom: '16px', fontSize: '14px', color: '#64748b', fontWeight: 500, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>Showing {response.responses.length} answers</span>
-                                <span style={{ fontSize: '13px', color: '#94a3b8' }}>3-column view</span>
                               </div>
                               <ResponseGrid>
                                 {response.responses.map((item: any, idx: number) => {

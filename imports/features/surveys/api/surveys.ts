@@ -690,11 +690,11 @@ Meteor.methods({
         siteTextQuestions: importData.siteTextQuestions || [],
         siteTextQForm: importData.siteTextQForm || {},
         selectedDemographics: importData.selectedDemographics || [],
-        published: false,
+        published: true,
         createdAt: now,
         updatedAt: now,
         createdBy: this.userId,
-        status: 'draft',
+        status: 'active',
         // Initialize optional fields
         surveySections: [],
         sectionQuestions: [],
@@ -1300,14 +1300,48 @@ Meteor.methods({
       
       try {
         // Add required fields for a valid survey
-        surveyDoc.published = false;
+        surveyDoc.published = true;
         surveyDoc.createdAt = now;
         surveyDoc.updatedAt = now;
         surveyDoc.createdBy = this.userId;
         
-        // Insert the survey as a draft
+        // Insert the survey as published
         console.log('Inserting survey document:', JSON.stringify(surveyDoc));
         const _id = await Surveys.insertAsync(surveyDoc);
+        
+        // Generate public URL for the imported survey since it's marked as published
+        let publicUrl = null;
+        try {
+          console.log('Generating public URL for imported survey:', _id);
+          
+          // Call the existing makePublic method to generate shareToken
+          const updatedSurvey = await Meteor.callAsync('surveys.makePublic', _id);
+          
+          if (updatedSurvey) {
+            try {
+              // Generate encrypted token for the survey
+              const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', _id);
+              
+              // Create public URL using encrypted token
+              const baseUrl = Meteor.absoluteUrl();
+              publicUrl = `${baseUrl}public/${encryptedToken}`;
+              
+              console.log(`Generated public URL for imported survey: ${publicUrl}`);
+            } catch (tokenError: any) {
+              console.error('Error generating encrypted token, falling back to shareToken:', tokenError);
+              
+              // Fallback to shareToken if encryption fails
+              if (updatedSurvey.shareToken) {
+                const baseUrl = Meteor.absoluteUrl();
+                publicUrl = `${baseUrl}public/${updatedSurvey.shareToken}`;
+                console.log(`Generated fallback public URL: ${publicUrl}`);
+              }
+            }
+          }
+        } catch (urlError: any) {
+          console.error('Error generating public URL for imported survey:', urlError);
+          // Continue with import even if URL generation fails
+        }
         
         // Process collaborators if they exist in the import data
         if (importData.collaborators && Array.isArray(importData.collaborators) && importData.collaborators.length > 0) {
@@ -1386,7 +1420,24 @@ Meteor.methods({
         }
         
         console.log('Survey imported successfully with ID:', _id);
-        return { _id, success: true, message: 'Survey imported successfully!' };
+        
+        // Return success response with public URL if generated
+        if (publicUrl) {
+          return { 
+            _id, 
+            success: true, 
+            message: 'Survey imported and published successfully!',
+            publicUrl: publicUrl,
+            published: true
+          };
+        } else {
+          return { 
+            _id, 
+            success: true, 
+            message: 'Survey imported successfully! (Public URL generation failed)',
+            published: false
+          };
+        }
       } catch (error: any) {
         console.error('Error importing survey:', error);
         

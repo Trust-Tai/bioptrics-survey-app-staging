@@ -3141,13 +3141,6 @@ useEffect(() => {
     <AdminLayout>
       <DashboardBg>
         <div className="survey-builder-container">
-          {/* Alert message */}
-          {alert && (
-            <div className={`alert alert-${alert.type}`}>
-              {alert.message}
-            </div>
-          )}
-          
           {/* Header */}
           <SurveyHeaderSection
             survey={survey}
