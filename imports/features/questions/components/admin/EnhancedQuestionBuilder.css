@@ -470,6 +470,10 @@ body.panel-open {
   scrollbar-width: thin;
 }
 
+.react-tabs__tab-list.question-builder-tab-list {
+  scrollbar-width: none;
+}
+
 .react-tabs__tab {
   list-style: none;
   padding: 14px 24px;
@@ -491,22 +495,20 @@ body.panel-open {
   color: var(--color-primary);
 }
 
+/* Disable default react-tabs selected tab styles */
+.react-tabs__tab--selected::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Implement new custom selected tab styles */
 .react-tabs__tab--selected {
   color: var(--color-primary);
   background: var(--color-background);
   border-bottom: 3px solid var(--color-primary);
   box-shadow: 0 4px 6px -6px rgba(0, 0, 0, 0.1);
-}
-
-.react-tabs__tab--selected::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 3px 3px 0 0;
 }
 
 .tab-content {
