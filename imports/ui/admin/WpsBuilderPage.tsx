@@ -11,7 +11,7 @@ import { useTheme } from '/imports/contexts/ThemeContext';
 // Centralized zones
 const ZONES = [
   { id: 'SZN-1', label: 'Built Environment' },
-  { id: 'SZN-2', label: 'Equity' },
+  { id: 'SZN-2', label: 'Knowledge Equity' },
   { id: 'SZN-3', label: 'Well-Being' },
   { id: 'SZN-4', label: 'Behavior' },
   { id: 'SZN-5', label: 'Workplace' },
@@ -92,6 +92,49 @@ const TOOLTIP_CSS = `
     border-right: 8px solid transparent;
     border-top: 10px solid #fff;
     margin-top: -1px;
+  }
+`;
+
+// Responsive CSS specifically for zone buttons layout
+const RESPONSIVE_ZONE_CSS = `
+  /* Zone buttons responsive layout */
+  .wps-zone-filters { flex-wrap: wrap; }
+  .wps-zone-filters .wps-zone-item { position: relative; }
+  .wps-zone-filters .wps-zone-btn { min-width: 130px; padding:.65rem .85rem; line-height:1.1; font-weight:600; }
+  .wps-zone-filters .wps-zone-btn.btn-outline-primary { --bs-btn-color:#6c47b6; }
+  .wps-zone-filters .wps-zone-btn.btn-primary { background:#542A46; border-color:#542A46; }
+  .wps-zone-filters .wps-zone-btn.btn-primary:hover, .wps-zone-filters .wps-zone-btn.btn-primary:focus { background:#5d334f; border-color:#5d334f; }
+  .wps-zone-filters .wps-zone-btn:focus { box-shadow:0 0 0 .15rem rgba(108,71,182,.35); }
+  @media (max-width: 1199.98px) { /* lg breakpoint */
+    .wps-zone-filters { gap: .75rem; }
+    .wps-zone-filters .wps-zone-btn { min-width: 125px; }
+  }
+  @media (max-width: 991.98px) { /* md */
+    .wps-zone-filters { gap: .65rem; }
+    .wps-zone-filters .wps-zone-btn { flex: 1 1 calc(50% - .65rem); min-width: 0; }
+  }
+  @media (max-width: 767.98px) { /* sm */
+    .wps-zone-filters { gap: .5rem; }
+    .wps-zone-filters .wps-zone-btn { flex: 1 1 calc(50% - .5rem); padding: .7rem .65rem; font-size: .85rem; }
+  }
+  @media (max-width: 575.98px) { /* xs */
+    .wps-zone-filters { gap: .5rem; }
+    .wps-zone-filters .wps-zone-btn { flex: 1 1 100%; font-size: .85rem; }
+    .wps-zone-filters-counter { width: 100%; margin-top: .25rem; justify-content: flex-start !important; border-left: none !important; padding-left: 0 !important; }
+  }
+  /* Action panel styling */
+  .wps-action-panel { display:flex; flex-direction:column; align-items:stretch; gap:.65rem; background:#fff; padding:.75rem .9rem .9rem; border:1px solid #e2dff0; border-radius:.75rem; box-shadow:0 2px 6px rgba(40,20,70,.06); min-width:260px; }
+  .wps-action-panel .btn { font-weight:600; }
+  .wps-action-panel-row { display:flex; gap:.5rem; }
+  .wps-indicator-pill { background:#fdfdfe; color:#6c757d; font-size:16px; padding:0; border-radius:.375rem; display:flex; align-items:stretch; gap:0; cursor:pointer; font-weight:600; letter-spacing:.25px; width:100%; justify-content:center; border:1px solid #6c757d; transition:background-color .18s ease, box-shadow .18s ease, border-color .18s ease; text-align:center; overflow:hidden; }
+  .wps-indicator-pill .label { padding:.6rem .9rem; display:inline-flex; align-items:center; }
+  .wps-indicator-pill:hover { background:#f5f6f8; }
+  .wps-indicator-pill:hover { background:#f3eef7; }
+  .wps-indicator-pill:focus { outline:2px solid #bca3ec; outline-offset:2px; }
+  .wps-indicator-pill .count { color:#fff; padding:.3rem .6rem; border-radius:.35rem; font-size:.9rem; line-height:1; font-weight:700; min-width:2.3rem; text-align:center; box-shadow:0 1px 2px rgba(0,0,0,.12); display:inline-flex; align-items:center; justify-content:center; margin:.3rem; }
+  @media (max-width: 767.98px) { /* stack action panel */
+    .wps-action-panel { flex-direction:row; flex-wrap:wrap; align-items:center; padding:.75rem; }
+    .wps-action-panel-row { flex:1 1 100%; }
   }
 `;
 
@@ -348,59 +391,22 @@ const WpsBuilderPage: React.FC = () => {
 
   // Render helpers to keep return minimal
   const renderZoneFilters = () => (
-    <div className="d-flex gap-2 align-items-center">
+    <div className="d-flex wps-zone-filters gap-2 align-items-center">
       {ZONES.map(({ id, label }) => (
-        <div key={id} style={STYLES.zoneWrapper}>
+        <div key={id} className="wps-zone-item" style={STYLES.zoneWrapper}>
           <Button
             variant={activeFilter === id ? 'primary' : 'outline-primary'}
             id={id}
             onClick={handleButtonClick}
             active={activeFilter === id}
             style={STYLES.zoneButtonPos}
+            className="wps-zone-btn"
           >
             {label}
           </Button>
             {sznCounts[id] > 0 && <span style={STYLES.zoneBadge}>{sznCounts[id]}</span>}
         </div>
       ))}
-      {/* Total selected indicators counter */}
-      <div className="d-flex align-items-center ms-2 ps-3" style={{ borderLeft: '1px solid #ddd', lineHeight: 1 }}>
-        <div
-          ref={counterTooltipRef}
-          className="d-inline-flex align-items-baseline"
-          style={{
-            color: selectionCountColor,
-            textDecoration: 'underline dotted',
-            cursor: 'pointer',
-            transition: 'color 160ms linear'
-          }}
-          onClick={() => setShowCounterTooltip(v => !v)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCounterTooltip(v => !v); }
-            if (e.key === 'Escape') { setShowCounterTooltip(false); }
-          }}
-          tabIndex={0}
-          role="button"
-          aria-haspopup="dialog"
-          aria-expanded={showCounterTooltip}
-          aria-label={counterTooltipText}
-        >
-          <span>Selected Indicators:&nbsp;</span>
-          <span className="fw-bold">{selectedIndicatorCount}</span>
-        </div>
-        <Overlay
-          target={counterTooltipRef.current}
-          show={showCounterTooltip}
-          placement="bottom"
-          rootClose
-          onHide={() => setShowCounterTooltip(false)}
-        >
-          <Tooltip id="tooltip-selected-indicators" style={STYLES.tooltipBox}>
-            <div style={{ fontWeight: 600, color: '#6c47b6', marginBottom: 4 }}>Guidance</div>
-            <div>{counterTooltipMarkup}</div>
-          </Tooltip>
-        </Overlay>
-      </div>
     </div>
   );
 
@@ -506,7 +512,7 @@ const WpsBuilderPage: React.FC = () => {
 
   return (
     <>
-      <style>{TOOLTIP_CSS}</style>
+  <style>{TOOLTIP_CSS + RESPONSIVE_ZONE_CSS}</style>
       <AdminLayout>
         {/* Indicator Details Modal */}
         <IndicatorDetailsModal
@@ -529,13 +535,47 @@ const WpsBuilderPage: React.FC = () => {
         <Row className="mb-4">
           <Col className="d-flex gap-2 justify-content-between align-items-center">
             {renderZoneFilters()}
-            <div className="d-flex gap-2 ms-auto">
-              <Button variant="outline-secondary" onClick={() => setSelectedWPSIDs([])}>
-                Clear Selected
-              </Button>
-              <Button variant="dark" onClick={handleBuildClick}>
-                Build
-              </Button>
+            <div className="wps-action-panel ms-auto">
+              <div className="wps-action-panel-row">
+                <Button variant="outline-secondary" onClick={() => setSelectedWPSIDs([])} className="flex-fill">
+                  Clear
+                </Button>
+                <Button variant="dark" onClick={handleBuildClick} className="flex-fill">
+                  Build
+                </Button>
+              </div>
+              <div style={{ lineHeight: 1 }}>
+                <div
+                  ref={counterTooltipRef}
+                  className="wps-indicator-pill"
+                  style={{ background:'#fff', border:'1px solid #6c757d', textDecoration:'none', width:'100%' }}
+                  onClick={() => setShowCounterTooltip(v => !v)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCounterTooltip(v => !v); }
+                    if (e.key === 'Escape') { setShowCounterTooltip(false); }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={showCounterTooltip}
+                  aria-label={counterTooltipText}
+                >
+                  <span className="label" style={{ fontWeight:600, color:'#6c757d' }}>Indicators</span>
+                  <span className="count" style={{ background: selectionCountColor }}>{selectedIndicatorCount}</span>
+                </div>
+                <Overlay
+                  target={counterTooltipRef.current}
+                  show={showCounterTooltip}
+                  placement="bottom"
+                  rootClose
+                  onHide={() => setShowCounterTooltip(false)}
+                >
+                  <Tooltip id="tooltip-selected-indicators" style={STYLES.tooltipBox}>
+                    <div style={{ fontWeight: 600, color: '#6c47b6', marginBottom: 4 }}>Guidance</div>
+                    <div>{counterTooltipMarkup}</div>
+                  </Tooltip>
+                </Overlay>
+              </div>
             </div>
           </Col>
         </Row>

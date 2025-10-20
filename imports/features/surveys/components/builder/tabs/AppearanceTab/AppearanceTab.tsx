@@ -292,6 +292,23 @@ const TooltipContent = styled.div`
   }
 `;
 
+// Scoped Quill styling override
+const ConsentQuillWrapper = styled.div`
+  /* Base font size inside the editor */
+  .ql-container {
+    font-size: 16px;
+  }
+
+  /* Make the editable region scroll when content exceeds max height */
+  .ql-container .ql-editor {
+    /* Provide comfortable editing space but constrain growth */
+    min-height: 140px;
+    max-height: 260px; /* Adjust if you want a taller editor */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+`;
+
 const ToggleContainer = styled.div`
   display: flex;
   align-items: center;
@@ -1110,31 +1127,33 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
 
         {/* Consent Text Editor */}
         <div style={{ marginBottom: 20 }}>
-          <label htmlFor="consentText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#495057' }}>
+          <label htmlFor="consentText" style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: '#495057' }}>
             Consent Text
           </label>
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
-            <ReactQuill
-              value={consentText}
-              onChange={(value) => {
-                setConsentText(value);
-                setSurvey(prev => ({
-                  ...prev,
-                  consentScreen: { ...prev?.consentScreen, consentText: value },
-                }) as Survey);
-                setHasUnsavedChanges(true);
-                triggerAutoSave();
-              }}
-              modules={{
-                toolbar: [
-                  [{ 'header': [1, 2, 3, false] }],
-                  ['bold', 'italic', 'underline'],
-                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                  ['clean']
-                ]
-              }}
-              style={{ height: 300, backgroundColor: '#fff' }}
-            />
+          <div style={{border: '1px solid #e2e8f0', borderRadius: 4, overflow: 'hidden', fontSize: '14px' }}>
+            <ConsentQuillWrapper style={{fontSize: 14}}>
+              <ReactQuill
+                value={consentText}
+                onChange={(value) => {
+                  setConsentText(value);
+                  setSurvey(prev => ({
+                    ...prev,
+                    consentScreen: { ...prev?.consentScreen, consentText: value },
+                  }) as Survey);
+                  setHasUnsavedChanges(true);
+                  triggerAutoSave();
+                }}
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['clean']
+                  ]
+                }}
+                style={{ height: 300, backgroundColor: '#fff' }}
+              />
+            </ConsentQuillWrapper>
           </div>
           <div style={{ marginTop: 8, fontSize: 13, color: '#718096' }}>
             Format your consent text with headings, bold, italic, and lists. Include sections for purpose, data collection, data use, confidentiality, and contact information.
