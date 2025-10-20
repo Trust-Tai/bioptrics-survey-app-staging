@@ -14,6 +14,17 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  
+  // Check if user is already logged in and redirect to dashboard
+  useEffect(() => {
+    const adminToken = localStorage.getItem('admin_jwt');
+    if (adminToken && Meteor.userId()) {
+      // User is already authenticated, show redirecting and redirect to dashboard
+      setIsRedirecting(true);
+      window.location.href = '/admin/dashboard';
+    }
+  }, []);
   
   // Check for logout success message in URL parameters
   useEffect(() => {
@@ -55,6 +66,22 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
   };
 
 
+
+  // Show redirecting message if user is already authenticated
+  if (isRedirecting) {
+    return (
+      <AuthBg>
+        <AuthCard style={{ maxWidth: 400, padding: '2rem', minWidth: 320, textAlign: 'center' }}>
+          <AuthTitle style={{ fontSize: 24, marginBottom: 16, fontWeight: 400, color: '#222' }}>
+            Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Pulse Admin</span>
+          </AuthTitle>
+          <div style={{ color: '#666', fontSize: 16 }}>
+            Redirecting to dashboard...
+          </div>
+        </AuthCard>
+      </AuthBg>
+    );
+  }
 
   return (
     <AuthBg>
