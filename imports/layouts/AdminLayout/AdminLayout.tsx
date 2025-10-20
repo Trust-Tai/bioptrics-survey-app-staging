@@ -39,6 +39,7 @@ interface SidebarLink {
 
 // Function to get sidebar links with customized terminology and dynamic tags
 const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []): SidebarLink[] => [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2},
   { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard}, 
   // { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase},
   // { to: '/admin/tags/manage', label: 'Tags', icon: FaTag },

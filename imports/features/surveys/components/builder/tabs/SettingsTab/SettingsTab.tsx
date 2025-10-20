@@ -141,22 +141,88 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 									<input
 										type="number"
 										min="1"
+										max="999999"
 										value={survey?.defaultSettings?.responseLimit === -1 ? '' : (survey?.defaultSettings?.responseLimit || '')}
 										placeholder="Unlimited"
 										onChange={(e) => {
 											const defaultSettings = survey.defaultSettings || {};
-											const value = e.target.value.trim();
-											const responseLimit = value === '' ? -1 : parseInt(value, 10);
+											let value = e.target.value.trim();
 											
+											// Remove leading zeros but keep single zero for empty-like behavior
+											if (value.length > 1 && value.startsWith('0')) {
+												value = value.replace(/^0+/, '');
+												// If all zeros were removed, set to empty
+												if (value === '') {
+													value = '';
+												}
+											}
+											
+											// If value is just '0', treat as empty (unlimited)
+											if (value === '0') {
+												setSurvey({
+													...survey,
+													defaultSettings: {
+														...defaultSettings,
+														responseLimit: -1,
+													},
+												});
+												setHasUnsavedChanges(true);
+												triggerAutoSave();
+												// Update the input field to show empty
+												e.target.value = '';
+												return;
+											}
+											
+											// Comprehensive validation
+											if (value === '') {
+												// Empty value means unlimited
+												setSurvey({
+													...survey,
+													defaultSettings: {
+														...defaultSettings,
+														responseLimit: -1,
+													},
+												});
+												setHasUnsavedChanges(true);
+												triggerAutoSave();
+												return;
+											}
+											
+											// Parse and validate the number
+											const numValue = parseInt(value, 10);
+											
+											// Check for invalid inputs
+											if (isNaN(numValue) || numValue < 1 || numValue > 999999) {
+												// Don't update if invalid - just ignore the input
+												return;
+											}
+											
+											// Update the input field to show the cleaned value (no leading zeros)
+											e.target.value = numValue.toString();
+											
+											// Only update with valid positive integers
 											setSurvey({
 												...survey,
 												defaultSettings: {
 													...defaultSettings,
-													responseLimit: responseLimit,
+													responseLimit: numValue,
 												},
 											});
 											setHasUnsavedChanges(true);
 											triggerAutoSave();
+										}}
+										onKeyPress={(e) => {
+											// Prevent non-numeric characters (except backspace, delete, etc.)
+											if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+												e.preventDefault();
+											}
+										}}
+										onPaste={(e) => {
+											// Prevent pasting non-numeric content
+											const paste = e.clipboardData.getData('text');
+											if (!/^\d+$/.test(paste)) {
+												e.preventDefault();
+											}
 										}}
 										style={{
 											padding: '8px 12px',
