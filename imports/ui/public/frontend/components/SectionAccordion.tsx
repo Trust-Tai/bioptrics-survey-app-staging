@@ -35,6 +35,7 @@ interface SectionAccordionProps {
   onAnswer: (questionId: string, answer: any) => void;
   completionPercentage: number;
   color?: string; // Kept for backward compatibility
+  hideTitle?: boolean; // Add hideTitle prop to conditionally hide section title
 }
 
 const SectionAccordion: React.FC<SectionAccordionProps> = ({
@@ -43,7 +44,8 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
   responses,
   onAnswer,
   completionPercentage,
-  color = '#552A47' // Kept for backward compatibility
+  color = '#552A47', // Kept for backward compatibility
+  hideTitle = false // Default to false, show title by default
 }) => {
   // Function to determine question type
   const getQuestionType = (question: Question) => {
@@ -63,7 +65,7 @@ const SectionAccordion: React.FC<SectionAccordionProps> = ({
     <SectionContainer id={`section-${section.id}`}>
       <SectionHeader>
         {section.image && <SectionImage src={section.image} alt={section.name} />}
-        <Title>{section.name}</Title>
+        {!hideTitle && <Title>{section.name}</Title>}
         <Description>{section.description}</Description>
         <ProgressContainer>
           <ProgressBar>

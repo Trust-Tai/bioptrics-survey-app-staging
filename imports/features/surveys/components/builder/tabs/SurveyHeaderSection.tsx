@@ -120,52 +120,6 @@ const SaveButton = styled.button<ButtonProps>`
   }
 `;
 
-const SaveButtonMain = styled(SaveButton)`
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  flex: 1;
-  transform: none !important; /* Prevent individual transform */
-  box-shadow: none; /* Remove individual box shadow */
-  
-  &:hover {
-    transform: none !important; /* Override the individual button hover */
-    box-shadow: none;
-  }
-`;
-
-const SaveButtonDropdown = styled(SaveButton)`
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  padding: 10px 8px;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
-  transform: none !important; /* Prevent individual transform */
-  box-shadow: none; /* Remove individual box shadow */
-  
-  &:hover {
-    transform: none !important; /* Override the individual button hover */
-    box-shadow: none;
-  }
-`;
-
-const SaveButtonGroup = styled.div`
-  display: flex;
-  position: relative;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(85, 42, 71, 0.4) !important;
-  }
-  
-  /* Target child buttons using descendant selector */
-  &:hover button {
-    background-color: #6a3559;
-  }
-  
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
 
 const PublishedButton = styled.button`
   padding: 10px 15px;
@@ -200,61 +154,6 @@ const PublishedButton = styled.button`
   }
 `;
 
-const DropdownContainer = styled.div`
-  position: relative;
-`;
-
-const DropdownButton = styled.div`
-  padding: 10px 12px;
-  border-radius: 8px;
-  background-color: #fff;
-  color: #000;
-  font-weight: 600;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: #f8f9fa;
-    transform: translateY(-2px);
-  }
-`;
-
-const DropdownMenu = styled.div`
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  min-width: 200px;
-  overflow: hidden;
-`;
-
-interface DropdownItemProps {
-  disabled?: boolean;
-}
-
-const DropdownItem = styled.div<DropdownItemProps>`
-  padding: 12px 16px;
-  cursor: ${props => (props.disabled ? 'not-allowed' : 'pointer')};
-  opacity: ${props => (props.disabled ? 0.7 : 1)};
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s ease;
-  color: #000;
-
-  &:hover:not([disabled]) {
-    background-color: #f8f9fa;
-  }
-`;
 
 // Props interface
 interface SurveyHeaderSectionProps {
@@ -293,20 +192,7 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
   handleSaveSurvey,
   handleGeneratePublicUrl,
 }) => {
-  const [showActionDropdown, setShowActionDropdown] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Handle clicks outside dropdown to close it
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowActionDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Handle preview click
   const handlePreview = async () => {
@@ -476,93 +362,88 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
             ) : null}
           </SaveIndicator>
           
-          {/* Conditional rendering: Show Published button if published, otherwise show Save button */}
+          {/* Conditional rendering: Show Published + Share if published, otherwise show Save + Publish + Share */}
           {isPublished ? (
-            <PublishedButton onClick={async () => {
-              try {
-                // Save first and check if successful
-                const saveSuccess = await handleSaveSurvey(false);
-                
-                if (saveSuccess) {
-                  // Only publish if save was successful
-                  handleGeneratePublicUrl();
-                } else {
-                  // Don't publish if save failed (validation errors shown by parent)
-                  console.log('Save failed - skipping publish');
+            <>
+              <PublishedButton onClick={async () => {
+                try {
+                  // Save first and check if successful
+                  const saveSuccess = await handleSaveSurvey(false);
+                  
+                  if (saveSuccess) {
+                    // Only publish if save was successful
+                    handleGeneratePublicUrl();
+                  } else {
+                    // Don't publish if save failed (validation errors shown by parent)
+                    console.log('Save failed - skipping publish');
+                  }
+                } catch (error) {
+                  console.error('Error during save:', error);
+                  showErrorAlert('Failed to save survey. Please try again.');
                 }
-              } catch (error) {
-                console.error('Error during save:', error);
-                showErrorAlert('Failed to save survey. Please try again.');
-              }
-            }}>
-              <FiSave style={{ fontSize: '16px' }} /> Published
-            </PublishedButton>
-          ) : (
-            <SaveButtonGroup 
-              ref={dropdownRef}
-              className="save-button-group"
-              style={{
-                boxShadow: '0 2px 4px rgba(85, 42, 71, 0.3)',
-                borderRadius: '8px'
-              }}
-            >
-              <SaveButtonMain onClick={() => handleSaveSurvey(false)} disabled={saving}>
-                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
-              </SaveButtonMain>
-              <SaveButtonDropdown 
-                onClick={() => setShowActionDropdown(!showActionDropdown)} 
-                disabled={saving}
+              }}>
+                <FiSave style={{ fontSize: '16px' }} /> Published
+              </PublishedButton>
+              
+              <SaveButton 
+                onClick={() => setShowShareModal(true)} 
+                disabled={!survey?._id}
+                style={{ 
+                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                  borderRadius: '8px'
+                }}
               >
-                <svg 
-                  width="12" 
-                  height="12" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path 
-                    d="M6 9l6 6 6-6" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </SaveButtonDropdown>
-              {showActionDropdown && (
-                <DropdownMenu>
-                  <DropdownItem
-                    onClick={() => {
-                      setShowActionDropdown(false);
+                <FiShare2 style={{ fontSize: '16px' }} /> Share
+              </SaveButton>
+            </>
+          ) : (
+            <>
+              {/* Save Button */}
+              <SaveButton onClick={() => handleSaveSurvey(false)} disabled={saving}>
+                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
+              </SaveButton>
+              
+              {/* Publish Button */}
+              <SaveButton 
+                onClick={async () => {
+                  try {
+                    // Save first and check if successful
+                    const saveSuccess = await handleSaveSurvey(false);
+                    
+                    if (saveSuccess) {
+                      // Only publish if save was successful
                       handleGeneratePublicUrl();
-                    }}
-                    disabled={!survey?._id}
-                  >
-                    {isPublished ? 'Publish Again' : 'Publish'}
-                  </DropdownItem>
-                  <DropdownItem
-                    onClick={() => {
-                      setShowActionDropdown(false);
-                      handleSaveSurvey(false);
-                    }}
-                    disabled={saving}
-                  >
-                    Save as Draft
-                  </DropdownItem>
-                </DropdownMenu>
-              )}
-            </SaveButtonGroup>
+                    } else {
+                      // Don't publish if save failed (validation errors shown by parent)
+                      console.log('Save failed - skipping publish');
+                    }
+                  } catch (error) {
+                    console.error('Error during save:', error);
+                    showErrorAlert('Failed to save survey. Please try again.');
+                  }
+                }} 
+                disabled={!survey?._id || saving}
+                style={{ 
+                  cursor: (!survey?._id || saving) ? 'not-allowed' : 'pointer',
+                  borderRadius: '8px'
+                }}
+              >
+                <FiSave style={{ fontSize: '16px' }} /> Publish
+              </SaveButton>
+              
+              {/* Share Button */}
+              <SaveButton 
+                onClick={() => setShowShareModal(true)} 
+                disabled={!survey?._id}
+                style={{ 
+                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
+                  borderRadius: '8px'
+                }}
+              >
+                <FiShare2 style={{ fontSize: '16px' }} /> Share
+              </SaveButton>
+            </>
           )}
-          <SaveButton 
-            onClick={() => setShowShareModal(true)} 
-            disabled={!survey?._id}
-            style={{ 
-              cursor: !survey?._id ? 'not-allowed' : 'pointer',
-              borderRadius: '8px' // Ensure Share button has rounded corners
-            }}
-          >
-            <FiShare2 style={{ fontSize: '16px' }} /> Share
-          </SaveButton>
         </Actions>
       </Header>
       
