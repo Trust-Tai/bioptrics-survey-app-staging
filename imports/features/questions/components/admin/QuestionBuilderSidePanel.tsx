@@ -702,6 +702,14 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
       // Get the current question data
       const currentQuestion = questions[0].question;
       
+      // Validate required fields
+      const questionText = currentQuestion.text?.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags and trim whitespace
+      if (!questionText) {
+        showErrorAlert('Please enter Question Text');
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Log the data being saved for debugging
       console.log('Saving question data:', currentQuestion);
       
@@ -828,6 +836,14 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
 
       // Get the current question data
       const currentQuestion = questions[0].question;
+      
+      // Validate required fields
+      const questionText = currentQuestion.text?.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags and trim whitespace
+      if (!questionText) {
+        showErrorAlert('Please enter Question Text');
+        setIsSubmitting(false);
+        return;
+      }
       
       // Log the data being published for debugging
       console.log('Publishing question data:', currentQuestion);
@@ -1334,7 +1350,6 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                         break;
                       case 'dropdown':
                         updatedQuestions[0].question.answers = [
-                          { text: 'Select an option', value: '' },
                           { text: 'Option 1', value: 'Option 1' },
                           { text: 'Option 2', value: 'Option 2' },
                           { text: 'Option 3', value: 'Option 3' }

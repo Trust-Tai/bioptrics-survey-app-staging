@@ -226,6 +226,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
     if (type.includes('likert')) return 'likert';
     if (type.includes('radio') || type === 'single_choice') return 'radio';
     if (type.includes('checkbox') || type === 'multiple_choice') return 'checkbox';
+    if (type.includes('dropdown')) return 'dropdown';
     if (type.includes('rating') || type === 'scale') return 'rating';
     if (type.includes('rank')) return 'rank';
     if (type.includes('date')) return 'date';

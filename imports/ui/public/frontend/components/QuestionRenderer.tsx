@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 
-type QuestionType = 'likert' | 'radio' | 'text' | 'textarea' | 'checkbox' | 'rating' | 'rank' | 'date';
+type QuestionType = 'likert' | 'radio' | 'text' | 'textarea' | 'checkbox' | 'dropdown' | 'rating' | 'rank' | 'date';
 
 interface Option {
   value: string;
@@ -353,6 +353,24 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
     );
   };
 
+  // Implementation for dropdown select
+  const renderDropdownOptions = () => {
+    return (
+      <DropdownSelect
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+      >
+        <option value="">Select an option...</option>
+        {options.map((option: Option) => (
+          <option key={option.value} value={option.value}>
+            {option.text || option.label || option.value}
+          </option>
+        ))}
+      </DropdownSelect>
+    );
+  };
+
   // Define renderQuestionInput after all render functions are defined
   const renderQuestionInput = () => {
     switch (questionType) {
@@ -366,6 +384,8 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
         return renderTextareaInput();
       case 'checkbox':
         return renderCheckboxOptions();
+      case 'dropdown':
+        return renderDropdownOptions();
       case 'rating':
         return renderRatingScale();
       case 'rank':
@@ -705,6 +725,26 @@ const DateInput = styled.input`
     outline: none;
     border-color: var(--primary-color, #552A47);
     box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
+  }
+`;
+
+const DropdownSelect = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color, #552A47);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 85, 42, 71), 0.2);
+  }
+  
+  &:hover {
+    border-color: #ccc;
   }
 `;
 
