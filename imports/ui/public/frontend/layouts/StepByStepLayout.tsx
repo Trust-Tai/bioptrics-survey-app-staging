@@ -431,7 +431,8 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       const prevSection = sections[i];
       const prevSectionQuestions = questions.filter(q => q.sectionId === prevSection.id && !q.isUnsectioned);
       if (prevSectionQuestions.length > 0) {
-        return prevSection.name;
+        // Hide "Default Section" name in navigation
+        return prevSection.name === "Default Section" ? '' : prevSection.name;
       }
     }
     
@@ -449,7 +450,8 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
       const nextSection = sections[i];
       const nextSectionQuestions = questions.filter(q => q.sectionId === nextSection.id && !q.isUnsectioned);
       if (nextSectionQuestions.length > 0) {
-        return nextSection.name;
+        // Hide "Default Section" name in navigation
+        return nextSection.name === "Default Section" ? '' : nextSection.name;
       }
     }
     
@@ -843,6 +845,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
                 progress={100}
                 color={survey.color}
                 image={currentSection.image}
+                hideTitle={currentSection.name === "Default Section"}
               />
             )}
             
@@ -900,6 +903,7 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
                 progress={calculateSectionProgress(currentSection.id)}
                 color={survey.color}
                 image={currentSection.image}
+                hideTitle={currentSection.name === "Default Section"}
               />
             )}
             

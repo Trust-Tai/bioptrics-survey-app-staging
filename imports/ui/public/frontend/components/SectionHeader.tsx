@@ -11,6 +11,7 @@ interface SectionHeaderProps {
   document?: string; // Add document property for section documents (PDF/Word)
   documentName?: string; // Document filename
   documentType?: string; // Document MIME type (e.g., 'application/pdf')
+  hideTitle?: boolean; // Add hideTitle prop to conditionally hide section title
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({
@@ -22,12 +23,13 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   image,
   document,
   documentName,
-  documentType
+  documentType,
+  hideTitle = false // Default to false, show title by default
 }) => {
   return (
     <HeaderContainer>
       {image && <SectionImage src={image} alt={title} />}
-      <Title>{title}</Title>
+      {!hideTitle && <Title>{title}</Title>}
       <Description>{description}</Description>
       <ProgressContainer>
         <ProgressBar>

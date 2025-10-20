@@ -134,7 +134,9 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 ) : (
                   <RadioCircle isActive={false} />
                 )}
-                <SectionName isActive={section.id === activeSection}>{section.name}</SectionName>
+                {section.name !== "Default Section" && (
+                  <SectionName isActive={section.id === activeSection}>{section.name}</SectionName>
+                )}
                 
                 {/* Always show completion percentage */}
                 <CompletionPercentage 

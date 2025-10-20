@@ -194,6 +194,9 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
           // Define a simple function to handle answers for this section
           const sectionOnAnswer = (questionId: string, value: any) => onAnswer(questionId, value);
           
+          // Check if this is a "Default Section" - if so, hide the section title
+          const isDefaultSection = section.name === "Default Section";
+          
           return (
             <SectionContainer key={section.id} id={`section-${section.id}`}>
               <SectionAccordion
@@ -204,6 +207,7 @@ const AllOnOnePageLayout: React.FC<AllOnOnePageLayoutProps> = ({
                 onAnswer={sectionOnAnswer}
                 completionPercentage={calculateSectionProgress(section.id)}
                 color={survey.color}
+                hideTitle={isDefaultSection}
               />
             </SectionContainer>
           );
