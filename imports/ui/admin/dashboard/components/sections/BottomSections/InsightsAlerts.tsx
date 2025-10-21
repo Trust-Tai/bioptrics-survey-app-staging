@@ -9,6 +9,7 @@ const SectionContainer = styled.div`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.05);
   flex: 1;
+  margin-bottom: 32px;
 `;
 
 const SectionTitle = styled.h3`

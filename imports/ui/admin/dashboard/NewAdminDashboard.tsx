@@ -77,6 +77,7 @@ const BottomSectionsContainer = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   margin-top: 32px;
+  margin-bottom: 32px;
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -135,6 +136,12 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
 
           <SectionDivider />
 
+          {/* Bottom Sections */}
+          <BottomSectionsContainer>
+            <InsightsAlerts />
+            <ExportsReports />
+          </BottomSectionsContainer>
+
           {/* Policy Compliance Section */}
           <PolicyComplianceSection />
 
@@ -152,12 +159,6 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
 
           {/* Quick Start Surveys Section */}
           <QuickStartSection />
-
-          {/* Bottom Sections */}
-          <BottomSectionsContainer>
-            <InsightsAlerts />
-            <ExportsReports />
-          </BottomSectionsContainer>
         </DashboardContent>
       </DashboardContainer>
     </AdminLayout>
