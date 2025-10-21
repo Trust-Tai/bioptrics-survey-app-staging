@@ -26,7 +26,7 @@ const MenuButton = styled.button`
   margin: 0;
   cursor: pointer;
   font-size: 22px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
 `;

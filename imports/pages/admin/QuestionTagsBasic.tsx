@@ -64,7 +64,7 @@ const QuestionTagsBasic: React.FC = () => {
                 </button>
                 <button style={{ 
                   padding: '6px 12px', 
-                  background: '#552a47', 
+                  background: 'var(--color-primary, #552a47)', 
                   color: '#fff', 
                   border: 'none', 
                   borderRadius: 6, 

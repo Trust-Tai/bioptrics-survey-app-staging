@@ -166,7 +166,7 @@ const SurveyQuestions: React.FC<{ surveyId: string; questions: string[] }> = ({ 
             variant="primary"
             size="lg"
             className="py-3 fs-6 fs-md-5"
-            style={{ backgroundColor: '#552a47', borderColor: '#552a47' }}
+            style={{ backgroundColor: 'var(--color-primary, #552a47)', borderColor: 'var(--color-primary, #552a47)' }}
           >
             {submitting ? (
               <>
@@ -200,7 +200,7 @@ function renderInput(q: any, qid: string, value: any, onChange: (v: any) => void
             onChange={() => onChange(n)}
             label={n.toString()}
             className="fw-medium fs-6 mb-1 mb-sm-0"
-            style={{ color: '#552a47' }}
+            style={{ color: 'var(--color-primary, #552a47)' }}
           />
         ))}
       </div>

@@ -33,7 +33,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
 const GoldHeaderCard = styled.div`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   border-radius: 12px;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
   padding: 1.5rem 2rem;
@@ -205,8 +205,8 @@ const ActionButton = styled.button`
   }
   
   &.primary {
-    background: #552a47;
-    border-color: #552a47;
+    background: var(--color-primary, #552a47);
+    border-color: var(--color-primary, #552a47);
     color: white;
     
     &:hover {
@@ -266,7 +266,7 @@ const KpiIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const HeatMapGrid = styled.div`
@@ -334,12 +334,12 @@ const TrendRow = styled.div`
 const TrendLabel = styled.div`
   width: 70px;
   font-size: 1.08rem;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-weight: 600;
 `;
 const TrendFill = styled.div<{ width: number; color?: string }>`
   height: 14px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   border-radius: 8px;
   margin: 0 12px 0 0;
   width: ${({ width }) => width}%;

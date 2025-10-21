@@ -2,6 +2,127 @@
   <title>Bioptrics Pulse Application</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
+  
+  <!-- Early theme initialization to prevent color flash -->
+  <script>
+    (function() {
+      // Define available themes (exactly matching ColorThemeContext)
+      const themes = {
+        bioptrics: {
+          primary: '#542A46',
+          secondary: '#3B1D31',
+          accent: '#A9A59D',
+          background: '#f8f9fa',
+          text: '#2e2e2e',
+          sidebar: 'transparent',
+          sidebarText: '#2c2c2c'
+        },
+        terracotta: {
+          primary: '#be5f41',
+          secondary: '#8a4329',
+          accent: '#A9A59D',
+          background: '#f8f9fa',
+          text: '#2e2e2e',
+          sidebar: 'transparent',
+          sidebarText: '#2c2c2c'
+        },
+        slate: {
+          primary: '#a6a6a6',
+          secondary: '#7a7a7a',
+          accent: '#A9A59D',
+          background: '#f8f9fa',
+          text: '#2e2e2e',
+          sidebar: 'transparent',
+          sidebarText: '#2c2c2c'
+        },
+        golden: {
+          primary: '#fcca5e',
+          secondary: '#e6b54a',
+          accent: '#A9A59D',
+          background: '#f8f9fa',
+          text: '#2e2e2e',
+          sidebar: 'transparent',
+          sidebarText: '#2c2c2c'
+        },
+        steel: {
+          primary: '#5a8596',
+          secondary: '#456a7a',
+          accent: '#A9A59D',
+          background: '#f8f9fa',
+          text: '#2e2e2e',
+          sidebar: 'transparent',
+          sidebarText: '#2c2c2c'
+        },
+        // Legacy theme mappings for backward compatibility
+        default: {
+          primary: '#542A46',
+          secondary: '#3B1D31',
+          accent: '#A9A59D',
+          background: '#f8f9fa',
+          text: '#2e2e2e',
+          sidebar: 'transparent',
+          sidebarText: '#2c2c2c'
+        }
+      };
+      
+      // Try to get saved theme from localStorage
+      let selectedTheme = themes.bioptrics; // fallback
+      let themeSource = 'fallback';
+      
+      try {
+        const savedThemeId = localStorage.getItem('admin-color-theme');
+        console.log('Saved theme ID from localStorage:', savedThemeId);
+        
+        if (savedThemeId && themes[savedThemeId]) {
+          selectedTheme = themes[savedThemeId];
+          themeSource = 'localStorage';
+          console.log('Loaded theme from localStorage:', savedThemeId);
+        } else if (savedThemeId) {
+          console.log('Theme ID not found in themes object:', savedThemeId, 'Available:', Object.keys(themes));
+        }
+      } catch (e) {
+        console.log('localStorage access failed:', e);
+      }
+      
+      // Apply theme colors to CSS custom properties immediately
+      const root = document.documentElement;
+      root.style.setProperty('--color-primary', selectedTheme.primary);
+      root.style.setProperty('--color-secondary', selectedTheme.secondary);
+      root.style.setProperty('--color-accent', selectedTheme.accent);
+      root.style.setProperty('--color-background', selectedTheme.background);
+      root.style.setProperty('--color-text', selectedTheme.text);
+      root.style.setProperty('--color-sidebar', selectedTheme.sidebar);
+      root.style.setProperty('--color-sidebar-text', selectedTheme.sidebarText);
+      root.style.setProperty('--bs-primary', selectedTheme.primary);
+      root.style.setProperty('--bs-secondary', selectedTheme.secondary);
+      
+      console.log('🎨 Early Script - CSS Variables applied:', {
+        primary: selectedTheme.primary,
+        secondary: selectedTheme.secondary,
+        sidebar: selectedTheme.sidebar,
+        sidebarText: selectedTheme.sidebarText,
+        source: themeSource,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Wait for body to be available, then mark as loaded
+      function markThemeLoaded() {
+        if (document.body) {
+          document.body.setAttribute('data-theme-loaded', 'true');
+        } else {
+          // If body isn't ready yet, wait a bit and try again
+          setTimeout(markThemeLoaded, 10);
+        }
+      }
+      
+      // Try to mark immediately, or wait for DOM
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', markThemeLoaded);
+      } else {
+        markThemeLoaded();
+      }
+    })();
+  </script>
 </head>
 
 <body>

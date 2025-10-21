@@ -146,7 +146,7 @@ const FolderSelector: React.FC<FolderSelectorProps> = ({
     if (data.__isNew__) {
       return (
         <components.Option {...props}>
-          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: 'var(--color-accent, #542A46)', fontWeight: 'bold' }}>
+          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: 'var(--color-primary, #542A46)', fontWeight: 'bold' }}>
             Create folder: "{data.label}"
           </div>
         </components.Option>
@@ -229,13 +229,13 @@ const FolderSelector: React.FC<FolderSelectorProps> = ({
               borderColor: 'var(--color-border, #ddd)',
               boxShadow: 'none',
               '&:hover': {
-                borderColor: 'var(--color-accent, #542A46)',
+                borderColor: 'var(--color-primary, #542A46)',
               },
             }),
             option: (provided, state) => ({
               ...provided,
               backgroundColor: state.isSelected 
-                ? 'var(--color-accent, #542A46)' 
+                ? 'var(--color-primary, #542A46)' 
                 : state.isFocused 
                   ? 'var(--color-accent-light, #f0e6ee)'
                   : 'white',
@@ -271,13 +271,13 @@ const FolderSelector: React.FC<FolderSelectorProps> = ({
               borderColor: 'var(--color-border, #ddd)',
               boxShadow: 'none',
               '&:hover': {
-                borderColor: 'var(--color-accent, #542A46)',
+                borderColor: 'var(--color-primary, #542A46)',
               },
             }),
             option: (provided, state) => ({
               ...provided,
               backgroundColor: state.isSelected 
-                ? 'var(--color-accent, #542A46)' 
+                ? 'var(--color-primary, #542A46)' 
                 : state.isFocused 
                   ? 'var(--color-accent-light, #f0e6ee)'
                   : 'white',

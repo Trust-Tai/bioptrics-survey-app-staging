@@ -47,12 +47,12 @@ const StyledButton = styled.button<{
     switch (props.variant) {
       case 'primary':
         return `
-          background: linear-gradient(135deg, #552a47 0%, #7a4e7a 100%);
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
           color: white;
           
           &:hover:not(:disabled) {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(85, 42, 71, 0.3);
+            box-shadow: 0 4px 12px var(--color-primary-30);
           }
         `;
       case 'secondary':
@@ -69,11 +69,11 @@ const StyledButton = styled.button<{
       case 'outline':
         return `
           background: transparent;
-          color: #552a47;
-          border: 2px solid #552a47;
+          color: var(--color-primary);
+          border: 2px solid var(--color-primary);
           
           &:hover:not(:disabled) {
-            background: #552a47;
+            background: var(--color-primary);
             color: white;
             transform: translateY(-1px);
           }
@@ -81,10 +81,10 @@ const StyledButton = styled.button<{
       case 'ghost':
         return `
           background: transparent;
-          color: #552a47;
+          color: var(--color-primary);
           
           &:hover:not(:disabled) {
-            background: rgba(85, 42, 71, 0.1);
+            background: var(--color-primary-10);
           }
         `;
       default:

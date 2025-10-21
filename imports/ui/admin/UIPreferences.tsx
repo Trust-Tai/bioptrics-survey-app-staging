@@ -8,7 +8,7 @@ const themePresets = [
     id: 'default',
     name: 'Default',
     colors: {
-      primary: '#542A46',
+      primary: 'var(--color-primary, #542A46)',
       secondary: '#3B1D31',
       accent: '#A9A59D',
       background: '#f8f9fa',
@@ -302,12 +302,12 @@ const UIPreferences: React.FC = () => {
   
   // Custom theme colors state
   const [customColors, setCustomColors] = useState({
-    primary: '#542A46',
+    primary: 'var(--color-primary, #542A46)',
     secondary: '#3B1D31',
     accent: '#A9A59D',
     background: '#f8f9fa',
     text: '#2e2e2e',
-    sidebar: '#542A46',
+    sidebar: 'var(--color-primary, #542A46)',
     sidebarText: '#ffffff'
   });
   
@@ -544,7 +544,7 @@ const UIPreferences: React.FC = () => {
                   type="text"
                   value={customColors.primary}
                   onChange={(e) => handleColorChange('primary', e.target.value)}
-                  placeholder="#542A46"
+                  placeholder="var(--color-primary, #542A46)"
                   $textColor={customColors.text}
                   $bgColor={customColors.background}
                 />

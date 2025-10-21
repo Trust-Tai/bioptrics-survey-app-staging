@@ -91,12 +91,12 @@ export const generateQuestionReportPDF = (data: QuestionReportData) => {
         }
         .accent-bar {
           height: 60px;
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           margin-bottom: 40px;
         }
         .report-title {
           font-size: 32px;
-          color: #552a47;
+          color: var(--color-primary, #552a47);
           text-align: center;
           margin-bottom: 10px;
         }
@@ -135,7 +135,7 @@ export const generateQuestionReportPDF = (data: QuestionReportData) => {
           box-sizing: border-box;
         }
         .section-header {
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           color: white;
           padding: 10px;
           margin-bottom: 15px;
@@ -256,7 +256,7 @@ export const generateQuestionReportPDF = (data: QuestionReportData) => {
           padding: 12px;
           margin-bottom: 10px;
           border-radius: 4px;
-          border-left: 3px solid #552a47;
+          border-left: 3px solid var(--color-primary, #552a47);
         }
       }
     `;
@@ -321,7 +321,7 @@ export const generateQuestionReportPDF = (data: QuestionReportData) => {
               
               ${data.question.categoryTags && data.question.categoryTags.length > 0 ? 
                 `<p class="categories" style="font-weight: bold; color: #333; margin-bottom: 10px;">
-                  <span style="color:#552a47;">${data.question.categoryTags.join(', ')}</span>
+                  <span style="color:var(--color-primary, #552a47);">${data.question.categoryTags.join(', ')}</span>
                 </p>` : 
                 ''
               }
@@ -378,7 +378,7 @@ export const generateQuestionReportPDF = (data: QuestionReportData) => {
               <!-- Text Responses Section -->
               ${data.question.textResponses && data.question.textResponses.length > 0 ? `
                 <div class="text-responses-section">
-                  <h4 style="color: #552a47; margin-top: 30px; margin-bottom: 15px;">Text Responses</h4>
+                  <h4 style="color: var(--color-primary, #552a47); margin-top: 30px; margin-bottom: 15px;">Text Responses</h4>
                   ${data.question.textResponses.map((response, index) => `
                     <div class="text-response">
                       <strong>${index + 1}.</strong> ${response}

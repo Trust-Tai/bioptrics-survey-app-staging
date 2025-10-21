@@ -18,7 +18,7 @@ const AssignmentHeader = styled.div`
 const AssignmentTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -57,15 +57,15 @@ const FilterButton = styled.button<{ active?: boolean }>`
   gap: 6px;
   padding: 6px 12px;
   border-radius: 6px;
-  border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary, #552a47)' : '#ddd'};
   background: ${props => props.active ? '#f9f4f8' : '#fff'};
-  color: ${props => props.active ? '#552a47' : '#666'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#666'};
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -152,7 +152,7 @@ const ActionButton = styled.button<{ disabled?: boolean }>`
   border-radius: 50%;
   border: 1px solid ${props => props.disabled ? '#eee' : '#ddd'};
   background: ${props => props.disabled ? '#f9f9f9' : '#fff'};
-  color: ${props => props.disabled ? '#ccc' : '#552a47'};
+  color: ${props => props.disabled ? '#ccc' : 'var(--color-primary, #552a47)'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +161,7 @@ const ActionButton = styled.button<{ disabled?: boolean }>`
   
   &:hover {
     background: ${props => props.disabled ? '#f9f9f9' : '#f5f0f5'};
-    border-color: ${props => props.disabled ? '#eee' : '#552a47'};
+    border-color: ${props => props.disabled ? '#eee' : 'var(--color-primary, #552a47)'};
   }
 `;
 

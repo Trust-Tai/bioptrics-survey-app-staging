@@ -16,7 +16,7 @@ const PageHeader = styled.div`
 
 const Title = styled.h1`
   font-size: 28px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -33,7 +33,7 @@ const SearchInput = styled.input`
   font-size: 14px;
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -67,7 +67,7 @@ const TemplateCard = styled.div`
 
 const TemplateTitle = styled.h3`
   margin: 0 0 8px 0;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 18px;
 `;
 
@@ -101,7 +101,7 @@ const TemplateActions = styled.div`
 const ActionButton = styled.button`
   background: none;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   cursor: pointer;
   padding: 6px;
   border-radius: 4px;
@@ -119,7 +119,7 @@ const EmptyState = styled.div`
 `;
 
 const Button = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 4px;
@@ -159,7 +159,7 @@ const ModalContent = styled.div`
 
 const ModalTitle = styled.h3`
   margin: 0 0 16px 0;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const ModalActions = styled.div`

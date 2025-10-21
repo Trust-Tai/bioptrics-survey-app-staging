@@ -52,7 +52,7 @@ const StyledButton = styled.button<{
       case 'success': return '#4caf50';
       case 'warning': return '#ff9800';
       case 'info': return '#2196f3';
-      default: return '#552a47'; // primary (default)
+      default: return 'var(--color-primary, #552a47)'; // primary (default)
     }
   }};
   

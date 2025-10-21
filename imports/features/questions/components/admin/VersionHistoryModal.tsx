@@ -419,7 +419,7 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                             }}
                             style={{
                               ...actionButtonStyle,
-                              backgroundColor: '#542A46',
+                              backgroundColor: 'var(--color-primary, #542A46)',
                               padding: '6px',
                               marginLeft: '5px',
                               fontSize: '12px',

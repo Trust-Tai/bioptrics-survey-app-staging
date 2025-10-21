@@ -6,19 +6,10 @@
 
 /* Custom Bootstrap theme variables that match your existing theme */
 :root {
-  /* Your existing theme colors */
-  --color-primary: #542A46;
-  --color-secondary: #3B1D31;
-  --color-accent: #A9A59D;
-  --color-background: #f8f9fa;
-  --color-text: #2e2e2e;
-  --color-sidebar: #542A46;
-  --color-sidebar-text: #ffffff;
-  --color-error: #d32f2f;
+  /* Theme colors will be set dynamically by JavaScript */
+  /* No default colors to prevent flash of wrong theme */
   
-  /* Bootstrap variable overrides */
-  --bs-primary: #542A46;
-  --bs-secondary: #3B1D31;
+  /* Bootstrap variable overrides - will be set dynamically */
   --bs-success: #28a745;
   --bs-info: #17a2b8;
   --bs-warning: #ffc107;

@@ -29,12 +29,12 @@ interface ThemeContextType {
 }
 
 const lightTheme: ThemeColors = {
-  primary: '#542A46',
+  primary: 'var(--color-primary, #542A46)',
   secondary: '#3B1D31',
   accent: '#A9A59D',
   background: '#f8f9fa',
   text: '#2e2e2e',
-  sidebar: '#542A46',
+  sidebar: 'var(--color-primary, #542A46)',
   sidebarText: '#ffffff', // White text on dark sidebar
 };
 
@@ -49,12 +49,12 @@ const darkTheme: ThemeColors = {
 };
 
 const defaultColors: ThemeColors = {
-  primary: '#542A46',
+  primary: 'var(--color-primary, #542A46)',
   secondary: '#3B1D31',
   accent: '#A9A59D',
   background: '#f8f9fa',
   text: '#2e2e2e',
-  sidebar: '#542A46',
+  sidebar: 'var(--color-primary, #542A46)',
   sidebarText: '#ffffff', // White text on dark sidebar
 };
 

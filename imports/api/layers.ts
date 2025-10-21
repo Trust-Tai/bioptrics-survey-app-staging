@@ -84,7 +84,7 @@ if (Meteor.isServer) {
         name: layerData.name,
         location: layerData.location,
         parentId: layerData.parentId || undefined,
-        color: layerData.color || '#552a47',
+        color: layerData.color || 'var(--color-primary, #552a47)',
         description: layerData.description || '',
         fields: Array.isArray(layerData.fields) ? layerData.fields.map((field: any) => {
           // Ensure each field has the required properties

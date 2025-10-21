@@ -26,7 +26,8 @@ import {
   FiLogOut
 } from 'react-icons/fi';
 import styled from 'styled-components';
-import { useTheme } from '/imports/contexts/ThemeContext';
+import { ColorThemeProvider, useColorTheme } from '/imports/contexts/ColorThemeContext';
+import { ColorPalette } from '/imports/shared/components/ColorPalette';
 
 // Define interface for sidebar link items
 interface SidebarLink {
@@ -334,7 +335,7 @@ const Footer = styled.footer<FooterProps>`
   font-size: 0.9rem;
   color: #fff;
   border-top: 1px solid #333;
-  background-color: #552a47; /* Updated to match dark body layer */
+  background-color: var(--color-primary, #552a47);
   width: 100%;
   position: fixed;
   bottom: 0;
@@ -380,9 +381,9 @@ const MainContent = styled.main<MainContentProps & { isMobile?: boolean }>`
 
 
 /**
- * AdminLayout component that provides the admin dashboard shell with navigation
+ * Inner AdminLayout component that provides the admin dashboard shell with navigation
  */
-const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Render counter for debugging
   const renderCount = React.useRef(0);
   renderCount.current += 1;
@@ -390,8 +391,22 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   
   // Get organization settings for customized terminology
   const { getTerminology } = useOrganization();
-  const theme = useTheme();
-  const colors = theme.colors || {};
+  const { currentTheme, isLoading: themeLoading } = useColorTheme();
+  
+  // Don't render until theme is loaded to prevent color flash
+  if (!currentTheme || themeLoading) {
+    return null; // CSS will keep body hidden until theme loads
+  }
+  
+  const colors = {
+    primary: currentTheme.primary,
+    secondary: currentTheme.secondary,
+    accent: currentTheme.accent,
+    background: currentTheme.background,
+    text: currentTheme.text,
+    sidebar: currentTheme.sidebar,
+    sidebarText: currentTheme.sidebarText
+  };
   
   // Subscribe to layers collection and filter active tags by location
   const { surveyTags, questionTags, isLoading } = useTracker(() => {
@@ -644,6 +659,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
         
+        {/* Color Theme Palette - Floating at top right */}
+        <ColorPalette />
+        
         <Footer collapsed={collapsed}>
           Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.
         </Footer>
@@ -651,6 +669,18 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </div>
   );
 };
+
+/**
+ * AdminLayout component wrapped with ColorThemeProvider
+ */
+const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <ColorThemeProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </ColorThemeProvider>
+  );
+};
+
 declare module 'styled-components' {
   export interface DefaultTheme {
     colors?: {

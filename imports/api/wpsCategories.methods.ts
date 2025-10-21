@@ -29,7 +29,7 @@ Meteor.methods({
       // Create a document with all required fields
       const categoryDoc = {
         name: category.name.trim(),
-        color: category.color || '#552a47',
+        color: category.color || 'var(--color-primary, #552a47)',
         description: category.description.trim(),
         createdAt: new Date()
       };

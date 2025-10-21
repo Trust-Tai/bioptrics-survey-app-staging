@@ -2,6 +2,28 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check, Match } from 'meteor/check';
 
+// Extend UserProfile interface to include theme preference
+declare module 'meteor/meteor' {
+  namespace Meteor {
+    interface UserProfile {
+      name?: string;
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+      organization?: string;
+      admin?: boolean;
+      company?: string;
+      phone?: string;
+      address?: string;
+      city?: string;
+      country?: string;
+      postalCode?: string;
+      onboardingComplete?: boolean;
+      themePreference?: string;
+    }
+  }
+}
+
 // Ensure this file is imported on the server
 if (Meteor.isServer) {
   console.log('Registering users methods');
@@ -13,6 +35,20 @@ if (Meteor.isServer) {
         'profile.name': 1,
         'username': 1,
         'emails.address': 1
+      }
+    });
+  });
+
+  // Publication for current user's profile data including theme preference
+  Meteor.publish('currentUserProfile', function() {
+    if (!this.userId) {
+      return this.ready();
+    }
+    
+    return Meteor.users.find(this.userId, {
+      fields: {
+        'profile': 1,
+        'emails': 1
       }
     });
   });
@@ -241,6 +277,53 @@ Meteor.methods({
     } catch (error: any) {
       console.error('Error changing password:', error);
       throw new Meteor.Error('password-change-failed', error.message || 'Failed to change password');
+    }
+  },
+
+  'users.updateThemePreference': async function(themeId: string) {
+    // Check if the user is logged in
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to update theme preference');
+    }
+
+    // Validate theme ID
+    check(themeId, String);
+    
+    const validThemes = ['bioptrics', 'terracotta', 'slate', 'golden', 'steel'];
+    if (!validThemes.includes(themeId)) {
+      throw new Meteor.Error('invalid-theme', 'Invalid theme ID provided');
+    }
+
+    try {
+      // Update user's theme preference in profile
+      await Meteor.users.updateAsync(this.userId, {
+        $set: {
+          'profile.themePreference': themeId
+        }
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating theme preference:', error);
+      throw new Meteor.Error('server-error', 'Failed to update theme preference');
+    }
+  },
+
+  'users.getThemePreference': async function() {
+    // Check if the user is logged in
+    if (!this.userId) {
+      return 'bioptrics'; // Default theme for non-logged users
+    }
+
+    try {
+      const user = await Meteor.users.findOneAsync(this.userId, {
+        fields: { 'profile.themePreference': 1 }
+      });
+
+      return user?.profile?.themePreference || 'bioptrics';
+    } catch (error) {
+      console.error('Error getting theme preference:', error);
+      return 'bioptrics'; // Default theme on error
     }
   }
 });

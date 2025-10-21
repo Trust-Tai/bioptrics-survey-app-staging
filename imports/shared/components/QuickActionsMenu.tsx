@@ -17,7 +17,7 @@ const QuickActionButton = styled.button`
   border-radius: 6px;
   background: #f9f4f8;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

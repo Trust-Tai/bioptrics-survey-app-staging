@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-const PRIMARY_COLOR = '#552a47';
+const PRIMARY_COLOR = 'var(--color-primary, #552a47)';
 
 export const AuthBg = styled.div`
   min-height: 100vh;
@@ -10,7 +10,7 @@ export const AuthBg = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;

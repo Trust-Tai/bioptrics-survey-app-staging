@@ -2,6 +2,7 @@ export { default as QuickActionsMenu } from './QuickActionsMenu';
 export { default as TermLabel } from './TermLabel';
 export { default as EllipsisMenu } from './EllipsisMenu';
 export { default as DashboardBg } from './DashboardBg';
+export { ColorPalette } from './ColorPalette';
 export {
   AuthBg,
   AuthCard,

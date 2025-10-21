@@ -22,7 +22,7 @@ const DashboardContainer = styled.div`
 `;
 
 const DashboardHeader = styled.div`
-  background: linear-gradient(135deg, #552a47 0%, #7a4e7a 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 32px;
@@ -136,6 +136,11 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
 
           <SectionDivider />
 
+          {/* Quick Start Surveys Section */}
+          <QuickStartSection />
+
+          <SectionDivider />
+
           {/* Bottom Sections */}
           <BottomSectionsContainer>
             <InsightsAlerts />
@@ -155,10 +160,6 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
           {/* Whole Person Safety Overview Section */}
           <SafetyOverviewSection />
 
-          <SectionDivider />
-
-          {/* Quick Start Surveys Section */}
-          <QuickStartSection />
         </DashboardContent>
       </DashboardContainer>
     </AdminLayout>

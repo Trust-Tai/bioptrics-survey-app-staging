@@ -28,7 +28,7 @@ const seedCategories = [
   },
   {
     name: 'Inclusion Safety',
-    color: '#552a47',
+    color: 'var(--color-primary, #552a47)',
     description: 'Creating an environment where everyone feels valued, respected, and empowered to contribute.'
   },
 ];

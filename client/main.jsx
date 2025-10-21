@@ -10,6 +10,9 @@ import '/imports/startup/client/dynamicImportFix';
 // Import Bootstrap CSS first for proper styling
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+// Import color theme CSS for dynamic theming
+import './color-theme.css';
+
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -53,7 +56,7 @@ const FallbackComponent = () => (
     <h2>Bioptrics Pulse Application</h2>
     <p>If you're seeing this page, the application is loading or encountered an issue.</p>
     <div style={{ marginTop: '20px', padding: '10px', background: '#f5f5f5', borderRadius: '5px' }}>
-      <a href="/admin-login" style={{ color: '#552a47', fontWeight: 'bold', textDecoration: 'none' }}>
+      <a href="/admin-login" style={{ color: 'var(--color-primary, #333)', fontWeight: 'bold', textDecoration: 'none' }}>
         Go to Admin Login
       </a>
     </div>
@@ -92,7 +95,7 @@ Meteor.startup(() => {
             <h2>Error rendering React application</h2>
             <pre>${innerError.toString()}</pre>
             <div style="margin-top: 20px;">
-              <button onclick="location.reload()" style="padding: 10px 15px; background: #552a47; color: white; border: none; cursor: pointer; border-radius: 4px;">
+              <button onclick="location.reload()" style="padding: 10px 15px; background: var(--color-primary, #333); color: white; border: none; cursor: pointer; border-radius: 4px;">
                 Reload Application
               </button>
             </div>
@@ -107,7 +110,7 @@ Meteor.startup(() => {
         <h2>Error during application startup</h2>
         <pre>${error.toString()}</pre>
         <div style="margin-top: 20px;">
-          <button onclick="location.reload()" style="padding: 10px 15px; background: #552a47; color: white; border: none; cursor: pointer; border-radius: 4px;">
+          <button onclick="location.reload()" style="padding: 10px 15px; background: var(--color-primary, #333); color: white; border: none; cursor: pointer; border-radius: 4px;">
             Reload Application
           </button>
         </div>
