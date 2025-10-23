@@ -11,7 +11,7 @@ const Container = styled.div`
 const Header = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 16px;
 `;
 
@@ -25,9 +25,9 @@ const SectionSelector = styled.div`
 
 const SectionTab = styled.button<{ isActive: boolean }>`
   padding: 10px 16px;
-  background: ${props => props.isActive ? '#552a47' : '#fff'};
+  background: ${props => props.isActive ? 'var(--color-primary, #552a47)' : '#fff'};
   color: ${props => props.isActive ? '#fff' : '#333'};
-  border: 1px solid ${props => props.isActive ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.isActive ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
   font-weight: ${props => props.isActive ? '600' : '400'};
   cursor: pointer;
@@ -35,8 +35,8 @@ const SectionTab = styled.button<{ isActive: boolean }>`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
-    background: ${props => props.isActive ? '#552a47' : '#f9f4f8'};
+    border-color: var(--color-primary, #552a47);
+    background: ${props => props.isActive ? 'var(--color-primary, #552a47)' : '#f9f4f8'};
   }
 `;
 
@@ -68,7 +68,7 @@ const SearchInput = styled.div`
     
     &:focus {
       outline: none;
-      border-color: #552a47;
+      border-color: var(--color-primary, #552a47);
     }
   }
   
@@ -95,14 +95,14 @@ const FilterButton = styled.button<{ isActive?: boolean }>`
   gap: 6px;
   padding: 8px 12px;
   background: ${props => props.isActive ? '#f9f4f8' : '#fff'};
-  border: 1px solid ${props => props.isActive ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.isActive ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
-  color: ${props => props.isActive ? '#552a47' : '#333'};
+  color: ${props => props.isActive ? 'var(--color-primary, #552a47)' : '#333'};
   font-size: 13px;
   cursor: pointer;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -119,7 +119,7 @@ const BulkActionBar = styled.div`
 const QuestionItem = styled.div<{ isSelected?: boolean }>`
   display: flex;
   background: ${props => props.isSelected ? '#f9f4f8' : '#fff'};
-  border: 1px solid ${props => props.isSelected ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.isSelected ? 'var(--color-primary, #552a47)' : '#ddd'};
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
@@ -129,7 +129,7 @@ const QuestionItem = styled.div<{ isSelected?: boolean }>`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 `;
@@ -171,7 +171,7 @@ const ActionButton = styled.button`
   
   &:hover {
     background: #f0f0f0;
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -193,9 +193,9 @@ const EmptyState = styled.div`
 
 const Button = styled.button<{ primary?: boolean }>`
   padding: 8px 16px;
-  background: ${props => props.primary ? '#552a47' : '#f5f5f5'};
+  background: ${props => props.primary ? 'var(--color-primary, #552a47)' : '#f5f5f5'};
   color: ${props => props.primary ? '#fff' : '#333'};
-  border: 1px solid ${props => props.primary ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.primary ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
@@ -328,7 +328,7 @@ const SectionQuestions: React.FC<SectionQuestionsProps> = ({
               key={section.id}
               isActive={activeSection === section.id}
               onClick={() => setActiveSection(section.id)}
-              style={{ borderLeft: `4px solid ${section.color || '#552a47'}` }}
+              style={{ borderLeft: `4px solid ${section.color || 'var(--color-primary, #552a47)'}` }}
             >
               {section.name}
             </SectionTab>

@@ -49,7 +49,7 @@ const ProgressBarContainer = styled.div`
 const ProgressBarFill = styled.div<{ width: number }>`
   height: 100%;
   width: ${props => props.width}%;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   border-radius: 6px;
   transition: width 0.3s ease;
 `;

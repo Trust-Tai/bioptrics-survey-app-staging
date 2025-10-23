@@ -52,7 +52,7 @@ const ViewToggleButton = styled.button<{ active: boolean }>`
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: ${props => props.active ? '#552a47' : '#f5f5f5'};
+  background: ${props => props.active ? 'var(--color-primary, #552a47)' : '#f5f5f5'};
   color: ${props => props.active ? '#fff' : '#555'};
   border: none;
   cursor: pointer;
@@ -60,7 +60,7 @@ const ViewToggleButton = styled.button<{ active: boolean }>`
   margin-left: 8px;
   
   &:hover {
-    background: ${props => props.active ? '#552a47' : '#e0e0e0'};
+    background: ${props => props.active ? 'var(--color-primary, #552a47)' : '#e0e0e0'};
   }
   
   svg {
@@ -100,7 +100,7 @@ const SurveyCard = styled.div`
     left: 0;
     width: 4px;
     height: 100%;
-    background: linear-gradient(to bottom, #552a47, #7b4068);
+    background: linear-gradient(to bottom, var(--color-primary, #552a47), #7b4068);
     opacity: 0;
     transition: opacity 0.25s ease;
   }
@@ -193,7 +193,7 @@ const StatItem = styled.div`
 const StatValue = styled.div`
   font-weight: 700;
   font-size: 24px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   position: relative;
   display: inline-block;
   
@@ -204,7 +204,7 @@ const StatValue = styled.div`
     left: 0;
     width: 24px;
     height: 2px;
-    background: linear-gradient(to right, #552a47, rgba(85, 42, 71, 0.2));
+    background: linear-gradient(to right, var(--color-primary, #552a47), rgba(85, 42, 71, 0.2));
     border-radius: 2px;
   }
 `;
@@ -280,7 +280,7 @@ const FilterButton = styled.button`
   }
 
   svg {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
     font-size: 16px;
   }
 `;
@@ -297,7 +297,7 @@ const SearchInput = styled.input`
 
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
   }
 
@@ -342,7 +342,7 @@ const FilterSelect = styled.select`
 
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
   }
   
@@ -394,7 +394,7 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #552a47, #7b4068);
+  background: linear-gradient(135deg, var(--color-primary, #552a47), #7b4068);
   color: white;
   border: none;
   border-radius: 6px;
@@ -469,7 +469,7 @@ const SurveyRow = styled.tr`
   }
   
   &:hover td:first-child {
-    box-shadow: inset 4px 0 0 #552a47;
+    box-shadow: inset 4px 0 0 var(--color-primary, #552a47);
   }
   
   &:active {
@@ -533,7 +533,7 @@ transition: all 0.2s;
 
 &:hover {
   background: rgba(85, 42, 71, 0.08);
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 }
 
 svg {
@@ -992,7 +992,7 @@ const SurveyResponses: React.FC = () => {
               fontWeight: 600,
               fontSize: 16,
               zIndex: 2000,
-              boxShadow: '0 2px 12px #552a4733',
+              boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
               minWidth: 280,
               display: 'flex',
               alignItems: 'center',
@@ -1044,7 +1044,7 @@ const SurveyResponses: React.FC = () => {
                     alignItems: 'center', 
                     justifyContent: 'center' 
                   }}>
-                    <FiFilter style={{ color: '#552a47', strokeWidth: 2.5 }} />
+                    <FiFilter style={{ color: 'var(--color-primary, #552a47)', strokeWidth: 2.5 }} />
                   </div>
                   <span style={{ fontWeight: 600, color: '#2d3748', fontSize: '16px' }}>Filters</span>
                 </div>
@@ -1061,7 +1061,7 @@ const SurveyResponses: React.FC = () => {
                     top: '50%', 
                     transform: 'translateY(-50%)', 
                     pointerEvents: 'none',
-                    color: searchTerm ? '#552a47' : '#a0aec0'
+                    color: searchTerm ? 'var(--color-primary, #552a47)' : '#a0aec0'
                   }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="11" cy="11" r="8"></circle>
@@ -1528,7 +1528,7 @@ const SurveyResponses: React.FC = () => {
                                  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
                                }}
                               style={{ 
-                                background: 'linear-gradient(135deg, #552a47, #7b4068)', 
+                                background: 'linear-gradient(135deg, var(--color-primary, #552a47), #7b4068)', 
                                 border: 'none', 
                                 borderRadius: '50%', 
                                 width: 44, 
@@ -1577,7 +1577,7 @@ const SurveyResponses: React.FC = () => {
                                   (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
                                 }}
                               >
-                                <FiFileText style={{ color: '#552a47' }} /> Basic Export
+                                <FiFileText style={{ color: 'var(--color-primary, #552a47)' }} /> Basic Export
                               </div>
                               <div 
                                 style={{ 
@@ -1597,7 +1597,7 @@ const SurveyResponses: React.FC = () => {
                                   (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
                                 }}
                               >
-                                <FiList style={{ color: '#552a47' }} /> Detailed Export
+                                <FiList style={{ color: 'var(--color-primary, #552a47)' }} /> Detailed Export
                               </div>
                               <div 
                                 style={{ 
@@ -1616,7 +1616,7 @@ const SurveyResponses: React.FC = () => {
                                   (e.currentTarget.parentElement as HTMLDivElement).style.display = 'none';
                                 }}
                               >
-                                <FiBarChart2 style={{ color: '#552a47' }} /> Analytics Export
+                                <FiBarChart2 style={{ color: 'var(--color-primary, #552a47)' }} /> Analytics Export
                               </div>
                             </div>
                           </div>

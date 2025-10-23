@@ -182,7 +182,7 @@ const QuickActionButton = styled.button`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   display: flex;
@@ -217,14 +217,14 @@ const Tab = styled.button<{ active: boolean }>`
   padding: 12px 20px;
   background: transparent;
   border: none;
-  border-bottom: ${props => props.active ? '2px solid #552a47' : '2px solid transparent'};
-  color: ${props => props.active ? '#552a47' : '#4a5568'};
+  border-bottom: ${props => props.active ? '2px solid var(--color-primary, #552a47)' : '2px solid transparent'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#4a5568'};
   font-weight: ${props => props.active ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 

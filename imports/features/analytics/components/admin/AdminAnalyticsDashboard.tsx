@@ -186,7 +186,7 @@ const QuickActionButton = styled.button`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   display: flex;
@@ -197,7 +197,7 @@ const QuickActionButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: #6d3a5d;
+    background: var(--color-secondary, #6d3a5d);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }

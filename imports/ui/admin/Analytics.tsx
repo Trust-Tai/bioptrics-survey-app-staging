@@ -191,7 +191,7 @@ const FilterSelect = styled.select`
       padding: 8px 12px;
       
       &:checked {
-        background-color: #552a47;
+        background-color: var(--color-primary, #552a47);
         color: white;
       
       &:hover:not(:checked) {
@@ -226,7 +226,7 @@ const DropdownButton = styled.button`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
   }
 `;
@@ -261,7 +261,7 @@ const SearchInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -287,13 +287,13 @@ const OptionItem = styled.div<{ isSelected: boolean }>`
 const Checkbox = styled.div<{ isSelected: boolean }>`
   width: 16px;
   height: 16px;
-  border: 1px solid ${props => props.isSelected ? '#552a47' : '#d1d5db'};
+  border: 1px solid ${props => props.isSelected ? 'var(--color-primary, #552a47)' : '#d1d5db'};
   border-radius: 3px;
   margin-right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.isSelected ? '#552a47' : 'transparent'};
+  background-color: ${props => props.isSelected ? 'var(--color-primary, #552a47)' : 'transparent'};
   
   &:after {
     content: '';
@@ -371,7 +371,7 @@ const KpiIcon = styled.div`
   height: 40px;
   border-radius: 8px;
   background-color: #f1f5f9;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -547,7 +547,7 @@ const MockBarChart = styled.div`
 
 const MockBar = styled.div`
   width: 30px;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   border-radius: 4px 4px 0 0;
 `;
 
@@ -583,7 +583,7 @@ const ActivityIcon = styled.div`
   height: 32px;
   border-radius: 50%;
   background-color: #f1f5f9;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -619,7 +619,7 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 4px;

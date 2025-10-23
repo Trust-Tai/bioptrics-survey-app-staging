@@ -66,16 +66,16 @@ const FilterButton = styled.button<{ active?: boolean }>`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: ${props => props.active ? '#552a47' : '#f5f5f5'};
+  background: ${props => props.active ? 'var(--color-primary, #552a47)' : '#f5f5f5'};
   color: ${props => props.active ? '#fff' : '#333'};
-  border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: ${props => props.active ? '#552a47' : '#eee'};
+    background: ${props => props.active ? 'var(--color-primary, #552a47)' : '#eee'};
   }
 `;
 
@@ -100,7 +100,7 @@ const TemplateCard = styled.div`
 `;
 
 const TemplateHeader = styled.div<{ color?: string }>`
-  background: ${props => props.color || '#552a47'};
+  background: ${props => props.color || 'var(--color-primary, #552a47)'};
   color: white;
   padding: 16px;
   position: relative;
@@ -145,7 +145,7 @@ const TemplateButton = styled.button`
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -308,7 +308,7 @@ const CancelButton = styled.button`
 
 const SaveButton = styled.button`
   padding: 10px 16px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;

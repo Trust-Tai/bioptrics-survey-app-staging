@@ -170,7 +170,7 @@ const Card = styled.div`
     left: 0;
     width: 100%;
     height: 4px;
-    background: linear-gradient(90deg, #552a47, #7a4e7a);
+    background: linear-gradient(90deg, var(--color-primary, #552a47), #7a4e7a);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -251,7 +251,7 @@ const WelcomeBackSection = styled.div`
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -264,14 +264,14 @@ const WelcomeTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const WelcomeSubtitle = styled.p`
   font-size: 16px;
   margin: 0;
   opacity: 0.9;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const MetricsRow = styled.div`
@@ -433,7 +433,7 @@ const FilterSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.1);
   }
   
@@ -1260,7 +1260,7 @@ const TrendTitle = styled.h3`
   gap: 10px;
   
   svg {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -1278,13 +1278,13 @@ const TrendTab = styled.button<{ active?: boolean }>`
   font-size: 13px;
   font-weight: 500;
   border: none;
-  background: ${props => props.active ? '#552a47' : 'transparent'};
+  background: ${props => props.active ? 'var(--color-primary, #552a47)' : 'transparent'};
   color: ${props => props.active ? 'white' : '#666'};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background: ${props => props.active ? '#552a47' : '#e0e0e0'};
+    background: ${props => props.active ? 'var(--color-primary, #552a47)' : '#e0e0e0'};
   }
 `;
 
@@ -1329,7 +1329,7 @@ const ResponseTrendLabel = styled.div`
 const TrendBarFill = styled.div<{ width: number; color?: string }>`
   height: 30px;
   width: ${props => props.width}%;
-  background: ${props => props.color || 'linear-gradient(90deg, #552a47 0%, #7a4e7a 100%)'};
+  background: ${props => props.color || 'linear-gradient(90deg, var(--color-primary, #552a47) 0%, #7a4e7a 100%)'};
   border-radius: 6px;
   position: relative;
   transition: width 0.5s ease;

@@ -55,12 +55,12 @@ const styles = {
   },
   accentBar: {
     height: '60px',
-    backgroundColor: '#552a47',
+    backgroundColor: 'var(--color-primary, #552a47)',
     marginBottom: '40px',
   },
   reportTitle: {
     fontSize: '32px',
-    color: '#552a47',
+    color: 'var(--color-primary, #552a47)',
     textAlign: 'center' as const,
     marginBottom: '10px',
   },
@@ -103,7 +103,7 @@ const styles = {
     boxSizing: 'border-box',
   },
   parentTagHeader: {
-    backgroundColor: '#552a47',
+    backgroundColor: 'var(--color-primary, #552a47)',
     color: 'white',
     padding: '10px',
     marginBottom: '15px',
@@ -121,11 +121,11 @@ const styles = {
     marginBottom: '20px',
     padding: '10px',
     backgroundColor: '#f8f8f8',
-    borderLeft: '3px solid #552a47',
+    borderLeft: '3px solid var(--color-primary, #552a47)',
   },
   childTagTitle: {
     fontSize: '16px',
-    color: '#552a47',
+    color: 'var(--color-primary, #552a47)',
     margin: '0 0 5px',
   },
   childTagDescription: {
@@ -243,7 +243,7 @@ const styles = {
     textAlign: 'center' as const,
   },
   button: {
-    backgroundColor: '#552a47',
+    backgroundColor: 'var(--color-primary, #552a47)',
     color: 'white',
     padding: '10px 20px',
     border: 'none',
@@ -484,12 +484,12 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
         }
         .accent-bar {
           height: 60px;
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           margin-bottom: 40px;
         }
         .report-title {
           font-size: 32px;
-          color: #552a47;
+          color: var(--color-primary, #552a47);
           text-align: center;
           margin-bottom: 10px;
         }
@@ -528,7 +528,7 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
           box-sizing: border-box;
         }
         .parent-tag-header {
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           color: white;
           padding: 10px;
           margin-bottom: 15px;
@@ -546,11 +546,11 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
           margin-bottom: 20px;
           padding: 10px;
           background-color: #f8f8f8;
-          border-left: 3px solid #552a47;
+          border-left: 3px solid var(--color-primary, #552a47);
         }
         .child-tag-title {
           font-size: 16px;
-          color: #552a47;
+          color: var(--color-primary, #552a47);
           margin: 0 0 5px;
         }
         .child-tag-description {
@@ -731,7 +731,7 @@ export const generateSurveyReportPDF = (reportData: SurveyReportData) => {
                       <div class="question">
                         <h5 class="question-title">${question.title}</h5>
                         <p class="question-description">${question.description}</p>
-                        <p class="categories" style="font-weight: bold; color: #333; margin-bottom: 10px;"><span style="color:#552a47;">${Array.isArray(question.categoryTags) && question.categoryTags.length > 0 ? question.categoryTags.join(', ') : 'None'}</span></p>
+                        <p class="categories" style="font-weight: bold; color: #333; margin-bottom: 10px;"><span style="color:var(--color-primary, #552a47);">${Array.isArray(question.categoryTags) && question.categoryTags.length > 0 ? question.categoryTags.join(', ') : 'None'}</span></p>
                         <p class="respondent-count">(${question.respondents} of ${reportData.totalRespondents} respondents answered this question)</p>
                         <p class="response-overview">${question.responseOverview}</p>
                         

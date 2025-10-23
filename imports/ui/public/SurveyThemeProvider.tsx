@@ -53,7 +53,7 @@ const adjustColor = (color: string, amount: number): string => {
 // Generate CSS rules based on theme properties
 const generateCssRules = (theme: SurveyThemeType): string => {
   // Extract theme properties with fallbacks
-  const primaryColor = theme.primaryColor || theme.color || '#552a47';
+  const primaryColor = theme.primaryColor || theme.color || 'var(--color-primary, #552a47)';
   const secondaryColor = theme.secondaryColor || '#97C646';
   const accentColor = theme.accentColor || '#b69d57';
   const backgroundColor = theme.backgroundColor || '#ffffff';

@@ -49,7 +49,7 @@ const IssuesList = styled.div`
   }
   
   &::-webkit-scrollbar-thumb {
-    background: #552a47;
+    background: var(--color-primary, #552a47);
     border-radius: 10px;
   }
 `;
@@ -127,7 +127,7 @@ const LoadingOverlay = styled.div`
 
 const LoadingSpinner = styled.div`
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #552a47;
+  border-top: 3px solid var(--color-primary, #552a47);
   border-radius: 50%;
   width: 30px;
   height: 30px;

@@ -58,8 +58,8 @@ const PaginationButton = styled.button<{ active?: boolean }>`
   padding: 8px 12px;
   margin: 0 4px;
   border-radius: 4px;
-  border: 1px solid ${props => props.active ? '#552a47' : '#e0e0e0'};
-  background-color: ${props => props.active ? '#552a47' : 'white'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary, #552a47)' : '#e0e0e0'};
+  background-color: ${props => props.active ? 'var(--color-primary, #552a47)' : 'white'};
   color: ${props => props.active ? 'white' : '#333'};
   cursor: pointer;
   font-size: 14px;
@@ -154,12 +154,12 @@ const QuestionTypeSelect = styled.select`
   padding-right: 32px;
 
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 0 0 3px rgba(85, 42, 71, 0.1);
   }
 `;

@@ -90,7 +90,7 @@ const SaveButton = styled.button<ButtonProps>`
   padding: 10px 15px;
   border-radius: 8px;
   border: none;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: #fff;
   font-weight: 600;
   font-size: 15px;
@@ -104,7 +104,7 @@ const SaveButton = styled.button<ButtonProps>`
   box-shadow: 0 2px 4px rgba(85, 42, 71, 0.3);
 
   &:hover:not(:disabled) {
-    background-color: #6a3559;
+    background-color: var(--color-secondary, #6a3559);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(85, 42, 71, 0.4);
   }
@@ -125,7 +125,7 @@ const PublishedButton = styled.button`
   padding: 10px 15px;
   border-radius: 8px;
   border: none;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: #fff;
   font-weight: 600;
   font-size: 15px;
@@ -138,7 +138,7 @@ const PublishedButton = styled.button`
   box-shadow: 0 2px 4px rgba(85, 42, 71, 0.3);
 
   &:hover {
-    background-color: #6a3559;
+    background-color: var(--color-secondary, #6a3559);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(85, 42, 71, 0.4);
   }

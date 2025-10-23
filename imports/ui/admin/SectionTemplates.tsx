@@ -10,7 +10,7 @@ const TemplateContainer = styled.div`
 const TemplateHeader = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 16px;
 `;
 
@@ -30,7 +30,7 @@ const TemplateCard = styled.div`
   cursor: pointer;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 2px 8px rgba(85, 42, 71, 0.1);
     transform: translateY(-2px);
   }
@@ -112,7 +112,7 @@ export const DEFAULT_SECTION_TEMPLATES: SectionTemplate[] = [
     description: 'Introduction to the survey with title, description, and logo',
     category: 'Basic',
     tags: ['introduction', 'welcome'],
-    color: '#552a47',
+    color: 'var(--color-primary, #552a47)',
     instructions: 'Welcome to our survey! Please take a few minutes to share your thoughts with us.',
     isRequired: true,
     progressIndicator: true,
@@ -120,7 +120,7 @@ export const DEFAULT_SECTION_TEMPLATES: SectionTemplate[] = [
     theme: {
       backgroundColor: '#ffffff',
       textColor: '#333333',
-      accentColor: '#552a47',
+      accentColor: 'var(--color-primary, #552a47)',
       fontFamily: 'Arial, sans-serif'
     },
     skipLogic: {

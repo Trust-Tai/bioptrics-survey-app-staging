@@ -73,7 +73,7 @@ const HeaderActions = styled.div`
 const Title = styled.h1`
   font-size: 24px;
   font-weight: 700;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -120,7 +120,7 @@ const QuickActionCard = styled.div`
   }
   
   svg {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -138,7 +138,7 @@ const QuickActionIcon = styled.div`
 const QuickActionTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
   text-align: center;
 `;
@@ -151,9 +151,9 @@ const QuickActionDescription = styled.p`
 `;
 
 const ActionButton = styled.button<{ primary?: boolean }>`
-  background: ${props => props.primary ? '#552a47' : 'transparent'};
-  color: ${props => props.primary ? 'white' : '#552a47'};
-  border: ${props => props.primary ? 'none' : '1px solid #552a47'};
+  background: ${props => props.primary ? 'var(--color-primary, #552a47)' : 'transparent'};
+  color: ${props => props.primary ? 'white' : 'var(--color-primary, #552a47)'};
+  border: ${props => props.primary ? 'none' : '1px solid var(--color-primary, #552a47)'};
   border-radius: 6px;
   padding: 8px 16px;
   font-size: 14px;
@@ -230,17 +230,17 @@ const Button = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     background: #f9f4f8;
   }
   
   svg {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
 const PrimaryButton = styled(Button)`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: #fff;
   border: none;
   
@@ -267,15 +267,15 @@ const Tab = styled.button<{ active: boolean }>`
   padding: 12px 20px;
   background: ${props => props.active ? '#f9f4f8' : 'transparent'};
   border: none;
-  border-bottom: 3px solid ${props => props.active ? '#552a47' : 'transparent'};
-  color: ${props => props.active ? '#552a47' : '#666'};
+  border-bottom: 3px solid ${props => props.active ? 'var(--color-primary, #552a47)' : 'transparent'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#666'};
   font-size: 15px;
   font-weight: ${props => props.active ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
     background: ${props => props.active ? '#f9f4f8' : '#f9f4f810'};
   }
 `;
@@ -309,7 +309,7 @@ const Spinner = styled.div`
   height: 100%;
   border-radius: 50%;
   border: 3px solid rgba(85, 42, 71, 0.1);
-  border-top-color: #552a47;
+  border-top-color: var(--color-primary, #552a47);
   animation: spin 1s linear infinite;
   
   @keyframes spin {

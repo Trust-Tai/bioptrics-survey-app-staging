@@ -93,12 +93,12 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
         }
         .accent-bar {
           height: 60px;
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           margin-bottom: 40px;
         }
         .report-title {
           font-size: 32px;
-          color: #552a47;
+          color: var(--color-primary, #552a47);
           text-align: center;
           margin-bottom: 10px;
         }
@@ -131,7 +131,7 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
           box-sizing: border-box;
         }
         .section-header {
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           color: white;
           padding: 10px;
           margin-bottom: 15px;
@@ -147,7 +147,7 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
         .survey-title {
           font-size: 24px;
           font-weight: bold;
-          color: #552a47;
+          color: var(--color-primary, #552a47);
           margin: 30px 0 15px;
           padding-bottom: 8px;
           border-bottom: 1px solid #e0e0e0;
@@ -175,7 +175,7 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
           border-radius: 4px;
           font-size: 12px;
           font-weight: 500;
-          background-color: #552a47;
+          background-color: var(--color-primary, #552a47);
           color: white;
         }
         .chart-container {
@@ -291,11 +291,11 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
               
               ${data.surveys.length === 1 ? `
                 <div style="margin-top: 30px; text-align: center;">
-                  <h3 style="font-size: 24px; color: #552a47; margin-bottom: 10px;">${data.surveys[0].surveyTitle}</h3>
+                  <h3 style="font-size: 24px; color: var(--color-primary, #552a47); margin-bottom: 10px;">${data.surveys[0].surveyTitle}</h3>
                 </div>
               ` : `
                 <div style="margin-top: 30px; text-align: center;">
-                  <h3 style="font-size: 20px; color: #552a47; margin-bottom: 10px;">Selected Surveys:</h3>
+                  <h3 style="font-size: 20px; color: var(--color-primary, #552a47); margin-bottom: 10px;">Selected Surveys:</h3>
                   <ul style="list-style: none; padding: 0; margin: 0;">
                     ${data.surveys.map(survey => `<li style="font-size: 18px; margin-bottom: 8px; color: #333;">${survey.surveyTitle}</li>`).join('')}
                   </ul>
@@ -339,7 +339,7 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
             <div class="page-break"></div>
             <div class="content-page">
               <!-- Survey Title Header -->
-              <div class="section" style="background-color: #552a47; padding: 15px; margin: 0 -24px 20px -10px; width: calc(100% + 48px);">
+              <div class="section" style="background-color: var(--color-primary, #552a47); padding: 15px; margin: 0 -24px 20px -10px; width: calc(100% + 48px);">
                 <h2 class="section-title" style="color: white; margin: 0; font-size: 18px;">${survey.surveyTitle}</h2>
                 <p class="section-description" style="color: white; margin: 5px 0 0 0; font-size: 14px;">Analysis of responses for the selected surveys</p>
               </div>
@@ -362,7 +362,7 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
                 <div style="background-color: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); padding: 24px; margin-bottom: 24px; page-break-inside: avoid;">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
                     <div style="font-size: 16px; font-weight: 500; color: #1e293b; max-width: 80%;"><span style="font-weight: 700;">Question ${questionIndex + 1}:</span> ${question.questionText}</div>
-                    <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: #552a47; color: white;">${question.questionType}</span>
+                    <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: var(--color-primary, #552a47); color: white;">${question.questionType}</span>
                   </div>
                   
                   ${isTextQuestion(question.questionType) && question.latestResponses && question.latestResponses.length > 0 ? `
@@ -429,7 +429,7 @@ export const generateAnalyticsExportPDF = (data: AnalyticsExportData) => {
                       <div style="background-color: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); padding: 24px; margin-bottom: 24px; page-break-inside: avoid;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
                           <div style="font-size: 16px; font-weight: 500; color: #1e293b; max-width: 80%;"><span style="font-weight: 700;">Question ${questionIndex + 1}:</span> ${question.questionText}</div>
-                          <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: #552a47; color: white;">${question.questionType}</span>
+                          <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: var(--color-primary, #552a47); color: white;">${question.questionType}</span>
                         </div>
                         
                         ${isTextQuestion(question.questionType) && question.latestResponses && question.latestResponses.length > 0 ? `

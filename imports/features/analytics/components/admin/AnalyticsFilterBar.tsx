@@ -86,8 +86,8 @@ const StyledSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
-    box-shadow: 0 0 0 1px #552a47;
+    border-color: var(--color-primary, #552a47);
+    box-shadow: 0 0 0 1px var(--color-primary, #552a47);
   }
 `;
 

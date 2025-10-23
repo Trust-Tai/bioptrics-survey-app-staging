@@ -55,7 +55,7 @@ const LoadingOverlay = styled.div`
 
 const LoadingSpinner = styled.div`
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #552a47;
+  border-top: 3px solid var(--color-primary, #552a47);
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -132,7 +132,7 @@ const EngagementTrendLine: React.FC<EngagementTrendLineProps> = ({ data, isLoadi
                       return (
                         <CustomTooltip>
                           <p style={{ margin: '0 0 5px', fontWeight: 'bold' }}>{label}</p>
-                          <p style={{ margin: '0', color: '#552a47' }}>
+                          <p style={{ margin: '0', color: 'var(--color-primary, #552a47)' }}>
                             Score: {payload[0].value}/5
                           </p>
                         </CustomTooltip>
@@ -145,19 +145,19 @@ const EngagementTrendLine: React.FC<EngagementTrendLineProps> = ({ data, isLoadi
                 <Line 
                   type="monotone" 
                   dataKey="score" 
-                  stroke="#552a47" 
+                  stroke="var(--color-primary, #552a47)" 
                   strokeWidth={2} 
                   dot={{ 
                     r: 6, 
-                    stroke: '#552a47', 
+                    stroke: 'var(--color-primary, #552a47)', 
                     strokeWidth: 2, 
                     fill: 'white' 
                   }} 
                   activeDot={{ 
                     r: 8, 
-                    stroke: '#552a47', 
+                    stroke: 'var(--color-primary, #552a47)', 
                     strokeWidth: 2, 
-                    fill: '#552a47' 
+                    fill: 'var(--color-primary, #552a47)' 
                   }} 
                 />
               </LineChart>

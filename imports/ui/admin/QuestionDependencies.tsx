@@ -21,7 +21,7 @@ const Title = styled.h4`
   margin: 0;
   font-weight: 600;
   font-size: 16px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -58,7 +58,7 @@ const Select = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -71,7 +71,7 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -80,9 +80,9 @@ const Button = styled.button<{ primary?: boolean }>`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: ${props => props.primary ? '#552a47' : '#fff'};
+  background: ${props => props.primary ? 'var(--color-primary, #552a47)' : '#fff'};
   color: ${props => props.primary ? '#fff' : '#333'};
-  border: 1px solid ${props => props.primary ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.primary ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;

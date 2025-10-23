@@ -70,7 +70,7 @@ const WelcomeSection = styled.div`
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 40px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -18,7 +18,7 @@ const Header = styled.div`
 const Title = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -40,12 +40,12 @@ const Button = styled.button`
   cursor: pointer;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     background: #f9f4f8;
   }
   
   svg {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -62,7 +62,7 @@ const FilterBar = styled.div`
 const FilterLabel = styled.span`
   font-size: 14px;
   font-weight: 500;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const FilterSelect = styled.select`
@@ -73,7 +73,7 @@ const FilterSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -91,7 +91,7 @@ const DateInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -110,7 +110,7 @@ const StatCard = styled.div`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 2px 8px rgba(85, 42, 71, 0.1);
   }
 `;
@@ -137,7 +137,7 @@ const StatIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const StatValue = styled.div`
@@ -173,7 +173,7 @@ const TableHeader = styled.th`
   background: #f9f4f8;
   border-bottom: 1px solid #e5d6c7;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 14px;
 `;
 
@@ -199,7 +199,7 @@ const ProgressBar = styled.div<{ progress: number; color?: string }>`
     left: 0;
     height: 100%;
     width: ${props => props.progress}%;
-    background: ${props => props.color || '#552a47'};
+    background: ${props => props.color || 'var(--color-primary, #552a47)'};
     transition: width 0.3s ease;
   }
 `;
@@ -376,7 +376,7 @@ const SurveyResponseAnalytics: React.FC<SurveyResponseAnalyticsProps> = ({
         
         <DateRangePicker>
           <FilterLabel>Date Range:</FilterLabel>
-          <FiCalendar size={16} style={{ color: '#552a47' }} />
+          <FiCalendar size={16} style={{ color: 'var(--color-primary, #552a47)' }} />
           <DateInput
             type="date"
             value={dateRange.start}
@@ -429,7 +429,7 @@ const SurveyResponseAnalytics: React.FC<SurveyResponseAnalyticsProps> = ({
       
       {/* Response Trend Chart */}
       <ChartContainer>
-        <h4 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 16, color: '#552a47' }}>Response Trend</h4>
+        <h4 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 16, color: 'var(--color-primary, #552a47)' }}>Response Trend</h4>
         <div style={{ height: 'calc(100% - 40px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', color: '#666' }}>
             <p>Response trend visualization would appear here.</p>
@@ -440,7 +440,7 @@ const SurveyResponseAnalytics: React.FC<SurveyResponseAnalyticsProps> = ({
       
       {/* Section Response Table */}
       <div>
-        <h4 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 16, color: '#552a47' }}>Section Performance</h4>
+        <h4 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 16, color: 'var(--color-primary, #552a47)' }}>Section Performance</h4>
         <SectionResponseTable>
           <thead>
             <tr>
@@ -470,11 +470,11 @@ const SurveyResponseAnalytics: React.FC<SurveyResponseAnalyticsProps> = ({
       {/* Demographic Breakdown */}
       {data.demographicBreakdown && (
         <div>
-          <h4 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 16, color: '#552a47' }}>Demographic Breakdown</h4>
+          <h4 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 16, color: 'var(--color-primary, #552a47)' }}>Demographic Breakdown</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
             {data.demographicBreakdown.map(demographic => (
               <StatCard key={demographic.category}>
-                <h5 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 15, color: '#552a47' }}>{demographic.category}</h5>
+                <h5 style={{ margin: '0 0 12px 0', fontWeight: 600, fontSize: 15, color: 'var(--color-primary, #552a47)' }}>{demographic.category}</h5>
                 <div>
                   {Object.entries(demographic.distribution).map(([label, value]) => (
                     <div key={label} style={{ marginBottom: 8 }}>

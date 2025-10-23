@@ -51,7 +51,7 @@ const ModalTitle = styled.h2`
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const CloseButton = styled.button`
@@ -68,7 +68,7 @@ const CloseButton = styled.button`
   
   &:hover {
     background-color: #f5f5f5;
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -81,8 +81,8 @@ const Tab = styled.button<{ active: boolean }>`
   padding: 12px 20px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${props => props.active ? '#552a47' : 'transparent'};
-  color: ${props => props.active ? '#552a47' : '#666'};
+  border-bottom: 2px solid ${props => props.active ? 'var(--color-primary, #552a47)' : 'transparent'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#666'};
   font-weight: ${props => props.active ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
@@ -91,7 +91,7 @@ const Tab = styled.button<{ active: boolean }>`
   gap: 8px;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -122,7 +122,7 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -137,7 +137,7 @@ const TextArea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -182,7 +182,7 @@ const ToolbarSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -223,12 +223,12 @@ const Select = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
 const Button = styled.button`
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 4px;
@@ -273,7 +273,7 @@ const ProgressBarContainer = styled.div`
 const ProgressBarFill = styled.div<{ progress: number }>`
   height: 100%;
   width: ${props => props.progress}%;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   transition: width 0.3s ease;
 `;
 

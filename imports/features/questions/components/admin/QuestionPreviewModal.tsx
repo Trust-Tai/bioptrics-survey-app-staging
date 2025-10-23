@@ -28,7 +28,7 @@ const QuestionPreviewModal: React.FC<QuestionPreviewModalProps> = ({ question, o
         minWidth: 350,
         maxWidth: 480,
         padding: '36px 36px 28px 36px',
-        boxShadow: '0 6px 32px #552a4733',
+        boxShadow: '0 6px 32px var(--color-primary, #552a47)33',
         position: 'relative',
       }}>
         <button 
@@ -40,14 +40,14 @@ const QuestionPreviewModal: React.FC<QuestionPreviewModalProps> = ({ question, o
             background: 'none', 
             border: 'none', 
             fontSize: 26, 
-            color: '#552a47', 
+            color: 'var(--color-primary, #552a47)', 
             cursor: 'pointer' 
           }} 
           title="Close"
         >
           ×
         </button>
-        <div style={{ fontWeight: 700, fontSize: 19, color: '#552a47', marginBottom: 14 }}>
+        <div style={{ fontWeight: 700, fontSize: 19, color: 'var(--color-primary, #552a47)', marginBottom: 14 }}>
           Question Preview
         </div>
         <div style={{ marginBottom: 10, fontWeight: 600, fontSize: 16, color: '#28211e' }}>
@@ -121,7 +121,7 @@ const QuestionPreviewModal: React.FC<QuestionPreviewModalProps> = ({ question, o
         )}
         {question.feedbackType && question.feedbackType !== 'none' && (
           <div style={{ marginTop: 18, padding: '10px 0 0 0', borderTop: '1px solid #e0e0e0' }}>
-            <span style={{ fontWeight: 600, color: '#552a47', fontSize: 15 }}>
+            <span style={{ fontWeight: 600, color: 'var(--color-primary, #552a47)', fontSize: 15 }}>
               Feedback Required:
             </span> 
             <span style={{ color: '#28211e', fontSize: 15 }}>

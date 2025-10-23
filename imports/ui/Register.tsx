@@ -133,10 +133,10 @@ export const Register: React.FC<RegisterProps> = ({ onAuth, onSwitchToLogin }) =
               <label style={{display:'block',marginBottom:'0.5rem'}}>
                 <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)} required />
                 {' '}You agree to the{' '}
-                <Link to="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#552a47', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}>
+                <Link to="/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary, #552a47)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}>
                   Terms of Use <FaExternalLinkAlt style={{ fontSize: '0.85em', marginLeft: 2 }} />
                 </Link>{' '}and{' '}
-                <Link to="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#552a47', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}>
+                <Link to="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary, #552a47)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}>
                   Privacy Notice <FaExternalLinkAlt style={{ fontSize: '0.85em', marginLeft: 2 }} />
                 </Link>{' '}
                 <span style={{color:'red'}}>*</span>
@@ -152,7 +152,7 @@ export const Register: React.FC<RegisterProps> = ({ onAuth, onSwitchToLogin }) =
         )}
         {emailChecked && !emailExists && (
           <>
-            <div style={{fontSize:'1.03rem',color:'#552a47',marginBottom:'1.25rem',textAlign:'center',fontWeight:600}}>
+            <div style={{fontSize:'1.03rem',color:'var(--color-primary, #552a47)',marginBottom:'1.25rem',textAlign:'center',fontWeight:600}}>
               Setting password for: <span style={{fontWeight:700}}>{email}</span>
             </div>
             <AuthInputWrapper>

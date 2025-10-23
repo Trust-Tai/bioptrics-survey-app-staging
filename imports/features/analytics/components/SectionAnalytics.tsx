@@ -17,7 +17,7 @@ const Header = styled.div`
 const Title = styled.h2`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -50,7 +50,7 @@ const MetricIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const MetricTitle = styled.h3`
@@ -98,7 +98,7 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -109,15 +109,15 @@ const ChartControls = styled.div`
 
 const ChartControl = styled.button<{ active?: boolean }>`
   background: ${props => props.active ? '#f9f4f8' : 'transparent'};
-  border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
-  color: ${props => props.active ? '#552a47' : '#666'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary, #552a47)' : '#ddd'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#666'};
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 12px;
   cursor: pointer;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -149,7 +149,7 @@ const TableHeader = styled.div`
 const TableTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -166,7 +166,7 @@ const TableHead = styled.thead`
     text-align: left;
     font-size: 14px;
     font-weight: 600;
-    color: #552a47;
+    color: var(--color-primary, #552a47);
     border-bottom: 1px solid #e5d6c7;
   }
 `;

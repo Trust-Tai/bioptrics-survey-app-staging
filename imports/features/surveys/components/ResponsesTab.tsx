@@ -101,7 +101,7 @@ const AnswerText = styled.div`
 
 const Spinner = styled.div`
   border: 3px solid rgba(0, 0, 0, 0.1);
-  border-top: 3px solid #552a47;
+  border-top: 3px solid var(--color-primary, #552a47);
   border-radius: 50%;
   width: 24px;
   height: 24px;

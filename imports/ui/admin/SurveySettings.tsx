@@ -17,7 +17,7 @@ const Header = styled.div`
 const Title = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -26,7 +26,7 @@ const SaveButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -59,7 +59,7 @@ const SettingsCard = styled.div`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -78,13 +78,13 @@ const CardIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const CardTitle = styled.h4`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -137,7 +137,7 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -150,7 +150,7 @@ const Select = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -165,7 +165,7 @@ const TextArea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -179,7 +179,7 @@ const TagsInput = styled.div`
   min-height: 40px;
   
   &:focus-within {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 

@@ -73,7 +73,7 @@ const Title = styled.div`
 `;
 
 const IconContainer = styled.div`
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;

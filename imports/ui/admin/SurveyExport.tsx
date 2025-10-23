@@ -10,7 +10,7 @@ const Container = styled.div`
 const Header = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 16px;
 `;
 
@@ -23,14 +23,14 @@ const ExportGrid = styled.div`
 
 const ExportCard = styled.div<{ selected?: boolean }>`
   background: ${props => props.selected ? '#f9f4f8' : '#fff'};
-  border: 1px solid ${props => props.selected ? '#552a47' : '#e5d6c7'};
+  border: 1px solid ${props => props.selected ? 'var(--color-primary, #552a47)' : '#e5d6c7'};
   border-radius: 10px;
   padding: 16px;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 2px 8px rgba(85, 42, 71, 0.1);
   }
 `;
@@ -50,7 +50,7 @@ const ExportIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const ExportTitle = styled.h4`
@@ -85,7 +85,7 @@ const OptionGroup = styled.div`
 const OptionLabel = styled.h5`
   font-size: 15px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0 0 8px 0;
 `;
 
@@ -133,7 +133,7 @@ const Button = styled.button`
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: #fff;
   border: none;
   border-radius: 6px;

@@ -46,13 +46,13 @@
 }
 
 .answer-type-card:hover:not(.disabled) {
-  border-color: #552a47;
+  border-color: var(--color-primary, #552a47);
   box-shadow: 0 2px 8px rgba(85, 42, 71, 0.15);
   transform: translateY(-2px);
 }
 
 .answer-type-card.selected {
-  border-color: #552a47;
+  border-color: var(--color-primary, #552a47);
   background-color: #f4ebf1;
   box-shadow: 0 2px 8px rgba(85, 42, 71, 0.15);
   position: relative;
@@ -65,7 +65,7 @@
   left: 0;
   width: 100%;
   height: 3px;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
 }
 
 .answer-type-card.disabled {
@@ -75,7 +75,7 @@
 
 .answer-type-icon {
   font-size: 20px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 5px;
   transition: transform 0.2s ease;
 }

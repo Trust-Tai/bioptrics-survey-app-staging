@@ -576,7 +576,7 @@ const Container = styled.div`
 
 const Title = styled.h2`
   font-size: 1.5rem;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0 0 16px 0;
 `;
 
@@ -593,7 +593,7 @@ const UploadSection = styled.div`
 `;
 
 const UploadButton = styled.button`
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 4px;
@@ -618,8 +618,8 @@ const UploadButton = styled.button`
 
 const TemplateButton = styled.button`
   background-color: #ffffff;
-  color: #552a47;
-  border: 1px solid #552a47;
+  color: var(--color-primary, #552a47);
+  border: 1px solid var(--color-primary, #552a47);
   border-radius: 4px;
   padding: 10px 16px;
   font-size: 14px;
@@ -648,13 +648,13 @@ const FileFormatInfo = styled.div`
   margin-top: 8px;
   padding: 10px;
   background-color: #f8f5f7;
-  border-left: 3px solid #552a47;
+  border-left: 3px solid var(--color-primary, #552a47);
   font-size: 13px;
   line-height: 1.5;
 `;
 
 const ImportButton = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 4px;
@@ -678,7 +678,7 @@ const ImportButton = styled.button`
 
 const SecondaryButton = styled.button`
   background: #f7f2f5;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   border: 1px solid #d1c1cc;
   border-radius: 4px;
   padding: 12px 24px;
@@ -716,7 +716,7 @@ const SuccessMessage = styled.div`
 
 const MappingTitle = styled.h3`
   font-size: 1.2rem;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 24px 0 8px 0;
 `;
 

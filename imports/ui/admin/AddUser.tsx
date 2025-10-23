@@ -107,7 +107,7 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -132,7 +132,7 @@ const PasswordToggleButton = styled.button`
   justify-content: center;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -192,7 +192,7 @@ const CopyButton = styled.button`
   margin-left: 8px;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -204,7 +204,7 @@ const Select = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -215,7 +215,7 @@ const Checkbox = styled.div`
 `;
 
 const Button = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -497,7 +497,7 @@ const AddUser = () => {
             fontWeight: 600,
             fontSize: 16,
             zIndex: 2000,
-            boxShadow: '0 2px 12px #552a4733',
+            boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
           }}>
             {alert.message}
           </div>

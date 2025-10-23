@@ -170,7 +170,7 @@ const customPdfStyles = `
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
-    background-color: #552a47;
+    background-color: var(--color-primary, #552a47);
     color: white;
   }
   
@@ -660,7 +660,7 @@ const generatePDF = (reportData: SurveyReportData) => {
           ${reportData.parentTags.map((parentTag, index) => `
             ${index > 0 ? '<div class="page-break"></div>' : ''}
             <div class="content-page">
-              <div class="section" style="background-color: #552a47; padding: 15px; margin: 0 -24px 20px -10px; width: calc(100% + 48px);">
+              <div class="section" style="background-color: var(--color-primary, #552a47); padding: 15px; margin: 0 -24px 20px -10px; width: calc(100% + 48px);">
                 <h2 class="section-title" style="color: white; margin: 0; font-size: 18px;">${parentTag.name}</h2>
                 <p class="section-description" style="color: white; margin: 5px 0 0 0; font-size: 14px;">${parentTag.description}</p>
               </div>
@@ -674,7 +674,7 @@ const generatePDF = (reportData: SurveyReportData) => {
                       <div style="background-color: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); padding: 24px; margin-bottom: 24px; page-break-inside: avoid;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                           <div style="font-size: 16px; font-weight: 500; color: #1e293b; max-width: 80%;"><span style="font-weight: 700;">Question ${questionIndex + 1}:</span> ${question.title.replace(/\n/g, ' ').replace(/<br\s*\/?>/gi, ' ')}</div>
-                          <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: #552a47; color: white;">${question.categoryTags && question.categoryTags.length > 0 ? question.categoryTags[0] : 'Unknown'}</span>
+                          <span style="display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background-color: var(--color-primary, #552a47); color: white;">${question.categoryTags && question.categoryTags.length > 0 ? question.categoryTags[0] : 'Unknown'}</span>
                         </div>
                         
                         <p style="display:none; font-size: 14px; font-weight: 500; color: #46223b; margin-bottom: 15px;">
@@ -993,12 +993,12 @@ const generatePDFWithoutSections = (
               }
               .accent-bar {
                 height: 60px;
-                background-color: #552a47;
+                background-color: var(--color-primary, #552a47);
                 margin-bottom: 40px;
               }
               .report-title {
                 font-size: 32px;
-                color: #552a47;
+                color: var(--color-primary, #552a47);
                 text-align: center;
                 margin-bottom: 10px;
               }
@@ -1061,13 +1061,13 @@ const generatePDFWithoutSections = (
             <div class="page-break"></div>
             <div class="content-page">
               <div>
-                <div class="parent-tag-header" style="background-color: #552a47; color: white; padding: 10px; margin-bottom: 15px;">
+                <div class="parent-tag-header" style="background-color: var(--color-primary, #552a47); color: white; padding: 10px; margin-bottom: 15px;">
                   <h3 style="font-size: 18px; margin: 0;">${reportData.parentTags[0].name}</h3>
                   <p style="font-size: 12px; margin: 5px 0 0;">${reportData.parentTags[0].description}</p>
                 </div>
                 
                 <div class="child-tag" style="margin-left: 0; margin-bottom: 20px; padding: 10px;">
-                  <h4 style="font-size: 16px; color: #552a47; margin: 0 0 5px;">${reportData.parentTags[0].childTags[0].name}</h4>
+                  <h4 style="font-size: 16px; color: var(--color-primary, #552a47); margin: 0 0 5px;">${reportData.parentTags[0].childTags[0].name}</h4>
                   <p style="font-size: 12px; margin: 0 0 10px;">${reportData.parentTags[0].childTags[0].description}</p>
                   
                   ${reportData.parentTags[0].childTags[0].questions.map(question => `

@@ -26,7 +26,7 @@ const Header = styled.div`
 
 const Title = styled.h2`
   margin: 0;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 24px;
   font-weight: 700;
 `;
@@ -36,7 +36,7 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #552a47, #7b4068);
+  background: linear-gradient(135deg, var(--color-primary, #552a47), #7b4068);
   color: white;
   border: none;
   border-radius: 6px;
@@ -110,7 +110,7 @@ const StatCardHeader = styled.div`
 const StatCardTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -122,13 +122,13 @@ const StatCardIcon = styled.div`
   height: 32px;
   background: #f7f2f5;
   border-radius: 8px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const StatValue = styled.div`
   font-size: 32px;
   font-weight: 700;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 8px;
 `;
 
@@ -205,7 +205,7 @@ const SurveyLink = styled.a`
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   text-decoration: none;
   font-weight: 500;
   
@@ -219,7 +219,7 @@ const ExpandButton = styled.button`
   align-items: center;
   background: none;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   cursor: pointer;
   font-size: 14px;
   padding: 4px 8px;
@@ -251,7 +251,7 @@ const DetailSection = styled.div`
 const DetailTitle = styled.h4`
   margin: 0 0 8px;
   font-size: 16px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const DetailList = styled.div`
@@ -288,8 +288,8 @@ const Pagination = styled.div`
 
 const PageButton = styled.button<{ active?: boolean }>`
   padding: 6px 12px;
-  border: 1px solid ${props => props.active ? '#552a47' : '#dee2e6'};
-  background-color: ${props => props.active ? '#552a47' : 'white'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary, #552a47)' : '#dee2e6'};
+  background-color: ${props => props.active ? 'var(--color-primary, #552a47)' : 'white'};
   color: ${props => props.active ? 'white' : '#212529'};
   border-radius: 4px;
   cursor: pointer;
@@ -728,7 +728,7 @@ const AllSurveyResponses: React.FC = () => {
               fontWeight: 600,
               fontSize: 16,
               zIndex: 2000,
-              boxShadow: '0 2px 12px #552a4733',
+              boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
               minWidth: 280,
               display: 'flex',
               alignItems: 'center',
@@ -837,7 +837,7 @@ const AllSurveyResponses: React.FC = () => {
             fontWeight: 600,
             fontSize: 16,
             zIndex: 2000,
-            boxShadow: '0 2px 12px #552a4733',
+            boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
             minWidth: 280,
             display: 'flex',
             alignItems: 'center',

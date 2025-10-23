@@ -68,7 +68,7 @@ const ActionButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-right: 10px;
   font-size: 16px;
   
@@ -78,7 +78,7 @@ const ActionButton = styled.button`
 `;
 
 const AdminBadge = styled.span`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
@@ -167,7 +167,7 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -192,7 +192,7 @@ const PasswordToggleButton = styled.button`
   justify-content: center;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -204,7 +204,7 @@ const Select = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -237,7 +237,7 @@ const CancelButton = styled.button`
 `;
 
 const Button = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -413,7 +413,7 @@ const AllUsers = () => {
             fontWeight: 600,
             fontSize: 16,
             zIndex: 2000,
-            boxShadow: '0 2px 12px #552a4733',
+            boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
           }}>
             {alert.message}
           </div>
@@ -586,7 +586,7 @@ const AllUsers = () => {
               maxWidth: '90%',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             }}>
-              <h3 style={{ margin: '0 0 16px 0', color: '#552a47' }}>{confirmDialog.title}</h3>
+              <h3 style={{ margin: '0 0 16px 0', color: 'var(--color-primary, #552a47)' }}>{confirmDialog.title}</h3>
               <p style={{ margin: '0 0 24px 0', lineHeight: 1.5 }}>{confirmDialog.message}</p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button 

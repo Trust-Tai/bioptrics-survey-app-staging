@@ -18,7 +18,7 @@ const Header = styled.div`
 const Title = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -35,14 +35,14 @@ const DeviceButton = styled.button<{ active: boolean }>`
   height: 40px;
   border-radius: 6px;
   background: ${props => props.active ? '#f9f4f8' : '#fff'};
-  border: 1px solid ${props => props.active ? '#552a47' : '#ddd'};
-  color: ${props => props.active ? '#552a47' : '#666'};
+  border: 1px solid ${props => props.active ? 'var(--color-primary, #552a47)' : '#ddd'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#666'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
-    color: #552a47;
+    border-color: var(--color-primary, #552a47);
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -129,13 +129,13 @@ const NavigationButton = styled.button`
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 6px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     background: #f9f4f8;
   }
   
@@ -161,7 +161,7 @@ const ProgressBar = styled.div<{ progress: number }>`
     left: 0;
     height: 100%;
     width: ${props => props.progress}%;
-    background: #552a47;
+    background: var(--color-primary, #552a47);
     transition: width 0.3s ease;
   }
 `;
@@ -260,7 +260,7 @@ const SectionHeader = styled.div<{ color?: string }>`
   h2 {
     font-size: 20px;
     font-weight: 600;
-    color: ${props => props.color || '#552a47'};
+    color: ${props => props.color || 'var(--color-primary, #552a47)'};
     margin: 0 0 8px 0;
   }
   
@@ -277,7 +277,7 @@ const SectionInstructions = styled.div`
   background: #f9f4f8;
   border-radius: 6px;
   font-size: 14px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const QuestionContainer = styled.div`
@@ -333,7 +333,7 @@ const TextInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -348,7 +348,7 @@ const TextArea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -362,16 +362,16 @@ const RatingOption = styled.button<{ selected?: boolean }>`
   width: 40px;
   height: 40px;
   border-radius: 6px;
-  background: ${props => props.selected ? '#552a47' : '#f9f4f8'};
+  background: ${props => props.selected ? 'var(--color-primary, #552a47)' : '#f9f4f8'};
   color: ${props => props.selected ? '#fff' : '#333'};
-  border: 1px solid ${props => props.selected ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.selected ? 'var(--color-primary, #552a47)' : '#ddd'};
   font-weight: ${props => props.selected ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
-    background: ${props => props.selected ? '#552a47' : '#f0e8ed'};
+    border-color: var(--color-primary, #552a47);
+    background: ${props => props.selected ? 'var(--color-primary, #552a47)' : '#f0e8ed'};
   }
 `;
 
@@ -422,7 +422,7 @@ const SurveyPreview: React.FC<SurveyPreviewProps> = ({
           description: 'Introduction to the survey',
           isActive: true,
           priority: 0,
-          color: '#552a47',
+          color: 'var(--color-primary, #552a47)',
           instructions: 'Please read the introduction carefully before proceeding.'
         },
         {
@@ -488,7 +488,7 @@ const SurveyPreview: React.FC<SurveyPreviewProps> = ({
       setData({
         title: 'Employee Satisfaction Survey',
         description: 'Help us improve your workplace experience by sharing your feedback.',
-        color: '#552a47',
+        color: 'var(--color-primary, #552a47)',
         image: '/images/survey-header.jpg',
         sections: mockSections,
         questions: mockQuestions,

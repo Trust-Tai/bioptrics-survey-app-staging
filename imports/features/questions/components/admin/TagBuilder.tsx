@@ -114,7 +114,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
     if (data.__isNew__) {
       return (
         <components.Option {...props}>
-          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: '#552a47', fontWeight: 'bold' }}>
+          <div style={{ fontFamily: 'monospace', whiteSpace: 'pre', color: 'var(--color-primary, #552a47)', fontWeight: 'bold' }}>
             Create this tag: "{data.label}"
           </div>
         </components.Option>

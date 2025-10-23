@@ -158,7 +158,7 @@ const Tab = styled.button<{ active: boolean }>`
   transition: all 0.2s;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 

@@ -50,7 +50,7 @@ const SwitchInput = styled.input`
   height: 0;
   
   &:checked + span {
-    background-color: #552a47;
+    background-color: var(--color-primary, #552a47);
   }
   
   &:checked + span:before {
@@ -167,7 +167,7 @@ const SaveButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;

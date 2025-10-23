@@ -161,7 +161,7 @@ const generateDummyData = (): DeviceUsageData[] => {
       deviceType: 'desktop',
       count: 114,
       value: 100,
-      color: '#552a47'
+      color: 'var(--color-primary, #552a47)'
     },
     {
       name: 'Mobile',
@@ -175,7 +175,7 @@ const generateDummyData = (): DeviceUsageData[] => {
       deviceType: 'tablet',
       count: 0,
       value: 0,
-      color: '#552a4780'
+      color: 'var(--color-primary-transparent, #552a4780)'
     }
   ];
 };

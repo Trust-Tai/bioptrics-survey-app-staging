@@ -174,7 +174,7 @@ const MetricCard = styled.div`
     gap: 8px;
     
     svg {
-      color: #552a47;
+      color: var(--color-primary, #552a47);
     }
   }
   
@@ -217,7 +217,7 @@ const ChartContainer = styled.div`
     gap: 8px;
     
     svg {
-      color: #552a47;
+      color: var(--color-primary, #552a47);
     }
   }
 `;
@@ -238,7 +238,7 @@ const TableContainer = styled.div`
     gap: 8px;
     
     svg {
-      color: #552a47;
+      color: var(--color-primary, #552a47);
     }
   }
   
@@ -281,7 +281,7 @@ const ProgressBar = styled.div<{ progress: number }>`
     display: block;
     height: 100%;
     width: ${props => props.progress}%;
-    background: #552a47;
+    background: var(--color-primary, #552a47);
     border-radius: 4px;
     transition: width 0.3s ease;
   }

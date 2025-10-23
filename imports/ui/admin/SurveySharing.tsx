@@ -23,7 +23,7 @@ const SharingHeader = styled.div`
 const SharingTitle = styled.h3`
   font-weight: 700;
   font-size: 18px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
   display: flex;
   align-items: center;
@@ -40,8 +40,8 @@ const Tab = styled.button<{ active: boolean }>`
   padding: 10px 16px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${props => props.active ? '#552a47' : 'transparent'};
-  color: ${props => props.active ? '#552a47' : '#666'};
+  border-bottom: 2px solid ${props => props.active ? 'var(--color-primary, #552a47)' : 'transparent'};
+  color: ${props => props.active ? 'var(--color-primary, #552a47)' : '#666'};
   font-weight: ${props => props.active ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
@@ -50,7 +50,7 @@ const Tab = styled.button<{ active: boolean }>`
   gap: 8px;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -81,7 +81,7 @@ const UserAvatar = styled.div`
   height: 36px;
   border-radius: 50%;
   background: #f0e6f5;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,7 +109,7 @@ const UserRole = styled.div`
   padding: 2px 8px;
   border-radius: 12px;
   background: #f0e6f5;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const UserActions = styled.div`
@@ -127,7 +127,7 @@ const ActionButton = styled.button`
   
   &:hover {
     background: #f5f5f5;
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -140,12 +140,12 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
 const Button = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -184,13 +184,13 @@ const LinkInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
 const CopyButton = styled.button`
   background: #f0e6f5;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   border: none;
   border-radius: 6px;
   padding: 10px 16px;
@@ -218,7 +218,7 @@ const NotificationContainer = styled.div<{ type: 'success' | 'error' }>`
   font-weight: 600;
   font-size: 16px;
   z-index: 2000;
-  box-shadow: 0 2px 12px #552a4733;
+  box-shadow: 0 2px 12px var(--color-primary, #552a47)33;
   min-width: 280px;
   display: flex;
   align-items: center;

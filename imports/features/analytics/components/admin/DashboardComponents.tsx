@@ -158,7 +158,7 @@ const KpiIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const MetricValue = styled.div`

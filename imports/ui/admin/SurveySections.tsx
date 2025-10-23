@@ -26,7 +26,7 @@ const SectionContainer = styled.div`
 const SectionHeader = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 16px;
 `;
 
@@ -46,7 +46,7 @@ const SectionCard = styled.div<{ isActive?: boolean; isComplete?: boolean }>`
   }};
   border: 1px solid ${props => {
     if (props.isComplete) return '#2ecc71';
-    return props.isActive ? '#552a47' : '#e5d6c7';
+    return props.isActive ? 'var(--color-primary, #552a47)' : '#e5d6c7';
   }};
   border-radius: 10px;
   transition: all 0.2s;
@@ -54,7 +54,7 @@ const SectionCard = styled.div<{ isActive?: boolean; isComplete?: boolean }>`
   position: relative;
   
   &:hover {
-    border-color: ${props => props.isComplete ? '#2ecc71' : '#552a47'};
+    border-color: ${props => props.isComplete ? '#2ecc71' : 'var(--color-primary, #552a47)'};
     box-shadow: 0 2px 8px rgba(85, 42, 71, 0.1);
   }
   
@@ -157,7 +157,7 @@ const QuickActionsMenu = styled.div`
 const QuickActionButton = styled.button`
   background: transparent;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 12px;
   font-weight: 500;
   display: flex;
@@ -192,7 +192,7 @@ const ActionButton = styled.button`
   
   &:hover {
     background: #f0f0f0;
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -201,8 +201,8 @@ const AddSectionButton = styled.button`
   align-items: center;
   gap: 8px;
   background: #fff;
-  border: 1px dashed #552a47;
-  color: #552a47;
+  border: 1px dashed var(--color-primary, #552a47);
+  color: var(--color-primary, #552a47);
   padding: 12px 16px;
   border-radius: 10px;
   font-weight: 500;
@@ -253,9 +253,9 @@ const FormActions = styled.div`
 
 const Button = styled.button<{ primary?: boolean }>`
   padding: 8px 16px;
-  background: ${props => props.primary ? '#552a47' : '#f5f5f5'};
+  background: ${props => props.primary ? 'var(--color-primary, #552a47)' : '#f5f5f5'};
   color: ${props => props.primary ? '#fff' : '#333'};
-  border: 1px solid ${props => props.primary ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.primary ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
@@ -499,7 +499,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
         description: newSection.description || '',
         isActive: true,
         priority: sections.length,
-        color: newSection.color || '#552a47',
+        color: newSection.color || 'var(--color-primary, #552a47)',
         instructions: newSection.instructions,
         isRequired: newSection.isRequired,
         progressIndicator: newSection.progressIndicator
@@ -562,7 +562,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#552a47',
+                color: 'var(--color-primary, #552a47)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -689,7 +689,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
       
       {isAdding && (
         <SectionForm>
-          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Add New Section</h3>
+          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: 'var(--color-primary, #552a47)' }}>Add New Section</h3>
           
           {/* Basic Information */}
           <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
@@ -738,7 +738,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
                 <Label>Section Color</Label>
                 <Input 
                   type="color" 
-                  value={newSection.color || '#552a47'} 
+                  value={newSection.color || 'var(--color-primary, #552a47)'} 
                   onChange={(e) => setNewSection({...newSection, color: e.target.value})}
                   style={{ height: 40 }}
                 />
@@ -791,7 +791,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
       
       {editingSection && (
         <SectionForm>
-          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: '#552a47' }}>Edit Section</h3>
+          <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 18, color: 'var(--color-primary, #552a47)' }}>Edit Section</h3>
           
           {/* Basic Information */}
           <div style={{ marginBottom: 24, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}>
@@ -828,7 +828,7 @@ export const SurveySections: React.FC<SurveySectionsProps> = ({
                 <Label>Section Color</Label>
                 <Input 
                   type="color" 
-                  value={editingSection.color || '#552a47'} 
+                  value={editingSection.color || 'var(--color-primary, #552a47)'} 
                   onChange={(e) => setEditingSection({...editingSection, color: e.target.value})}
                   style={{ height: 40 }}
                 />

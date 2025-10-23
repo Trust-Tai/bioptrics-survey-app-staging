@@ -4,7 +4,7 @@
 export const colors = {
   // Primary color and its shades
   primary: {
-    main: '#552a47',      // Main primary color (previously #552a47 or #552a47)
+    main: 'var(--color-primary, #552a47)',      // Main primary color (dynamic from theme)
     light: '#7a3e68',     // Lighter shade (previously #d4af37)
     lighter: '#9e5288',   // Even lighter shade
     dark: '#3d1f33',      // Darker shade

@@ -64,7 +64,7 @@ const SurveyContent = styled.div`
 
 const QuestionLabel = styled.div<{isPurpose?: boolean}>`
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 1.18rem;
   margin-bottom: ${({isPurpose}) => isPurpose ? '30px' : '14px'};
   text-align: left;
@@ -87,7 +87,7 @@ const OptionRow = styled.div<{vertical?: boolean}>`
       border-radius: 8px;
     }
     &::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #a96fa6 0%, #552a47 100%);
+      background: linear-gradient(135deg, #a96fa6 0%, var(--color-primary, #552a47) 100%);
       border-radius: 8px;
       min-height: 32px;
       box-shadow: 0 2px 6px rgba(85,42,71,0.08);
@@ -108,9 +108,9 @@ const OptionButton = styled.button<{selected: boolean}>`
   font-size: 1.13rem;
   padding: 0.85rem 1.2rem;
   border-radius: 12px;
-  border: 2px solid ${({selected}) => selected ? '#552a47' : '#e2d5e2'};
+  border: 2px solid ${({selected}) => selected ? 'var(--color-primary, #552a47)' : '#e2d5e2'};
   background: ${({selected}) => selected ? 'rgba(85,42,71,0.07)' : '#fff'};
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-weight: 600;
   margin-bottom: 0;
   transition: border 0.18s, background 0.18s;
@@ -354,7 +354,7 @@ export default function GetToKnowYou() {
         <LeftImage image={ONBOARD_IMAGE} />
         <RightSurvey>
           <SurveyContent>
-            <AuthTitle style={{marginBottom: 32, textAlign: 'left', fontSize: '2.1rem', color: '#552a47'}}>Let's get to know you!</AuthTitle>
+            <AuthTitle style={{marginBottom: 32, textAlign: 'left', fontSize: '2.1rem', color: 'var(--color-primary, #552a47)'}}>Let's get to know you!</AuthTitle>
             <div style={{ width: '100%', margin: '32px 0', color: '#a96fa6', fontSize: 22, fontWeight: 600, textAlign: 'center' }}>
               No questions available. Please ask your admin to add questions in the Question Bank.
             </div>
@@ -372,7 +372,7 @@ export default function GetToKnowYou() {
           Skip <FaForward style={{marginLeft:8, fontSize:'1.1em', verticalAlign:'middle'}} />
         </SkipButton>
         <SurveyContent>
-          <AuthTitle style={{marginBottom: 32, textAlign: 'left', fontSize: '2.1rem', color: '#552a47'}}>Let's get to know you!</AuthTitle>
+          <AuthTitle style={{marginBottom: 32, textAlign: 'left', fontSize: '2.1rem', color: 'var(--color-primary, #552a47)'}}>Let's get to know you!</AuthTitle>
           {/* Progressive questions: show all previous questions/answers, and the next unanswered one */}
           {questions.slice(0, step + 1).map((q, idx) => (
             <div key={q.name || idx} style={{ width: '100%', marginBottom: 28, opacity: idx < step ? 0.7 : 1 }}>

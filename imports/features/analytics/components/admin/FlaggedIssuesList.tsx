@@ -43,7 +43,7 @@ const IssuesList = styled.div`
   }
   
   &::-webkit-scrollbar-thumb {
-    background: #552a47;
+    background: var(--color-primary, #552a47);
     border-radius: 10px;
   }
 `;

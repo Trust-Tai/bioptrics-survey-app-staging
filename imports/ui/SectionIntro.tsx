@@ -61,7 +61,7 @@ const Description = styled.p`
 `;
 
 const ContinueButton = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: #fff;
   border: none;
   border-radius: 22px;
@@ -102,7 +102,7 @@ const BackButton = styled.button`
   top: 24px;
   background: none;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 2rem;
   font-weight: bold;
   z-index: 10;

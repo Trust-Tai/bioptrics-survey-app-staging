@@ -72,14 +72,14 @@ const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({ isOpen, onClo
           <textarea value={description} onChange={e => setDescription(e.target.value)} style={{ width: '100%', padding: 6, marginTop: 4, minHeight: 48 }} />
         </div>
         {error && <div style={{ color: 'red', marginBottom: 10 }}>{error}</div>}
-        <button onClick={handleSave} disabled={saving} style={{ background: '#552a47', color: '#fff', padding: '7px 18px', border: 'none', borderRadius: 4, fontWeight: 600 }}>
+        <button onClick={handleSave} disabled={saving} style={{ background: 'var(--color-primary, #552a47)', color: '#fff', padding: '7px 18px', border: 'none', borderRadius: 4, fontWeight: 600 }}>
           {saving ? 'Saving...' : 'Save Template'}
         </button>
       </div>
       <style>{`
         .modal-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: #fff; padding: 24px 28px; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); min-width: 320px; max-width: 400px; position: relative; }
-        .close-btn { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: #552a47; }
+        .close-btn { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--color-primary, #552a47); }
         .close-btn:hover { color: #a85e8e; }
       `}</style>
     </div>

@@ -50,7 +50,7 @@
 .preview-modal-header h2 {
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 }
 
@@ -72,14 +72,14 @@
 }
 
 .device-button.active {
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   background: rgba(85, 42, 71, 0.1);
 }
 
 .close-button {
   background: none;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 18px;
   cursor: pointer;
   padding: 6px;
@@ -240,9 +240,9 @@
 }
 
 .rating-option.selected {
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
-  border-color: #552a47;
+  border-color: var(--color-primary, #552a47);
 }
 
 .preview-likert-scale {
@@ -276,7 +276,7 @@
 .preview-feedback-section h4 {
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 8px;
 }
 
@@ -331,8 +331,8 @@
 }
 
 .preview-next-button {
-  background: #552a47;
-  border: 1px solid #552a47;
+  background: var(--color-primary, #552a47);
+  border: 1px solid var(--color-primary, #552a47);
   color: white;
 }
 

@@ -80,7 +80,7 @@ const IconWrapper = styled.div`
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 24px;
 `;
 

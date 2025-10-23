@@ -19,7 +19,7 @@ const Header = styled.div`
 const Title = styled.h2`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -32,7 +32,7 @@ const TemplateGrid = styled.div`
 
 const TemplateCard = styled.div<{ isSelected?: boolean }>`
   background: ${props => props.isSelected ? '#f9f4f8' : '#fff'};
-  border: 1px solid ${props => props.isSelected ? '#552a47' : '#e5d6c7'};
+  border: 1px solid ${props => props.isSelected ? 'var(--color-primary, #552a47)' : '#e5d6c7'};
   border-radius: 10px;
   padding: 16px;
   transition: all 0.2s;
@@ -40,7 +40,7 @@ const TemplateCard = styled.div<{ isSelected?: boolean }>`
   
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -54,7 +54,7 @@ const TemplateHeader = styled.div`
 const TemplateName = styled.h3`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0 0 4px 0;
 `;
 
@@ -72,7 +72,7 @@ const TemplateActions = styled.div`
 const ActionButton = styled.button`
   background: none;
   border: none;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -92,7 +92,7 @@ const TemplateStats = styled.div`
 `;
 
 const AddButton = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -120,7 +120,7 @@ const FormContainer = styled.div`
 const FormTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0 0 16px 0;
 `;
 
@@ -145,7 +145,7 @@ const Input = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -160,7 +160,7 @@ const Textarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -187,7 +187,7 @@ const CancelButton = styled.button`
 `;
 
 const SaveButton = styled.button`
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -525,7 +525,7 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
                     alignItems: 'center', 
                     gap: '4px',
                     padding: '8px 12px',
-                    border: `1px solid ${formData.structure?.layout === layout ? '#552a47' : '#ddd'}`,
+                    border: `1px solid ${formData.structure?.layout === layout ? 'var(--color-primary, #552a47)' : '#ddd'}`,
                     borderRadius: '6px',
                     cursor: 'pointer',
                     background: formData.structure?.layout === layout ? '#f9f4f8' : 'transparent'
@@ -559,7 +559,7 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
                     alignItems: 'center', 
                     gap: '4px',
                     padding: '8px 12px',
-                    border: `1px solid ${formData.structure?.feedback?.type === type ? '#552a47' : '#ddd'}`,
+                    border: `1px solid ${formData.structure?.feedback?.type === type ? 'var(--color-primary, #552a47)' : '#ddd'}`,
                     borderRadius: '6px',
                     cursor: 'pointer',
                     background: formData.structure?.feedback?.type === type ? '#f9f4f8' : 'transparent'
@@ -606,7 +606,7 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
       
       {templates.length === 0 ? (
         <EmptyState>
-          <FiPlus size={32} color="#552a47" />
+          <FiPlus size={32} color="var(--color-primary, #552a47)" />
           <EmptyStateTitle>No Templates Yet</EmptyStateTitle>
           <EmptyStateDescription>
             Create your first section template to streamline survey creation.
@@ -680,7 +680,7 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
                     padding: '2px 8px',
                     background: '#f9f4f8',
                     borderRadius: '12px',
-                    color: '#552a47'
+                    color: 'var(--color-primary, #552a47)'
                   }}>
                     {tag}
                   </div>
@@ -701,7 +701,7 @@ const SectionTemplateManager: React.FC<SectionTemplateManagerProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  color: '#552a47',
+                  color: 'var(--color-primary, #552a47)',
                   fontSize: '14px',
                   fontWeight: 500
                 }}>

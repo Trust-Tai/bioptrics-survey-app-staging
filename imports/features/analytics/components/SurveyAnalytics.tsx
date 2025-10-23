@@ -11,7 +11,7 @@ const Container = styled.div`
 const Header = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 16px;
 `;
 
@@ -30,7 +30,7 @@ const StatCard = styled.div`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
     box-shadow: 0 2px 8px rgba(85, 42, 71, 0.1);
   }
 `;
@@ -57,7 +57,7 @@ const StatIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const StatValue = styled.div`
@@ -79,7 +79,7 @@ const SectionAnalyticsContainer = styled.div`
 const SectionAnalyticsHeader = styled.h4`
   font-size: 16px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 12px;
 `;
 
@@ -95,7 +95,7 @@ const TableHeader = styled.th`
   background: #f9f4f8;
   border-bottom: 1px solid #e5d6c7;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-size: 14px;
 `;
 
@@ -121,7 +121,7 @@ const ProgressBar = styled.div<{ progress: number; color?: string }>`
     left: 0;
     height: 100%;
     width: ${props => props.progress}%;
-    background: ${props => props.color || '#552a47'};
+    background: ${props => props.color || 'var(--color-primary, #552a47)'};
     transition: width 0.3s ease;
   }
 `;
@@ -318,7 +318,7 @@ const SurveyAnalytics: React.FC<SurveyAnalyticsProps> = ({
         <ChartContainer>
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ textAlign: 'center', color: '#666' }}>
-              <FiTrendingUp size={48} style={{ marginBottom: 16, color: '#552a47' }} />
+              <FiTrendingUp size={48} style={{ marginBottom: 16, color: 'var(--color-primary, #552a47)' }} />
               <p>Response trend visualization would appear here.</p>
               <p style={{ fontSize: 14 }}>This would show responses over time and identify patterns.</p>
             </div>
@@ -333,7 +333,7 @@ const SurveyAnalytics: React.FC<SurveyAnalyticsProps> = ({
         <ChartContainer>
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ textAlign: 'center', color: '#666' }}>
-              <FiPieChart size={48} style={{ marginBottom: 16, color: '#552a47' }} />
+              <FiPieChart size={48} style={{ marginBottom: 16, color: 'var(--color-primary, #552a47)' }} />
               <p>Device breakdown visualization would appear here.</p>
               <p style={{ fontSize: 14 }}>This would show the distribution of devices used to complete the survey.</p>
             </div>

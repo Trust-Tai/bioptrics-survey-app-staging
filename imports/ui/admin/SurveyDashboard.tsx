@@ -194,7 +194,7 @@ const StatItem = styled.div`
 
 const StatValue = styled.div`
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
 `;
 
 const StatLabel = styled.div`
@@ -224,7 +224,7 @@ const ActionButton = styled.button`
   }
   
   &.edit {
-    background: #552a47;
+    background: var(--color-primary, #552a47);
     color: #fff;
   }
   
@@ -262,7 +262,7 @@ const KPICard = styled.div`
 const KPIValue = styled.div`
   font-size: 2.5rem;
   font-weight: 700;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 12px 0;
 `;
 
@@ -371,7 +371,7 @@ const ViewToggle = styled.div`
 const ToggleButton = styled.button`
   padding: 8px 16px;
   border: none;
-  background: ${props => props.active ? '#552a47' : 'white'};
+  background: ${props => props.active ? 'var(--color-primary, #552a47)' : 'white'};
   color: ${props => props.active ? 'white' : '#333'};
   cursor: pointer;
   display: flex;
@@ -380,7 +380,7 @@ const ToggleButton = styled.button`
   font-size: 0.9rem;
   
   &:hover {
-    background: ${props => props.active ? '#552a47' : '#f5f5f5'};
+    background: ${props => props.active ? 'var(--color-primary, #552a47)' : '#f5f5f5'};
   }
 `;
 
@@ -399,7 +399,7 @@ const AlertBadge = styled.span`
 
 // COLORS for charts
 const COLORS = [
-  '#552a47', '#8e44ad', '#9b59b6', '#3498db', '#2980b9', 
+  'var(--color-primary, #552a47)', '#8e44ad', '#9b59b6', '#3498db', '#2980b9', 
   '#1abc9c', '#16a085', '#27ae60', '#2ecc71', '#f1c40f',
   '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b'
 ];
@@ -423,7 +423,7 @@ const AnalyticsHeader = styled.div`
 const AnalyticsTitle = styled.h3`
   font-weight: 700;
   font-size: 20px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -446,7 +446,7 @@ const ExportButton = styled.button`
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 6px;
@@ -770,7 +770,7 @@ const SurveyDashboard: React.FC = () => {
               <button 
                 onClick={() => navigate('/admin/surveys/builder')} 
                 style={{ 
-                  background: '#552a47', 
+                  background: 'var(--color-primary, #552a47)', 
                   color: '#fff', 
                   border: 'none', 
                   borderRadius: 8, 
@@ -789,7 +789,7 @@ const SurveyDashboard: React.FC = () => {
                 <button 
                   style={{
                     padding: '8px 16px',
-                    background: view === 'dashboard' ? '#552a47' : '#f5f5f5',
+                    background: view === 'dashboard' ? 'var(--color-primary, #552a47)' : '#f5f5f5',
                     color: view === 'dashboard' ? '#fff' : '#333',
                     border: 'none',
                     borderRadius: '4px 0 0 4px',
@@ -805,7 +805,7 @@ const SurveyDashboard: React.FC = () => {
                 <button 
                   style={{
                     padding: '8px 16px',
-                    background: view === 'table' ? '#552a47' : '#f5f5f5',
+                    background: view === 'table' ? 'var(--color-primary, #552a47)' : '#f5f5f5',
                     color: view === 'table' ? '#fff' : '#333',
                     border: 'none',
                     borderRadius: '0 4px 4px 0',
@@ -925,7 +925,7 @@ const SurveyDashboard: React.FC = () => {
                   {/* Total Surveys Card */}
                   <AnalyticsCard bgColor="#f9f4f7">
                     <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Total Surveys</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: '#552a47' }}>{totalSurveys}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary, #552a47)' }}>{totalSurveys}</div>
                     <div style={{ fontSize: 13, color: '#777', marginTop: 8 }}>
                       Created and managed in system
                     </div>
@@ -986,14 +986,14 @@ const SurveyDashboard: React.FC = () => {
                       <AreaChart data={responsesByMonth}>
                         <defs>
                           <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#552a47" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#552a47" stopOpacity={0.1}/>
+                            <stop offset="5%" stopColor="var(--color-primary, #552a47)" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="var(--color-primary, #552a47)" stopOpacity={0.1}/>
                           </linearGradient>
                         </defs>
                         <XAxis dataKey="name" />
                         <YAxis />
                         <Tooltip />
-                        <Area type="monotone" dataKey="count" stroke="#552a47" fillOpacity={1} fill="url(#colorCount)" />
+                        <Area type="monotone" dataKey="count" stroke="var(--color-primary, #552a47)" fillOpacity={1} fill="url(#colorCount)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -1002,7 +1002,7 @@ const SurveyDashboard: React.FC = () => {
               
               <DashboardGrid>
                 <KPICard>
-                  <FaClipboardList size={24} color="#552a47" />
+                  <FaClipboardList size={24} color="var(--color-primary, #552a47)" />
                   <KPIValue>{totalSurveys}</KPIValue>
                   <KPILabel>Total Surveys</KPILabel>
                   <KPITrend className="neutral">
@@ -1011,7 +1011,7 @@ const SurveyDashboard: React.FC = () => {
                 </KPICard>
                 
                 <KPICard>
-                  <FaFileAlt size={24} color="#552a47" />
+                  <FaFileAlt size={24} color="var(--color-primary, #552a47)" />
                   <KPIValue>{templateSurveys}</KPIValue>
                   <KPILabel>Survey Templates</KPILabel>
                   <KPITrend className="neutral">
@@ -1020,7 +1020,7 @@ const SurveyDashboard: React.FC = () => {
                 </KPICard>
                 
                 <KPICard>
-                  <FaUsers size={24} color="#552a47" />
+                  <FaUsers size={24} color="var(--color-primary, #552a47)" />
                   <KPIValue>{totalResponses}</KPIValue>
                   <KPILabel>Total Responses</KPILabel>
                   <KPITrend className="neutral">
@@ -1037,7 +1037,7 @@ const SurveyDashboard: React.FC = () => {
                 </KPICard>
                 
                 <KPICard>
-                  <FaExclamationTriangle size={24} color="#552a47" />
+                  <FaExclamationTriangle size={24} color="var(--color-primary, #552a47)" />
                   <KPIValue>{completionRate}%</KPIValue>
                   <KPILabel>Completion Rate</KPILabel>
                   <KPITrend className={completionRate > 75 ? 'positive' : completionRate > 50 ? 'neutral' : 'negative'}>
@@ -1104,7 +1104,7 @@ const SurveyDashboard: React.FC = () => {
                       <XAxis type="number" />
                       <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#552a47">
+                      <Bar dataKey="value" fill="var(--color-primary, #552a47)">
                         {responsesBySurvey.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
@@ -1120,7 +1120,7 @@ const SurveyDashboard: React.FC = () => {
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
-                      <Line type="monotone" dataKey="count" stroke="#552a47" strokeWidth={2} />
+                      <Line type="monotone" dataKey="count" stroke="var(--color-primary, #552a47)" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -1205,7 +1205,7 @@ const SurveyDashboard: React.FC = () => {
                         <button
                           onClick={() => navigate(`/admin/surveys/builder/${row.id}`)}
                           style={{
-                            background: '#552a47',
+                            background: 'var(--color-primary, #552a47)',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,

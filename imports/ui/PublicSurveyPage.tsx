@@ -112,7 +112,7 @@ const SurveyQuestions: React.FC<{ surveyId: string; questions: string[] }> = ({ 
         type="submit"
         disabled={submitting}
         style={{
-          background: '#552a47', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 6, padding: '12px 32px', marginTop: 8, cursor: 'pointer', opacity: submitting ? 0.7 : 1
+          background: 'var(--color-primary, #552a47)', color: '#fff', fontWeight: 700, fontSize: 17, border: 'none', borderRadius: 6, padding: '12px 32px', marginTop: 8, cursor: 'pointer', opacity: submitting ? 0.7 : 1
         }}
       >
         {submitting ? 'Submitting...' : 'Submit Survey'}
@@ -127,7 +127,7 @@ function renderInput(q: any, qid: string, value: any, onChange: (v: any) => void
     return (
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
         {[1,2,3,4,5].map(n => (
-          <label key={n} style={{ fontWeight: 500, color: '#552a47' }}>
+          <label key={n} style={{ fontWeight: 500, color: 'var(--color-primary, #552a47)' }}>
             <input
               type="radio"
               name={qid}
