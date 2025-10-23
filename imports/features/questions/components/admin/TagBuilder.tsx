@@ -210,7 +210,7 @@ const TagBuilder: React.FC<TagBuilderProps> = ({ selectedTagIds = [], onTagChang
             // Call Meteor method to create a new tag
             Meteor.call('layers.create', {
               name: inputValue,
-              color: 'rgb(85, 42, 71)',
+              color: 'var(--color-primary, #552a47)',
               active: true,
               location: 'Questions',
               fields: [], // Required empty array for fields

@@ -434,7 +434,7 @@ const FilterSelect = styled.select`
   &:focus {
     outline: none;
     border-color: var(--color-primary, #552a47);
-    box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.1);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent);
   }
   
   &:hover {
@@ -1338,7 +1338,7 @@ const TrendBarFill = styled.div<{ width: number; color?: string }>`
   align-items: center;
   justify-content: flex-end;
   padding-right: 10px;
-  box-shadow: 0 2px 8px rgba(85, 42, 71, 0.15);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary, #552a47) 15%, transparent);
   
   &::after {
     content: '';

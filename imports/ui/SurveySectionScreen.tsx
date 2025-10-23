@@ -198,12 +198,12 @@ const Illustration = styled.img`
   height: auto;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 6px 20px rgba(85, 42, 71, 0.15);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent);
   animation: pulseEffect 3s infinite ease-in-out alternate;
   
   @keyframes pulseEffect {
-    from { transform: scale(1); box-shadow: 0 6px 20px rgba(85, 42, 71, 0.15); }
-    to { transform: scale(1.03); box-shadow: 0 8px 25px rgba(85, 42, 71, 0.25); }
+    from { transform: scale(1); box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent); }
+    to { transform: scale(1.03); box-shadow: 0 8px 25px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent); }
   }
 `;
 

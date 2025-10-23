@@ -366,7 +366,7 @@ const BasicSurveyWelcomeSection: React.FC<BasicSurveyWelcomeSectionProps> = ({
                 'layers.create',
                 {
                   name: inputValue,
-                  color: 'rgb(85, 42, 71)',
+                  color: 'var(--color-primary, #552a47)',
                   active: true,
                   location: 'Surveys',
                   fields: [],

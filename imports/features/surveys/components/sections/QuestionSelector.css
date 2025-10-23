@@ -326,7 +326,7 @@ select.filter-select[multiple] {
 
 .checkbox-checked:hover {
   background: linear-gradient(135deg, #5e2f4f, #8a4379);
-  box-shadow: 0 2px 4px rgba(85, 42, 71, 0.2);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary, #552a47) 20%, transparent);
 }
 
 .checkbox-label {
@@ -823,13 +823,13 @@ select.filter-select[multiple] {
   color: var(--color-primary, #552a47);
   font-weight: 600;
   border-bottom: 2px solid var(--color-primary, #552a47);
-  background-color: rgba(85, 42, 71, 0.05);
+  background-color: color-mix(in srgb, var(--color-primary, #552a47) 5%, transparent);
 }
 
 .question-selector-tabs .react-tabs__tab--selected:hover {
   transform: none;
   box-shadow: none;
-  background-color: rgba(85, 42, 71, 0.08);
+  background-color: color-mix(in srgb, var(--color-primary, #552a47) 8%, transparent);
 }
 
 .question-selector-tabs .react-tabs__tab-panel {
@@ -977,9 +977,9 @@ select.filter-select[multiple] {
 }
 
 .ts-wrapper .ts-control .item {
-  background: rgba(85, 42, 71, 0.08);
+  background: color-mix(in srgb, var(--color-primary, #552a47) 8%, transparent);
   color: var(--color-primary, #552a47);
-  border: 1px solid rgba(85, 42, 71, 0.2);
+  border: 1px solid color-mix(in srgb, var(--color-primary, #552a47) 20%, transparent);
   border-radius: 4px;
   padding: 1px 6px;
   margin: 2px 4px 2px 0;

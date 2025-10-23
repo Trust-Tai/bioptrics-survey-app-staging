@@ -89,7 +89,7 @@ const SurveyCard = styled.div`
   position: relative;
   
   &:hover {
-    box-shadow: 0 8px 24px rgba(85, 42, 71, 0.12);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent);
     transform: translateY(-3px);
   }
   
@@ -532,7 +532,7 @@ border-radius: 6px;
 transition: all 0.2s;
 
 &:hover {
-  background: rgba(85, 42, 71, 0.08);
+  background: color-mix(in srgb, var(--color-primary, #552a47) 8%, transparent);
   color: var(--color-primary, #552a47);
 }
 
@@ -1039,7 +1039,7 @@ const SurveyResponses: React.FC = () => {
                     width: '36px', 
                     height: '36px', 
                     borderRadius: '8px', 
-                    background: 'rgba(85, 42, 71, 0.08)', 
+                    background: 'color-mix(in srgb, var(--color-primary, #552a47) 8%, transparent)', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center' 

@@ -154,7 +154,7 @@
 
 .tom-select-container .ts-control:focus {
   border-color: var(--color-primary, #552a47);
-  box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary, #552a47) 15%, transparent);
 }
 
 /* Dropdown styling - ensure it's visible */
@@ -187,7 +187,7 @@
   border-radius: 4px;
   padding: 3px 8px;
   margin: 2px 4px 2px 0;
-  border: 1px solid rgba(85, 42, 71, 0.2);
+  border: 1px solid color-mix(in srgb, var(--color-primary, #552a47) 15%, transparent);
   display: inline-flex;
   align-items: center;
 }
@@ -203,7 +203,7 @@
 }
 
 .ts-control .item .remove:hover {
-  background-color: rgba(85, 42, 71, 0.1);
+  background-color: color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent);
   border-radius: 50%;
 }
 
@@ -310,7 +310,7 @@ body > .ts-dropdown {
 .form-control:focus {
   border-color: var(--color-primary, #552a47);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(85, 42, 71, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary, #552a47) 15%, transparent);
 }
 
 .color-picker {

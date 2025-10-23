@@ -871,7 +871,7 @@ const SurveyGoalsPage: React.FC = () => {
                       style={{ 
                         background: '#fff', 
                         borderRadius: 14, 
-                        boxShadow: '0 4px 12px rgba(85, 42, 71, 0.08)', 
+                        boxShadow: '0 4px 12px color-mix(in srgb, var(--color-primary, #552a47) 8%, transparent)', 
                         padding: '20px', 
                         display: 'flex', 
                         flexDirection: 'column', 
@@ -885,11 +885,11 @@ const SurveyGoalsPage: React.FC = () => {
                       }}
                       onMouseOver={(e) => {
                         e.currentTarget.style.transform = 'translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(85, 42, 71, 0.12)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent)';
                       }}
                       onMouseOut={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(85, 42, 71, 0.08)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px color-mix(in srgb, var(--color-primary, #552a47) 8%, transparent)';
                       }}
                     >
                       {/* Color accent at top */}

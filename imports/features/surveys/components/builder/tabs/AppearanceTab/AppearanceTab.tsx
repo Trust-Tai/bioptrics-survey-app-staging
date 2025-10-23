@@ -171,11 +171,11 @@ const LayoutOption = styled.label<{ isSelected: boolean }>`
   padding: 16px;
   border: 2px solid ${({ isSelected }) => (isSelected ? '#552a47' : '#dee2e6')};
   border-radius: 8px;
-  background-color: ${({ isSelected }) => (isSelected ? 'rgba(85, 42, 71, 0.05)' : '#ffffff')};
+  background-color: ${({ isSelected }) => (isSelected ? 'color-mix(in srgb, var(--color-primary, #552a47) 5%, transparent)' : '#ffffff')};
   cursor: pointer;
   transition: all 0.2s ease;
   height: 100%;
-  box-shadow: ${({ isSelected }) => (isSelected ? '0 2px 8px rgba(85, 42, 71, 0.1)' : 'none')};
+  box-shadow: ${({ isSelected }) => (isSelected ? '0 2px 8px color-mix(in srgb, var(--color-primary, #552a47) 10%, transparent)' : 'none')};
 `;
 
 const ThemeCard = styled.div<{ isSelected: boolean; themeColor: string }>`

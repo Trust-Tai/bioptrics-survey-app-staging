@@ -1240,7 +1240,7 @@ Meteor.methods({
                   id: tagId,
                   name: tagName,
                   location: 'Surveys', // Set location to Surveys as required
-                  color: importData.color || 'rgb(85, 42, 71)', // Use survey color or default
+                  color: importData.color || 'var(--color-primary, #552a47)', // Use survey color or default
                   fields: [],
                   customFields: [],
                   active: true,
