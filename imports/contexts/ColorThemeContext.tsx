@@ -247,13 +247,6 @@ export const ColorThemeProvider: React.FC<ColorThemeProviderProps> = ({ children
       
       // Mark theme as loaded to show content
       document.body.setAttribute('data-theme-loaded', 'true');
-      
-      console.log('🚀 ColorThemeContext - Theme applied:', {
-        themeId: currentTheme.id,
-        primary: currentTheme.primary,
-        sidebar: currentTheme.sidebar,
-        timestamp: new Date().toISOString()
-      });
     }
   }, [currentTheme]);
 
