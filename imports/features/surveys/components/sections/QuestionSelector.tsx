@@ -1068,8 +1068,8 @@ const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                       style={{
                         padding: '6px 10px',
                         borderRadius: '6px',
-                        border: pageNum === currentPage ? '1px solid #552a47' : '1px solid #e2e8f0',
-                        backgroundColor: pageNum === currentPage ? '#552a47' : '#ffffff',
+                        border: pageNum === currentPage ? '1px solid var(--color-primary, #552a47)' : '1px solid #e2e8f0',
+                        backgroundColor: pageNum === currentPage ? 'var(--color-primary, #552a47)' : '#ffffff',
                         color: pageNum === currentPage ? '#ffffff' : '#475569',
                         cursor: 'pointer',
                         minWidth: 34,
