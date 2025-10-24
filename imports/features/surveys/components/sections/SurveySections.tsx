@@ -31,7 +31,7 @@ const SectionContainer = styled.div`
 const SectionHeader = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin-bottom: 16px;
 `;
 
@@ -51,13 +51,13 @@ const SectionCard = styled.div<{ isActive?: boolean; isComplete?: boolean }>`
   }};
   border: 1px solid ${props => {
     if (props.isComplete) return '#2ecc71';
-    return props.isActive ? '#552a47' : '#e5d6c7';
+    return props.isActive ? 'var(--color-primary, #552a47)' : '#e5d6c7';
   }};
   border-radius: 10px;
   transition: all 0.2s;
   
   &:hover {
-    border-color: ${props => props.isComplete ? '#2ecc71' : '#552a47'};
+    border-color: ${props => props.isComplete ? '#2ecc71' : 'var(--color-primary, #552a47)'};
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 `;
@@ -104,7 +104,7 @@ const ActionButton = styled.button`
   
   &:hover {
     background: #f0f0f0;
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -143,9 +143,9 @@ const AddSectionButton = styled.button`
   gap: 8px;
   padding: 12px;
   background: #f9f4f8;
-  border: 1px dashed #552a47;
+  border: 1px dashed var(--color-primary, #552a47);
   border-radius: 10px;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -188,7 +188,7 @@ const ModalHeader = styled.div`
 const ModalTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
-  color: #552a47;
+  color: var(--color-primary, #552a47);
   margin: 0;
 `;
 
@@ -224,7 +224,7 @@ const FormInput = styled.input`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -239,7 +239,7 @@ const FormTextarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -252,7 +252,7 @@ const FormSelect = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #552a47;
+    border-color: var(--color-primary, #552a47);
   }
 `;
 
@@ -276,9 +276,9 @@ const ButtonGroup = styled.div`
 
 const Button = styled.button<{ primary?: boolean }>`
   padding: 10px 16px;
-  background: ${props => props.primary ? '#552a47' : '#f5f5f5'};
+  background: ${props => props.primary ? 'var(--color-primary, #552a47)' : '#f5f5f5'};
   color: ${props => props.primary ? '#fff' : '#333'};
-  border: 1px solid ${props => props.primary ? '#552a47' : '#ddd'};
+  border: 1px solid ${props => props.primary ? 'var(--color-primary, #552a47)' : '#ddd'};
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
@@ -311,14 +311,14 @@ const Tab = styled.button<{ isActive: boolean }>`
   padding: 10px 16px;
   background: none;
   border: none;
-  border-bottom: 2px solid ${props => props.isActive ? '#552a47' : 'transparent'};
-  color: ${props => props.isActive ? '#552a47' : '#666'};
+  border-bottom: 2px solid ${props => props.isActive ? 'var(--color-primary, #552a47)' : 'transparent'};
+  color: ${props => props.isActive ? 'var(--color-primary, #552a47)' : '#666'};
   font-weight: ${props => props.isActive ? '600' : '400'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
   }
 `;
 
@@ -363,7 +363,7 @@ const SurveySections: React.FC<SurveySectionsProps> = ({
     description: '',
     isActive: true,
     priority: 0,
-    color: '#552a47',
+    color: 'var(--color-primary, #552a47)',
     isRequired: false,
   });
   const [activeTab, setActiveTab] = useState<'general' | 'visibility' | 'instructions' | 'templates'>('general');
@@ -384,7 +384,7 @@ const SurveySections: React.FC<SurveySectionsProps> = ({
       description: '',
       isActive: true,
       priority: sections.length,
-      color: '#552a47',
+      color: 'var(--color-primary, #552a47)',
       isRequired: false,
     });
     setActiveTab('general');
@@ -424,7 +424,7 @@ const SurveySections: React.FC<SurveySectionsProps> = ({
         description: formData.description || '',
         isActive: formData.isActive ?? true,
         priority: formData.priority ?? sections.length,
-        color: formData.color || '#552a47',
+        color: formData.color || 'var(--color-primary, #552a47)',
         isRequired: formData.isRequired ?? false,
         instructions: formData.instructions || '',
         visibilityCondition: formData.visibilityCondition,
@@ -521,7 +521,7 @@ const SurveySections: React.FC<SurveySectionsProps> = ({
             key={section.id} 
             isActive={section.isActive}
             isComplete={section.completionPercentage === 100}
-            style={{ borderLeft: `4px solid ${section.color || '#552a47'}` }}
+            style={{ borderLeft: `4px solid ${section.color || 'var(--color-primary, #552a47)'}` }}
           >
             <SectionHeader2>
               <SectionTitle>
@@ -681,14 +681,14 @@ const SurveySections: React.FC<SurveySectionsProps> = ({
                         <FormInput 
                           type="color" 
                           name="color" 
-                          value={formData.color || '#552a47'} 
+                          value={formData.color || 'var(--color-primary, #552a47)'} 
                           onChange={handleInputChange} 
                           style={{ width: 50, padding: 2 }}
                         />
                         <FormInput 
                           type="text" 
                           name="color" 
-                          value={formData.color || '#552a47'} 
+                          value={formData.color || 'var(--color-primary, #552a47)'} 
                           onChange={handleInputChange} 
                         />
                       </div>

@@ -36,8 +36,8 @@ const TabButton = styled.button<{ isActive: boolean }>`
   padding: 12px 20px;
   background: ${({ isActive }) => (isActive ? '#fff' : 'transparent')};
   border: none;
-  border-bottom: 3px solid ${({ isActive }) => (isActive ? '#552a47' : 'transparent')};
-  color: ${({ isActive }) => (isActive ? '#552a47' : '#4a5568')};
+  border-bottom: 3px solid ${({ isActive }) => (isActive ? 'var(--color-primary, #552a47)' : 'transparent')};
+  color: ${({ isActive }) => (isActive ? 'var(--color-primary, #552a47)' : '#4a5568')};
   font-weight: ${({ isActive }) => (isActive ? '600' : '500')};
   cursor: pointer;
   transition: all 0.2s;
@@ -47,7 +47,7 @@ const TabButton = styled.button<{ isActive: boolean }>`
   white-space: nowrap;
   
   &:hover {
-    color: #552a47;
+    color: var(--color-primary, #552a47);
     background: ${({ isActive }) => (isActive ? '#fff' : '#f8f9fa')};
   }
 `;
@@ -76,7 +76,7 @@ const AddThemeButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #552a47;
+  background: var(--color-primary, #552a47);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -124,7 +124,7 @@ const FileInput = styled.input`
 `;
 
 const FileUploadButton = styled.label`
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: #ffffff;
   padding: 8px 16px;
   border-radius: 4px;
@@ -169,7 +169,7 @@ const LayoutOption = styled.label<{ isSelected: boolean }>`
   flex-direction: column;
   align-items: center;
   padding: 16px;
-  border: 2px solid ${({ isSelected }) => (isSelected ? '#552a47' : '#dee2e6')};
+  border: 2px solid ${({ isSelected }) => (isSelected ? 'var(--color-primary, #552a47)' : '#dee2e6')};
   border-radius: 8px;
   background-color: ${({ isSelected }) => (isSelected ? 'color-mix(in srgb, var(--color-primary, #552a47) 5%, transparent)' : '#ffffff')};
   cursor: pointer;
@@ -244,7 +244,7 @@ const TooltipContainer = styled.div`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   cursor: pointer;
   position: relative;
   box-shadow: 0 2px 4px rgba(85, 42, 71, 0.2);
@@ -256,7 +256,7 @@ const TooltipContent = styled.div`
   bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%) translateY(5px);
-  background-color: #552a47;
+  background-color: var(--color-primary, #552a47);
   color: white;
   padding: 10px 14px;
   border-radius: 6px;
@@ -281,7 +281,7 @@ const TooltipContent = styled.div`
     transform: translateX(-50%);
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-top: 8px solid #552a47;
+    border-top: 8px solid var(--color-primary, #552a47);
     filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
   }
 
@@ -321,7 +321,7 @@ const ToggleSwitch = styled.div<{ isActive: boolean }>`
   position: relative;
   
   svg {
-    color: ${({ isActive }) => (isActive ? '#552a47' : '#a0aec0')};
+    color: ${({ isActive }) => (isActive ? 'var(--color-primary, #552a47)' : '#a0aec0')};
     font-size: 32px;
   }
 `;
@@ -678,12 +678,12 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                     value="multiStep"
                     checked={survey?.layout === 'multiStep' || !survey?.layout}
                     onChange={() => handleLayoutChange('multiStep')}
-                    style={{ accentColor: '#552a47', cursor: 'pointer', width: 18, height: 18 }}
+                    style={{ accentColor: 'var(--color-primary, #552a47)', cursor: 'pointer', width: 18, height: 18 }}
                   />
                 </div>
                 <div style={{ width: '100%', height: 80, backgroundColor: '#f8f9fa', borderRadius: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12, border: '1px solid #e9ecef' }}>
                   <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="10" y="10" width="100" height="10" rx="2" fill="#552a47" fillOpacity="0.7" />
+                    <rect x="10" y="10" width="100" height="10" rx="2" fill="var(--color-primary, #552a47)" fillOpacity="0.7" />
                     <rect x="10" y="25" width="100" height="5" rx="1" fill="#dee2e6" />
                     <rect x="10" y="35" width="60" height="5" rx="1" fill="#dee2e6" />
                     <rect x="10" y="45" width="30" height="5" rx="1" fill="#dee2e6" />
@@ -702,12 +702,12 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                     value="allOnOnePage"
                     checked={survey?.layout === 'allOnOnePage'}
                     onChange={() => handleLayoutChange('allOnOnePage')}
-                    style={{ accentColor: '#552a47', cursor: 'pointer', width: 18, height: 18 }}
+                    style={{ accentColor: 'var(--color-primary, #552a47)', cursor: 'pointer', width: 18, height: 18 }}
                   />
                 </div>
                 <div style={{ width: '100%', height: 80, backgroundColor: '#f8f9fa', borderRadius: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12, border: '1px solid #e9ecef' }}>
                   <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="10" y="5" width="100" height="8" rx="2" fill="#552a47" fillOpacity="0.7" />
+                    <rect x="10" y="5" width="100" height="8" rx="2" fill="var(--color-primary, #552a47)" fillOpacity="0.7" />
                     <rect x="10" y="18" width="100" height="4" rx="1" fill="#dee2e6" />
                     <rect x="10" y="27" width="100" height="4" rx="1" fill="#dee2e6" />
                     <rect x="10" y="36" width="60" height="4" rx="1" fill="#dee2e6" />
@@ -819,13 +819,13 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             const isSelected = selectedTheme === theme._id;
             const bgColor = theme.headerStyle === 'gradient' && theme.secondaryColor
               ? `linear-gradient(135deg, ${theme.primaryColor || theme.color}, ${theme.secondaryColor})`
-              : theme.primaryColor || theme.color || '#552a47';
+              : theme.primaryColor || theme.color || 'var(--color-primary, #552a47)';
 
             return (
               <ThemeCard
                 key={theme._id}
                 isSelected={isSelected}
-                themeColor={theme.primaryColor || theme.color || '#552a47'}
+                themeColor={theme.primaryColor || theme.color || 'var(--color-primary, #552a47)'}
                 onClick={() => handleThemeSelect(theme._id)}
               >
                 <ThemeHeader bgColor={bgColor}>
@@ -932,7 +932,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                       padding: '6px 12px',
                       fontSize: 14,
                       color: '#fff',
-                      background: (theme.color === 'rgb(248, 249, 250)' || theme.color === '#f8f9fa') ? '#552a47' : (theme.color || '#552a47'),
+                      background: (theme.color === 'rgb(248, 249, 250)' || theme.color === '#f8f9fa') ? 'var(--color-primary, #552a47)' : (theme.color || 'var(--color-primary, #552a47)'),
                       border: 'none',
                       borderRadius: 6,
                       cursor: 'pointer',
@@ -985,7 +985,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                         padding: '8px 16px',
                         borderRadius: 8,
                         border: '1px solid #e5d6c7',
-                        backgroundColor: currentThemePage === pageNum ? '#552a47' : '#fff',
+                        backgroundColor: currentThemePage === pageNum ? 'var(--color-primary, #552a47)' : '#fff',
                         color: currentThemePage === pageNum ? '#fff' : '#28211e',
                         cursor: 'pointer',
                         fontSize: 14,
@@ -1088,7 +1088,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                   setHasUnsavedChanges(true);
                   triggerAutoSave();
                 }}
-                style={{ marginRight: 8, accentColor: '#552a47', width: 16, height: 16 }}
+                style={{ marginRight: 8, accentColor: 'var(--color-primary, #552a47)', width: 16, height: 16 }}
               />
               <span>Show anonymity notice</span>
             </label>
@@ -1276,7 +1276,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             onClick={() => setShowConsentPreview(!showConsentPreview)}
             style={{
               padding: '8px 16px',
-              backgroundColor: '#552a47',
+              backgroundColor: 'var(--color-primary, #552a47)',
               color: 'white',
               border: 'none',
               borderRadius: 4,
@@ -1573,9 +1573,9 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                         } as Survey));
                         setHasUnsavedChanges(true);
                       }}
-                      style={{ marginRight: 6, accentColor: '#552a47', width: 16, height: 16 }}
+                      style={{ marginRight: 6, accentColor: 'var(--color-primary, #552a47)', width: 16, height: 16 }}
                     />
-                    <span style={{ color: '#552a47', fontWeight: 500 }}>Display to participant?</span>
+                    <span style={{ color: 'var(--color-primary, #552a47)', fontWeight: 500 }}>Display to participant?</span>
                   </label>
                 </div>
                 <div style={{ marginBottom: 12 }}>
@@ -1622,7 +1622,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
               onClick={() => setShowThankYouPreview(!showThankYouPreview)}
               style={{
                 padding: '8px 16px',
-                backgroundColor: '#552a47',
+                backgroundColor: 'var(--color-primary, #552a47)',
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
@@ -1662,12 +1662,12 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                   }}
                 >
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#552a47" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="var(--color-primary, #552a47)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               )}
               <div style={{ padding: '0 20px', maxWidth: 700, margin: '0 auto', boxSizing: 'border-box' }}>
-                <h3 style={{ fontSize: 28, fontWeight: 600, marginBottom: 16, color: '#552a47' }}>{thankYouTitle || 'Thank You!'}</h3>
+                <h3 style={{ fontSize: 28, fontWeight: 600, marginBottom: 16, color: 'var(--color-primary, #552a47)' }}>{thankYouTitle || 'Thank You!'}</h3>
                 <div style={{ marginBottom: 30, color: '#4a5568', fontSize: 16, maxWidth: 600, margin: '0 auto' }}>
                   {thankYouDetails || 'Your responses have been successfully submitted. We appreciate your time and feedback.'}
                 </div>
@@ -1688,7 +1688,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                   }}
                 >
                   <div style={{ textAlign: 'left', flex: 1 }}>
-                    <h4 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 600, color: '#552a47' }}>
+                    <h4 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 600, color: 'var(--color-primary, #552a47)' }}>
                       {index === 0 ? '1' : index === 1 ? '3' : index === 2 ? '0%' : '3 min 42 sec'}
                     </h4>
                     <div style={{ fontSize: 14, color: '#4a5568', fontWeight: 500 }}>{box.title}</div>
