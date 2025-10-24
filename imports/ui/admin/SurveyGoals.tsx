@@ -54,7 +54,7 @@ const DEFAULT_GOALS: Omit<SurveyGoal, '_id' | 'createdAt'>[] = [
   { 
     title: 'Accountability', 
     description: 'Promote accountability at all levels', 
-    color: '#552a47',
+    color: 'var(--color-primary, #552a47)',
     targetValue: 90,
     currentValue: 68,
     startDate: '2025-01-01',
@@ -362,7 +362,7 @@ const SurveyGoalsPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
             <button
               onClick={openAddModal}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
             >
               <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
               Add
@@ -398,7 +398,7 @@ const SurveyGoalsPage: React.FC = () => {
               background: alert.type === 'success' ? '#2ecc40' : '#e74c3c',
               color: '#fff',
               borderRadius: 10,
-              boxShadow: '0 2px 12px #552a4733',
+              boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
               padding: '18px 36px 18px 20px',
               fontSize: 17,
               fontWeight: 600,
@@ -419,8 +419,8 @@ const SurveyGoalsPage: React.FC = () => {
         )}
         {confirmDelete && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Delete Goal</h3>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Delete Goal</h3>
               <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12, textAlign: 'center' }}>
                 Are you sure you want to delete <span style={{ fontWeight: 700 }}>{confirmDelete.title}</span>?
               </div>
@@ -433,8 +433,8 @@ const SurveyGoalsPage: React.FC = () => {
         )}
         {showModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={handleAddOrUpdate} style={{ background: '#fff', borderRadius: 14, padding: 32, width: 700, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>{editing ? 'Edit Goal' : 'Add Goal'}</h3>
+            <form onSubmit={handleAddOrUpdate} style={{ background: '#fff', borderRadius: 14, padding: 32, width: 700, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>{editing ? 'Edit Goal' : 'Add Goal'}</h3>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                 <div style={{ gridColumn: '1 / 3' }}>
@@ -461,7 +461,7 @@ const SurveyGoalsPage: React.FC = () => {
                       }}
                       maxLength={7}
                       style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                      placeholder="#552a47"
+                      placeholder="var(--color-primary, #552a47)"
                       required
                     />
                   </label>
@@ -579,7 +579,7 @@ const SurveyGoalsPage: React.FC = () => {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>{editing ? 'Update' : 'Add'}</button>
+                <button type="submit" style={{ background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>{editing ? 'Update' : 'Add'}</button>
                 <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={closeModal}>Cancel</button>
               </div>
               <button type="button" onClick={closeModal} style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: 22, fontWeight: 700, color: '#28211e', cursor: 'pointer', opacity: 0.5, padding: 0, lineHeight: 1 }} aria-label="Close">×</button>
@@ -951,7 +951,7 @@ const SurveyGoalsPage: React.FC = () => {
                             style={{ 
                               background: '#f9f4f7', 
                               border: 'none', 
-                              color: '#552a47', 
+                              color: 'var(--color-primary, #552a47)', 
                               width: '28px',
                               height: '28px',
                               borderRadius: '50%',
@@ -1085,7 +1085,7 @@ const SurveyGoalsPage: React.FC = () => {
                   onClick={() => setPage(page - 1)}
                   disabled={page === 1}
                   style={{
-                    background: page === 1 ? '#eee' : '#552a47',
+                    background: page === 1 ? '#eee' : 'var(--color-primary, #552a47)',
                     color: page === 1 ? '#bbb' : '#fff',
                     border: 'none',
                     borderRadius: 8,
@@ -1099,14 +1099,14 @@ const SurveyGoalsPage: React.FC = () => {
                 >
                   Previous
                 </button>
-                <span style={{ fontSize: 15, color: '#552a47', fontWeight: 600 }}>
+                <span style={{ fontSize: 15, color: 'var(--color-primary, #552a47)', fontWeight: 600 }}>
                   Page {page} of {pageCount}
                 </span>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={page === pageCount}
                   style={{
-                    background: page === pageCount ? '#eee' : '#552a47',
+                    background: page === pageCount ? '#eee' : 'var(--color-primary, #552a47)',
                     color: page === pageCount ? '#bbb' : '#fff',
                     border: 'none',
                     borderRadius: 8,

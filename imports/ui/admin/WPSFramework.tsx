@@ -32,8 +32,8 @@ const WPSFramework: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
-  const [color, setColor] = useState('#552a47');
-  const [editColor, setEditColor] = useState('#552a47');
+  const [color, setColor] = useState('var(--color-primary, #552a47)');
+  const [editColor, setEditColor] = useState('var(--color-primary, #552a47)');
   const [description, setDescription] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,7 @@ const WPSFramework: React.FC = () => {
     Meteor.call('wpsCategories.insert', { name, color, description }, (err: any) => {
       if (!err) {
         setName('');
-        setColor('#552a47');
+        setColor('var(--color-primary, #552a47)');
         setDescription('');
         showSuccess('Category added successfully!');
         setShowModal(false);
@@ -132,7 +132,7 @@ const WPSFramework: React.FC = () => {
   const startEdit = (cat: Category) => {
     setEditId(cat._id!);
     setEditName(cat.name);
-    setEditColor(cat.color || '#552a47');
+    setEditColor(cat.color || 'var(--color-primary, #552a47)');
     setEditDescription(cat.description || '');
   };
 
@@ -142,7 +142,7 @@ const WPSFramework: React.FC = () => {
       if (!err) {
         setEditId(null);
         setEditName('');
-        setEditColor('#552a47');
+        setEditColor('var(--color-primary, #552a47)');
         setEditDescription('');
         showSuccess('Category updated successfully!');
       } else {
@@ -167,7 +167,7 @@ const WPSFramework: React.FC = () => {
           fontWeight: 600,
           fontSize: 16,
           zIndex: 2000,
-          boxShadow: '0 2px 12px #552a4733',
+          boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
         }}>{alert.message}</div>
       )}
       <div style={{ width: '100%', padding: '32px 32px 32px 32px', borderRadius: 0, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
@@ -175,7 +175,7 @@ const WPSFramework: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <button
             onClick={() => { setShowModal(true); setName(''); }}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
           >
             <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
             Add
@@ -207,7 +207,7 @@ const WPSFramework: React.FC = () => {
             }}>
               {/* Header */}
               <div style={{ 
-                background: '#552a47', 
+                background: 'var(--color-primary, #552a47)', 
                 color: '#fff', 
                 padding: '20px 24px', 
                 borderTopLeftRadius: 16, 
@@ -277,7 +277,7 @@ const WPSFramework: React.FC = () => {
                       transition: 'border-color 0.2s ease',
                       outline: 'none'
                     }}
-                    onFocus={e => e.target.style.borderColor = '#552a47'}
+                    onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                     onBlur={e => e.target.style.borderColor = '#e5d6c7'}
                     required 
                   />
@@ -312,7 +312,7 @@ const WPSFramework: React.FC = () => {
                       transition: 'border-color 0.2s ease',
                       outline: 'none'
                     }}
-                    onFocus={e => e.target.style.borderColor = '#552a47'}
+                    onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                     onBlur={e => e.target.style.borderColor = '#e5d6c7'}
                     required 
                   />
@@ -382,9 +382,9 @@ const WPSFramework: React.FC = () => {
                         transition: 'border-color 0.2s ease',
                         outline: 'none'
                       }}
-                      onFocus={e => e.target.style.borderColor = '#552a47'}
+                      onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                       onBlur={e => e.target.style.borderColor = '#e5d6c7'}
-                      placeholder="#552a47"
+                      placeholder="var(--color-primary, #552a47)"
                       required
                     />
                   </div>
@@ -401,7 +401,7 @@ const WPSFramework: React.FC = () => {
                   <button 
                     type="submit" 
                     style={{ 
-                      background: '#552a47', 
+                      background: 'var(--color-primary, #552a47)', 
                       color: '#fff', 
                       border: 'none', 
                       borderRadius: 8, 
@@ -414,7 +414,7 @@ const WPSFramework: React.FC = () => {
                       transition: 'background 0.2s ease'
                     }}
                     onMouseOver={e => e.currentTarget.style.background = '#46233b'}
-                    onMouseOut={e => e.currentTarget.style.background = '#552a47'}
+                    onMouseOut={e => e.currentTarget.style.background = 'var(--color-primary, #552a47)'}
                   >
                     Add Category
                   </button>
@@ -470,7 +470,7 @@ const WPSFramework: React.FC = () => {
                     <button 
                       onClick={() => startEdit(cat)} 
                       className="wps-button wps-button-edit"
-                      style={{ background: '#552a47' }}
+                      style={{ background: 'var(--color-primary, #552a47)' }}
                     >
                       Edit
                     </button>
@@ -492,8 +492,8 @@ const WPSFramework: React.FC = () => {
       {/* Delete Category Modal */}
       {confirmDelete && (
         <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Delete Category</h3>
+          <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Delete Category</h3>
             <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12, textAlign: 'center' }}>
               Are you sure you want to delete <span style={{ fontWeight: 700 }}>{confirmDelete.name}</span>?
             </div>
@@ -524,7 +524,7 @@ const WPSFramework: React.FC = () => {
           }}>
             {/* Header */}
             <div style={{ 
-              background: viewingCategory.color || '#552a47', 
+              background: viewingCategory.color || 'var(--color-primary, #552a47)', 
               color: '#fff', 
               padding: '20px 24px', 
               borderTopLeftRadius: 16, 
@@ -578,7 +578,7 @@ const WPSFramework: React.FC = () => {
                   width: 48,
                   height: 48,
                   borderRadius: 8,
-                  background: viewingCategory.color || '#552a47',
+                  background: viewingCategory.color || 'var(--color-primary, #552a47)',
                   boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.1)',
                   border: '1px solid rgba(0,0,0,0.05)'
                 }} />
@@ -599,7 +599,7 @@ const WPSFramework: React.FC = () => {
                   margin: '0 0 12px 0', 
                   fontSize: 16, 
                   fontWeight: 600, 
-                  color: '#552a47',
+                  color: 'var(--color-primary, #552a47)',
                   borderBottom: '1px solid rgba(85,42,71,0.1)',
                   paddingBottom: 8
                 }}>Description</h4>
@@ -637,7 +637,7 @@ const WPSFramework: React.FC = () => {
               <button 
                 onClick={() => setViewingCategory(null)} 
                 style={{ 
-                  background: '#552a47', 
+                  background: 'var(--color-primary, #552a47)', 
                   color: '#fff', 
                   border: 'none', 
                   borderRadius: 8, 
@@ -649,7 +649,7 @@ const WPSFramework: React.FC = () => {
                   transition: 'background 0.2s ease'
                 }}
                 onMouseOver={e => e.currentTarget.style.background = '#46233b'}
-                onMouseOut={e => e.currentTarget.style.background = '#552a47'}
+                onMouseOut={e => e.currentTarget.style.background = 'var(--color-primary, #552a47)'}
               >
                 Close
               </button>
@@ -675,7 +675,7 @@ const WPSFramework: React.FC = () => {
             overflow: 'hidden'
           }}>
             <div style={{ 
-              background: '#552a47', 
+              background: 'var(--color-primary, #552a47)', 
               color: '#fff', 
               padding: '20px 24px', 
               borderTopLeftRadius: 16, 
@@ -686,7 +686,7 @@ const WPSFramework: React.FC = () => {
             }}>
               <h3 style={{ margin: 0, fontWeight: 700, fontSize: 22 }}>Edit Category</h3>
               <button 
-                onClick={() => { setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}
+                onClick={() => { setEditId(null); setEditName(''); setEditColor('var(--color-primary, #552a47)'); setEditDescription(''); }}
                 style={{ 
                   background: 'transparent', 
                   border: 'none', 
@@ -738,7 +738,7 @@ const WPSFramework: React.FC = () => {
                     transition: 'border-color 0.2s ease',
                     outline: 'none'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#552a47'}
+                  onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                   onBlur={e => e.target.style.borderColor = '#e5d6c7'}
                   required 
                 />
@@ -771,7 +771,7 @@ const WPSFramework: React.FC = () => {
                     transition: 'border-color 0.2s ease',
                     outline: 'none'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#552a47'}
+                  onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                   onBlur={e => e.target.style.borderColor = '#e5d6c7'}
                   required 
                 />
@@ -839,9 +839,9 @@ const WPSFramework: React.FC = () => {
                       transition: 'border-color 0.2s ease',
                       outline: 'none'
                     }}
-                    onFocus={e => e.target.style.borderColor = '#552a47'}
+                    onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                     onBlur={e => e.target.style.borderColor = '#e5d6c7'}
-                    placeholder="#552a47"
+                    placeholder="var(--color-primary, #552a47)"
                     required
                   />
                 </div>
@@ -857,7 +857,7 @@ const WPSFramework: React.FC = () => {
                 <button 
                   type="submit" 
                   style={{ 
-                    background: '#552a47', 
+                    background: 'var(--color-primary, #552a47)', 
                     color: '#fff', 
                     border: 'none', 
                     borderRadius: 8, 
@@ -870,7 +870,7 @@ const WPSFramework: React.FC = () => {
                     transition: 'background 0.2s ease'
                   }}
                   onMouseOver={e => e.currentTarget.style.background = '#46233b'}
-                  onMouseOut={e => e.currentTarget.style.background = '#552a47'}
+                  onMouseOut={e => e.currentTarget.style.background = 'var(--color-primary, #552a47)'}
                 >
                   Save
                 </button>
@@ -888,7 +888,7 @@ const WPSFramework: React.FC = () => {
                     cursor: 'pointer',
                     transition: 'background 0.2s ease'
                   }} 
-                  onClick={() => { setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}
+                  onClick={() => { setEditId(null); setEditName(''); setEditColor('var(--color-primary, #552a47)'); setEditDescription(''); }}
                   onMouseOver={e => e.currentTarget.style.background = '#e0e0e0'}
                   onMouseOut={e => e.currentTarget.style.background = '#eee'}
                 >

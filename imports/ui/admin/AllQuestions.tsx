@@ -188,7 +188,7 @@ const CloseButton = styled.button`
 `;
 
 const ExportButton = styled.button`
-  background-color: var(--color-primary);
+  background-color: var(--color-primary, #552a47);
   color: white;
   border: none;
   border-radius: 4px;
@@ -438,7 +438,7 @@ const QuestionType = styled.div`
   border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
-  background-color: var(--color-primary, #542A46);
+  background-color: var(--color-primary, #552a47);
   color: #ffffff;
   white-space: nowrap;
   min-width: fit-content;
@@ -486,7 +486,7 @@ const QuestionMeta = styled.div`
 `;
 
 const MetaTag = styled.div`
-  background-color: var(--color-primary, #542A46);
+  background-color: var(--color-primary, #552a47);
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;

@@ -2514,7 +2514,7 @@ const handleRestart = () => {
       return (
         <div className="all-on-one-page-container">
           <div className="survey-header" style={{ marginBottom: '30px' }}>
-            <h1 style={{ color: survey && survey.color ? survey.color : '#552a47', marginBottom: '10px' }}>
+            <h1 style={{ color: survey && survey.color ? survey.color : 'var(--color-primary, #552a47)', marginBottom: '10px' }}>
               {survey && survey.title ? survey.title : 'Survey'}
             </h1>
             {survey && survey.description && <p>{survey.description}</p>}
@@ -2567,7 +2567,7 @@ const handleRestart = () => {
     // Prepare the content to render based on the current state
     const surveyHeader = (
       <div className="survey-header" style={{ marginBottom: '30px' }}>
-        <h1 style={{ color: survey && survey.color ? survey.color : '#552a47', marginBottom: '10px' }}>
+        <h1 style={{ color: survey && survey.color ? survey.color : 'var(--color-primary, #552a47)', marginBottom: '10px' }}>
           {survey && survey.title ? survey.title : 'Survey'}
         </h1>
         {survey && survey.description && <p>{survey.description}</p>}
@@ -2591,7 +2591,7 @@ const handleRestart = () => {
     if (currentSection) {
       sectionHeader = (
         <div className="section-header" style={{ marginBottom: '20px' }}>
-          <h2 style={{ color: survey && survey.color ? survey.color : '#552a47' }}>
+          <h2 style={{ color: survey && survey.color ? survey.color : 'var(--color-primary, #552a47)' }}>
             {currentSection.name || 'Section'}
           </h2>
           {currentSection.description && <p>{currentSection.description}</p>}
@@ -2600,7 +2600,7 @@ const handleRestart = () => {
     } else if (currentSectionId === 'unsectioned') {
       sectionHeader = (
         <div className="section-header" style={{ marginBottom: '20px' }}>
-          <h2 style={{ color: survey && survey.color ? survey.color : '#552a47' }}>General Questions</h2>
+          <h2 style={{ color: survey && survey.color ? survey.color : 'var(--color-primary, #552a47)' }}>General Questions</h2>
           <p>Please answer these general questions.</p>
         </div>
       );
@@ -2644,7 +2644,7 @@ const handleRestart = () => {
                 onAnswer={(answer, saveOnly = true) => handleQuestionAnswer(questionId, answer, saveOnly)}
                 onBack={() => {}} // No back navigation in all-on-one-page mode
                 value={responses && responses[questionId] ? responses[questionId] : undefined}
-                color={survey && survey.color ? survey.color : '#552a47'}
+                color={survey && survey.color ? survey.color : 'var(--color-primary, #552a47)'}
                 isLastQuestion={false} // No questions are "last" in all-on-one-page mode
                 onSubmit={() => {}} // Individual questions don't submit in all-on-one-page mode
                 backgroundImage={survey && survey.featuredImage ? survey.featuredImage : undefined}
@@ -2715,7 +2715,7 @@ const handleRestart = () => {
             <button 
               onClick={handleAllOnOnePageSubmit}
               style={{
-                backgroundColor: survey && survey.color ? survey.color : '#552a47',
+                backgroundColor: survey && survey.color ? survey.color : 'var(--color-primary, #552a47)',
                 color: '#ffffff',
                 padding: '12px 30px',
                 fontSize: '16px',
@@ -2731,7 +2731,7 @@ const handleRestart = () => {
             <button 
               onClick={goToNextSection}
               style={{
-                backgroundColor: survey && survey.color ? survey.color : '#552a47',
+                backgroundColor: survey && survey.color ? survey.color : 'var(--color-primary, #552a47)',
                 color: '#ffffff',
                 padding: '10px 20px',
                 fontSize: '14px',

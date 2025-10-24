@@ -152,7 +152,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
               <a href="#" style={{ fontSize: 13, color: '#7a6a4f', textDecoration: 'underline', opacity: 0.9 }}>Forgot password?</a>
             </div>
           </div>
-          <AuthButton type="submit" style={{ marginTop: 22, fontSize: 17, fontWeight: 700, borderRadius: 24, background: 'linear-gradient(90deg, #552a47 0%, #552a47 100%)', boxShadow: '0 2px 8px #e5d6e0', height: 44, letterSpacing: 0.2, width: '100%', border: 'none' }}>LOG IN</AuthButton>
+          <AuthButton type="submit" style={{ marginTop: 22, fontSize: 17, fontWeight: 700, borderRadius: 24, background: 'linear-gradient(90deg, var(--color-primary, #552a47) 0%, var(--color-primary, #552a47) 100%)', boxShadow: '0 2px 8px #e5d6e0', height: 44, letterSpacing: 0.2, width: '100%', border: 'none' }}>LOG IN</AuthButton>
         </div>
       </AuthCard>
     </AuthBg>

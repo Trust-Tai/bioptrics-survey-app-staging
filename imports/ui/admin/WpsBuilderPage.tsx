@@ -102,8 +102,8 @@ const RESPONSIVE_ZONE_CSS = `
   .wps-zone-filters .wps-zone-item { position: relative; }
   .wps-zone-filters .wps-zone-btn { min-width: 130px; padding:.65rem .85rem; line-height:1.1; font-weight:600; }
   .wps-zone-filters .wps-zone-btn.btn-outline-primary { --bs-btn-color:#6c47b6; }
-  .wps-zone-filters .wps-zone-btn.btn-primary { background:var(--color-primary, #542A46); border-color:var(--color-primary, #542A46); }
-  .wps-zone-filters .wps-zone-btn.btn-primary:hover, .wps-zone-filters .wps-zone-btn.btn-primary:focus { background:#5d334f; border-color:#5d334f; }
+  .wps-zone-filters .wps-zone-btn.btn-primary { background:var(--color-primary, #552a47); border-color:var(--color-primary, #552a47); }
+  .wps-zone-filters .wps-zone-btn.btn-primary:hover, .wps-zone-filters .wps-zone-btn.btn-primary:focus { background:var(--color-primary-dark, #5d334f); border-color:var(--color-primary-dark, #5d334f); }
   .wps-zone-filters .wps-zone-btn:focus { box-shadow:0 0 0 .15rem rgba(108,71,182,.35); }
   @media (max-width: 1199.98px) { /* lg breakpoint */
     .wps-zone-filters { gap: .75rem; }

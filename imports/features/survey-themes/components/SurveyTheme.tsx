@@ -69,8 +69,8 @@ const SurveyTheme: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [search, setSearch] = useState('');
-  const [color, setColor] = useState('#552a47');
-  const [editColor, setEditColor] = useState('#552a47');
+  const [color, setColor] = useState('var(--color-primary, #552a47)');
+  const [editColor, setEditColor] = useState('var(--color-primary, #552a47)');
   const [description, setDescription] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [wpsCategoryId, setWpsCategoryId] = useState('');
@@ -87,7 +87,7 @@ const SurveyTheme: React.FC = () => {
   const [viewingTheme, setViewingTheme] = useState<Theme | null>(null);
   
   // New theme property states
-  const [primaryColor, setPrimaryColor] = useState('#552a47');
+  const [primaryColor, setPrimaryColor] = useState('var(--color-primary, #552a47)');
   const [secondaryColor, setSecondaryColor] = useState('#3b82f6');
   const [accentColor, setAccentColor] = useState('#10b981');
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
@@ -132,13 +132,13 @@ const SurveyTheme: React.FC = () => {
     }, (err: any) => {
       if (!err) {
         setName('');
-        setColor('#552a47');
+        setColor('var(--color-primary, #552a47)');
         setDescription('');
         setAssignableTo([]);
         setKeywords([]);
         setPriority(0);
         setIsActive(true);
-        setPrimaryColor('#552a47');
+        setPrimaryColor('var(--color-primary, #552a47)');
         setSecondaryColor('#3b82f6');
         setAccentColor('#10b981');
         setBackgroundColor('#ffffff');
@@ -174,7 +174,7 @@ const SurveyTheme: React.FC = () => {
     setEditIsActive(theme.isActive !== false); // Default to true if not specified
     
     // Set new theme property states
-    setPrimaryColor(theme.primaryColor || '#552a47');
+    setPrimaryColor(theme.primaryColor || 'var(--color-primary, #552a47)');
     setSecondaryColor(theme.secondaryColor || '#3b82f6');
     setAccentColor(theme.accentColor || '#10b981');
     setBackgroundColor(theme.backgroundColor || '#ffffff');
@@ -222,14 +222,14 @@ const SurveyTheme: React.FC = () => {
       if (!err) {
         setEditId(null);
         setEditName('');
-        setEditColor('#552a47');
+        setEditColor('var(--color-primary, #552a47)');
         setEditDescription('');
         setEditWpsCategoryId('');
         setEditAssignableTo([]);
         setEditKeywords([]);
         setEditPriority(0);
         setEditIsActive(true);
-        setPrimaryColor('#552a47');
+        setPrimaryColor('var(--color-primary, #552a47)');
         setSecondaryColor('#3b82f6');
         setAccentColor('#10b981');
         setBackgroundColor('#ffffff');
@@ -315,7 +315,7 @@ const SurveyTheme: React.FC = () => {
             fontWeight: 600,
             fontSize: 16,
             zIndex: 2000,
-            boxShadow: '0 2px 12px #552a4733',
+            boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
           }}>
             {alert.message}
           </div>
@@ -323,8 +323,8 @@ const SurveyTheme: React.FC = () => {
         {/* Search and Add Theme */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
   <button
-    onClick={() => { setShowModal(true); setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}
-    style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+    onClick={() => { setShowModal(true); setEditId(null); setEditName(''); setEditColor('var(--color-primary, #552a47)'); setEditDescription(''); }}
+    style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
   >
     <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
     Add
@@ -340,8 +340,8 @@ const SurveyTheme: React.FC = () => {
         {/* List, Edit, View, and Delete logic for Themes */}
         {showModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, width: 700, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Add Theme</h3>
+            <form onSubmit={e => { e.preventDefault(); handleAdd(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, width: 700, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Add Theme</h3>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
                 <div style={{ gridColumn: '1 / 3' }}>
@@ -403,7 +403,7 @@ const SurveyTheme: React.FC = () => {
                       }}
                       maxLength={7}
                       style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                      placeholder="#552a47"
+                      placeholder="var(--color-primary, #552a47)"
                       required
                     />
                   </label>
@@ -411,7 +411,7 @@ const SurveyTheme: React.FC = () => {
                 
                 {/* Theme Customization Section */}
                 <div style={{ gridColumn: '1 / 3', marginTop: 10 }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: '#552a47', fontSize: 18 }}>Theme Customization</h4>
+                  <h4 style={{ margin: '0 0 10px 0', fontWeight: 700, color: 'var(--color-primary, #552a47)', fontSize: 18 }}>Theme Customization</h4>
                 </div>
                 
                 <div>
@@ -728,7 +728,7 @@ const SurveyTheme: React.FC = () => {
               </div>
               
               <div style={{ display: 'flex', gap: 14, marginTop: 20 }}>
-                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
+                <button type="submit" style={{ background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Add</button>
                 <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => setShowModal(false)}>Cancel</button>
               </div>
             </form>
@@ -737,8 +737,8 @@ const SurveyTheme: React.FC = () => {
         {/* Edit Theme Modal */}
         {editId && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Edit Theme</h3>
+            <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Edit Theme</h3>
               <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Name
                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }} required />
               </label>
@@ -756,13 +756,13 @@ const SurveyTheme: React.FC = () => {
                   }}
                   maxLength={7}
                   style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                  placeholder="#552a47"
+                  placeholder="var(--color-primary, #552a47)"
                   required
                 />
               </label>
               <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
-                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}>Cancel</button>
+                <button type="submit" style={{ background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
+                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('var(--color-primary, #552a47)'); setEditDescription(''); }}>Cancel</button>
               </div>
             </form>
           </div>
@@ -770,7 +770,7 @@ const SurveyTheme: React.FC = () => {
         {/* View Theme Modal */}
         {viewingTheme && viewModal && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 14, padding: 32, width: 600, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 32, width: 600, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, fontWeight: 800, color: viewingTheme.color, fontSize: 24 }}>{viewingTheme.name}</h3>
                 <span style={{ 
@@ -789,18 +789,18 @@ const SurveyTheme: React.FC = () => {
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, fontSize: 15, color: '#333' }}>
                 <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>WPS Category</h4>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: 'var(--color-primary, #552a47)' }}>WPS Category</h4>
                   <div>{wpsCategories.find((cat: any) => cat._id === viewingTheme.wpsCategoryId)?.name || 'None'}</div>
                 </div>
                 
                 <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Priority</h4>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: 'var(--color-primary, #552a47)' }}>Priority</h4>
                   <div>{viewingTheme.priority || 0}</div>
                 </div>
               </div>
               
               <div>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Assignable To</h4>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: 'var(--color-primary, #552a47)' }}>Assignable To</h4>
                 <div style={{ display: 'flex', gap: 12 }}>
                   {viewingTheme.assignableTo && viewingTheme.assignableTo.includes('questions') && (
                     <span style={{ backgroundColor: '#e3f2fd', color: '#0d6efd', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>Questions</span>
@@ -816,7 +816,7 @@ const SurveyTheme: React.FC = () => {
               
               {(viewingTheme.keywords && viewingTheme.keywords.length > 0) && (
                 <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: '#552a47' }}>Keywords</h4>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: 16, color: 'var(--color-primary, #552a47)' }}>Keywords</h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {viewingTheme.keywords.map((keyword, index) => (
                       <span key={index} style={{ backgroundColor: '#f8f9fa', color: '#6c757d', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>{keyword}</span>
@@ -829,7 +829,7 @@ const SurveyTheme: React.FC = () => {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
                 <button onClick={closeViewModal} style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }}>Close</button>
-                <button onClick={() => { closeViewModal(); startEdit(viewingTheme); }} style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => { closeViewModal(); startEdit(viewingTheme); }} style={{ background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Edit</button>
               </div>
               
               <button type="button" onClick={closeViewModal} style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: 22, fontWeight: 700, color: '#28211e', cursor: 'pointer', opacity: 0.5, padding: 0, lineHeight: 1 }} aria-label="Close">×</button>
@@ -864,7 +864,7 @@ const SurveyTheme: React.FC = () => {
                   </div>
                   <div>
                     <button onClick={() => handleViewTheme(theme)} style={{ background: 'none', border: 'none', color: '#3776a8', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>View</button>
-                    <button onClick={() => startEdit(theme)} style={{ background: 'none', border: 'none', color: '#552a47', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>Edit</button>
+                    <button onClick={() => startEdit(theme)} style={{ background: 'none', border: 'none', color: 'var(--color-primary, #552a47)', fontWeight: 700, cursor: 'pointer', fontSize: 14, marginRight: 10 }}>Edit</button>
                     <button onClick={() => handleDelete(theme._id!)} style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
                   </div>
                 </div>
@@ -914,8 +914,8 @@ const SurveyTheme: React.FC = () => {
         {/* Delete Theme Modal */}
         {confirmDelete && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Delete Theme</h3>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Delete Theme</h3>
               <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12, textAlign: 'center' }}>
                 Are you sure you want to delete <span style={{ fontWeight: 700 }}>{confirmDelete.name}</span>?
               </div>
@@ -929,8 +929,8 @@ const SurveyTheme: React.FC = () => {
         {/* View Theme Modal */}
         {viewingTheme && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 160, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Theme Details</h3>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 160, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Theme Details</h3>
               <div style={{ fontSize: 17, color: '#28211e', fontWeight: 700 }}>{viewingTheme.name}</div>
               <div style={{ fontSize: 15, color: '#28211e', marginBottom: 6 }}>{viewingTheme.description}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -952,8 +952,8 @@ const SurveyTheme: React.FC = () => {
         {/* Edit Theme Modal */}
         {editId && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.15)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Edit Theme</h3>
+            <form onSubmit={e => { e.preventDefault(); handleUpdate(); }} style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, maxWidth: 400, minHeight: 270, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', boxSizing: 'border-box' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Edit Theme</h3>
               <label style={{ fontWeight: 600, fontSize: 15, color: '#28211e' }}>Name
                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5d6c7', fontSize: 16, fontWeight: 500, color: '#28211e', boxSizing: 'border-box' }} required />
               </label>
@@ -971,13 +971,13 @@ const SurveyTheme: React.FC = () => {
                   }}
                   maxLength={7}
                   style={{ width: 90, fontSize: 16, border: '1.5px solid #e5d6c7', borderRadius: 6, padding: '4px 8px', marginLeft: 8 }}
-                  placeholder="#552a47"
+                  placeholder="var(--color-primary, #552a47)"
                   required
                 />
               </label>
               <div style={{ display: 'flex', gap: 14, marginTop: 10 }}>
-                <button type="submit" style={{ background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
-                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}>Cancel</button>
+                <button type="submit" style={{ background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 40, cursor: 'pointer' }}>Save</button>
+                <button type="button" style={{ background: '#eee', color: '#28211e', border: 'none', borderRadius: 8, fontWeight: 600, padding: '0 16px', fontSize: 15, height: 40, cursor: 'pointer' }} onClick={() => { setEditId(null); setEditName(''); setEditColor('var(--color-primary, #552a47)'); setEditDescription(''); }}>Cancel</button>
               </div>
             </form>
           </div>

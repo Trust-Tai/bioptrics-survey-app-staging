@@ -54,8 +54,8 @@ const SurveyTheme: React.FC = () => {
   const [modalType, setModalType] = useState<'add' | 'edit' | null>(null);
 
   const [search, setSearch] = useState('');
-  const [color, setColor] = useState('#552a47');
-  const [editColor, setEditColor] = useState('#552a47');
+  const [color, setColor] = useState('var(--color-primary, #552a47)');
+  const [editColor, setEditColor] = useState('var(--color-primary, #552a47)');
   const [description, setDescription] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [wpsCategoryId, setWpsCategoryId] = useState('');
@@ -89,7 +89,7 @@ const SurveyTheme: React.FC = () => {
     }, (err: any) => {
       if (!err) {
         setName('');
-        setColor('#552a47');
+        setColor('var(--color-primary, #552a47)');
         setDescription('');
         setWpsCategoryId('');
         setAssignableTo(['questions', 'surveys']);
@@ -120,7 +120,7 @@ const SurveyTheme: React.FC = () => {
       if (!err) {
         setEditId(null);
         setEditName('');
-        setEditColor('#552a47');
+        setEditColor('var(--color-primary, #552a47)');
         setEditDescription('');
         setEditWpsCategoryId('');
         setEditAssignableTo(['questions', 'surveys']);
@@ -196,7 +196,7 @@ const SurveyTheme: React.FC = () => {
             fontWeight: 600,
             fontSize: 16,
             zIndex: 2000,
-            boxShadow: '0 2px 12px #552a4733',
+            boxShadow: '0 2px 12px var(--color-primary, #552a47)33',
           }}>
             {alert.message}
           </div>
@@ -204,8 +204,8 @@ const SurveyTheme: React.FC = () => {
         {/* Search and Add Theme */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
   <button
-    onClick={() => { setModalType('add'); setEditId(null); setEditName(''); setEditColor('#552a47'); setEditDescription(''); }}
-    style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#552a47', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
+    onClick={() => { setModalType('add'); setEditId(null); setEditName(''); setEditColor('var(--color-primary, #552a47)'); setEditDescription(''); }}
+    style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary, #552a47)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, padding: '0 22px', fontSize: 16, height: 44, cursor: 'pointer' }}
   >
     <span style={{ fontSize: 20, marginRight: 2 }}>+</span>
     Add
@@ -263,8 +263,8 @@ const SurveyTheme: React.FC = () => {
                     width: 40,
                     height: 40,
                     borderRadius: 12,
-                    background: color || '#552a47',
-                    boxShadow: `0 4px 12px ${color || '#552a47'}40`,
+                    background: color || 'var(--color-primary, #552a47)',
+                    boxShadow: `0 4px 12px ${color || 'var(--color-primary, #552a47)'}40`,
                     transition: 'all 0.3s ease'
                   }} />
                   <div>
@@ -319,7 +319,7 @@ const SurveyTheme: React.FC = () => {
                           transition: 'all 0.2s ease',
                           outline: 'none'
                         }}
-                        onFocus={e => e.target.style.borderColor = '#552a47'}
+                        onFocus={e => e.target.style.borderColor = 'var(--color-primary, #552a47)'}
                         onBlur={e => e.target.style.borderColor = '#e5d6c7'}
                         required
                       />
@@ -358,12 +358,12 @@ const SurveyTheme: React.FC = () => {
                           paddingRight: '40px',
                           cursor: 'pointer',
                           '&:focus': {
-                            borderColor: '#552a47',
+                            borderColor: 'var(--color-primary, #552a47)',
                             boxShadow: '0 0 0 3px rgba(85,42,71,0.1)',
                             outline: 'none'
                           },
                           '&:hover': {
-                            borderColor: '#552a47'
+                            borderColor: 'var(--color-primary, #552a47)'
                           }
                         }}
                         required
@@ -406,12 +406,12 @@ const SurveyTheme: React.FC = () => {
                           resize: 'vertical',
                           lineHeight: '1.5',
                           '&:focus': {
-                            borderColor: '#552a47',
+                            borderColor: 'var(--color-primary, #552a47)',
                             boxShadow: '0 0 0 3px rgba(85,42,71,0.1)',
                             outline: 'none'
                           },
                           '&:hover': {
-                            borderColor: '#552a47'
+                            borderColor: 'var(--color-primary, #552a47)'
                           }
                         }}
                         required
@@ -439,7 +439,7 @@ const SurveyTheme: React.FC = () => {
                       border: '2px solid #e5d6c7',
                       transition: 'all 0.2s ease',
                       '&:hover': {
-                        borderColor: '#552a47'
+                        borderColor: 'var(--color-primary, #552a47)'
                       }
                     }}>
                       <input
@@ -480,7 +480,7 @@ const SurveyTheme: React.FC = () => {
                             boxShadow: '0 0 0 3px rgba(85,42,71,0.1)'
                           }
                         }}
-                        placeholder="#552a47"
+                        placeholder="var(--color-primary, #552a47)"
                         required
                       />
                     </div>
@@ -515,12 +515,12 @@ const SurveyTheme: React.FC = () => {
                           transition: 'all 0.2s ease',
                           backgroundColor: '#fff',
                           '&:focus': {
-                            borderColor: '#552a47',
+                            borderColor: 'var(--color-primary, #552a47)',
                             boxShadow: '0 0 0 3px rgba(85,42,71,0.1)',
                             outline: 'none'
                           },
                           '&:hover': {
-                            borderColor: '#552a47'
+                            borderColor: 'var(--color-primary, #552a47)'
                           }
                         }}
                       />
@@ -555,12 +555,12 @@ const SurveyTheme: React.FC = () => {
                           transition: 'all 0.2s ease',
                           backgroundColor: '#fff',
                           '&:focus': {
-                            borderColor: '#552a47',
+                            borderColor: 'var(--color-primary, #552a47)',
                             boxShadow: '0 0 0 3px rgba(85,42,71,0.1)',
                             outline: 'none'
                           },
                           '&:hover': {
-                            borderColor: '#552a47'
+                            borderColor: 'var(--color-primary, #552a47)'
                           }
                         }}
                       />
@@ -609,12 +609,12 @@ const SurveyTheme: React.FC = () => {
                         <div style={{ 
                           width: 20, 
                           height: 20, 
-                          border: '2px solid #552a47',
+                          border: '2px solid var(--color-primary, #552a47)',
                           borderRadius: 6,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          backgroundColor: assignableTo.includes('questions') ? '#552a47' : 'transparent',
+                          backgroundColor: assignableTo.includes('questions') ? 'var(--color-primary, #552a47)' : 'transparent',
                           transition: 'all 0.2s ease'
                         }}>
                           {assignableTo.includes('questions') && (
@@ -655,12 +655,12 @@ const SurveyTheme: React.FC = () => {
                         <div style={{ 
                           width: 20, 
                           height: 20, 
-                          border: '2px solid #552a47',
+                          border: '2px solid var(--color-primary, #552a47)',
                           borderRadius: 6,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          backgroundColor: assignableTo.includes('surveys') ? '#552a47' : 'transparent',
+                          backgroundColor: assignableTo.includes('surveys') ? 'var(--color-primary, #552a47)' : 'transparent',
                           transition: 'all 0.2s ease'
                         }}>
                           {assignableTo.includes('surveys') && (
@@ -701,7 +701,7 @@ const SurveyTheme: React.FC = () => {
                     <div style={{ 
                       width: 44,
                       height: 24,
-                      backgroundColor: isActive ? '#552a47' : '#e5e5e5',
+                      backgroundColor: isActive ? 'var(--color-primary, #552a47)' : '#e5e5e5',
                       borderRadius: 12,
                       position: 'relative',
                       transition: 'background-color 0.2s ease'
@@ -742,7 +742,7 @@ const SurveyTheme: React.FC = () => {
                 <button
                   type="submit"
                   style={{ 
-                    background: '#552a47',
+                    background: 'var(--color-primary, #552a47)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: 12,
@@ -1147,7 +1147,7 @@ const SurveyTheme: React.FC = () => {
                       setModalType('edit');
                       setEditId(viewingTheme._id!);
                       setEditName(viewingTheme.name);
-                      setEditColor(viewingTheme.color || '#552a47');
+                      setEditColor(viewingTheme.color || 'var(--color-primary, #552a47)');
                       setEditDescription(viewingTheme.description || '');
                       setEditWpsCategoryId(viewingTheme.wpsCategoryId || '');
                       setEditAssignableTo(viewingTheme.assignableTo || ['questions', 'surveys']);
@@ -1156,7 +1156,7 @@ const SurveyTheme: React.FC = () => {
                       setEditIsActive(viewingTheme.isActive !== false);
                     }}
                     style={{
-                      background: '#552a47',
+                      background: 'var(--color-primary, #552a47)',
                       color: '#fff',
                       border: 'none',
                       borderRadius: 8,
@@ -1346,7 +1346,7 @@ const SurveyTheme: React.FC = () => {
                           setModalType('edit');
                           setEditId(theme._id!);
                           setEditName(theme.name);
-                          setEditColor(theme.color || '#552a47');
+                          setEditColor(theme.color || 'var(--color-primary, #552a47)');
                           setEditDescription(theme.description || '');
                           setEditWpsCategoryId(theme.wpsCategoryId || '');
                           setEditAssignableTo(theme.assignableTo || ['questions', 'surveys']);
@@ -1357,7 +1357,7 @@ const SurveyTheme: React.FC = () => {
                         style={{ 
                           background: '#f0e6ee', 
                           border: 'none', 
-                          color: '#552a47', 
+                          color: 'var(--color-primary, #552a47)', 
                           fontWeight: 600, 
                           cursor: 'pointer', 
                           fontSize: 14, 
@@ -1390,8 +1390,8 @@ const SurveyTheme: React.FC = () => {
         {/* Delete Theme Modal */}
         {confirmDelete && (
           <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(40,33,30,0.18)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px #552a4733', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, color: '#552a47', fontSize: 22 }}>Delete Theme</h3>
+            <div style={{ background: '#fff', borderRadius: 14, padding: 32, minWidth: 340, minHeight: 120, boxShadow: '0 4px 32px var(--color-primary, #552a47)33', display: 'flex', flexDirection: 'column', gap: 18, position: 'relative', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--color-primary, #552a47)', fontSize: 22 }}>Delete Theme</h3>
               <div style={{ fontSize: 16, color: '#28211e', marginBottom: 12, textAlign: 'center' }}>
                 Are you sure you want to delete <span style={{ fontWeight: 700 }}>{confirmDelete.name}</span>?
               </div>
@@ -1608,7 +1608,7 @@ const SurveyTheme: React.FC = () => {
                         background: '#fff',
                         transition: 'all 0.2s ease'
                       }}
-                      placeholder="#552a47"
+                      placeholder="var(--color-primary, #552a47)"
                       required
                     />
                   </div>
@@ -1630,7 +1630,7 @@ const SurveyTheme: React.FC = () => {
                     setModalType(null);
                     setEditId(null); 
                     setEditName(''); 
-                    setEditColor('#552a47'); 
+                    setEditColor('var(--color-primary, #552a47)'); 
                     setEditDescription(''); 
                   }}
                   style={{ 
