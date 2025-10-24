@@ -1591,7 +1591,7 @@ useEffect(() => {
         setIsPublished(true);
         
         // Show success message
-        showSuccessAlert('Survey published successfully!');
+        // showSuccessAlert('Survey published successfully!');
       } catch (tokenError: any) {
         // Fallback to shareToken if token generation fails
         if (updatedSurvey.shareToken) {
@@ -1601,7 +1601,7 @@ useEffect(() => {
           setPublicUrl(publicSurveyUrl);
           setIsPublished(true);
           
-          showSuccessAlert('Survey published successfully!');
+          // showSuccessAlert('Survey published successfully!');
         } else {
           showErrorAlert('Failed to generate secure token for the survey.');
         }
@@ -1807,7 +1807,7 @@ useEffect(() => {
         const saveResult = await handleSaveSurvey(isAutoSave);
         
         // After successful save:
-        if (saveResult) {
+        if (saveResult.success) {
           const now = Date.now();
           setLastSaved(now);
           setHasUnsavedChanges(false);
@@ -1816,7 +1816,7 @@ useEffect(() => {
         // Always reset the saving indicator
         setSaving(false);
         
-        return saveResult;
+        return saveResult.success;
       } else {
         // If no changes, just reset states without showing UI indicators
         setSaving(false);
@@ -1892,7 +1892,7 @@ useEffect(() => {
   }, []);
   
   // Handle saving the survey
-  const handleSaveSurvey = async (isAutoSave = false): Promise<boolean> => {
+  const handleSaveSurvey = async (isAutoSave = false): Promise<{ success: boolean; surveyId?: string; surveyData?: any }> => {
     try {
       // Skip validation for auto-saves
       if (!isAutoSave) {
@@ -1902,7 +1902,7 @@ useEffect(() => {
           if (!validation.isValid) {
             setValidationErrors(validation.errors);
             setShowValidationModal(true);
-            return false;
+            return { success: false };
           }
         }
       }
@@ -2055,12 +2055,22 @@ useEffect(() => {
         setHasUnsavedChanges(false);
         
         // Only show success message for manual saves, not auto-saves
+        // Note: Success message is now handled by SurveyHeaderSection for save+publish operations
         if (!isAutoSave) {
-          showSuccessAlert('Survey saved successfully!');
+          // Only show save message if this is a standalone save (not part of save+publish)
+          // The SurveyHeaderSection will handle the success message for save+publish
+          console.log('Survey saved successfully - message handling delegated to caller');
         }
       }, 50);
       
-      return true; // Return success
+      // Get the updated survey from database to ensure we have the latest data including ID
+      const updatedSurvey = Surveys.findOne(savedSurveyId);
+      
+      return { 
+        success: true, 
+        surveyId: savedSurveyId,
+        surveyData: updatedSurvey
+      };
     } catch (error) {
       console.error('Error saving survey:', error);
       
@@ -2074,7 +2084,7 @@ useEffect(() => {
       // Keep unsaved changes flag true since save failed
       setHasUnsavedChanges(true);
       
-      return false; // Return failure
+      return { success: false }; // Return failure
     }
   };
   // Simple navigation warning for unsaved changes
@@ -2139,6 +2149,35 @@ useEffect(() => {
       }
     }
   }, [hasUnsavedChanges, handleSaveSurvey]);
+  
+  // Listen for survey published events from SurveyHeaderSection
+  useEffect(() => {
+    const handleSurveyPublished = (event: any) => {
+      const { publicUrl, surveyId } = event.detail;
+      console.log('Survey published event received:', { publicUrl, surveyId });
+      
+      // Update the public URL state
+      setPublicUrl(publicUrl);
+      setIsPublished(true);
+      
+      // Update the survey state if needed
+      if (surveyId && survey && survey._id === surveyId) {
+        setSurvey(prev => ({
+          ...prev,
+          published: true,
+          shareToken: publicUrl.split('/').pop() // Extract token from URL
+        }));
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('surveyPublished', handleSurveyPublished);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('surveyPublished', handleSurveyPublished);
+    };
+  }, [survey]);
   
   // Handle editing a section
   const handleEditSection = (section: SurveySectionItem) => {
@@ -3148,6 +3187,7 @@ useEffect(() => {
             saving={saving}
             showSavedMessage={showSavedMessage}
             isPublished={isPublished}
+            hasUnsavedChanges={hasUnsavedChanges}
             sections={sections}
             surveyQuestions={surveyQuestions}
             selectedTheme={selectedTheme}
