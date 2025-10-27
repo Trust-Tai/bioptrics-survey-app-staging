@@ -475,11 +475,11 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
       description: '', // Will be cast to string in the actual question object
       answerType: 'likert',
       answers: [
-        { text: 'Strongly Disagree', value: 'Strongly Disagree' },
-        { text: 'Disagree', value: 'Disagree' },
-        { text: 'Neither Agree nor Disagree', value: 'Neither Agree nor Disagree' },
-        { text: 'Agree', value: 'Agree' },
-        { text: 'Strongly Agree', value: 'Strongly Agree' }
+        { text: 'Strongly Disagree', value: 'Strongly Disagree', emoji: '😡' },
+        { text: 'Disagree', value: 'Disagree', emoji: '😕' },
+        { text: 'Neither Agree nor Disagree', value: 'Neither Agree nor Disagree', emoji: '😶' },
+        { text: 'Agree', value: 'Agree', emoji: '😊' },
+        { text: 'Strongly Agree', value: 'Strongly Agree', emoji: '🥰' }
       ],
       required: true,
       image: '',
@@ -581,6 +581,40 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
       setSaveToQuestionBank(questionSaveToQuestionBank);
       console.log(`Setting saveToQuestionBank toggle to: ${questionSaveToQuestionBank}`);
       
+      // Helper function to get default emoji for existing questions
+      const getDefaultEmojiForText = (text: string, index: number, totalOptions: number): string => {
+        const lowerText = (text || '').toLowerCase();
+        
+        // Text-based matching
+        if (lowerText.includes('strongly disagree')) return '😡';
+        if (lowerText.includes('disagree') && !lowerText.includes('strongly')) return '😕';
+        if (lowerText.includes('neither') || lowerText.includes('neutral')) return '😶';
+        if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '😊';
+        if (lowerText.includes('strongly agree')) return '🥰';
+        
+        // Position-based fallback
+        const emojiScale = ['😡', '😕', '😶', '😊', '🥰'];
+        if (totalOptions <= emojiScale.length) {
+          return emojiScale[index] || '😶';
+        }
+        
+        return '😶'; // Default
+      };
+      
+      // Process answers with backward compatibility for emojis
+      const processedAnswers = Array.isArray(currentVersionData.options) 
+        ? currentVersionData.options.map((option: any, index: number) => {
+            // If it's a Likert question and emoji is missing, add default emoji
+            if (currentVersionData.responseType === 'likert' && !option.emoji) {
+              return {
+                ...option,
+                emoji: getDefaultEmojiForText(option.text || option.label || '', index, currentVersionData.options.length)
+              };
+            }
+            return option;
+          })
+        : [];
+
       // Map the database question format to the form format
       const questionToEdit = {
         id: `edit-question-${questionId}`,
@@ -589,7 +623,7 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
           text: currentVersionData.questionText || '',
           description: currentVersionData.description || '',
           answerType: currentVersionData.responseType || 'text',
-          answers: Array.isArray(currentVersionData.options) ? currentVersionData.options : [],
+          answers: processedAnswers,
           required: !!currentVersionData.required,
           image: currentVersionData.image || '',
           leftLabel: currentVersionData.leftLabel || '',
@@ -1366,11 +1400,11 @@ const QuestionBuilderSidePanel: React.FC<QuestionBuilderSidePanelProps> = ({
                         break;
                       case 'likert':
                         updatedQuestions[0].question.answers = [
-                          { text: 'Strongly Disagree', value: 'Strongly Disagree' },
-                          { text: 'Disagree', value: 'Disagree' },
-                          { text: 'Neither Agree nor Disagree', value: 'Neither Agree nor Disagree' },
-                          { text: 'Agree', value: 'Agree' },
-                          { text: 'Strongly Agree', value: 'Strongly Agree' }
+                          { text: 'Strongly Disagree', value: 'Strongly Disagree', emoji: '😡' },
+                          { text: 'Disagree', value: 'Disagree', emoji: '😕' },
+                          { text: 'Neither Agree nor Disagree', value: 'Neither Agree nor Disagree', emoji: '😶' },
+                          { text: 'Agree', value: 'Agree', emoji: '😊' },
+                          { text: 'Strongly Agree', value: 'Strongly Agree', emoji: '🥰' }
                         ];
                         break;
                       case 'ranking':

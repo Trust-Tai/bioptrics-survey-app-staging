@@ -4,12 +4,126 @@ import { FaPlus, FaInfoCircle } from 'react-icons/fa';
 import update from 'immutability-helper';
 import './QuestionBuilderAnswerOptions.css';
 
+// Emoji Selector Component for Likert questions
+const EmojiSelector: React.FC<{
+  selectedEmoji: string;
+  onChange: (optionIndex: number, emoji: string) => void;
+  optionIndex: number;
+}> = ({ selectedEmoji, onChange, optionIndex }) => {
+  const emojiOptions = [
+    { value: '', label: 'No Emoji' },
+    { value: '😡', label: '😡 Angry' },
+    { value: '😠', label: '😠 Mad' },
+    { value: '😟', label: '😟 Worried' },
+    { value: '😕', label: '😕 Confused' },
+    { value: '😔', label: '😔 Sad' },
+    { value: '😶', label: '😶 Neutral' },
+    { value: '🙂', label: '🙂 Slight Smile' },
+    { value: '😊', label: '😊 Happy' },
+    { value: '😄', label: '😄 Grinning' },
+    { value: '🥰', label: '🥰 Love' },
+    { value: '👍', label: '👍 Thumbs Up' },
+    { value: '👎', label: '👎 Thumbs Down' },
+    { value: '⭐', label: '⭐ Star' },
+    { value: '❤️', label: '❤️ Heart' },
+    { value: '💯', label: '💯 Perfect' }
+  ];
+
+  return (
+    <select 
+      className="emoji-selector"
+      value={selectedEmoji || ''}
+      onChange={(e) => onChange(optionIndex, e.target.value)}
+    >
+      {emojiOptions.map(emoji => (
+        <option key={emoji.value} value={emoji.value}>
+          {emoji.label}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+// Specialized Likert Answer Option Row
+const LikertAnswerOptionRow: React.FC<{
+  option: Answer;
+  index: number;
+  onChange: (index: number, updatedAnswer: Answer) => void;
+  onRemove: (index: number) => void;
+  disabled?: boolean;
+}> = ({ option, index, onChange, onRemove, disabled = false }) => {
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(index, { ...option, text: e.target.value });
+  };
+
+  const handleEmojiChange = (optionIndex: number, emoji: string) => {
+    onChange(index, { ...option, emoji: emoji });
+  };
+
+  return (
+    <div className="likert-answer-option-row">
+      {/* Text Input */}
+      <div className="text-input-wrapper">
+        <input 
+          type="text"
+          value={option.text}
+          onChange={handleTextChange}
+          placeholder={`Enter option ${index + 1} text...`}
+          className="option-text-input"
+          disabled={disabled}
+        />
+      </div>
+
+      {/* Emoji Selector */}
+      <div className="emoji-selector-wrapper">
+        <EmojiSelector 
+          selectedEmoji={option.emoji || ''}
+          onChange={handleEmojiChange}
+          optionIndex={index}
+        />
+      </div>
+
+      {/* Remove Button */}
+      <button 
+        className="remove-option-btn"
+        onClick={() => onRemove(index)}
+        type="button"
+        title="Remove this option"
+        disabled={disabled}
+      >
+        ✕
+      </button>
+    </div>
+  );
+};
+
+// Helper function to get default emoji for text (backward compatibility)
+const getDefaultEmojiForText = (text: string, index: number, totalOptions: number): string => {
+  const lowerText = (text || '').toLowerCase();
+  
+  // Text-based matching
+  if (lowerText.includes('strongly disagree')) return '😡';
+  if (lowerText.includes('disagree') && !lowerText.includes('strongly')) return '😕';
+  if (lowerText.includes('neither') || lowerText.includes('neutral')) return '😶';
+  if (lowerText.includes('agree') && !lowerText.includes('strongly')) return '😊';
+  if (lowerText.includes('strongly agree')) return '🥰';
+  
+  // Position-based fallback
+  const emojiScale = ['😡', '😕', '😶', '😊', '🥰'];
+  if (totalOptions <= emojiScale.length) {
+    return emojiScale[index] || '😶';
+  }
+  
+  return '😶'; // Default
+};
+
 interface Answer {
   text: string;
   value?: string;
   image?: string;
   isOther?: boolean;
   isCorrect?: boolean;
+  emoji?: string; // Add emoji property for Likert questions
 }
 
 interface QuestionBuilderAnswerOptionsProps {
@@ -151,7 +265,7 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
       case 'rating':
         return 'Add rating scale options (e.g., 1-5, Poor-Excellent)';
       case 'likert':
-        return 'Add Likert scale statements and options';
+        return 'Add Likert scale options with emojis. Choose an emoji and enter text for each option.';
       case 'ranking':
         return 'Add items for the respondent to rank in order';
       case 'text':
@@ -325,41 +439,74 @@ const QuestionBuilderAnswerOptions: React.FC<QuestionBuilderAnswerOptionsProps> 
       
       {/* Answer Options List */}
       <div className="answer-options-list">
-        {answers.map((answer, index) => (
-          <div key={index} className="answer-option-row">
-            <DraggableAnswerOption
-              key={index}
-              index={index}
-              answer={answer}
-              moveAnswer={moveAnswer}
-              onUpdate={(updatedAnswer) => handleUpdateAnswer(index, updatedAnswer)}
-              onRemove={() => handleRemoveAnswer(index)}
-              disabled={disabled || answer.isOther}
-              isAssessment={isAssessment}
-            />
+        {answerType === 'likert' ? (
+          // Special handling for Likert questions with emoji selectors
+          <>
+            {answers.map((answer, index) => {
+              // Ensure backward compatibility - add emoji if missing
+              const answerWithEmoji = {
+                ...answer,
+                emoji: answer.emoji || getDefaultEmojiForText(answer.text, index, answers.length)
+              };
+              
+              return (
+                <LikertAnswerOptionRow
+                  key={index}
+                  option={answerWithEmoji}
+                  index={index}
+                  onChange={handleUpdateAnswer}
+                  onRemove={handleRemoveAnswer}
+                  disabled={disabled || answer.isOther}
+                />
+              );
+            })}
             
-            {/* Correct Answer Checkbox */}
-            {isAssessment && (answerType === 'radio' || answerType === 'checkbox' || answerType === 'dropdown') && (
-              <div className="correct-answer-checkbox">
-                <label>
-                  <input
-                    type={answerType === 'checkbox' ? 'checkbox' : 'radio'}
-                    name="correctAnswer"
-                    checked={!!answer.isCorrect}
-                    onChange={(e) => handleMarkAsCorrect(index, e.target.checked)}
-                    disabled={disabled || answer.isOther}
-                  />
-                  <span>Correct</span>
-                </label>
+            {answers.length === 0 && (
+              <div className="no-answers-message">
+                No Likert scale options added yet. Add your first option below.
               </div>
             )}
-          </div>
-        ))}
-        
-        {answers.length === 0 && (
-          <div className="no-answers-message">
-            No answer options added yet. Add your first option below.
-          </div>
+          </>
+        ) : (
+          // Regular handling for other question types
+          <>
+            {answers.map((answer, index) => (
+              <div key={index} className="answer-option-row">
+                <DraggableAnswerOption
+                  key={index}
+                  index={index}
+                  answer={answer}
+                  moveAnswer={moveAnswer}
+                  onUpdate={(updatedAnswer) => handleUpdateAnswer(index, updatedAnswer)}
+                  onRemove={() => handleRemoveAnswer(index)}
+                  disabled={disabled || answer.isOther}
+                  isAssessment={isAssessment}
+                />
+                
+                {/* Correct Answer Checkbox */}
+                {isAssessment && (answerType === 'radio' || answerType === 'checkbox' || answerType === 'dropdown') && (
+                  <div className="correct-answer-checkbox">
+                    <label>
+                      <input
+                        type={answerType === 'checkbox' ? 'checkbox' : 'radio'}
+                        name="correctAnswer"
+                        checked={!!answer.isCorrect}
+                        onChange={(e) => handleMarkAsCorrect(index, e.target.checked)}
+                        disabled={disabled || answer.isOther}
+                      />
+                      <span>Correct</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {answers.length === 0 && (
+              <div className="no-answers-message">
+                No answer options added yet. Add your first option below.
+              </div>
+            )}
+          </>
         )}
       </div>
       

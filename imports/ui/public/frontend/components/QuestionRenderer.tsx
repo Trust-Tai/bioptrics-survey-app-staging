@@ -8,6 +8,7 @@ interface Option {
   label?: string;
   text?: string;
   image?: string;
+  emoji?: string; // Add emoji property for Likert questions
 }
 
 interface QuestionRendererProps {
@@ -82,12 +83,19 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
     };
   }, []);
 
-  // Enhanced emoji function with position-based and text-based mapping
+  // Enhanced emoji function with custom emoji support and fallback mapping
   const getEmoji = useMemo(() => {
-    return (text: string, optionIndex?: number, totalOptions?: number) => {
+    return (option: Option | string, optionIndex?: number, totalOptions?: number) => {
+      // First priority: Use custom emoji if specified in option object
+      if (typeof option === 'object' && option.emoji) {
+        return option.emoji;
+      }
+      
+      // Get text for fallback logic
+      const text = typeof option === 'string' ? option : (option.text || option.label || '');
       const lowerText = text.toLowerCase();
       
-      // First try text-based matching for standard patterns
+      // Second priority: Text-based matching for standard patterns
       if (lowerText.includes('neither agree nor disagree') || 
           lowerText.includes('neither relevant nor irrelevant') ||
           lowerText.includes('neutral')) return '😶'; // Neutral face
@@ -100,7 +108,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
       if (lowerText.includes('strongly agree') || 
           lowerText.includes('strongly relevant')) return '🥰'; // Grinning face
       
-      // Fallback to position-based mapping for custom options
+      // Third priority: Position-based mapping for custom options
       if (optionIndex !== undefined && totalOptions !== undefined) {
         const emojiScale = ['😡', '😕', '😶', '😊', '🥰']; // 5-point scale
         const emojiScale3 = ['😕', '😶', '😊']; // 3-point scale
@@ -166,7 +174,7 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = React.memo(({
               bgColor={bgColor}
             >
               <LikertEmoji isSelected={isSelected}>
-                {getEmoji(text, index, options.length)}
+                {getEmoji(option, index, options.length)}
               </LikertEmoji>
               <OptionLabel isSelected={isSelected}>
                 {text}
