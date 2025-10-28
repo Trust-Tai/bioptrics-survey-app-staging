@@ -137,6 +137,9 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 {section.name !== "Default Section" && (
                   <SectionName isActive={section.id === activeSection}>{section.name}</SectionName>
                 )}
+                {section.name == "Default Section" && currentQuestionNumber && totalQuestions &&(
+                  <SectionName isActive={section.id === activeSection}>Question {currentQuestionNumber} of {totalQuestions}</SectionName>
+                )}
                 
                 {/* Always show completion percentage */}
                 <CompletionPercentage 
@@ -158,7 +161,7 @@ const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 </SectionProgressBar>
               </SectionProgressContainer>
               
-              {section.id === activeSection && currentQuestionNumber && totalQuestions && (
+              {section.name !== "Default Section" && section.id === activeSection && currentQuestionNumber && totalQuestions && (
                 <StepIndicator>Question {currentQuestionNumber} of {totalQuestions}</StepIndicator>
               )}
             </SectionItem>

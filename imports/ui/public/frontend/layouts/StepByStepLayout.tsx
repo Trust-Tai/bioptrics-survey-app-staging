@@ -924,6 +924,15 @@ const StepByStepLayout: React.FC<StepByStepLayoutProps> = ({
             {/* Display current question */}
             <QuestionsContainer>
               <QuestionItem>
+                {/* Show progress bar for Default Section */}
+                {currentSection?.name === "Default Section" && (
+                  <DefaultSectionProgress>
+                    <DefaultProgressBar>
+                      <DefaultProgressFill width={calculateSectionProgress(currentSection.id)} />
+                    </DefaultProgressBar>
+                    <DefaultProgressText>{calculateSectionProgress(currentSection.id)}% Completed</DefaultProgressText>
+                  </DefaultSectionProgress>
+                )}
                 <QuestionHeader>
                   <QuestionBadge>Question {getQuestionPosition().current} of {getQuestionPosition().total}</QuestionBadge>
                   <QuestionTitle>
@@ -1133,6 +1142,37 @@ const DocumentViewerContainer = styled.div`
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+`;
+
+const DefaultSectionProgress = styled.div`
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const DefaultProgressBar = styled.div`
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+`;
+
+const DefaultProgressFill = styled.div<{ width: number }>`
+  height: 100%;
+  width: ${props => props.width}%;
+  background-color: var(--primary-color, #552A47);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+`;
+
+const DefaultProgressText = styled.div`
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: right;
+  color: #6b7280;
 `;
 
 export default StepByStepLayout;

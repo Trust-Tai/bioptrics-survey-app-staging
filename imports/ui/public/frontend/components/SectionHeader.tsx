@@ -26,6 +26,9 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   documentType,
   hideTitle = false // Default to false, show title by default
 }) => {
+  if (hideTitle) {
+    return null;
+  }
   return (
     <HeaderContainer>
       {image && <SectionImage src={image} alt={title} />}

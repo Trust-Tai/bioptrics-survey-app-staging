@@ -550,47 +550,126 @@ useEffect(() => {
     const onQuestionUpdatedCallback = (updatedQuestionId: string) => {
       console.log('Question updated:', updatedQuestionId);
       
-      // Refresh the question data from the database
-      const questionDoc = Questions.findOne(updatedQuestionId);
-      if (questionDoc) {
-        const updatedQuestion: QuestionItem = {
-          id: updatedQuestionId,
-          text: extractQuestionText(questionDoc),
-          type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
-          status: 'published' as const,
-          sectionId: questionToEdit.sectionId,
-          order: questionToEdit.order
-        };
+      // Add retry logic to handle Meteor subscription delays
+      const attemptUpdate = (retryCount = 0) => {
+        const maxRetries = 5;
+        const retryDelay = 100 + (retryCount * 100); // Increasing delay: 100ms, 200ms, 300ms, etc.
         
-        // Update the question in local state
-        setSurveyQuestions(prev => 
-          prev.map(q => q.id === updatedQuestionId ? updatedQuestion : q)
-        );
-        
-        // Update survey with updated sectionQuestions
-        if (survey && onSurveyUpdate) {
-          const currentSectionQuestions = Array.isArray(survey.sectionQuestions) ? survey.sectionQuestions : [];
-          const updatedSectionQuestions = currentSectionQuestions.map((q: any) => 
-            q.id === updatedQuestionId ? {
-              ...q,
-              text: updatedQuestion.text,
-              type: updatedQuestion.type
-            } : q
-          );
+        setTimeout(() => {
+          console.log(`Attempting to fetch updated question (attempt ${retryCount + 1}/${maxRetries})`);
           
-          const updatedSurvey = {
-            ...survey,
-            sectionQuestions: updatedSectionQuestions,
-            surveyOrder: surveyOrder
-          };
-          onSurveyUpdate(updatedSurvey);
-        }
-        
-        // Trigger unsaved changes
-        if (onHasUnsavedChanges) {
-          onHasUnsavedChanges(true);
-        }
-      }
+          // Try to get the question document
+          const questionDoc = Questions.findOne(updatedQuestionId);
+          
+          if (questionDoc) {
+            console.log('Successfully found updated question:', questionDoc);
+            
+            const updatedQuestion: QuestionItem = {
+              id: updatedQuestionId,
+              text: extractQuestionText(questionDoc),
+              type: getLatestQuestionVersion(questionDoc)?.responseType || 'text',
+              status: 'published' as const,
+              sectionId: questionToEdit.sectionId,
+              order: questionToEdit.order
+            };
+            
+            console.log('Updating UI with question:', updatedQuestion);
+            
+            // Update the question in local state
+            setSurveyQuestions(prev => {
+              const updated = prev.map(q => q.id === updatedQuestionId ? updatedQuestion : q);
+              console.log('Updated surveyQuestions:', updated);
+              return updated;
+            });
+            
+            // Update survey with updated sectionQuestions
+            if (survey && onSurveyUpdate) {
+              const currentSectionQuestions = Array.isArray(survey.sectionQuestions) ? survey.sectionQuestions : [];
+              const updatedSectionQuestions = currentSectionQuestions.map((q: any) => 
+                q.id === updatedQuestionId ? {
+                  ...q,
+                  text: updatedQuestion.text,
+                  type: updatedQuestion.type
+                } : q
+              );
+              
+              const updatedSurvey = {
+                ...survey,
+                sectionQuestions: updatedSectionQuestions,
+                surveyOrder: surveyOrder
+              };
+              onSurveyUpdate(updatedSurvey);
+            }
+            
+            // Trigger unsaved changes
+            if (onHasUnsavedChanges) {
+              onHasUnsavedChanges(true);
+            }
+            
+          } else if (retryCount < maxRetries - 1) {
+            console.log(`Question not found yet, retrying in ${retryDelay}ms...`);
+            attemptUpdate(retryCount + 1);
+          } else {
+            console.error('Failed to find updated question after', maxRetries, 'attempts. Using fallback method.');
+            
+            // Fallback: Use server method to get the question
+            Meteor.call('questions.getById', updatedQuestionId, (error: Meteor.Error | null, result: any) => {
+              if (error) {
+                console.error('Error fetching question from server:', error);
+                // As a last resort, just refresh the entire survey data
+                if (typeof onSurveyUpdate === 'function') {
+                  console.log('Refreshing entire survey as fallback');
+                  // Force a re-render by updating the survey object
+                  onSurveyUpdate({ ...survey });
+                }
+              } else if (result) {
+                console.log('Got question from server method:', result);
+                
+                const updatedQuestion: QuestionItem = {
+                  id: updatedQuestionId,
+                  text: extractQuestionText(result),
+                  type: getLatestQuestionVersion(result)?.responseType || 'text',
+                  status: 'published' as const,
+                  sectionId: questionToEdit.sectionId,
+                  order: questionToEdit.order
+                };
+                
+                // Update the question in local state
+                setSurveyQuestions(prev => 
+                  prev.map(q => q.id === updatedQuestionId ? updatedQuestion : q)
+                );
+                
+                // Update survey with updated sectionQuestions
+                if (survey && onSurveyUpdate) {
+                  const currentSectionQuestions = Array.isArray(survey.sectionQuestions) ? survey.sectionQuestions : [];
+                  const updatedSectionQuestions = currentSectionQuestions.map((q: any) => 
+                    q.id === updatedQuestionId ? {
+                      ...q,
+                      text: updatedQuestion.text,
+                      type: updatedQuestion.type
+                    } : q
+                  );
+                  
+                  const updatedSurvey = {
+                    ...survey,
+                    sectionQuestions: updatedSectionQuestions,
+                    surveyOrder: surveyOrder
+                  };
+                  onSurveyUpdate(updatedSurvey);
+                }
+                
+                // Trigger unsaved changes
+                if (onHasUnsavedChanges) {
+                  onHasUnsavedChanges(true);
+                }
+              }
+            });
+          }
+        }, retryCount === 0 ? 100 : retryDelay); // First attempt after 100ms, then increasing delays
+      };
+      
+      // Start the update attempt
+      attemptUpdate();
     };
     
     // Open the question builder panel for editing

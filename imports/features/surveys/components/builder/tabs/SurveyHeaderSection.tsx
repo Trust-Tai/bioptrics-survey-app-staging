@@ -121,39 +121,6 @@ const SaveButton = styled.button<ButtonProps>`
 `;
 
 
-const PublishedButton = styled.button`
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: none;
-  background-color: var(--color-primary, #552a47);
-  color: #fff;
-  font-weight: 600;
-  font-size: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(85, 42, 71, 0.3);
-
-  &:hover {
-    background-color: var(--color-secondary, #6a3559);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(85, 42, 71, 0.4);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 14px;
-    padding: 8px 16px;
-  }
-`;
-
 
 // Props interface
 interface SurveyHeaderSectionProps {
@@ -162,6 +129,7 @@ interface SurveyHeaderSectionProps {
   saving: boolean;
   showSavedMessage: boolean;
   isPublished: boolean;
+  hasUnsavedChanges: boolean;
   sections: any[];
   surveyQuestions: any[];
   selectedTheme: string;
@@ -181,6 +149,7 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
   saving,
   showSavedMessage,
   isPublished,
+  hasUnsavedChanges,
   sections,
   surveyQuestions,
   selectedTheme,
@@ -238,6 +207,97 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
       window.open(previewUrl, '_blank');
     } catch (error) {
       showErrorAlert(`Error preparing preview: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Combined Save & Publish handler
+  const handleSaveAndPublish = async () => {
+    try {
+      console.log('Starting save and publish process...');
+      
+      // Step 1: Save the survey with validation
+      const saveResult = await handleSaveSurvey(false);
+      
+      if (saveResult.success && saveResult.surveyId) {
+        console.log('Save successful, proceeding with publish...', saveResult.surveyId);
+        
+        // Step 2: Generate public URL using the fresh survey ID
+        await generatePublicUrlWithId(saveResult.surveyId, saveResult.surveyData);
+        
+        // Step 3: Show success message
+        showSuccessAlert('Survey saved successfully!');
+      } else {
+        // Save failed due to validation - error already shown by parent component
+        console.log('Save failed - publish cancelled due to validation errors');
+      }
+    } catch (error) {
+      console.error('Error during save and publish:', error);
+      showErrorAlert('Failed to save and publish survey. Please try again.');
+    }
+  };
+
+  // Generate public URL with fresh survey ID and data
+  const generatePublicUrlWithId = async (surveyId: string, surveyData: any) => {
+    try {
+      console.log('Generating public URL for survey:', surveyId);
+      
+      // Call the server method to mark the survey as public
+      const updatedSurvey = await Meteor.callAsync('surveys.makePublic', surveyId);
+      
+      if (!updatedSurvey) {
+        showErrorAlert('Failed to make the survey public.');
+        return;
+      }
+      
+      // Update the survey status to active
+      await Meteor.callAsync('surveys.updateStatus', surveyId, 'active');
+      
+      try {
+        // Generate an encrypted token for the survey ID
+        const encryptedToken = await Meteor.callAsync('surveys.generateEncryptedToken', surveyId);
+        
+        // Generate the public URL using the encrypted token
+        const baseUrl = window.location.origin;
+        const publicSurveyUrl = `${baseUrl}/public/${encryptedToken}`;
+        
+        // Update state immediately with the generated URL
+        // Note: We're calling the parent component's state setter
+        if (typeof window !== 'undefined') {
+          // Trigger a custom event to update the parent component's publicUrl state
+          window.dispatchEvent(new CustomEvent('surveyPublished', { 
+            detail: { 
+              publicUrl: publicSurveyUrl,
+              surveyId: surveyId 
+            } 
+          }));
+        }
+        
+        console.log('Public URL generated successfully:', publicSurveyUrl);
+      } catch (tokenError: any) {
+        console.error('Error generating encrypted token:', tokenError);
+        // Fallback to shareToken if available
+        if (updatedSurvey.shareToken) {
+          const baseUrl = window.location.origin;
+          const publicSurveyUrl = `${baseUrl}/public/${updatedSurvey.shareToken}`;
+          
+          // Update state with fallback URL
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('surveyPublished', { 
+              detail: { 
+                publicUrl: publicSurveyUrl,
+                surveyId: surveyId 
+              } 
+            }));
+          }
+          
+          console.log('Public URL generated with fallback token:', publicSurveyUrl);
+        } else {
+          showErrorAlert('Failed to generate secure token for the survey.');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error in generatePublicUrlWithId:', error);
+      showErrorAlert(`Error generating public URL: ${error.message}`);
     }
   };
 
@@ -362,88 +422,28 @@ const SurveyHeaderSection: React.FC<SurveyHeaderSectionProps> = ({
             ) : null}
           </SaveIndicator>
           
-          {/* Conditional rendering: Show Published + Share if published, otherwise show Save + Publish + Share */}
-          {isPublished ? (
-            <>
-              <PublishedButton onClick={async () => {
-                try {
-                  // Save first and check if successful
-                  const saveSuccess = await handleSaveSurvey(false);
-                  
-                  if (saveSuccess) {
-                    // Only publish if save was successful
-                    handleGeneratePublicUrl();
-                  } else {
-                    // Don't publish if save failed (validation errors shown by parent)
-                    console.log('Save failed - skipping publish');
-                  }
-                } catch (error) {
-                  console.error('Error during save:', error);
-                  showErrorAlert('Failed to save survey. Please try again.');
-                }
-              }}>
-                <FiSave style={{ fontSize: '16px' }} /> Published
-              </PublishedButton>
-              
-              <SaveButton 
-                onClick={() => setShowShareModal(true)} 
-                disabled={!survey?._id}
-                style={{ 
-                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
-                  borderRadius: '8px'
-                }}
-              >
-                <FiShare2 style={{ fontSize: '16px' }} /> Share
-              </SaveButton>
-            </>
-          ) : (
-            <>
-              {/* Save Button */}
-              <SaveButton onClick={() => handleSaveSurvey(false)} disabled={saving}>
-                <FiSave style={{ fontSize: '16px' }} /> {saving ? 'Saving...' : 'Save'}
-              </SaveButton>
-              
-              {/* Publish Button */}
-              <SaveButton 
-                onClick={async () => {
-                  try {
-                    // Save first and check if successful
-                    const saveSuccess = await handleSaveSurvey(false);
-                    
-                    if (saveSuccess) {
-                      // Only publish if save was successful
-                      handleGeneratePublicUrl();
-                    } else {
-                      // Don't publish if save failed (validation errors shown by parent)
-                      console.log('Save failed - skipping publish');
-                    }
-                  } catch (error) {
-                    console.error('Error during save:', error);
-                    showErrorAlert('Failed to save survey. Please try again.');
-                  }
-                }} 
-                disabled={!survey?._id || saving}
-                style={{ 
-                  cursor: (!survey?._id || saving) ? 'not-allowed' : 'pointer',
-                  borderRadius: '8px'
-                }}
-              >
-                <FiSave style={{ fontSize: '16px' }} /> Publish
-              </SaveButton>
-              
-              {/* Share Button */}
-              <SaveButton 
-                onClick={() => setShowShareModal(true)} 
-                disabled={!survey?._id}
-                style={{ 
-                  cursor: !survey?._id ? 'not-allowed' : 'pointer',
-                  borderRadius: '8px'
-                }}
-              >
-                <FiShare2 style={{ fontSize: '16px' }} /> Share
-              </SaveButton>
-            </>
-          )}
+          {/* Save Button - handles both save and publish */}
+          <SaveButton 
+            onClick={handleSaveAndPublish} 
+            disabled={saving || !hasUnsavedChanges}
+            style={{cursor: !hasUnsavedChanges ? 'not-allowed' : 'pointer' }}
+            title={hasUnsavedChanges ? "Save and publish survey" : "No changes to save"}
+          >
+            <FiSave style={{ fontSize: '16px' }} />
+            {saving ? 'Saving...' : 'Save'}
+          </SaveButton>
+          
+          {/* Share Button */}
+          <SaveButton 
+            onClick={() => setShowShareModal(true)} 
+            disabled={!survey?._id}
+            style={{ 
+              cursor: !survey?._id ? 'not-allowed' : 'pointer',
+              borderRadius: '8px'
+            }}
+          >
+            <FiShare2 style={{ fontSize: '16px' }} /> Share
+          </SaveButton>
         </Actions>
       </Header>
       
