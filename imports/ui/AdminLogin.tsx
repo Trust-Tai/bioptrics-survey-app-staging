@@ -77,10 +77,10 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
   if (isRedirecting) {
     return (
       <AuthBg>
-        <AuthCard style={{ maxWidth: 400, padding: '2rem', minWidth: 320, textAlign: 'center' }}>
-          <AuthTitle style={{ fontSize: 24, marginBottom: 16, fontWeight: 400, color: '#222' }}>
+        <AuthCard style={{ maxWidth: 500, padding: '2rem', minWidth: 320, textAlign: 'center' }}>
+          {/* <AuthTitle style={{ fontSize: 24, marginBottom: 16, fontWeight: 400, color: '#222' }}>
             Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Pulse Admin</span>
-          </AuthTitle>
+          </AuthTitle> */}
           <div style={{ color: '#666', fontSize: 16 }}>
             Redirecting to dashboard...
           </div>
@@ -95,7 +95,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
       <img src="/newlogo-art.png" alt="bioptrics art" style={{ position: 'absolute', left: 0, bottom: 0, height: '60%', zIndex: 1, pointerEvents: 'none' }} />
       {/* Powered by Bioptrics at bottom right */}
       <img src="/poweredbybioptrics.png" alt="Powered by Bioptrics" style={{ position: 'absolute', right: 20, bottom: 20, height: 40, zIndex: 1, pointerEvents: 'none' }} />
-      <AuthCard onSubmit={handleLogin} style={{ maxWidth: 400, padding: '1.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
+      <AuthCard onSubmit={handleLogin} style={{ maxWidth: 500, padding: '1.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img 
+            src="/bioptrics_fixed_black.png" 
+            alt="Bioptrics Pulse" 
+            style={{ maxWidth: '280px', width: '100%', height: 'auto' }}
+          />
+        </div>
         <AuthTitle style={{ fontSize: 24, marginBottom: 8, marginTop: 0, fontWeight: 400, letterSpacing: 0.1, color: '#222' }}>
           Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Pulse Admin</span>
         </AuthTitle>
