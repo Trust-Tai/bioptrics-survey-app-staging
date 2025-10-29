@@ -10,7 +10,10 @@ export const AuthBg = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  background: var(--color-primary, #552a47);
+  background: url('/login-image.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
