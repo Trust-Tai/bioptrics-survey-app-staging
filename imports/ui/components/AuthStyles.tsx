@@ -103,6 +103,10 @@ export const AuthButton = styled.button<{ variant?: string }>`
   margin-left: ${({ variant }) => variant === 'link' ? '0.5rem' : '0'};
   font-weight: ${({ variant }) => variant === 'link' ? 600 : 600};
   text-decoration: ${({ variant }) => variant === 'link' ? 'none' : 'none'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   &:hover {
     background: ${({ variant }) => variant === 'link' ? 'none' : `linear-gradient(90deg, #7c4f6a 0%, ${PRIMARY_COLOR} 100%)`};
     color: ${({ variant }) => variant === 'link' ? '#2e1624' : '#fff'};
@@ -124,4 +128,73 @@ export const AuthRow = styled.div`
   text-align: center;
   margin-top: 1rem;
   font-size: 0.97rem;
+`;
+
+export const AuthDivider = styled.div`
+  text-align: center;
+  margin: 20px 0;
+  color: #999;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #d0d0d0;
+  }
+`;
+
+export const Office365Button = styled.button`
+  background: white;
+  color: #5e5e5e;
+  border: 1.5px solid #8c8c8c;
+  border-radius: 8px;
+  padding: 0.85rem 2.25rem;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  
+  &:hover {
+    background: #f5f5f5;
+    border-color: #5e5e5e;
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+export const MicrosoftLogo = styled.img`
+  width: 20px;
+  height: 20px;
+`;
+
+export const AuthTerms = styled.div`
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin-top: 16px;
+  line-height: 1.5;
+  
+  a {
+    color: #5e5e5e;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 `;
