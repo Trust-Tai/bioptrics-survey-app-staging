@@ -71,6 +71,7 @@ import ChangeNotification from './admin/change-notification';
 import PolicyReview from './admin/policy-review';
 import KnowledgeCheck from './admin/knowledge-check';
 import RootCauseAnalysis from './admin/root-cause-analysis';
+import WPSDashboard from './admin/wps-dashboard';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -201,6 +202,8 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/knowledge-check" element={<KnowledgeCheck />} />
          {/* Root Cause Analysis Route */}
          <Route path="/admin/root-cause-analysis" element={<RootCauseAnalysis />} />
+         {/* WPS Dashboard Route */}
+         <Route path="/admin/wps-dashboard" element={<WPSDashboard />} />
          {/* Dashboard Route */}
          {/* <Route path="/admin/dashboard" element={<NewAdminDashboard />} /> */}
          {/* Redirect from /admin/surveys to /admin/surveys/all */}

@@ -36,7 +36,7 @@ export const toolsData: ToolData[] = [
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '/admin/marketplace/wps-builder'
+    link: '/admin/wps-dashboard'
   },
   {
     id: 'culture-surveys',
