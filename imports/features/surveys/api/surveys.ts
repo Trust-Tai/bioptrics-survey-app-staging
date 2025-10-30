@@ -87,6 +87,7 @@ export interface SurveyDoc {
     isActive: boolean;
     icon?: string;
     color?: string;
+    image?: string;
     instructions?: string;
     isRequired?: boolean;
     visibilityCondition?: {
@@ -783,24 +784,70 @@ Meteor.methods({
         if (!surveyDoc.surveySections) {
           surveyDoc.surveySections = [];
         }
+
+        const hasWpsTag = Array.isArray(importData.selectedTags) && importData.selectedTags.some((tag: unknown) => typeof tag === 'string' && tag.toLowerCase() === 'wps');
         
+        // WPS section image base filenames. Update manually if assets change.
+        const wpsImages: string[] = [
+          '/WPS/awareness-of-roles-and-expectations.png',
+          '/WPS/change-management.png',
+          '/WPS/communal-and-interpersonal-relationships.png',
+          '/WPS/continuous-improvement.png',
+          '/WPS/continuous-evaluation-of-equity-and-accessibility-of-knowledge.png',
+          '/WPS/cultural-sensitivity-and-recognition.png',
+          '/WPS/employee-involvement-and-empowerment.png',
+          '/WPS/engagement-and-well-being.png',
+          '/WPS/equal-access-for-training-and-career-development.png',
+          '/WPS/equitable-and-equal-participation.png',
+          '/WPS/health-and-safety-enhancement.png',
+          '/WPS/health-promotion-and-wellness-programs.png',
+          '/WPS/inclusive-design-and-accessibility.png',
+          '/WPS/leadership-and-accountability.png',
+          '/WPS/leadership-support-and-supervision.png',
+          '/WPS/procedure-effectiveness.png',
+          '/WPS/protective-equipment-effectiveness.png',
+          '/WPS/psychological-safety-effectiveness.png',
+          '/WPS/respect-and-engagement.png',
+          '/WPS/support-services-and-crisis-management.png',
+          '/WPS/training-effectiveness.png',
+          '/WPS/work-environment-and-flexibility.png'
+        ];
+
+        const wpsTagActive = hasWpsTag; // alias for clarity below
+
         // Map imported sections to survey sections
-        const mappedSections = importData.sections.map((section: any, index: number) => ({
-          id: Random.id(),
-          name: section.title || section.name || `Section ${index + 1}`,
-          description: section.description || '',
-          isActive: true,
-          // Priority removed - order managed via surveyOrder only
-          icon: section.icon || '',
-          color: section.color || '',
-          instructions: section.instructions || '',
-          isRequired: section.isRequired || false,
-          timeLimit: section.timeLimit || 0,
-          questionIds: section.questionIds || [],
-          templateId: section.templateId || '',
-          customCss: section.customCss || '',
-          progressIndicator: section.progressIndicator !== undefined ? section.progressIndicator : true,
-        }));
+        const mappedSections = importData.sections.map((section: any, index: number) => {
+          let image = '';
+          if (wpsTagActive) {
+            const originalId = section.id || section.sectionId || '';
+            if (originalId) {
+              const match = wpsImages.find(img => {
+                const base = img.replace(/^\/WPS\//, '').replace(/\.png$/i, '');
+                return base === originalId;
+              });
+              if (match) {
+                image = match;
+              }
+            }
+          }
+          return {
+            id: Random.id(),
+            name: section.title || section.name || `Section ${index + 1}`,
+            description: section.description || '',
+            isActive: true,
+            // Priority removed - order managed via surveyOrder only
+            icon: section.icon || '',
+            color: section.color || '',
+            image,
+            instructions: section.instructions || '',
+            isRequired: section.isRequired || false,
+            timeLimit: section.timeLimit || 0,
+            questionIds: section.questionIds || [],
+            templateId: section.templateId || '',
+            customCss: section.customCss || '',
+            progressIndicator: section.progressIndicator !== undefined ? section.progressIndicator : true,
+          };
+        });
         
         // Assign the mapped sections to surveyDoc.surveySections
         surveyDoc.surveySections = mappedSections;
