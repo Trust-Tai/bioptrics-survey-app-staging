@@ -67,6 +67,7 @@ import { NewAdminDashboard } from './admin/dashboard';
 import AdminHomePage from './admin/home';
 import SurveyCatalog from './admin/survey-catalog';
 import AssessmentBuilder from './admin/assessment-builder';
+import ChangeNotification from './admin/change-notification';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -189,6 +190,8 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/survey-catalog" element={<SurveyCatalog />} />
          {/* Assessment Builder Route */}
          <Route path="/admin/assessment-builder" element={<AssessmentBuilder />} />
+         {/* Change Notification Route */}
+         <Route path="/admin/change-notification" element={<ChangeNotification />} />
          {/* Dashboard Route */}
          <Route path="/admin/dashboard" element={<NewAdminDashboard />} />
          {/* Redirect from /admin/surveys to /admin/surveys/all */}

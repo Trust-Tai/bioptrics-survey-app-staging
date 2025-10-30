@@ -117,10 +117,10 @@ export const toolsData: ToolData[] = [
       'Multi-channel delivery'
     ],
     setupTime: '8 minutes',
-    timeToInsights: 'Real-time',
+    timeToInsights: '24 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#9ca3a8',
-    link: '#'
+    link: '/admin/change-notification'
   },
   {
     id: 'policy-review',
