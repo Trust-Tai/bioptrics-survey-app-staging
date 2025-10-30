@@ -138,10 +138,10 @@ export const toolsData: ToolData[] = [
       'Automated reminders'
     ],
     setupTime: '3 minutes',
-    timeToInsights: '24 hours',
+    timeToInsights: '1 hour',
     buttonText: 'Deploy This Solution →',
     cardColor: '#5cb85c',
-    link: '#'
+    link: '/admin/policy-review'
   },
   {
     id: 'knowledge-check',
