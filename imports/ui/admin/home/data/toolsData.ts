@@ -1,5 +1,6 @@
 export interface ToolData {
   id: string;
+  category: 'culture' | 'operations' | 'benchmarking';
   title: string;
   description: string;
   badge: string;
@@ -19,6 +20,7 @@ export interface ToolData {
 export const toolsData: ToolData[] = [
   {
     id: 'wps-check',
+    category: 'culture',
     title: 'Whole Person Safety (WPS) Check',
     description: 'Monitor holistic safety across your organization with comprehensive wellness insights',
     badge: 'POPULAR',
@@ -40,6 +42,7 @@ export const toolsData: ToolData[] = [
   },
   {
     id: 'culture-surveys',
+    category: 'culture',
     title: 'Culture Pre-built Surveys',
     description: 'Launch validated culture assessment surveys designed by experts to measure what matters most',
     badge: 'POPULAR',
@@ -59,29 +62,31 @@ export const toolsData: ToolData[] = [
     cardColor: '#6b8e9d',
     link: '/admin/survey-catalog'
   },
-  {
-    id: 'survey-builder',
-    title: 'Survey Builder',
-    description: 'Create custom surveys with our guided builder. Best practices built in to ensure quality data',
-    badge: 'FLEXIBLE',
-    icon: 'BarChart3',
-    stats: {
-      deployments: 892,
-      successRate: 89
-    },
-    features: [
-      'Drag-and-drop builder',
-      'Custom question types',
-      'Logic branching'
-    ],
-    setupTime: '10 minutes',
-    timeToInsights: '24 hours',
-    buttonText: 'Deploy This Solution →',
-    cardColor: '#6b8e9d',
-    link: '/admin/surveys/builder'
-  },
+  // {
+  //   id: 'survey-builder',
+  //   category: 'culture',
+  //   title: 'Survey Builder',
+  //   description: 'Create custom surveys with our guided builder. Best practices built in to ensure quality data',
+  //   badge: 'FLEXIBLE',
+  //   icon: 'BarChart3',
+  //   stats: {
+  //     deployments: 892,
+  //     successRate: 89
+  //   },
+  //   features: [
+  //     'Drag-and-drop builder',
+  //     'Custom question types',
+  //     'Logic branching'
+  //   ],
+  //   setupTime: '10 minutes',
+  //   timeToInsights: '24 hours',
+  //   buttonText: 'Deploy This Solution →',
+  //   cardColor: '#6b8e9d',
+  //   link: '/admin/surveys/builder'
+  // },
   {
     id: 'assessment-builder',
+    category: 'culture',
     title: 'Assessment Builder',
     description: 'Build comprehensive assessments with scoring logic and automated insights',
     badge: 'ADVANCED',
@@ -103,6 +108,7 @@ export const toolsData: ToolData[] = [
   },
   {
     id: 'change-notification',
+    category: 'operations',
     title: 'Change Notification Builder',
     description: 'Create and track organizational change communications with read receipts and comprehension checks',
     badge: 'COMMUNICATION',
@@ -124,6 +130,7 @@ export const toolsData: ToolData[] = [
   },
   {
     id: 'policy-review',
+    category: 'operations',
     title: 'Policy Review',
     description: 'Manage policy acknowledgments and compliance tracking across your organization',
     badge: 'REGULATORY',
@@ -145,6 +152,7 @@ export const toolsData: ToolData[] = [
   },
   {
     id: 'knowledge-check',
+    category: 'benchmarking',
     title: 'Knowledge Check',
     description: 'Verify understanding with quick knowledge checks and quizzes that drive learning',
     badge: 'LEARNING',
@@ -166,6 +174,7 @@ export const toolsData: ToolData[] = [
   },
   {
     id: 'root-cause-analysis',
+    category: 'benchmarking',
     title: 'Root Cause Analysis',
     description: 'Dig deeper into issues with structured root cause analysis tools and frameworks',
     badge: 'ANALYSIS',
