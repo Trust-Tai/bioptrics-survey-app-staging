@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { Heart, Target, BarChart3, TrendingUp, Gift, MessageCircle, Search as SearchIcon } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 
 // ============ STYLED COMPONENTS ============
@@ -36,13 +37,14 @@ const SearchWrapper = styled.div`
   max-width: 500px;
 `;
 
-const SearchIcon = styled.span`
+const SearchIconWrapper = styled.div`
   position: absolute;
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: #6c757d;
-  font-size: 18px;
+  display: flex;
+  align-items: center;
 `;
 
 const SearchBar = styled.input`
@@ -231,7 +233,9 @@ const SurveyCatalog: React.FC = () => {
             <Title>Pre-built Survey Solutions</Title>
             <Subtitle>Expert-designed surveys ready to deploy in minutes</Subtitle>
             <SearchWrapper>
-              <SearchIcon>🔍</SearchIcon>
+              <SearchIconWrapper>
+                <SearchIcon size={18} />
+              </SearchIconWrapper>
               <SearchBar placeholder="Search survey templates..." />
             </SearchWrapper>
           </HeaderContent>
@@ -241,7 +245,9 @@ const SurveyCatalog: React.FC = () => {
           {/* Card 1: Employee Engagement */}
           <Card>
             <CardHeader bgColor="#6b8e9d">
-              <IconWrapper>♡</IconWrapper>
+              <IconWrapper>
+                <Heart size={24} strokeWidth={2} />
+              </IconWrapper>
               <CardTitle>Employee Engagement</CardTitle>
               <CardDescription>Measure team satisfaction and motivation</CardDescription>
             </CardHeader>
@@ -284,7 +290,9 @@ const SurveyCatalog: React.FC = () => {
           {/* Card 2: Leadership Assessment */}
           <Card>
             <CardHeader bgColor="#6b8e9d">
-              <IconWrapper>🎯</IconWrapper>
+              <IconWrapper>
+                <Target size={24} strokeWidth={2} />
+              </IconWrapper>
               <CardTitle>Leadership Assessment</CardTitle>
               <CardDescription>Evaluate leadership effectiveness</CardDescription>
             </CardHeader>
@@ -327,7 +335,9 @@ const SurveyCatalog: React.FC = () => {
           {/* Card 3: Organizational Culture */}
           <Card>
             <CardHeader bgColor="#c17a5f">
-              <IconWrapper>👥</IconWrapper>
+              <IconWrapper>
+                <BarChart3 size={24} strokeWidth={2} />
+              </IconWrapper>
               <CardTitle>Organizational Culture</CardTitle>
               <CardDescription>Assess workplace culture health</CardDescription>
             </CardHeader>
@@ -370,7 +380,9 @@ const SurveyCatalog: React.FC = () => {
           {/* Card 4: Wellness Check */}
           <Card>
             <CardHeader bgColor="#c17a5f">
-              <IconWrapper>📈</IconWrapper>
+              <IconWrapper>
+                <TrendingUp size={24} strokeWidth={2} />
+              </IconWrapper>
               <CardTitle>Wellness Check</CardTitle>
               <CardDescription>Monitor employee wellbeing</CardDescription>
             </CardHeader>
@@ -413,7 +425,9 @@ const SurveyCatalog: React.FC = () => {
           {/* Card 5: Onboarding Experience */}
           <Card>
             <CardHeader bgColor="#9ca3a8">
-              <IconWrapper>🎁</IconWrapper>
+              <IconWrapper>
+                <Gift size={24} strokeWidth={2} />
+              </IconWrapper>
               <CardTitle>Onboarding Experience</CardTitle>
               <CardDescription>Gather new hire feedback</CardDescription>
             </CardHeader>
@@ -456,7 +470,9 @@ const SurveyCatalog: React.FC = () => {
           {/* Card 6: 360° Feedback */}
           <Card>
             <CardHeader bgColor="#5cb85c">
-              <IconWrapper>💬</IconWrapper>
+              <IconWrapper>
+                <MessageCircle size={24} strokeWidth={2} />
+              </IconWrapper>
               <CardTitle>360° Feedback</CardTitle>
               <CardDescription>Comprehensive performance review</CardDescription>
             </CardHeader>

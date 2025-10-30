@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import * as LucideIcons from 'lucide-react';
 import { ToolData } from '../data/toolsData';
 
 interface ToolCardProps {
@@ -195,11 +196,16 @@ const DeployButton = styled.button<{ bgColor?: string }>`
 `;
 
 const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick }) => {
+  // Dynamically get the Lucide icon component
+  const IconComponent = (LucideIcons as any)[tool.icon] || LucideIcons.HelpCircle;
+  
   return (
     <Card onClick={onClick}>
       <CardHeader bgColor={tool.cardColor}>
         <Badge>{tool.badge}</Badge>
-        <IconWrapper>{tool.icon}</IconWrapper>
+        <IconWrapper>
+          <IconComponent size={24} strokeWidth={2} />
+        </IconWrapper>
         <Title>{tool.title}</Title>
         <Description>{tool.description}</Description>
       </CardHeader>

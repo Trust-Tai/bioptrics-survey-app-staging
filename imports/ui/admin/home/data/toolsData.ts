@@ -3,7 +3,7 @@ export interface ToolData {
   title: string;
   description: string;
   badge: string;
-  icon: string;
+  icon: string; // Lucide icon name
   stats: {
     deployments: number;
     successRate: number;
@@ -22,7 +22,7 @@ export const toolsData: ToolData[] = [
     title: 'Whole Person Safety (WPS) Check',
     description: 'Monitor holistic safety across your organization with comprehensive wellness insights',
     badge: 'POPULAR',
-    icon: '♡',
+    icon: 'Heart',
     stats: {
       deployments: 1247,
       successRate: 94
@@ -43,7 +43,7 @@ export const toolsData: ToolData[] = [
     title: 'Culture Pre-built Surveys',
     description: 'Launch validated culture assessment surveys designed by experts to measure what matters most',
     badge: 'POPULAR',
-    icon: '♡',
+    icon: 'Heart',
     stats: {
       deployments: 1247,
       successRate: 94
@@ -64,7 +64,7 @@ export const toolsData: ToolData[] = [
     title: 'Survey Builder',
     description: 'Create custom surveys with our guided builder. Best practices built in to ensure quality data',
     badge: 'FLEXIBLE',
-    icon: '📊',
+    icon: 'BarChart3',
     stats: {
       deployments: 892,
       successRate: 89
@@ -85,7 +85,7 @@ export const toolsData: ToolData[] = [
     title: 'Assessment Builder',
     description: 'Build comprehensive assessments with scoring logic and automated insights',
     badge: 'ADVANCED',
-    icon: '📋',
+    icon: 'ClipboardList',
     stats: {
       deployments: 634,
       successRate: 91
@@ -99,14 +99,14 @@ export const toolsData: ToolData[] = [
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#c17a5f',
-    link: '#'
+    link: '/admin/assessment-builder'
   },
   {
     id: 'change-notification',
     title: 'Change Notification Builder',
     description: 'Create and track organizational change communications with read receipts and comprehension checks',
     badge: 'COMMUNICATION',
-    icon: '🔔',
+    icon: 'Bell',
     stats: {
       deployments: 523,
       successRate: 87
@@ -127,7 +127,7 @@ export const toolsData: ToolData[] = [
     title: 'Policy Review',
     description: 'Manage policy acknowledgments and compliance tracking across your organization',
     badge: 'REGULATORY',
-    icon: '📄',
+    icon: 'FileText',
     stats: {
       deployments: 892,
       successRate: 98
@@ -148,7 +148,7 @@ export const toolsData: ToolData[] = [
     title: 'Knowledge Check',
     description: 'Verify understanding with quick knowledge checks and quizzes that drive learning',
     badge: 'LEARNING',
-    icon: '🧠',
+    icon: 'Brain',
     stats: {
       deployments: 721,
       successRate: 92
@@ -169,7 +169,7 @@ export const toolsData: ToolData[] = [
     title: 'Root Cause Analysis',
     description: 'Dig deeper into issues with structured root cause analysis tools and frameworks',
     badge: 'ANALYSIS',
-    icon: '🔍',
+    icon: 'Search',
     stats: {
       deployments: 445,
       successRate: 88
