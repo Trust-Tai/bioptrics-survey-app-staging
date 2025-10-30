@@ -3,7 +3,7 @@ export interface ToolData {
   title: string;
   description: string;
   badge: string;
-  icon: string;
+  icon: string; // Lucide icon name
   stats: {
     deployments: number;
     successRate: number;
@@ -22,7 +22,7 @@ export const toolsData: ToolData[] = [
     title: 'Whole Person Safety (WPS) Check',
     description: 'Monitor holistic safety across your organization with comprehensive wellness insights',
     badge: 'POPULAR',
-    icon: '♡',
+    icon: 'Heart',
     stats: {
       deployments: 1247,
       successRate: 94
@@ -43,7 +43,7 @@ export const toolsData: ToolData[] = [
     title: 'Culture Pre-built Surveys',
     description: 'Launch validated culture assessment surveys designed by experts to measure what matters most',
     badge: 'POPULAR',
-    icon: '♡',
+    icon: 'Heart',
     stats: {
       deployments: 1247,
       successRate: 94
@@ -57,14 +57,14 @@ export const toolsData: ToolData[] = [
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/survey-catalog'
   },
   {
     id: 'survey-builder',
     title: 'Survey Builder',
     description: 'Create custom surveys with our guided builder. Best practices built in to ensure quality data',
     badge: 'FLEXIBLE',
-    icon: '📊',
+    icon: 'BarChart3',
     stats: {
       deployments: 892,
       successRate: 89
@@ -78,14 +78,14 @@ export const toolsData: ToolData[] = [
     timeToInsights: '24 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/surveys/builder'
   },
   {
     id: 'assessment-builder',
     title: 'Assessment Builder',
     description: 'Build comprehensive assessments with scoring logic and automated insights',
     badge: 'ADVANCED',
-    icon: '📋',
+    icon: 'ClipboardList',
     stats: {
       deployments: 634,
       successRate: 91
@@ -99,14 +99,14 @@ export const toolsData: ToolData[] = [
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#c17a5f',
-    link: '#'
+    link: '/admin/assessment-builder'
   },
   {
     id: 'change-notification',
     title: 'Change Notification Builder',
     description: 'Create and track organizational change communications with read receipts and comprehension checks',
     badge: 'COMMUNICATION',
-    icon: '🔔',
+    icon: 'Bell',
     stats: {
       deployments: 523,
       successRate: 87
@@ -117,17 +117,17 @@ export const toolsData: ToolData[] = [
       'Multi-channel delivery'
     ],
     setupTime: '8 minutes',
-    timeToInsights: 'Real-time',
+    timeToInsights: '24 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#9ca3a8',
-    link: '#'
+    link: '/admin/change-notification'
   },
   {
     id: 'policy-review',
     title: 'Policy Review',
     description: 'Manage policy acknowledgments and compliance tracking across your organization',
     badge: 'REGULATORY',
-    icon: '📄',
+    icon: 'FileText',
     stats: {
       deployments: 892,
       successRate: 98
@@ -138,17 +138,17 @@ export const toolsData: ToolData[] = [
       'Automated reminders'
     ],
     setupTime: '3 minutes',
-    timeToInsights: '24 hours',
+    timeToInsights: '1 hour',
     buttonText: 'Deploy This Solution →',
     cardColor: '#5cb85c',
-    link: '#'
+    link: '/admin/policy-review'
   },
   {
     id: 'knowledge-check',
     title: 'Knowledge Check',
     description: 'Verify understanding with quick knowledge checks and quizzes that drive learning',
     badge: 'LEARNING',
-    icon: '🧠',
+    icon: 'Brain',
     stats: {
       deployments: 721,
       successRate: 92
@@ -159,17 +159,17 @@ export const toolsData: ToolData[] = [
       'Adaptive difficulty'
     ],
     setupTime: '7 minutes',
-    timeToInsights: 'Immediate',
+    timeToInsights: '30 minutes',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/knowledge-check'
   },
   {
     id: 'root-cause-analysis',
     title: 'Root Cause Analysis',
     description: 'Dig deeper into issues with structured root cause analysis tools and frameworks',
     badge: 'ANALYSIS',
-    icon: '🔍',
+    icon: 'Search',
     stats: {
       deployments: 445,
       successRate: 88
@@ -180,9 +180,9 @@ export const toolsData: ToolData[] = [
       'Action plan generation'
     ],
     setupTime: '12 minutes',
-    timeToInsights: '72 hours',
+    timeToInsights: '2 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/root-cause-analysis'
   }
 ];

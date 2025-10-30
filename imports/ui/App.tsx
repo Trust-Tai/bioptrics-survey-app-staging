@@ -65,6 +65,12 @@ import MigrationPanel from './admin/MigrationPanel';
 import ConsentScreenTest from './public/frontend/components/ConsentScreenTest';
 import { NewAdminDashboard } from './admin/dashboard';
 import AdminHomePage from './admin/home';
+import SurveyCatalog from './admin/survey-catalog';
+import AssessmentBuilder from './admin/assessment-builder';
+import ChangeNotification from './admin/change-notification';
+import PolicyReview from './admin/policy-review';
+import KnowledgeCheck from './admin/knowledge-check';
+import RootCauseAnalysis from './admin/root-cause-analysis';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -183,6 +189,18 @@ const AppRoutes: React.FC = () => {
       <Route element={<RequireAdminAuth />}>
          {/* Home Route */}
          <Route path="/admin/home" element={<AdminHomePage />} />
+         {/* Survey Catalog Route */}
+         <Route path="/admin/survey-catalog" element={<SurveyCatalog />} />
+         {/* Assessment Builder Route */}
+         <Route path="/admin/assessment-builder" element={<AssessmentBuilder />} />
+         {/* Change Notification Route */}
+         <Route path="/admin/change-notification" element={<ChangeNotification />} />
+         {/* Policy Review Route */}
+         <Route path="/admin/policy-review" element={<PolicyReview />} />
+         {/* Knowledge Check Route */}
+         <Route path="/admin/knowledge-check" element={<KnowledgeCheck />} />
+         {/* Root Cause Analysis Route */}
+         <Route path="/admin/root-cause-analysis" element={<RootCauseAnalysis />} />
          {/* Dashboard Route */}
          <Route path="/admin/dashboard" element={<NewAdminDashboard />} />
          {/* Redirect from /admin/surveys to /admin/surveys/all */}

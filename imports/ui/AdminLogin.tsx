@@ -103,9 +103,9 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
             style={{ maxWidth: '280px', width: '100%', height: 'auto' }}
           />
         </div>
-        <AuthTitle style={{ fontSize: 24, marginBottom: 8, marginTop: 0, fontWeight: 400, letterSpacing: 0.1, color: '#222' }}>
+        {/* <AuthTitle style={{ fontSize: 24, marginBottom: 8, marginTop: 0, fontWeight: 400, letterSpacing: 0.1, color: '#222' }}>
           Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Pulse Admin</span>
-        </AuthTitle>
+        </AuthTitle> */}
         <div style={{ textAlign: 'center', color: '#555555', fontSize: 15, marginBottom: 22, marginTop: 2 }}>
           Securely log in to access the admin dashboard, manage survey data, view insights, and control system settings.<br />
           Only authorized users are permitted.
