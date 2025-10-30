@@ -85,7 +85,7 @@ const HeroSection: React.FC = () => {
   const navigate = useNavigate();
 
   const handleViewDashboard = () => {
-    navigate('/admin/dashboard');
+    navigate('/admin/home');
   };
 
   const handleTakeTour = () => {
