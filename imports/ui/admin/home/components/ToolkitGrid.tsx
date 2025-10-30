@@ -40,6 +40,25 @@ const Grid = styled.div`
   }
 `;
 
+// Category configuration with titles and descriptions
+const categories = [
+  {
+    id: 'culture' as const,
+    title: 'Culture Assessments',
+    description: 'Evaluate and enhance organizational culture with comprehensive tools like WPS, prebuilt surveys, and custom assessment builders designed to uncover insights and drive positive change.'
+  },
+  {
+    id: 'operations' as const,
+    title: 'Operations and Governance',
+    description: 'Streamline compliance and improve operational efficiency using robust solutions such as the Change Notification Builder and Policy Review tools, tailored to support effective governance and procedural excellence.'
+  },
+  {
+    id: 'benchmarking' as const,
+    title: 'Benchmarking Tools',
+    description: 'Leverage in-depth benchmarking tools, including Knowledge Check and Root Cause Analysis, to identify performance gaps, facilitate continuous improvement, and maintain a competitive edge in your industry.'
+  }
+];
+
 const ToolkitGrid: React.FC = () => {
   const navigate = useNavigate();
 
@@ -52,24 +71,31 @@ const ToolkitGrid: React.FC = () => {
   };
 
   return (
-    <GridContainer>
-      <SectionHeader>
-        <SectionTitle>Your Culture Toolkit</SectionTitle>
-        <SectionSubtitle>
-          Select any tool to get started. Each includes built-in guidance and best practices to ensure success.
-        </SectionSubtitle>
-      </SectionHeader>
-      
-      <Grid>
-        {toolsData.map((tool) => (
-          <ToolCard
-            key={tool.id}
-            tool={tool}
-            onClick={() => handleToolClick(tool.link)}
-          />
-        ))}
-      </Grid>
-    </GridContainer>
+    <>
+      {categories.map((category) => {
+        // Filter tools for this category
+        const categoryTools = toolsData.filter(tool => tool.category === category.id);
+        
+        return (
+          <GridContainer key={category.id}>
+            <SectionHeader>
+              <SectionTitle>{category.title}</SectionTitle>
+              <SectionSubtitle>{category.description}</SectionSubtitle>
+            </SectionHeader>
+            
+            <Grid>
+              {categoryTools.map((tool) => (
+                <ToolCard
+                  key={tool.id}
+                  tool={tool}
+                  onClick={() => handleToolClick(tool.link)}
+                />
+              ))}
+            </Grid>
+          </GridContainer>
+        );
+      })}
+    </>
   );
 };
 
