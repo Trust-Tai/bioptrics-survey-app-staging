@@ -65,6 +65,7 @@ import MigrationPanel from './admin/MigrationPanel';
 import ConsentScreenTest from './public/frontend/components/ConsentScreenTest';
 import { NewAdminDashboard } from './admin/dashboard';
 import AdminHomePage from './admin/home';
+import SurveyCatalog from './admin/survey-catalog';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -183,6 +184,8 @@ const AppRoutes: React.FC = () => {
       <Route element={<RequireAdminAuth />}>
          {/* Home Route */}
          <Route path="/admin/home" element={<AdminHomePage />} />
+         {/* Survey Catalog Route */}
+         <Route path="/admin/survey-catalog" element={<SurveyCatalog />} />
          {/* Dashboard Route */}
          <Route path="/admin/dashboard" element={<NewAdminDashboard />} />
          {/* Redirect from /admin/surveys to /admin/surveys/all */}

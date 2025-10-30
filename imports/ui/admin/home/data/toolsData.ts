@@ -57,7 +57,7 @@ export const toolsData: ToolData[] = [
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/survey-catalog'
   },
   {
     id: 'survey-builder',
@@ -78,7 +78,7 @@ export const toolsData: ToolData[] = [
     timeToInsights: '24 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/surveys/builder'
   },
   {
     id: 'assessment-builder',
