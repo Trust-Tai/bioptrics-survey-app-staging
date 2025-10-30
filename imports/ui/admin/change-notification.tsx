@@ -19,8 +19,23 @@ const PageContainer = styled.div`
 `;
 
 const Header = styled.div`
-  background: #f5f7f8;
-  padding: 40px 24px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: 16px;
+  padding: 32px 24px;
+  margin: 24px;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+  }
 `;
 
 const HeaderContent = styled.div`
@@ -30,27 +45,34 @@ const HeaderContent = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 1;
 `;
 
-const HeaderText = styled.div``;
+const HeaderText = styled.div`
+  color: white;
+`;
 
 const Title = styled.h1`
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  color: #2c3e50;
+  color: white;
   margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const Subtitle = styled.p`
-  font-size: 15px;
-  color: #6c757d;
+  font-size: 16px;
+  color: white;
   margin: 0;
+  opacity: 0.9;
+  font-weight: 400;
 `;
 
 const SendButton = styled.button`
-  background: #542a46;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   padding: 12px 24px;
   font-size: 15px;
@@ -59,10 +81,12 @@ const SendButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
   
   &:hover {
-    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 `;
 

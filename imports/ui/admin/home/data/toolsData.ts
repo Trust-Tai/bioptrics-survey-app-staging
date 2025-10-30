@@ -159,10 +159,10 @@ export const toolsData: ToolData[] = [
       'Adaptive difficulty'
     ],
     setupTime: '7 minutes',
-    timeToInsights: 'Immediate',
+    timeToInsights: '30 minutes',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/knowledge-check'
   },
   {
     id: 'root-cause-analysis',
@@ -180,9 +180,9 @@ export const toolsData: ToolData[] = [
       'Action plan generation'
     ],
     setupTime: '12 minutes',
-    timeToInsights: '72 hours',
+    timeToInsights: '2 hours',
     buttonText: 'Deploy This Solution →',
     cardColor: '#6b8e9d',
-    link: '#'
+    link: '/admin/root-cause-analysis'
   }
 ];

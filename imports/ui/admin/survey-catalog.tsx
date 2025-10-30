@@ -10,26 +10,52 @@ const PageContainer = styled.div`
 `;
 
 const Header = styled.div`
-  background: #f5f7f8;
-  padding: 60px 24px 40px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: 16px;
+  padding: 32px 24px;
+  margin: 24px;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+  }
 `;
 
 const HeaderContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 `;
 
 const Title = styled.h1`
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
-  color: #2c3e50;
-  margin: 0 0 12px 0;
+  color: white;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const Subtitle = styled.p`
   font-size: 16px;
-  color: #6c757d;
-  margin: 0 0 32px 0;
+  color: white;
+  margin: 0;
+  opacity: 0.9;
+  font-weight: 400;
+`;
+
+const SearchSection = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
 `;
 
 const SearchWrapper = styled.div`
@@ -64,7 +90,7 @@ const SearchBar = styled.input`
 const Grid = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  padding: 60px 24px;
+  padding: 24px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
@@ -232,14 +258,17 @@ const SurveyCatalog: React.FC = () => {
           <HeaderContent>
             <Title>Pre-built Survey Solutions</Title>
             <Subtitle>Expert-designed surveys ready to deploy in minutes</Subtitle>
-            <SearchWrapper>
-              <SearchIconWrapper>
-                <SearchIcon size={18} />
-              </SearchIconWrapper>
-              <SearchBar placeholder="Search survey templates..." />
-            </SearchWrapper>
           </HeaderContent>
         </Header>
+
+        <SearchSection>
+          <SearchWrapper>
+            <SearchIconWrapper>
+              <SearchIcon size={18} />
+            </SearchIconWrapper>
+            <SearchBar placeholder="Search survey templates..." />
+          </SearchWrapper>
+        </SearchSection>
 
         <Grid>
           {/* Card 1: Employee Engagement */}
