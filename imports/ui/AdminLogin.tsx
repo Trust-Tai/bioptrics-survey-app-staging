@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { AuthBg, AuthCard, AuthTitle, AuthInput, AuthButton, AuthError, AuthInputWrapper, AuthInputIcon, AuthInputAction } from './components/AuthStyles';
+import { AuthBg, AuthCard, AuthTitle, AuthInput, AuthButton, AuthError, AuthInputWrapper, AuthInputIcon, AuthInputAction, AuthDivider, Office365Button, MicrosoftLogo, AuthTerms } from './components/AuthStyles';
 import { FaUser, FaKey, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { HiMail } from 'react-icons/hi';
 
 interface AdminLoginProps {
   onAdminAuth: () => void;
@@ -65,16 +66,21 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
     }
   };
 
+  // Static handler for Office 365 button (demo only)
+  const handleOffice365Login = () => {
+    // For demo purposes - show a message
+    // alert('Office 365 SSO integration coming soon!\n\nThis feature will allow you to sign in with your Microsoft 365 credentials.');
+  };
 
 
   // Show redirecting message if user is already authenticated
   if (isRedirecting) {
     return (
       <AuthBg>
-        <AuthCard style={{ maxWidth: 400, padding: '2rem', minWidth: 320, textAlign: 'center' }}>
-          <AuthTitle style={{ fontSize: 24, marginBottom: 16, fontWeight: 400, color: '#222' }}>
+        <AuthCard style={{ maxWidth: 500, padding: '2rem', minWidth: 320, textAlign: 'center' }}>
+          {/* <AuthTitle style={{ fontSize: 24, marginBottom: 16, fontWeight: 400, color: '#222' }}>
             Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Pulse Admin</span>
-          </AuthTitle>
+          </AuthTitle> */}
           <div style={{ color: '#666', fontSize: 16 }}>
             Redirecting to dashboard...
           </div>
@@ -89,7 +95,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
       <img src="/newlogo-art.png" alt="bioptrics art" style={{ position: 'absolute', left: 0, bottom: 0, height: '60%', zIndex: 1, pointerEvents: 'none' }} />
       {/* Powered by Bioptrics at bottom right */}
       <img src="/poweredbybioptrics.png" alt="Powered by Bioptrics" style={{ position: 'absolute', right: 20, bottom: 20, height: 40, zIndex: 1, pointerEvents: 'none' }} />
-      <AuthCard onSubmit={handleLogin} style={{ maxWidth: 400, padding: '1.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
+      <AuthCard onSubmit={handleLogin} style={{ maxWidth: 500, padding: '1.5rem 2.5rem 2rem 2.5rem', minWidth: 320, position: 'relative', zIndex: 3 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img 
+            src="/bioptrics_fixed_black.png" 
+            alt="Bioptrics Pulse" 
+            style={{ maxWidth: '280px', width: '100%', height: 'auto' }}
+          />
+        </div>
         <AuthTitle style={{ fontSize: 24, marginBottom: 8, marginTop: 0, fontWeight: 400, letterSpacing: 0.1, color: '#222' }}>
           Bioptrics <span style={{ fontWeight: 'bold', color: '#7a3e68' }}>Pulse Admin</span>
         </AuthTitle>
@@ -152,7 +165,24 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
               <a href="#" style={{ fontSize: 13, color: '#7a6a4f', textDecoration: 'underline', opacity: 0.9 }}>Forgot password?</a>
             </div>
           </div>
-          <AuthButton type="submit" style={{ marginTop: 22, fontSize: 17, fontWeight: 700, borderRadius: 24, background: 'linear-gradient(90deg, var(--color-primary, #552a47) 0%, var(--color-primary, #552a47) 100%)', boxShadow: '0 2px 8px #e5d6e0', height: 44, letterSpacing: 0.2, width: '100%', border: 'none' }}>LOG IN</AuthButton>
+          <AuthButton type="submit" style={{ marginTop: 22, fontSize: 17, fontWeight: 500, borderRadius: 24, background: 'linear-gradient(90deg, var(--color-primary, #552a47) 0%, var(--color-primary, #552a47) 100%)', boxShadow: '0 2px 8px #e5d6e0', height: 44, letterSpacing: 0.2, width: '100%', border: 'none' }}>
+            <HiMail size={20} />
+            Sign in with Email
+          </AuthButton>
+          
+          <AuthDivider>OR CONTINUE WITH</AuthDivider>
+          
+          <Office365Button type="button" onClick={handleOffice365Login}>
+            <MicrosoftLogo 
+              src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" 
+              alt="Microsoft"
+            />
+            Sign in with Office 365
+          </Office365Button>
+          
+          <AuthTerms>
+            By signing in, you agree to our <a href="#" onClick={(e) => e.preventDefault()}>Terms of Service</a> and <a href="#" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+          </AuthTerms>
         </div>
       </AuthCard>
     </AuthBg>
