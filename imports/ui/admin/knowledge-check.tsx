@@ -244,7 +244,7 @@ const Input = styled.input`
 
 const BuildButton = styled.button`
   width: 100%;
-  background: #6b8e9d;
+  background: #5a8596;
   color: white;
   border: none;
   border-radius: 8px;
@@ -319,7 +319,7 @@ const KnowledgeCheck: React.FC = () => {
 
             <CheckTypeGrid>
               {/* Quick Quiz */}
-              <CheckTypeCard bgColor="#6b8e9d">
+              <CheckTypeCard bgColor="#5a8596">
                 <CardTop>
                   <IconWrapper>
                     <Zap size={24} />
@@ -336,7 +336,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Knowledge Test */}
-              <CheckTypeCard bgColor="#6b8e9d">
+              <CheckTypeCard bgColor="#5a8596">
                 <CardTop>
                   <IconWrapper>
                     <BookOpen size={24} />
@@ -353,7 +353,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Skill Check */}
-              <CheckTypeCard bgColor="#c17a5f">
+              <CheckTypeCard bgColor="#be5f41">
                 <CardTop>
                   <IconWrapper>
                     <Target size={24} />
@@ -370,7 +370,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Certification Check */}
-              <CheckTypeCard bgColor="#c17a5f">
+              <CheckTypeCard bgColor="#be5f41">
                 <CardTop>
                   <IconWrapper>
                     <Award size={24} />

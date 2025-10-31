@@ -37,7 +37,7 @@ export const toolsData: ToolData[] = [
     setupTime: '5 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#6b8e9d',
+    cardColor: '#5a8596',
     link: '/admin/wps-dashboard'
   },
   {
@@ -59,7 +59,7 @@ export const toolsData: ToolData[] = [
     setupTime: '5 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#6b8e9d',
+    cardColor: '#5a8596',
     link: '/admin/survey-catalog'
   },
   // {
@@ -103,7 +103,7 @@ export const toolsData: ToolData[] = [
     setupTime: '15 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#c17a5f',
+    cardColor: '#5a8596',
     link: '/admin/assessment-builder'
   },
   {
@@ -125,7 +125,7 @@ export const toolsData: ToolData[] = [
     setupTime: '8 minutes',
     timeToInsights: '24 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#9ca3a8',
+    cardColor: '#be5f41',
     link: '/admin/change-notification'
   },
   {
@@ -147,7 +147,7 @@ export const toolsData: ToolData[] = [
     setupTime: '3 minutes',
     timeToInsights: '1 hour',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#5cb85c',
+    cardColor: '#be5f41',
     link: '/admin/policy-review'
   },
   {
@@ -169,7 +169,7 @@ export const toolsData: ToolData[] = [
     setupTime: '7 minutes',
     timeToInsights: '30 minutes',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#6b8e9d',
+    cardColor: '#fcca5e',
     link: '/admin/knowledge-check'
   },
   {
@@ -191,7 +191,7 @@ export const toolsData: ToolData[] = [
     setupTime: '12 minutes',
     timeToInsights: '2 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#6b8e9d',
+    cardColor: '#fcca5e',
     link: '/admin/root-cause-analysis'
   }
 ];

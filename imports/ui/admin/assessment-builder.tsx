@@ -253,7 +253,7 @@ const AssessmentBuilder: React.FC = () => {
             <Grid>
               {/* Leadership Assessment */}
               <TemplateCard onClick={() => handleTemplateSelect('leadership')}>
-                <CardHeader bgColor="#6b8e9d">
+                <CardHeader bgColor="#5a8596">
                   <IconWrapper>
                     <Target size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -273,7 +273,7 @@ const AssessmentBuilder: React.FC = () => {
 
               {/* Performance Review */}
               <TemplateCard onClick={() => handleTemplateSelect('performance')}>
-                <CardHeader bgColor="#6b8e9d">
+                <CardHeader bgColor="#be5f41">
                   <IconWrapper>
                     <Award size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -293,7 +293,7 @@ const AssessmentBuilder: React.FC = () => {
 
               {/* Competency Assessment */}
               <TemplateCard onClick={() => handleTemplateSelect('competency')}>
-                <CardHeader bgColor="#c17a5f">
+                <CardHeader bgColor="#a6a6a6">
                   <IconWrapper>
                     <TrendingUp size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -313,7 +313,7 @@ const AssessmentBuilder: React.FC = () => {
 
               {/* Team Effectiveness */}
               <TemplateCard onClick={() => handleTemplateSelect('team')}>
-                <CardHeader bgColor="#c17a5f">
+                <CardHeader bgColor="#fcca5e">
                   <IconWrapper>
                     <Users size={24} strokeWidth={2} />
                   </IconWrapper>

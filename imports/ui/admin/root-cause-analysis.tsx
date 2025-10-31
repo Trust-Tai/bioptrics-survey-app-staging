@@ -262,7 +262,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: List,
       title: '5 Whys Analysis',
       description: 'Iteratively ask \'why\' to uncover root causes',
-      bgColor: '#6b8e9d',
+      bgColor: '#5a8596',
       steps: [
         'Define the problem',
         'Ask why it happened',
@@ -275,7 +275,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: GitBranch,
       title: 'Fishbone Diagram',
       description: 'Visual cause-and-effect analysis',
-      bgColor: '#c17a5f',
+      bgColor: '#be5f41',
       steps: [
         'Define the problem',
         'Identify categories',
@@ -288,7 +288,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: Search,
       title: 'Fault Tree Analysis',
       description: 'Top-down deductive failure analysis',
-      bgColor: '#6b8e9d',
+      bgColor: '#a6a6a6',
       steps: [
         'Define top event',
         'Identify immediate causes',
