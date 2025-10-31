@@ -273,7 +273,7 @@ const SurveyCatalog: React.FC = () => {
         <Grid>
           {/* Card 1: Employee Engagement */}
           <Card>
-            <CardHeader bgColor="#6b8e9d">
+            <CardHeader bgColor="#5a8596">
               <IconWrapper>
                 <Heart size={24} strokeWidth={2} />
               </IconWrapper>
@@ -312,13 +312,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#6b8e9d">Use This Template →</UseButton>
+              <UseButton bgColor="#5a8596">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 2: Leadership Assessment */}
           <Card>
-            <CardHeader bgColor="#6b8e9d">
+            <CardHeader bgColor="#5a8596">
               <IconWrapper>
                 <Target size={24} strokeWidth={2} />
               </IconWrapper>
@@ -357,13 +357,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#6b8e9d">Use This Template →</UseButton>
+              <UseButton bgColor="#5a8596">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 3: Organizational Culture */}
           <Card>
-            <CardHeader bgColor="#c17a5f">
+            <CardHeader bgColor="#be5f41">
               <IconWrapper>
                 <BarChart3 size={24} strokeWidth={2} />
               </IconWrapper>
@@ -402,13 +402,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#c17a5f">Use This Template →</UseButton>
+              <UseButton bgColor="#be5f41">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 4: Wellness Check */}
           <Card>
-            <CardHeader bgColor="#c17a5f">
+            <CardHeader bgColor="#be5f41">
               <IconWrapper>
                 <TrendingUp size={24} strokeWidth={2} />
               </IconWrapper>
@@ -447,13 +447,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#c17a5f">Use This Template →</UseButton>
+              <UseButton bgColor="#be5f41">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 5: Onboarding Experience */}
           <Card>
-            <CardHeader bgColor="#9ca3a8">
+            <CardHeader bgColor="#a6a6a6">
               <IconWrapper>
                 <Gift size={24} strokeWidth={2} />
               </IconWrapper>
@@ -492,13 +492,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#9ca3a8">Use This Template →</UseButton>
+              <UseButton bgColor="#a6a6a6">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 6: 360° Feedback */}
           <Card>
-            <CardHeader bgColor="#5cb85c">
+            <CardHeader bgColor="#fcca5e">
               <IconWrapper>
                 <MessageCircle size={24} strokeWidth={2} />
               </IconWrapper>
@@ -541,7 +541,7 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#5cb85c">Use This Template →</UseButton>
+              <UseButton bgColor="#fcca5e">Use This Template →</UseButton>
             </CardContent>
           </Card>
         </Grid>

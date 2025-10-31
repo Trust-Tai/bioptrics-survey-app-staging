@@ -41,7 +41,7 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'outline' }>`
   ${props => {
     if (props.variant === 'primary') {
       return `
-        background: #6b8e9d;
+        background: #5a8596;
         color: white;
         
         &:hover {
