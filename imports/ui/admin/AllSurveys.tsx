@@ -1308,6 +1308,7 @@ const AllSurveys: React.FC = () => {
                 <span style={{ marginLeft: 6 }}>Add Survey</span>
               </AddButton>
               <AddButton
+                style={{ display: 'none' }}
                 onClick={() => setShowImportPanel(true)}
                 
               >
