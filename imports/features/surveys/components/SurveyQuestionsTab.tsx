@@ -1276,10 +1276,10 @@ useEffect(() => {
 
   const handleEditSection = (section: any) => {
     // Check if survey is imported - don't allow editing sections in imported surveys
-    if (isSurveyImported()) {
-      console.log('Cannot edit section in imported survey');
-      return;
-    }
+    // if (isSurveyImported()) {
+    //   console.log('Cannot edit section in imported survey');
+    //   return;
+    // }
     
     console.log('Editing section with data:', section);
     console.log('Document fields in passed section:', {
@@ -2011,23 +2011,39 @@ useEffect(() => {
                                 <FiEdit2 size={14} />
                               </button>
                             ) : (
+                              // <button
+                              //   style={{
+                              //     background: 'none',
+                              //     border: 'none',
+                              //     cursor: 'not-allowed',
+                              //     color: '#6b7280',
+                              //     opacity: 0.5,
+                              //     padding: '4px',
+                              //     display: 'flex',
+                              //     alignItems: 'center'
+                              //   }}
+                              //   title="Cannot edit section in imported survey"
+                              //   disabled
+                              // >
+                              //   <FiLock size={14} />
+                              // </button>
                               <button
+                                onClick={() => handleEditSection(section)}
                                 style={{
                                   background: 'none',
                                   border: 'none',
-                                  cursor: 'not-allowed',
+                                  cursor: 'pointer',
                                   color: '#6b7280',
-                                  opacity: 0.5,
                                   padding: '4px',
                                   display: 'flex',
                                   alignItems: 'center'
                                 }}
-                                title="Cannot edit section in imported survey"
-                                disabled
+                                title="Edit section"
                               >
-                                <FiLock size={14} />
+                                <FiEdit2 size={14} />
                               </button>
                             )}
+
                             {!isSurveyImported() ? (
                               <button
                                 onClick={(e) => {
@@ -2224,18 +2240,30 @@ useEffect(() => {
                           ) : (
                             <div 
                               className="survey-section-add-question"
+                              onClick={() => handleChooseFromQuestionBankForSection(section.id)}
                               style={{ 
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 gap: '6px',
-                                padding: '8px 12px',
-                                opacity: 0.5,
-                                cursor: 'not-allowed'
+                                padding: '8px 12px'
                               }}
-                              title="Cannot add questions to imported survey"
                             >
-                              <FiLock size={14} /> <span style={{ marginLeft: '8px' }}>Choose from Question Bank</span>
+                              <FiPlus size={14} /> Choose from Question Bank
                             </div>
+                            // <div 
+                            //   className="survey-section-add-question"
+                            //   style={{ 
+                            //     display: 'flex', 
+                            //     alignItems: 'center', 
+                            //     gap: '6px',
+                            //     padding: '8px 12px',
+                            //     opacity: 0.5,
+                            //     cursor: 'not-allowed'
+                            //   }}
+                            //   title="Cannot add questions to imported survey"
+                            // >
+                            //   <FiLock size={14} /> <span style={{ marginLeft: '8px' }}>Choose from Question Bank</span>
+                            // </div>
                           )}
                           {!isSurveyImported() ? (
                             <div 
@@ -2254,19 +2282,32 @@ useEffect(() => {
                           ) : (
                             <div 
                               className="survey-section-add-question"
+                              onClick={() => handleCreateQuestionForSection(section.id)}
                               style={{ 
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 gap: '6px',
                                 fontSize: '14px',
-                                padding: '8px 12px',
-                                opacity: 0.5,
-                                cursor: 'not-allowed'
+                                padding: '8px 12px'
                               }}
-                              title="Cannot create questions in imported survey"
                             >
-                              <FiLock size={14} /> Create Question
+                              <FiPlus size={14} /> Create Question
                             </div>
+                            // <div 
+                            //   className="survey-section-add-question"
+                            //   style={{ 
+                            //     display: 'flex', 
+                            //     alignItems: 'center', 
+                            //     gap: '6px',
+                            //     fontSize: '14px',
+                            //     padding: '8px 12px',
+                            //     opacity: 0.5,
+                            //     cursor: 'not-allowed'
+                            //   }}
+                            //   title="Cannot create questions in imported survey"
+                            // >
+                            //   <FiLock size={14} /> Create Question
+                            // </div>
                           )}
                         </div>
                       </div>
