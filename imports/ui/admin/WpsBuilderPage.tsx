@@ -199,9 +199,28 @@ const STYLES = {
     display: 'block',
   } as React.CSSProperties,
   detailsBtn: { minWidth: 70 } as React.CSSProperties,
+  standardLabel: {
+    position: 'absolute',
+    bottom: 8,
+    right: 12,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 8px',
+    borderRadius: 6,
+    maxWidth: '85%',
+    lineHeight: 1.15,
+    fontSize: 15,
+    letterSpacing: '.3px',
+    textAlign: 'right',
+    justifyContent: 'flex-end',
+    width: 'auto'
+  } as React.CSSProperties,
 };
 
 // Pure helpers
+// Build image path for a standard: lowercase, trim, replace inner whitespace with hyphens, prefix directory & suffix extension.
+const standardImagePath = (title: string): string => `/WPS/${title.toLowerCase().trim().replace(/\s+/g, '-')}.png`;
 const sortWPSIDs = (wpsids: string[]) =>
   wpsids.slice().sort((a, b) => {
     const numA = parseInt(a.replace(/^WPS/, ''), 10);
@@ -296,10 +315,25 @@ const interpolateCountColor = (value: number) => {
   return stops[stops.length - 1][1];
 };
 
-const getStandardCellStyle = (hovered: boolean): React.CSSProperties => ({
-  ...STYLES.standardCellBase,
-  backgroundColor: hovered ? '#f1eaff' : undefined,
-});
+// Standard cell ("tile") styling now includes dynamic background image per standard.
+// We avoid overriding with a solid background color on hover; instead add an outline for focus/hover feedback.
+const getStandardCellStyle = (hovered: boolean, standard: string): React.CSSProperties => {
+  const imgPath = standardImagePath(standard);
+  return {
+    ...STYLES.standardCellBase,
+    backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.25)), url("${imgPath}")`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    color: '#fff',
+    fontWeight: 600,
+    outline: hovered ? '2px solid #bca3ec' : undefined,
+    outlineOffset: hovered ? '-2px' : undefined,
+    padding: 0,
+    paddingBottom: 16, // slight bottom padding to push label upward visually
+    minHeight: 140,
+  };
+};
 
 const getIndicatorCellStyle = (hovered: boolean): React.CSSProperties => ({
   ...STYLES.indicatorCellBase,
@@ -429,12 +463,13 @@ const WpsBuilderPage: React.FC = () => {
             {idx === 0 && (
               <td
                 rowSpan={(indicators as string[]).length}
-                style={getStandardCellStyle(hoveredStandard === standard)}
+                className="wps-standard-cell"
+                style={getStandardCellStyle(hoveredStandard === standard, standard)}
                 onMouseEnter={() => setHoveredStandard(standard)}
                 onMouseLeave={() => setHoveredStandard(null)}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  {standard}
+                <div style={STYLES.standardLabel}>
+                  <span style={{ fontWeight: 700 }}>{standard}</span>
                   <span
                     ref={el => {
                       tooltipTargetRefs.current[standard] = el;
@@ -447,8 +482,8 @@ const WpsBuilderPage: React.FC = () => {
                     }}
                   >
                     <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="10" cy="10" r="9" stroke="#888" strokeWidth="2" fill="#fff" />
-                      <text x="10" y="15" textAnchor="middle" fontSize="13" fill="#888" fontWeight="bold">i</text>
+                      <circle cx="10" cy="10" r="9" stroke="#ddd" strokeWidth="2" fill="rgba(255,255,255,0.85)" />
+                      <text x="10" y="15" textAnchor="middle" fontSize="13" fill="#555" fontWeight="bold">i</text>
                     </svg>
                   </span>
                   <Overlay
@@ -463,7 +498,7 @@ const WpsBuilderPage: React.FC = () => {
                       <div>{getStandardDescription(wpsQuestions, standard)}</div>
                     </Tooltip>
                   </Overlay>
-                </span>
+                </div>
               </td>
             )}
             <td
