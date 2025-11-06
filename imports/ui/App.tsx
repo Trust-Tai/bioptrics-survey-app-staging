@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { AdminLogin } from './AdminLogin';
 import Analytics from './admin/Analytics';
-import AnalyticsDashboard1 from './admin/AnalyticsDashboard';
+import AnalyticsDashboard from './admin/AnalyticsDashboard';
 import AnalyticsCompareCohorts from './admin/AnalyticsCompareCohorts';
 import AnalyticsExportReports from './admin/AnalyticsExportReports';
 import WPSFramework from './admin/WPSFramework';
