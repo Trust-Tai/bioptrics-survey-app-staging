@@ -39,17 +39,45 @@ interface SidebarLink {
   isTag?: boolean;
 }
 
-// Function to get sidebar links with customized terminology and dynamic tags
-const getSidebarLinks = (getTerminology: (key: any) => string, surveyTags: any[] = [], questionTags: any[] = []): SidebarLink[] => [
-  { to: '/admin/home', label: 'Home', icon: FiHome},
-  // { to: '/admin/dashboard', label: 'Dashboard', icon: FiBarChart2},
-  { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard}, 
-  // { to: '/admin/questions/all', label: `${getTerminology('questionLabel')} Bank`, icon: FaDatabase},
-  // { to: '/admin/tags/manage', label: 'Tags', icon: FaTag },
-  { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie},
-  { to: '/admin/marketplace', label: 'Marketplace', icon: FaStore},
-  { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding},
-  { to: '/logout', label: 'Logout', icon: FiLogOut },
+// Define interface for navigation groups
+interface NavigationGroup {
+  label: string | null;
+  items: SidebarLink[];
+}
+
+// Function to get grouped sidebar links
+const getNavigationGroups = (getTerminology: (key: any) => string): NavigationGroup[] => [
+  {
+    label: null,
+    items: [
+      { to: '/admin/home', label: 'Home', icon: FiHome }
+    ]
+  },
+  {
+    label: 'INTELLIGENCE',
+    items: [
+      { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie }
+    ]
+  },
+  {
+    label: 'SOLUTIONS',
+    items: [
+      { to: '/admin/surveys/all', label: `${getTerminology('surveyLabel')}s`, icon: FiClipboard },
+      { to: '/admin/marketplace', label: 'Resources', icon: FaStore }
+    ]
+  },
+  {
+    label: 'ORGANIZATION',
+    items: [
+      { to: '/admin/org-setup', label: 'Org Setup', icon: FaBuilding }
+    ]
+  },
+  {
+    label: null,
+    items: [
+      { to: '/logout', label: 'Logout', icon: FiLogOut }
+    ]
+  }
 ];
 
 interface SidebarProps {
@@ -206,14 +234,24 @@ const MobileBackdrop = styled.div`
 `;
 
 const Logo = styled.div<{theme?: any}>`
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-  padding: 0 1rem;
+  padding: 1.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1rem;
   color: var(--color-sidebar-text, #ffffff) !important;
   
   span {
     color: var(--color-sidebar-text, #ffffff) !important;
   }
+`;
+
+const SectionLabel = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 1.5rem;
+  margin: 1.5rem 0 0.5rem 0;
 `;
 
 const NavItem = styled(Link)<NavItemProps & {theme?: any}>`
@@ -429,8 +467,8 @@ const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children })
     };
   }, []);
   
-  // Generate sidebar links with customized terminology and dynamic tags
-  const sidebarLinks = getSidebarLinks(getTerminology, surveyTags, questionTags);
+  // Generate navigation groups with customized terminology
+  const navigationGroups = getNavigationGroups(getTerminology);
   React.useEffect(() => {
     const prevBg = document.body.style.background;
     const prevOverflowX = document.body.style.overflowX;
@@ -480,20 +518,16 @@ const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children })
     }
   };
 
-  // Add expandedMenus state for submenu toggling
+  // Add expandedMenus state for submenu toggling (reserved for future use)
   const [expandedMenus, setExpandedMenus] = useState<{ [idx: number]: boolean }>({});
   
   // Use onboarding session hook (no provider needed)
   const { enabled: onboardingEnabled } = useOnboardingSession();
   
-  // Ensure the Question Bank submenu is expanded when on any of its pages
+  // No submenu expansion needed for flat navigation
   React.useEffect(() => {
-    // Find the index of the Question Bank menu item
-    const questionBankIndex = sidebarLinks.findIndex(link => link.to === '/admin/questions');
-    if (questionBankIndex !== -1 && location.pathname.startsWith('/admin/questions')) {
-      setExpandedMenus(prev => ({ ...prev, [questionBankIndex]: true }));
-    }
-  }, [location.pathname, sidebarLinks]);
+    // Reserved for future submenu functionality
+  }, [location.pathname]);
 
   function handleLogout() {
     if (window.confirm('Are you sure you want to log out?')) {
@@ -524,103 +558,7 @@ const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children })
         id="adminSidebar"
         onMouseEnter={handleSidebarInteraction}
       >
-        <nav>
-          {sidebarLinks.map((link, idx) => {
-            const isActive = location.pathname.startsWith(link.to);
-            const hasSubmenu = !!link.submenu;
-            return (
-              <div
-                key={link.to}
-                style={{ position: 'relative', overflow: 'visible' }}
-                onMouseEnter={() => {
-                  if (!isMobile || !collapsed) {
-                    const isInline = !collapsed && (location.pathname.startsWith(link.to) || (link.submenu && link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))));
-                    if (!isInline) setHovered(idx);
-                  }
-                }}
-                onMouseLeave={() => setHovered(null)}
-              >
-                <NavItem
-                  to={link.to}
-                  active={isActive}
-                  $collapsed={collapsed}
-                  theme={colors}
-                  tabIndex={0}
-                  aria-haspopup={hasSubmenu ? 'true' : undefined}
-                  aria-expanded={hasSubmenu ? hovered === idx : undefined}
-                  onClick={(e) => handleNavClick(link, e)}
-                  onKeyDown={e => {
-                    if (hasSubmenu && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault();
-                      setHovered(hovered === idx ? null : idx);
-                    }
-                  }}
-                >
-                  <NavIcon $collapsed={collapsed} theme={colors}>
-                    {React.createElement(link.icon)}
-                  </NavIcon>
-                  <NavLabel $collapsed={collapsed}>
-                    {link.label}
-                  </NavLabel>
-                  {hasSubmenu && !collapsed && (
-                    <span style={{ 
-                      marginLeft: 'auto', 
-                      fontSize: 14, 
-                      opacity: 0.7, 
-                      transform: hovered === idx ? 'rotate(90deg)' : 'none', 
-                      transition: 'transform 0.2s' 
-                    }}>
-                      ▸
-                    </span>
-                  )}
-                  {collapsed && hovered === idx && (
-                    <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
-                      {link.label}
-                    </Tooltip>
-                  )}
-                </NavItem>
-                
-                {/* Submenu handling */}
-                {hasSubmenu && !collapsed && link.submenu && (
-                  (!((location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to)))) && hovered === idx)
-                  ? (
-                    <SubmenuFlyout theme={colors}>
-                      {link.submenu.map((sublink: any) => (
-                        <SubmenuItem
-                          key={sublink.to}
-                          to={sublink.to}
-                          theme={colors}
-                          active={location.pathname.startsWith(sublink.to)}
-                        >
-                          {sublink.isTag ? '🏷️ ' : ''}{sublink.label}
-                        </SubmenuItem>
-                      ))}
-                    </SubmenuFlyout>
-                  ) : (
-                    (location.pathname.startsWith(link.to) || link.submenu.some((sublink: any) => location.pathname.startsWith(sublink.to))) && (
-                      <SubmenuInline>
-                        {link.submenu.map((sublink: any) => (
-                          <SubmenuItem
-                            key={sublink.to}
-                            to={sublink.to}
-                            theme={colors}
-                            active={location.pathname.startsWith(sublink.to)}
-                          >
-                            {sublink.isTag ? '🏷️ ' : ''}{sublink.label}
-                          </SubmenuItem>
-                        ))}
-                      </SubmenuInline>
-                    )
-                  )
-                )}
-              </div>
-            );
-          })}
-        </nav>
-        
-        {/* Onboarding Toggle */}
-        <OnboardingToggle collapsed={collapsed} />
-        
+        {/* Logo Header */}
         <Logo theme={colors}>
           <img 
             src="/bioptrics_fixed_black.png" 
@@ -628,6 +566,60 @@ const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children })
             style={{ width: '100%', height: 'auto', maxWidth: collapsed ? '32px' : '150px' }} 
           />
         </Logo>
+        
+        {/* Navigation Groups */}
+        <nav>
+          {navigationGroups.map((group, groupIdx) => (
+            <div key={groupIdx}>
+              {/* Section Label */}
+              {group.label && !collapsed && (
+                <SectionLabel>{group.label}</SectionLabel>
+              )}
+              
+              {/* Navigation Items */}
+              {group.items.map((link, idx) => {
+                const isActive = location.pathname.startsWith(link.to);
+                const uniqueKey = `${groupIdx}-${idx}`;
+                
+                return (
+                  <div
+                    key={uniqueKey}
+                    style={{ position: 'relative', overflow: 'visible' }}
+                    onMouseEnter={() => {
+                      if (collapsed) {
+                        setHovered(parseInt(`${groupIdx}${idx}`));
+                      }
+                    }}
+                    onMouseLeave={() => setHovered(null)}
+                  >
+                    <NavItem
+                      to={link.to}
+                      active={isActive}
+                      $collapsed={collapsed}
+                      theme={colors}
+                      onClick={(e) => handleNavClick(link, e)}
+                    >
+                      <NavIcon $collapsed={collapsed} theme={colors}>
+                        {React.createElement(link.icon)}
+                      </NavIcon>
+                      <NavLabel $collapsed={collapsed}>
+                        {link.label}
+                      </NavLabel>
+                      {collapsed && hovered === parseInt(`${groupIdx}${idx}`) && (
+                        <Tooltip style={{ opacity: 1, visibility: 'visible' }}>
+                          {link.label}
+                        </Tooltip>
+                      )}
+                    </NavItem>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+        
+        {/* Onboarding Toggle */}
+        <OnboardingToggle collapsed={collapsed} />
       </Sidebar>
 
       {/* Desktop toggle button */}
