@@ -50,15 +50,16 @@ const getNavigationGroups = (getTerminology: (key: any) => string): NavigationGr
   {
     label: null,
     items: [
-      { to: '/admin/home', label: 'Home', icon: FiHome }
-    ]
-  },
-  {
-    label: 'INTELLIGENCE',
-    items: [
+      { to: '/admin/home', label: 'Home', icon: FiHome },
       { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie }
     ]
   },
+  // {
+  //   label: 'INTELLIGENCE',
+  //   items: [
+  //     { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie }
+  //   ]
+  // },
   {
     label: 'SOLUTIONS',
     items: [
