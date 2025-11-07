@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { PolicyComplianceData } from '../../../types/dashboard.types';
 import { StatusBadge } from '../../shared/StatusBadge';
@@ -122,10 +123,16 @@ const TeamIcon = styled.div`
 `;
 
 export const PolicyCard: React.FC<PolicyCardProps> = ({ data }) => {
+  const navigate = useNavigate();
+  
   const getProgressColor = (status: string, progress: number) => {
     if (status === 'at-risk') return '#e74c3c';
     if (status === 'needs-attention') return '#f39c12';
     return '#27ae60';
+  };
+
+  const handleViewDetails = () => {
+    navigate('/admin/policy-detail');
   };
 
   return (
@@ -159,7 +166,7 @@ export const PolicyCard: React.FC<PolicyCardProps> = ({ data }) => {
           <TeamIcon>👥</TeamIcon>
           {data.team}
         </TeamInfo>
-        <Button variant="ghost" size="small">
+        <Button variant="ghost" size="small" onClick={handleViewDetails}>
           View Details
         </Button>
       </Footer>
