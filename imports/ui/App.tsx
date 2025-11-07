@@ -64,6 +64,7 @@ import WpsBuilderPage from './admin/WpsBuilderPage';
 import MigrationPanel from './admin/MigrationPanel';
 import ConsentScreenTest from './public/frontend/components/ConsentScreenTest';
 import { NewAdminDashboard } from './admin/dashboard';
+import { PolicyDetailStatic } from './admin/dashboard/components/sections/PolicyCompliance/PolicyDetailStatic';
 import AdminHomePage from './admin/home';
 import SurveyCatalog from './admin/survey-catalog';
 import AssessmentBuilder from './admin/assessment-builder';
@@ -227,6 +228,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/bank" element={<Bank />} />
         <Route path="/admin/analytics" element={<Navigate to="/admin/analytics/dashboard" replace />} />
         <Route path="/admin/analytics/dashboard" element={<NewAdminDashboard />} />
+        <Route path="/admin/policy-detail" element={<PolicyDetailStatic />} />
         <Route path="/admin/analytics/compare-cohorts" element={<AnalyticsCompareCohorts />} />
         <Route path="/admin/analytics/:surveyId" element={<SurveyAnalyticsPage />} />
         <Route path="/admin/analytics/export-reports" element={<AnalyticsExportReports />} />
