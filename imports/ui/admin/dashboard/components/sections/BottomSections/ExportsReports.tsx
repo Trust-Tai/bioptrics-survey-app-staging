@@ -17,14 +17,6 @@ const SectionTitle = styled.h3`
   font-weight: 600;
   color: #1a1a1a;
   margin: 0 0 20px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  &::before {
-    content: '📊';
-    font-size: 16px;
-  }
 `;
 
 const ActionsList = styled.div`

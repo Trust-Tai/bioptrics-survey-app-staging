@@ -24,7 +24,7 @@ const HeatmapTitle = styled.h3`
 
 const HeatmapGrid = styled.div`
   display: grid;
-  grid-template-columns: 120px repeat(4, 1fr);
+  grid-template-columns: 120px repeat(2, 1fr);
   gap: 8px;
   margin-top: 12px;
 `;
@@ -88,7 +88,7 @@ const EmptyCell = styled.div`
 `;
 
 export const SiteHeatmap: React.FC<SiteHeatmapProps> = ({ data }) => {
-  const sites = ['Site A', 'Site B', 'Site C', 'Site D'];
+  const sites = ['Workforce', 'Leaders'];
   
   return (
     <HeatmapContainer>

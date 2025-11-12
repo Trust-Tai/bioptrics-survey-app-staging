@@ -17,14 +17,6 @@ const SectionTitle = styled.h2`
   font-weight: 600;
   color: #1a1a1a;
   margin: 0 0 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  &::before {
-    content: '🛡️';
-    font-size: 18px;
-  }
 `;
 
 const SectionSubtitle = styled.p`
@@ -35,7 +27,7 @@ const SectionSubtitle = styled.p`
 
 const ChartsContainer = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   
   @media (max-width: 1024px) {
@@ -54,55 +46,43 @@ export const SafetyOverviewSection: React.FC<SafetyOverviewSectionProps> = ({ cl
     {
       category: 'Built Environment',
       sites: {
-        'Site A': 75,
-        'Site B': 82,
-        'Site C': null,
-        'Site D': 68
+        'Workforce': 75,
+        'Leaders': 82
       }
     },
     {
       category: 'Inclusion',
       sites: {
-        'Site A': 88,
-        'Site B': 72,
-        'Site C': 65,
-        'Site D': 78
+        'Workforce': 88,
+        'Leaders': 72
       }
     },
     {
       category: 'Psychological',
       sites: {
-        'Site A': null,
-        'Site B': 68,
-        'Site C': 72,
-        'Site D': 82
+        'Workforce': null,
+        'Leaders': 68
       }
     },
     {
       category: 'Physical',
       sites: {
-        'Site A': 72,
-        'Site B': 85,
-        'Site C': 78,
-        'Site D': null
+        'Workforce': 72,
+        'Leaders': 85
       }
     },
     {
       category: 'Leadership',
       sites: {
-        'Site A': 65,
-        'Site B': null,
-        'Site C': 88,
-        'Site D': 72
+        'Workforce': 65,
+        'Leaders': null
       }
     },
     {
       category: 'Social',
       sites: {
-        'Site A': 78,
-        'Site B': 72,
-        'Site C': 68,
-        'Site D': 75
+        'Workforce': 78,
+        'Leaders': 72
       }
     }
   ];

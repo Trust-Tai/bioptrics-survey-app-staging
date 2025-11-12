@@ -21,14 +21,6 @@ const SectionTitle = styled.h2`
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  &::before {
-    content: '⚖️';
-    font-size: 18px;
-  }
 `;
 
 const HeaderActions = styled.div`
