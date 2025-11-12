@@ -6,7 +6,6 @@ import { KPISection } from './components/sections/KPISection/KPISection';
 import { PolicyComplianceSection } from './components/sections/PolicyCompliance/PolicyComplianceSection';
 import { ChangeNoticesSection } from './components/sections/ChangeNotices/ChangeNoticesSection';
 import { SafetyOverviewSection } from './components/sections/SafetyOverview/SafetyOverviewSection';
-import { QuickStartSection } from './components/sections/QuickStartSurveys/QuickStartSection';
 import { InsightsAlerts } from './components/sections/BottomSections/InsightsAlerts';
 import { ExportsReports } from './components/sections/BottomSections/ExportsReports';
 
@@ -136,8 +135,8 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
 
           <SectionDivider />
 
-          {/* Quick Start Surveys Section */}
-          <QuickStartSection />
+          {/* Whole Person Safety Overview Section */}
+          <SafetyOverviewSection />
 
           <SectionDivider />
 
@@ -154,11 +153,6 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
 
           {/* Change Notices & Memos Section */}
           <ChangeNoticesSection />
-
-          <SectionDivider />
-
-          {/* Whole Person Safety Overview Section */}
-          <SafetyOverviewSection />
 
         </DashboardContent>
       </DashboardContainer>
