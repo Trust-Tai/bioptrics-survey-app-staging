@@ -12,16 +12,16 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const Header = styled.div`
-  background: linear-gradient(135deg, ${colors.blue} 0%, #4a7bc8 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -113,8 +113,8 @@ const SectionHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const SectionIconWrapper = styled.div`
-  color: ${colors.blue};
+const SectionIconWrapper = styled.div<{ color: string }>`
+  color: ${props => props.color};
   margin-top: 2px;
 `;
 
@@ -122,16 +122,16 @@ const SectionHeaderText = styled.div`
   flex: 1;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 20px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 4px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
 `;
 
@@ -143,25 +143,25 @@ const FormGroup = styled.div`
   }
 `;
 
-const Label = styled.label`
+const Label = styled.label<{ color: string }>`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const Input = styled.input`
+const Input = styled.input<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: ${colors.blue};
+    border-color: ${props => props.focusBorderColor};
   }
   
   &::placeholder {
@@ -169,10 +169,10 @@ const Input = styled.input`
   }
 `;
 
-const Textarea = styled.textarea`
+const Textarea = styled.textarea<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   min-height: 200px;
@@ -182,7 +182,7 @@ const Textarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: ${colors.blue};
+    border-color: ${props => props.focusBorderColor};
   }
   
   &::placeholder {
@@ -196,10 +196,10 @@ const ButtonGroup = styled.div`
   margin-top: 16px;
 `;
 
-const SecondaryButton = styled.button`
+const SecondaryButton = styled.button<{ textColor: string; borderColor: string; hoverBgColor: string; hoverBorderColor: string }>`
   background: white;
-  color: ${colors.textDark};
-  border: 1px solid ${colors.borderGray};
+  color: ${props => props.textColor};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   padding: 10px 20px;
   font-size: 14px;
@@ -211,8 +211,8 @@ const SecondaryButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: ${colors.grayLight};
-    border-color: ${colors.blue};
+    background: ${props => props.hoverBgColor};
+    border-color: ${props => props.hoverBorderColor};
   }
 `;
 
@@ -220,10 +220,10 @@ const DropdownWrapper = styled.div`
   position: relative;
 `;
 
-const Dropdown = styled.div`
+const Dropdown = styled.div<{ borderColor: string; textColor: string; hoverBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   background: white;
@@ -231,11 +231,11 @@ const Dropdown = styled.div`
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  color: ${colors.textDark};
+  color: ${props => props.textColor};
   transition: border-color 0.2s;
   
   &:hover {
-    border-color: ${colors.blue};
+    border-color: ${props => props.hoverBorderColor};
   }
 `;
 
@@ -249,42 +249,42 @@ const FeatureGrid = styled.div`
   }
 `;
 
-const FeatureCard = styled.div`
+const FeatureCard = styled.div<{ borderColor: string; hoverBorderColor: string }>`
   background: white;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 12px;
   padding: 24px;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: ${colors.blue};
+    border-color: ${props => props.hoverBorderColor};
     box-shadow: 0 4px 12px rgba(50, 91, 155, 0.1);
   }
 `;
 
-const FeatureIconWrapper = styled.div`
+const FeatureIconWrapper = styled.div<{ bgColor: string; iconColor: string }>`
   width: 48px;
   height: 48px;
-  background: #f0f6ff;
+  background: ${props => props.bgColor};
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${colors.blue};
+  color: ${props => props.iconColor};
   margin-bottom: 16px;
 `;
 
-const FeatureTitle = styled.h3`
+const FeatureTitle = styled.h3<{ color: string }>`
   font-size: 16px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 8px 0;
 `;
 
-const FeatureDescription = styled.p`
+const FeatureDescription = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
   line-height: 1.5;
 `;
@@ -292,6 +292,7 @@ const FeatureDescription = styled.p`
 // ============ MAIN COMPONENT ============
 const ChangeNotificationCreate: React.FC = () => {
   const navigate = useNavigate();
+  const colors = useDynamicColors();
 
   const handleSend = () => {
     console.log('Send notification clicked');
@@ -301,8 +302,8 @@ const ChangeNotificationCreate: React.FC = () => {
 
   return (
     <AdminLayout>
-      <PageContainer>
-        <Header>
+      <PageContainer bgColor={colors.white}>
+        <Header primaryColor={colors.blue}>
           <HeaderContent>
             <HeaderText>
               <Title>Create Change Notification</Title>
@@ -319,31 +320,49 @@ const ChangeNotificationCreate: React.FC = () => {
           {/* Section 1: Notification Content */}
           <Section>
             <SectionHeader>
-              <SectionIconWrapper>
+              <SectionIconWrapper color={colors.blue}>
                 <FileText size={24} />
               </SectionIconWrapper>
               <SectionHeaderText>
-                <SectionTitle>Notification Content</SectionTitle>
-                <SectionSubtitle>Create your change notification message</SectionSubtitle>
+                <SectionTitle color={colors.textDark}>Notification Content</SectionTitle>
+                <SectionSubtitle color={colors.textMedium}>Create your change notification message</SectionSubtitle>
               </SectionHeaderText>
             </SectionHeader>
 
             <FormGroup>
-              <Label>Subject Line</Label>
-              <Input placeholder="Enter notification subject..." />
+              <Label color={colors.textDark}>Subject Line</Label>
+              <Input 
+                placeholder="Enter notification subject..." 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
 
             <FormGroup>
-              <Label>Message</Label>
-              <Textarea placeholder="Write your change notification message here..." />
+              <Label color={colors.textDark}>Message</Label>
+              <Textarea 
+                placeholder="Write your change notification message here..." 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
 
             <ButtonGroup>
-              <SecondaryButton>
+              <SecondaryButton
+                textColor={colors.textDark}
+                borderColor={colors.borderGray}
+                hoverBgColor={colors.grayLight}
+                hoverBorderColor={colors.blue}
+              >
                 <Upload size={16} />
                 Upload Document
               </SecondaryButton>
-              <SecondaryButton>
+              <SecondaryButton
+                textColor={colors.textDark}
+                borderColor={colors.borderGray}
+                hoverBgColor={colors.grayLight}
+                hoverBorderColor={colors.blue}
+              >
                 <Clipboard size={16} />
                 Paste from Clipboard
               </SecondaryButton>
@@ -353,17 +372,21 @@ const ChangeNotificationCreate: React.FC = () => {
           {/* Section 2: Select Recipients */}
           <Section>
             <SectionHeader>
-              <SectionIconWrapper>
+              <SectionIconWrapper color={colors.blue}>
                 <Users size={24} />
               </SectionIconWrapper>
               <SectionHeaderText>
-                <SectionTitle>Select Recipients</SectionTitle>
-                <SectionSubtitle>Choose who will receive this notification</SectionSubtitle>
+                <SectionTitle color={colors.textDark}>Select Recipients</SectionTitle>
+                <SectionSubtitle color={colors.textMedium}>Choose who will receive this notification</SectionSubtitle>
               </SectionHeaderText>
             </SectionHeader>
 
             <DropdownWrapper>
-              <Dropdown>
+              <Dropdown
+                borderColor={colors.borderGray}
+                textColor={colors.textDark}
+                hoverBorderColor={colors.blue}
+              >
                 <span>Specific Department</span>
                 <ChevronDown size={18} />
               </Dropdown>
@@ -373,32 +396,38 @@ const ChangeNotificationCreate: React.FC = () => {
           {/* Section 3: Tracking & Verification */}
           <Section>
             <SectionHeader>
-              <SectionIconWrapper>
+              <SectionIconWrapper color={colors.blue}>
                 <CheckCircle size={24} />
               </SectionIconWrapper>
               <SectionHeaderText>
-                <SectionTitle>Tracking & Verification</SectionTitle>
-                <SectionSubtitle>Set up read receipts and comprehension checks</SectionSubtitle>
+                <SectionTitle color={colors.textDark}>Tracking & Verification</SectionTitle>
+                <SectionSubtitle color={colors.textMedium}>Set up read receipts and comprehension checks</SectionSubtitle>
               </SectionHeaderText>
             </SectionHeader>
 
             <FeatureGrid>
-              <FeatureCard>
-                <FeatureIconWrapper>
+              <FeatureCard
+                borderColor={colors.borderGray}
+                hoverBorderColor={colors.blue}
+              >
+                <FeatureIconWrapper bgColor={`${colors.blue}26`} iconColor={colors.blue}>
                   <Mail size={24} />
                 </FeatureIconWrapper>
-                <FeatureTitle>Read Receipt</FeatureTitle>
-                <FeatureDescription>
+                <FeatureTitle color={colors.textDark}>Read Receipt</FeatureTitle>
+                <FeatureDescription color={colors.textMedium}>
                   Track who has opened the notification
                 </FeatureDescription>
               </FeatureCard>
 
-              <FeatureCard>
-                <FeatureIconWrapper>
+              <FeatureCard
+                borderColor={colors.borderGray}
+                hoverBorderColor={colors.blue}
+              >
+                <FeatureIconWrapper bgColor={`${colors.blue}26`} iconColor={colors.blue}>
                   <CheckCircle size={24} />
                 </FeatureIconWrapper>
-                <FeatureTitle>Comprehension Check</FeatureTitle>
-                <FeatureDescription>
+                <FeatureTitle color={colors.textDark}>Comprehension Check</FeatureTitle>
+                <FeatureDescription color={colors.textMedium}>
                   Add quiz to verify understanding
                 </FeatureDescription>
               </FeatureCard>

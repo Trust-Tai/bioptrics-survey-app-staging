@@ -13,10 +13,34 @@ export interface ColorTheme {
   text: string;
   sidebar: string;
   sidebarText: string;
+  // Optional: Category-specific colors for multi-color themes
+  categoryColors?: {
+    culture: string;      // Orange - Culture Assessments
+    operations: string;   // Blue - Operations & Governance
+    benchmarking: string; // Yellow - Benchmarking Tools
+    neutral: string;      // Gray - Neutral/General
+  };
 }
 
 // Available color themes
 export const COLOR_THEMES: ColorTheme[] = [
+  {
+    id: 'default',
+    name: 'Default',
+    primary: '#ed6801',
+    secondary: '#c55501',
+    accent: '#d29b0a',
+    background: '#f8f9fa',
+    text: '#2e2e2e',
+    sidebar: 'transparent',
+    sidebarText: '#2c2c2c',
+    categoryColors: {
+      culture: '#ed6801',      // Orange
+      operations: '#325b9b',   // Blue
+      benchmarking: '#d29b0a', // Yellow
+      neutral: '#a6a6a6',      // Gray
+    },
+  },
   {
     id: 'bioptrics',
     name: 'Bioptrics',
@@ -194,6 +218,20 @@ export const ColorThemeProvider: React.FC<ColorThemeProviderProps> = ({ children
       root.style.setProperty('--color-text', currentTheme.text);
       root.style.setProperty('--color-sidebar', currentTheme.sidebar);
       root.style.setProperty('--color-sidebar-text', currentTheme.sidebarText);
+      
+      // Set category colors if available (for multi-color themes like Default)
+      if (currentTheme.categoryColors) {
+        root.style.setProperty('--color-culture', currentTheme.categoryColors.culture);
+        root.style.setProperty('--color-operations', currentTheme.categoryColors.operations);
+        root.style.setProperty('--color-benchmarking', currentTheme.categoryColors.benchmarking);
+        root.style.setProperty('--color-neutral', currentTheme.categoryColors.neutral);
+        
+        // Set gradients for each category
+        root.style.setProperty('--gradient-culture', `linear-gradient(135deg, ${currentTheme.categoryColors.culture} 0%, #ff8534 100%)`);
+        root.style.setProperty('--gradient-operations', `linear-gradient(135deg, ${currentTheme.categoryColors.operations} 0%, #4a7bc8 100%)`);
+        root.style.setProperty('--gradient-benchmarking', `linear-gradient(135deg, ${currentTheme.categoryColors.benchmarking} 0%, #f0b429 100%)`);
+        root.style.setProperty('--gradient-neutral', `linear-gradient(135deg, ${currentTheme.categoryColors.neutral} 0%, #c0c0c0 100%)`);
+      }
       
       // Set Bootstrap variables
       root.style.setProperty('--bs-primary', currentTheme.primary);

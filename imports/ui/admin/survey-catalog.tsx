@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Heart, Target, BarChart3, TrendingUp, Gift, MessageCircle, Search as SearchIcon } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const Header = styled.div`
-  background: linear-gradient(135deg, ${colors.orange} 0%, #ff8534 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -64,27 +64,27 @@ const SearchWrapper = styled.div`
   max-width: 500px;
 `;
 
-const SearchIconWrapper = styled.div`
+const SearchIconWrapper = styled.div<{ color: string }>`
   position: absolute;
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   display: flex;
   align-items: center;
 `;
 
-const SearchBar = styled.input`
+const SearchBar = styled.input<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 20px 12px 45px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   background: white;
   
   &:focus {
     outline: none;
-    border-color: ${colors.orange};
+    border-color: ${props => props.focusBorderColor};
   }
 `;
 
@@ -154,31 +154,31 @@ const CardContent = styled.div`
   background: white;
 `;
 
-const MetaInfo = styled.div`
+const MetaInfo = styled.div<{ bgColor: string; textColor: string }>`
   display: flex;
   justify-content: space-between;
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: ${colors.grayLight};
+  background: ${props => props.bgColor};
   border-radius: 6px;
   
   span {
-    color: ${colors.textMedium};
+    color: ${props => props.textColor};
     font-size: 14px;
     font-weight: 500;
   }
 `;
 
-const ToggleButton = styled.button<{ borderColor?: string }>`
+const ToggleButton = styled.button<{ borderColor: string; hoverBgColor: string; textColor: string; defaultBorderColor: string }>`
   width: 100%;
   padding: 12px;
   background: white;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.defaultBorderColor};
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: ${colors.textDark};
+  color: ${props => props.textColor};
   margin-bottom: 16px;
   transition: all 0.2s;
   display: flex;
@@ -187,8 +187,8 @@ const ToggleButton = styled.button<{ borderColor?: string }>`
   gap: 8px;
   
   &:hover {
-    background: ${colors.grayLight};
-    border-color: ${props => props.borderColor || colors.orange};
+    background: ${props => props.hoverBgColor};
+    border-color: ${props => props.borderColor};
   }
 `;
 
@@ -214,15 +214,15 @@ const QuestionItem = styled.div`
   }
 `;
 
-const QuestionHeader = styled.div`
+const QuestionHeader = styled.div<{ color: string }>`
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   font-size: 13px;
   margin-bottom: 6px;
 `;
 
-const QuestionText = styled.div`
-  color: ${colors.textMedium};
+const QuestionText = styled.div<{ color: string }>`
+  color: ${props => props.color};
   font-size: 14px;
   line-height: 1.5;
 `;
@@ -247,15 +247,21 @@ const UseButton = styled.button<{ bgColor: string }>`
 // ============ MAIN COMPONENT ============
 const SurveyCatalog: React.FC = () => {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const colors = useDynamicColors();
 
   const toggleQuestions = (id: string) => {
     setExpandedCard(expandedCard === id ? null : id);
   };
 
+  // Helper function to get card color based on category
+  const getCardColor = (category: 'culture' | 'operations' | 'benchmarking') => {
+    return colors.category[category];
+  };
+
   return (
     <AdminLayout>
-      <PageContainer>
-        <Header>
+      <PageContainer bgColor={colors.white}>
+        <Header primaryColor={colors.orange}>
           <HeaderContent>
             <Title>Pre-built Survey Solutions</Title>
             <Subtitle>Expert-designed surveys ready to deploy in minutes</Subtitle>
@@ -264,17 +270,21 @@ const SurveyCatalog: React.FC = () => {
 
         <SearchSection>
           <SearchWrapper>
-            <SearchIconWrapper>
+            <SearchIconWrapper color={colors.textMedium}>
               <SearchIcon size={18} />
             </SearchIconWrapper>
-            <SearchBar placeholder="Search survey templates..." />
+            <SearchBar 
+              borderColor={colors.borderGray}
+              focusBorderColor={colors.orange}
+              placeholder="Search survey templates..." 
+            />
           </SearchWrapper>
         </SearchSection>
 
         <Grid>
           {/* Card 1: Employee Engagement */}
           <Card>
-            <CardHeader bgColor="#ed6801">
+            <CardHeader bgColor={getCardColor('culture')}>
               <IconWrapper>
                 <Heart size={24} strokeWidth={2} />
               </IconWrapper>
@@ -282,44 +292,50 @@ const SurveyCatalog: React.FC = () => {
               <CardDescription>Measure team satisfaction and motivation</CardDescription>
             </CardHeader>
             <CardContent>
-              <MetaInfo>
+              <MetaInfo bgColor={colors.grayLight} textColor={colors.textMedium}>
                 <span>Questions: 25</span>
                 <span>5-7 min</span>
               </MetaInfo>
-              <ToggleButton borderColor="#ed6801" onClick={() => toggleQuestions('engagement')}>
+              <ToggleButton 
+                borderColor={getCardColor('culture')} 
+                hoverBgColor={colors.grayLight}
+                textColor={colors.textDark}
+                defaultBorderColor={colors.borderGray}
+                onClick={() => toggleQuestions('engagement')}
+              >
                 {expandedCard === 'engagement' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'engagement' && (
                 <QuestionList>
                   <QuestionItem>
-                    <QuestionHeader>Q1 • Rating Scale</QuestionHeader>
-                    <QuestionText>I am satisfied with my current role and responsibilities</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q1 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I am satisfied with my current role and responsibilities</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q2 • Rating Scale</QuestionHeader>
-                    <QuestionText>I feel valued and appreciated at work</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q2 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I feel valued and appreciated at work</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q3 • Rating Scale</QuestionHeader>
-                    <QuestionText>My work provides me with a sense of accomplishment</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q3 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>My work provides me with a sense of accomplishment</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q4 • Rating Scale</QuestionHeader>
-                    <QuestionText>I would recommend this organization as a great place to work</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q4 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I would recommend this organization as a great place to work</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q5 • Multiple Choice</QuestionHeader>
-                    <QuestionText>How likely are you to stay with the company in the next year?</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q5 • Multiple Choice</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>How likely are you to stay with the company in the next year?</QuestionText>
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#ed6801">Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('culture')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 2: Leadership Assessment */}
           <Card>
-            <CardHeader bgColor="#325b9b">
+            <CardHeader bgColor={getCardColor('operations')}>
               <IconWrapper>
                 <Target size={24} strokeWidth={2} />
               </IconWrapper>
@@ -327,44 +343,50 @@ const SurveyCatalog: React.FC = () => {
               <CardDescription>Evaluate leadership effectiveness</CardDescription>
             </CardHeader>
             <CardContent>
-              <MetaInfo>
+              <MetaInfo bgColor={colors.grayLight} textColor={colors.textMedium}>
                 <span>Questions: 30</span>
                 <span>8-10 min</span>
               </MetaInfo>
-              <ToggleButton borderColor="#325b9b" onClick={() => toggleQuestions('leadership')}>
+              <ToggleButton 
+                borderColor={getCardColor('operations')} 
+                hoverBgColor={colors.grayLight}
+                textColor={colors.textDark}
+                defaultBorderColor={colors.borderGray}
+                onClick={() => toggleQuestions('leadership')}
+              >
                 {expandedCard === 'leadership' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'leadership' && (
                 <QuestionList>
                   <QuestionItem>
-                    <QuestionHeader>Q1 • Rating Scale</QuestionHeader>
-                    <QuestionText>Leadership communicates clear vision and direction</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q1 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Leadership communicates clear vision and direction</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q2 • Rating Scale</QuestionHeader>
-                    <QuestionText>Leaders are accessible and approachable</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q2 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Leaders are accessible and approachable</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q3 • Rating Scale</QuestionHeader>
-                    <QuestionText>Management supports professional development</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q3 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Management supports professional development</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q4 • Rating Scale</QuestionHeader>
-                    <QuestionText>Leaders demonstrate integrity and ethical behavior</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q4 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Leaders demonstrate integrity and ethical behavior</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q5 • Text</QuestionHeader>
-                    <QuestionText>What leadership qualities do you value most?</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q5 • Text</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>What leadership qualities do you value most?</QuestionText>
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#325b9b">Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('operations')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 3: Organizational Culture */}
           <Card>
-            <CardHeader bgColor="#d29b0a">
+            <CardHeader bgColor={getCardColor('benchmarking')}>
               <IconWrapper>
                 <BarChart3 size={24} strokeWidth={2} />
               </IconWrapper>
@@ -372,44 +394,50 @@ const SurveyCatalog: React.FC = () => {
               <CardDescription>Assess workplace culture health</CardDescription>
             </CardHeader>
             <CardContent>
-              <MetaInfo>
+              <MetaInfo bgColor={colors.grayLight} textColor={colors.textMedium}>
                 <span>Questions: 35</span>
                 <span>10-12 min</span>
               </MetaInfo>
-              <ToggleButton borderColor="#d29b0a" onClick={() => toggleQuestions('culture')}>
+              <ToggleButton 
+                borderColor={getCardColor('benchmarking')} 
+                hoverBgColor={colors.grayLight}
+                textColor={colors.textDark}
+                defaultBorderColor={colors.borderGray}
+                onClick={() => toggleQuestions('culture')}
+              >
                 {expandedCard === 'culture' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'culture' && (
                 <QuestionList>
                   <QuestionItem>
-                    <QuestionHeader>Q1 • Rating Scale</QuestionHeader>
-                    <QuestionText>Our workplace culture promotes collaboration</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q1 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Our workplace culture promotes collaboration</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q2 • Rating Scale</QuestionHeader>
-                    <QuestionText>I feel a sense of belonging at work</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q2 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I feel a sense of belonging at work</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q3 • Rating Scale</QuestionHeader>
-                    <QuestionText>The organization values diversity and inclusion</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q3 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>The organization values diversity and inclusion</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q4 • Rating Scale</QuestionHeader>
-                    <QuestionText>Innovation and creativity are encouraged</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q4 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Innovation and creativity are encouraged</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q5 • Text</QuestionHeader>
-                    <QuestionText>Describe the culture in three words</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q5 • Text</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Describe the culture in three words</QuestionText>
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#d29b0a">Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('benchmarking')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 4: Wellness Check */}
           <Card>
-            <CardHeader bgColor="#ed6801">
+            <CardHeader bgColor={getCardColor('culture')}>
               <IconWrapper>
                 <TrendingUp size={24} strokeWidth={2} />
               </IconWrapper>
@@ -417,44 +445,50 @@ const SurveyCatalog: React.FC = () => {
               <CardDescription>Monitor employee wellbeing</CardDescription>
             </CardHeader>
             <CardContent>
-              <MetaInfo>
+              <MetaInfo bgColor={colors.grayLight} textColor={colors.textMedium}>
                 <span>Questions: 20</span>
                 <span>5 min</span>
               </MetaInfo>
-              <ToggleButton borderColor="#ed6801" onClick={() => toggleQuestions('wellness')}>
+              <ToggleButton 
+                borderColor={getCardColor('culture')} 
+                hoverBgColor={colors.grayLight}
+                textColor={colors.textDark}
+                defaultBorderColor={colors.borderGray}
+                onClick={() => toggleQuestions('wellness')}
+              >
                 {expandedCard === 'wellness' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'wellness' && (
                 <QuestionList>
                   <QuestionItem>
-                    <QuestionHeader>Q1 • Rating Scale</QuestionHeader>
-                    <QuestionText>I feel physically healthy and energized</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q1 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I feel physically healthy and energized</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q2 • Rating Scale</QuestionHeader>
-                    <QuestionText>I maintain a good work-life balance</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q2 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I maintain a good work-life balance</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q3 • Rating Scale</QuestionHeader>
-                    <QuestionText>I have access to wellness resources and support</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q3 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I have access to wellness resources and support</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q4 • Rating Scale</QuestionHeader>
-                    <QuestionText>My workload is manageable</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q4 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>My workload is manageable</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q5 • Multiple Choice</QuestionHeader>
-                    <QuestionText>How often do you feel stressed at work?</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q5 • Multiple Choice</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>How often do you feel stressed at work?</QuestionText>
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#ed6801">Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('culture')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 5: Onboarding Experience */}
           <Card>
-            <CardHeader bgColor="#325b9b">
+            <CardHeader bgColor={getCardColor('operations')}>
               <IconWrapper>
                 <Gift size={24} strokeWidth={2} />
               </IconWrapper>
@@ -462,44 +496,50 @@ const SurveyCatalog: React.FC = () => {
               <CardDescription>Gather new hire feedback</CardDescription>
             </CardHeader>
             <CardContent>
-              <MetaInfo>
+              <MetaInfo bgColor={colors.grayLight} textColor={colors.textMedium}>
                 <span>Questions: 15</span>
                 <span>4-5 min</span>
               </MetaInfo>
-              <ToggleButton borderColor="#325b9b" onClick={() => toggleQuestions('onboarding')}>
+              <ToggleButton 
+                borderColor={getCardColor('operations')} 
+                hoverBgColor={colors.grayLight}
+                textColor={colors.textDark}
+                defaultBorderColor={colors.borderGray}
+                onClick={() => toggleQuestions('onboarding')}
+              >
                 {expandedCard === 'onboarding' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'onboarding' && (
                 <QuestionList>
                   <QuestionItem>
-                    <QuestionHeader>Q1 • Rating Scale</QuestionHeader>
-                    <QuestionText>The onboarding process was well-organized</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q1 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>The onboarding process was well-organized</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q2 • Rating Scale</QuestionHeader>
-                    <QuestionText>I received adequate training for my role</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q2 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I received adequate training for my role</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q3 • Rating Scale</QuestionHeader>
-                    <QuestionText>My team welcomed me warmly</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q3 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>My team welcomed me warmly</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q4 • Rating Scale</QuestionHeader>
-                    <QuestionText>I have the tools and resources I need to succeed</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q4 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>I have the tools and resources I need to succeed</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q5 • Text</QuestionHeader>
-                    <QuestionText>What could improve the onboarding experience?</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q5 • Text</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>What could improve the onboarding experience?</QuestionText>
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#325b9b">Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('operations')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 6: 360° Feedback */}
           <Card>
-            <CardHeader bgColor="#d29b0a">
+            <CardHeader bgColor={getCardColor('benchmarking')}>
               <IconWrapper>
                 <MessageCircle size={24} strokeWidth={2} />
               </IconWrapper>
@@ -507,42 +547,48 @@ const SurveyCatalog: React.FC = () => {
               <CardDescription>Comprehensive performance review</CardDescription>
             </CardHeader>
             <CardContent>
-              <MetaInfo>
+              <MetaInfo bgColor={colors.grayLight} textColor={colors.textMedium}>
                 <span>Questions: 40</span>
                 <span>12-15 min</span>
               </MetaInfo>
-              <ToggleButton borderColor="#d29b0a" onClick={() => toggleQuestions('feedback')}>
+              <ToggleButton 
+                borderColor={getCardColor('benchmarking')} 
+                hoverBgColor={colors.grayLight}
+                textColor={colors.textDark}
+                defaultBorderColor={colors.borderGray}
+                onClick={() => toggleQuestions('feedback')}
+              >
                 {expandedCard === 'feedback' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'feedback' && (
                 <QuestionList>
                   <QuestionItem>
-                    <QuestionHeader>Q1 • Rating Scale</QuestionHeader>
-                    <QuestionText>Demonstrates strong communication skills</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q1 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Demonstrates strong communication skills</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q2 • Rating Scale</QuestionHeader>
-                    <QuestionText>Shows leadership and initiative</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q2 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Shows leadership and initiative</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q3 • Rating Scale</QuestionHeader>
-                    <QuestionText>Collaborates effectively with team members</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q3 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Collaborates effectively with team members</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q4 • Rating Scale</QuestionHeader>
-                    <QuestionText>Delivers high-quality work consistently</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q4 • Rating Scale</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>Delivers high-quality work consistently</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q5 • Text</QuestionHeader>
-                    <QuestionText>What are this person's greatest strengths?</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q5 • Text</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>What are this person's greatest strengths?</QuestionText>
                   </QuestionItem>
                   <QuestionItem>
-                    <QuestionHeader>Q6 • Text</QuestionHeader>
-                    <QuestionText>What areas could benefit from development?</QuestionText>
+                    <QuestionHeader color={colors.textDark}>Q6 • Text</QuestionHeader>
+                    <QuestionText color={colors.textMedium}>What areas could benefit from development?</QuestionText>
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#d29b0a">Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('benchmarking')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
         </Grid>

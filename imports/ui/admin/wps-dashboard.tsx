@@ -8,16 +8,16 @@ import {
   AlertCircle
 } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const Header = styled.div`
-  background: linear-gradient(135deg, ${colors.orange} 0%, #ff8534 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -132,7 +132,7 @@ const StatCard = styled.div`
 const StatIconWrapper = styled.div<{ bgColor?: string }>`
   width: 48px;
   height: 48px;
-  background: ${props => props.bgColor || colors.grayLight};
+  background: ${props => props.bgColor || '#f5f7f8'};
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -147,21 +147,21 @@ const StatContent = styled.div`
 const StatNumber = styled.div<{ color?: string }>`
   font-size: 28px;
   font-weight: 700;
-  color: ${props => props.color || colors.textDark};
+  color: ${props => props.color || '#2c3e50'};
   line-height: 1;
   margin-bottom: 4px;
 `;
 
-const StatLabel = styled.div`
+const StatLabel = styled.div<{ color: string }>`
   font-size: 13px;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   font-weight: 600;
   margin-bottom: 4px;
 `;
 
 const StatSubtext = styled.div<{ color?: string }>`
   font-size: 12px;
-  color: ${props => props.color || colors.textMedium};
+  color: ${props => props.color || '#6c757d'};
   display: flex;
   align-items: center;
   gap: 4px;
@@ -175,16 +175,16 @@ const SectionHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 20px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 4px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
 `;
 
@@ -196,27 +196,27 @@ const EmptyState = styled.div`
   text-align: center;
 `;
 
-const EmptyIcon = styled.div`
+const EmptyIcon = styled.div<{ bgColor: string; color: string }>`
   width: 64px;
   height: 64px;
-  background: ${colors.grayLight};
+  background: ${props => props.bgColor};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
 `;
 
-const EmptyMessage = styled.div`
+const EmptyMessage = styled.div<{ color: string }>`
   font-size: 16px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 24px;
 `;
 
-const EmptyButton = styled.button`
-  background: ${colors.orange};
+const EmptyButton = styled.button<{ bgColor: string; hoverColor: string }>`
+  background: ${props => props.bgColor};
   color: white;
   border: none;
   border-radius: 8px;
@@ -230,22 +230,26 @@ const EmptyButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: ${colors.hover.orange};
+    background: ${props => props.hoverColor};
   }
 `;
 
 // ============ MAIN COMPONENT ============
 const WPSDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const colors = useDynamicColors();
 
   const handleCreateWPSCheck = () => {
     navigate('/admin/marketplace/wps-builder');
   };
 
+  // Calculate light background color for stat icon (15% opacity)
+  const lightOrangeBg = `${colors.orange}26`; // 26 = 15% in hex
+
   return (
     <AdminLayout>
-      <PageContainer>
-        <Header>
+      <PageContainer bgColor={colors.white}>
+        <Header primaryColor={colors.orange}>
           <HeaderContent>
             <HeaderText>
               <Title>Whole Person Safety (WPS) Check</Title>
@@ -262,12 +266,12 @@ const WPSDashboard: React.FC = () => {
           {/* Statistics Cards */}
           <StatsGrid>
             <StatCard>
-              <StatIconWrapper bgColor="#f9f0e5">
+              <StatIconWrapper bgColor={lightOrangeBg}>
                 <Users size={24} color={colors.orange} />
               </StatIconWrapper>
               <StatContent>
                 <StatNumber>2,847</StatNumber>
-                <StatLabel>Total Participants</StatLabel>
+                <StatLabel color={colors.textDark}>Total Participants</StatLabel>
                 <StatSubtext>Across all checks</StatSubtext>
               </StatContent>
             </StatCard>
@@ -278,7 +282,7 @@ const WPSDashboard: React.FC = () => {
               </StatIconWrapper>
               <StatContent>
                 <StatNumber color="#4caf50">78%</StatNumber>
-                <StatLabel>Average Safety Score</StatLabel>
+                <StatLabel color={colors.textDark}>Average Safety Score</StatLabel>
                 <StatSubtext color="#4caf50">+5% from last quarter</StatSubtext>
               </StatContent>
             </StatCard>
@@ -289,7 +293,7 @@ const WPSDashboard: React.FC = () => {
               </StatIconWrapper>
               <StatContent>
                 <StatNumber color="#ff9800">3</StatNumber>
-                <StatLabel>Areas Needing Attention</StatLabel>
+                <StatLabel color={colors.textDark}>Areas Needing Attention</StatLabel>
                 <StatSubtext>Departments flagged</StatSubtext>
               </StatContent>
             </StatCard>
@@ -298,16 +302,20 @@ const WPSDashboard: React.FC = () => {
           {/* Recent WPS Checks Section */}
           <Section>
             <SectionHeader>
-              <SectionTitle>Recent WPS Checks</SectionTitle>
-              <SectionSubtitle>View and manage your safety assessments</SectionSubtitle>
+              <SectionTitle color={colors.textDark}>Recent WPS Checks</SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>View and manage your safety assessments</SectionSubtitle>
             </SectionHeader>
 
             <EmptyState>
-              <EmptyIcon>
+              <EmptyIcon bgColor={colors.grayLight} color={colors.textMedium}>
                 <Users size={32} />
               </EmptyIcon>
-              <EmptyMessage>No WPS checks yet</EmptyMessage>
-              <EmptyButton onClick={handleCreateWPSCheck}>
+              <EmptyMessage color={colors.textDark}>No WPS checks yet</EmptyMessage>
+              <EmptyButton 
+                bgColor={colors.orange}
+                hoverColor={colors.hover.orange}
+                onClick={handleCreateWPSCheck}
+              >
                 <Plus size={18} />
                 Create Your First WPS Check
               </EmptyButton>
