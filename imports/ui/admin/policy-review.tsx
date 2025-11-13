@@ -9,15 +9,16 @@ import {
   Plus
 } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.blue} 0%, #4a7bc8 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -158,7 +159,7 @@ const StatCard = styled.div`
 const StatIconWrapper = styled.div<{ bgColor?: string }>`
   width: 48px;
   height: 48px;
-  background: ${props => props.bgColor || '#f5f7f8'};
+  background: ${props => props.bgColor || colors.grayLight};
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -174,14 +175,14 @@ const StatContent = styled.div`
 const StatNumber = styled.div`
   font-size: 28px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   line-height: 1;
   margin-bottom: 4px;
 `;
 
 const StatLabel = styled.div`
   font-size: 13px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   font-weight: 500;
 `;
 
@@ -196,13 +197,13 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 4px 0;
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
 `;
 
@@ -223,8 +224,8 @@ const PolicyCard = styled.div`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #542a46;
-    box-shadow: 0 2px 8px rgba(84, 42, 70, 0.1);
+    border-color: ${colors.blue};
+    box-shadow: 0 2px 8px rgba(50, 91, 155, 0.1);
   }
   
   @media (max-width: 768px) {
@@ -272,7 +273,7 @@ const PolicyHeader = styled.div`
 const PolicyName = styled.h3`
   font-size: 16px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0;
 `;
 
@@ -287,7 +288,7 @@ const StatusBadge = styled.span<{ status: 'active' | 'draft' }>`
 
 const PolicyDate = styled.div`
   font-size: 13px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 const PolicyRight = styled.div`
@@ -319,13 +320,13 @@ const StatCount = styled.div<{ color?: string }>`
 
 const StatText = styled.div`
   font-size: 12px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 const ViewButton = styled.button`
   background: white;
-  color: #2c3e50;
-  border: 1px solid #dee2e6;
+  color: ${colors.textDark};
+  border: 1px solid ${colors.borderGray};
   border-radius: 6px;
   padding: 8px 16px;
   font-size: 14px;
@@ -335,8 +336,8 @@ const ViewButton = styled.button`
   white-space: nowrap;
   
   &:hover {
-    background: #f5f7f8;
-    border-color: #542a46;
+    background: ${colors.grayLight};
+    border-color: ${colors.blue};
   }
 `;
 
@@ -403,8 +404,8 @@ const PolicyReview: React.FC = () => {
           {/* Statistics Cards */}
           <StatsGrid>
             <StatCard>
-              <StatIconWrapper bgColor="#f5f7f8">
-                <FileText size={24} color="#542a46" />
+              <StatIconWrapper bgColor="#f0f6ff">
+                <FileText size={24} color={colors.blue} />
               </StatIconWrapper>
               <StatContent>
                 <StatNumber>4</StatNumber>
@@ -433,8 +434,8 @@ const PolicyReview: React.FC = () => {
             </StatCard>
 
             <StatCard>
-              <StatIconWrapper bgColor="#f5f7f8">
-                <Users size={24} color="#542a46" />
+              <StatIconWrapper bgColor="#f0f6ff">
+                <Users size={24} color={colors.blue} />
               </StatIconWrapper>
               <StatContent>
                 <StatNumber>257</StatNumber>

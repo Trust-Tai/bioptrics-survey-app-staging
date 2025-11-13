@@ -5,18 +5,20 @@ import {
   List,
   GitBranch,
   Search,
-  FileText
+  FileText,
+  Target
 } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.yellow} 0%, #f0b429 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -109,13 +111,13 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 4px 0;
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
 `;
 
@@ -233,25 +235,25 @@ const EmptyState = styled.div`
 const EmptyIcon = styled.div`
   width: 64px;
   height: 64px;
-  background: #f5f7f8;
+  background: ${colors.grayLight};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 const EmptyMessage = styled.div`
   font-size: 16px;
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 8px;
 `;
 
 const EmptySubtext = styled.div`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 // ============ MAIN COMPONENT ============
@@ -262,7 +264,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: List,
       title: '5 Whys Analysis',
       description: 'Iteratively ask \'why\' to uncover root causes',
-      bgColor: '#5a8596',
+      bgColor: '#ed6801',
       steps: [
         'Define the problem',
         'Ask why it happened',
@@ -275,7 +277,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: GitBranch,
       title: 'Fishbone Diagram',
       description: 'Visual cause-and-effect analysis',
-      bgColor: '#be5f41',
+      bgColor: '#325b9b',
       steps: [
         'Define the problem',
         'Identify categories',
@@ -288,7 +290,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: Search,
       title: 'Fault Tree Analysis',
       description: 'Top-down deductive failure analysis',
-      bgColor: '#a6a6a6',
+      bgColor: '#d29b0a',
       steps: [
         'Define top event',
         'Identify immediate causes',

@@ -1,23 +1,17 @@
 import React from 'react';
 import styled from 'styled-components';
-import { 
-  Plus,
-  Zap,
-  BookOpen,
-  Target,
-  Award,
-  Brain
-} from 'lucide-react';
+import { Brain, Plus, TrendingUp, Target, Zap, BookOpen, Award } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.yellow} 0%, #f0b429 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -110,13 +104,13 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 4px 0;
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
 `;
 
@@ -220,21 +214,21 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 8px;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: #542a46;
+    border-color: ${colors.yellow};
   }
   
   &::placeholder {
@@ -244,7 +238,7 @@ const Input = styled.input`
 
 const BuildButton = styled.button`
   width: 100%;
-  background: #5a8596;
+  background: ${colors.yellow};
   color: white;
   border: none;
   border-radius: 8px;
@@ -252,10 +246,10 @@ const BuildButton = styled.button`
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
   
   &:hover {
-    opacity: 0.9;
+    background: ${colors.hover.yellow};
   }
 `;
 
@@ -270,25 +264,25 @@ const EmptyState = styled.div`
 const EmptyIcon = styled.div`
   width: 64px;
   height: 64px;
-  background: #f5f7f8;
+  background: ${colors.grayLight};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 const EmptyMessage = styled.div`
   font-size: 16px;
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 8px;
 `;
 
 const EmptySubtext = styled.div`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 // ============ MAIN COMPONENT ============
@@ -319,7 +313,7 @@ const KnowledgeCheck: React.FC = () => {
 
             <CheckTypeGrid>
               {/* Quick Quiz */}
-              <CheckTypeCard bgColor="#5a8596">
+              <CheckTypeCard bgColor="#325b9b">
                 <CardTop>
                   <IconWrapper>
                     <Zap size={24} />
@@ -336,7 +330,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Knowledge Test */}
-              <CheckTypeCard bgColor="#5a8596">
+              <CheckTypeCard bgColor="#325b9b">
                 <CardTop>
                   <IconWrapper>
                     <BookOpen size={24} />
@@ -353,7 +347,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Skill Check */}
-              <CheckTypeCard bgColor="#be5f41">
+              <CheckTypeCard bgColor="#ed6801">
                 <CardTop>
                   <IconWrapper>
                     <Target size={24} />
@@ -370,7 +364,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Certification Check */}
-              <CheckTypeCard bgColor="#be5f41">
+              <CheckTypeCard bgColor="#ed6801">
                 <CardTop>
                   <IconWrapper>
                     <Award size={24} />
