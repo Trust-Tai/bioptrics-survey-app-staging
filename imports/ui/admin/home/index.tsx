@@ -4,14 +4,15 @@ import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import HeroSection from './components/HeroSection';
 import ToolkitGrid from './components/ToolkitGrid';
 import HelpSection from './components/HelpSection';
+import { colors } from './theme/colors';
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const HeroWrapper = styled.div`
-  background: #f5f7f8;
+  background: ${colors.creamBg};
   padding-bottom: 60px;
 `;
 
@@ -22,7 +23,7 @@ const ContentWrapper = styled.div`
 `;
 
 const MainContent = styled.div`
-  background: #ffffff;
+  background: ${colors.white};
   padding: 40px 0;
 `;
 

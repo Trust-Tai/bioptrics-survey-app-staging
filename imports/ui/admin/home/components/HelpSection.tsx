@@ -1,8 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
+import { colors } from '../theme/colors';
 
 const HelpContainer = styled.section`
-  background: white;
+  background: ${colors.peachBg};
   border-radius: 12px;
   padding: 48px;
   margin-top: 40px;
@@ -12,13 +13,13 @@ const HelpContainer = styled.section`
 const Title = styled.h2`
   font-size: 28px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 12px 0;
 `;
 
 const Subtitle = styled.p`
   font-size: 16px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0 0 32px 0;
   line-height: 1.5;
 `;
@@ -41,31 +42,30 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'outline' }>`
   ${props => {
     if (props.variant === 'primary') {
       return `
-        background: #5a8596;
+        background: ${colors.blue};
         color: white;
         
         &:hover {
-          background: #5a7d8c;
+          background: ${colors.hover.blue};
         }
       `;
     } else if (props.variant === 'secondary') {
       return `
-        background: #f5f7f8;
-        color: #2c3e50;
+        background: ${colors.orange};
+        color: white;
         
         &:hover {
-          background: #e8ecef;
+          background: ${colors.hover.orange};
         }
       `;
     } else {
       return `
-        background: transparent;
-        color: #6c757d;
-        border: 1px solid #dee2e6;
+        background: ${colors.yellow};
+        color: ${colors.textDark};
+        border: none;
         
         &:hover {
-          border-color: #6b8e9d;
-          color: #6b8e9d;
+          background: ${colors.hover.yellow};
         }
       `;
     }

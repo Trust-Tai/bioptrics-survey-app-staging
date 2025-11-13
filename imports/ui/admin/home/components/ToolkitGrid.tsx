@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import ToolCard from './ToolCard';
 import { toolsData } from '../data/toolsData';
+import { colors } from '../theme/colors';
 
 const GridContainer = styled.section`
   margin-bottom: 60px;
@@ -15,15 +16,18 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 32px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 12px 0;
+  padding-left: 16px;
+  border-left: 4px solid ${colors.orange};
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 16px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
   line-height: 1.5;
+  padding-left: 20px;
 `;
 
 const Grid = styled.div`
@@ -45,17 +49,20 @@ const categories = [
   {
     id: 'culture' as const,
     title: 'Culture Assessments',
-    description: 'Evaluate and enhance organizational culture with comprehensive tools like WPS, prebuilt surveys, and custom assessment builders designed to uncover insights and drive positive change.'
+    description: 'Evaluate and enhance organizational culture with comprehensive tools like WPS, prebuilt surveys, and custom assessment builders designed to uncover insights and drive positive change.',
+    bgColor: colors.category.culture
   },
   {
     id: 'operations' as const,
     title: 'Operations and Governance',
-    description: 'Streamline compliance and improve operational efficiency using robust solutions such as the Change Notification Builder and Policy Review tools, tailored to support effective governance and procedural excellence.'
+    description: 'Streamline compliance and improve operational efficiency using robust solutions such as the Change Notification Builder and Policy Review tools, tailored to support effective governance and procedural excellence.',
+    bgColor: colors.category.operations
   },
   {
     id: 'benchmarking' as const,
     title: 'Benchmarking Tools',
-    description: 'Leverage in-depth benchmarking tools, including Knowledge Check and Root Cause Analysis, to identify performance gaps, facilitate continuous improvement, and maintain a competitive edge in your industry.'
+    description: 'Leverage in-depth benchmarking tools, including Knowledge Check and Root Cause Analysis, to identify performance gaps, facilitate continuous improvement, and maintain a competitive edge in your industry.',
+    bgColor: colors.category.benchmarking
   }
 ];
 
