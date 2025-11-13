@@ -175,7 +175,7 @@ export const ColorPalette: React.FC = () => {
   return (
     <>
       <Overlay isOpen={isOpen} onClick={() => setIsOpen(false)} />
-      <FloatingContainer ref={containerRef}>
+      <FloatingContainer style={{ display:'none' }}  ref={containerRef}>
         <PaletteButton 
           onClick={toggleDropdown} 
           title="Change Color Theme"
