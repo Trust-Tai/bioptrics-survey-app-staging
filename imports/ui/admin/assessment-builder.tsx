@@ -3,15 +3,16 @@ import styled from 'styled-components';
 import { Target, Award, TrendingUp, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.orange} 0%, #ff8534 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -66,13 +67,13 @@ const Section = styled.div`
 const SectionTitle = styled.h2`
   font-size: 24px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 8px 0;
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 15px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0 0 32px 0;
 `;
 
@@ -86,17 +87,19 @@ const Grid = styled.div`
   }
 `;
 
-const TemplateCard = styled.div`
+const TemplateCard = styled.div<{ borderColor?: string }>`
   background: white;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: all 0.3s;
+  border: 2px solid transparent;
   
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: ${props => props.borderColor || 'transparent'};
   }
 `;
 
@@ -138,7 +141,7 @@ const CardContent = styled.div`
 const CriteriaLabel = styled.div`
   font-size: 11px;
   font-weight: 700;
-  color: #6c757d;
+  color: ${colors.textMedium};
   letter-spacing: 0.5px;
   margin-bottom: 12px;
 `;
@@ -151,8 +154,8 @@ const TagsContainer = styled.div`
 
 const Tag = styled.span`
   padding: 6px 14px;
-  background: #f5f7f8;
-  color: #2c3e50;
+  background: ${colors.grayLight};
+  color: ${colors.textDark};
   border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
@@ -173,21 +176,21 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 8px;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: #6b8e9d;
+    border-color: ${colors.orange};
   }
   
   &::placeholder {
@@ -198,17 +201,17 @@ const Input = styled.input`
 const BuildButton = styled.button`
   width: 100%;
   padding: 16px;
-  background: #6b8e9d;
+  background: ${colors.orange};
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
   
   &:hover {
-    opacity: 0.9;
+    background: ${colors.hover.orange};
   }
   
   &:disabled {
@@ -252,8 +255,8 @@ const AssessmentBuilder: React.FC = () => {
             
             <Grid>
               {/* Leadership Assessment */}
-              <TemplateCard onClick={() => handleTemplateSelect('leadership')}>
-                <CardHeader bgColor="#5a8596">
+              <TemplateCard borderColor="#ed6801" onClick={() => handleTemplateSelect('leadership')}>
+                <CardHeader bgColor="#ed6801">
                   <IconWrapper>
                     <Target size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -272,8 +275,8 @@ const AssessmentBuilder: React.FC = () => {
               </TemplateCard>
 
               {/* Performance Review */}
-              <TemplateCard onClick={() => handleTemplateSelect('performance')}>
-                <CardHeader bgColor="#be5f41">
+              <TemplateCard borderColor="#325b9b" onClick={() => handleTemplateSelect('performance')}>
+                <CardHeader bgColor="#325b9b">
                   <IconWrapper>
                     <Award size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -292,8 +295,8 @@ const AssessmentBuilder: React.FC = () => {
               </TemplateCard>
 
               {/* Competency Assessment */}
-              <TemplateCard onClick={() => handleTemplateSelect('competency')}>
-                <CardHeader bgColor="#a6a6a6">
+              <TemplateCard borderColor="#d29b0a" onClick={() => handleTemplateSelect('competency')}>
+                <CardHeader bgColor="#d29b0a">
                   <IconWrapper>
                     <TrendingUp size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -312,8 +315,8 @@ const AssessmentBuilder: React.FC = () => {
               </TemplateCard>
 
               {/* Team Effectiveness */}
-              <TemplateCard onClick={() => handleTemplateSelect('team')}>
-                <CardHeader bgColor="#fcca5e">
+              <TemplateCard borderColor="#ed6801" onClick={() => handleTemplateSelect('team')}>
+                <CardHeader bgColor="#ed6801">
                   <IconWrapper>
                     <Users size={24} strokeWidth={2} />
                   </IconWrapper>

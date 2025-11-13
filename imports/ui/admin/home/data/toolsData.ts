@@ -14,6 +14,7 @@ export interface ToolData {
   timeToInsights: string;
   buttonText: string;
   cardColor?: string;
+  cardBgColor?: string;
   link: string;
 }
 
@@ -37,7 +38,8 @@ export const toolsData: ToolData[] = [
     setupTime: '5 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#5a8596',
+    cardColor: '#ed6801',
+    cardBgColor: '#f9f0e5',
     link: '/admin/wps-dashboard'
   },
   {
@@ -59,7 +61,8 @@ export const toolsData: ToolData[] = [
     setupTime: '5 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#5a8596',
+    cardColor: '#ed6801',
+    cardBgColor: '#f9f0e5',
     link: '/admin/survey-catalog'
   },
   // {
@@ -103,7 +106,8 @@ export const toolsData: ToolData[] = [
     setupTime: '15 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#5a8596',
+    cardColor: '#ed6801',
+    cardBgColor: '#f9f0e5',
     link: '/admin/assessment-builder'
   },
   {
@@ -125,7 +129,8 @@ export const toolsData: ToolData[] = [
     setupTime: '8 minutes',
     timeToInsights: '24 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#be5f41',
+    cardColor: '#325b9b',
+    cardBgColor: '#f0f6ff',
     link: '/admin/change-notification'
   },
   {
@@ -147,7 +152,8 @@ export const toolsData: ToolData[] = [
     setupTime: '3 minutes',
     timeToInsights: '1 hour',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#be5f41',
+    cardColor: '#325b9b',
+    cardBgColor: '#f0f6ff',
     link: '/admin/policy-review'
   },
   {
@@ -169,7 +175,8 @@ export const toolsData: ToolData[] = [
     setupTime: '7 minutes',
     timeToInsights: '30 minutes',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#fcca5e',
+    cardColor: '#d29b0a',
+    cardBgColor: '#fef6e3',
     link: '/admin/knowledge-check'
   },
   {
@@ -191,7 +198,8 @@ export const toolsData: ToolData[] = [
     setupTime: '12 minutes',
     timeToInsights: '2 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#fcca5e',
+    cardColor: '#d29b0a',
+    cardBgColor: '#fef6e3',
     link: '/admin/root-cause-analysis'
   }
 ];

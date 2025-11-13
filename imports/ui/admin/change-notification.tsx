@@ -11,15 +11,16 @@ import {
   ChevronDown
 } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.blue} 0%, #4a7bc8 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -112,7 +113,7 @@ const SectionHeader = styled.div`
 `;
 
 const SectionIconWrapper = styled.div`
-  color: #542a46;
+  color: ${colors.blue};
   margin-top: 2px;
 `;
 
@@ -123,13 +124,13 @@ const SectionHeaderText = styled.div`
 const SectionTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 4px 0;
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
 `;
 
@@ -145,21 +146,21 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 8px;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: #542a46;
+    border-color: ${colors.blue};
   }
   
   &::placeholder {
@@ -170,7 +171,7 @@ const Input = styled.input`
 const Textarea = styled.textarea`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   font-size: 15px;
   min-height: 200px;
@@ -180,7 +181,7 @@ const Textarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #542a46;
+    border-color: ${colors.blue};
   }
   
   &::placeholder {
@@ -196,8 +197,8 @@ const ButtonGroup = styled.div`
 
 const SecondaryButton = styled.button`
   background: white;
-  color: #2c3e50;
-  border: 1px solid #dee2e6;
+  color: ${colors.textDark};
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   padding: 10px 20px;
   font-size: 14px;
@@ -209,8 +210,8 @@ const SecondaryButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: #f5f7f8;
-    border-color: #542a46;
+    background: ${colors.grayLight};
+    border-color: ${colors.blue};
   }
 `;
 
@@ -221,7 +222,7 @@ const DropdownWrapper = styled.div`
 const Dropdown = styled.div`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   font-size: 15px;
   background: white;
@@ -229,11 +230,11 @@ const Dropdown = styled.div`
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  color: #2c3e50;
+  color: ${colors.textDark};
   transition: border-color 0.2s;
   
   &:hover {
-    border-color: #542a46;
+    border-color: ${colors.blue};
   }
 `;
 
@@ -249,40 +250,40 @@ const FeatureGrid = styled.div`
 
 const FeatureCard = styled.div`
   background: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 12px;
   padding: 24px;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    border-color: #542a46;
-    box-shadow: 0 4px 12px rgba(84, 42, 70, 0.1);
+    border-color: ${colors.blue};
+    box-shadow: 0 4px 12px rgba(50, 91, 155, 0.1);
   }
 `;
 
 const FeatureIconWrapper = styled.div`
   width: 48px;
   height: 48px;
-  background: #f5f7f8;
+  background: #f0f6ff;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #542a46;
+  color: ${colors.blue};
   margin-bottom: 16px;
 `;
 
 const FeatureTitle = styled.h3`
   font-size: 16px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 8px 0;
 `;
 
 const FeatureDescription = styled.p`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
   line-height: 1.5;
 `;

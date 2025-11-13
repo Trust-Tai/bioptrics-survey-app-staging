@@ -8,15 +8,16 @@ import {
   AlertCircle
 } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.orange} 0%, #ff8534 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -131,7 +132,7 @@ const StatCard = styled.div`
 const StatIconWrapper = styled.div<{ bgColor?: string }>`
   width: 48px;
   height: 48px;
-  background: ${props => props.bgColor || '#f5f7f8'};
+  background: ${props => props.bgColor || colors.grayLight};
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -146,21 +147,21 @@ const StatContent = styled.div`
 const StatNumber = styled.div<{ color?: string }>`
   font-size: 28px;
   font-weight: 700;
-  color: ${props => props.color || '#2c3e50'};
+  color: ${props => props.color || colors.textDark};
   line-height: 1;
   margin-bottom: 4px;
 `;
 
 const StatLabel = styled.div`
   font-size: 13px;
-  color: #2c3e50;
+  color: ${colors.textDark};
   font-weight: 600;
   margin-bottom: 4px;
 `;
 
 const StatSubtext = styled.div<{ color?: string }>`
   font-size: 12px;
-  color: ${props => props.color || '#6c757d'};
+  color: ${props => props.color || colors.textMedium};
   display: flex;
   align-items: center;
   gap: 4px;
@@ -177,13 +178,13 @@ const SectionHeader = styled.div`
 const SectionTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin: 0 0 4px 0;
 `;
 
 const SectionSubtitle = styled.p`
   font-size: 14px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   margin: 0;
 `;
 
@@ -198,24 +199,24 @@ const EmptyState = styled.div`
 const EmptyIcon = styled.div`
   width: 64px;
   height: 64px;
-  background: #f5f7f8;
+  background: ${colors.grayLight};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: #6c757d;
+  color: ${colors.textMedium};
 `;
 
 const EmptyMessage = styled.div`
   font-size: 16px;
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 24px;
 `;
 
 const EmptyButton = styled.button`
-  background: #6b8e9d;
+  background: ${colors.orange};
   color: white;
   border: none;
   border-radius: 8px;
@@ -226,10 +227,10 @@ const EmptyButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
   
   &:hover {
-    opacity: 0.9;
+    background: ${colors.hover.orange};
   }
 `;
 
@@ -261,8 +262,8 @@ const WPSDashboard: React.FC = () => {
           {/* Statistics Cards */}
           <StatsGrid>
             <StatCard>
-              <StatIconWrapper bgColor="#f5f7f8">
-                <Users size={24} color="#542a46" />
+              <StatIconWrapper bgColor="#f9f0e5">
+                <Users size={24} color={colors.orange} />
               </StatIconWrapper>
               <StatContent>
                 <StatNumber>2,847</StatNumber>

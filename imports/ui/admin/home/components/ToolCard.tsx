@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import * as LucideIcons from 'lucide-react';
 import { ToolData } from '../data/toolsData';
+import { colors } from '../theme/colors';
 
 interface ToolCardProps {
   tool: ToolData;
@@ -79,12 +80,12 @@ const CardContent = styled.div`
   flex-direction: column;
 `;
 
-const StatsContainer = styled.div`
+const StatsContainer= styled.div<{ bgColor?: string }>`
   display: flex;
   gap: 32px;
   margin-bottom: 28px;
   padding: 20px;
-  background: #f5f7f8;
+  background: ${props => props.bgColor || '#6b8e9d'};
   border-radius: 8px;
 `;
 
@@ -103,7 +104,7 @@ const StatValue = styled.div<{ isSuccessRate?: boolean }>`
 
 const StatLabel = styled.div`
   font-size: 12px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   font-weight: 500;
 `;
 
@@ -118,7 +119,7 @@ const FeaturesTitle = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
-  color: #2c3e50;
+  color: ${colors.textDark};
 `;
 
 const FeaturesList = styled.ul`
@@ -127,12 +128,12 @@ const FeaturesList = styled.ul`
   margin: 0;
 `;
 
-const FeatureItem = styled.li`
+const FeatureItem = styled.li<{ bgColor?: string }>`
   font-size: 13px;
   margin-bottom: 8px;
   padding-left: 24px;
   position: relative;
-  color: #5a6c7d;
+  color: ${colors.textMedium};
   
   &::before {
     content: '✓';
@@ -140,7 +141,7 @@ const FeatureItem = styled.li`
     left: 0;
     width: 18px;
     height: 18px;
-    background: #6b8e9d;
+    background: ${props => props.bgColor || '#6b8e9d'};
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -151,12 +152,12 @@ const FeatureItem = styled.li`
   }
 `;
 
-const TimeInfo = styled.div`
+const TimeInfo = styled.div<{ bgColor?: string }>`
   display: flex;
   justify-content: space-between;
   margin-bottom: 16px;
   padding: 16px;
-  background: #f5f7f8;
+  background: ${props => props.bgColor || '#6b8e9d'};
   border-radius: 6px;
 `;
 
@@ -168,14 +169,14 @@ const TimeItem = styled.div`
 const TimeLabel = styled.div`
   font-size: 11px;
   margin-bottom: 6px;
-  color: #6c757d;
+  color: ${colors.textMedium};
   font-weight: 500;
 `;
 
 const TimeValue = styled.div`
   font-size: 13px;
   font-weight: 700;
-  color: #2c3e50;
+  color: ${colors.textDark};
 `;
 
 const DeployButton = styled.button<{ bgColor?: string }>`
@@ -211,7 +212,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick }) => {
       </CardHeader>
       
       <CardContent>
-        <StatsContainer>
+        <StatsContainer bgColor={tool.cardBgColor}>
           <StatItem>
             <StatValue isSuccessRate={false}>{tool.stats.deployments}</StatValue>
             <StatLabel>Deployments</StatLabel>
@@ -226,13 +227,13 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick }) => {
           <FeaturesTitle>KEY FEATURES</FeaturesTitle>
           <FeaturesList>
             {tool.features.map((feature, index) => (
-              <FeatureItem key={index}>{feature}</FeatureItem>
+              <FeatureItem bgColor={tool.cardColor} key={index}>{feature}</FeatureItem>
             ))}
           </FeaturesList>
         </FeaturesSection>
         
         <div>
-          <TimeInfo>
+          <TimeInfo bgColor={tool.cardBgColor}>
             <TimeItem>
               <TimeLabel>Setup Time</TimeLabel>
               <TimeValue>{tool.setupTime}</TimeValue>

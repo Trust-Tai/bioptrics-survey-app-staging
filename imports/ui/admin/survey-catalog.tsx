@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Heart, Target, BarChart3, TrendingUp, Gift, MessageCircle, Search as SearchIcon } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
+import { colors } from './home/theme/colors';
 
 // ============ STYLED COMPONENTS ============
 const PageContainer = styled.div`
   min-height: 100vh;
-  background: #ffffff;
+  background: ${colors.white};
 `;
 
 const Header = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, ${colors.orange} 0%, #ff8534 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -68,7 +69,7 @@ const SearchIconWrapper = styled.div`
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6c757d;
+  color: ${colors.textMedium};
   display: flex;
   align-items: center;
 `;
@@ -76,14 +77,14 @@ const SearchIconWrapper = styled.div`
 const SearchBar = styled.input`
   width: 100%;
   padding: 12px 20px 12px 45px;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 8px;
   font-size: 15px;
   background: white;
   
   &:focus {
     outline: none;
-    border-color: #6b8e9d;
+    border-color: ${colors.orange};
   }
 `;
 
@@ -158,26 +159,26 @@ const MetaInfo = styled.div`
   justify-content: space-between;
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: #f5f7f8;
+  background: ${colors.grayLight};
   border-radius: 6px;
   
   span {
-    color: #6c757d;
+    color: ${colors.textMedium};
     font-size: 14px;
     font-weight: 500;
   }
 `;
 
-const ToggleButton = styled.button`
+const ToggleButton = styled.button<{ borderColor?: string }>`
   width: 100%;
   padding: 12px;
   background: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid ${colors.borderGray};
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #2c3e50;
+  color: ${colors.textDark};
   margin-bottom: 16px;
   transition: all 0.2s;
   display: flex;
@@ -186,8 +187,8 @@ const ToggleButton = styled.button`
   gap: 8px;
   
   &:hover {
-    background: #f5f7f8;
-    border-color: #6b8e9d;
+    background: ${colors.grayLight};
+    border-color: ${props => props.borderColor || colors.orange};
   }
 `;
 
@@ -215,13 +216,13 @@ const QuestionItem = styled.div`
 
 const QuestionHeader = styled.div`
   font-weight: 600;
-  color: #2c3e50;
+  color: ${colors.textDark};
   font-size: 13px;
   margin-bottom: 6px;
 `;
 
 const QuestionText = styled.div`
-  color: #5a6c7d;
+  color: ${colors.textMedium};
   font-size: 14px;
   line-height: 1.5;
 `;
@@ -273,7 +274,7 @@ const SurveyCatalog: React.FC = () => {
         <Grid>
           {/* Card 1: Employee Engagement */}
           <Card>
-            <CardHeader bgColor="#5a8596">
+            <CardHeader bgColor="#ed6801">
               <IconWrapper>
                 <Heart size={24} strokeWidth={2} />
               </IconWrapper>
@@ -285,7 +286,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>Questions: 25</span>
                 <span>5-7 min</span>
               </MetaInfo>
-              <ToggleButton onClick={() => toggleQuestions('engagement')}>
+              <ToggleButton borderColor="#ed6801" onClick={() => toggleQuestions('engagement')}>
                 {expandedCard === 'engagement' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'engagement' && (
@@ -312,13 +313,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#5a8596">Use This Template →</UseButton>
+              <UseButton bgColor="#ed6801">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 2: Leadership Assessment */}
           <Card>
-            <CardHeader bgColor="#5a8596">
+            <CardHeader bgColor="#325b9b">
               <IconWrapper>
                 <Target size={24} strokeWidth={2} />
               </IconWrapper>
@@ -330,7 +331,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>Questions: 30</span>
                 <span>8-10 min</span>
               </MetaInfo>
-              <ToggleButton onClick={() => toggleQuestions('leadership')}>
+              <ToggleButton borderColor="#325b9b" onClick={() => toggleQuestions('leadership')}>
                 {expandedCard === 'leadership' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'leadership' && (
@@ -357,13 +358,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#5a8596">Use This Template →</UseButton>
+              <UseButton bgColor="#325b9b">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 3: Organizational Culture */}
           <Card>
-            <CardHeader bgColor="#be5f41">
+            <CardHeader bgColor="#d29b0a">
               <IconWrapper>
                 <BarChart3 size={24} strokeWidth={2} />
               </IconWrapper>
@@ -375,7 +376,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>Questions: 35</span>
                 <span>10-12 min</span>
               </MetaInfo>
-              <ToggleButton onClick={() => toggleQuestions('culture')}>
+              <ToggleButton borderColor="#d29b0a" onClick={() => toggleQuestions('culture')}>
                 {expandedCard === 'culture' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'culture' && (
@@ -402,13 +403,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#be5f41">Use This Template →</UseButton>
+              <UseButton bgColor="#d29b0a">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 4: Wellness Check */}
           <Card>
-            <CardHeader bgColor="#be5f41">
+            <CardHeader bgColor="#ed6801">
               <IconWrapper>
                 <TrendingUp size={24} strokeWidth={2} />
               </IconWrapper>
@@ -420,7 +421,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>Questions: 20</span>
                 <span>5 min</span>
               </MetaInfo>
-              <ToggleButton onClick={() => toggleQuestions('wellness')}>
+              <ToggleButton borderColor="#ed6801" onClick={() => toggleQuestions('wellness')}>
                 {expandedCard === 'wellness' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'wellness' && (
@@ -447,13 +448,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#be5f41">Use This Template →</UseButton>
+              <UseButton bgColor="#ed6801">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 5: Onboarding Experience */}
           <Card>
-            <CardHeader bgColor="#a6a6a6">
+            <CardHeader bgColor="#325b9b">
               <IconWrapper>
                 <Gift size={24} strokeWidth={2} />
               </IconWrapper>
@@ -465,7 +466,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>Questions: 15</span>
                 <span>4-5 min</span>
               </MetaInfo>
-              <ToggleButton onClick={() => toggleQuestions('onboarding')}>
+              <ToggleButton borderColor="#325b9b" onClick={() => toggleQuestions('onboarding')}>
                 {expandedCard === 'onboarding' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'onboarding' && (
@@ -492,13 +493,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#a6a6a6">Use This Template →</UseButton>
+              <UseButton bgColor="#325b9b">Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 6: 360° Feedback */}
           <Card>
-            <CardHeader bgColor="#fcca5e">
+            <CardHeader bgColor="#d29b0a">
               <IconWrapper>
                 <MessageCircle size={24} strokeWidth={2} />
               </IconWrapper>
@@ -510,7 +511,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>Questions: 40</span>
                 <span>12-15 min</span>
               </MetaInfo>
-              <ToggleButton onClick={() => toggleQuestions('feedback')}>
+              <ToggleButton borderColor="#d29b0a" onClick={() => toggleQuestions('feedback')}>
                 {expandedCard === 'feedback' ? '▲ Hide Questions' : '▼ View Questions'}
               </ToggleButton>
               {expandedCard === 'feedback' && (
@@ -541,7 +542,7 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor="#fcca5e">Use This Template →</UseButton>
+              <UseButton bgColor="#d29b0a">Use This Template →</UseButton>
             </CardContent>
           </Card>
         </Grid>
