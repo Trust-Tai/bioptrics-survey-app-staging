@@ -3,16 +3,16 @@ import styled from 'styled-components';
 import { FileText, Edit, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const Header = styled.div`
-  background: linear-gradient(135deg, #325b9b 0%, #4a7bc8 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -88,8 +88,8 @@ const SectionHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const SectionIconWrapper = styled.div`
-  color: #325b9b;
+const SectionIconWrapper = styled.div<{ color: string }>`
+  color: ${props => props.color};
   margin-top: 2px;
 `;
 
@@ -97,16 +97,16 @@ const SectionHeaderText = styled.div`
   flex: 1;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 20px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 4px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
 `;
 
@@ -118,25 +118,25 @@ const FormGroup = styled.div`
   }
 `;
 
-const Label = styled.label`
+const Label = styled.label<{ color: string }>`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const Input = styled.input`
+const Input = styled.input<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: #325b9b;
+    border-color: ${props => props.focusBorderColor};
   }
   
   &::placeholder {
@@ -144,10 +144,10 @@ const Input = styled.input`
   }
 `;
 
-const Select = styled.select`
+const Select = styled.select<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   background: white;
@@ -156,14 +156,14 @@ const Select = styled.select`
   
   &:focus {
     outline: none;
-    border-color: #325b9b;
+    border-color: ${props => props.focusBorderColor};
   }
 `;
 
-const Textarea = styled.textarea`
+const Textarea = styled.textarea<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   resize: vertical;
@@ -172,7 +172,7 @@ const Textarea = styled.textarea`
   
   &:focus {
     outline: none;
-    border-color: #325b9b;
+    border-color: ${props => props.focusBorderColor};
   }
   
   &::placeholder {
@@ -184,21 +184,21 @@ const FileInput = styled.input`
   display: none;
 `;
 
-const FileButton = styled.label`
+const FileButton = styled.label<{ textColor: string; borderColor: string; hoverBgColor: string; hoverBorderColor: string }>`
   display: inline-block;
   padding: 10px 20px;
   background: white;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: ${colors.textDark};
+  color: ${props => props.textColor};
   transition: all 0.2s;
   
   &:hover {
-    background: ${colors.grayLight};
-    border-color: #325b9b;
+    background: ${props => props.hoverBgColor};
+    border-color: ${props => props.hoverBorderColor};
   }
 `;
 
@@ -209,11 +209,11 @@ const Checkbox = styled.input`
   height: 18px;
 `;
 
-const CheckboxLabel = styled.label`
+const CheckboxLabel = styled.label<{ color: string }>`
   display: flex;
   align-items: center;
   font-size: 14px;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   cursor: pointer;
   user-select: none;
 `;
@@ -273,6 +273,7 @@ const SecondaryButton = styled.button`
 // ============ MAIN COMPONENT ============
 const PolicyCreate: React.FC = () => {
   const navigate = useNavigate();
+  const colors = useDynamicColors();
 
   const handleCancel = () => {
     navigate('/admin/policy-review');
@@ -290,9 +291,9 @@ const PolicyCreate: React.FC = () => {
 
   return (
     <AdminLayout>
-      <PageContainer>
+      <PageContainer bgColor={colors.white}>
         {/* Header */}
-        <Header>
+        <Header primaryColor={colors.blue}>
           <HeaderContent>
             <HeaderText>
               <Title>Create New Policy</Title>
@@ -316,23 +317,30 @@ const PolicyCreate: React.FC = () => {
           {/* Section 1: Policy Information */}
           <Section>
             <SectionHeader>
-              <SectionIconWrapper>
+              <SectionIconWrapper color={colors.blue}>
                 <FileText size={24} />
               </SectionIconWrapper>
               <SectionHeaderText>
-                <SectionTitle>Policy Information</SectionTitle>
-                <SectionSubtitle>Basic details about the policy</SectionSubtitle>
+                <SectionTitle color={colors.textDark}>Policy Information</SectionTitle>
+                <SectionSubtitle color={colors.textMedium}>Basic details about the policy</SectionSubtitle>
               </SectionHeaderText>
             </SectionHeader>
 
             <FormGroup>
-              <Label>Policy Title *</Label>
-              <Input placeholder="e.g., Code of Conduct 2024" />
+              <Label color={colors.textDark}>Policy Title *</Label>
+              <Input 
+                placeholder="e.g., Code of Conduct 2024" 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
 
             <FormGroup>
-              <Label>Policy Category *</Label>
-              <Select>
+              <Label color={colors.textDark}>Policy Category *</Label>
+              <Select
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              >
                 <option value="">Select category...</option>
                 <option value="conduct">Code of Conduct</option>
                 <option value="privacy">Data Privacy</option>
@@ -343,62 +351,89 @@ const PolicyCreate: React.FC = () => {
             </FormGroup>
 
             <FormGroup>
-              <Label>Effective Date *</Label>
-              <Input type="date" />
+              <Label color={colors.textDark}>Effective Date *</Label>
+              <Input 
+                type="date" 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
 
             <FormGroup>
-              <Label>Expiry Date</Label>
-              <Input type="date" />
+              <Label color={colors.textDark}>Expiry Date</Label>
+              <Input 
+                type="date" 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
 
             <FormGroup>
-              <Label>Policy Description *</Label>
-              <Textarea placeholder="Brief description of the policy..." rows={4} />
+              <Label color={colors.textDark}>Policy Description *</Label>
+              <Textarea 
+                placeholder="Brief description of the policy..." 
+                rows={4} 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
           </Section>
 
           {/* Section 2: Policy Content */}
           <Section>
             <SectionHeader>
-              <SectionIconWrapper>
+              <SectionIconWrapper color={colors.blue}>
                 <Edit size={24} />
               </SectionIconWrapper>
               <SectionHeaderText>
-                <SectionTitle>Policy Content</SectionTitle>
-                <SectionSubtitle>Upload document or write policy content</SectionSubtitle>
+                <SectionTitle color={colors.textDark}>Policy Content</SectionTitle>
+                <SectionSubtitle color={colors.textMedium}>Upload document or write policy content</SectionSubtitle>
               </SectionHeaderText>
             </SectionHeader>
 
             <FormGroup>
-              <Label>Upload Document</Label>
-              <FileButton htmlFor="policy-file">
+              <Label color={colors.textDark}>Upload Document</Label>
+              <FileButton 
+                htmlFor="policy-file"
+                textColor={colors.textDark}
+                borderColor={colors.borderGray}
+                hoverBgColor={colors.grayLight}
+                hoverBorderColor={colors.blue}
+              >
                 📎 Choose File (PDF, DOC, DOCX)
               </FileButton>
               <FileInput id="policy-file" type="file" accept=".pdf,.doc,.docx" />
             </FormGroup>
 
             <FormGroup>
-              <Label>Or Write Policy Content</Label>
-              <Textarea placeholder="Write your policy content here..." rows={10} />
+              <Label color={colors.textDark}>Or Write Policy Content</Label>
+              <Textarea 
+                placeholder="Write your policy content here..." 
+                rows={10} 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
           </Section>
 
           {/* Section 3: Distribution & Acknowledgment */}
           <Section>
             <SectionHeader>
-              <SectionIconWrapper>
+              <SectionIconWrapper color={colors.blue}>
                 <Users size={24} />
               </SectionIconWrapper>
               <SectionHeaderText>
-                <SectionTitle>Distribution & Acknowledgment</SectionTitle>
-                <SectionSubtitle>Define who needs to review and acknowledge</SectionSubtitle>
+                <SectionTitle color={colors.textDark}>Distribution & Acknowledgment</SectionTitle>
+                <SectionSubtitle color={colors.textMedium}>Define who needs to review and acknowledge</SectionSubtitle>
               </SectionHeaderText>
             </SectionHeader>
 
             <FormGroup>
-              <Label>Target Audience *</Label>
-              <Select>
+              <Label color={colors.textDark}>Target Audience *</Label>
+              <Select
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              >
                 <option value="">Select audience...</option>
                 <option value="all">All Employees</option>
                 <option value="dept">Specific Departments</option>
@@ -408,19 +443,23 @@ const PolicyCreate: React.FC = () => {
             </FormGroup>
 
             <FormGroup>
-              <Label>Acknowledgment Deadline</Label>
-              <Input type="date" />
+              <Label color={colors.textDark}>Acknowledgment Deadline</Label>
+              <Input 
+                type="date" 
+                borderColor={colors.borderGray}
+                focusBorderColor={colors.blue}
+              />
             </FormGroup>
 
             <FormGroup>
-              <CheckboxLabel>
+              <CheckboxLabel color={colors.textDark}>
                 <Checkbox type="checkbox" defaultChecked />
                 Require acknowledgment from recipients
               </CheckboxLabel>
             </FormGroup>
 
             <FormGroup>
-              <CheckboxLabel>
+              <CheckboxLabel color={colors.textDark}>
                 <Checkbox type="checkbox" defaultChecked />
                 Send email notification to recipients
               </CheckboxLabel>

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import ToolCard from './ToolCard';
 import { toolsData } from '../data/toolsData';
-import { colors } from '../theme/colors';
+import { useDynamicColors } from '../theme/useDynamicColors';
 
 const GridContainer = styled.section`
   margin-bottom: 60px;
@@ -13,18 +13,18 @@ const SectionHeader = styled.div`
   margin-bottom: 32px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ textColor: string; borderColor: string }>`
   font-size: 32px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.textColor};
   margin: 0 0 12px 0;
   padding-left: 16px;
-  border-left: 4px solid ${colors.orange};
+  border-left: 4px solid ${props => props.borderColor};
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 16px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
   line-height: 1.5;
   padding-left: 20px;
@@ -45,7 +45,7 @@ const Grid = styled.div`
 `;
 
 // Category configuration with titles and descriptions
-const categories = [
+const getCategoriesConfig = (colors: any) => [
   {
     id: 'culture' as const,
     title: 'Culture Assessments',
@@ -68,6 +68,8 @@ const categories = [
 
 const ToolkitGrid: React.FC = () => {
   const navigate = useNavigate();
+  const colors = useDynamicColors();
+  const categories = getCategoriesConfig(colors);
 
   const handleToolClick = (link: string) => {
     if (link && link !== '#') {
@@ -86,8 +88,15 @@ const ToolkitGrid: React.FC = () => {
         return (
           <GridContainer key={category.id}>
             <SectionHeader>
-              <SectionTitle>{category.title}</SectionTitle>
-              <SectionSubtitle>{category.description}</SectionSubtitle>
+              <SectionTitle 
+                textColor={colors.textDark} 
+                borderColor={category.bgColor}
+              >
+                {category.title}
+              </SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>
+                {category.description}
+              </SectionSubtitle>
             </SectionHeader>
             
             <Grid>

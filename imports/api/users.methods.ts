@@ -289,7 +289,7 @@ Meteor.methods({
     // Validate theme ID
     check(themeId, String);
     
-    const validThemes = ['bioptrics', 'terracotta', 'slate', 'golden', 'steel'];
+    const validThemes = ['default', 'bioptrics', 'terracotta', 'slate', 'golden', 'steel'];
     if (!validThemes.includes(themeId)) {
       throw new Meteor.Error('invalid-theme', 'Invalid theme ID provided');
     }
@@ -312,7 +312,7 @@ Meteor.methods({
   'users.getThemePreference': async function() {
     // Check if the user is logged in
     if (!this.userId) {
-      return 'bioptrics'; // Default theme for non-logged users
+      return 'default'; // Default theme for non-logged users
     }
 
     try {
@@ -320,10 +320,10 @@ Meteor.methods({
         fields: { 'profile.themePreference': 1 }
       });
 
-      return user?.profile?.themePreference || 'bioptrics';
+      return user?.profile?.themePreference || 'default';
     } catch (error) {
       console.error('Error getting theme preference:', error);
-      return 'bioptrics'; // Default theme on error
+      return 'default'; // Default theme on error
     }
   }
 });

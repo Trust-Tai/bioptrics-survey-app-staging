@@ -18,6 +18,7 @@ import OrgSetupDashboard from './admin/OrgSetupDashboard';
 import Marketplace from './admin/Marketplace';
 import { OrganizationProvider } from '/imports/features/organization/contexts/OrganizationContext';
 import { ThemeProvider } from '/imports/contexts/ThemeContext';
+import { ColorThemeProvider } from '/imports/contexts/ColorThemeContext';
 import Setting from './admin/Setting';
 import Participants from './admin/Participants';
 import Users from './admin/Users';
@@ -290,14 +291,16 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => (
   <Router>
-    <ThemeProvider>
-      <OrganizationProvider>
-        <QuestionBuilderPanelProvider>
-          <AppRoutes />
-          <GlobalNotification />
-        </QuestionBuilderPanelProvider>
-      </OrganizationProvider>
-    </ThemeProvider>
+    <ColorThemeProvider>
+      <ThemeProvider>
+        <OrganizationProvider>
+          <QuestionBuilderPanelProvider>
+            <AppRoutes />
+            <GlobalNotification />
+          </QuestionBuilderPanelProvider>
+        </OrganizationProvider>
+      </ThemeProvider>
+    </ColorThemeProvider>
   </Router>
 );
 

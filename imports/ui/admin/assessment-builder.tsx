@@ -3,16 +3,16 @@ import styled from 'styled-components';
 import { Target, Award, TrendingUp, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const Header = styled.div`
-  background: linear-gradient(135deg, ${colors.orange} 0%, #ff8534 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -64,16 +64,16 @@ const Section = styled.div`
   margin-bottom: 60px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 24px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 8px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 15px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0 0 32px 0;
 `;
 
@@ -138,10 +138,10 @@ const CardContent = styled.div`
   background: white;
 `;
 
-const CriteriaLabel = styled.div`
+const CriteriaLabel = styled.div<{ color: string }>`
   font-size: 11px;
   font-weight: 700;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   letter-spacing: 0.5px;
   margin-bottom: 12px;
 `;
@@ -152,10 +152,10 @@ const TagsContainer = styled.div`
   gap: 8px;
 `;
 
-const Tag = styled.span`
+const Tag = styled.span<{ bgColor: string; textColor: string }>`
   padding: 6px 14px;
-  background: ${colors.grayLight};
-  color: ${colors.textDark};
+  background: ${props => props.bgColor};
+  color: ${props => props.textColor};
   border-radius: 16px;
   font-size: 13px;
   font-weight: 500;
@@ -172,25 +172,25 @@ const InputWrapper = styled.div`
   margin-bottom: 24px;
 `;
 
-const Label = styled.label`
+const Label = styled.label<{ color: string }>`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const Input = styled.input`
+const Input = styled.input<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: ${colors.orange};
+    border-color: ${props => props.focusBorderColor};
   }
   
   &::placeholder {
@@ -198,10 +198,10 @@ const Input = styled.input`
   }
 `;
 
-const BuildButton = styled.button`
+const BuildButton = styled.button<{ bgColor: string; hoverBgColor: string }>`
   width: 100%;
   padding: 16px;
-  background: ${colors.orange};
+  background: ${props => props.bgColor};
   color: white;
   border: none;
   border-radius: 8px;
@@ -211,7 +211,7 @@ const BuildButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: ${colors.hover.orange};
+    background: ${props => props.hoverBgColor};
   }
   
   &:disabled {
@@ -224,6 +224,7 @@ const BuildButton = styled.button`
 const AssessmentBuilder: React.FC = () => {
   const navigate = useNavigate();
   const [assessmentName, setAssessmentName] = useState('');
+  const colors = useDynamicColors();
 
   const handleTemplateSelect = (templateType: string) => {
     console.log('Template selected:', templateType);
@@ -237,10 +238,15 @@ const AssessmentBuilder: React.FC = () => {
     }
   };
 
+  // Helper function to get card color based on category
+  const getCardColor = (category: 'culture' | 'operations' | 'benchmarking') => {
+    return colors.category[category];
+  };
+
   return (
     <AdminLayout>
-      <PageContainer>
-        <Header>
+      <PageContainer bgColor={colors.white}>
+        <Header primaryColor={colors.orange}>
           <HeaderContent>
             <Title>Assessment Builder</Title>
             <Subtitle>Create comprehensive assessments with automated scoring</Subtitle>
@@ -250,13 +256,13 @@ const AssessmentBuilder: React.FC = () => {
         <ContentWrapper>
           {/* Choose Assessment Type Section */}
           <Section>
-            <SectionTitle>Choose Assessment Type</SectionTitle>
-            <SectionSubtitle>Select a framework to get started quickly</SectionSubtitle>
+            <SectionTitle color={colors.textDark}>Choose Assessment Type</SectionTitle>
+            <SectionSubtitle color={colors.textMedium}>Select a framework to get started quickly</SectionSubtitle>
             
             <Grid>
               {/* Leadership Assessment */}
-              <TemplateCard borderColor="#ed6801" onClick={() => handleTemplateSelect('leadership')}>
-                <CardHeader bgColor="#ed6801">
+              <TemplateCard borderColor={getCardColor('culture')} onClick={() => handleTemplateSelect('leadership')}>
+                <CardHeader bgColor={getCardColor('culture')}>
                   <IconWrapper>
                     <Target size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -264,19 +270,19 @@ const AssessmentBuilder: React.FC = () => {
                   <CardDescription>Evaluate leadership skills and effectiveness</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CriteriaLabel>KEY CRITERIA</CriteriaLabel>
+                  <CriteriaLabel color={colors.textMedium}>KEY CRITERIA</CriteriaLabel>
                   <TagsContainer>
-                    <Tag>Decision Making</Tag>
-                    <Tag>Communication</Tag>
-                    <Tag>Vision</Tag>
-                    <Tag>Team Building</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Decision Making</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Communication</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Vision</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Team Building</Tag>
                   </TagsContainer>
                 </CardContent>
               </TemplateCard>
 
               {/* Performance Review */}
-              <TemplateCard borderColor="#325b9b" onClick={() => handleTemplateSelect('performance')}>
-                <CardHeader bgColor="#325b9b">
+              <TemplateCard borderColor={getCardColor('operations')} onClick={() => handleTemplateSelect('performance')}>
+                <CardHeader bgColor={getCardColor('operations')}>
                   <IconWrapper>
                     <Award size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -284,19 +290,19 @@ const AssessmentBuilder: React.FC = () => {
                   <CardDescription>Comprehensive performance evaluation</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CriteriaLabel>KEY CRITERIA</CriteriaLabel>
+                  <CriteriaLabel color={colors.textMedium}>KEY CRITERIA</CriteriaLabel>
                   <TagsContainer>
-                    <Tag>Goals Achievement</Tag>
-                    <Tag>Quality of Work</Tag>
-                    <Tag>Collaboration</Tag>
-                    <Tag>Innovation</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Goals Achievement</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Quality of Work</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Collaboration</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Innovation</Tag>
                   </TagsContainer>
                 </CardContent>
               </TemplateCard>
 
               {/* Competency Assessment */}
-              <TemplateCard borderColor="#d29b0a" onClick={() => handleTemplateSelect('competency')}>
-                <CardHeader bgColor="#d29b0a">
+              <TemplateCard borderColor={getCardColor('benchmarking')} onClick={() => handleTemplateSelect('competency')}>
+                <CardHeader bgColor={getCardColor('benchmarking')}>
                   <IconWrapper>
                     <TrendingUp size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -304,19 +310,19 @@ const AssessmentBuilder: React.FC = () => {
                   <CardDescription>Measure skill proficiency levels</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CriteriaLabel>KEY CRITERIA</CriteriaLabel>
+                  <CriteriaLabel color={colors.textMedium}>KEY CRITERIA</CriteriaLabel>
                   <TagsContainer>
-                    <Tag>Technical Skills</Tag>
-                    <Tag>Soft Skills</Tag>
-                    <Tag>Job Knowledge</Tag>
-                    <Tag>Adaptability</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Technical Skills</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Soft Skills</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Job Knowledge</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Adaptability</Tag>
                   </TagsContainer>
                 </CardContent>
               </TemplateCard>
 
               {/* Team Effectiveness */}
-              <TemplateCard borderColor="#ed6801" onClick={() => handleTemplateSelect('team')}>
-                <CardHeader bgColor="#ed6801">
+              <TemplateCard borderColor={getCardColor('culture')} onClick={() => handleTemplateSelect('team')}>
+                <CardHeader bgColor={getCardColor('culture')}>
                   <IconWrapper>
                     <Users size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -324,12 +330,12 @@ const AssessmentBuilder: React.FC = () => {
                   <CardDescription>Assess team dynamics and performance</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CriteriaLabel>KEY CRITERIA</CriteriaLabel>
+                  <CriteriaLabel color={colors.textMedium}>KEY CRITERIA</CriteriaLabel>
                   <TagsContainer>
-                    <Tag>Collaboration</Tag>
-                    <Tag>Communication</Tag>
-                    <Tag>Conflict Resolution</Tag>
-                    <Tag>Productivity</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Collaboration</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Communication</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Conflict Resolution</Tag>
+                    <Tag bgColor={colors.grayLight} textColor={colors.textDark}>Productivity</Tag>
                   </TagsContainer>
                 </CardContent>
               </TemplateCard>
@@ -338,12 +344,12 @@ const AssessmentBuilder: React.FC = () => {
 
           {/* Build From Scratch Section */}
           <Section>
-            <SectionTitle>Or Build From Scratch</SectionTitle>
-            <SectionSubtitle>Create a fully customized assessment</SectionSubtitle>
+            <SectionTitle color={colors.textDark}>Or Build From Scratch</SectionTitle>
+            <SectionSubtitle color={colors.textMedium}>Create a fully customized assessment</SectionSubtitle>
             
             <BuildSection>
               <InputWrapper>
-                <Label>Assessment Name</Label>
+                <Label color={colors.textDark}>Assessment Name</Label>
                 <Input
                   type="text"
                   placeholder="Enter assessment name..."
@@ -354,11 +360,15 @@ const AssessmentBuilder: React.FC = () => {
                       handleStartBuilding();
                     }
                   }}
+                  borderColor={colors.borderGray}
+                  focusBorderColor={colors.orange}
                 />
               </InputWrapper>
               <BuildButton 
                 onClick={handleStartBuilding}
                 disabled={!assessmentName.trim()}
+                bgColor={colors.orange}
+                hoverBgColor={colors.hover.orange}
               >
                 Start Building
               </BuildButton>

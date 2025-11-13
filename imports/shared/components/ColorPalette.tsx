@@ -10,12 +10,14 @@ const FloatingContainer = styled.div`
   z-index: 9999;
 `;
 
-const PaletteButton = styled.button`
+const PaletteButton = styled.button<{ isMultiColor?: boolean }>`
   width: 50px;
   height: 50px;
   border-radius: 50%;
   border: 3px solid #fff;
-  background: var(--color-primary);
+  background: ${props => props.isMultiColor 
+    ? 'conic-gradient(#ed6801 0deg 90deg, #325b9b 90deg 180deg, #d29b0a 180deg 270deg, #a6a6a6 270deg 360deg)' 
+    : 'var(--color-primary)'};
   color: white;
   cursor: pointer;
   display: flex;
@@ -71,11 +73,12 @@ const ColorOption = styled.div<{ color: string; isActive: boolean }>`
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 2px solid ${props => props.isActive ? props.color : 'transparent'};
-  background: ${props => props.isActive ? `${props.color}10` : 'transparent'};
+  border: 2px solid ${props => props.isActive ? props.color : '#e5e7eb'};
+  background: ${props => props.isActive ? '#f0f6ff' : 'transparent'};
   
   &:hover {
-    background: ${props => `${props.color}15`};
+    background: #f8f9fa;
+    border-color: ${props => props.color};
     transform: translateX(2px);
   }
 `;
@@ -88,6 +91,23 @@ const ColorSwatch = styled.div<{ color: string }>`
   margin-right: 12px;
   border: 2px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const MultiColorSwatch = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+  background: conic-gradient(
+    #ed6801 0deg 90deg,
+    #325b9b 90deg 180deg,
+    #d29b0a 180deg 270deg,
+    #a6a6a6 270deg 360deg
+  );
 `;
 
 const ColorName = styled.span`
@@ -156,7 +176,11 @@ export const ColorPalette: React.FC = () => {
     <>
       <Overlay isOpen={isOpen} onClick={() => setIsOpen(false)} />
       <FloatingContainer ref={containerRef}>
-        <PaletteButton onClick={toggleDropdown} title="Change Color Theme">
+        <PaletteButton 
+          onClick={toggleDropdown} 
+          title="Change Color Theme"
+          isMultiColor={currentTheme.id === 'default'}
+        >
           <FaPalette />
         </PaletteButton>
         
@@ -170,7 +194,11 @@ export const ColorPalette: React.FC = () => {
                 isActive={currentTheme.id === theme.id}
                 onClick={() => handleThemeChange(theme.id)}
               >
-                <ColorSwatch color={theme.primary} />
+                {theme.id === 'default' ? (
+                  <MultiColorSwatch />
+                ) : (
+                  <ColorSwatch color={theme.primary} />
+                )}
                 <ColorName>{theme.name}</ColorName>
                 <CheckIcon isVisible={currentTheme.id === theme.id}>
                   <FaCheck />
