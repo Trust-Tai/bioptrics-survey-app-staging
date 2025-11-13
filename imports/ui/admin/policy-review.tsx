@@ -8,6 +8,7 @@ import {
   Upload,
   Plus
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { colors } from './home/theme/colors';
 
@@ -343,6 +344,8 @@ const ViewButton = styled.button`
 
 // ============ MAIN COMPONENT ============
 const PolicyReview: React.FC = () => {
+  const navigate = useNavigate();
+  
   const policies = [
     {
       id: 1,
@@ -392,7 +395,7 @@ const PolicyReview: React.FC = () => {
                 <Upload size={18} />
                 Upload Policy
               </SecondaryButton>
-              <PrimaryButton>
+              <PrimaryButton onClick={() => navigate('/admin/policy-create')}>
                 <Plus size={18} />
                 Create Policy
               </PrimaryButton>

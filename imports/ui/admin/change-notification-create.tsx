@@ -10,6 +10,7 @@ import {
   Bell,
   ChevronDown
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { colors } from './home/theme/colors';
 
@@ -289,17 +290,25 @@ const FeatureDescription = styled.p`
 `;
 
 // ============ MAIN COMPONENT ============
-const ChangeNotification: React.FC = () => {
+const ChangeNotificationCreate: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleSend = () => {
+    console.log('Send notification clicked');
+    // Navigate back to dashboard after sending
+    // navigate('/admin/change-notification');
+  };
+
   return (
     <AdminLayout>
       <PageContainer>
         <Header>
           <HeaderContent>
             <HeaderText>
-              <Title>Change Notification Builder</Title>
-              <Subtitle>Create and track organizational change communications</Subtitle>
+              <Title>Create Change Notification</Title>
+              <Subtitle>Create and send organizational change communications</Subtitle>
             </HeaderText>
-            <SendButton>
+            <SendButton onClick={handleSend}>
               <Bell size={18} />
               Send Notification
             </SendButton>
@@ -401,4 +410,4 @@ const ChangeNotification: React.FC = () => {
   );
 };
 
-export default ChangeNotification;
+export default ChangeNotificationCreate;
