@@ -1,3 +1,6 @@
 node_modules/
 scope-of-work.docx
 .env
+
+# Ignore all markdown files
+*.md

@@ -68,8 +68,10 @@ import { PolicyDetailStatic } from './admin/dashboard/components/sections/Policy
 import AdminHomePage from './admin/home';
 import SurveyCatalog from './admin/survey-catalog';
 import AssessmentBuilder from './admin/assessment-builder';
-import ChangeNotification from './admin/change-notification';
+import ChangeNotificationDashboard from './admin/change-notification-dashboard';
+import ChangeNotificationCreate from './admin/change-notification-create';
 import PolicyReview from './admin/policy-review';
+import PolicyCreate from './admin/policy-create';
 import KnowledgeCheck from './admin/knowledge-check';
 import RootCauseAnalysis from './admin/root-cause-analysis';
 import WPSDashboard from './admin/wps-dashboard';
@@ -195,10 +197,13 @@ const AppRoutes: React.FC = () => {
          <Route path="/admin/survey-catalog" element={<SurveyCatalog />} />
          {/* Assessment Builder Route */}
          <Route path="/admin/assessment-builder" element={<AssessmentBuilder />} />
-         {/* Change Notification Route */}
-         <Route path="/admin/change-notification" element={<ChangeNotification />} />
+         {/* Change Notification Routes */}
+         <Route path="/admin/change-notification" element={<ChangeNotificationDashboard />} />
+         <Route path="/admin/change-notification/create" element={<ChangeNotificationCreate />} />
          {/* Policy Review Route */}
          <Route path="/admin/policy-review" element={<PolicyReview />} />
+         {/* Policy Create Route */}
+         <Route path="/admin/policy-create" element={<PolicyCreate />} />
          {/* Knowledge Check Route */}
          <Route path="/admin/knowledge-check" element={<KnowledgeCheck />} />
          {/* Root Cause Analysis Route */}
