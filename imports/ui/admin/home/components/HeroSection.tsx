@@ -98,7 +98,6 @@ const HeroSection: React.FC = () => {
   return (
     <HeroContainer>
       <WelcomeBadge bgColor={colors.orange} textColor={colors.white}>
-        <Icon>🏠</Icon>
         Welcome to Bioptrics Pulse
       </WelcomeBadge>
       
