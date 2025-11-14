@@ -28,7 +28,7 @@ import {
 } from 'react-icons/fi';
 import styled from 'styled-components';
 import { ColorThemeProvider, useColorTheme } from '/imports/contexts/ColorThemeContext';
-import { ColorPalette } from '/imports/shared/components/ColorPalette';
+// ColorPalette import removed - no longer using color switching
 
 // Define interface for sidebar link items
 interface SidebarLink {
@@ -654,8 +654,7 @@ const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children })
           <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
         
-        {/* Color Theme Palette - Floating at top right */}
-        <ColorPalette />
+        {/* Color Theme Palette removed - no longer needed */}
         
         <Footer collapsed={collapsed}>
           Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.
