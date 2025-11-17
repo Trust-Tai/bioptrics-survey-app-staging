@@ -263,7 +263,7 @@ const SurveyCatalog: React.FC = () => {
       <PageContainer bgColor={colors.white}>
         <Header primaryColor={colors.orange}>
           <HeaderContent>
-            <Title>Pre-built Survey Solutions</Title>
+            <Title>Culture and Workforce</Title>
             <Subtitle>Expert-designed surveys ready to deploy in minutes</Subtitle>
           </HeaderContent>
         </Header>
@@ -288,7 +288,7 @@ const SurveyCatalog: React.FC = () => {
               <IconWrapper>
                 <Heart size={24} strokeWidth={2} />
               </IconWrapper>
-              <CardTitle>Employee Engagement</CardTitle>
+              <CardTitle>Psychosocial Hazard Diagnostic</CardTitle>
               <CardDescription>Measure team satisfaction and motivation</CardDescription>
             </CardHeader>
             <CardContent>
@@ -339,7 +339,7 @@ const SurveyCatalog: React.FC = () => {
               <IconWrapper>
                 <Target size={24} strokeWidth={2} />
               </IconWrapper>
-              <CardTitle>Leadership Assessment</CardTitle>
+              <CardTitle>Workforce Respect, Civility & Speak-Up Confidence</CardTitle>
               <CardDescription>Evaluate leadership effectiveness</CardDescription>
             </CardHeader>
             <CardContent>
@@ -390,7 +390,7 @@ const SurveyCatalog: React.FC = () => {
               <IconWrapper>
                 <BarChart3 size={24} strokeWidth={2} />
               </IconWrapper>
-              <CardTitle>Organizational Culture</CardTitle>
+              <CardTitle>Leadership Accountability & Behaviour Reliability</CardTitle>
               <CardDescription>Assess workplace culture health</CardDescription>
             </CardHeader>
             <CardContent>
@@ -441,7 +441,7 @@ const SurveyCatalog: React.FC = () => {
               <IconWrapper>
                 <TrendingUp size={24} strokeWidth={2} />
               </IconWrapper>
-              <CardTitle>Wellness Check</CardTitle>
+              <CardTitle>Employee Engagement & Retention Risk Predictor</CardTitle>
               <CardDescription>Monitor employee wellbeing</CardDescription>
             </CardHeader>
             <CardContent>
@@ -492,7 +492,7 @@ const SurveyCatalog: React.FC = () => {
               <IconWrapper>
                 <Gift size={24} strokeWidth={2} />
               </IconWrapper>
-              <CardTitle>Onboarding Experience</CardTitle>
+              <CardTitle>Inclusion, Equity & Belonging Climate Check</CardTitle>
               <CardDescription>Gather new hire feedback</CardDescription>
             </CardHeader>
             <CardContent>
@@ -543,7 +543,7 @@ const SurveyCatalog: React.FC = () => {
               <IconWrapper>
                 <MessageCircle size={24} strokeWidth={2} />
               </IconWrapper>
-              <CardTitle>360° Feedback</CardTitle>
+              <CardTitle>Workforce Psychological Health & Safety</CardTitle>
               <CardDescription>Comprehensive performance review</CardDescription>
             </CardHeader>
             <CardContent>

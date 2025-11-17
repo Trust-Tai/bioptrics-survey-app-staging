@@ -10,7 +10,7 @@ export const AuthBg = styled.div`
   position: fixed;
   top: 0;
   left: 0;
-  background: url('/login-image.png');
+  background: url('/bioptrics-register-bg.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
