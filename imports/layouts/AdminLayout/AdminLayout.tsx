@@ -383,7 +383,7 @@ const Footer = styled.footer<FooterProps>`
   left: 0;
   right: 0;
   z-index: 100;
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
 `;

@@ -38,7 +38,7 @@ export const toolsData: ToolData[] = [
     setupTime: '5 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#ed6801',
+    cardColor: '#be5f41',
     cardBgColor: '#f9f0e5',
     link: '/admin/wps-dashboard'
   },
@@ -61,7 +61,7 @@ export const toolsData: ToolData[] = [
     setupTime: '5 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#ed6801',
+    cardColor: '#be5f41',
     cardBgColor: '#f9f0e5',
     link: '/admin/survey-catalog'
   },
@@ -106,7 +106,7 @@ export const toolsData: ToolData[] = [
     setupTime: '15 minutes',
     timeToInsights: '48 hours',
     buttonText: 'Deploy This Solution →',
-    cardColor: '#ed6801',
+    cardColor: '#be5f41',
     cardBgColor: '#f9f0e5',
     link: '/admin/assessment-builder'
   },
