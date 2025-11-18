@@ -44,7 +44,7 @@ export const KPISection: React.FC<KPISectionProps> = ({ className }) => {
         isPositive: true
       },
       icon: FaShieldAlt,
-      color: '#be5f41'
+      color: '#FD9F2C'
     },
     {
       title: 'Change Notices Read',
@@ -54,7 +54,7 @@ export const KPISection: React.FC<KPISectionProps> = ({ className }) => {
         isPositive: true
       },
       icon: FaBookOpen,
-      color: '#be5f41'
+      color: '#FD9F2C'
     },
     {
       title: 'WPS Maturity Avg',
@@ -64,7 +64,7 @@ export const KPISection: React.FC<KPISectionProps> = ({ className }) => {
         isPositive: true
       },
       icon: FaHeart,
-      color: '#be5f41'
+      color: '#FD9F2C'
     },
     {
       title: 'Items At Risk',
@@ -74,7 +74,7 @@ export const KPISection: React.FC<KPISectionProps> = ({ className }) => {
         isPositive: true
       },
       icon: FaExclamationTriangle,
-      color: '#be5f41'
+      color: '#FD9F2C'
     }
   ];
 

@@ -29,7 +29,7 @@ export const ColorThemeProvider: React.FC<ColorThemeProviderProps> = ({ children
     const root = document.documentElement;
     
     // Set the primary color to our fixed value
-    const primaryColor = '#be5f41';
+    const primaryColor = '#FD9F2C';
     
     // Set main theme colors - using fixed values
     root.style.setProperty('--color-primary', primaryColor);
@@ -41,13 +41,13 @@ export const ColorThemeProvider: React.FC<ColorThemeProviderProps> = ({ children
     root.style.setProperty('--color-sidebar-text', '#2c2c2c');
     
     // Set category colors - using fixed values
-    root.style.setProperty('--color-culture', '#be5f41');
+    root.style.setProperty('--color-culture', '#FD9F2C');
     root.style.setProperty('--color-operations', '#325b9b');
     root.style.setProperty('--color-benchmarking', '#d29b0a');
     root.style.setProperty('--color-neutral', '#a6a6a6');
     
     // Set gradients for each category
-    root.style.setProperty('--gradient-culture', 'linear-gradient(135deg, #be5f41 0%, #ff8534 100%)');
+    root.style.setProperty('--gradient-culture', 'linear-gradient(135deg, #FD9F2C 0%, #ff8534 100%)');
     root.style.setProperty('--gradient-operations', 'linear-gradient(135deg, #325b9b 0%, #4a7bc8 100%)');
     root.style.setProperty('--gradient-benchmarking', 'linear-gradient(135deg, #d29b0a 0%, #f0b429 100%)');
     root.style.setProperty('--gradient-neutral', 'linear-gradient(135deg, #a6a6a6 0%, #c0c0c0 100%)');
@@ -109,7 +109,7 @@ export const ColorThemeProvider: React.FC<ColorThemeProviderProps> = ({ children
     currentTheme: {
       id: 'default',
       name: 'Default Theme',
-      primary: '#be5f41',
+      primary: '#FD9F2C',
       secondary: '#c55501',
       accent: '#d29b0a',
       background: '#f8f9fa',
