@@ -16,7 +16,7 @@ const PaletteButton = styled.button<{ isMultiColor?: boolean }>`
   border-radius: 50%;
   border: 3px solid #fff;
   background: ${props => props.isMultiColor 
-    ? 'conic-gradient(#FD9F2C 0deg 90deg, #325b9b 90deg 180deg, #d29b0a 180deg 270deg, #a6a6a6 270deg 360deg)' 
+    ? 'conic-gradient(#e99d48 0deg 90deg, #325b9b 90deg 180deg, #d29b0a 180deg 270deg, #a6a6a6 270deg 360deg)' 
     : 'var(--color-primary)'};
   color: white;
   cursor: pointer;
@@ -103,7 +103,7 @@ const MultiColorSwatch = styled.div`
   overflow: hidden;
   position: relative;
   background: conic-gradient(
-    #FD9F2C 0deg 90deg,
+    #e99d48 0deg 90deg,
     #325b9b 90deg 180deg,
     #d29b0a 180deg 270deg,
     #a6a6a6 270deg 360deg

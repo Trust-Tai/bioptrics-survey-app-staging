@@ -33,7 +33,7 @@ const RadarSVG = styled.svg`
 
 const RadarPolygon = styled.polygon`
   fill: rgba(237, 104, 1, 0.2);
-  stroke: #FD9F2C;
+  stroke: #e99d48;
   stroke-width: 2;
 `;
 
@@ -138,7 +138,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({ data }) => {
             cx={point.x}
             cy={point.y}
             r="4"
-            fill="#FD9F2C"
+            fill="#e99d48"
             stroke="white"
             strokeWidth="2"
           />
