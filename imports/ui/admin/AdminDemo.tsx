@@ -1,7 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-
+const body = document.body;
+body.style.padding = '0';
+body.style.margin = '0';
 const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -73,7 +75,7 @@ const CardInner = styled.div<{ disabled?: boolean }>`
     transform: ${({ disabled }) => (disabled ? 'none' : 'translateY(-4px)')};
     box-shadow: ${({ disabled }) =>
       disabled ? '0 10px 20px rgba(15, 23, 42, 0.04)' : '0 16px 35px rgba(15, 23, 42, 0.10)'};
-    border-color: ${({ disabled }) => (disabled ? '#e5e7eb' : 'var(--color-primary, #552a47)')};
+    border-color: ${({ disabled }) => (disabled ? '#e5e7eb' : '#FD9F2C')};
   }
 `;
 
@@ -104,7 +106,7 @@ const CardAction = styled.div`
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
-  color: #111827;
+  color: #FD9F2C;
   margin-bottom: 6px;
 `;
 
@@ -142,7 +144,7 @@ const AdminDemo: React.FC = () => {
           <CardsGrid>
             <Card onClick={() => handleOpen('https://pulse.bioptrics.com')}>
               <CardInner>
-                <IconWrapper bg="#fde4cf">
+                <IconWrapper bg="#FD9F2C">
                   <IconGlyph>📈</IconGlyph>
                 </IconWrapper>
                 <CardTitle>Bioptrics Pulse</CardTitle>
@@ -153,7 +155,7 @@ const AdminDemo: React.FC = () => {
 
             <Card onClick={() => handleOpen('https://lms.bioptrics.com')}>
               <CardInner>
-                <IconWrapper bg="#e0f2fe">
+                <IconWrapper bg="#325b9b">
                   <IconGlyph>📚</IconGlyph>
                 </IconWrapper>
                 <CardTitle>Bioptrics LMS</CardTitle>
@@ -164,7 +166,7 @@ const AdminDemo: React.FC = () => {
 
             <Card disabled>
               <CardInner disabled>
-                <IconWrapper bg="#f3e8ff">
+                <IconWrapper bg="#d29b0a">
                   <IconGlyph>👥</IconGlyph>
                 </IconWrapper>
                 <CardTitle>Bioptrics Team</CardTitle>
