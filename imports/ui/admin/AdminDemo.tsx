@@ -172,7 +172,7 @@ const AdminDemo: React.FC = () => {
                 </IconWrapper>
                 <CardTitle>Bioptrics Team</CardTitle>
                 <CardAction>ENGAGE</CardAction>
-                <CardMeta emphasis>Coming soon – designed for collaboration and team engagement.</CardMeta>
+                <CardMeta emphasis>Coming soon</CardMeta>
               </CardInner>
             </Card>
           </CardsGrid>
