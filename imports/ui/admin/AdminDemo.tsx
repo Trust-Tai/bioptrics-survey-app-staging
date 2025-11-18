@@ -8,8 +8,9 @@ const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  background: #f7f5f0;
+  justify-content: flex-start;
+  padding-top: 48px;
+  background: #ffffff;
 `;
 
 const ContentWrapper = styled.div`
@@ -19,15 +20,29 @@ const ContentWrapper = styled.div`
 `;
 
 const SuiteHeader = styled.div`
-  margin-bottom: 32px;
+  margin-bottom: 42px;
   text-align: center;
+`;
+
+const LogoWrapper = styled.div`
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+
+  img {
+    max-width: 230px;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
 `;
 
 const SuiteTitle = styled.h1`
   font-size: 36px;
   font-weight: 700;
   color: #1f2933;
-  margin: 0 0 12px;
+  margin: 0 0 22px;
+  display:none;
 `;
 
 const SuiteSubtitle = styled.p`
@@ -60,7 +75,7 @@ const Card = styled.button<{ disabled?: boolean }>`
 `;
 
 const CardInner = styled.div<{ disabled?: boolean }>`
-  background: #ffffff;
+  background: ##f7f5f0;
   border-radius: 16px;
   padding: 24px 20px 20px;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
@@ -131,6 +146,9 @@ const AdminDemo: React.FC = () => {
 
   return (
       <PageContainer>
+        <LogoWrapper>
+            <img src="/bioptrics_fixed_black.png" alt="Bioptrics" />
+        </LogoWrapper>
         <ContentWrapper>
           <SuiteHeader>
             <SuiteTitle>Bioptrics Suite</SuiteTitle>
