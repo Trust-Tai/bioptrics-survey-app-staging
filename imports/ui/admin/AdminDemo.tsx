@@ -20,7 +20,7 @@ const ContentWrapper = styled.div`
 `;
 
 const SuiteHeader = styled.div`
-  margin-bottom: 32px;
+  margin-bottom: 35px;
   text-align: center;
 `;
 
