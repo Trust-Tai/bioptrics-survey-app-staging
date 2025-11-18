@@ -76,6 +76,7 @@ import PolicyCreate from './admin/policy-create';
 import KnowledgeCheck from './admin/knowledge-check';
 import RootCauseAnalysis from './admin/root-cause-analysis';
 import WPSDashboard from './admin/wps-dashboard';
+import AdminDemo from './admin/AdminDemo';
 
 function RequireAdminAuth() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
@@ -194,6 +195,7 @@ const AppRoutes: React.FC = () => {
       <Route element={<RequireAdminAuth />}>
          {/* Home Route */}
          <Route path="/admin/home" element={<AdminHomePage />} />
+         <Route path="/admin/demo" element={<AdminDemo />} />
          {/* Survey Catalog Route */}
          <Route path="/admin/survey-catalog" element={<SurveyCatalog />} />
          {/* Assessment Builder Route */}

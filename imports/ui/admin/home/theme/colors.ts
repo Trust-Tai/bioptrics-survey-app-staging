@@ -1,7 +1,7 @@
 // Client color palette - "flower orange color palette"
 export const colors = {
   // Primary brand colors
-  orange: '#be5f41',      // Primary orange - Culture Assessments
+  orange: '#FD9F2C',      // Primary orange - Culture Assessments
   gray: '#a6a6a6',        // Neutral gray
   yellow: '#fcca5e',      // Accent yellow - Benchmarking Tools
   blue: '#325b9b',        // Secondary blue - Operations & Governance
@@ -22,7 +22,7 @@ export const colors = {
   
   // Category-specific colors
   category: {
-    culture: '#be5f41',      // Orange for Culture Assessments
+    culture: '#FD9F2C',      // Orange for Culture Assessments
     operations: '#325b9b',   // Blue for Operations & Governance
     benchmarking: '#d29b0a', // Yellow for Benchmarking Tools
   },
