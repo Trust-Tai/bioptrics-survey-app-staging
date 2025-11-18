@@ -112,6 +112,7 @@ const CardAction = styled.div`
 
 const CardMeta = styled.div<{ emphasis?: boolean }>`
   font-size: 13px;
+  text-align: center;
   color: ${({ emphasis }) => (emphasis ? '#9b1c1c' : '#6b7280')};
   font-weight: ${({ emphasis }) => (emphasis ? 600 : 400)};
 `;
