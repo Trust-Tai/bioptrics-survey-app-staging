@@ -10,7 +10,7 @@ const PageContainer = styled.div`
   flex-direction: column;
   justify-content: flex-start;
   padding-top: 48px;
-  background: #ffffff;
+  background: #f7f5f0;
 `;
 
 const ContentWrapper = styled.div`
@@ -20,7 +20,7 @@ const ContentWrapper = styled.div`
 `;
 
 const SuiteHeader = styled.div`
-  margin-bottom: 42px;
+  margin-bottom: 32px;
   text-align: center;
 `;
 
@@ -30,7 +30,7 @@ const LogoWrapper = styled.div`
   justify-content: center;
 
   img {
-    max-width: 230px;
+    max-width: 350px;
     width: 100%;
     height: auto;
     display: block;
@@ -41,7 +41,7 @@ const SuiteTitle = styled.h1`
   font-size: 36px;
   font-weight: 700;
   color: #1f2933;
-  margin: 0 0 22px;
+  margin: 0 0 12px;
   display:none;
 `;
 
@@ -75,7 +75,7 @@ const Card = styled.button<{ disabled?: boolean }>`
 `;
 
 const CardInner = styled.div<{ disabled?: boolean }>`
-  background: ##f7f5f0;
+  background: #ffffff;
   border-radius: 16px;
   padding: 24px 20px 20px;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
@@ -147,7 +147,7 @@ const AdminDemo: React.FC = () => {
   return (
       <PageContainer>
         <LogoWrapper>
-            <img src="/bioptrics_fixed_black.png" alt="Bioptrics" />
+            <img src="/BIOPTRICS_LOGO_FIXED_BLACK.png" alt="Bioptrics" />
         </LogoWrapper>
         <ContentWrapper>
           <SuiteHeader>
