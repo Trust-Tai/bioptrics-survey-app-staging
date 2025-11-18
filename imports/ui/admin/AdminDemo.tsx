@@ -75,7 +75,7 @@ const CardInner = styled.div<{ disabled?: boolean }>`
     transform: ${({ disabled }) => (disabled ? 'none' : 'translateY(-4px)')};
     box-shadow: ${({ disabled }) =>
       disabled ? '0 10px 20px rgba(15, 23, 42, 0.04)' : '0 16px 35px rgba(15, 23, 42, 0.10)'};
-    border-color: ${({ disabled }) => (disabled ? '#e5e7eb' : '#FD9F2C')};
+    border-color: ${({ disabled }) => (disabled ? '#e5e7eb' : '#e99d48')};
   }
 `;
 
@@ -106,7 +106,7 @@ const CardAction = styled.div`
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
-  color: #FD9F2C;
+  color: #e99d48;
   margin-bottom: 6px;
 `;
 
@@ -145,7 +145,7 @@ const AdminDemo: React.FC = () => {
           <CardsGrid>
             <Card onClick={() => handleOpen('https://pulse.bioptrics.com')}>
               <CardInner>
-                <IconWrapper bg="#FD9F2C">
+                <IconWrapper bg="#e99d48">
                   <IconGlyph>📈</IconGlyph>
                 </IconWrapper>
                 <CardTitle>Bioptrics Pulse</CardTitle>
@@ -172,7 +172,7 @@ const AdminDemo: React.FC = () => {
                 </IconWrapper>
                 <CardTitle>Bioptrics Team</CardTitle>
                 <CardAction>ENGAGE</CardAction>
-                <CardMeta emphasis>Coming soon</CardMeta>
+                <CardMeta style={{color: '#fff'}} emphasis>Coming soon</CardMeta>
               </CardInner>
             </Card>
           </CardsGrid>
