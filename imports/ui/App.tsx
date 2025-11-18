@@ -192,10 +192,10 @@ const AppRoutes: React.FC = () => {
       <Route path="/privacy" element={<PrivacyNotice />} />
       <Route path="/admin" element={<AdminLogin onAdminAuth={() => navigate('/admin/home')} />} />
       <Route path="/admin-login" element={<AdminLogin onAdminAuth={() => navigate('/admin/home')} />} />
+      <Route path="/demo" element={<AdminDemo />} />
       <Route element={<RequireAdminAuth />}>
          {/* Home Route */}
          <Route path="/admin/home" element={<AdminHomePage />} />
-         <Route path="/admin/demo" element={<AdminDemo />} />
          {/* Survey Catalog Route */}
          <Route path="/admin/survey-catalog" element={<SurveyCatalog />} />
          {/* Assessment Builder Route */}
