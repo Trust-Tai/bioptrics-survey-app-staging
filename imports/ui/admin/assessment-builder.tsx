@@ -281,8 +281,8 @@ const AssessmentBuilder: React.FC = () => {
               </TemplateCard>
 
               {/* Performance Review */}
-              <TemplateCard borderColor={getCardColor('operations')} onClick={() => handleTemplateSelect('performance')}>
-                <CardHeader bgColor={getCardColor('operations')}>
+              <TemplateCard borderColor={getCardColor('culture')} onClick={() => handleTemplateSelect('performance')}>
+                <CardHeader bgColor={getCardColor('culture')}>
                   <IconWrapper>
                     <Award size={24} strokeWidth={2} />
                   </IconWrapper>
@@ -321,8 +321,8 @@ const AssessmentBuilder: React.FC = () => {
               </TemplateCard>
 
               {/* Team Effectiveness */}
-              <TemplateCard borderColor={getCardColor('culture')} onClick={() => handleTemplateSelect('team')}>
-                <CardHeader bgColor={getCardColor('culture')}>
+              <TemplateCard borderColor={getCardColor('operations')} onClick={() => handleTemplateSelect('team')}>
+                <CardHeader bgColor={getCardColor('operations')}>
                   <IconWrapper>
                     <Users size={24} strokeWidth={2} />
                   </IconWrapper>

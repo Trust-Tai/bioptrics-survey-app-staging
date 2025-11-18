@@ -335,7 +335,7 @@ const SurveyCatalog: React.FC = () => {
 
           {/* Card 2: Leadership Assessment */}
           <Card>
-            <CardHeader bgColor={getCardColor('operations')}>
+            <CardHeader bgColor={getCardColor('culture')}>
               <IconWrapper>
                 <Target size={24} strokeWidth={2} />
               </IconWrapper>
@@ -348,7 +348,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>8-10 min</span>
               </MetaInfo>
               <ToggleButton 
-                borderColor={getCardColor('operations')} 
+                borderColor={getCardColor('culture')} 
                 hoverBgColor={colors.grayLight}
                 textColor={colors.textDark}
                 defaultBorderColor={colors.borderGray}
@@ -380,13 +380,13 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor={getCardColor('operations')}>Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('culture')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
           {/* Card 3: Organizational Culture */}
           <Card>
-            <CardHeader bgColor={getCardColor('benchmarking')}>
+            <CardHeader bgColor={getCardColor('culture')}>
               <IconWrapper>
                 <BarChart3 size={24} strokeWidth={2} />
               </IconWrapper>
@@ -399,7 +399,7 @@ const SurveyCatalog: React.FC = () => {
                 <span>10-12 min</span>
               </MetaInfo>
               <ToggleButton 
-                borderColor={getCardColor('benchmarking')} 
+                borderColor={getCardColor('culture')} 
                 hoverBgColor={colors.grayLight}
                 textColor={colors.textDark}
                 defaultBorderColor={colors.borderGray}
@@ -431,7 +431,7 @@ const SurveyCatalog: React.FC = () => {
                   </QuestionItem>
                 </QuestionList>
               )}
-              <UseButton bgColor={getCardColor('benchmarking')}>Use This Template →</UseButton>
+              <UseButton bgColor={getCardColor('culture')}>Use This Template →</UseButton>
             </CardContent>
           </Card>
 
