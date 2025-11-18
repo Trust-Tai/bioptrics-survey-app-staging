@@ -42,6 +42,7 @@ const SuiteTitle = styled.h1`
   font-weight: 700;
   color: #1f2933;
   margin: 0 0 22px;
+  display:none;
 `;
 
 const SuiteSubtitle = styled.p`
