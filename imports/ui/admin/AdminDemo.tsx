@@ -8,57 +8,42 @@ const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  padding-top: 48px;
-  background: #f7f5f0;
+  align-items: stretch;
+  background: #ffffff;
 `;
 
-const ContentWrapper = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 48px;
-`;
-
-const SuiteHeader = styled.div`
-  margin-bottom: 35px;
-  text-align: center;
-`;
-
-const LogoWrapper = styled.div`
-  margin-bottom: 16px;
+const HeaderBar = styled.header`
+  padding: 32px 24px 8px;
+  border-bottom: 1px solid #f3f4f6;
   display: flex;
   justify-content: center;
-
-  img {
-    max-width: 350px;
-    width: 100%;
-    height: auto;
-    display: block;
-  }
 `;
 
-const SuiteTitle = styled.h1`
-  font-size: 36px;
-  font-weight: 700;
-  color: #1f2933;
-  margin: 0 0 12px;
-  display:none;
+const BrandLogo = styled.img`
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  display: block;
 `;
 
-const SuiteSubtitle = styled.p`
-  margin: 0;
-  font-size: 25px;
-  line-height: 1.5;
-  color: #4b5563;
+const ContentWrapper = styled.main`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const CardsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 32px;
+  width: 100%;
 
-  @media (max-width: 960px) {
+  @media (max-width: 1024px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
   }
 
   @media (max-width: 640px) {
@@ -74,69 +59,124 @@ const Card = styled.button<{ disabled?: boolean }>`
   background: transparent;
 `;
 
-const CardInner = styled.div<{ disabled?: boolean }>`
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px 20px 20px;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
-  border: 1px solid ${({ disabled }) => (disabled ? '#e5e7eb' : 'rgba(107, 114, 128, 0.18)')};
+const CardInner = styled.div<{ variant: 'pulse' | 'lms' | 'team'; disabled?: boolean }>`
+  height: 400px;
+  width: 300px;
+  max-width: 300px;
+  border-radius: 10px;
+  padding: 40px 25px 25px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.22);
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
   opacity: ${({ disabled }) => (disabled ? 0.75 : 1)};
+  background: ${({ variant }) => {
+    if (variant === 'pulse') {
+      return 'linear-gradient(180deg, rgba(255, 155, 33, 1) 0%, rgba(190, 107, 6, 1) 100%)';
+    }
+    if (variant === 'lms') {
+      return 'linear-gradient(180deg, rgba(50, 91, 155, 1) 0%, rgba(40, 70, 122, 1) 100%)';
+    }
+    return 'linear-gradient(180deg, rgba(255, 207, 81, 1) 0%, rgba(170, 123, 0, 1) 100%)';
+  }};
 
   &:hover {
-    transform: ${({ disabled }) => (disabled ? 'none' : 'translateY(-4px)')};
+    transform: ${({ disabled }) => (disabled ? 'none' : 'translateY(-6px)')};
     box-shadow: ${({ disabled }) =>
-      disabled ? '0 10px 20px rgba(15, 23, 42, 0.04)' : '0 16px 35px rgba(15, 23, 42, 0.10)'};
-    border-color: ${({ disabled }) => (disabled ? '#e5e7eb' : '#e99d48')};
+      disabled ? '0 14px 30px rgba(15, 23, 42, 0.14)' : '0 24px 60px rgba(15, 23, 42, 0.35)'};
   }
 `;
 
-const IconWrapper = styled.div<{ bg: string }>`
-  width: 80px;
+const CardLogoWrapper = styled.div`
+  width: 231px;
   height: 80px;
-  border-radius: 12px;
-  background: ${({ bg }) => bg};
-  display: flex;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.26);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 `;
 
-const IconGlyph = styled.div`
-  font-size: 36px;
+const CardLogo = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 10px;
+`;
+
+const CardBody = styled.div`
+  color: #ffffff;
+`;
+
+const CardSpacer = styled.div`
+  flex: 1;
+`;
+
+const CardBottomPanel = styled.div`
+  width: 100%;
+  max-width: 250px;
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  background: rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(2px);
+`;
+
+const CardActionRow = styled.div`
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+`;
+
+const CardActionText = styled.span`
+  opacity: 0.96;
+`;
+
+const CardActionIcon = styled.span`
+  font-size: 13px;
 `;
 
 const CardTitle = styled.div`
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 6px;
-`;
-
-const CardAction = styled.div`
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 20px;
   font-weight: 700;
-  color: #e99d48;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 `;
 
-const CardMeta = styled.div<{ emphasis?: boolean }>`
+const CardMeta = styled.div`
   font-size: 13px;
+  line-height: 1.55;
+  max-width: 260px;
+`;
+
+const FooterTagline = styled.div`
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const TaglineIcon = styled.img`
+  width: 14px;
+  height: 14px;
+  margin-right: 10px;
+  display: block;
+`;
+
+const TaglineText = styled.div`
+  max-width: 498px;
+  font-size: 14px;
+  line-height: 14px;
+  font-weight: 400;
+  color: rgba(51, 51, 51, 1);
   text-align: center;
-  color: ${({ emphasis }) => (emphasis ? '#9b1c1c' : '#6b7280')};
-  font-weight: ${({ emphasis }) => (emphasis ? 600 : 400)};
-`;
-
-const HelperText = styled.p`
-  margin-top: 16px;
-  font-size: 13px;
-  color: #6b7280;
-  display:none;
 `;
 
 const AdminDemo: React.FC = () => {
@@ -145,57 +185,85 @@ const AdminDemo: React.FC = () => {
   };
 
   return (
-      <PageContainer>
-        <LogoWrapper>
-            <img src="/BIOPTRICS_LOGO_FIXED_BLACK.png" alt="Bioptrics" />
-        </LogoWrapper>
-        <ContentWrapper>
-          <SuiteHeader>
-            <SuiteTitle>Bioptrics Suite</SuiteTitle>
-            <SuiteSubtitle>
-              Empowering workplace wellbeing through data-driven insights and learning
-            </SuiteSubtitle>
-            <HelperText>
-              Use this page in demos to quickly jump into each experience while keeping the admin view open in this tab.
-            </HelperText>
-          </SuiteHeader>
+    <PageContainer>
+      <HeaderBar>
+        <BrandLogo src="/BIOPTRICS_LOGO_FIXED_BLACK.png" alt="Bioptrics" />
+      </HeaderBar>
 
-          <CardsGrid>
-            <Card onClick={() => handleOpen('https://pulse.bioptrics.com')}>
-              <CardInner>
-                <IconWrapper bg="#e99d48">
-                  <IconGlyph>📈</IconGlyph>
-                </IconWrapper>
-                <CardTitle>Bioptrics Pulse</CardTitle>
-                <CardAction>MEASURE</CardAction>
-                <CardMeta>Launch survey insights and organizational pulse analytics.</CardMeta>
-              </CardInner>
-            </Card>
+      <ContentWrapper>
+        <CardsGrid>
+          <Card onClick={() => handleOpen('https://pulse.bioptrics.com')}>
+            <CardInner variant="pulse">
+              <CardLogoWrapper>
+                <CardLogo src="/bioptrics_fixed_black.png" alt="Bioptrics Pulse" />
+              </CardLogoWrapper>
+              <CardSpacer />
+              <CardBottomPanel>
+                <CardBody>
+                  <CardActionRow>
+                    <CardActionText>Measure</CardActionText>
+                    <CardActionIcon>↗</CardActionIcon>
+                  </CardActionRow>
+                  <CardTitle>Bioptrics Pulse</CardTitle>
+                  <CardMeta>
+                    Launch survey insights and organizational pulse analytics.
+                  </CardMeta>
+                </CardBody>
+              </CardBottomPanel>
+            </CardInner>
+          </Card>
 
-            <Card onClick={() => handleOpen('https://lms.bioptrics.com')}>
-              <CardInner>
-                <IconWrapper bg="#325b9b">
-                  <IconGlyph>📚</IconGlyph>
-                </IconWrapper>
-                <CardTitle>Bioptrics LMS</CardTitle>
-                <CardAction>LEARN</CardAction>
-                <CardMeta>Open the learning experience to support capability-building.</CardMeta>
-              </CardInner>
-            </Card>
+          <Card onClick={() => handleOpen('https://lms.bioptrics.com')}>
+            <CardInner variant="lms">
+              <CardLogoWrapper>
+                <CardLogo src="/lms-logo.png" alt="Bioptrics LMS" />
+              </CardLogoWrapper>
+              <CardSpacer />
+              <CardBottomPanel>
+                <CardBody>
+                  <CardActionRow>
+                    <CardActionText>Learn</CardActionText>
+                    <CardActionIcon>↗</CardActionIcon>
+                  </CardActionRow>
+                  <CardTitle>Bioptrics LMS</CardTitle>
+                  <CardMeta>
+                    Open the learning experience to support capability-building.
+                  </CardMeta>
+                </CardBody>
+              </CardBottomPanel>
+            </CardInner>
+          </Card>
 
-            <Card disabled>
-              <CardInner disabled>
-                <IconWrapper bg="#d29b0a">
-                  <IconGlyph>👥</IconGlyph>
-                </IconWrapper>
-                <CardTitle>Bioptrics Team</CardTitle>
-                <CardAction>ENGAGE</CardAction>
-                <CardMeta style={{color: '#fff'}} emphasis>Coming soon</CardMeta>
-              </CardInner>
-            </Card>
-          </CardsGrid>
-        </ContentWrapper>
-      </PageContainer>
+          <Card disabled>
+            <CardInner variant="team" disabled>
+              <CardLogoWrapper>
+                <CardLogo src="/team-logo.png" alt="Bioptrics Team" />
+              </CardLogoWrapper>
+              <CardSpacer />
+              <CardBottomPanel>
+                <CardBody>
+                  <CardActionRow>
+                    <CardActionText>Engage</CardActionText>
+                    <CardActionIcon>↗</CardActionIcon>
+                  </CardActionRow>
+                  <CardTitle>Bioptrics Team</CardTitle>
+                  <CardMeta>
+                    Measure team dynamics and drive performance growth.
+                  </CardMeta>
+                </CardBody>
+              </CardBottomPanel>
+            </CardInner>
+          </Card>
+        </CardsGrid>
+
+        <FooterTagline>
+          <TaglineIcon src="/information_icon.png" alt="Information" />
+          <TaglineText>
+            Empowering workplace wellbeing through data-driven insights and learning
+          </TaglineText>
+        </FooterTagline>
+      </ContentWrapper>
+    </PageContainer>
   );
 };
 
