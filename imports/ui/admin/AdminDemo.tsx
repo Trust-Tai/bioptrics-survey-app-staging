@@ -192,27 +192,6 @@ const AdminDemo: React.FC = () => {
 
       <ContentWrapper>
         <CardsGrid>
-          <Card onClick={() => handleOpen('https://pulse.bioptrics.com')}>
-            <CardInner variant="pulse">
-              <CardLogoWrapper>
-                <CardLogo src="/bioptrics_fixed_black.png" alt="Bioptrics Pulse" />
-              </CardLogoWrapper>
-              <CardSpacer />
-              <CardBottomPanel>
-                <CardBody>
-                  <CardActionRow>
-                    <CardActionText>Measure</CardActionText>
-                    <CardActionIcon>↗</CardActionIcon>
-                  </CardActionRow>
-                  <CardTitle>Bioptrics Pulse</CardTitle>
-                  <CardMeta>
-                    Launch survey insights and organizational pulse analytics.
-                  </CardMeta>
-                </CardBody>
-              </CardBottomPanel>
-            </CardInner>
-          </Card>
-
           <Card onClick={() => handleOpen('https://lms.bioptrics.com')}>
             <CardInner variant="lms">
               <CardLogoWrapper>
@@ -228,6 +207,27 @@ const AdminDemo: React.FC = () => {
                   <CardTitle>Bioptrics LMS</CardTitle>
                   <CardMeta>
                     Open the learning experience to support capability-building.
+                  </CardMeta>
+                </CardBody>
+              </CardBottomPanel>
+            </CardInner>
+          </Card>
+
+          <Card onClick={() => handleOpen('https://pulse.bioptrics.com')}>
+            <CardInner variant="pulse">
+              <CardLogoWrapper>
+                <CardLogo src="/bioptrics_fixed_black.png" alt="Bioptrics Pulse" />
+              </CardLogoWrapper>
+              <CardSpacer />
+              <CardBottomPanel>
+                <CardBody>
+                  <CardActionRow>
+                    <CardActionText>Measure</CardActionText>
+                    <CardActionIcon>↗</CardActionIcon>
+                  </CardActionRow>
+                  <CardTitle>Bioptrics Pulse</CardTitle>
+                  <CardMeta>
+                    Launch survey insights and organizational pulse analytics.
                   </CardMeta>
                 </CardBody>
               </CardBottomPanel>
