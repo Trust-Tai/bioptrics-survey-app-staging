@@ -270,6 +270,53 @@ const SecondaryButton = styled.button`
   }
 `;
 
+// Footer buttons with different styling
+const FooterButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding: 24px 0;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+  }
+`;
+
+const FooterSecondaryButton = styled.button<{ borderColor: string; textColor: string; hoverBgColor: string }>`
+  background: white;
+  color: ${props => props.textColor};
+  border: 1px solid ${props => props.borderColor};
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${props => props.hoverBgColor};
+  }
+`;
+
+const FooterPrimaryButton = styled.button<{ bgColor: string; hoverBgColor: string }>`
+  background: ${props => props.bgColor};
+  color: white;
+  border: 1px solid ${props => props.bgColor};
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${props => props.hoverBgColor};
+    border-color: ${props => props.hoverBgColor};
+  }
+`;
+
 // ============ MAIN COMPONENT ============
 const PolicyCreate: React.FC = () => {
   const navigate = useNavigate();
@@ -299,17 +346,6 @@ const PolicyCreate: React.FC = () => {
               <Title>Create New Policy</Title>
               <Subtitle>Define policy details and distribution settings</Subtitle>
             </HeaderText>
-            <ButtonGroup>
-              <SecondaryButton onClick={handleCancel}>
-                Cancel
-              </SecondaryButton>
-              <SecondaryButton onClick={handleSaveDraft}>
-                Save as Draft
-              </SecondaryButton>
-              <PrimaryButton onClick={handlePublish}>
-                Publish Policy
-              </PrimaryButton>
-            </ButtonGroup>
           </HeaderContent>
         </Header>
 
@@ -465,6 +501,33 @@ const PolicyCreate: React.FC = () => {
               </CheckboxLabel>
             </FormGroup>
           </Section>
+
+          {/* Footer Buttons */}
+          <FooterButtonGroup>
+            <FooterSecondaryButton 
+              onClick={handleCancel}
+              borderColor={colors.borderGray}
+              textColor={colors.textDark}
+              hoverBgColor={colors.grayLight}
+            >
+              Cancel
+            </FooterSecondaryButton>
+            <FooterSecondaryButton 
+              onClick={handleSaveDraft}
+              borderColor={colors.blue}
+              textColor={colors.blue}
+              hoverBgColor={`${colors.blue}10`}
+            >
+              Save as Draft
+            </FooterSecondaryButton>
+            <FooterPrimaryButton 
+              onClick={handlePublish}
+              bgColor={colors.blue}
+              hoverBgColor={`${colors.blue}dd`}
+            >
+              Publish Policy
+            </FooterPrimaryButton>
+          </FooterButtonGroup>
         </ContentWrapper>
       </PageContainer>
     </AdminLayout>
