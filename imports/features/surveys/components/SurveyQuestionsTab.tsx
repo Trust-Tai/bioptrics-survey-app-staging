@@ -471,11 +471,8 @@ useEffect(() => {
       return question;
     }
     
-    // Try to find a version that matches the current survey
-    const versionMatch = question.versions.find((v: any) => v.surveyId === surveyId);
-    if (versionMatch) return versionMatch;
-    
-    // Fall back to the last version in the array
+    // Always return the most recent version (last in array) to ensure we get the latest updates
+    // This ensures that when a question is updated, the UI reflects the latest changes immediately
     return question.versions[question.versions.length - 1];
   };
 

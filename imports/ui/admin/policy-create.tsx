@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FileText, Edit, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -317,10 +317,58 @@ const FooterPrimaryButton = styled.button<{ bgColor: string; hoverBgColor: strin
   }
 `;
 
+const MultiSelectContainer = styled.div`
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background: white;
+`;
+
+const DepartmentOption = styled.label<{ color: string }>`
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: ${props => props.color};
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+  
+  input {
+    margin-right: 8px;
+    cursor: pointer;
+  }
+`;
+
 // ============ MAIN COMPONENT ============
 const PolicyCreate: React.FC = () => {
   const navigate = useNavigate();
   const colors = useDynamicColors();
+  
+  // State for target audience selection
+  const [targetAudience, setTargetAudience] = useState('');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  
+  // Sample departments list (this would typically come from an API)
+  const departments = [
+    'Human Resources',
+    'Information Technology',
+    'Finance & Accounting',
+    'Marketing & Sales',
+    'Operations',
+    'Legal & Compliance',
+    'Research & Development',
+    'Customer Service',
+    'Quality Assurance',
+    'Administration'
+  ];
 
   const handleCancel = () => {
     navigate('/admin/policy-review');
@@ -328,12 +376,32 @@ const PolicyCreate: React.FC = () => {
 
   const handleSaveDraft = () => {
     console.log('Save as draft clicked');
-    // alert('Policy saved as draft!');
+    console.log('Target Audience:', targetAudience);
+    console.log('Selected Departments:', selectedDepartments);
   };
 
   const handlePublish = () => {
     console.log('Publish policy clicked');
-    // alert('Policy published successfully!');
+    console.log('Target Audience:', targetAudience);
+    console.log('Selected Departments:', selectedDepartments);
+  };
+  
+  const handleTargetAudienceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTargetAudience(e.target.value);
+    // Reset selected departments when changing audience type
+    if (e.target.value !== 'dept') {
+      setSelectedDepartments([]);
+    }
+  };
+  
+  const handleDepartmentChange = (departmentName: string) => {
+    setSelectedDepartments(prev => {
+      if (prev.includes(departmentName)) {
+        return prev.filter(dept => dept !== departmentName);
+      } else {
+        return [...prev, departmentName];
+      }
+    });
   };
 
   return (
@@ -467,6 +535,8 @@ const PolicyCreate: React.FC = () => {
             <FormGroup>
               <Label color={colors.textDark}>Target Audience *</Label>
               <Select
+                value={targetAudience}
+                onChange={handleTargetAudienceChange}
                 borderColor={colors.borderGray}
                 focusBorderColor={colors.blue}
               >
@@ -477,6 +547,30 @@ const PolicyCreate: React.FC = () => {
                 <option value="custom">Custom Group</option>
               </Select>
             </FormGroup>
+
+            {/* Conditional Department Selection */}
+            {targetAudience === 'dept' && (
+              <FormGroup>
+                <Label color={colors.textDark}>Select Departments *</Label>
+                <MultiSelectContainer>
+                  {departments.map((department) => (
+                    <DepartmentOption key={department} color={colors.textDark}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDepartments.includes(department)}
+                        onChange={() => handleDepartmentChange(department)}
+                      />
+                      {department}
+                    </DepartmentOption>
+                  ))}
+                </MultiSelectContainer>
+                {selectedDepartments.length > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '14px', color: colors.textMedium }}>
+                    Selected: {selectedDepartments.join(', ')}
+                  </div>
+                )}
+              </FormGroup>
+            )}
 
             <FormGroup>
               <Label color={colors.textDark}>Acknowledgment Deadline</Label>
