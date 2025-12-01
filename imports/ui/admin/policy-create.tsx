@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FileText, Edit, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -270,10 +270,105 @@ const SecondaryButton = styled.button`
   }
 `;
 
+// Footer buttons with different styling
+const FooterButtonGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding: 24px 0;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+  }
+`;
+
+const FooterSecondaryButton = styled.button<{ borderColor: string; textColor: string; hoverBgColor: string }>`
+  background: white;
+  color: ${props => props.textColor};
+  border: 1px solid ${props => props.borderColor};
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${props => props.hoverBgColor};
+  }
+`;
+
+const FooterPrimaryButton = styled.button<{ bgColor: string; hoverBgColor: string }>`
+  background: ${props => props.bgColor};
+  color: white;
+  border: 1px solid ${props => props.bgColor};
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${props => props.hoverBgColor};
+    border-color: ${props => props.hoverBgColor};
+  }
+`;
+
+const MultiSelectContainer = styled.div`
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-height: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background: white;
+`;
+
+const DepartmentOption = styled.label<{ color: string }>`
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: ${props => props.color};
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+  
+  input {
+    margin-right: 8px;
+    cursor: pointer;
+  }
+`;
+
 // ============ MAIN COMPONENT ============
 const PolicyCreate: React.FC = () => {
   const navigate = useNavigate();
   const colors = useDynamicColors();
+  
+  // State for target audience selection
+  const [targetAudience, setTargetAudience] = useState('');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  
+  // Sample departments list (this would typically come from an API)
+  const departments = [
+    'Human Resources',
+    'Information Technology',
+    'Finance & Accounting',
+    'Marketing & Sales',
+    'Operations',
+    'Legal & Compliance',
+    'Research & Development',
+    'Customer Service',
+    'Quality Assurance',
+    'Administration'
+  ];
 
   const handleCancel = () => {
     navigate('/admin/policy-review');
@@ -281,12 +376,32 @@ const PolicyCreate: React.FC = () => {
 
   const handleSaveDraft = () => {
     console.log('Save as draft clicked');
-    // alert('Policy saved as draft!');
+    console.log('Target Audience:', targetAudience);
+    console.log('Selected Departments:', selectedDepartments);
   };
 
   const handlePublish = () => {
     console.log('Publish policy clicked');
-    // alert('Policy published successfully!');
+    console.log('Target Audience:', targetAudience);
+    console.log('Selected Departments:', selectedDepartments);
+  };
+  
+  const handleTargetAudienceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTargetAudience(e.target.value);
+    // Reset selected departments when changing audience type
+    if (e.target.value !== 'dept') {
+      setSelectedDepartments([]);
+    }
+  };
+  
+  const handleDepartmentChange = (departmentName: string) => {
+    setSelectedDepartments(prev => {
+      if (prev.includes(departmentName)) {
+        return prev.filter(dept => dept !== departmentName);
+      } else {
+        return [...prev, departmentName];
+      }
+    });
   };
 
   return (
@@ -299,17 +414,6 @@ const PolicyCreate: React.FC = () => {
               <Title>Create New Policy</Title>
               <Subtitle>Define policy details and distribution settings</Subtitle>
             </HeaderText>
-            <ButtonGroup>
-              <SecondaryButton onClick={handleCancel}>
-                Cancel
-              </SecondaryButton>
-              <SecondaryButton onClick={handleSaveDraft}>
-                Save as Draft
-              </SecondaryButton>
-              <PrimaryButton onClick={handlePublish}>
-                Publish Policy
-              </PrimaryButton>
-            </ButtonGroup>
           </HeaderContent>
         </Header>
 
@@ -431,6 +535,8 @@ const PolicyCreate: React.FC = () => {
             <FormGroup>
               <Label color={colors.textDark}>Target Audience *</Label>
               <Select
+                value={targetAudience}
+                onChange={handleTargetAudienceChange}
                 borderColor={colors.borderGray}
                 focusBorderColor={colors.blue}
               >
@@ -441,6 +547,30 @@ const PolicyCreate: React.FC = () => {
                 <option value="custom">Custom Group</option>
               </Select>
             </FormGroup>
+
+            {/* Conditional Department Selection */}
+            {targetAudience === 'dept' && (
+              <FormGroup>
+                <Label color={colors.textDark}>Select Departments *</Label>
+                <MultiSelectContainer>
+                  {departments.map((department) => (
+                    <DepartmentOption key={department} color={colors.textDark}>
+                      <input
+                        type="checkbox"
+                        checked={selectedDepartments.includes(department)}
+                        onChange={() => handleDepartmentChange(department)}
+                      />
+                      {department}
+                    </DepartmentOption>
+                  ))}
+                </MultiSelectContainer>
+                {selectedDepartments.length > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '14px', color: colors.textMedium }}>
+                    Selected: {selectedDepartments.join(', ')}
+                  </div>
+                )}
+              </FormGroup>
+            )}
 
             <FormGroup>
               <Label color={colors.textDark}>Acknowledgment Deadline</Label>
@@ -465,6 +595,33 @@ const PolicyCreate: React.FC = () => {
               </CheckboxLabel>
             </FormGroup>
           </Section>
+
+          {/* Footer Buttons */}
+          <FooterButtonGroup>
+            <FooterSecondaryButton 
+              onClick={handleCancel}
+              borderColor={colors.borderGray}
+              textColor={colors.textDark}
+              hoverBgColor={colors.grayLight}
+            >
+              Cancel
+            </FooterSecondaryButton>
+            <FooterSecondaryButton 
+              onClick={handleSaveDraft}
+              borderColor={colors.blue}
+              textColor={colors.blue}
+              hoverBgColor={`${colors.blue}10`}
+            >
+              Save as Draft
+            </FooterSecondaryButton>
+            <FooterPrimaryButton 
+              onClick={handlePublish}
+              bgColor={colors.blue}
+              hoverBgColor={`${colors.blue}dd`}
+            >
+              Publish Policy
+            </FooterPrimaryButton>
+          </FooterButtonGroup>
         </ContentWrapper>
       </PageContainer>
     </AdminLayout>
