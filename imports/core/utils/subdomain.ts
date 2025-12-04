@@ -13,7 +13,7 @@ export class SubdomainRouter {
       defaultRoute: '/dashboard'
     },
     {
-      subdomain: 'lms',
+      subdomain: 'pulse-dev',
       moduleId: 'lms',
       defaultRoute: '/dashboard'
     }
