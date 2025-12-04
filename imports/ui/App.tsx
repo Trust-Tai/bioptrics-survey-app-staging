@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Outlet, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import NotFoundPage from './public/components/NotFoundPage';
 import GlobalNotification from '../shared/components/GlobalNotification';
 import { QuestionBuilderPanelProvider } from '../features/questions/contexts/QuestionBuilderPanelContext';
@@ -77,10 +77,16 @@ import KnowledgeCheck from './admin/knowledge-check';
 import RootCauseAnalysis from './admin/root-cause-analysis';
 import WPSDashboard from './admin/wps-dashboard';
 import AdminDemo from './admin/AdminDemo';
+import LMSComingSoon from '/imports/modules/lms/pages/LMSComingSoon';
 
 function RequireAdminAuth() {
+  const location = useLocation();
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_jwt') : null;
+  
   if (!token) {
+    // Store the current location so we can redirect back after login
+    const redirectTo = location.pathname + location.search;
+    localStorage.setItem('admin_redirect_after_login', redirectTo);
     return <Navigate to="/admin-login" replace />;
   }
   return <Outlet />;
@@ -284,6 +290,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/subscription" element={<Subscription />} />
         <Route path="/admin/marketplace/wps-builder" element={<WpsBuilderPage />} />
         <Route path="/admin/migration" element={<MigrationPanel />} />
+        {/* LMS Module Route - Protected by admin authentication */}
+        <Route path="/lms" element={<LMSComingSoon />} />
       </Route>
       {/* Catch-all route for 404 pages */}
       <Route path="*" element={<NotFoundPage />} />

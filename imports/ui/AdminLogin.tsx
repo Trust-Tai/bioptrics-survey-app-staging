@@ -58,7 +58,18 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
           setError(err.reason || 'Not an admin user');
         } else {
           localStorage.setItem('admin_jwt', res.token);
-          onAdminAuth();
+          
+          // Check if there's a stored redirect location
+          const redirectTo = localStorage.getItem('admin_redirect_after_login');
+          if (redirectTo) {
+            // Clear the stored redirect
+            localStorage.removeItem('admin_redirect_after_login');
+            // Redirect to the intended location
+            window.location.href = redirectTo;
+          } else {
+            // Default behavior
+            onAdminAuth();
+          }
         }
       });
     } catch (err: any) {
