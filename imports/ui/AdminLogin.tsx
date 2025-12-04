@@ -64,8 +64,16 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
           if (redirectTo) {
             // Clear the stored redirect
             localStorage.removeItem('admin_redirect_after_login');
-            // Redirect to the intended location
-            window.location.href = redirectTo;
+            
+            // Special handling for subdomain redirects
+            const currentHost = window.location.hostname;
+            if (currentHost.includes('pulse-dev.bioptrics.com') && redirectTo === '/pulse-dev') {
+              // Stay on current subdomain, just redirect to root
+              window.location.href = '/';
+            } else {
+              // Redirect to the intended location
+              window.location.href = redirectTo;
+            }
           } else {
             // Default behavior
             onAdminAuth();
