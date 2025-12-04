@@ -263,20 +263,6 @@ const LMSComingSoon: React.FC = () => {
             complete learning and assessment ecosystem.
           </IntegrationText>
         </IntegrationNote>
-
-        <LaunchInfo>
-          <LaunchTitle>
-            <FiCalendar />
-            Coming Soon
-          </LaunchTitle>
-          <LaunchText>
-            We're working hard to bring you an amazing learning management experience. 
-            The LMS module is currently in development and will be available soon.
-          </LaunchText>
-          <NotifyButton onClick={handleNotifyMe}>
-            Notify Me When Ready
-          </NotifyButton>
-        </LaunchInfo>
       </ContentCard>
     </ComingSoonContainer>
   );
