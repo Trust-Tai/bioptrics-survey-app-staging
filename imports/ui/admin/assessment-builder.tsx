@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Target, Award, TrendingUp, Users } from 'lucide-react';
+import { Target, Award, TrendingUp, Users, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { colors } from './home/theme/colors';
@@ -9,6 +9,28 @@ import { colors } from './home/theme/colors';
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${colors.white};
+`;
+
+const BackToHomeLink = styled.button`
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.9;
+  
+  &:hover {
+    opacity: 1;
+    transform: translateX(-2px);
+  }
 `;
 
 const Header = styled.div`
@@ -237,11 +259,19 @@ const AssessmentBuilder: React.FC = () => {
     }
   };
 
+  const handleBackToHome = () => {
+    navigate('/admin/home#culture');
+  };
+
   return (
     <AdminLayout>
       <PageContainer>
         <Header>
           <HeaderContent>
+            <BackToHomeLink onClick={handleBackToHome}>
+              <ArrowLeft size={16} />
+              Back to Culture Assessments
+            </BackToHomeLink>
             <Title>Assessment Builder</Title>
             <Subtitle>Create comprehensive assessments with automated scoring</Subtitle>
           </HeaderContent>

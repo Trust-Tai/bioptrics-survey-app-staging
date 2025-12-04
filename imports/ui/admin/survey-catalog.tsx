@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Heart, Target, BarChart3, TrendingUp, Gift, MessageCircle, Search as SearchIcon } from 'lucide-react';
+import { Heart, Target, BarChart3, TrendingUp, Gift, MessageCircle, Search as SearchIcon, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { colors } from './home/theme/colors';
 
@@ -8,6 +9,28 @@ import { colors } from './home/theme/colors';
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${colors.white};
+`;
+
+const BackToHomeLink = styled.button`
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.9;
+  
+  &:hover {
+    opacity: 1;
+    transform: translateX(-2px);
+  }
 `;
 
 const Header = styled.div`
@@ -246,10 +269,15 @@ const UseButton = styled.button<{ bgColor: string }>`
 
 // ============ MAIN COMPONENT ============
 const SurveyCatalog: React.FC = () => {
+  const navigate = useNavigate();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   const toggleQuestions = (id: string) => {
     setExpandedCard(expandedCard === id ? null : id);
+  };
+
+  const handleBackToHome = () => {
+    navigate('/admin/home#culture');
   };
 
   return (
@@ -257,6 +285,10 @@ const SurveyCatalog: React.FC = () => {
       <PageContainer>
         <Header>
           <HeaderContent>
+            <BackToHomeLink onClick={handleBackToHome}>
+              <ArrowLeft size={16} />
+              Back to Culture Assessments
+            </BackToHomeLink>
             <Title>Pre-built Survey Solutions</Title>
             <Subtitle>Expert-designed surveys ready to deploy in minutes</Subtitle>
           </HeaderContent>

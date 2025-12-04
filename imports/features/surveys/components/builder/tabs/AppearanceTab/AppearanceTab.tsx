@@ -5,11 +5,10 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
 import { Meteor } from 'meteor/meteor';
+import { SurveyDoc } from '../../../api/surveys';
+import { SurveyThemeType } from '../../../../survey-themes/api/surveyThemes';
 
 // Styled components
-
-let Survey : any;
-let Theme : any;
 
 // Default consent text if none provided
 const defaultConsentText = `
@@ -335,9 +334,9 @@ const ToggleLabel = styled.span`
 
 // Props interface
 interface AppearanceSectionProps {
-  survey: Survey | any;
-  setSurvey: (survey: Survey) => void;
-  surveyThemes: Theme[];
+  survey: SurveyDoc | any;
+  setSurvey: (survey: SurveyDoc) => void;
+  surveyThemes: SurveyThemeType[];
   themeSearchQuery: string;
   setThemeSearchQuery: (query: string) => void;
   currentThemePage: number;
@@ -362,7 +361,7 @@ interface AppearanceSectionProps {
   hasUnsavedChanges: boolean;
   setHasUnsavedChanges: (has: boolean) => void;
   triggerAutoSave: () => void;
-  handlePreview: (theme: Theme) => void;
+  handlePreview: (theme: SurveyThemeType) => void;
   // Consent Screen props
   consentTitle: string;
   setConsentTitle: (title: string) => void;
@@ -439,8 +438,6 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   setShowConsentScreen,
 }) => {
   const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'consent' | 'thankYou'>('branding');
-  const [showRemoveLogoConfirm, setShowRemoveLogoConfirm] = useState(false);
-  const [showRemoveFeaturedImageConfirm, setShowRemoveFeaturedImageConfirm] = useState(false);
   const [showConsentPreview, setShowConsentPreview] = useState(false);
 
   // Memoized filtered and paginated themes
@@ -475,15 +472,15 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
           const result = event.target?.result as string;
           if (field === 'thankYouIcon') {
             setThankYouIcon(result);
-            setSurvey(prev => ({
+            setSurvey((prev: SurveyDoc) => ({
               ...prev,
               thankYou: { ...prev?.thankYou, icon: result },
-            } as Survey));
+            } as SurveyDoc));
           } else {
-            setSurvey(prev => ({
+            setSurvey((prev: SurveyDoc) => ({
               ...prev,
               [field]: result,
-            } as Survey));
+            } as SurveyDoc));
           }
           setHasUnsavedChanges(true);
           triggerAutoSave();
@@ -499,20 +496,18 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
     (field: 'logo' | 'featuredImage' | 'thankYouIcon') => {
       if (field === 'thankYouIcon') {
         setThankYouIcon(null);
-        setSurvey(prev => ({
+        setSurvey((prev: SurveyDoc) => ({
           ...prev,
           thankYou: { ...prev?.thankYou, icon: null },
-        } as Survey));
+        } as SurveyDoc));
       } else {
-        setSurvey(prev => ({
+        setSurvey((prev: SurveyDoc) => ({
           ...prev,
           [field]: undefined,
-        } as Survey));
+        } as SurveyDoc));
       }
       setHasUnsavedChanges(true);
       triggerAutoSave();
-      if (field === 'logo') setShowRemoveLogoConfirm(false);
-      else if (field === 'featuredImage') setShowRemoveFeaturedImageConfirm(false);
     },
     [setSurvey, setThankYouIcon, setHasUnsavedChanges, triggerAutoSave]
   );
@@ -520,7 +515,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   // Handle layout change
   const handleLayoutChange = useCallback(
     (layout: 'multiStep' | 'allOnOnePage') => {
-      setSurvey(prev => ({ ...prev, layout } as Survey));
+      setSurvey((prev: SurveyDoc) => ({ ...prev, layout } as SurveyDoc));
       if (surveyId) {
         Meteor.call('surveys.update', surveyId, { layout }, (error: Meteor.Error) => {
           if (error) {
@@ -539,7 +534,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   const handleThemeSelect = useCallback(
     (themeId: string) => {
       setSelectedTheme(themeId);
-      setSurvey(prev => ({ ...prev, selectedTheme: themeId } as Survey));
+      setSurvey((prev: SurveyDoc) => ({ ...prev, selectedTheme: themeId } as SurveyDoc));
       setHasUnsavedChanges(true);
       triggerAutoSave();
     },
@@ -550,13 +545,13 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
   const handleToggleConsentScreen = useCallback(() => {
     const newValue = !showConsentScreen;
     setShowConsentScreen(newValue);
-    setSurvey(prev => ({
+    setSurvey((prev: SurveyDoc) => ({
       ...prev,
       consentScreen: { 
         ...prev?.consentScreen, 
         showConsentScreen: newValue 
       },
-    }) as Survey);
+    }) as SurveyDoc);
     setHasUnsavedChanges(true);
     triggerAutoSave();
   }, [showConsentScreen, setSurvey, setHasUnsavedChanges, triggerAutoSave]);
@@ -628,7 +623,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                 {survey?.logo && (
                   <ImagePreview>
                     <img src={survey.logo} alt="Logo Preview" style={{ maxWidth: 180, maxHeight: 80 }} />
-                    <RemoveButton onClick={() => setShowRemoveLogoConfirm(true)} title="Remove logo">
+                    <RemoveButton onClick={() => handleRemoveImage('logo')} title="Remove logo">
                       <FiX />
                     </RemoveButton>
                   </ImagePreview>
@@ -653,7 +648,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                 {survey?.featuredImage && (
                   <ImagePreview>
                     <img src={survey.featuredImage} alt="Featured Image Preview" style={{ maxWidth: 180, maxHeight: 120 }} />
-                    <RemoveButton onClick={() => setShowRemoveFeaturedImageConfirm(true)} title="Remove featured image">
+                    <RemoveButton onClick={() => handleRemoveImage('featuredImage')} title="Remove featured image">
                       <FiX />
                     </RemoveButton>
                   </ImagePreview>
@@ -914,6 +909,7 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M2.03711 12.3224C2.03711 12.3224 5.03711 5.32239 12.0371 5.32239C19.0371 5.32239 22.0371 12.3224 22.0371 12.3224C22.0371 12.3224 19.0371 19.3224 12.0371 19.3224C5.03711 19.3224 2.03711 12.3224 2.03711 12.3224Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M2.03711 12.3224C2.03711 12.3224 5.03711 5.32239 12.0371 5.32239C19.0371 5.32239 22.0371 12.3224 22.0371 12.3224C22.0371 12.3224 19.0371 19.3224 12.0371 19.3224C5.03711 19.3224 2.03711 12.3224 2.03711 12.3224Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M12.0371 15.3224C13.6939 15.3224 15.0371 13.9793 15.0371 12.3224C15.0371 10.6656 13.6939 9.32239 12.0371 9.32239C10.3802 9.32239 9.03711 10.6656 9.03711 12.3224C9.03711 13.9793 10.3802 15.3224 12.0371 15.3224Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     Preview
@@ -1055,10 +1051,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={consentTitle}
             onChange={(e) => {
               setConsentTitle(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 consentScreen: { ...prev?.consentScreen, title: e.target.value },
-              }) as Survey);
+              }) as SurveyDoc);
               setHasUnsavedChanges(true);
               triggerAutoSave();
             }}
@@ -1078,13 +1074,13 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                 checked={showAnonymityNotice}
                 onChange={(e) => {
                   setShowAnonymityNotice(e.target.checked);
-                  setSurvey(prev => ({
+                  setSurvey((prev: SurveyDoc) => ({
                     ...prev,
                     consentScreen: { 
                       ...prev?.consentScreen, 
                       showAnonymityNotice: e.target.checked 
                     },
-                  }) as Survey);
+                  }) as SurveyDoc);
                   setHasUnsavedChanges(true);
                   triggerAutoSave();
                 }}
@@ -1105,13 +1101,13 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                 value={anonymityNoticeText}
                 onChange={(e) => {
                   setAnonymityNoticeText(e.target.value);
-                  setSurvey(prev => ({
+                  setSurvey((prev: SurveyDoc) => ({
                     ...prev,
                     consentScreen: { 
                       ...prev?.consentScreen, 
                       anonymityNoticeText: e.target.value 
                     },
-                  }) as Survey);
+                  }) as SurveyDoc);
                   setHasUnsavedChanges(true);
                   triggerAutoSave();
                 }}
@@ -1136,10 +1132,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                 value={consentText}
                 onChange={(value) => {
                   setConsentText(value);
-                  setSurvey(prev => ({
+                  setSurvey((prev: SurveyDoc) => ({
                     ...prev,
                     consentScreen: { ...prev?.consentScreen, consentText: value },
-                  }) as Survey);
+                  }) as SurveyDoc);
                   setHasUnsavedChanges(true);
                   triggerAutoSave();
                 }}
@@ -1171,10 +1167,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={privacyNoticeUrl}
             onChange={(e) => {
               setPrivacyNoticeUrl(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 consentScreen: { ...prev?.consentScreen, privacyNoticeUrl: e.target.value },
-              }) as Survey);
+              }) as SurveyDoc);
               setHasUnsavedChanges(true);
               triggerAutoSave();
             }}
@@ -1193,10 +1189,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={privacyLinkText}
             onChange={(e) => {
               setPrivacyLinkText(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 consentScreen: { ...prev?.consentScreen, privacyLinkText: e.target.value },
-              }) as Survey);
+              }) as SurveyDoc);
               setHasUnsavedChanges(true);
               triggerAutoSave();
             }}
@@ -1215,10 +1211,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={privacyInfoText}
             onChange={(e) => {
               setPrivacyInfoText(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 consentScreen: { ...prev?.consentScreen, privacyInfoText: e.target.value },
-              }) as Survey);
+              }) as SurveyDoc);
               setHasUnsavedChanges(true);
               triggerAutoSave();
             }}
@@ -1237,10 +1233,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={continueButtonText}
             onChange={(e) => {
               setContinueButtonText(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 consentScreen: { ...prev?.consentScreen, continueButtonText: e.target.value },
-              }) as Survey);
+              }) as SurveyDoc);
               setHasUnsavedChanges(true);
               triggerAutoSave();
             }}
@@ -1259,10 +1255,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={checkboxText}
             onChange={(e) => {
               setCheckboxText(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 consentScreen: { ...prev?.consentScreen, checkboxText: e.target.value },
-              }) as Survey);
+              }) as SurveyDoc);
               setHasUnsavedChanges(true);
               triggerAutoSave();
             }}
@@ -1503,10 +1499,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={thankYouTitle}
             onChange={(e) => {
               setThankYouTitle(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 thankYou: { ...prev?.thankYou, title: e.target.value },
-              } as Survey));
+              } as SurveyDoc));
               setHasUnsavedChanges(true);
             }}
           />
@@ -1522,10 +1518,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
             value={thankYouDetails}
             onChange={(e) => {
               setThankYouDetails(e.target.value);
-              setSurvey(prev => ({
+              setSurvey((prev: SurveyDoc) => ({
                 ...prev,
                 thankYou: { ...prev?.thankYou, details: e.target.value },
-              } as Survey));
+              } as SurveyDoc));
               setHasUnsavedChanges(true);
             }}
           />
@@ -1567,10 +1563,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                         const newBoxes = [...thankYouBoxes];
                         newBoxes[index].selected = e.target.checked;
                         setThankYouBoxes(newBoxes);
-                        setSurvey(prev => ({
+                        setSurvey((prev: SurveyDoc) => ({
                           ...prev,
                           thankYou: { ...prev?.thankYou, boxes: newBoxes },
-                        } as Survey));
+                        } as SurveyDoc));
                         setHasUnsavedChanges(true);
                       }}
                       style={{ marginRight: 6, accentColor: 'var(--color-primary, #552a47)', width: 16, height: 16 }}
@@ -1587,10 +1583,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                       const newBoxes = [...thankYouBoxes];
                       newBoxes[index].title = e.target.value;
                       setThankYouBoxes(newBoxes);
-                      setSurvey(prev => ({
+                      setSurvey((prev: SurveyDoc) => ({
                         ...prev,
                         thankYou: { ...prev?.thankYou, boxes: newBoxes },
-                      } as Survey));
+                      } as SurveyDoc));
                       setHasUnsavedChanges(true);
                     }}
                   />
@@ -1604,10 +1600,10 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
                       const newBoxes = [...thankYouBoxes];
                       newBoxes[index].subtitle = e.target.value;
                       setThankYouBoxes(newBoxes);
-                      setSurvey(prev => ({
+                      setSurvey((prev: SurveyDoc) => ({
                         ...prev,
                         thankYou: { ...prev?.thankYou, boxes: newBoxes },
-                      } as Survey));
+                      } as SurveyDoc));
                       setHasUnsavedChanges(true);
                     }}
                   />
@@ -1706,20 +1702,6 @@ const AppearanceTab: React.FC<AppearanceSectionProps> = ({
       )}
 
       {/* Modals for Remove Confirmation (implement as needed) */}
-      {showRemoveLogoConfirm && (
-        <div>
-          {/* Modal JSX with confirm/cancel for removing logo */}
-          <button onClick={() => handleRemoveImage('logo')}>Confirm</button>
-          <button onClick={() => setShowRemoveLogoConfirm(false)}>Cancel</button>
-        </div>
-      )}
-      {showRemoveFeaturedImageConfirm && (
-        <div>
-          {/* Modal JSX with confirm/cancel for removing featured image */}
-          <button onClick={() => handleRemoveImage('featuredImage')}>Confirm</button>
-          <button onClick={() => setShowRemoveFeaturedImageConfirm(false)}>Cancel</button>
-        </div>
-      )}
     </Panel>
   );
 };

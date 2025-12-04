@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
 import HeroSection from './components/HeroSection';
@@ -28,6 +28,22 @@ const MainContent = styled.div`
 `;
 
 const AdminHomePage: React.FC = () => {
+  useEffect(() => {
+    // Check if there's a hash in the URL and scroll to that section
+    const hash = window.location.hash;
+    if (hash) {
+      // Remove the # from the hash
+      const elementId = hash.substring(1);
+      // Wait a bit for the page to render
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, []);
+
   return (
     <AdminLayout>
       <PageContainer>

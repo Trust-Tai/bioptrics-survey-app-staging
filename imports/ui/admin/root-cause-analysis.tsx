@@ -6,8 +6,10 @@ import {
   GitBranch,
   Search,
   FileText,
-  Target
+  Target,
+  ArrowLeft
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { colors } from './home/theme/colors';
 
@@ -15,6 +17,28 @@ import { colors } from './home/theme/colors';
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${colors.white};
+`;
+
+const BackToHomeLink = styled.button`
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.9;
+  
+  &:hover {
+    opacity: 1;
+    transform: translateX(-2px);
+  }
 `;
 
 const Header = styled.div`
@@ -40,11 +64,14 @@ const Header = styled.div`
 const HeaderContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
+`;
+
+const HeaderMainRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  z-index: 1;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -258,6 +285,12 @@ const EmptySubtext = styled.div`
 
 // ============ MAIN COMPONENT ============
 const RootCauseAnalysis: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleBackToHome = () => {
+    navigate('/admin/home#benchmarking');
+  };
+
   const methods = [
     {
       id: 1,
@@ -305,14 +338,20 @@ const RootCauseAnalysis: React.FC = () => {
       <PageContainer>
         <Header>
           <HeaderContent>
-            <HeaderText>
-              <Title>Root Cause Analysis</Title>
-              <Subtitle>Identify and address the underlying causes of issues</Subtitle>
-            </HeaderText>
-            <StartButton>
-              <Plus size={18} />
-              Start New Analysis
-            </StartButton>
+            <BackToHomeLink onClick={handleBackToHome}>
+              <ArrowLeft size={16} />
+              Back to Benchmarking Tools
+            </BackToHomeLink>
+            <HeaderMainRow>
+              <HeaderText>
+                <Title>Root Cause Analysis</Title>
+                <Subtitle>Identify and address the underlying causes of issues</Subtitle>
+              </HeaderText>
+              <StartButton>
+                <Plus size={18} />
+                Start New Analysis
+              </StartButton>
+            </HeaderMainRow>
           </HeaderContent>
         </Header>
 

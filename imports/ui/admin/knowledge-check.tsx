@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Brain, Plus, TrendingUp, Target, Zap, BookOpen, Award } from 'lucide-react';
+import { Brain, Plus, TrendingUp, Target, Zap, BookOpen, Award, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
 import { colors } from './home/theme/colors';
 
@@ -8,6 +9,28 @@ import { colors } from './home/theme/colors';
 const PageContainer = styled.div`
   min-height: 100vh;
   background: ${colors.white};
+`;
+
+const BackToHomeLink = styled.button`
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0.9;
+  
+  &:hover {
+    opacity: 1;
+    transform: translateX(-2px);
+  }
 `;
 
 const Header = styled.div`
@@ -33,11 +56,14 @@ const Header = styled.div`
 const HeaderContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
+`;
+
+const HeaderMainRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  z-index: 1;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -287,19 +313,31 @@ const EmptySubtext = styled.div`
 
 // ============ MAIN COMPONENT ============
 const KnowledgeCheck: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleBackToHome = () => {
+    navigate('/admin/home#benchmarking');
+  };
+
   return (
     <AdminLayout>
       <PageContainer>
         <Header>
           <HeaderContent>
-            <HeaderText>
-              <Title>Knowledge Check</Title>
-              <Subtitle>Create quick checks to verify understanding and drive learning</Subtitle>
-            </HeaderText>
-            <CreateButton>
-              <Plus size={18} />
-              Create Check
-            </CreateButton>
+            <BackToHomeLink onClick={handleBackToHome}>
+              <ArrowLeft size={16} />
+              Back to Benchmarking Tools
+            </BackToHomeLink>
+            <HeaderMainRow>
+              <HeaderText>
+                <Title>Knowledge Check</Title>
+                <Subtitle>Create quick checks to verify understanding and drive learning</Subtitle>
+              </HeaderText>
+              <CreateButton>
+                <Plus size={18} />
+                Create Check
+              </CreateButton>
+            </HeaderMainRow>
           </HeaderContent>
         </Header>
 

@@ -84,7 +84,7 @@ const ToolkitGrid: React.FC = () => {
         const categoryTools = toolsData.filter(tool => tool.category === category.id);
         
         return (
-          <GridContainer key={category.id}>
+          <GridContainer key={category.id} id={category.id}>
             <SectionHeader>
               <SectionTitle>{category.title}</SectionTitle>
               <SectionSubtitle>{category.description}</SectionSubtitle>

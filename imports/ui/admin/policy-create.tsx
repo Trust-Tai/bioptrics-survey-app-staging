@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FileText, Edit, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -202,6 +202,52 @@ const FileButton = styled.label`
   }
 `;
 
+const AttachedFile = styled.div`
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const AttachedFileInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+`;
+
+const AttachedFileName = styled.span`
+  font-size: 14px;
+  color: ${colors.textDark};
+  font-weight: 500;
+`;
+
+const AttachedFileSize = styled.span`
+  font-size: 13px;
+  color: ${colors.textMedium};
+`;
+
+const RemoveFileButton = styled.button`
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #fee;
+  }
+`;
+
 const Checkbox = styled.input`
   margin-right: 8px;
   cursor: pointer;
@@ -273,6 +319,7 @@ const SecondaryButton = styled.button`
 // ============ MAIN COMPONENT ============
 const PolicyCreate: React.FC = () => {
   const navigate = useNavigate();
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
   const handleCancel = () => {
     navigate('/admin/policy-review');
@@ -286,6 +333,28 @@ const PolicyCreate: React.FC = () => {
   const handlePublish = () => {
     console.log('Publish policy clicked');
     // alert('Policy published successfully!');
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAttachedFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setAttachedFile(null);
+    // Reset the file input
+    const fileInput = document.getElementById('policy-file') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   return (
@@ -375,7 +444,19 @@ const PolicyCreate: React.FC = () => {
               <FileButton htmlFor="policy-file">
                 📎 Choose File (PDF, DOC, DOCX)
               </FileButton>
-              <FileInput id="policy-file" type="file" accept=".pdf,.doc,.docx" />
+              <FileInput id="policy-file" type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
+              {attachedFile && (
+                <AttachedFile>
+                  <AttachedFileInfo>
+                    <span>📄</span>
+                    <div>
+                      <AttachedFileName>{attachedFile.name}</AttachedFileName>
+                      <AttachedFileSize> ({formatFileSize(attachedFile.size)})</AttachedFileSize>
+                    </div>
+                  </AttachedFileInfo>
+                  <RemoveFileButton onClick={handleRemoveFile}>Remove</RemoveFileButton>
+                </AttachedFile>
+              )}
             </FormGroup>
 
             <FormGroup>
