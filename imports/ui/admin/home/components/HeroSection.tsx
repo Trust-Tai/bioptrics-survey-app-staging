@@ -1,22 +1,22 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { colors } from '../theme/colors';
+import { useDynamicColors } from '../theme/useDynamicColors';
 
 const HeroContainer = styled.section`
   padding: 60px 0 40px 0;
 `;
 
-const WelcomeBadge = styled.div`
+const WelcomeBadge = styled.div<{ bgColor: string; textColor: string }>`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: ${colors.orange};
+  background: ${props => props.bgColor};
   padding: 8px 16px;
   border-radius: 20px;
   margin-bottom: 24px;
   font-size: 14px;
-  color: ${colors.white};
+  color: ${props => props.textColor};
   font-weight: 500;
 `;
 
@@ -24,17 +24,17 @@ const Icon = styled.span`
   font-size: 16px;
 `;
 
-const Title = styled.h1`
+const Title = styled.h1<{ color: string }>`
   font-size: 42px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 20px 0;
   line-height: 1.2;
 `;
 
-const Description = styled.div`
+const Description = styled.div<{ color: string }>`
   font-size: 16px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   line-height: 1.6;
   margin-bottom: 32px;
   max-width: 700px;
@@ -46,8 +46,8 @@ const ButtonGroup = styled.div`
   align-items: center;
 `;
 
-const PrimaryButton = styled.button`
-  background: ${colors.blue};
+const PrimaryButton = styled.button<{ bgColor: string; hoverColor: string }>`
+  background: ${props => props.bgColor};
   color: white;
   border: none;
   border-radius: 6px;
@@ -58,14 +58,14 @@ const PrimaryButton = styled.button`
   transition: background-color 0.2s;
   
   &:hover {
-    background: ${colors.hover.blue};
+    background: ${props => props.hoverColor};
   }
 `;
 
-const SecondaryButton = styled.button`
+const SecondaryButton = styled.button<{ textColor: string; borderColor: string; hoverBorderColor: string; hoverTextColor: string }>`
   background: transparent;
-  color: ${colors.textMedium};
-  border: 1px solid ${colors.borderGray};
+  color: ${props => props.textColor};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 6px;
   padding: 14px 28px;
   font-size: 15px;
@@ -77,13 +77,14 @@ const SecondaryButton = styled.button`
   gap: 8px;
   
   &:hover {
-    border-color: ${colors.blue};
-    color: ${colors.blue};
+    border-color: ${props => props.hoverBorderColor};
+    color: ${props => props.hoverTextColor};
   }
 `;
 
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
+  const colors = useDynamicColors();
 
   const handleViewDashboard = () => {
     navigate('/admin/home');
@@ -96,22 +97,33 @@ const HeroSection: React.FC = () => {
 
   return (
     <HeroContainer>
-      <WelcomeBadge>
-        <Icon>🏠</Icon>
+      <WelcomeBadge bgColor={colors.orange} textColor={colors.white}>
         Welcome to Bioptrics Pulse
       </WelcomeBadge>
       
-      <Title>Build a Culture Where Everyone Thrives</Title>
+      <Title color={colors.textDark}>Build a Culture Where Everyone Thrives</Title>
       
-      <Description>
+      <Description color={colors.textMedium}>
         Transform your workplace with data-driven insights and proven methodologies.
         <br />
         Each tool below guides you through best practices, making culture development simple and impactful.
       </Description>
       
       <ButtonGroup>
-        <PrimaryButton onClick={handleViewDashboard}>View Dashboard</PrimaryButton>
-        <SecondaryButton onClick={handleTakeTour}>
+        <PrimaryButton 
+          bgColor={colors.blue} 
+          hoverColor={colors.hover.blue}
+          onClick={handleViewDashboard}
+        >
+          View Dashboard
+        </PrimaryButton>
+        <SecondaryButton 
+          textColor={colors.textMedium}
+          borderColor={colors.borderGray}
+          hoverBorderColor={colors.blue}
+          hoverTextColor={colors.blue}
+          onClick={handleTakeTour}
+        >
           <Icon>▶</Icon>
           Take a Tour
         </SecondaryButton>

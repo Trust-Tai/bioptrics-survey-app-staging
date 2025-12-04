@@ -24,6 +24,13 @@ const ModalOverlay = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
+  overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    align-items: flex-start;
+    padding: 8px;
+  }
 `;
 
 const ModalContainer = styled.div`
@@ -33,6 +40,23 @@ const ModalContainer = styled.div`
   width: 500px;
   max-width: 90%;
   padding: 24px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+    margin: 8px 0;
+    max-height: calc(100vh - 16px);
+    border-radius: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+    border-radius: 8px;
+  }
 `;
 
 const ModalHeader = styled.div`
@@ -40,10 +64,19 @@ const ModalHeader = styled.div`
   font-weight: 600;
   margin-bottom: 16px;
   color: var(--color-text, #333);
+  
+  @media (max-width: 480px) {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
 `;
 
 const ModalBody = styled.div`
   margin-bottom: 24px;
+  
+  @media (max-width: 480px) {
+    margin-bottom: 16px;
+  }
 `;
 
 const WarningSection = styled.div`
@@ -55,6 +88,12 @@ const WarningSection = styled.div`
   color: var(--color-text, #333);
   font-size: 14px;
   line-height: 1.5;
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
 `;
 
 const ExportLink = styled.a`
@@ -149,6 +188,11 @@ const OptionSection = styled.div<{ highlighted?: boolean }>`
   border-radius: 6px;
   background-color: ${props => props.highlighted ? '#fff8e1' : '#f8f9fa'};
   border-left: ${props => props.highlighted ? '4px solid #ffc107' : '4px solid transparent'};
+  
+  @media (max-width: 480px) {
+    padding: 10px;
+    margin-bottom: 12px;
+  }
 `;
 
 const OptionIcon = styled.div`
@@ -182,6 +226,13 @@ const ModalFooter = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-top: 24px;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    margin-top: 16px;
+  }
 `;
 
 const CheckboxLabel = styled.label`
@@ -195,6 +246,11 @@ const CheckboxLabel = styled.label`
 const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: space-between;
+  }
 `;
 
 const Button = styled.button`
@@ -203,6 +259,12 @@ const Button = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  
+  @media (max-width: 480px) {
+    padding: 12px 20px;
+    flex: 1;
+    font-size: 14px;
+  }
 `;
 
 const CancelButton = styled(Button)`

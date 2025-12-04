@@ -19,7 +19,7 @@ declare module 'meteor/meteor' {
       country?: string;
       postalCode?: string;
       onboardingComplete?: boolean;
-      themePreference?: string;
+      // themePreference removed - using CSS variables only
     }
   }
 }
@@ -280,50 +280,5 @@ Meteor.methods({
     }
   },
 
-  'users.updateThemePreference': async function(themeId: string) {
-    // Check if the user is logged in
-    if (!this.userId) {
-      throw new Meteor.Error('not-authorized', 'You must be logged in to update theme preference');
-    }
-
-    // Validate theme ID
-    check(themeId, String);
-    
-    const validThemes = ['bioptrics', 'terracotta', 'slate', 'golden', 'steel'];
-    if (!validThemes.includes(themeId)) {
-      throw new Meteor.Error('invalid-theme', 'Invalid theme ID provided');
-    }
-
-    try {
-      // Update user's theme preference in profile
-      await Meteor.users.updateAsync(this.userId, {
-        $set: {
-          'profile.themePreference': themeId
-        }
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating theme preference:', error);
-      throw new Meteor.Error('server-error', 'Failed to update theme preference');
-    }
-  },
-
-  'users.getThemePreference': async function() {
-    // Check if the user is logged in
-    if (!this.userId) {
-      return 'bioptrics'; // Default theme for non-logged users
-    }
-
-    try {
-      const user = await Meteor.users.findOneAsync(this.userId, {
-        fields: { 'profile.themePreference': 1 }
-      });
-
-      return user?.profile?.themePreference || 'bioptrics';
-    } catch (error) {
-      console.error('Error getting theme preference:', error);
-      return 'bioptrics'; // Default theme on error
-    }
-  }
+  // Theme preference methods removed - using CSS variables only
 });

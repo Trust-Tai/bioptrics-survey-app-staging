@@ -1,40 +1,18 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Bell, Plus, Mail, TrendingUp, Users, Eye, Edit, Archive, ArrowLeft } from 'lucide-react';
+import { Bell, Plus, Mail, TrendingUp, Users, Eye, Edit, Archive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const BackToHomeLink = styled.button`
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0;
-  margin-bottom: 16px;
-  border-radius: 6px;
-  transition: all 0.2s;
-  opacity: 0.9;
-  
-  &:hover {
-    opacity: 1;
-    transform: translateX(-2px);
-  }
-`;
-
-const Header = styled.div`
-  background: linear-gradient(135deg, #325b9b 0%, #4a7bc8 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -56,14 +34,11 @@ const Header = styled.div`
 const HeaderContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1;
-`;
-
-const HeaderMainRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 1;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -134,7 +109,7 @@ const StatsGrid = styled.div`
   }
 `;
 
-const StatCard = styled.div`
+const StatCard = styled.div<{ hoverBorderColor: string }>`
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -142,49 +117,49 @@ const StatCard = styled.div`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #325b9b;
+    border-color: ${props => props.hoverBorderColor};
     box-shadow: 0 2px 8px rgba(50, 91, 155, 0.1);
   }
 `;
 
-const StatIconWrapper = styled.div`
+const StatIconWrapper = styled.div<{ bgColor: string; iconColor: string }>`
   width: 48px;
   height: 48px;
-  background: #f0f6ff;
+  background: ${props => props.bgColor};
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #325b9b;
+  color: ${props => props.iconColor};
   margin-bottom: 12px;
 `;
 
-const StatValue = styled.div`
+const StatValue = styled.div<{ color: string }>`
   font-size: 28px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 4px;
 `;
 
-const StatLabel = styled.div`
+const StatLabel = styled.div<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
 `;
 
 const SectionHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 20px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 4px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
 `;
 
@@ -194,7 +169,7 @@ const NotificationList = styled.div`
   gap: 16px;
 `;
 
-const NotificationCard = styled.div`
+const NotificationCard = styled.div<{ hoverBorderColor: string }>`
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -202,7 +177,7 @@ const NotificationCard = styled.div`
   transition: all 0.2s;
   
   &:hover {
-    border-color: #325b9b;
+    border-color: ${props => props.hoverBorderColor};
     box-shadow: 0 2px 8px rgba(50, 91, 155, 0.1);
   }
 `;
@@ -223,19 +198,19 @@ const NotificationLeft = styled.div`
   flex: 1;
 `;
 
-const NotificationTitle = styled.h3`
+const NotificationTitle = styled.h3<{ color: string }>`
   font-size: 18px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 8px 0;
   display: flex;
   align-items: center;
   gap: 8px;
 `;
 
-const NotificationMeta = styled.div`
+const NotificationMeta = styled.div<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   display: flex;
   align-items: center;
   gap: 16px;
@@ -265,9 +240,9 @@ const StatusBadge = styled.span<{ status: 'sent' | 'draft' | 'scheduled' }>`
   }};
 `;
 
-const NotificationMessage = styled.p`
+const NotificationMessage = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 12px 0;
   line-height: 1.5;
 `;
@@ -276,9 +251,9 @@ const ProgressBarContainer = styled.div`
   margin: 16px 0;
 `;
 
-const ProgressLabel = styled.div`
+const ProgressLabel = styled.div<{ color: string }>`
   font-size: 13px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
@@ -292,10 +267,10 @@ const ProgressBar = styled.div`
   overflow: hidden;
 `;
 
-const ProgressFill = styled.div<{ percentage: number }>`
+const ProgressFill = styled.div<{ percentage: number; primaryColor: string }>`
   width: ${props => props.percentage}%;
   height: 100%;
-  background: linear-gradient(90deg, #325b9b 0%, #4a7bc8 100%);
+  background: linear-gradient(90deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 4px;
   transition: width 0.3s;
 `;
@@ -310,10 +285,10 @@ const ActionButtons = styled.div`
   }
 `;
 
-const ActionButton = styled.button`
+const ActionButton = styled.button<{ textColor: string; borderColor: string; hoverBgColor: string; hoverBorderColor: string }>`
   background: white;
-  color: ${colors.textDark};
-  border: 1px solid ${colors.borderGray};
+  color: ${props => props.textColor};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 14px;
@@ -325,8 +300,8 @@ const ActionButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: ${colors.grayLight};
-    border-color: #325b9b;
+    background: ${props => props.hoverBgColor};
+    border-color: ${props => props.hoverBorderColor};
   }
 `;
 
@@ -338,33 +313,33 @@ const EmptyState = styled.div`
   text-align: center;
 `;
 
-const EmptyIcon = styled.div`
+const EmptyIcon = styled.div<{ bgColor: string; iconColor: string }>`
   width: 64px;
   height: 64px;
-  background: ${colors.grayLight};
+  background: ${props => props.bgColor};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: ${colors.textMedium};
+  color: ${props => props.iconColor};
 `;
 
-const EmptyMessage = styled.div`
+const EmptyMessage = styled.div<{ color: string }>`
   font-size: 16px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const EmptySubtext = styled.div`
+const EmptySubtext = styled.div<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin-bottom: 24px;
 `;
 
-const EmptyButton = styled.button`
-  background: #325b9b;
+const EmptyButton = styled.button<{ bgColor: string; hoverBgColor: string }>`
+  background: ${props => props.bgColor};
   color: white;
   border: none;
   border-radius: 8px;
@@ -378,13 +353,14 @@ const EmptyButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: #274a7d;
+    background: ${props => props.hoverBgColor};
   }
 `;
 
 // ============ MAIN COMPONENT ============
 const ChangeNotificationDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const colors = useDynamicColors();
 
   // Static data for notifications
   const notifications = [
@@ -428,73 +404,63 @@ const ChangeNotificationDashboard: React.FC = () => {
     navigate('/admin/change-notification/create');
   };
 
-  const handleBackToHome = () => {
-    navigate('/admin/home#operations');
-  };
-
   return (
     <AdminLayout>
-      <PageContainer>
+      <PageContainer bgColor={colors.white}>
         {/* Header */}
-        <Header>
+        <Header primaryColor={colors.blue}>
           <HeaderContent>
-            <BackToHomeLink onClick={handleBackToHome}>
-              <ArrowLeft size={16} />
-              Back to Operations and Governance
-            </BackToHomeLink>
-            <HeaderMainRow>
-              <HeaderText>
-                <Title>Change Notifications</Title>
-                <Subtitle>Track organizational change communications</Subtitle>
-              </HeaderText>
-              <CreateButton onClick={handleCreateNotification}>
-                <Plus size={18} />
-                Create Notification
-              </CreateButton>
-            </HeaderMainRow>
+            <HeaderText>
+              <Title>Change Notifications</Title>
+              <Subtitle>Track organizational change communications</Subtitle>
+            </HeaderText>
+            <CreateButton onClick={handleCreateNotification}>
+              <Plus size={18} />
+              Create Notification
+            </CreateButton>
           </HeaderContent>
         </Header>
 
         <ContentWrapper>
           {/* Statistics Cards */}
           <StatsGrid>
-            <StatCard>
-              <StatIconWrapper>
+            <StatCard hoverBorderColor={colors.blue}>
+              <StatIconWrapper bgColor={`${colors.blue}26`} iconColor={colors.blue}>
                 <Mail size={24} />
               </StatIconWrapper>
-              <StatValue>{stats.totalSent}</StatValue>
-              <StatLabel>Total Sent</StatLabel>
+              <StatValue color={colors.textDark}>{stats.totalSent}</StatValue>
+              <StatLabel color={colors.textMedium}>Total Sent</StatLabel>
             </StatCard>
 
-            <StatCard>
-              <StatIconWrapper>
+            <StatCard hoverBorderColor={colors.blue}>
+              <StatIconWrapper bgColor={`${colors.blue}26`} iconColor={colors.blue}>
                 <Bell size={24} />
               </StatIconWrapper>
-              <StatValue>{stats.pendingReads}</StatValue>
-              <StatLabel>Pending Reads</StatLabel>
+              <StatValue color={colors.textDark}>{stats.pendingReads}</StatValue>
+              <StatLabel color={colors.textMedium}>Pending Reads</StatLabel>
             </StatCard>
 
-            <StatCard>
-              <StatIconWrapper>
+            <StatCard hoverBorderColor={colors.blue}>
+              <StatIconWrapper bgColor={`${colors.blue}26`} iconColor={colors.blue}>
                 <TrendingUp size={24} />
               </StatIconWrapper>
-              <StatValue>{stats.readRate}%</StatValue>
-              <StatLabel>Read Rate</StatLabel>
+              <StatValue color={colors.textDark}>{stats.readRate}%</StatValue>
+              <StatLabel color={colors.textMedium}>Read Rate</StatLabel>
             </StatCard>
 
-            <StatCard>
-              <StatIconWrapper>
+            <StatCard hoverBorderColor={colors.blue}>
+              <StatIconWrapper bgColor={`${colors.blue}26`} iconColor={colors.blue}>
                 <Users size={24} />
               </StatIconWrapper>
-              <StatValue>{stats.totalRecipients}</StatValue>
-              <StatLabel>Total Recipients</StatLabel>
+              <StatValue color={colors.textDark}>{stats.totalRecipients}</StatValue>
+              <StatLabel color={colors.textMedium}>Total Recipients</StatLabel>
             </StatCard>
           </StatsGrid>
 
           {/* Notifications List */}
           <SectionHeader>
-            <SectionTitle>Recent Notifications</SectionTitle>
-            <SectionSubtitle>View and manage your change notifications</SectionSubtitle>
+            <SectionTitle color={colors.textDark}>Recent Notifications</SectionTitle>
+            <SectionSubtitle color={colors.textMedium}>View and manage your change notifications</SectionSubtitle>
           </SectionHeader>
 
           {notifications.length > 0 ? (
@@ -503,14 +469,14 @@ const ChangeNotificationDashboard: React.FC = () => {
                 const readPercentage = Math.round((notification.read / notification.recipients) * 100);
                 
                 return (
-                  <NotificationCard key={notification.id}>
+                  <NotificationCard key={notification.id} hoverBorderColor={colors.blue}>
                     <NotificationHeader>
                       <NotificationLeft>
-                        <NotificationTitle>
+                        <NotificationTitle color={colors.textDark}>
                           <Bell size={20} />
                           {notification.title}
                         </NotificationTitle>
-                        <NotificationMeta>
+                        <NotificationMeta color={colors.textMedium}>
                           <span>Sent on {new Date(notification.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           <span>•</span>
                           <span>{notification.recipients} recipients</span>
@@ -521,28 +487,43 @@ const ChangeNotificationDashboard: React.FC = () => {
                       </StatusBadge>
                     </NotificationHeader>
 
-                    <NotificationMessage>{notification.message}</NotificationMessage>
+                    <NotificationMessage color={colors.textMedium}>{notification.message}</NotificationMessage>
 
                     <ProgressBarContainer>
-                      <ProgressLabel>
+                      <ProgressLabel color={colors.textMedium}>
                         <span>Read Status</span>
                         <span>{notification.read}/{notification.recipients} ({readPercentage}%)</span>
                       </ProgressLabel>
                       <ProgressBar>
-                        <ProgressFill percentage={readPercentage} />
+                        <ProgressFill percentage={readPercentage} primaryColor={colors.blue} />
                       </ProgressBar>
                     </ProgressBarContainer>
 
                     <ActionButtons>
-                      <ActionButton>
+                      <ActionButton 
+                        textColor={colors.textDark}
+                        borderColor={colors.borderGray}
+                        hoverBgColor={colors.grayLight}
+                        hoverBorderColor={colors.blue}
+                      >
                         <Eye size={16} />
                         View Details
                       </ActionButton>
-                      <ActionButton>
+                      <ActionButton 
+                        textColor={colors.textDark}
+                        borderColor={colors.borderGray}
+                        hoverBgColor={colors.grayLight}
+                        hoverBorderColor={colors.blue}
+                      >
                         <Edit size={16} />
                         Edit
                       </ActionButton>
-                      <ActionButton>
+                      <ActionButton 
+                        textColor={colors.textDark}
+                        borderColor={colors.borderGray}
+                        hoverBgColor={colors.grayLight}
+                        hoverBorderColor={colors.blue}
+                      >
                         <Archive size={16} />
                         Archive
                       </ActionButton>
@@ -553,12 +534,16 @@ const ChangeNotificationDashboard: React.FC = () => {
             </NotificationList>
           ) : (
             <EmptyState>
-              <EmptyIcon>
+              <EmptyIcon bgColor={colors.grayLight} iconColor={colors.textMedium}>
                 <Bell size={32} />
               </EmptyIcon>
-              <EmptyMessage>No notifications yet</EmptyMessage>
-              <EmptySubtext>Create your first change notification to get started</EmptySubtext>
-              <EmptyButton onClick={handleCreateNotification}>
+              <EmptyMessage color={colors.textDark}>No notifications yet</EmptyMessage>
+              <EmptySubtext color={colors.textMedium}>Create your first change notification to get started</EmptySubtext>
+              <EmptyButton 
+                bgColor={colors.blue}
+                hoverBgColor={colors.hover.blue}
+                onClick={handleCreateNotification}
+              >
                 <Plus size={18} />
                 Create Notification
               </EmptyButton>

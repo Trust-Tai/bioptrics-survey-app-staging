@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import * as LucideIcons from 'lucide-react';
 import { ToolData } from '../data/toolsData';
-import { colors } from '../theme/colors';
+import { useCardColors } from '../theme/useDynamicColors';
 
 interface ToolCardProps {
   tool: ToolData;
@@ -102,9 +102,9 @@ const StatValue = styled.div<{ isSuccessRate?: boolean }>`
   color: ${props => props.isSuccessRate ? '#4caf50' : '#8ba5b0'};
 `;
 
-const StatLabel = styled.div`
+const StatLabel = styled.div<{ color: string }>`
   font-size: 12px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   font-weight: 500;
 `;
 
@@ -113,13 +113,13 @@ const FeaturesSection = styled.div`
   flex-grow: 1;
 `;
 
-const FeaturesTitle = styled.div`
+const FeaturesTitle = styled.div<{ color: string }>`
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
-  color: ${colors.textDark};
+  color: ${props => props.color};
 `;
 
 const FeaturesList = styled.ul`
@@ -128,12 +128,12 @@ const FeaturesList = styled.ul`
   margin: 0;
 `;
 
-const FeatureItem = styled.li<{ bgColor?: string }>`
+const FeatureItem = styled.li<{ bgColor?: string; textColor: string }>`
   font-size: 13px;
   margin-bottom: 8px;
   padding-left: 24px;
   position: relative;
-  color: ${colors.textMedium};
+  color: ${props => props.textColor};
   
   &::before {
     content: '✓';
@@ -166,17 +166,17 @@ const TimeItem = styled.div`
   text-align: center;
 `;
 
-const TimeLabel = styled.div`
+const TimeLabel = styled.div<{ color: string }>`
   font-size: 11px;
   margin-bottom: 6px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   font-weight: 500;
 `;
 
-const TimeValue = styled.div`
+const TimeValue = styled.div<{ color: string }>`
   font-size: 13px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
 `;
 
 const DeployButton = styled.button<{ bgColor?: string }>`
@@ -200,9 +200,16 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick }) => {
   // Dynamically get the Lucide icon component
   const IconComponent = (LucideIcons as any)[tool.icon] || LucideIcons.HelpCircle;
   
+  // Get dynamic card colors based on theme
+  const { cardColor, cardBgColor } = useCardColors(tool.cardColor, tool.cardBgColor);
+  
+  // Static text colors (don't change with theme)
+  const textMedium = '#6c757d';
+  const textDark = '#2c3e50';
+  
   return (
     <Card onClick={onClick}>
-      <CardHeader bgColor={tool.cardColor}>
+      <CardHeader bgColor={cardColor}>
         <Badge>{tool.badge}</Badge>
         <IconWrapper>
           <IconComponent size={24} strokeWidth={2} />
@@ -212,39 +219,45 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onClick }) => {
       </CardHeader>
       
       <CardContent>
-        <StatsContainer bgColor={tool.cardBgColor}>
+        <StatsContainer bgColor={cardBgColor}>
           <StatItem>
             <StatValue isSuccessRate={false}>{tool.stats.deployments}</StatValue>
-            <StatLabel>Deployments</StatLabel>
+            <StatLabel color={textMedium}>Deployments</StatLabel>
           </StatItem>
           <StatItem>
             <StatValue isSuccessRate={true}>{tool.stats.successRate}%</StatValue>
-            <StatLabel>Success Rate</StatLabel>
+            <StatLabel color={textMedium}>Success Rate</StatLabel>
           </StatItem>
         </StatsContainer>
         
         <FeaturesSection>
-          <FeaturesTitle>KEY FEATURES</FeaturesTitle>
+          <FeaturesTitle color={textDark}>KEY FEATURES</FeaturesTitle>
           <FeaturesList>
             {tool.features.map((feature, index) => (
-              <FeatureItem bgColor={tool.cardColor} key={index}>{feature}</FeatureItem>
+              <FeatureItem 
+                bgColor={cardColor} 
+                textColor={textMedium}
+                key={index}
+              >
+                {feature}
+              </FeatureItem>
             ))}
           </FeaturesList>
         </FeaturesSection>
         
         <div>
-          <TimeInfo bgColor={tool.cardBgColor}>
+          <TimeInfo bgColor={cardBgColor}>
             <TimeItem>
-              <TimeLabel>Setup Time</TimeLabel>
-              <TimeValue>{tool.setupTime}</TimeValue>
+              <TimeLabel color={textMedium}>Setup Time</TimeLabel>
+              <TimeValue color={textDark}>{tool.setupTime}</TimeValue>
             </TimeItem>
             <TimeItem>
-              <TimeLabel>Time to Insights</TimeLabel>
-              <TimeValue>{tool.timeToInsights}</TimeValue>
+              <TimeLabel color={textMedium}>Time to Insights</TimeLabel>
+              <TimeValue color={textDark}>{tool.timeToInsights}</TimeValue>
             </TimeItem>
           </TimeInfo>
           
-          <DeployButton bgColor={tool.cardColor}>{tool.buttonText}</DeployButton>
+          <DeployButton bgColor={cardColor}>{tool.buttonText}</DeployButton>
         </div>
       </CardContent>
     </Card>

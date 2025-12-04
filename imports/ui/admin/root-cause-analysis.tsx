@@ -6,43 +6,19 @@ import {
   GitBranch,
   Search,
   FileText,
-  Target,
-  ArrowLeft
+  Target
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const BackToHomeLink = styled.button`
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0;
-  margin-bottom: 16px;
-  border-radius: 6px;
-  transition: all 0.2s;
-  opacity: 0.9;
-  
-  &:hover {
-    opacity: 1;
-    transform: translateX(-2px);
-  }
-`;
-
-const Header = styled.div`
-  background: linear-gradient(135deg, ${colors.yellow} 0%, #f0b429 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -64,14 +40,11 @@ const Header = styled.div`
 const HeaderContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1;
-`;
-
-const HeaderMainRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 1;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -135,16 +108,16 @@ const SectionHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 20px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 4px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
 `;
 
@@ -259,37 +232,33 @@ const EmptyState = styled.div`
   text-align: center;
 `;
 
-const EmptyIcon = styled.div`
+const EmptyIcon = styled.div<{ bgColor: string; iconColor: string }>`
   width: 64px;
   height: 64px;
-  background: ${colors.grayLight};
+  background: ${props => props.bgColor};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: ${colors.textMedium};
+  color: ${props => props.iconColor};
 `;
 
-const EmptyMessage = styled.div`
+const EmptyMessage = styled.div<{ color: string }>`
   font-size: 16px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const EmptySubtext = styled.div`
+const EmptySubtext = styled.div<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
 `;
 
 // ============ MAIN COMPONENT ============
 const RootCauseAnalysis: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleBackToHome = () => {
-    navigate('/admin/home#benchmarking');
-  };
+  const colors = useDynamicColors();
 
   const methods = [
     {
@@ -297,7 +266,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: List,
       title: '5 Whys Analysis',
       description: 'Iteratively ask \'why\' to uncover root causes',
-      bgColor: '#ed6801',
+      bgColor: colors.category.culture,
       steps: [
         'Define the problem',
         'Ask why it happened',
@@ -310,7 +279,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: GitBranch,
       title: 'Fishbone Diagram',
       description: 'Visual cause-and-effect analysis',
-      bgColor: '#325b9b',
+      bgColor: colors.category.operations,
       steps: [
         'Define the problem',
         'Identify categories',
@@ -323,7 +292,7 @@ const RootCauseAnalysis: React.FC = () => {
       icon: Search,
       title: 'Fault Tree Analysis',
       description: 'Top-down deductive failure analysis',
-      bgColor: '#d29b0a',
+      bgColor: colors.category.benchmarking,
       steps: [
         'Define top event',
         'Identify immediate causes',
@@ -335,23 +304,17 @@ const RootCauseAnalysis: React.FC = () => {
 
   return (
     <AdminLayout>
-      <PageContainer>
-        <Header>
+      <PageContainer bgColor={colors.white}>
+        <Header primaryColor={colors.yellow}>
           <HeaderContent>
-            <BackToHomeLink onClick={handleBackToHome}>
-              <ArrowLeft size={16} />
-              Back to Benchmarking Tools
-            </BackToHomeLink>
-            <HeaderMainRow>
-              <HeaderText>
-                <Title>Root Cause Analysis</Title>
-                <Subtitle>Identify and address the underlying causes of issues</Subtitle>
-              </HeaderText>
-              <StartButton>
-                <Plus size={18} />
-                Start New Analysis
-              </StartButton>
-            </HeaderMainRow>
+            <HeaderText>
+              <Title>Root Cause Analysis</Title>
+              <Subtitle>Identify and address the underlying causes of issues</Subtitle>
+            </HeaderText>
+            <StartButton>
+              <Plus size={18} />
+              Start New Analysis
+            </StartButton>
           </HeaderContent>
         </Header>
 
@@ -359,8 +322,8 @@ const RootCauseAnalysis: React.FC = () => {
           {/* Select Analysis Method Section */}
           <Section>
             <SectionHeader>
-              <SectionTitle>Select Analysis Method</SectionTitle>
-              <SectionSubtitle>Choose the framework that best fits your situation</SectionSubtitle>
+              <SectionTitle color={colors.textDark}>Select Analysis Method</SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>Choose the framework that best fits your situation</SectionSubtitle>
             </SectionHeader>
 
             <MethodGrid>
@@ -391,16 +354,16 @@ const RootCauseAnalysis: React.FC = () => {
           {/* Recent Analyses Section */}
           <Section>
             <SectionHeader>
-              <SectionTitle>Recent Analyses</SectionTitle>
-              <SectionSubtitle>Track your ongoing and completed root cause analyses</SectionSubtitle>
+              <SectionTitle color={colors.textDark}>Recent Analyses</SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>Track your ongoing and completed root cause analyses</SectionSubtitle>
             </SectionHeader>
 
             <EmptyState>
-              <EmptyIcon>
+              <EmptyIcon bgColor={colors.grayLight} iconColor={colors.textMedium}>
                 <FileText size={32} />
               </EmptyIcon>
-              <EmptyMessage>No analyses started yet</EmptyMessage>
-              <EmptySubtext>Select a method above to begin your first root cause analysis</EmptySubtext>
+              <EmptyMessage color={colors.textDark}>No analyses started yet</EmptyMessage>
+              <EmptySubtext color={colors.textMedium}>Select a method above to begin your first root cause analysis</EmptySubtext>
             </EmptyState>
           </Section>
         </ContentWrapper>

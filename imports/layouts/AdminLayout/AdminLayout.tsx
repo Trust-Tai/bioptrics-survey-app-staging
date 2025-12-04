@@ -28,7 +28,7 @@ import {
 } from 'react-icons/fi';
 import styled from 'styled-components';
 import { ColorThemeProvider, useColorTheme } from '/imports/contexts/ColorThemeContext';
-import { ColorPalette } from '/imports/shared/components/ColorPalette';
+// ColorPalette import removed - no longer using color switching
 
 // Define interface for sidebar link items
 interface SidebarLink {
@@ -51,6 +51,7 @@ const getNavigationGroups = (getTerminology: (key: any) => string): NavigationGr
     label: null,
     items: [
       { to: '/admin/home', label: 'Home', icon: FiHome },
+      // { to: '/admin/demo', label: 'Suite Demo', icon: FaChartPie },
       { to: '/admin/analytics/dashboard', label: 'Analytics', icon: FaChartPie }
     ]
   },
@@ -383,7 +384,7 @@ const Footer = styled.footer<FooterProps>`
   left: 0;
   right: 0;
   z-index: 100;
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
 `;
@@ -654,8 +655,7 @@ const AdminLayoutInner: React.FC<{ children: React.ReactNode }> = ({ children })
           <div style={{ flex: 1 }}>{children}</div>
         </MainContent>
         
-        {/* Color Theme Palette - Floating at top right */}
-        <ColorPalette />
+        {/* Color Theme Palette removed - no longer needed */}
         
         <Footer collapsed={collapsed}>
           Made with <HeartIcon>❤️</HeartIcon> by Bioptrics — for bold teams building better workplaces.

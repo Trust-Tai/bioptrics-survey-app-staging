@@ -3,105 +3,37 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
   
-  <!-- Early theme initialization to prevent color flash -->
+  <!-- Fixed theme initialization - no theme switching -->
   <script>
     (function() {
-      // Define available themes (exactly matching ColorThemeContext)
-      const themes = {
-        bioptrics: {
-          primary: '#542A46',
-          secondary: '#3B1D31',
-          accent: '#A9A59D',
-          background: '#f8f9fa',
-          text: '#2e2e2e',
-          sidebar: 'transparent',
-          sidebarText: '#2c2c2c'
-        },
-        terracotta: {
-          primary: '#be5f41',
-          secondary: '#8a4329',
-          accent: '#A9A59D',
-          background: '#f8f9fa',
-          text: '#2e2e2e',
-          sidebar: 'transparent',
-          sidebarText: '#2c2c2c'
-        },
-        slate: {
-          primary: '#a6a6a6',
-          secondary: '#7a7a7a',
-          accent: '#A9A59D',
-          background: '#f8f9fa',
-          text: '#2e2e2e',
-          sidebar: 'transparent',
-          sidebarText: '#2c2c2c'
-        },
-        golden: {
-          primary: '#fcca5e',
-          secondary: '#e6b54a',
-          accent: '#A9A59D',
-          background: '#f8f9fa',
-          text: '#2e2e2e',
-          sidebar: 'transparent',
-          sidebarText: '#2c2c2c'
-        },
-        steel: {
-          primary: '#5a8596',
-          secondary: '#456a7a',
-          accent: '#A9A59D',
-          background: '#f8f9fa',
-          text: '#2e2e2e',
-          sidebar: 'transparent',
-          sidebarText: '#2c2c2c'
-        },
-        // Legacy theme mappings for backward compatibility
-        default: {
-          primary: '#542A46',
-          secondary: '#3B1D31',
-          accent: '#A9A59D',
-          background: '#f8f9fa',
-          text: '#2e2e2e',
-          sidebar: 'transparent',
-          sidebarText: '#2c2c2c'
-        }
+      // Fixed theme colors - no switching allowed
+      const fixedTheme = {
+        primary: '#e99d48',
+        secondary: '#c55501',
+        accent: '#d29b0a',
+        background: '#f8f9fa',
+        text: '#2e2e2e',
+        sidebar: 'transparent',
+        sidebarText: '#2c2c2c'
       };
       
-      // Try to get saved theme from localStorage
-      let selectedTheme = themes.bioptrics; // fallback
-      let themeSource = 'fallback';
-      
-      try {
-        const savedThemeId = localStorage.getItem('admin-color-theme');
-        console.log('Saved theme ID from localStorage:', savedThemeId);
-        
-        if (savedThemeId && themes[savedThemeId]) {
-          selectedTheme = themes[savedThemeId];
-          themeSource = 'localStorage';
-          console.log('Loaded theme from localStorage:', savedThemeId);
-        } else if (savedThemeId) {
-          console.log('Theme ID not found in themes object:', savedThemeId, 'Available:', Object.keys(themes));
-        }
-      } catch (e) {
-        console.log('localStorage access failed:', e);
-      }
-      
-      // Apply theme colors to CSS custom properties immediately
+      // Apply fixed theme colors to CSS custom properties immediately
       const root = document.documentElement;
-      root.style.setProperty('--color-primary', selectedTheme.primary);
-      root.style.setProperty('--color-secondary', selectedTheme.secondary);
-      root.style.setProperty('--color-accent', selectedTheme.accent);
-      root.style.setProperty('--color-background', selectedTheme.background);
-      root.style.setProperty('--color-text', selectedTheme.text);
-      root.style.setProperty('--color-sidebar', selectedTheme.sidebar);
-      root.style.setProperty('--color-sidebar-text', selectedTheme.sidebarText);
-      root.style.setProperty('--bs-primary', selectedTheme.primary);
-      root.style.setProperty('--bs-secondary', selectedTheme.secondary);
+      root.style.setProperty('--color-primary', fixedTheme.primary);
+      root.style.setProperty('--color-secondary', fixedTheme.secondary);
+      root.style.setProperty('--color-accent', fixedTheme.accent);
+      root.style.setProperty('--color-background', fixedTheme.background);
+      root.style.setProperty('--color-text', fixedTheme.text);
+      root.style.setProperty('--color-sidebar', fixedTheme.sidebar);
+      root.style.setProperty('--color-sidebar-text', fixedTheme.sidebarText);
+      root.style.setProperty('--bs-primary', fixedTheme.primary);
+      root.style.setProperty('--bs-secondary', fixedTheme.secondary);
       
-      console.log('🎨 Early Script - CSS Variables applied:', {
-        primary: selectedTheme.primary,
-        secondary: selectedTheme.secondary,
-        sidebar: selectedTheme.sidebar,
-        sidebarText: selectedTheme.sidebarText,
-        source: themeSource,
+      console.log('🎨 Fixed Theme - CSS Variables applied:', {
+        primary: fixedTheme.primary,
+        secondary: fixedTheme.secondary,
+        sidebar: fixedTheme.sidebar,
+        sidebarText: fixedTheme.sidebarText,
         timestamp: new Date().toISOString()
       });
       

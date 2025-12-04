@@ -1,40 +1,17 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Brain, Plus, TrendingUp, Target, Zap, BookOpen, Award, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Brain, Plus, TrendingUp, Target, Zap, BookOpen, Award } from 'lucide-react';
 import AdminLayout from '../../layouts/AdminLayout/AdminLayout';
-import { colors } from './home/theme/colors';
+import { useDynamicColors } from './home/theme/useDynamicColors';
 
 // ============ STYLED COMPONENTS ============
-const PageContainer = styled.div`
+const PageContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: ${colors.white};
+  background: ${props => props.bgColor};
 `;
 
-const BackToHomeLink = styled.button`
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 0;
-  margin-bottom: 16px;
-  border-radius: 6px;
-  transition: all 0.2s;
-  opacity: 0.9;
-  
-  &:hover {
-    opacity: 1;
-    transform: translateX(-2px);
-  }
-`;
-
-const Header = styled.div`
-  background: linear-gradient(135deg, ${colors.yellow} 0%, #f0b429 100%);
+const Header = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px 24px;
   margin: 24px;
@@ -56,14 +33,11 @@ const Header = styled.div`
 const HeaderContent = styled.div`
   max-width: 1400px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1;
-`;
-
-const HeaderMainRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 1;
   
   @media (max-width: 768px) {
     flex-direction: column;
@@ -127,16 +101,16 @@ const SectionHeader = styled.div`
   margin-bottom: 24px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ color: string }>`
   font-size: 20px;
   font-weight: 700;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin: 0 0 4px 0;
 `;
 
-const SectionSubtitle = styled.p`
+const SectionSubtitle = styled.p<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
   margin: 0;
 `;
 
@@ -236,25 +210,25 @@ const FormGroup = styled.div`
   }
 `;
 
-const Label = styled.label`
+const Label = styled.label<{ color: string }>`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const Input = styled.input`
+const Input = styled.input<{ borderColor: string; focusBorderColor: string }>`
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid ${colors.borderGray};
+  border: 1px solid ${props => props.borderColor};
   border-radius: 8px;
   font-size: 15px;
   transition: border-color 0.2s;
   
   &:focus {
     outline: none;
-    border-color: ${colors.yellow};
+    border-color: ${props => props.focusBorderColor};
   }
   
   &::placeholder {
@@ -262,9 +236,9 @@ const Input = styled.input`
   }
 `;
 
-const BuildButton = styled.button`
+const BuildButton = styled.button<{ bgColor: string; hoverBgColor: string }>`
   width: 100%;
-  background: ${colors.yellow};
+  background: ${props => props.bgColor};
   color: white;
   border: none;
   border-radius: 8px;
@@ -275,7 +249,7 @@ const BuildButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: ${colors.hover.yellow};
+    background: ${props => props.hoverBgColor};
   }
 `;
 
@@ -287,57 +261,47 @@ const EmptyState = styled.div`
   text-align: center;
 `;
 
-const EmptyIcon = styled.div`
+const EmptyIcon = styled.div<{ bgColor: string; iconColor: string }>`
   width: 64px;
   height: 64px;
-  background: ${colors.grayLight};
+  background: ${props => props.bgColor};
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  color: ${colors.textMedium};
+  color: ${props => props.iconColor};
 `;
 
-const EmptyMessage = styled.div`
+const EmptyMessage = styled.div<{ color: string }>`
   font-size: 16px;
   font-weight: 600;
-  color: ${colors.textDark};
+  color: ${props => props.color};
   margin-bottom: 8px;
 `;
 
-const EmptySubtext = styled.div`
+const EmptySubtext = styled.div<{ color: string }>`
   font-size: 14px;
-  color: ${colors.textMedium};
+  color: ${props => props.color};
 `;
 
 // ============ MAIN COMPONENT ============
 const KnowledgeCheck: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleBackToHome = () => {
-    navigate('/admin/home#benchmarking');
-  };
+  const colors = useDynamicColors();
 
   return (
     <AdminLayout>
-      <PageContainer>
-        <Header>
+      <PageContainer bgColor={colors.white}>
+        <Header primaryColor={colors.yellow}>
           <HeaderContent>
-            <BackToHomeLink onClick={handleBackToHome}>
-              <ArrowLeft size={16} />
-              Back to Benchmarking Tools
-            </BackToHomeLink>
-            <HeaderMainRow>
-              <HeaderText>
-                <Title>Knowledge Check</Title>
-                <Subtitle>Create quick checks to verify understanding and drive learning</Subtitle>
-              </HeaderText>
-              <CreateButton>
-                <Plus size={18} />
-                Create Check
-              </CreateButton>
-            </HeaderMainRow>
+            <HeaderText>
+              <Title>Knowledge Check</Title>
+              <Subtitle>Create quick checks to verify understanding and drive learning</Subtitle>
+            </HeaderText>
+            <CreateButton>
+              <Plus size={18} />
+              Create Check
+            </CreateButton>
           </HeaderContent>
         </Header>
 
@@ -345,13 +309,13 @@ const KnowledgeCheck: React.FC = () => {
           {/* Choose Check Type Section */}
           <Section>
             <SectionHeader>
-              <SectionTitle>Choose Check Type</SectionTitle>
-              <SectionSubtitle>Select the format that best fits your needs</SectionSubtitle>
+              <SectionTitle color={colors.textDark}>Choose Check Type</SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>Select the format that best fits your needs</SectionSubtitle>
             </SectionHeader>
 
             <CheckTypeGrid>
               {/* Quick Quiz */}
-              <CheckTypeCard bgColor="#325b9b">
+              <CheckTypeCard bgColor={colors.category.operations}>
                 <CardTop>
                   <IconWrapper>
                     <Zap size={24} />
@@ -368,7 +332,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Knowledge Test */}
-              <CheckTypeCard bgColor="#325b9b">
+              <CheckTypeCard bgColor={colors.category.operations}>
                 <CardTop>
                   <IconWrapper>
                     <BookOpen size={24} />
@@ -385,7 +349,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Skill Check */}
-              <CheckTypeCard bgColor="#ed6801">
+              <CheckTypeCard bgColor={colors.category.culture}>
                 <CardTop>
                   <IconWrapper>
                     <Target size={24} />
@@ -402,7 +366,7 @@ const KnowledgeCheck: React.FC = () => {
               </CheckTypeCard>
 
               {/* Certification Check */}
-              <CheckTypeCard bgColor="#ed6801">
+              <CheckTypeCard bgColor={colors.category.culture}>
                 <CardTop>
                   <IconWrapper>
                     <Award size={24} />
@@ -423,38 +387,52 @@ const KnowledgeCheck: React.FC = () => {
           {/* Build Custom Check Section */}
           <Section>
             <SectionHeader>
-              <SectionTitle>Or Build Custom Check</SectionTitle>
-              <SectionSubtitle>Start from scratch with full control</SectionSubtitle>
+              <SectionTitle color={colors.textDark}>Or Build Custom Check</SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>Start from scratch with full control</SectionSubtitle>
             </SectionHeader>
 
             <CustomCheckForm>
               <FormGroup>
-                <Label>Check Name</Label>
-                <Input placeholder="e.g., Safety Procedures Quiz" />
+                <Label color={colors.textDark}>Check Name</Label>
+                <Input 
+                  placeholder="e.g., Safety Procedures Quiz" 
+                  borderColor={colors.borderGray}
+                  focusBorderColor={colors.yellow}
+                />
               </FormGroup>
 
               <FormGroup>
-                <Label>Number of Questions</Label>
-                <Input type="number" placeholder="5" />
+                <Label color={colors.textDark}>Number of Questions</Label>
+                <Input 
+                  type="number" 
+                  placeholder="5" 
+                  borderColor={colors.borderGray}
+                  focusBorderColor={colors.yellow}
+                />
               </FormGroup>
 
-              <BuildButton>Start Building</BuildButton>
+              <BuildButton 
+                bgColor={colors.yellow}
+                hoverBgColor={colors.hover.yellow}
+              >
+                Start Building
+              </BuildButton>
             </CustomCheckForm>
           </Section>
 
           {/* Recent Knowledge Checks Section */}
           <Section>
             <SectionHeader>
-              <SectionTitle>Recent Knowledge Checks</SectionTitle>
-              <SectionSubtitle>View your latest checks and results</SectionSubtitle>
+              <SectionTitle color={colors.textDark}>Recent Knowledge Checks</SectionTitle>
+              <SectionSubtitle color={colors.textMedium}>View your latest checks and results</SectionSubtitle>
             </SectionHeader>
 
             <EmptyState>
-              <EmptyIcon>
+              <EmptyIcon bgColor={colors.grayLight} iconColor={colors.textMedium}>
                 <Brain size={32} />
               </EmptyIcon>
-              <EmptyMessage>No checks created yet</EmptyMessage>
-              <EmptySubtext>Create your first knowledge check to get started</EmptySubtext>
+              <EmptyMessage color={colors.textDark}>No checks created yet</EmptyMessage>
+              <EmptySubtext color={colors.textMedium}>Create your first knowledge check to get started</EmptySubtext>
             </EmptyState>
           </Section>
         </ContentWrapper>

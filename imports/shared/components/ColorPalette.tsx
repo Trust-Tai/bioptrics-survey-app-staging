@@ -10,12 +10,14 @@ const FloatingContainer = styled.div`
   z-index: 9999;
 `;
 
-const PaletteButton = styled.button`
+const PaletteButton = styled.button<{ isMultiColor?: boolean }>`
   width: 50px;
   height: 50px;
   border-radius: 50%;
   border: 3px solid #fff;
-  background: var(--color-primary);
+  background: ${props => props.isMultiColor 
+    ? 'conic-gradient(#e99d48 0deg 90deg, #325b9b 90deg 180deg, #d29b0a 180deg 270deg, #a6a6a6 270deg 360deg)' 
+    : 'var(--color-primary)'};
   color: white;
   cursor: pointer;
   display: flex;
@@ -71,11 +73,12 @@ const ColorOption = styled.div<{ color: string; isActive: boolean }>`
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 2px solid ${props => props.isActive ? props.color : 'transparent'};
-  background: ${props => props.isActive ? `${props.color}10` : 'transparent'};
+  border: 2px solid ${props => props.isActive ? props.color : '#e5e7eb'};
+  background: ${props => props.isActive ? '#f0f6ff' : 'transparent'};
   
   &:hover {
-    background: ${props => `${props.color}15`};
+    background: #f8f9fa;
+    border-color: ${props => props.color};
     transform: translateX(2px);
   }
 `;
@@ -88,6 +91,23 @@ const ColorSwatch = styled.div<{ color: string }>`
   margin-right: 12px;
   border: 2px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const MultiColorSwatch = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+  background: conic-gradient(
+    #e99d48 0deg 90deg,
+    #325b9b 90deg 180deg,
+    #d29b0a 180deg 270deg,
+    #a6a6a6 270deg 360deg
+  );
 `;
 
 const ColorName = styled.span`
@@ -116,70 +136,6 @@ const Overlay = styled.div<{ isOpen: boolean }>`
 `;
 
 export const ColorPalette: React.FC = () => {
-  const { currentTheme, setTheme, availableThemes } = useColorTheme();
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const handleThemeChange = async (themeId: string) => {
-    try {
-      await setTheme(themeId);
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Failed to change theme:', error);
-      // Still close the dropdown even if theme change fails
-      setIsOpen(false);
-    }
-  };
-
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
-
-  return (
-    <>
-      <Overlay isOpen={isOpen} onClick={() => setIsOpen(false)} />
-      <FloatingContainer ref={containerRef}>
-        <PaletteButton onClick={toggleDropdown} title="Change Color Theme">
-          <FaPalette />
-        </PaletteButton>
-        
-        <DropdownContainer isOpen={isOpen}>
-          <DropdownHeader>Color Themes</DropdownHeader>
-          <ColorGrid>
-            {availableThemes.map((theme) => (
-              <ColorOption
-                key={theme.id}
-                color={theme.primary}
-                isActive={currentTheme.id === theme.id}
-                onClick={() => handleThemeChange(theme.id)}
-              >
-                <ColorSwatch color={theme.primary} />
-                <ColorName>{theme.name}</ColorName>
-                <CheckIcon isVisible={currentTheme.id === theme.id}>
-                  <FaCheck />
-                </CheckIcon>
-              </ColorOption>
-            ))}
-          </ColorGrid>
-        </DropdownContainer>
-      </FloatingContainer>
-    </>
-  );
+  // ColorPalette component disabled - using CSS variables only
+  return null;
 };

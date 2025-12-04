@@ -268,7 +268,9 @@ useEffect(() => {
       setIsQuestionsLoading(true);
       
       // FIRST: Fetch all question documents with import status
-      Meteor.call('questions.getImportStatus', questionIds, (error, result) => {
+      // Use setTimeout to make this non-blocking and show loading state immediately
+      setTimeout(() => {
+        Meteor.call('questions.getImportStatus', questionIds, (error, result) => {
         if (error) {
           console.error('Error fetching questions:', error);
         } else if (result) {
@@ -361,7 +363,8 @@ useEffect(() => {
           setSurveyQuestions(questions);
           setIsQuestionsLoading(false);
         }
-      });
+        });
+      }, 0); // Execute immediately but non-blocking
       
       return () => {
         // No subscription to clean up
@@ -471,11 +474,8 @@ useEffect(() => {
       return question;
     }
     
-    // Try to find a version that matches the current survey
-    const versionMatch = question.versions.find((v: any) => v.surveyId === surveyId);
-    if (versionMatch) return versionMatch;
-    
-    // Fall back to the last version in the array
+    // Always return the most recent version (last in array) to ensure we get the latest updates
+    // This ensures that when a question is updated, the UI reflects the latest changes immediately
     return question.versions[question.versions.length - 1];
   };
 
@@ -1824,10 +1824,50 @@ useEffect(() => {
             .drag-handle:active {
               cursor: grabbing;
             }
+            @keyframes pulse {
+              0%, 100% {
+                opacity: 1;
+              }
+              50% {
+                opacity: 0.5;
+              }
+            }
+            @keyframes spin {
+              0% {
+                transform: rotate(0deg);
+              }
+              100% {
+                transform: rotate(360deg);
+              }
+            }
           `}</style>
 
+          {/* Loading indicator for questions */}
+          {isQuestionsLoading && (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '12px 16px', 
+              backgroundColor: '#f8f9fa', 
+              borderRadius: '8px', 
+              marginBottom: '16px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <div style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid #e2e8f0',
+                borderTop: '2px solid #552a47',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <span style={{ fontSize: '14px', color: '#666' }}>Loading questions...</span>
+            </div>
+          )}
+
           {/* Questions List */}
-          {(surveyQuestions.length > 0 || sections.length > 0) && (
+          {(surveyQuestions.length > 0 || sections.length > 0 || isQuestionsLoading) && (
             <div style={{ marginBottom: '20px' }}>
               <div>
                 {/* Render items in unified order */}
@@ -2086,7 +2126,50 @@ useEffect(() => {
 
                         {/* Section Questions */}
                         <div style={{ paddingLeft: '24px' }}>
-                          {surveyQuestions.filter(q => q.sectionId === section.id).length > 0 ? (
+                          {/* Show loading skeleton while questions are being fetched */}
+                          {isQuestionsLoading && surveyQuestions.filter(q => q.sectionId === section.id).length === 0 ? (
+                            // Loading skeleton for questions
+                            <div>
+                              {[1, 2].map((index) => (
+                                <div 
+                                  key={`skeleton-${section.id}-${index}`}
+                                  style={{
+                                    padding: '12px 16px',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e2e8f0',
+                                    marginBottom: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    animation: 'pulse 1.5s ease-in-out infinite'
+                                  }}
+                                >
+                                  <div style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    backgroundColor: '#e2e8f0',
+                                    borderRadius: '4px'
+                                  }} />
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{
+                                      height: '16px',
+                                      backgroundColor: '#e2e8f0',
+                                      borderRadius: '4px',
+                                      marginBottom: '4px',
+                                      width: `${60 + Math.random() * 30}%`
+                                    }} />
+                                    <div style={{
+                                      height: '12px',
+                                      backgroundColor: '#f1f3f4',
+                                      borderRadius: '4px',
+                                      width: '40%'
+                                    }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : surveyQuestions.filter(q => q.sectionId === section.id).length > 0 ? (
                             surveyQuestions
                               .filter(q => q.sectionId === section.id)
                               .sort((a, b) => (a.order || 0) - (b.order || 0)) // Sort by order property

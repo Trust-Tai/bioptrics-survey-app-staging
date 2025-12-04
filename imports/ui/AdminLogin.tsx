@@ -58,7 +58,33 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
           setError(err.reason || 'Not an admin user');
         } else {
           localStorage.setItem('admin_jwt', res.token);
-          onAdminAuth();
+          
+          // Check if there's a stored redirect location
+          const redirectTo = localStorage.getItem('admin_redirect_after_login');
+          const currentHost = window.location.hostname;
+          
+          if (redirectTo) {
+            // Clear the stored redirect
+            localStorage.removeItem('admin_redirect_after_login');
+            
+            // Special handling for subdomain redirects
+            if (currentHost.includes('pulse-dev.bioptrics.com')) {
+              // On LMS subdomain - redirect to admin/home (which will show LMS)
+              window.location.href = '/admin/home';
+            } else {
+              // On main domain - redirect to the intended location
+              window.location.href = redirectTo;
+            }
+          } else {
+            // No stored redirect - check current subdomain
+            if (currentHost.includes('pulse-dev.bioptrics.com')) {
+              // On LMS subdomain - redirect to admin/home (which will show LMS)
+              window.location.href = '/admin/home';
+            } else {
+              // Default behavior for main domain
+              onAdminAuth();
+            }
+          }
         }
       });
     } catch (err: any) {

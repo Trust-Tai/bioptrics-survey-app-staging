@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import AdminLayout from '../../../layouts/AdminLayout/AdminLayout';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useDynamicColors } from '../home/theme/useDynamicColors';
 import { KPISection } from './components/sections/KPISection/KPISection';
 import { PolicyComplianceSection } from './components/sections/PolicyCompliance/PolicyComplianceSection';
 import { ChangeNoticesSection } from './components/sections/ChangeNotices/ChangeNoticesSection';
@@ -10,9 +10,9 @@ import { InsightsAlerts } from './components/sections/BottomSections/InsightsAle
 import { ExportsReports } from './components/sections/BottomSections/ExportsReports';
 
 // Global styles for the dashboard
-const DashboardContainer = styled.div`
+const DashboardContainer = styled.div<{ bgColor: string }>`
   min-height: 100vh;
-  background: #f8f9fa;
+  background: ${props => props.bgColor};
   padding: 24px;
   
   @media (max-width: 768px) {
@@ -20,8 +20,8 @@ const DashboardContainer = styled.div`
   }
 `;
 
-const DashboardHeader = styled.div`
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+const DashboardHeader = styled.div<{ primaryColor: string }>`
+  background: linear-gradient(135deg, ${props => props.primaryColor} 0%, ${props => props.primaryColor}dd 100%);
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 32px;
@@ -87,7 +87,7 @@ const BottomSectionsContainer = styled.div`
 interface NewAdminDashboardProps {}
 
 export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
-  const theme = useTheme();
+  const colors = useDynamicColors();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
   if (isLoading) {
     return (
       <AdminLayout>
-        <DashboardContainer>
+        <DashboardContainer bgColor={colors.white}>
           <div style={{ 
             display: 'flex', 
             justifyContent: 'center', 
@@ -120,10 +120,10 @@ export const NewAdminDashboard: React.FC<NewAdminDashboardProps> = () => {
 
   return (
     <AdminLayout>
-      <DashboardContainer>
+      <DashboardContainer bgColor={colors.white}>
         <DashboardContent>
           {/* Dashboard Header */}
-          <DashboardHeader>
+          <DashboardHeader primaryColor={colors.orange}>
             <HeaderContent>
               <HeaderTitle>Dashboard</HeaderTitle>
               <HeaderSubtitle>Workplace Safety & Compliance Insights</HeaderSubtitle>

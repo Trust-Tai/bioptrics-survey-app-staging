@@ -5,6 +5,7 @@ import HeroSection from './components/HeroSection';
 import ToolkitGrid from './components/ToolkitGrid';
 import HelpSection from './components/HelpSection';
 import { colors } from './theme/colors';
+import LMSComingSoon from '/imports/modules/lms/pages/LMSComingSoon';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -28,6 +29,15 @@ const MainContent = styled.div`
 `;
 
 const AdminHomePage: React.FC = () => {
+  // Check if we're on the LMS subdomain
+  const isLMSSubdomain = typeof window !== 'undefined' && 
+    window.location.hostname.includes('pulse-dev.bioptrics.com');
+
+  // If on LMS subdomain, show the LMS coming soon page
+  if (isLMSSubdomain) {
+    return <LMSComingSoon />;
+  }
+
   useEffect(() => {
     // Check if there's a hash in the URL and scroll to that section
     const hash = window.location.hash;
@@ -44,6 +54,7 @@ const AdminHomePage: React.FC = () => {
     }
   }, []);
 
+  // Otherwise show the regular admin home page
   return (
     <AdminLayout>
       <PageContainer>
