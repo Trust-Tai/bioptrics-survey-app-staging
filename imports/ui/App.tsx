@@ -87,6 +87,12 @@ function RequireAdminAuth() {
     // Store the current location so we can redirect back after login
     const redirectTo = location.pathname + location.search;
     localStorage.setItem('admin_redirect_after_login', redirectTo);
+    
+    // For subdomain access, store that we want to go to admin/home
+    if (typeof window !== 'undefined' && window.location.hostname.includes('pulse-dev.bioptrics.com')) {
+      localStorage.setItem('admin_redirect_after_login', '/admin/home');
+    }
+    
     return <Navigate to="/admin-login" replace />;
   }
   return <Outlet />;

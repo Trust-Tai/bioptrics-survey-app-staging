@@ -61,22 +61,29 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onAdminAuth }) => {
           
           // Check if there's a stored redirect location
           const redirectTo = localStorage.getItem('admin_redirect_after_login');
+          const currentHost = window.location.hostname;
+          
           if (redirectTo) {
             // Clear the stored redirect
             localStorage.removeItem('admin_redirect_after_login');
             
             // Special handling for subdomain redirects
-            const currentHost = window.location.hostname;
-            if (currentHost.includes('pulse-dev.bioptrics.com') && redirectTo === '/pulse-dev') {
-              // Stay on current subdomain, just redirect to root
-              window.location.href = '/';
+            if (currentHost.includes('pulse-dev.bioptrics.com')) {
+              // On LMS subdomain - redirect to admin/home (which will show LMS)
+              window.location.href = '/admin/home';
             } else {
-              // Redirect to the intended location
+              // On main domain - redirect to the intended location
               window.location.href = redirectTo;
             }
           } else {
-            // Default behavior
-            onAdminAuth();
+            // No stored redirect - check current subdomain
+            if (currentHost.includes('pulse-dev.bioptrics.com')) {
+              // On LMS subdomain - redirect to admin/home (which will show LMS)
+              window.location.href = '/admin/home';
+            } else {
+              // Default behavior for main domain
+              onAdminAuth();
+            }
           }
         }
       });
