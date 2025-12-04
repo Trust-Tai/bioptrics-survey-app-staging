@@ -3,8 +3,8 @@ import './quill-styles.css';
 import { createRoot } from 'react-dom/client';
 import { Meteor } from 'meteor/meteor';
 
-// Import the new modular app instead of the regular App
-import ModularApp from '/imports/app/ModularApp';
+// Import the regular App component
+import App from '/imports/ui/App';
 
 // Import dynamic import fix to ensure correct domain is used in production
 import '/imports/startup/client/dynamicImportFix';
@@ -38,7 +38,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-          <h2>Something went wrong with the modular architecture.</h2>
+          <h2>Something went wrong.</h2>
           <details style={{ whiteSpace: 'pre-wrap', marginTop: '10px' }}>
             <summary>Error Details</summary>
             <p>{this.state.error && this.state.error.toString()}</p>
@@ -55,28 +55,11 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Fallback component to display when routing fails
-const FallbackComponent = () => (
-  <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-    <h2>Trust-Tai Modular Platform</h2>
-    <p>Loading modular architecture...</p>
-    <div style={{ marginTop: '20px', padding: '10px', background: '#f5f5f5', borderRadius: '5px' }}>
-      <p>🔧 Modular Architecture Features:</p>
-      <ul style={{ textAlign: 'left', display: 'inline-block' }}>
-        <li>Survey Module (Active)</li>
-        <li>LMS Module (Future)</li>
-        <li>Analytics Module (Future)</li>
-        <li>Cross-module Communication</li>
-      </ul>
-    </div>
-  </div>
-);
-
 Meteor.startup(() => {
   const root = createRoot(document.getElementById('react-target'));
   root.render(
     <ErrorBoundary>
-      <ModularApp fallback={FallbackComponent} />
+      <App />
     </ErrorBoundary>
   );
 });
