@@ -290,8 +290,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/subscription" element={<Subscription />} />
         <Route path="/admin/marketplace/wps-builder" element={<WpsBuilderPage />} />
         <Route path="/admin/migration" element={<MigrationPanel />} />
-        {/* LMS Module Route - Protected by admin authentication */}
-        <Route path="/lms" element={<LMSComingSoon />} />
+        <Route path="/pulse-dev" element={<LMSComingSoon />} />
       </Route>
       {/* Catch-all route for 404 pages */}
       <Route path="*" element={<NotFoundPage />} />
