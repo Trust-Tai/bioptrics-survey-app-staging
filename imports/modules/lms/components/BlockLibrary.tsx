@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FileText, Image, Video, X, FileType, Download, ChevronDown, AlertCircle, MousePointerClick, HelpCircle, Folder, Minus, RotateCw, ImageIcon } from 'lucide-react';
+import { FileText, Image, Video, X, FileType, Download, ChevronDown, AlertCircle, MousePointerClick, Folder, Minus, RotateCw, ImageIcon, Grid3x3 } from 'lucide-react';
 import type { ContentBlockType } from '../types/contentBlocks';
 
 interface BlockLibraryProps {
@@ -193,6 +193,13 @@ const blockLibraryData = [
     category: 'Layout',
     blocks: [
       {
+        type: 'content-grid' as ContentBlockType,
+        name: 'Content Grid',
+        description: 'Grid of feature cards with images',
+        icon: <Grid3x3 size={20} />,
+        color: '#10b981',
+      },
+      {
         type: 'divider' as ContentBlockType,
         name: 'Divider',
         description: 'Horizontal line separator',
@@ -231,13 +238,6 @@ const blockLibraryData = [
         description: 'Call-to-action button',
         icon: <MousePointerClick size={20} />,
         color: '#3b82f6',
-      },
-      {
-        type: 'quiz' as ContentBlockType,
-        name: 'Quiz',
-        description: 'Interactive quiz questions',
-        icon: <HelpCircle size={20} />,
-        color: '#f59e0b',
       },
       {
         type: 'tabs' as ContentBlockType,

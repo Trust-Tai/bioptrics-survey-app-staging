@@ -13,6 +13,7 @@ import { TabsBlock } from './TabsBlock';
 import { DividerBlock } from './DividerBlock';
 import { FlipboxesBlock } from './FlipboxesBlock';
 import { ImageTextBlock } from './ImageTextBlock';
+import { ContentGridBlock } from './ContentGridBlock';
 
 interface ContentBlockRendererProps {
   block: ContentBlock;
@@ -64,6 +65,9 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
     
     case 'image-text':
       return <ImageTextBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+    
+    case 'content-grid':
+      return <ContentGridBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
     
     default:
       return (
