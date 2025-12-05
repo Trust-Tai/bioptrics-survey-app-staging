@@ -53,6 +53,21 @@ import { seedOnboardingSteps } from '../imports/api/onboardingSteps';
 import '../imports/api/surveys/methods/reportMethods';
 // Import migration methods
 import '../scripts/migrate-survey-questions';
+// Import LMS module
+import '../imports/modules/lms/api/courses';
+import '../imports/modules/lms/api/courseTemplates';
+import '../imports/modules/lms/api/courses.methods';
+import '../imports/modules/lms/api/courses.publications';
+import { seedCourseTemplates } from '../imports/modules/lms/api/seedTemplates';
+// Import LMS Course Builder module
+import '../imports/modules/lms/api/modules';
+import '../imports/modules/lms/api/topics';
+import '../imports/modules/lms/api/quizzes';
+import '../imports/modules/lms/api/modules.methods';
+import '../imports/modules/lms/api/topics.methods';
+import '../imports/modules/lms/api/quizzes.methods';
+import '../imports/modules/lms/api/modules.publications';
+import '../imports/modules/lms/api/quizzes.publications';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();
@@ -123,6 +138,9 @@ Meteor.startup(async () => {
 
   // --- ONBOARDING STEPS SEEDING ---
   await seedOnboardingSteps();
+
+  // --- LMS COURSE TEMPLATES SEEDING ---
+  await seedCourseTemplates();
 
   // --- ADMIN USER CREATION ---
   const adminEmail = 'tayeshobajo@gmail.com';
