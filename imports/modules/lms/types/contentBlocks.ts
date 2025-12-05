@@ -1,6 +1,6 @@
 // Content Block Types for Topic Editor
 
-export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid';
+export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid';
 
 export interface BaseContentBlock {
   id: string;
@@ -53,6 +53,50 @@ export interface VideoBlockSettings {
 export interface VideoBlock extends BaseContentBlock {
   type: 'video';
   settings: VideoBlockSettings;
+}
+
+export interface VideoPlayerBlockSettings {
+  videoUrl?: string;
+  fileName?: string;
+  posterUrl?: string;
+  title?: string;
+  controls?: boolean;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  preload?: 'auto' | 'metadata' | 'none';
+  width?: string;
+  height?: string;
+  captionsUrl?: string;
+  aspectRatio?: '16:9' | '4:3' | '1:1' | 'auto';
+}
+
+export interface VideoPlayerBlock extends BaseContentBlock {
+  type: 'video-player';
+  settings: VideoPlayerBlockSettings;
+}
+
+export interface AudioPlayerBlockSettings {
+  audioUrl?: string;
+  fileName?: string;
+  title?: string;
+  artist?: string;
+  coverImageUrl?: string;
+  controls?: boolean;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  volume?: number;
+  preload?: 'auto' | 'metadata' | 'none';
+  playerType?: 'sticky' | 'static';
+  showDownload?: boolean;
+  backgroundColor?: string;
+  accentColor?: string;
+}
+
+export interface AudioPlayerBlock extends BaseContentBlock {
+  type: 'audio-player';
+  settings: AudioPlayerBlockSettings;
 }
 
 export interface PDFBlockSettings {
@@ -267,7 +311,7 @@ export interface ContentGridBlock extends BaseContentBlock {
   settings: ContentGridBlockSettings;
 }
 
-export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock;
+export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock;
 
 // Block Library Item
 export interface BlockLibraryItem {

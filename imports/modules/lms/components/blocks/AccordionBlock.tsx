@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import type { AccordionBlock as AccordionBlockType } from '../../types/contentBlocks';
 
@@ -139,6 +139,37 @@ export const AccordionBlock: React.FC<AccordionBlockProps> = ({ block }) => {
 
   // Track content heights for smooth animations
   const [contentHeights, setContentHeights] = useState<{ [key: string]: number }>({});
+  
+  // Store refs to content elements
+  const contentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Measure content heights when panels change or component mounts
+  useEffect(() => {
+    const heights: { [key: string]: number } = {};
+    panels.forEach((panel: any) => {
+      const element = contentRefs.current[panel.id];
+      if (element) {
+        heights[panel.id] = element.scrollHeight;
+      }
+    });
+    setContentHeights(heights);
+  }, [panels]);
+  
+  // Remeasure heights when content might have changed
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const heights: { [key: string]: number } = {};
+      panels.forEach((panel: any) => {
+        const element = contentRefs.current[panel.id];
+        if (element) {
+          heights[panel.id] = element.scrollHeight;
+        }
+      });
+      setContentHeights(heights);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [openPanels, panels]);
 
   const togglePanel = (panelId: string) => {
     setOpenPanels(prev => {
@@ -158,15 +189,6 @@ export const AccordionBlock: React.FC<AccordionBlockProps> = ({ block }) => {
       
       return newOpenPanels;
     });
-  };
-
-  const measureContent = (panelId: string, element: HTMLDivElement | null) => {
-    if (element) {
-      setContentHeights(prev => ({
-        ...prev,
-        [panelId]: element.scrollHeight,
-      }));
-    }
   };
 
   if (panels.length === 0) {
@@ -217,7 +239,7 @@ export const AccordionBlock: React.FC<AccordionBlockProps> = ({ block }) => {
 
             <AccordionContent isOpen={isOpen} height={contentHeight}>
               <AccordionContentInner
-                ref={(el) => measureContent(panel.id, el)}
+                ref={(el) => { contentRefs.current[panel.id] = el; }}
                 dangerouslySetInnerHTML={{
                   __html: panel.content || '<p>No content</p>',
                 }}

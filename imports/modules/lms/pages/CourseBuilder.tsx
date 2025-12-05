@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
@@ -11,6 +11,8 @@ import { Quizzes } from '../api/quizzes';
 import { Button } from '../../../ui/admin/dashboard/components/shared/Button';
 import { TopicCard } from '../components/TopicCard';
 import { QuizCard } from '../components/QuizCard';
+import { useToast, ToastManager } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import type { ModuleDoc } from '../api/modules';
 import type { TopicDoc } from '../api/topics';
 import type { QuizDoc } from '../api/quizzes';
@@ -401,6 +403,8 @@ const CourseBuilder: React.FC = () => {
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId?: string }>();
   const isNewCourse = courseId === 'new' || !courseId;
+  const toast = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Form state
   const [formData, setFormData] = useState<CourseFormData>({
@@ -422,6 +426,7 @@ const CourseBuilder: React.FC = () => {
   const [editingQuizTitle, setEditingQuizTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const hasInitializedModules = useRef(false);
 
   // Subscribe to data
   const { course, modules, topics, quizzes, isLoading } = useTracker(() => {
@@ -454,16 +459,21 @@ const CourseBuilder: React.FC = () => {
         title: course.title || '',
         topic: course.title || '',
         description: course.description || '',
-        learnerAudience: 'All Levels',
-        learningObjectives: [''],
+        learnerAudience: (course as any).learnerAudience || 'All Levels',
+        learningObjectives: (course as any).learningObjectives?.length > 0 
+          ? (course as any).learningObjectives 
+          : [''],
       });
-
-      // Expand first module by default
-      if (modules.length > 0) {
-        setExpandedModules(new Set([modules[0]._id]));
-      }
     }
-  }, [course, modules.length]);
+  }, [course]);
+
+  // Expand first module by default on initial load only
+  useEffect(() => {
+    if (modules.length > 0 && !hasInitializedModules.current) {
+      setExpandedModules(new Set([modules[0]._id]));
+      hasInitializedModules.current = true;
+    }
+  }, [modules.length]);
 
   // Auto-save
   const autoSaveCourse = async () => {
@@ -476,6 +486,8 @@ const CourseBuilder: React.FC = () => {
         Meteor.call('courses.update', courseId, {
           title: formData.topic.trim(),
           description: formData.description.trim(),
+          learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
+          learnerAudience: formData.learnerAudience.trim(),
         }, (error: any) => {
           if (error) reject(error);
           else resolve(true);
@@ -500,7 +512,7 @@ const CourseBuilder: React.FC = () => {
 
   const handleSaveCourse = async () => {
     if (!formData.topic.trim()) {
-      alert('Please enter a course topic');
+      toast.warning('Please enter a course topic');
       return;
     }
 
@@ -513,13 +525,15 @@ const CourseBuilder: React.FC = () => {
           Meteor.call('courses.insert', {
             title: formData.topic.trim(),
             description: formData.description.trim(),
+            learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
+            learnerAudience: formData.learnerAudience.trim(),
           }, (error: any, result: any) => {
             if (error) reject(error);
             else resolve(result);
           });
         }).then((newCourseId) => {
           navigate(`/admin/lms/builder/${newCourseId}`, { replace: true });
-          alert('Course created successfully!');
+          toast.success('Course created successfully!');
         });
       } else {
         // Update existing course
@@ -527,18 +541,19 @@ const CourseBuilder: React.FC = () => {
           Meteor.call('courses.update', courseId, {
             title: formData.topic.trim(),
             description: formData.description.trim(),
+            learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
+            learnerAudience: formData.learnerAudience.trim(),
           }, (error: any) => {
             if (error) reject(error);
             else resolve(true);
           });
         });
-        alert('Course saved successfully!');
+        toast.success('Course saved successfully!');
       }
     } catch (error: any) {
       console.error('Course save error:', error);
       const errorMessage = error.reason || error.message || 'Unknown error';
-      const errorDetails = error.details ? `\n\nDetails: ${error.details}` : '';
-      alert(`Failed to save course: ${errorMessage}${errorDetails}`);
+      toast.error(`Failed to save course: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -547,10 +562,9 @@ const CourseBuilder: React.FC = () => {
   // Module management
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(moduleId)) {
-        newSet.delete(moduleId);
-      } else {
+      const newSet = new Set<string>();
+      // If clicking on already open module, close it. Otherwise, open only this module
+      if (!prev.has(moduleId)) {
         newSet.add(moduleId);
       }
       return newSet;
@@ -559,7 +573,7 @@ const CourseBuilder: React.FC = () => {
 
   const handleAddModule = async () => {
     if (isNewCourse) {
-      alert('Please save the course first before adding modules');
+      toast.warning('Please save the course first before adding modules');
       return;
     }
 
@@ -574,14 +588,20 @@ const CourseBuilder: React.FC = () => {
         });
       });
     } catch (error: any) {
-      alert('Failed to add module: ' + error.message);
+      toast.error('Failed to add module: ' + error.message);
     }
   };
 
   const handleDeleteModule = async (moduleId: string) => {
-    if (!confirm('Delete this module? This will also delete all topics and quizzes inside it.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Delete Module?',
+      message: 'This will permanently delete this module and all topics and quizzes inside it. This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
       await new Promise((resolve, reject) => {
@@ -591,7 +611,7 @@ const CourseBuilder: React.FC = () => {
         });
       });
     } catch (error: any) {
-      alert('Failed to delete module: ' + error.message);
+      toast.error('Failed to delete module: ' + error.message);
     }
   };
 
@@ -612,7 +632,7 @@ const CourseBuilder: React.FC = () => {
           });
         });
       } catch (error: any) {
-        alert('Failed to save module name: ' + error.message);
+        toast.error('Failed to save module name: ' + error.message);
       }
     }
     setEditingModuleId(null);
@@ -623,6 +643,9 @@ const CourseBuilder: React.FC = () => {
   const handleAddTopic = async (moduleId: string) => {
     const module = modules.find(m => m._id === moduleId);
     if (!module) return;
+
+    // Keep only this module expanded when adding a topic
+    setExpandedModules(new Set([moduleId]));
 
     const topicsInModule = topics.filter(t => t.moduleId === moduleId);
     const topicNumber = topicsInModule.length + 1;
@@ -638,14 +661,20 @@ const CourseBuilder: React.FC = () => {
         });
       });
     } catch (error: any) {
-      alert('Failed to add topic: ' + error.message);
+      toast.error('Failed to add topic: ' + error.message);
     }
   };
 
   const handleDeleteTopic = async (moduleId: string, topicId: string) => {
-    if (!confirm('Delete this topic?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Delete Topic?',
+      message: 'Are you sure you want to delete this topic? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
       await new Promise((resolve, reject) => {
@@ -655,7 +684,7 @@ const CourseBuilder: React.FC = () => {
         });
       });
     } catch (error: any) {
-      alert('Failed to delete topic: ' + error.message);
+      toast.error('Failed to delete topic: ' + error.message);
     }
   };
 
@@ -676,7 +705,7 @@ const CourseBuilder: React.FC = () => {
           });
         });
       } catch (error: any) {
-        alert('Failed to save topic title: ' + error.message);
+        toast.error('Failed to save topic title: ' + error.message);
       }
     }
     setEditingTopicId(null);
@@ -687,6 +716,9 @@ const CourseBuilder: React.FC = () => {
   const handleAddQuiz = async (moduleId: string) => {
     const module = modules.find(m => m._id === moduleId);
     if (!module) return;
+
+    // Keep only this module expanded when adding a quiz
+    setExpandedModules(new Set([moduleId]));
 
     const quizzesInModule = quizzes.filter(q => q.moduleId === moduleId);
     const quizNumber = quizzesInModule.length + 1;
@@ -702,14 +734,20 @@ const CourseBuilder: React.FC = () => {
         });
       });
     } catch (error: any) {
-      alert('Failed to add quiz: ' + error.message);
+      toast.error('Failed to add quiz: ' + error.message);
     }
   };
 
   const handleDeleteQuiz = async (moduleId: string, quizId: string) => {
-    if (!confirm('Delete this quiz?')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Delete Quiz?',
+      message: 'Are you sure you want to delete this quiz? All questions will be permanently removed.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
       await new Promise((resolve, reject) => {
@@ -719,7 +757,7 @@ const CourseBuilder: React.FC = () => {
         });
       });
     } catch (error: any) {
-      alert('Failed to delete quiz: ' + error.message);
+      toast.error('Failed to delete quiz: ' + error.message);
     }
   };
 
@@ -740,7 +778,7 @@ const CourseBuilder: React.FC = () => {
           });
         });
       } catch (error: any) {
-        alert('Failed to save quiz title: ' + error.message);
+        toast.error('Failed to save quiz title: ' + error.message);
       }
     }
     setEditingQuizId(null);
@@ -828,6 +866,15 @@ const CourseBuilder: React.FC = () => {
                   )}
                 </ObjectiveRow>
               ))}
+              <SmallButton
+                onClick={() => {
+                  handleInputChange('learningObjectives', [...formData.learningObjectives, '']);
+                }}
+                style={{ marginTop: '8px' }}
+              >
+                <Plus size={14} />
+                Add Objective
+              </SmallButton>
             </FormGroup>
 
             <FormGroup>
@@ -1016,8 +1063,19 @@ const CourseBuilder: React.FC = () => {
                                       <Input
                                         type="number"
                                         value={module.estimatedMinutes}
-                                        readOnly
+                                        onChange={(e) => {
+                                          const minutes = parseInt(e.target.value) || 0;
+                                          Meteor.call('modules.update', module._id, {
+                                            estimatedMinutes: minutes,
+                                          }, (error: any) => {
+                                            if (error) {
+                                              toast.error('Failed to update duration: ' + error.message);
+                                            }
+                                          });
+                                        }}
+                                        min="0"
                                         style={{ width: '80px' }}
+                                        placeholder="60"
                                       />
                                       <span style={{ fontSize: '14px', color: '#6b7280' }}>Minutes</span>
                                     </div>
@@ -1067,6 +1125,12 @@ const CourseBuilder: React.FC = () => {
           </CourseOutlineSection>
         </RightPanel>
       </SplitContainer>
+      
+      {/* Toast Notifications */}
+      <ToastManager toasts={toast.toasts} onRemove={toast.removeToast} />
+      
+      {/* Confirmation Dialog */}
+      <ConfirmDialog />
     </PageContainer>
   );
 };

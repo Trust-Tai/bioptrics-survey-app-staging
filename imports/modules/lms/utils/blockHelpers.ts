@@ -75,6 +75,47 @@ export const createDefaultBlock = (blockType: ContentBlockType, order: number): 
         },
       };
 
+    case 'video-player':
+      return {
+        ...baseBlock,
+        type: 'video-player',
+        settings: {
+          videoUrl: '',
+          fileName: '',
+          posterUrl: '',
+          title: 'Video Player',
+          controls: true,
+          autoplay: false,
+          loop: false,
+          muted: false,
+          preload: 'metadata',
+          aspectRatio: '16:9',
+        },
+      };
+
+    case 'audio-player':
+      return {
+        ...baseBlock,
+        type: 'audio-player',
+        settings: {
+          audioUrl: '',
+          fileName: '',
+          title: 'Audio Track',
+          artist: '',
+          coverImageUrl: '',
+          controls: true,
+          autoplay: false,
+          loop: false,
+          muted: false,
+          volume: 0.8,
+          preload: 'metadata',
+          playerType: 'static',
+          showDownload: true,
+          backgroundColor: '#ffffff',
+          accentColor: '#6366f1',
+        },
+      };
+
     case 'pdf':
       return {
         ...baseBlock,
@@ -286,6 +327,10 @@ export const getBlockIcon = (blockType: ContentBlockType): string => {
       return '🖼️';
     case 'video':
       return '🎥';
+    case 'video-player':
+      return '🎬';
+    case 'audio-player':
+      return '🎵';
     case 'pdf':
       return '📄';
     case 'file-download':
@@ -322,6 +367,10 @@ export const getBlockColor = (blockType: ContentBlockType): string => {
       return '#10b981'; // green
     case 'video':
       return '#ef4444'; // red
+    case 'video-player':
+      return '#8b5cf6'; // purple
+    case 'audio-player':
+      return '#f59e0b'; // amber/orange
     case 'content-grid':
       return '#10b981'; // teal/green
     default:
