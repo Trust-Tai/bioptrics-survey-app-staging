@@ -23,12 +23,25 @@ function applyDynamicImportFix() {
   try {
     // 1. Patch the Meteor runtime configuration
     if (window.__meteor_runtime_config__) {
-      // Update ROOT_URL
       const originalRootUrl = window.__meteor_runtime_config__.ROOT_URL;
-      window.__meteor_runtime_config__.ROOT_URL = currentOrigin;
-      console.log(`[dynamicImportFix] Updated ROOT_URL from ${originalRootUrl} to ${currentOrigin}`);
       
-      // Update DYNAMIC_IMPORT_ROOT
+      // For subdomains, keep the main domain as ROOT_URL but update DYNAMIC_IMPORT_ROOT
+      let targetRootUrl = originalRootUrl;
+      
+      // Check if we're on a subdomain that should use main domain for assets
+      if (currentHostname.includes('pulse-dev.bioptrics.com')) {
+        // Keep ROOT_URL as main domain for asset serving
+        targetRootUrl = 'https://pulse.bioptrics.com';
+        console.log(`[dynamicImportFix] Subdomain detected, keeping ROOT_URL as main domain: ${targetRootUrl}`);
+      } else {
+        // For main domain or other cases, use current origin
+        targetRootUrl = currentOrigin;
+        console.log(`[dynamicImportFix] Updated ROOT_URL from ${originalRootUrl} to ${currentOrigin}`);
+      }
+      
+      window.__meteor_runtime_config__.ROOT_URL = targetRootUrl;
+      
+      // Always update DYNAMIC_IMPORT_ROOT to current origin for dynamic imports to work
       window.__meteor_runtime_config__.DYNAMIC_IMPORT_ROOT = currentOrigin + '/__meteor__/dynamic-import/';
       console.log(`[dynamicImportFix] Set DYNAMIC_IMPORT_ROOT to ${window.__meteor_runtime_config__.DYNAMIC_IMPORT_ROOT}`);
     }

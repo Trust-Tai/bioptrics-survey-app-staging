@@ -173,14 +173,24 @@ const Modal = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
 `;
 
 const ModalContent = styled.div`
   background: white;
   border-radius: 10px;
   padding: 28px;
-  width: 500px;
-  max-width: 90%;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    max-width: 95%;
+  }
 `;
 
 const ModalHeader = styled.div`
@@ -188,6 +198,12 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: -28px;
+  background: white;
+  z-index: 1;
 `;
 
 const ModalTitle = styled.h2`
@@ -211,20 +227,32 @@ const CloseButton = styled.button`
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+  margin-bottom: 16px;
 `;
 
 const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: 8px;
+  
+  @media (min-width: 768px) {
+    &.row {
+      flex-direction: row;
+      gap: 16px;
+      
+      > div {
+        flex: 1;
+      }
+    }
+  }
 `;
 
 const Label = styled.label`
   font-size: 14px;
   font-weight: 500;
   color: #333;
+  margin-bottom: 4px;
 `;
 
 const Input = styled.input`
@@ -234,10 +262,12 @@ const Input = styled.input`
   font-size: 14px;
   width: 100%;
   box-sizing: border-box;
+  transition: border-color 0.2s;
   
   &:focus {
     outline: none;
     border-color: #552a47;
+    box-shadow: 0 0 0 0.2rem rgba(85, 42, 71, 0.15);
   }
 `;
 
@@ -270,6 +300,20 @@ const ModalFooter = styled.div`
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+  position: sticky;
+  bottom: -28px;
+  background: white;
+  z-index: 1;
+  
+  @media (max-width: 576px) {
+    flex-direction: column-reverse;
+    
+    button {
+      width: 100%;
+    }
+  }
 `;
 
 const CancelButton = styled.button`
@@ -327,6 +371,31 @@ const ConfirmDialogContainer = styled.div`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+`;
+
+const ModalBody = styled.div`
+  margin: 20px 0;
+  
+  p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+`;
+
 // Types
 interface User {
   _id: string;
@@ -348,6 +417,14 @@ interface ConfirmDialog {
   onConfirm: () => void;
 }
 
+interface ConfirmDialogProps {
+  show: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
 interface FormData {
   email: string;
   name: string;
@@ -357,7 +434,7 @@ interface FormData {
   isAdmin: boolean;
 }
 
-const ConfirmDialog = ({ show, title, message, onConfirm, onCancel }) => {
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ show, title, message, onConfirm, onCancel }) => {
   if (!show) return null;
   
   return (
@@ -370,8 +447,8 @@ const ConfirmDialog = ({ show, title, message, onConfirm, onCancel }) => {
           <p>{message}</p>
         </ModalBody>
         <ModalFooter>
-          <Button secondary onClick={onCancel}>Cancel</Button>
-          <Button danger onClick={onConfirm}>Confirm</Button>
+          <CancelButton onClick={onCancel}>Cancel</CancelButton>
+          <Button onClick={onConfirm} style={{ background: '#dc3545' }}>Confirm</Button>
         </ModalFooter>
       </ConfirmDialogContainer>
     </ModalOverlay>
@@ -423,8 +500,8 @@ const Users = () => {
         // Calculate stats from the user data
         const totalUsers = result.length;
         const admins = result.filter(user => user.profile?.admin).length;
-        const activeUsers = result.filter(user => !user.profile?.inactive).length;
-        const inactiveUsers = result.filter(user => user.profile?.inactive).length;
+        const activeUsers = result.filter(user => user.profile?.active !== false).length;
+        const inactiveUsers = result.filter(user => user.profile?.active === false).length;
         
         setStats({
           totalUsers,
@@ -705,9 +782,11 @@ const Users = () => {
                     value={formData.role}
                     onChange={handleInputChange}
                   >
-                    <option value="user">User</option>
-                    <option value="manager">Manager</option>
-                    <option value="executive">Executive</option>
+                    <option value="Administrator">Administrator</option>
+                    <option value="Consultant">Consultant</option>
+                    <option value="CEO/Manager">CEO/Manager</option>
+                    <option value="DepartmentHead">Department Head</option>
+                    <option value="Respondent">Respondent</option>
                   </Select>
                 </FormGroup>
                 <FormGroup>
