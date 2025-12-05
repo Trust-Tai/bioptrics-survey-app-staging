@@ -1,6 +1,6 @@
 // Content Block Types for Topic Editor
 
-export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text';
+export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid';
 
 export interface BaseContentBlock {
   id: string;
@@ -243,7 +243,31 @@ export interface ImageTextBlock extends BaseContentBlock {
   settings: ImageTextBlockSettings;
 }
 
-export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock;
+export interface GridCardItem {
+  id: string;
+  imageUrl?: string;
+  imageLayout?: 'no-image' | 'top-image' | 'background-image' | 'title-image';
+  title: string;
+  description?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+}
+
+export interface ContentGridBlockSettings {
+  items?: GridCardItem[];
+  columns?: number;
+  gap?: 'small' | 'medium' | 'large';
+  cardStyle?: 'elevated' | 'bordered' | 'flat';
+  imageAspectRatio?: '16:9' | '4:3' | '1:1';
+  showShadow?: boolean;
+}
+
+export interface ContentGridBlock extends BaseContentBlock {
+  type: 'content-grid';
+  settings: ContentGridBlockSettings;
+}
+
+export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock;
 
 // Block Library Item
 export interface BlockLibraryItem {

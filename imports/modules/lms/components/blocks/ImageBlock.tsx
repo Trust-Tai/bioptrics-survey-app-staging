@@ -118,16 +118,23 @@ const EditButton = styled.button`
 
 export const ImageBlock: React.FC<ImageBlockProps> = ({ block, isEditing, onUpdate }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [imageError, setImageError] = React.useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const imageUrl = URL.createObjectURL(file);
-      onUpdate({
-        imageUrl,
-        fileName: file.name,
-        altText: block.settings.altText || file.name.replace(/\.[^/.]+$/, ''),
-      });
+      // Convert image to base64 for persistent storage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImageError(false); // Reset error state on new upload
+        onUpdate({
+          imageUrl: base64String,
+          fileName: file.name,
+          altText: block.settings.altText || file.name.replace(/\.[^/.]+$/, ''),
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -135,6 +142,10 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ block, isEditing, onUpda
     if (isEditing) {
       fileInputRef.current?.click();
     }
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   return (
@@ -147,12 +158,13 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ block, isEditing, onUpda
       />
       
       <ImageWrapper maxWidth={block.settings.maxWidth || '100%'}>
-        {block.settings.imageUrl ? (
+        {block.settings.imageUrl && !imageError ? (
           <EditOverlay>
             <StyledImage
               src={block.settings.imageUrl}
               alt={block.settings.altText || 'Image'}
               borderRadius={block.settings.borderRadius || '8px'}
+              onError={handleImageError}
             />
             {isEditing && (
               <EditButton className="edit-button" onClick={handleClick}>
@@ -166,9 +178,21 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ block, isEditing, onUpda
               <Upload size={32} />
             </PlaceholderIcon>
             <PlaceholderText>
-              {isEditing ? 'Click to upload an image' : 'No image uploaded'}
+              {imageError ? (
+                <>
+                  Image failed to load
+                  <br />
+                  <span style={{ fontSize: '12px' }}>
+                    {isEditing ? 'Click to upload a new image' : ''}
+                  </span>
+                </>
+              ) : isEditing ? (
+                'Click to upload an image'
+              ) : (
+                'No image uploaded'
+              )}
             </PlaceholderText>
-            {isEditing && (
+            {isEditing && !imageError && (
               <PlaceholderText style={{ fontSize: '12px', color: '#9ca3af' }}>
                 Supports: JPG, PNG, GIF, SVG
               </PlaceholderText>

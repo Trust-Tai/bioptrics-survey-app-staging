@@ -213,6 +213,48 @@ export const createDefaultBlock = (blockType: ContentBlockType, order: number): 
         },
       };
 
+    case 'content-grid':
+      return {
+        ...baseBlock,
+        type: 'content-grid',
+        settings: {
+          items: [
+            {
+              id: `item-${Date.now()}-1`,
+              imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop',
+              imageLayout: 'top-image',
+              title: 'Feature Card 1',
+              description: 'This is a sample content grid item showcasing your first feature. You can add images, customize layout, and include call-to-action buttons.',
+              buttonText: 'Learn More',
+              buttonUrl: '#',
+            },
+            {
+              id: `item-${Date.now()}-2`,
+              imageUrl: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&h=600&fit=crop',
+              imageLayout: 'background-image',
+              title: 'Feature Card 2',
+              description: 'Another grid item with background image layout. Perfect for creating engaging content sections with visual appeal.',
+              buttonText: 'Get Started',
+              buttonUrl: '#',
+            },
+            {
+              id: `item-${Date.now()}-3`,
+              imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop',
+              imageLayout: 'title-image',
+              title: 'Feature Card 3',
+              description: 'This card uses the side layout with title, image, then content. Great for showcasing different content types.',
+              buttonText: 'Explore',
+              buttonUrl: '#',
+            },
+          ],
+          columns: 3,
+          gap: 'medium',
+          cardStyle: 'elevated',
+          imageAspectRatio: '16:9',
+          showShadow: true,
+        },
+      };
+
     default:
       throw new Error(`Unknown block type: ${blockType}`);
   }
@@ -264,6 +306,8 @@ export const getBlockIcon = (blockType: ContentBlockType): string => {
       return '🔄';
     case 'image-text':
       return '🖼️';
+    case 'content-grid':
+      return '⊞';
     default:
       return '📄';
   }
@@ -278,6 +322,8 @@ export const getBlockColor = (blockType: ContentBlockType): string => {
       return '#10b981'; // green
     case 'video':
       return '#ef4444'; // red
+    case 'content-grid':
+      return '#10b981'; // teal/green
     default:
       return '#6b7280'; // gray
   }
