@@ -3,6 +3,8 @@ import type { ContentBlock } from '../../types/contentBlocks';
 import { RichTextBlock } from './RichTextBlock';
 import { ImageBlock } from './ImageBlock';
 import { VideoBlock } from './VideoBlock';
+import { VideoPlayerBlock } from './VideoPlayerBlock';
+import { AudioPlayerBlock } from './AudioPlayerBlock';
 import { PDFBlock } from './PDFBlock';
 import { FileDownloadBlock } from './FileDownloadBlock';
 import { AccordionBlock } from './AccordionBlock';
@@ -35,6 +37,12 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
     
     case 'video':
       return <VideoBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+    
+    case 'video-player':
+      return <VideoPlayerBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+    
+    case 'audio-player':
+      return <AudioPlayerBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
     
     case 'pdf':
       return <PDFBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;

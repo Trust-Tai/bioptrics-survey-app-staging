@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { X, Settings, Plus, Trash2 } from 'lucide-react';
-import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem } from '../types/contentBlocks';
+import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem } from '../types/contentBlocks';
 
 interface BlockSettingsPanelProps {
   block: ContentBlock;
@@ -253,6 +253,10 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
         return <ImageSettings block={block} onUpdate={onUpdate} />;
       case 'video':
         return <VideoSettings block={block} onUpdate={onUpdate} />;
+      case 'video-player':
+        return <VideoPlayerSettings block={block} onUpdate={onUpdate} />;
+      case 'audio-player':
+        return <AudioPlayerSettings block={block} onUpdate={onUpdate} />;
       case 'pdf':
         return <PDFSettings block={block} onUpdate={onUpdate} />;
       case 'file-download':
@@ -285,6 +289,8 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
       case 'rich-text': return 'Rich Text';
       case 'image': return 'Image';
       case 'video': return 'Video';
+      case 'video-player': return 'Video Player';
+      case 'audio-player': return 'Audio Player';
       case 'pdf': return 'PDF Document';
       case 'file-download': return 'File Download';
       case 'accordion': return 'Accordion';
@@ -535,6 +541,326 @@ const VideoSettings: React.FC<{ block: VideoBlock; onUpdate: (settings: any) => 
           placeholder="0"
         />
         <HelpText>Start video at specific timestamp</HelpText>
+      </SettingGroup>
+    </>
+  );
+};
+
+// Video Player Settings
+const VideoPlayerSettings: React.FC<{ block: VideoPlayerBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const posterInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePosterUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUpdate({ posterUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <>
+      <SettingGroup>
+        <Label>Video Title</Label>
+        <Input
+          type="text"
+          value={block.settings.title || ''}
+          onChange={e => onUpdate({ title: e.target.value })}
+          placeholder="Video title (optional)"
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Poster Image (Thumbnail)</Label>
+        {block.settings.posterUrl && (
+          <div style={{ marginBottom: '8px' }}>
+            <img 
+              src={block.settings.posterUrl} 
+              alt="Poster" 
+              style={{ width: '100%', maxHeight: '150px', objectFit: 'cover', borderRadius: '4px' }} 
+            />
+          </div>
+        )}
+        <button
+          onClick={() => posterInputRef.current?.click()}
+          style={{
+            padding: '8px 16px',
+            background: '#6366f1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          {block.settings.posterUrl ? 'Change Poster' : 'Upload Poster'}
+        </button>
+        <input
+          ref={posterInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePosterUpload}
+          style={{ display: 'none' }}
+        />
+        <HelpText>Thumbnail shown before video plays</HelpText>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Aspect Ratio</Label>
+        <Select
+          value={block.settings.aspectRatio || '16:9'}
+          onChange={e => onUpdate({ aspectRatio: e.target.value })}
+        >
+          <option value="16:9">16:9 (Widescreen)</option>
+          <option value="4:3">4:3 (Standard)</option>
+          <option value="1:1">1:1 (Square)</option>
+          <option value="auto">Auto (Original Size)</option>
+        </Select>
+      </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <Label>Playback Options</Label>
+        
+        <CheckboxWrapper style={{ marginBottom: '8px' }}>
+          <Checkbox
+            type="checkbox"
+            id="controls-player"
+            checked={block.settings.controls !== false}
+            onChange={e => onUpdate({ controls: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="controls-player">Show player controls</CheckboxLabel>
+        </CheckboxWrapper>
+
+        <CheckboxWrapper style={{ marginBottom: '8px' }}>
+          <Checkbox
+            type="checkbox"
+            id="autoplay-player"
+            checked={block.settings.autoplay || false}
+            onChange={e => onUpdate({ autoplay: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="autoplay-player">Autoplay video</CheckboxLabel>
+        </CheckboxWrapper>
+
+        <CheckboxWrapper style={{ marginBottom: '8px' }}>
+          <Checkbox
+            type="checkbox"
+            id="muted-player"
+            checked={block.settings.muted || false}
+            onChange={e => onUpdate({ muted: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="muted-player">Muted by default</CheckboxLabel>
+        </CheckboxWrapper>
+
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="loop-player"
+            checked={block.settings.loop || false}
+            onChange={e => onUpdate({ loop: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="loop-player">Loop video</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Preload</Label>
+        <Select
+          value={block.settings.preload || 'metadata'}
+          onChange={e => onUpdate({ preload: e.target.value })}
+        >
+          <option value="none">None</option>
+          <option value="metadata">Metadata Only</option>
+          <option value="auto">Auto (Full Video)</option>
+        </Select>
+        <HelpText>How much video to load before playing</HelpText>
+      </SettingGroup>
+    </>
+  );
+};
+
+// Audio Player Settings
+const AudioPlayerSettings: React.FC<{ block: AudioPlayerBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUpdate({ coverImageUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <>
+      <SettingGroup>
+        <Label>Track Title</Label>
+        <Input
+          type="text"
+          value={block.settings.title || ''}
+          onChange={e => onUpdate({ title: e.target.value })}
+          placeholder="Enter track title"
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Artist Name</Label>
+        <Input
+          type="text"
+          value={block.settings.artist || ''}
+          onChange={e => onUpdate({ artist: e.target.value })}
+          placeholder="Enter artist name (optional)"
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Cover Image (Album Art)</Label>
+        {block.settings.coverImageUrl && (
+          <div style={{ marginBottom: '8px' }}>
+            <img 
+              src={block.settings.coverImageUrl} 
+              alt="Cover" 
+              style={{ width: '100%', maxHeight: '150px', objectFit: 'cover', borderRadius: '4px' }} 
+            />
+          </div>
+        )}
+        <button
+          onClick={() => coverInputRef.current?.click()}
+          style={{
+            padding: '8px 16px',
+            background: '#6366f1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          {block.settings.coverImageUrl ? 'Change Cover' : 'Upload Cover'}
+        </button>
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleCoverUpload}
+          style={{ display: 'none' }}
+        />
+        <HelpText>Album art or thumbnail image</HelpText>
+      </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <Label>Player Type</Label>
+        <Select
+          value={block.settings.playerType || 'static'}
+          onChange={e => onUpdate({ playerType: e.target.value })}
+        >
+          <option value="static">Static (Inline)</option>
+          <option value="sticky">Sticky (Fixed Bottom)</option>
+        </Select>
+        <HelpText>Static: Inline player • Sticky: Fixed at bottom of screen</HelpText>
+      </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <Label>Playback Options</Label>
+        
+        <CheckboxWrapper style={{ marginBottom: '8px' }}>
+          <Checkbox
+            type="checkbox"
+            id="controls-audio"
+            checked={block.settings.controls !== false}
+            onChange={e => onUpdate({ controls: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="controls-audio">Show player controls</CheckboxLabel>
+        </CheckboxWrapper>
+
+        <CheckboxWrapper style={{ marginBottom: '8px' }}>
+          <Checkbox
+            type="checkbox"
+            id="autoplay-audio"
+            checked={block.settings.autoplay || false}
+            onChange={e => onUpdate({ autoplay: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="autoplay-audio">Autoplay audio</CheckboxLabel>
+        </CheckboxWrapper>
+
+        <CheckboxWrapper style={{ marginBottom: '8px' }}>
+          <Checkbox
+            type="checkbox"
+            id="loop-audio"
+            checked={block.settings.loop || false}
+            onChange={e => onUpdate({ loop: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="loop-audio">Loop audio</CheckboxLabel>
+        </CheckboxWrapper>
+
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="download-audio"
+            checked={block.settings.showDownload !== false}
+            onChange={e => onUpdate({ showDownload: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="download-audio">Show download button</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Default Volume</Label>
+        <Input
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          value={block.settings.volume || 0.8}
+          onChange={e => onUpdate({ volume: parseFloat(e.target.value) })}
+        />
+        <HelpText>Volume: {Math.round((block.settings.volume || 0.8) * 100)}%</HelpText>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Preload</Label>
+        <Select
+          value={block.settings.preload || 'metadata'}
+          onChange={e => onUpdate({ preload: e.target.value })}
+        >
+          <option value="none">None</option>
+          <option value="metadata">Metadata Only</option>
+          <option value="auto">Auto (Full Audio)</option>
+        </Select>
+        <HelpText>How much audio to load before playing</HelpText>
+      </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <Label>Background Color</Label>
+        <Input
+          type="color"
+          value={block.settings.backgroundColor || '#ffffff'}
+          onChange={e => onUpdate({ backgroundColor: e.target.value })}
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Accent Color</Label>
+        <Input
+          type="color"
+          value={block.settings.accentColor || '#6366f1'}
+          onChange={e => onUpdate({ accentColor: e.target.value })}
+        />
+        <HelpText>Color for play button and progress bar</HelpText>
       </SettingGroup>
     </>
   );
