@@ -78,6 +78,10 @@ import RootCauseAnalysis from './admin/root-cause-analysis';
 import WPSDashboard from './admin/wps-dashboard';
 import AdminDemo from './admin/AdminDemo';
 import LMSComingSoon from '/imports/modules/lms/pages/LMSComingSoon';
+import LMSDashboard from '/imports/modules/lms/pages/LMSDashboard';
+import CourseBuilder from '/imports/modules/lms/pages/CourseBuilder';
+import { TopicEditor } from '/imports/modules/lms/pages/TopicEditor';
+import { QuizEditor } from '/imports/modules/lms/pages/QuizEditor';
 
 function RequireAdminAuth() {
   const location = useLocation();
@@ -296,6 +300,10 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/subscription" element={<Subscription />} />
         <Route path="/admin/marketplace/wps-builder" element={<WpsBuilderPage />} />
         <Route path="/admin/migration" element={<MigrationPanel />} />
+        <Route path="/admin/lms" element={<LMSDashboard />} />
+        <Route path="/admin/lms/builder/:courseId" element={<CourseBuilder />} />
+        <Route path="/admin/lms/builder/:courseId/topic/:moduleId/:topicId" element={<TopicEditor />} />
+        <Route path="/admin/lms/builder/:courseId/quiz/:quizId" element={<QuizEditor />} />
         <Route path="/pulse-dev" element={<LMSComingSoon />} />
       </Route>
       {/* Catch-all route for 404 pages */}

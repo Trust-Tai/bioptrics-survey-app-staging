@@ -1,0 +1,284 @@
+import type { ContentBlock, ContentBlockType } from '../types/contentBlocks';
+
+// Extract YouTube video ID from various URL formats
+export const extractYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/v\/([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+};
+
+// Create default block settings
+export const createDefaultBlock = (blockType: ContentBlockType, order: number): ContentBlock => {
+  const baseBlock = {
+    id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    order,
+  };
+
+  switch (blockType) {
+    case 'rich-text':
+      return {
+        ...baseBlock,
+        type: 'rich-text',
+        settings: {
+          content: '<p>Start typing your content here...</p>',
+          fontSize: '16px',
+          textAlign: 'left',
+          textColor: '#374151',
+          backgroundColor: 'transparent',
+          padding: '16px',
+        },
+      };
+
+    case 'image':
+      return {
+        ...baseBlock,
+        type: 'image',
+        settings: {
+          imageUrl: '',
+          fileName: '',
+          altText: '',
+          caption: '',
+          alignment: 'center',
+          maxWidth: '100%',
+          borderRadius: '8px',
+          showCaption: true,
+        },
+      };
+
+    case 'video':
+      return {
+        ...baseBlock,
+        type: 'video',
+        settings: {
+          youtubeUrl: '',
+          videoId: '',
+          title: 'Video',
+          startTime: 0,
+          autoplay: false,
+          showControls: true,
+          muted: false,
+          loop: false,
+          aspectRatio: '16:9',
+        },
+      };
+
+    case 'pdf':
+      return {
+        ...baseBlock,
+        type: 'pdf',
+        settings: {
+          pdfUrl: '',
+          fileName: '',
+          allowDownload: true,
+          displayHeight: '600px',
+        },
+      };
+
+    case 'file-download':
+      return {
+        ...baseBlock,
+        type: 'file-download',
+        settings: {
+          files: [],
+          buttonStyle: 'button',
+          buttonColor: '#3b82f6',
+          buttonTextColor: '#ffffff',
+          showFileSize: true,
+          showFileType: true,
+          showDescription: true,
+          trackDownloads: true,
+          requireLogin: false,
+        },
+      };
+
+    case 'accordion':
+      return {
+        ...baseBlock,
+        type: 'accordion',
+        settings: {
+          panels: [],
+          allowMultipleOpen: false,
+          defaultExpanded: [],
+        },
+      };
+
+    case 'callout':
+      return {
+        ...baseBlock,
+        type: 'callout',
+        settings: {
+          calloutType: 'info',
+          variant: 'bordered',
+          title: '',
+          content: '',
+          showIcon: true,
+        },
+      };
+
+    case 'button':
+      return {
+        ...baseBlock,
+        type: 'button',
+        settings: {
+          buttonText: 'Click Here',
+          buttonUrl: '',
+          buttonStyle: 'primary',
+          buttonSize: 'medium',
+          alignment: 'left',
+          openInNewTab: false,
+          icon: 'none',
+          iconPosition: 'right',
+          backgroundColor: '#3b82f6',
+          textColor: '#ffffff',
+        },
+      };
+
+    case 'quiz':
+      return {
+        ...baseBlock,
+        type: 'quiz',
+        settings: {
+          questions: [],
+          showScoreImmediately: true,
+          allowRetry: true,
+          passingScore: 70,
+        },
+      };
+
+    case 'tabs':
+      return {
+        ...baseBlock,
+        type: 'tabs',
+        settings: {
+          tabs: [],
+          defaultTab: '',
+        },
+      };
+
+    case 'divider':
+      return {
+        ...baseBlock,
+        type: 'divider',
+        settings: {
+          dividerStyle: 'solid',
+          color: '#e5e7eb',
+          thickness: '2px',
+          spacing: '16px',
+        },
+      };
+
+    case 'flipboxes':
+      return {
+        ...baseBlock,
+        type: 'flipboxes',
+        settings: {
+          flipboxes: [],
+          columns: 3,
+          height: '300px',
+          frontBgColor: '#3b82f6',
+          frontTextColor: '#ffffff',
+          backBgColor: '#1e40af',
+          backTextColor: '#ffffff',
+        },
+      };
+
+    case 'image-text':
+      return {
+        ...baseBlock,
+        type: 'image-text',
+        settings: {
+          layout: 'image-left',
+          imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop',
+          imageAlt: 'Sample image',
+          heading: 'Sample Heading',
+          headingLevel: 'h2',
+          content: '<p>This is a sample image-text block. You can customize the layout, add headings, style the content, and include call-to-action buttons. Edit this block to add your own content and images.</p>',
+          buttonText: 'Learn More',
+          buttonUrl: '',
+          buttonVariant: 'primary',
+          buttonAlignment: 'left',
+        },
+      };
+
+    default:
+      throw new Error(`Unknown block type: ${blockType}`);
+  }
+};
+
+// Reorder blocks
+export const reorderBlocks = (
+  blocks: ContentBlock[],
+  dragIndex: number,
+  dropIndex: number
+): ContentBlock[] => {
+  const result = Array.from(blocks);
+  const [removed] = result.splice(dragIndex, 1);
+  result.splice(dropIndex, 0, removed);
+  
+  // Update order values
+  return result.map((block, index) => ({
+    ...block,
+    order: index,
+  }));
+};
+
+// Get block icon emoji
+export const getBlockIcon = (blockType: ContentBlockType): string => {
+  switch (blockType) {
+    case 'rich-text':
+      return '📝';
+    case 'image':
+      return '🖼️';
+    case 'video':
+      return '🎥';
+    case 'pdf':
+      return '📄';
+    case 'file-download':
+      return '📎';
+    case 'accordion':
+      return '📋';
+    case 'callout':
+      return '💡';
+    case 'button':
+      return '🔘';
+    case 'quiz':
+      return '❓';
+    case 'tabs':
+      return '📋';
+    case 'divider':
+      return '➖';
+    case 'flipboxes':
+      return '🔄';
+    case 'image-text':
+      return '🖼️';
+    default:
+      return '📄';
+  }
+};
+
+// Get block color
+export const getBlockColor = (blockType: ContentBlockType): string => {
+  switch (blockType) {
+    case 'rich-text':
+      return '#3b82f6'; // blue
+    case 'image':
+      return '#10b981'; // green
+    case 'video':
+      return '#ef4444'; // red
+    default:
+      return '#6b7280'; // gray
+  }
+};
