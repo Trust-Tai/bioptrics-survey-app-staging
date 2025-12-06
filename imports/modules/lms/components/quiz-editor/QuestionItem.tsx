@@ -75,6 +75,11 @@ const QuestionTypeBadge = styled.span<{ questionType: string }>`
   
   ${props => {
     switch (props.questionType) {
+      case 'single-select':
+        return `
+          background: #e0e7ff;
+          color: #4338ca;
+        `;
       case 'multiple-choice':
         return `
           background: #dbeafe;
@@ -175,6 +180,8 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
 }) => {
   const getQuestionTypeLabel = (type: string) => {
     switch (type) {
+      case 'single-select':
+        return 'Single Select';
       case 'multiple-choice':
         return 'Multiple Choice';
       case 'true-false':
@@ -187,8 +194,9 @@ export const QuestionItem: React.FC<QuestionItemProps> = ({
   };
 
   const getOptionsCount = () => {
-    if (question.type === 'multiple-choice' && question.options) {
-      return `${question.options.length} options`;
+    if ((question.type === 'single-select' || question.type === 'multiple-choice') && question.options) {
+      const hasOther = question.allowOther ? ' + Other' : '';
+      return `${question.options.length} options${hasOther}`;
     }
     if (question.type === 'true-false') {
       return '2 options';
