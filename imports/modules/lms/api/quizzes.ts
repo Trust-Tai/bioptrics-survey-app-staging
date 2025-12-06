@@ -3,11 +3,13 @@ import { Mongo } from 'meteor/mongo';
 export interface QuizQuestion {
   id: string;
   question: string;
-  type: 'multiple-choice' | 'true-false' | 'short-answer';
+  type: 'multiple-choice' | 'single-select' | 'true-false' | 'short-answer';
   options?: string[];
   correctAnswer: string | string[];
   points: number;
   order: number;
+  allowOther?: boolean;
+  otherLabel?: string;
 }
 
 export interface QuizSettings {

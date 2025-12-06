@@ -247,6 +247,33 @@ const HelpText = styled.p`
   color: #6b7280;
 `;
 
+const CheckboxWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+`;
+
+const Checkbox = styled.input`
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+`;
+
+const CheckboxLabel = styled.label`
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+`;
+
+const OtherInputWrapper = styled.div`
+  margin-top: 12px;
+  padding-left: 30px;
+`;
+
 export const QuestionEditor: React.FC<QuestionEditorProps> = ({
   isOpen,
   question,
@@ -256,12 +283,14 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
 }) => {
   const isEditMode = !!question;
   
-  const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false' | 'short-answer'>('multiple-choice');
+  const [questionType, setQuestionType] = useState<'multiple-choice' | 'single-select' | 'true-false' | 'short-answer'>('single-select');
   const [questionText, setQuestionText] = useState('');
   const [options, setOptions] = useState<string[]>(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState<string>('');
   const [points, setPoints] = useState<number>(1);
   const [explanation, setExplanation] = useState('');
+  const [allowOther, setAllowOther] = useState(false);
+  const [otherLabel, setOtherLabel] = useState('Other');
 
   // Initialize form from question data
   useEffect(() => {
@@ -272,14 +301,18 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
       setCorrectAnswer(Array.isArray(question.correctAnswer) ? question.correctAnswer[0] : question.correctAnswer);
       setPoints(question.points);
       setExplanation(''); // Explanation not in current schema
+      setAllowOther(question.allowOther || false);
+      setOtherLabel(question.otherLabel || 'Other');
     } else {
       // Reset form for new question
-      setQuestionType('multiple-choice');
+      setQuestionType('single-select');
       setQuestionText('');
-      setOptions(['', '', '', '']);
+      setOptions(['', '']);
       setCorrectAnswer('');
       setPoints(1);
       setExplanation('');
+      setAllowOther(false);
+      setOtherLabel('Other');
     }
   }, [question, isOpen]);
 
@@ -311,12 +344,12 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
       return;
     }
 
-    if (questionType === 'multiple-choice' && !correctAnswer) {
+    if ((questionType === 'multiple-choice' || questionType === 'single-select') && !correctAnswer) {
       alert('Please select a correct answer');
       return;
     }
 
-    if (questionType === 'multiple-choice' && options.some(opt => !opt.trim())) {
+    if ((questionType === 'multiple-choice' || questionType === 'single-select') && options.some(opt => !opt.trim())) {
       alert('Please fill in all options');
       return;
     }
@@ -328,7 +361,11 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
       correctAnswer: questionType === 'true-false' ? correctAnswer : 
                      questionType === 'short-answer' ? correctAnswer :
                      correctAnswer,
-      ...(questionType === 'multiple-choice' && { options: options.filter(opt => opt.trim()) }),
+      ...((questionType === 'multiple-choice' || questionType === 'single-select') && { 
+        options: options.filter(opt => opt.trim()),
+        allowOther,
+        otherLabel: allowOther ? otherLabel : undefined,
+      }),
     };
 
     if (isEditMode && question) {
@@ -356,6 +393,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
           <FormGroup>
             <Label>Question Type</Label>
             <Select value={questionType} onChange={(e) => setQuestionType(e.target.value as any)}>
+              <option value="single-select">Single Select (Radio)</option>
               <option value="multiple-choice">Multiple Choice</option>
               <option value="true-false">True/False</option>
               <option value="short-answer">Short Answer</option>
@@ -371,7 +409,7 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
             />
           </FormGroup>
 
-          {questionType === 'multiple-choice' && (
+          {(questionType === 'single-select' || questionType === 'multiple-choice') && (
             <FormGroup>
               <Label>Options (select the correct answer)</Label>
               <OptionsList>
@@ -401,6 +439,35 @@ export const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 <Plus size={16} />
                 Add Option
               </AddOptionButton>
+              
+              {questionType === 'single-select' && (
+                <>
+                  <CheckboxWrapper>
+                    <Checkbox
+                      type="checkbox"
+                      id="allowOther"
+                      checked={allowOther}
+                      onChange={(e) => setAllowOther(e.target.checked)}
+                    />
+                    <CheckboxLabel htmlFor="allowOther">
+                      Allow "Other" option with text input
+                    </CheckboxLabel>
+                  </CheckboxWrapper>
+                  
+                  {allowOther && (
+                    <OtherInputWrapper>
+                      <Label>"Other" Option Label</Label>
+                      <Input
+                        type="text"
+                        value={otherLabel}
+                        onChange={(e) => setOtherLabel(e.target.value)}
+                        placeholder="Other (please specify)"
+                      />
+                      <HelpText>Label shown for the "Other" option</HelpText>
+                    </OtherInputWrapper>
+                  )}
+                </>
+              )}
             </FormGroup>
           )}
 
