@@ -16,6 +16,7 @@ import { DividerBlock } from './DividerBlock';
 import { FlipboxesBlock } from './FlipboxesBlock';
 import { ImageTextBlock } from './ImageTextBlock';
 import { ContentGridBlock } from './ContentGridBlock';
+import { BannerBlock } from './BannerBlock';
 import { AnimationWrapper } from './AnimationWrapper';
 
 interface ContentBlockRendererProps {
@@ -78,6 +79,9 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
       
       case 'content-grid':
         return <ContentGridBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+      
+      case 'banner':
+        return <BannerBlock block={block} isEditing={isEditing} />;
       
       default:
         return (

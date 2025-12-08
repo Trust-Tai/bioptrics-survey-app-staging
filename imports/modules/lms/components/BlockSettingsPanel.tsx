@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { X, Settings, Plus, Trash2, Sparkles, Palette } from 'lucide-react';
-import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
+import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, BannerBlock, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
 
 interface BlockSettingsPanelProps {
   block: ContentBlock;
@@ -387,6 +387,8 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
         return <ImageTextSettings block={block} onUpdate={onUpdate} />;
       case 'content-grid':
         return <ContentGridSettings block={block} onUpdate={onUpdate} />;
+      case 'banner':
+        return <BannerSettings block={block} onUpdate={onUpdate} />;
       default:
         return <div>No settings available</div>;
     }
@@ -410,6 +412,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
       case 'flipboxes': return 'Flipboxes';
       case 'image-text': return 'Image-Text Block';
       case 'content-grid': return 'Content Grid';
+      case 'banner': return 'Hero Banner';
       default: return 'Block';
     }
   };
@@ -447,7 +450,12 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
         {activeTab === 'content' ? (
           renderSettings()
         ) : (
-          <AnimationSettingsPanel block={block} onUpdate={onUpdate} />
+          <>
+            {block.type === 'banner' && (
+              <BannerStyleSettings block={block as BannerBlock} onUpdate={onUpdate} />
+            )}
+            <AnimationSettingsPanel block={block} onUpdate={onUpdate} />
+          </>
         )}
       </PanelContent>
     </PanelContainer>
@@ -2671,6 +2679,319 @@ const ContentGridSettings: React.FC<{ block: ContentGridBlock; onUpdate: (settin
           <CheckboxLabel htmlFor="showShadow">Show shadow on hover</CheckboxLabel>
         </CheckboxWrapper>
       </SettingGroup>
+    </>
+  );
+};
+
+// Banner Settings
+const BannerSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        onUpdate({ backgroundImage: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <>
+      {/* Background Image */}
+      <SettingGroup>
+        <Label>Background Image</Label>
+        <ImageUploadContainer>
+          <ChangeImageButton onClick={() => fileInputRef.current?.click()}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Upload Image
+          </ChangeImageButton>
+          <HiddenFileInput
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          {block.settings?.backgroundImage && (
+            <ImagePreview src={block.settings.backgroundImage} alt="Banner preview" />
+          )}
+        </ImageUploadContainer>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Or enter image URL</Label>
+        <Input
+          type="url"
+          value={block.settings?.backgroundImage || ''}
+          onChange={(e) => onUpdate({ backgroundImage: e.target.value })}
+          placeholder="https://example.com/banner.jpg"
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Background Color (fallback)</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.backgroundColor || '#1f2937'}
+            onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.backgroundColor || '#1f2937'}
+            onChange={(e) => onUpdate({ backgroundColor: e.target.value })}
+            placeholder="#1f2937"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <Divider />
+
+      {/* Overlay Settings */}
+      <SettingGroup>
+        <Label>Overlay Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.overlayColor || '#000000'}
+            onChange={(e) => onUpdate({ overlayColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.overlayColor || '#000000'}
+            onChange={(e) => onUpdate({ overlayColor: e.target.value })}
+            placeholder="#000000"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Overlay Opacity: {block.settings?.overlayOpacity ?? 50}%</Label>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={block.settings?.overlayOpacity ?? 50}
+          onChange={(e) => onUpdate({ overlayOpacity: parseInt(e.target.value) })}
+          style={{ width: '100%' }}
+        />
+      </SettingGroup>
+
+      <Divider />
+
+      {/* Content */}
+      <SettingGroup>
+        <Label>Title</Label>
+        <Input
+          type="text"
+          value={block.settings?.title || ''}
+          onChange={(e) => onUpdate({ title: e.target.value })}
+          placeholder="Welcome to the Course"
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Title Font Size (px)</Label>
+        <Input
+          type="number"
+          min="16"
+          max="120"
+          value={block.settings?.titleSize || 48}
+          onChange={(e) => onUpdate({ titleSize: parseInt(e.target.value) || 48 })}
+          placeholder="48"
+        />
+        <HelpText>Recommended: 28-64px</HelpText>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Title Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.titleColor || '#ffffff'}
+            onChange={(e) => onUpdate({ titleColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.titleColor || '#ffffff'}
+            onChange={(e) => onUpdate({ titleColor: e.target.value })}
+            placeholder="#ffffff"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Subtitle</Label>
+        <Textarea
+          value={block.settings?.subtitle || ''}
+          onChange={(e) => onUpdate({ subtitle: e.target.value })}
+          placeholder="A brief description of what learners will discover..."
+          rows={3}
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Subtitle Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.subtitleColor || '#ffffff'}
+            onChange={(e) => onUpdate({ subtitleColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.subtitleColor || '#ffffff'}
+            onChange={(e) => onUpdate({ subtitleColor: e.target.value })}
+            placeholder="#ffffff"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <Divider />
+
+      {/* Button */}
+      <SettingGroup>
+        <Label>Button Text (optional)</Label>
+        <Input
+          type="text"
+          value={block.settings?.buttonText || ''}
+          onChange={(e) => onUpdate({ buttonText: e.target.value })}
+          placeholder="Get Started"
+        />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Button URL</Label>
+        <Input
+          type="url"
+          value={block.settings?.buttonUrl || ''}
+          onChange={(e) => onUpdate({ buttonUrl: e.target.value })}
+          placeholder="https://example.com"
+        />
+      </SettingGroup>
+
+    </>
+  );
+};
+
+// Banner Style Settings - For Style & Animation tab
+const BannerStyleSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  return (
+    <>
+      <SectionHeader>
+        <Palette size={16} />
+        Style Settings
+      </SectionHeader>
+
+      <SettingGroup>
+        <Label>Button Background Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.buttonColor || '#6366f1'}
+            onChange={(e) => onUpdate({ buttonColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.buttonColor || '#6366f1'}
+            onChange={(e) => onUpdate({ buttonColor: e.target.value })}
+            placeholder="#6366f1"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Button Text Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.buttonTextColor || '#ffffff'}
+            onChange={(e) => onUpdate({ buttonTextColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.buttonTextColor || '#ffffff'}
+            onChange={(e) => onUpdate({ buttonTextColor: e.target.value })}
+            placeholder="#ffffff"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <Label>Content Alignment</Label>
+        <Select
+          value={block.settings?.contentAlignment || 'center'}
+          onChange={(e) => onUpdate({ contentAlignment: e.target.value })}
+        >
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </Select>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Vertical Alignment</Label>
+        <Select
+          value={block.settings?.verticalAlignment || 'center'}
+          onChange={(e) => onUpdate({ verticalAlignment: e.target.value })}
+        >
+          <option value="top">Top</option>
+          <option value="center">Center</option>
+          <option value="bottom">Bottom</option>
+        </Select>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Banner Height (px)</Label>
+        <Input
+          type="number"
+          min="200"
+          max="1200"
+          value={block.settings?.height || 450}
+          onChange={(e) => onUpdate({ height: parseInt(e.target.value) || 450 })}
+          placeholder="450"
+        />
+        <HelpText>Recommended: 300-600px</HelpText>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="fullHeight"
+            checked={block.settings?.fullHeight || false}
+            onChange={(e) => onUpdate({ fullHeight: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="fullHeight">Full screen height (100vh)</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="parallax"
+            checked={block.settings?.parallax || false}
+            onChange={(e) => onUpdate({ parallax: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="parallax">Enable parallax effect</CheckboxLabel>
+        </CheckboxWrapper>
+        <HelpText>Background scrolls slower than content</HelpText>
+      </SettingGroup>
+
+      <Divider />
     </>
   );
 };
