@@ -226,7 +226,8 @@ export const AnimationWrapper: React.FC<AnimationWrapperProps> = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+  const prevSettingsRef = useRef<string>('');
 
   // Default animation settings
   const defaultAnimation: AnimationSettings = {
@@ -239,28 +240,63 @@ export const AnimationWrapper: React.FC<AnimationWrapperProps> = ({
   };
 
   const settings = animation || defaultAnimation;
-  const shouldAnimate = !isEditing && settings.enabled && settings.type !== 'none';
+  
+  // Enable animations in both editing and viewing modes
+  const shouldAnimate = settings.enabled && settings.type !== 'none';
 
-  // Handle on-load trigger
+  // Serialize current settings for comparison
+  const currentSettingsString = JSON.stringify({
+    enabled: settings.enabled,
+    type: settings.type,
+    duration: settings.duration,
+    delay: settings.delay,
+    trigger: settings.trigger,
+    easing: settings.easing,
+  });
+
+  // Auto re-trigger animation when settings change
+  useEffect(() => {
+    if (prevSettingsRef.current && prevSettingsRef.current !== currentSettingsString) {
+      // Settings changed - reset and replay animation
+      setIsVisible(false);
+      
+      // Brief delay to allow CSS to reset
+      const resetTimer = setTimeout(() => {
+        if (shouldAnimate) {
+          if (settings.trigger === 'on-load' || settings.trigger === 'on-scroll') {
+            setIsVisible(true);
+          }
+          setAnimationKey(prev => prev + 1);
+        }
+      }, 50);
+      
+      return () => clearTimeout(resetTimer);
+    }
+    prevSettingsRef.current = currentSettingsString;
+  }, [currentSettingsString, shouldAnimate, settings.trigger]);
+
+  // Handle on-load trigger - initial mount and when trigger changes to on-load
   useEffect(() => {
     if (!shouldAnimate) return;
-    if (settings.trigger === 'on-load' && !hasAnimated) {
-      setIsVisible(true);
-      setHasAnimated(true);
+    if (settings.trigger === 'on-load') {
+      // Small delay to ensure animation plays
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [settings.trigger, hasAnimated, shouldAnimate]);
+  }, [settings.trigger, shouldAnimate, animationKey]);
 
   // Handle on-scroll trigger with Intersection Observer
   useEffect(() => {
     if (!shouldAnimate) return;
-    if (settings.trigger !== 'on-scroll' || hasAnimated) return;
+    if (settings.trigger !== 'on-scroll') return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && !hasAnimated) {
+          if (entry.isIntersecting) {
             setIsVisible(true);
-            setHasAnimated(true);
           }
         });
       },
@@ -277,16 +313,17 @@ export const AnimationWrapper: React.FC<AnimationWrapperProps> = ({
     return () => {
       observer.disconnect();
     };
-  }, [settings.trigger, hasAnimated, shouldAnimate]);
+  }, [settings.trigger, shouldAnimate, animationKey]);
 
   // If not animating, render children directly
   if (!shouldAnimate) {
-    return <>{children}</>;
+    return <div style={{ width: '100%' }}>{children}</div>;
   }
 
   return (
     <AnimatedContainer
       ref={ref}
+      key={animationKey}
       $isVisible={isVisible || settings.trigger === 'on-hover'}
       $animationType={settings.type}
       $duration={settings.duration}

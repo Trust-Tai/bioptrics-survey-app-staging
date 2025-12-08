@@ -1,11 +1,94 @@
-import React from 'react';
-import styled from 'styled-components';
-import type { BannerBlock as BannerBlockType } from '../../types/contentBlocks';
+import React, { useState, useEffect } from 'react';
+import styled, { keyframes, css } from 'styled-components';
+import type { BannerBlock as BannerBlockType, BannerButton, BannerButtonHoverEffect, BannerButtonAnimation } from '../../types/contentBlocks';
 
 interface BannerBlockProps {
   block: BannerBlockType;
   isEditing: boolean;
 }
+
+// Animation keyframes
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const slideUp = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const slideLeft = keyframes`
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+`;
+
+const slideRight = keyframes`
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+`;
+
+const bounce = keyframes`
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+`;
+
+const pulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
+
+const getAnimation = (type: BannerButtonAnimation) => {
+  switch (type) {
+    case 'fade-in': return fadeIn;
+    case 'slide-up': return slideUp;
+    case 'slide-left': return slideLeft;
+    case 'slide-right': return slideRight;
+    case 'bounce': return bounce;
+    case 'pulse': return pulse;
+    default: return null;
+  }
+};
+
+const getHoverStyles = (effect: BannerButtonHoverEffect, hoverBg?: string, hoverText?: string) => {
+  const baseStyles = css`
+    ${hoverBg ? `background-color: ${hoverBg};` : ''}
+    ${hoverText ? `color: ${hoverText};` : ''}
+  `;
+  
+  switch (effect) {
+    case 'lift':
+      return css`
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        ${baseStyles}
+      `;
+    case 'glow':
+      return css`
+        box-shadow: 0 0 20px currentColor;
+        ${baseStyles}
+      `;
+    case 'scale':
+      return css`
+        transform: scale(1.05);
+        ${baseStyles}
+      `;
+    case 'darken':
+      return css`
+        filter: brightness(0.85);
+        ${baseStyles}
+      `;
+    case 'lighten':
+      return css`
+        filter: brightness(1.15);
+        ${baseStyles}
+      `;
+    default:
+      return baseStyles;
+  }
+};
 
 const BannerContainer = styled.div<{
   $backgroundImage?: string;
@@ -95,25 +178,80 @@ const Subtitle = styled.p<{ $color?: string }>`
   }
 `;
 
-const CTAButton = styled.a<{ $bgColor?: string; $textColor?: string }>`
+const ButtonsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+
+const CTAButton = styled.a<{
+  $bgColor: string;
+  $textColor: string;
+  $style: 'solid' | 'outline' | 'ghost';
+  $size: 'small' | 'medium' | 'large';
+  $borderRadius: number;
+  $hoverEffect: BannerButtonHoverEffect;
+  $hoverBgColor?: string;
+  $hoverTextColor?: string;
+  $animationType?: BannerButtonAnimation;
+  $animationDuration?: number;
+  $animationDelay?: number;
+  $animationEnabled?: boolean;
+  $animationKey?: number;
+}>`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 32px;
-  font-size: 16px;
   font-weight: 600;
   text-decoration: none;
-  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: ${props => props.$bgColor || '#6366f1'};
-  color: ${props => props.$textColor || '#ffffff'};
-  border: 2px solid ${props => props.$bgColor || '#6366f1'};
+  transition: all 0.3s ease;
+  border-radius: ${props => props.$borderRadius || 8}px;
   
+  /* Size */
+  ${props => {
+    switch (props.$size) {
+      case 'small':
+        return css`padding: 8px 16px; font-size: 14px;`;
+      case 'large':
+        return css`padding: 18px 40px; font-size: 18px;`;
+      default:
+        return css`padding: 14px 32px; font-size: 16px;`;
+    }
+  }}
+  
+  /* Style variants */
+  ${props => {
+    switch (props.$style) {
+      case 'outline':
+        return css`
+          background: transparent;
+          color: ${props.$textColor};
+          border: 2px solid ${props.$bgColor};
+        `;
+      case 'ghost':
+        return css`
+          background: transparent;
+          color: ${props.$textColor};
+          border: 2px solid transparent;
+        `;
+      default: // solid
+        return css`
+          background: ${props.$bgColor};
+          color: ${props.$textColor};
+          border: 2px solid ${props.$bgColor};
+        `;
+    }
+  }}
+  
+  /* Animation */
+  ${props => props.$animationEnabled && props.$animationType && props.$animationType !== 'none' && css`
+    animation: ${getAnimation(props.$animationType)} ${props.$animationDuration || 0.5}s ease ${props.$animationDelay || 0}s both;
+  `}
+  
+  /* Hover effect */
   &:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    ${props => getHoverStyles(props.$hoverEffect, props.$hoverBgColor, props.$hoverTextColor)}
   }
 `;
 
@@ -142,6 +280,41 @@ const EmptyState = styled.div<{ $color?: string }>`
   }
 `;
 
+// Button Icons
+const ArrowIcon = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+  </svg>
+);
+
+const ChevronIcon = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+  </svg>
+);
+
+const ExternalIcon = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+  </svg>
+);
+
+const getButtonIcon = (icon: string) => {
+  switch (icon) {
+    case 'arrow': return <ArrowIcon />;
+    case 'chevron': return <ChevronIcon />;
+    case 'external': return <ExternalIcon />;
+    case 'download': return <DownloadIcon />;
+    default: return null;
+  }
+};
+
 export const BannerBlock: React.FC<BannerBlockProps> = ({ block, isEditing }) => {
   const {
     backgroundImage,
@@ -153,10 +326,13 @@ export const BannerBlock: React.FC<BannerBlockProps> = ({ block, isEditing }) =>
     titleColor = '#ffffff',
     subtitle,
     subtitleColor = 'rgba(255, 255, 255, 0.9)',
+    // Legacy single button fields
     buttonText,
     buttonUrl,
     buttonColor = '#6366f1',
     buttonTextColor = '#ffffff',
+    // New buttons array
+    buttons = [],
     contentAlignment = 'center',
     verticalAlignment = 'center',
     height = 450,
@@ -164,7 +340,35 @@ export const BannerBlock: React.FC<BannerBlockProps> = ({ block, isEditing }) =>
     parallax = false,
   } = block.settings || {};
 
-  const hasContent = title || subtitle || buttonText;
+  // Animation key for replaying animations when settings change
+  const [animationKey, setAnimationKey] = useState(0);
+  
+  // Retrigger animations when buttons change
+  useEffect(() => {
+    setAnimationKey(prev => prev + 1);
+  }, [JSON.stringify(buttons)]);
+
+  // Get enabled buttons from the array, or use legacy single button
+  const activeButtons: BannerButton[] = buttons.length > 0 
+    ? buttons.filter(btn => btn.enabled)
+    : buttonText 
+      ? [{
+          id: 'legacy-btn',
+          enabled: true,
+          text: buttonText,
+          url: buttonUrl || '#',
+          icon: 'arrow' as const,
+          style: 'solid' as const,
+          size: 'medium' as const,
+          backgroundColor: buttonColor,
+          textColor: buttonTextColor,
+          borderRadius: 8,
+          hoverEffect: 'lift' as const,
+          animation: { enabled: false, type: 'none' as const, delay: 0, duration: 0.5 },
+        }]
+      : [];
+
+  const hasContent = title || subtitle || activeButtons.length > 0;
 
   return (
     <BannerContainer
@@ -200,18 +404,33 @@ export const BannerBlock: React.FC<BannerBlockProps> = ({ block, isEditing }) =>
               </Subtitle>
             )}
             
-            {buttonText && (
-              <CTAButton
-                href={isEditing ? undefined : buttonUrl || '#'}
-                $bgColor={buttonColor}
-                $textColor={buttonTextColor}
-                onClick={isEditing ? (e) => e.preventDefault() : undefined}
-              >
-                {buttonText}
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </CTAButton>
+            {activeButtons.length > 0 && (
+              <ButtonsContainer>
+                {activeButtons.map((btn, index) => (
+                  <CTAButton
+                    key={`${btn.id}-${animationKey}`}
+                    href={isEditing ? undefined : btn.url || '#'}
+                    target={btn.openInNewTab ? '_blank' : undefined}
+                    rel={btn.openInNewTab ? 'noopener noreferrer' : undefined}
+                    $bgColor={btn.backgroundColor}
+                    $textColor={btn.textColor}
+                    $style={btn.style}
+                    $size={btn.size}
+                    $borderRadius={btn.borderRadius}
+                    $hoverEffect={btn.hoverEffect}
+                    $hoverBgColor={btn.hoverBackgroundColor}
+                    $hoverTextColor={btn.hoverTextColor}
+                    $animationEnabled={btn.animation?.enabled}
+                    $animationType={btn.animation?.type}
+                    $animationDuration={btn.animation?.duration}
+                    $animationDelay={btn.animation?.delay}
+                    onClick={isEditing ? (e) => e.preventDefault() : undefined}
+                  >
+                    {btn.text}
+                    {getButtonIcon(btn.icon)}
+                  </CTAButton>
+                ))}
+              </ButtonsContainer>
             )}
           </>
         ) : (
