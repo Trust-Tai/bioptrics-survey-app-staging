@@ -17,6 +17,8 @@ import { FlipboxesBlock } from './FlipboxesBlock';
 import { ImageTextBlock } from './ImageTextBlock';
 import { ContentGridBlock } from './ContentGridBlock';
 import { BannerBlock } from './BannerBlock';
+import { TestimonialsBlock } from './TestimonialsBlock';
+import { TimelineBlock } from './TimelineBlock';
 import { AnimationWrapper } from './AnimationWrapper';
 
 interface ContentBlockRendererProps {
@@ -82,6 +84,12 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
       
       case 'banner':
         return <BannerBlock block={block} isEditing={isEditing} />;
+      
+      case 'testimonials':
+        return <TestimonialsBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+      
+      case 'timeline':
+        return <TimelineBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
       
       default:
         return (

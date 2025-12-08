@@ -1,6 +1,6 @@
 // Content Block Types for Topic Editor
 
-export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid' | 'banner';
+export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid' | 'banner' | 'testimonials' | 'timeline';
 
 // Animation Types
 export type AnimationType = 
@@ -368,7 +368,60 @@ export interface BannerBlock extends BaseContentBlock {
   settings: BannerBlockSettings;
 }
 
-export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock | BannerBlock;
+// Testimonials Block
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  role?: string;
+  company?: string;
+  avatar?: string;
+  content: string;
+  rating?: number; // 1-5 stars
+}
+
+export interface TestimonialsBlockSettings {
+  testimonials: TestimonialItem[];
+  layout: 'grid' | 'carousel' | 'list';
+  columns?: number; // 1-3 for grid
+  showRating?: boolean;
+  showAvatar?: boolean;
+  cardStyle?: 'elevated' | 'bordered' | 'flat';
+  accentColor?: string;
+  autoplay?: boolean; // for carousel
+  autoplaySpeed?: number; // seconds
+}
+
+export interface TestimonialsBlock extends BaseContentBlock {
+  type: 'testimonials';
+  settings: TestimonialsBlockSettings;
+}
+
+// Timeline Block
+export interface TimelineItem {
+  id: string;
+  title: string;
+  date?: string;
+  content: string;
+  icon?: string;
+  iconColor?: string;
+}
+
+export interface TimelineBlockSettings {
+  items: TimelineItem[];
+  layout: 'vertical' | 'horizontal';
+  lineColor?: string;
+  dotColor?: string;
+  alternating?: boolean; // for vertical - items alternate left/right
+  showDates?: boolean;
+  showIcons?: boolean;
+}
+
+export interface TimelineBlock extends BaseContentBlock {
+  type: 'timeline';
+  settings: TimelineBlockSettings;
+}
+
+export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock | BannerBlock | TestimonialsBlock | TimelineBlock;
 
 // Block Library Item
 export interface BlockLibraryItem {

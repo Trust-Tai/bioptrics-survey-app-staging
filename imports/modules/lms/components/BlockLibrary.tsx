@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FileText, Image, Video, Play, Music, X, FileType, Download, ChevronDown, AlertCircle, MousePointerClick, Folder, Minus, RotateCw, ImageIcon, Grid3x3, LayoutTemplate } from 'lucide-react';
+import { FileText, Image, Video, Play, Music, X, FileType, Download, ChevronDown, AlertCircle, MousePointerClick, Folder, Minus, RotateCw, ImageIcon, Grid3x3, LayoutTemplate, MessageSquareQuote, GitBranch } from 'lucide-react';
 import type { ContentBlockType } from '../types/contentBlocks';
 
 interface BlockLibraryProps {
@@ -266,6 +266,20 @@ const blockLibraryData = [
         description: 'Tabbed content panels',
         icon: <Folder size={20} />,
         color: '#14b8a6',
+      },
+      {
+        type: 'testimonials' as ContentBlockType,
+        name: 'Testimonials',
+        description: 'Student reviews & testimonials',
+        icon: <MessageSquareQuote size={20} />,
+        color: '#f59e0b',
+      },
+      {
+        type: 'timeline' as ContentBlockType,
+        name: 'Timeline',
+        description: 'Vertical or horizontal timeline',
+        icon: <GitBranch size={20} />,
+        color: '#8b5cf6',
       },
     ],
   },

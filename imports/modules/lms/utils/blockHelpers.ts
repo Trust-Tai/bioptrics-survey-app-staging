@@ -322,6 +322,99 @@ export const createDefaultBlock = (blockType: ContentBlockType, order: number): 
         },
       };
 
+    case 'testimonials':
+      return {
+        ...baseBlock,
+        type: 'testimonials',
+        settings: {
+          testimonials: [
+            {
+              id: `testimonial-${Date.now()}-1`,
+              name: 'Sarah Johnson',
+              role: 'Marketing Manager',
+              company: 'TechCorp',
+              avatar: '',
+              content: 'This course completely transformed my understanding of the subject. The content was well-structured and the instructor made complex topics easy to understand.',
+              rating: 5,
+            },
+            {
+              id: `testimonial-${Date.now()}-2`,
+              name: 'Michael Chen',
+              role: 'Software Developer',
+              company: 'StartupXYZ',
+              avatar: '',
+              content: 'Excellent course material with practical examples. I was able to apply what I learned immediately in my work. Highly recommended!',
+              rating: 5,
+            },
+            {
+              id: `testimonial-${Date.now()}-3`,
+              name: 'Emily Rodriguez',
+              role: 'Product Designer',
+              company: 'DesignStudio',
+              avatar: '',
+              content: 'The best online learning experience I\'ve had. Clear explanations, great pace, and valuable insights throughout the entire course.',
+              rating: 4,
+            },
+          ],
+          layout: 'grid',
+          columns: 3,
+          showRating: true,
+          showAvatar: true,
+          cardStyle: 'elevated',
+          accentColor: '#6366f1',
+          autoplay: false,
+          autoplaySpeed: 5,
+        },
+      };
+
+    case 'timeline':
+      return {
+        ...baseBlock,
+        type: 'timeline',
+        settings: {
+          items: [
+            {
+              id: `timeline-${Date.now()}-1`,
+              title: 'Getting Started',
+              date: 'Week 1',
+              content: 'Introduction to core concepts and foundational knowledge. Set up your learning environment and get familiar with the basics.',
+              icon: 'rocket',
+              iconColor: '#6366f1',
+            },
+            {
+              id: `timeline-${Date.now()}-2`,
+              title: 'Building Skills',
+              date: 'Week 2-3',
+              content: 'Deep dive into practical applications. Work through hands-on exercises and build your first projects.',
+              icon: 'star',
+              iconColor: '#10b981',
+            },
+            {
+              id: `timeline-${Date.now()}-3`,
+              title: 'Advanced Topics',
+              date: 'Week 4',
+              content: 'Explore advanced techniques and best practices. Learn from real-world case studies and expert insights.',
+              icon: 'flag',
+              iconColor: '#f59e0b',
+            },
+            {
+              id: `timeline-${Date.now()}-4`,
+              title: 'Completion',
+              date: 'Week 5',
+              content: 'Final project and assessment. Apply everything you\'ve learned and earn your certificate of completion.',
+              icon: 'check',
+              iconColor: '#ef4444',
+            },
+          ],
+          layout: 'vertical',
+          lineColor: '#e5e7eb',
+          dotColor: '#6366f1',
+          alternating: true,
+          showDates: true,
+          showIcons: true,
+        },
+      };
+
     default:
       throw new Error(`Unknown block type: ${blockType}`);
   }
@@ -381,6 +474,10 @@ export const getBlockIcon = (blockType: ContentBlockType): string => {
       return '⊞';
     case 'banner':
       return '🎯';
+    case 'testimonials':
+      return '💬';
+    case 'timeline':
+      return '📅';
     default:
       return '📄';
   }
@@ -402,6 +499,10 @@ export const getBlockColor = (blockType: ContentBlockType): string => {
     case 'content-grid':
       return '#10b981'; // teal/green
     case 'banner':
+      return '#8b5cf6'; // purple
+    case 'testimonials':
+      return '#f59e0b'; // amber
+    case 'timeline':
       return '#8b5cf6'; // purple
     default:
       return '#6b7280'; // gray

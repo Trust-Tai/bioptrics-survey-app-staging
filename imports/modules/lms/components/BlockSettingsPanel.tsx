@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { X, Settings, Plus, Trash2, Sparkles, Palette } from 'lucide-react';
-import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, BannerBlock, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
+import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, BannerBlock, TestimonialsBlock, TestimonialItem, TimelineBlock, TimelineItem, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
 
 interface BlockSettingsPanelProps {
   block: ContentBlock;
@@ -348,6 +348,52 @@ const RadioInput = styled.input`
   cursor: pointer;
 `;
 
+const ItemTabs = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+`;
+
+const ItemTab = styled.button<{ $active: boolean }>`
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid ${props => props.$active ? '#6366f1' : '#e5e7eb'};
+  background: ${props => props.$active ? '#eef2ff' : 'white'};
+  color: ${props => props.$active ? '#6366f1' : '#6b7280'};
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+  }
+`;
+
+const DeleteItemButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: center;
+  
+  &:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+  }
+`;
+
 type SettingsTab = 'content' | 'style';
 
 export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, onUpdate, onClose }) => {
@@ -389,6 +435,10 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
         return <ContentGridSettings block={block} onUpdate={onUpdate} />;
       case 'banner':
         return <BannerSettings block={block} onUpdate={onUpdate} />;
+      case 'testimonials':
+        return <TestimonialsSettings block={block} onUpdate={onUpdate} />;
+      case 'timeline':
+        return <TimelineSettings block={block} onUpdate={onUpdate} />;
       default:
         return <div>No settings available</div>;
     }
@@ -413,6 +463,8 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
       case 'image-text': return 'Image-Text Block';
       case 'content-grid': return 'Content Grid';
       case 'banner': return 'Hero Banner';
+      case 'testimonials': return 'Testimonials';
+      case 'timeline': return 'Timeline';
       default: return 'Block';
     }
   };
@@ -2992,6 +3044,473 @@ const BannerStyleSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: a
       </SettingGroup>
 
       <Divider />
+    </>
+  );
+};
+
+// Testimonials Settings
+const TestimonialsSettings: React.FC<{ block: TestimonialsBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const testimonials = block.settings?.testimonials || [];
+  const selectedTestimonial = testimonials[selectedIndex];
+
+  const handleAddTestimonial = () => {
+    const newTestimonial: TestimonialItem = {
+      id: `testimonial-${Date.now()}`,
+      name: 'New Person',
+      role: 'Role',
+      company: 'Company',
+      avatar: '',
+      content: 'Enter testimonial content here...',
+      rating: 5,
+    };
+    onUpdate({ testimonials: [...testimonials, newTestimonial] });
+    setSelectedIndex(testimonials.length);
+  };
+
+  const handleUpdateTestimonial = (field: keyof TestimonialItem, value: any) => {
+    const updated = testimonials.map((t, i) =>
+      i === selectedIndex ? { ...t, [field]: value } : t
+    );
+    onUpdate({ testimonials: updated });
+  };
+
+  const handleDeleteTestimonial = (index: number) => {
+    const updated = testimonials.filter((_, i) => i !== index);
+    onUpdate({ testimonials: updated });
+    if (selectedIndex >= updated.length) {
+      setSelectedIndex(Math.max(0, updated.length - 1));
+    }
+  };
+
+  return (
+    <>
+      <SettingGroup>
+        <Label>Layout</Label>
+        <Select
+          value={block.settings?.layout || 'grid'}
+          onChange={(e) => onUpdate({ layout: e.target.value })}
+        >
+          <option value="grid">Grid</option>
+          <option value="carousel">Carousel</option>
+          <option value="list">List</option>
+        </Select>
+      </SettingGroup>
+
+      {block.settings?.layout === 'grid' && (
+        <SettingGroup>
+          <Label>Columns</Label>
+          <Select
+            value={block.settings?.columns || 3}
+            onChange={(e) => onUpdate({ columns: parseInt(e.target.value) })}
+          >
+            <option value={1}>1 Column</option>
+            <option value={2}>2 Columns</option>
+            <option value={3}>3 Columns</option>
+          </Select>
+        </SettingGroup>
+      )}
+
+      <SettingGroup>
+        <Label>Card Style</Label>
+        <Select
+          value={block.settings?.cardStyle || 'elevated'}
+          onChange={(e) => onUpdate({ cardStyle: e.target.value })}
+        >
+          <option value="elevated">Elevated (Shadow)</option>
+          <option value="bordered">Bordered</option>
+          <option value="flat">Flat</option>
+        </Select>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Accent Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.accentColor || '#6366f1'}
+            onChange={(e) => onUpdate({ accentColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.accentColor || '#6366f1'}
+            onChange={(e) => onUpdate({ accentColor: e.target.value })}
+            placeholder="#6366f1"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="showRating"
+            checked={block.settings?.showRating !== false}
+            onChange={(e) => onUpdate({ showRating: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="showRating">Show star ratings</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="showAvatar"
+            checked={block.settings?.showAvatar !== false}
+            onChange={(e) => onUpdate({ showAvatar: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="showAvatar">Show avatars</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      {block.settings?.layout === 'carousel' && (
+        <>
+          <SettingGroup>
+            <CheckboxWrapper>
+              <Checkbox
+                type="checkbox"
+                id="autoplay"
+                checked={block.settings?.autoplay || false}
+                onChange={(e) => onUpdate({ autoplay: e.target.checked })}
+              />
+              <CheckboxLabel htmlFor="autoplay">Autoplay carousel</CheckboxLabel>
+            </CheckboxWrapper>
+          </SettingGroup>
+
+          {block.settings?.autoplay && (
+            <SettingGroup>
+              <Label>Autoplay Speed (seconds)</Label>
+              <Input
+                type="number"
+                min="1"
+                max="20"
+                value={block.settings?.autoplaySpeed || 5}
+                onChange={(e) => onUpdate({ autoplaySpeed: parseInt(e.target.value) || 5 })}
+              />
+            </SettingGroup>
+          )}
+        </>
+      )}
+
+      <Divider />
+
+      <SettingGroup>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <Label style={{ marginBottom: 0 }}>Testimonials ({testimonials.length})</Label>
+          <AddButton onClick={handleAddTestimonial}>
+            <Plus size={14} />
+            Add
+          </AddButton>
+        </div>
+
+        {testimonials.length > 0 && (
+          <ItemTabs>
+            {testimonials.map((t, i) => (
+              <ItemTab key={t.id} $active={selectedIndex === i} onClick={() => setSelectedIndex(i)}>
+                {t.name.split(' ')[0] || `#${i + 1}`}
+              </ItemTab>
+            ))}
+          </ItemTabs>
+        )}
+      </SettingGroup>
+
+      {selectedTestimonial && (
+        <>
+          <SettingGroup>
+            <Label>Name</Label>
+            <Input
+              type="text"
+              value={selectedTestimonial.name}
+              onChange={(e) => handleUpdateTestimonial('name', e.target.value)}
+              placeholder="John Doe"
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Role</Label>
+            <Input
+              type="text"
+              value={selectedTestimonial.role || ''}
+              onChange={(e) => handleUpdateTestimonial('role', e.target.value)}
+              placeholder="Marketing Manager"
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Company</Label>
+            <Input
+              type="text"
+              value={selectedTestimonial.company || ''}
+              onChange={(e) => handleUpdateTestimonial('company', e.target.value)}
+              placeholder="Acme Inc."
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Avatar URL</Label>
+            <Input
+              type="url"
+              value={selectedTestimonial.avatar || ''}
+              onChange={(e) => handleUpdateTestimonial('avatar', e.target.value)}
+              placeholder="https://example.com/avatar.jpg"
+            />
+            <HelpText>Leave empty to show initials</HelpText>
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Testimonial Content</Label>
+            <Textarea
+              value={selectedTestimonial.content}
+              onChange={(e) => handleUpdateTestimonial('content', e.target.value)}
+              placeholder="Enter testimonial..."
+              rows={4}
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Rating (1-5 stars)</Label>
+            <Select
+              value={selectedTestimonial.rating || 5}
+              onChange={(e) => handleUpdateTestimonial('rating', parseInt(e.target.value))}
+            >
+              <option value={5}>5 Stars</option>
+              <option value={4}>4 Stars</option>
+              <option value={3}>3 Stars</option>
+              <option value={2}>2 Stars</option>
+              <option value={1}>1 Star</option>
+            </Select>
+          </SettingGroup>
+
+          <SettingGroup>
+            <DeleteItemButton onClick={() => handleDeleteTestimonial(selectedIndex)}>
+              <Trash2 size={14} />
+              Delete Testimonial
+            </DeleteItemButton>
+          </SettingGroup>
+        </>
+      )}
+    </>
+  );
+};
+
+// Timeline Settings
+const TimelineSettings: React.FC<{ block: TimelineBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const items = block.settings?.items || [];
+  const selectedItem = items[selectedIndex];
+
+  const handleAddItem = () => {
+    const newItem: TimelineItem = {
+      id: `timeline-${Date.now()}`,
+      title: 'New Step',
+      date: '',
+      content: 'Enter description...',
+      icon: 'default',
+      iconColor: '#6366f1',
+    };
+    onUpdate({ items: [...items, newItem] });
+    setSelectedIndex(items.length);
+  };
+
+  const handleUpdateItem = (field: keyof TimelineItem, value: any) => {
+    const updated = items.map((item, i) =>
+      i === selectedIndex ? { ...item, [field]: value } : item
+    );
+    onUpdate({ items: updated });
+  };
+
+  const handleDeleteItem = (index: number) => {
+    const updated = items.filter((_, i) => i !== index);
+    onUpdate({ items: updated });
+    if (selectedIndex >= updated.length) {
+      setSelectedIndex(Math.max(0, updated.length - 1));
+    }
+  };
+
+  return (
+    <>
+      <SettingGroup>
+        <Label>Layout</Label>
+        <Select
+          value={block.settings?.layout || 'vertical'}
+          onChange={(e) => onUpdate({ layout: e.target.value })}
+        >
+          <option value="vertical">Vertical</option>
+          <option value="horizontal">Horizontal</option>
+        </Select>
+      </SettingGroup>
+
+      {block.settings?.layout === 'vertical' && (
+        <SettingGroup>
+          <CheckboxWrapper>
+            <Checkbox
+              type="checkbox"
+              id="alternating"
+              checked={block.settings?.alternating !== false}
+              onChange={(e) => onUpdate({ alternating: e.target.checked })}
+            />
+            <CheckboxLabel htmlFor="alternating">Alternating layout</CheckboxLabel>
+          </CheckboxWrapper>
+          <HelpText>Items alternate between left and right</HelpText>
+        </SettingGroup>
+      )}
+
+      <SettingGroup>
+        <Label>Line Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.lineColor || '#e5e7eb'}
+            onChange={(e) => onUpdate({ lineColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.lineColor || '#e5e7eb'}
+            onChange={(e) => onUpdate({ lineColor: e.target.value })}
+            placeholder="#e5e7eb"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Dot Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.dotColor || '#6366f1'}
+            onChange={(e) => onUpdate({ dotColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.dotColor || '#6366f1'}
+            onChange={(e) => onUpdate({ dotColor: e.target.value })}
+            placeholder="#6366f1"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="showDates"
+            checked={block.settings?.showDates !== false}
+            onChange={(e) => onUpdate({ showDates: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="showDates">Show dates</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="showIcons"
+            checked={block.settings?.showIcons || false}
+            onChange={(e) => onUpdate({ showIcons: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="showIcons">Show icons instead of dots</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <Label style={{ marginBottom: 0 }}>Timeline Items ({items.length})</Label>
+          <AddButton onClick={handleAddItem}>
+            <Plus size={14} />
+            Add
+          </AddButton>
+        </div>
+
+        {items.length > 0 && (
+          <ItemTabs>
+            {items.map((item, i) => (
+              <ItemTab key={item.id} $active={selectedIndex === i} onClick={() => setSelectedIndex(i)}>
+                {i + 1}
+              </ItemTab>
+            ))}
+          </ItemTabs>
+        )}
+      </SettingGroup>
+
+      {selectedItem && (
+        <>
+          <SettingGroup>
+            <Label>Title</Label>
+            <Input
+              type="text"
+              value={selectedItem.title}
+              onChange={(e) => handleUpdateItem('title', e.target.value)}
+              placeholder="Step Title"
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Date/Label</Label>
+            <Input
+              type="text"
+              value={selectedItem.date || ''}
+              onChange={(e) => handleUpdateItem('date', e.target.value)}
+              placeholder="Week 1, Jan 2024, etc."
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Content</Label>
+            <Textarea
+              value={selectedItem.content}
+              onChange={(e) => handleUpdateItem('content', e.target.value)}
+              placeholder="Enter description..."
+              rows={3}
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Icon</Label>
+            <Select
+              value={selectedItem.icon || 'default'}
+              onChange={(e) => handleUpdateItem('icon', e.target.value)}
+            >
+              <option value="default">Clock (Default)</option>
+              <option value="check">Checkmark</option>
+              <option value="star">Star</option>
+              <option value="flag">Flag</option>
+              <option value="rocket">Rocket</option>
+            </Select>
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Icon Color</Label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ColorInput
+                type="color"
+                value={selectedItem.iconColor || '#6366f1'}
+                onChange={(e) => handleUpdateItem('iconColor', e.target.value)}
+              />
+              <Input
+                type="text"
+                value={selectedItem.iconColor || '#6366f1'}
+                onChange={(e) => handleUpdateItem('iconColor', e.target.value)}
+                placeholder="#6366f1"
+                style={{ flex: 1 }}
+              />
+            </div>
+          </SettingGroup>
+
+          <SettingGroup>
+            <DeleteItemButton onClick={() => handleDeleteItem(selectedIndex)}>
+              <Trash2 size={14} />
+              Delete Item
+            </DeleteItemButton>
+          </SettingGroup>
+        </>
+      )}
     </>
   );
 };
