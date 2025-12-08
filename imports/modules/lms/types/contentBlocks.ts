@@ -2,10 +2,40 @@
 
 export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid';
 
+// Animation Types
+export type AnimationType = 
+  | 'none'
+  | 'fade-in'
+  | 'fade-in-up'
+  | 'fade-in-down'
+  | 'fade-in-left'
+  | 'fade-in-right'
+  | 'zoom-in'
+  | 'zoom-out'
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'bounce'
+  | 'flip'
+  | 'rotate';
+
+export type AnimationTrigger = 'on-load' | 'on-scroll' | 'on-hover';
+
+export interface AnimationSettings {
+  enabled: boolean;
+  type: AnimationType;
+  duration: number; // in seconds
+  delay: number; // in seconds
+  trigger: AnimationTrigger;
+  easing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
+}
+
 export interface BaseContentBlock {
   id: string;
   type: ContentBlockType;
   order: number;
+  animation?: AnimationSettings;
 }
 
 export interface RichTextBlockSettings {

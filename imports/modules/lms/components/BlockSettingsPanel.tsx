@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { X, Settings, Plus, Trash2 } from 'lucide-react';
-import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem } from '../types/contentBlocks';
+import { X, Settings, Plus, Trash2, Sparkles, Palette } from 'lucide-react';
+import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
 
 interface BlockSettingsPanelProps {
   block: ContentBlock;
@@ -60,6 +60,38 @@ const CloseButton = styled.button`
 const PanelContent = styled.div`
   flex: 1;
   overflow-y: auto;
+  padding: 20px;
+`;
+
+const TabsContainer = styled.div`
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+`;
+
+const Tab = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: ${props => props.$active ? '#6366f1' : '#6b7280'};
+  background: ${props => props.$active ? 'white' : 'transparent'};
+  border: none;
+  border-bottom: 2px solid ${props => props.$active ? '#6366f1' : 'transparent'};
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  
+  &:hover {
+    color: ${props => props.$active ? '#6366f1' : '#374151'};
+    background: ${props => props.$active ? 'white' : '#f3f4f6'};
+  }
+`;
+
+const TabContent = styled.div`
   padding: 20px;
 `;
 
@@ -244,7 +276,83 @@ const SmallInput = styled(Input)`
   padding: 6px 10px;
 `;
 
+const SectionDivider = styled.div`
+  margin: 24px 0 16px 0;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const SectionTitle = styled.h4`
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+`;
+
+const RangeWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const RangeInput = styled.input`
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  appearance: none;
+  cursor: pointer;
+  
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+  }
+`;
+
+const RangeValue = styled.span`
+  font-size: 13px;
+  color: #6b7280;
+  min-width: 40px;
+  text-align: right;
+`;
+
+const RadioGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const RadioOption = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+`;
+
+const RadioInput = styled.input`
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+`;
+
+type SettingsTab = 'content' | 'style';
+
 export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, onUpdate, onClose }) => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('content');
+
   const renderSettings = () => {
     switch (block.type) {
       case 'rich-text':
@@ -318,8 +426,29 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
         </CloseButton>
       </PanelHeader>
       
+      <TabsContainer>
+        <Tab 
+          $active={activeTab === 'content'} 
+          onClick={() => setActiveTab('content')}
+        >
+          <Settings size={14} />
+          Content
+        </Tab>
+        <Tab 
+          $active={activeTab === 'style'} 
+          onClick={() => setActiveTab('style')}
+        >
+          <Sparkles size={14} />
+          Style & Animation
+        </Tab>
+      </TabsContainer>
+
       <PanelContent>
-        {renderSettings()}
+        {activeTab === 'content' ? (
+          renderSettings()
+        ) : (
+          <AnimationSettingsPanel block={block} onUpdate={onUpdate} />
+        )}
       </PanelContent>
     </PanelContainer>
   );
@@ -2050,7 +2179,6 @@ const FlipboxesSettings: React.FC<{ block: FlipboxesBlock; onUpdate: (settings: 
 
 // Image-Text Settings (matching reference design)
 const ImageTextSettings: React.FC<{ block: ImageTextBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
-  const [activeTab, setActiveTab] = React.useState<'content' | 'style'>('content');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Default placeholder image
@@ -2076,172 +2204,145 @@ const ImageTextSettings: React.FC<{ block: ImageTextBlock; onUpdate: (settings: 
   return (
     <>
       <SettingGroup>
-        <TabNavigation style={{ marginBottom: '16px', borderBottom: '2px solid #e5e7eb' }}>
-          <TabButton
-            isActive={activeTab === 'content'}
-            onClick={() => setActiveTab('content')}
-            style={{ fontSize: '14px', padding: '10px 16px' }}
-          >
-            Content
-          </TabButton>
-          <TabButton
-            isActive={activeTab === 'style'}
-            onClick={() => setActiveTab('style')}
-            style={{ fontSize: '14px', padding: '10px 16px' }}
-          >
-            Style
-          </TabButton>
-        </TabNavigation>
+        <Label>Image Source</Label>
+        <ImageUploadContainer>
+          <ChangeImageButton onClick={handleChangeImage}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Change Image
+          </ChangeImageButton>
+          <HiddenFileInput
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          <ImagePreview src={currentImage} alt="Preview" />
+        </ImageUploadContainer>
+        <HelpText>Click "Change Image" to upload from your computer</HelpText>
       </SettingGroup>
 
-      {activeTab === 'content' && (
-        <>
-          <SettingGroup>
-            <Label>Image Source</Label>
-            <ImageUploadContainer>
-              <ChangeImageButton onClick={handleChangeImage}>
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Change Image
-              </ChangeImageButton>
-              <HiddenFileInput
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-              <ImagePreview src={currentImage} alt="Preview" />
-            </ImageUploadContainer>
-            <HelpText>Click "Change Image" to upload from your computer</HelpText>
-          </SettingGroup>
+      <SettingGroup>
+        <Label>Or enter image URL</Label>
+        <Input
+          type="url"
+          value={block.settings?.imageUrl || ''}
+          onChange={(e) => onUpdate({ imageUrl: e.target.value })}
+          placeholder="https://example.com/image.jpg"
+        />
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Or enter image URL</Label>
-            <Input
-              type="url"
-              value={block.settings?.imageUrl || ''}
-              onChange={(e) => onUpdate({ imageUrl: e.target.value })}
-              placeholder="https://example.com/image.jpg"
-            />
-          </SettingGroup>
+      <SettingGroup>
+        <Label>Alt Text</Label>
+        <Input
+          type="text"
+          value={block.settings?.imageAlt || ''}
+          onChange={(e) => onUpdate({ imageAlt: e.target.value })}
+          placeholder="Sample image"
+        />
+        <HelpText>Describe the image for accessibility</HelpText>
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Alt Text</Label>
-            <Input
-              type="text"
-              value={block.settings?.imageAlt || ''}
-              onChange={(e) => onUpdate({ imageAlt: e.target.value })}
-              placeholder="Sample image"
-            />
-            <HelpText>Describe the image for accessibility</HelpText>
-          </SettingGroup>
+      <Divider />
 
-          <Divider />
+      <SettingGroup>
+        <Label>Add Heading</Label>
+        <Input
+          type="text"
+          value={block.settings?.heading || ''}
+          onChange={(e) => onUpdate({ heading: e.target.value })}
+          placeholder="Sample Heading"
+        />
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Add Heading</Label>
-            <Input
-              type="text"
-              value={block.settings?.heading || ''}
-              onChange={(e) => onUpdate({ heading: e.target.value })}
-              placeholder="Sample Heading"
-            />
-          </SettingGroup>
+      <SettingGroup>
+        <Label>Heading Level</Label>
+        <Select
+          value={block.settings?.headingLevel || 'h2'}
+          onChange={(e) => onUpdate({ headingLevel: e.target.value })}
+        >
+          <option value="h1">H1 - Main Heading</option>
+          <option value="h2">H2 - Section Heading</option>
+          <option value="h3">H3 - Subsection Heading</option>
+          <option value="h4">H4 - Minor Heading</option>
+          <option value="h5">H5 - Small Heading</option>
+          <option value="h6">H6 - Smallest Heading</option>
+        </Select>
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Heading Level</Label>
-            <Select
-              value={block.settings?.headingLevel || 'h2'}
-              onChange={(e) => onUpdate({ headingLevel: e.target.value })}
-            >
-              <option value="h1">H1 - Main Heading</option>
-              <option value="h2">H2 - Section Heading</option>
-              <option value="h3">H3 - Subsection Heading</option>
-              <option value="h4">H4 - Minor Heading</option>
-              <option value="h5">H5 - Small Heading</option>
-              <option value="h6">H6 - Smallest Heading</option>
-            </Select>
-          </SettingGroup>
+      <Divider />
 
-          <Divider />
+      <SettingGroup>
+        <Label>Content</Label>
+        <Textarea
+          value={block.settings?.content || ''}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          placeholder="Add your text content here..."
+          rows={6}
+        />
+        <HelpText>Supports HTML formatting</HelpText>
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Content</Label>
-            <Textarea
-              value={block.settings?.content || ''}
-              onChange={(e) => onUpdate({ content: e.target.value })}
-              placeholder="Add your text content here..."
-              rows={6}
-            />
-            <HelpText>Supports HTML formatting</HelpText>
-          </SettingGroup>
+      <Divider />
 
-          <Divider />
+      <SettingGroup>
+        <Label>Call-to-Action Button (Optional)</Label>
+        <Input
+          type="text"
+          value={block.settings?.buttonText || ''}
+          onChange={(e) => onUpdate({ buttonText: e.target.value })}
+          placeholder="Learn More"
+          style={{ marginBottom: '8px' }}
+        />
+        <Input
+          type="url"
+          value={block.settings?.buttonUrl || ''}
+          onChange={(e) => onUpdate({ buttonUrl: e.target.value })}
+          placeholder="https://example.com"
+        />
+        <HelpText>Add button text and URL</HelpText>
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Call-to-Action Button (Optional)</Label>
-            <Input
-              type="text"
-              value={block.settings?.buttonText || ''}
-              onChange={(e) => onUpdate({ buttonText: e.target.value })}
-              placeholder="Learn More"
-              style={{ marginBottom: '8px' }}
-            />
-            <Input
-              type="url"
-              value={block.settings?.buttonUrl || ''}
-              onChange={(e) => onUpdate({ buttonUrl: e.target.value })}
-              placeholder="https://example.com"
-            />
-            <HelpText>Add button text and URL</HelpText>
-          </SettingGroup>
-        </>
-      )}
+      <Divider />
 
-      {activeTab === 'style' && (
-        <>
-          <SettingGroup>
-            <Label>Layout Style</Label>
-            <Select
-              value={block.settings?.layout || 'image-left'}
-              onChange={(e) => onUpdate({ layout: e.target.value })}
-            >
-              <option value="image-left">Image Left, Text Right</option>
-              <option value="image-right">Image Right, Text Left</option>
-              <option value="image-top">Image Top, Text Bottom</option>
-              <option value="image-bottom">Image Bottom, Text Top</option>
-            </Select>
-            <HelpText>Choose how to arrange image and text</HelpText>
-          </SettingGroup>
+      <SettingGroup>
+        <Label>Layout Style</Label>
+        <Select
+          value={block.settings?.layout || 'image-left'}
+          onChange={(e) => onUpdate({ layout: e.target.value })}
+        >
+          <option value="image-left">Image Left, Text Right</option>
+          <option value="image-right">Image Right, Text Left</option>
+          <option value="image-top">Image Top, Text Bottom</option>
+          <option value="image-bottom">Image Bottom, Text Top</option>
+        </Select>
+        <HelpText>Choose how to arrange image and text</HelpText>
+      </SettingGroup>
 
-          <Divider />
+      <SettingGroup>
+        <Label>Button Style</Label>
+        <Select
+          value={block.settings?.buttonVariant || 'primary'}
+          onChange={(e) => onUpdate({ buttonVariant: e.target.value })}
+        >
+          <option value="primary">Primary (Blue)</option>
+          <option value="secondary">Secondary (Outline)</option>
+          <option value="success">Success (Green)</option>
+        </Select>
+      </SettingGroup>
 
-          <SettingGroup>
-            <Label>Button Style</Label>
-            <Select
-              value={block.settings?.buttonVariant || 'primary'}
-              onChange={(e) => onUpdate({ buttonVariant: e.target.value })}
-            >
-              <option value="primary">Primary (Blue)</option>
-              <option value="secondary">Secondary (Outline)</option>
-              <option value="success">Success (Green)</option>
-            </Select>
-          </SettingGroup>
-
-          <SettingGroup>
-            <Label>Button Alignment</Label>
-            <Select
-              value={block.settings?.buttonAlignment || 'left'}
-              onChange={(e) => onUpdate({ buttonAlignment: e.target.value })}
-            >
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </Select>
-          </SettingGroup>
-        </>
-      )}
+      <SettingGroup>
+        <Label>Button Alignment</Label>
+        <Select
+          value={block.settings?.buttonAlignment || 'left'}
+          onChange={(e) => onUpdate({ buttonAlignment: e.target.value })}
+        >
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </Select>
+      </SettingGroup>
     </>
   );
 };
@@ -2344,7 +2445,6 @@ const AddButton = styled.button`
 
 // Content Grid Settings
 const ContentGridSettings: React.FC<{ block: ContentGridBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
-  const [activeTab, setActiveTab] = React.useState<'content' | 'style'>('content');
   const [selectedItemIndex, setSelectedItemIndex] = React.useState<number>(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -2393,206 +2493,338 @@ const ContentGridSettings: React.FC<{ block: ContentGridBlock; onUpdate: (settin
   return (
     <>
       <SettingGroup>
-        <TabNavigation style={{ marginBottom: '16px', borderBottom: '2px solid #e5e7eb' }}>
-          <TabButton
-            isActive={activeTab === 'content'}
-            onClick={() => setActiveTab('content')}
-            style={{ fontSize: '14px', padding: '10px 16px' }}
-          >
-            Content
-          </TabButton>
-          <TabButton
-            isActive={activeTab === 'style'}
-            onClick={() => setActiveTab('style')}
-            style={{ fontSize: '14px', padding: '10px 16px' }}
-          >
-            Style
-          </TabButton>
-        </TabNavigation>
+        <Label>Grid Items</Label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          {items.map((item, index) => (
+            <div key={item.id} style={{ position: 'relative' }}>
+              <TabButton
+                isActive={selectedItemIndex === index}
+                onClick={() => setSelectedItemIndex(index)}
+                style={{ padding: '8px 32px 8px 12px', fontSize: '13px' }}
+              >
+                Item {index + 1}
+              </TabButton>
+              {items.length > 1 && (
+                <button
+                  onClick={() => handleRemoveItem(index)}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#dc2626',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+          <AddButton onClick={handleAddItem}>
+            <Plus size={16} />
+            Add Item
+          </AddButton>
+        </div>
       </SettingGroup>
 
-      {activeTab === 'content' && (
+      {selectedItem && (
         <>
           <SettingGroup>
-            <Label>Grid Items</Label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-              {items.map((item, index) => (
-                <div key={item.id} style={{ position: 'relative' }}>
-                  <TabButton
-                    isActive={selectedItemIndex === index}
-                    onClick={() => setSelectedItemIndex(index)}
-                    style={{ padding: '8px 32px 8px 12px', fontSize: '13px' }}
-                  >
-                    Item {index + 1}
-                  </TabButton>
-                  {items.length > 1 && (
-                    <button
-                      onClick={() => handleRemoveItem(index)}
-                      style={{
-                        position: 'absolute',
-                        right: '8px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: '#dc2626',
-                        cursor: 'pointer',
-                        padding: '2px',
-                        display: 'flex',
-                      }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <AddButton onClick={handleAddItem}>
-                <Plus size={16} />
-                Add Item
-              </AddButton>
-            </div>
+            <Label>Image</Label>
+            <ImageUploadContainer>
+              <ChangeImageButton onClick={() => fileInputRef.current?.click()}>
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Change Image
+              </ChangeImageButton>
+              <HiddenFileInput
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+              <ImagePreview src={selectedItem.imageUrl || ''} alt="Preview" />
+            </ImageUploadContainer>
           </SettingGroup>
 
-          {selectedItem && (
-            <>
-              <SettingGroup>
-                <Label>Image</Label>
-                <ImageUploadContainer>
-                  <ChangeImageButton onClick={() => fileInputRef.current?.click()}>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Change Image
-                  </ChangeImageButton>
-                  <HiddenFileInput
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                  <ImagePreview src={selectedItem.imageUrl || ''} alt="Preview" />
-                </ImageUploadContainer>
-              </SettingGroup>
+          <SettingGroup>
+            <Label>Or enter image URL</Label>
+            <Input
+              type="url"
+              value={selectedItem.imageUrl || ''}
+              onChange={(e) => handleUpdateItem({ imageUrl: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+            />
+          </SettingGroup>
 
-              <SettingGroup>
-                <Label>Or enter image URL</Label>
-                <Input
-                  type="url"
-                  value={selectedItem.imageUrl || ''}
-                  onChange={(e) => handleUpdateItem({ imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </SettingGroup>
+          <SettingGroup>
+            <Label>Image Layout</Label>
+            <Select
+              value={selectedItem.imageLayout || 'top-image'}
+              onChange={(e) => handleUpdateItem({ imageLayout: e.target.value as 'no-image' | 'top-image' | 'background-image' | 'title-image' })}
+            >
+              <option value="no-image">No Image</option>
+              <option value="top-image">Top Image → Title → Content</option>
+              <option value="background-image">Background Image + Title + Content</option>
+              <option value="title-image">Title → Image → Content</option>
+            </Select>
+          </SettingGroup>
 
-              <SettingGroup>
-                <Label>Image Layout</Label>
-                <Select
-                  value={selectedItem.imageLayout || 'top-image'}
-                  onChange={(e) => handleUpdateItem({ imageLayout: e.target.value as 'no-image' | 'top-image' | 'background-image' | 'title-image' })}
-                >
-                  <option value="no-image">No Image</option>
-                  <option value="top-image">Top Image → Title → Content</option>
-                  <option value="background-image">Background Image + Title + Content</option>
-                  <option value="title-image">Title → Image → Content</option>
-                </Select>
-              </SettingGroup>
+          <Divider />
 
-              <Divider />
+          <SettingGroup>
+            <Label>Title</Label>
+            <Input
+              type="text"
+              value={selectedItem.title}
+              onChange={(e) => handleUpdateItem({ title: e.target.value })}
+              placeholder="Feature Card Title"
+            />
+          </SettingGroup>
 
-              <SettingGroup>
-                <Label>Title</Label>
-                <Input
-                  type="text"
-                  value={selectedItem.title}
-                  onChange={(e) => handleUpdateItem({ title: e.target.value })}
-                  placeholder="Feature Card Title"
-                />
-              </SettingGroup>
+          <SettingGroup>
+            <Label>Description</Label>
+            <Textarea
+              value={selectedItem.description || ''}
+              onChange={(e) => handleUpdateItem({ description: e.target.value })}
+              placeholder="Card description text..."
+              rows={3}
+            />
+          </SettingGroup>
 
-              <SettingGroup>
-                <Label>Description</Label>
-                <Textarea
-                  value={selectedItem.description || ''}
-                  onChange={(e) => handleUpdateItem({ description: e.target.value })}
-                  placeholder="Card description text..."
-                  rows={3}
-                />
-              </SettingGroup>
+          <Divider />
 
-              <Divider />
+          <SettingGroup>
+            <Label>Button Text (Optional)</Label>
+            <Input
+              type="text"
+              value={selectedItem.buttonText || ''}
+              onChange={(e) => handleUpdateItem({ buttonText: e.target.value })}
+              placeholder="Learn More"
+            />
+          </SettingGroup>
 
-              <SettingGroup>
-                <Label>Button Text (Optional)</Label>
-                <Input
-                  type="text"
-                  value={selectedItem.buttonText || ''}
-                  onChange={(e) => handleUpdateItem({ buttonText: e.target.value })}
-                  placeholder="Learn More"
-                />
-              </SettingGroup>
-
-              <SettingGroup>
-                <Label>Button URL</Label>
-                <Input
-                  type="url"
-                  value={selectedItem.buttonUrl || ''}
-                  onChange={(e) => handleUpdateItem({ buttonUrl: e.target.value })}
-                  placeholder="https://example.com"
-                />
-              </SettingGroup>
-            </>
-          )}
+          <SettingGroup>
+            <Label>Button URL</Label>
+            <Input
+              type="url"
+              value={selectedItem.buttonUrl || ''}
+              onChange={(e) => handleUpdateItem({ buttonUrl: e.target.value })}
+              placeholder="https://example.com"
+            />
+          </SettingGroup>
         </>
       )}
 
-      {activeTab === 'style' && (
+      <Divider />
+
+      <SettingGroup>
+        <Label>Columns</Label>
+        <Select
+          value={block.settings.columns || 3}
+          onChange={(e) => onUpdate({ columns: parseInt(e.target.value) })}
+        >
+          <option value="2">2 Columns</option>
+          <option value="3">3 Columns</option>
+          <option value="4">4 Columns</option>
+        </Select>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Gap Size</Label>
+        <Select
+          value={block.settings.gap || 'medium'}
+          onChange={(e) => onUpdate({ gap: e.target.value })}
+        >
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </Select>
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Card Style</Label>
+        <Select
+          value={block.settings.cardStyle || 'elevated'}
+          onChange={(e) => onUpdate({ cardStyle: e.target.value })}
+        >
+          <option value="elevated">Elevated (Shadow)</option>
+          <option value="bordered">Bordered</option>
+          <option value="flat">Flat</option>
+        </Select>
+      </SettingGroup>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="showShadow"
+            checked={block.settings.showShadow !== false}
+            onChange={(e) => onUpdate({ showShadow: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="showShadow">Show shadow on hover</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+    </>
+  );
+};
+
+// Animation Settings Panel - Shared across all blocks
+const AnimationSettingsPanel: React.FC<{ block: ContentBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const animation = block.animation || {
+    enabled: false,
+    type: 'fade-in' as AnimationType,
+    duration: 0.5,
+    delay: 0,
+    trigger: 'on-scroll' as AnimationTrigger,
+    easing: 'ease',
+  };
+
+  const handleAnimationUpdate = (updates: Partial<AnimationSettings>) => {
+    // We need to update the animation property on the block, not in settings
+    // This requires a special update mechanism
+    const newAnimation = { ...animation, ...updates };
+    onUpdate({ _animation: newAnimation });
+  };
+
+  const animationTypes: { value: AnimationType; label: string }[] = [
+    { value: 'none', label: 'None' },
+    { value: 'fade-in', label: 'Fade In' },
+    { value: 'fade-in-up', label: 'Fade In Up' },
+    { value: 'fade-in-down', label: 'Fade In Down' },
+    { value: 'fade-in-left', label: 'Fade In Left' },
+    { value: 'fade-in-right', label: 'Fade In Right' },
+    { value: 'zoom-in', label: 'Zoom In' },
+    { value: 'zoom-out', label: 'Zoom Out' },
+    { value: 'slide-up', label: 'Slide Up' },
+    { value: 'slide-down', label: 'Slide Down' },
+    { value: 'slide-left', label: 'Slide Left' },
+    { value: 'slide-right', label: 'Slide Right' },
+    { value: 'bounce', label: 'Bounce' },
+    { value: 'flip', label: 'Flip' },
+    { value: 'rotate', label: 'Rotate' },
+  ];
+
+  return (
+    <>
+      <SectionHeader>
+        <Sparkles size={16} color="#8b5cf6" />
+        <SectionTitle>Animation</SectionTitle>
+      </SectionHeader>
+      <HelpText style={{ marginTop: '-8px', marginBottom: '16px' }}>
+        Add entrance animations to this block when viewers scroll or load the page.
+      </HelpText>
+
+      <SettingGroup>
+        <CheckboxWrapper>
+          <Checkbox
+            type="checkbox"
+            id="enableAnimation"
+            checked={animation.enabled}
+            onChange={(e) => handleAnimationUpdate({ enabled: e.target.checked })}
+          />
+          <CheckboxLabel htmlFor="enableAnimation">Enable Animation</CheckboxLabel>
+        </CheckboxWrapper>
+      </SettingGroup>
+
+      {animation.enabled && (
         <>
           <SettingGroup>
-            <Label>Columns</Label>
+            <Label>Animation Type</Label>
             <Select
-              value={block.settings.columns || 3}
-              onChange={(e) => onUpdate({ columns: parseInt(e.target.value) })}
+              value={animation.type}
+              onChange={(e) => handleAnimationUpdate({ type: e.target.value as AnimationType })}
             >
-              <option value="2">2 Columns</option>
-              <option value="3">3 Columns</option>
-              <option value="4">4 Columns</option>
+              {animationTypes.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
             </Select>
           </SettingGroup>
 
           <SettingGroup>
-            <Label>Gap Size</Label>
-            <Select
-              value={block.settings.gap || 'medium'}
-              onChange={(e) => onUpdate({ gap: e.target.value })}
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </Select>
-          </SettingGroup>
-
-          <SettingGroup>
-            <Label>Card Style</Label>
-            <Select
-              value={block.settings.cardStyle || 'elevated'}
-              onChange={(e) => onUpdate({ cardStyle: e.target.value })}
-            >
-              <option value="elevated">Elevated (Shadow)</option>
-              <option value="bordered">Bordered</option>
-              <option value="flat">Flat</option>
-            </Select>
-          </SettingGroup>
-
-          <SettingGroup>
-            <CheckboxWrapper>
-              <Checkbox
-                type="checkbox"
-                id="showShadow"
-                checked={block.settings.showShadow !== false}
-                onChange={(e) => onUpdate({ showShadow: e.target.checked })}
+            <Label>Duration ({animation.duration}s)</Label>
+            <RangeWrapper>
+              <RangeInput
+                type="range"
+                min="0.1"
+                max="2"
+                step="0.1"
+                value={animation.duration}
+                onChange={(e) => handleAnimationUpdate({ duration: parseFloat(e.target.value) })}
               />
-              <CheckboxLabel htmlFor="showShadow">Show shadow on hover</CheckboxLabel>
-            </CheckboxWrapper>
+              <RangeValue>{animation.duration}s</RangeValue>
+            </RangeWrapper>
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Delay ({animation.delay}s)</Label>
+            <RangeWrapper>
+              <RangeInput
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={animation.delay}
+                onChange={(e) => handleAnimationUpdate({ delay: parseFloat(e.target.value) })}
+              />
+              <RangeValue>{animation.delay}s</RangeValue>
+            </RangeWrapper>
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Trigger</Label>
+            <RadioGroup>
+              <RadioOption>
+                <RadioInput
+                  type="radio"
+                  name="animationTrigger"
+                  value="on-load"
+                  checked={animation.trigger === 'on-load'}
+                  onChange={() => handleAnimationUpdate({ trigger: 'on-load' })}
+                />
+                On Page Load
+              </RadioOption>
+              <RadioOption>
+                <RadioInput
+                  type="radio"
+                  name="animationTrigger"
+                  value="on-scroll"
+                  checked={animation.trigger === 'on-scroll'}
+                  onChange={() => handleAnimationUpdate({ trigger: 'on-scroll' })}
+                />
+                On Scroll (Into View)
+              </RadioOption>
+              <RadioOption>
+                <RadioInput
+                  type="radio"
+                  name="animationTrigger"
+                  value="on-hover"
+                  checked={animation.trigger === 'on-hover'}
+                  onChange={() => handleAnimationUpdate({ trigger: 'on-hover' })}
+                />
+                On Hover
+              </RadioOption>
+            </RadioGroup>
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Easing</Label>
+            <Select
+              value={animation.easing || 'ease'}
+              onChange={(e) => handleAnimationUpdate({ easing: e.target.value as any })}
+            >
+              <option value="ease">Ease (Default)</option>
+              <option value="ease-in">Ease In</option>
+              <option value="ease-out">Ease Out</option>
+              <option value="ease-in-out">Ease In-Out</option>
+              <option value="linear">Linear</option>
+            </Select>
           </SettingGroup>
         </>
       )}
