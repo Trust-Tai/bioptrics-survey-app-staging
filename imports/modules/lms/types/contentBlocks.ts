@@ -1,6 +1,6 @@
 // Content Block Types for Topic Editor
 
-export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid';
+export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid' | 'banner';
 
 // Animation Types
 export type AnimationType = 
@@ -341,7 +341,34 @@ export interface ContentGridBlock extends BaseContentBlock {
   settings: ContentGridBlockSettings;
 }
 
-export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock;
+// Banner/Hero Block
+export interface BannerBlockSettings {
+  backgroundImage?: string;
+  backgroundColor?: string;
+  overlayColor?: string;
+  overlayOpacity?: number; // 0-100
+  title?: string;
+  titleSize?: number; // font size in px
+  titleColor?: string; // custom title color
+  subtitle?: string;
+  subtitleColor?: string; // custom subtitle color
+  buttonText?: string;
+  buttonUrl?: string;
+  buttonColor?: string; // custom button background color
+  buttonTextColor?: string; // custom button text color
+  contentAlignment?: 'left' | 'center' | 'right';
+  verticalAlignment?: 'top' | 'center' | 'bottom';
+  height?: number; // height in px
+  fullHeight?: boolean; // full viewport height
+  parallax?: boolean;
+}
+
+export interface BannerBlock extends BaseContentBlock {
+  type: 'banner';
+  settings: BannerBlockSettings;
+}
+
+export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock | BannerBlock;
 
 // Block Library Item
 export interface BlockLibraryItem {

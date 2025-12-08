@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FileText, Image, Video, Play, Music, X, FileType, Download, ChevronDown, AlertCircle, MousePointerClick, Folder, Minus, RotateCw, ImageIcon, Grid3x3 } from 'lucide-react';
+import { FileText, Image, Video, Play, Music, X, FileType, Download, ChevronDown, AlertCircle, MousePointerClick, Folder, Minus, RotateCw, ImageIcon, Grid3x3, LayoutTemplate } from 'lucide-react';
 import type { ContentBlockType } from '../types/contentBlocks';
 
 interface BlockLibraryProps {
@@ -135,6 +135,13 @@ const blockLibraryData = [
   {
     category: 'Essential',
     blocks: [
+      {
+        type: 'banner' as ContentBlockType,
+        name: 'Hero Banner',
+        description: 'Full-width banner with title, subtitle & CTA',
+        icon: <LayoutTemplate size={20} />,
+        color: '#8b5cf6',
+      },
       {
         type: 'rich-text' as ContentBlockType,
         name: 'Rich Text',

@@ -296,6 +296,32 @@ export const createDefaultBlock = (blockType: ContentBlockType, order: number): 
         },
       };
 
+    case 'banner':
+      return {
+        ...baseBlock,
+        type: 'banner',
+        settings: {
+          backgroundImage: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1600&h=900&fit=crop',
+          backgroundColor: '#1f2937',
+          overlayColor: '#000000',
+          overlayOpacity: 50,
+          title: 'Welcome to the Course',
+          titleSize: 48,
+          titleColor: '#ffffff',
+          subtitle: 'Discover new skills and expand your knowledge with our comprehensive learning materials.',
+          subtitleColor: 'rgba(255, 255, 255, 0.9)',
+          buttonText: 'Get Started',
+          buttonUrl: '#',
+          buttonColor: '#6366f1',
+          buttonTextColor: '#ffffff',
+          contentAlignment: 'center',
+          verticalAlignment: 'center',
+          height: 450,
+          fullHeight: false,
+          parallax: false,
+        },
+      };
+
     default:
       throw new Error(`Unknown block type: ${blockType}`);
   }
@@ -353,6 +379,8 @@ export const getBlockIcon = (blockType: ContentBlockType): string => {
       return '🖼️';
     case 'content-grid':
       return '⊞';
+    case 'banner':
+      return '🎯';
     default:
       return '📄';
   }
@@ -373,6 +401,8 @@ export const getBlockColor = (blockType: ContentBlockType): string => {
       return '#f59e0b'; // amber/orange
     case 'content-grid':
       return '#10b981'; // teal/green
+    case 'banner':
+      return '#8b5cf6'; // purple
     default:
       return '#6b7280'; // gray
   }
