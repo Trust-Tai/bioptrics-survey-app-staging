@@ -14,15 +14,44 @@ export const useBlockManagement = () => {
   };
 
   const updateBlock = (blockId: string, settings: any) => {
+    // Check if this is an animation update (special _animation key)
+    const isAnimationUpdate = '_animation' in settings;
+    
     setContentBlocks(prev =>
-      prev.map(block =>
-        block.id === blockId ? { ...block, settings: { ...block.settings, ...settings } } : block
-      )
+      prev.map(block => {
+        if (block.id !== blockId) return block;
+        
+        if (isAnimationUpdate) {
+          // Update the animation property on the block itself
+          const { _animation, ...restSettings } = settings;
+          return { 
+            ...block, 
+            animation: _animation,
+            settings: Object.keys(restSettings).length > 0 
+              ? { ...block.settings, ...restSettings } 
+              : block.settings 
+          };
+        }
+        
+        // Regular settings update
+        return { ...block, settings: { ...block.settings, ...settings } };
+      })
     );
     
     // Update selected block if it's being edited
     if (selectedBlock?.id === blockId) {
-      setSelectedBlock(prev => prev ? { ...prev, settings: { ...prev.settings, ...settings } } : null);
+      if (isAnimationUpdate) {
+        const { _animation, ...restSettings } = settings;
+        setSelectedBlock(prev => prev ? { 
+          ...prev, 
+          animation: _animation,
+          settings: Object.keys(restSettings).length > 0 
+            ? { ...prev.settings, ...restSettings } 
+            : prev.settings 
+        } : null);
+      } else {
+        setSelectedBlock(prev => prev ? { ...prev, settings: { ...prev.settings, ...settings } } : null);
+      }
     }
   };
 
