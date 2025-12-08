@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { X, Settings, Plus, Trash2, Sparkles, Palette } from 'lucide-react';
-import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, BannerBlock, TestimonialsBlock, TestimonialItem, TimelineBlock, TimelineItem, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
+import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, BannerBlock, BannerButton, TestimonialsBlock, TestimonialItem, TimelineBlock, TimelineItem, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
 
 interface BlockSettingsPanelProps {
   block: ContentBlock;
@@ -2738,6 +2738,59 @@ const ContentGridSettings: React.FC<{ block: ContentGridBlock; onUpdate: (settin
 // Banner Settings
 const BannerSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [selectedButtonIndex, setSelectedButtonIndex] = useState(0);
+  
+  const buttons = block.settings?.buttons || [];
+  const selectedButton = buttons[selectedButtonIndex];
+
+  const handleAddButton = () => {
+    const newButton: BannerButton = {
+      id: `btn-${Date.now()}`,
+      enabled: true,
+      text: 'New Button',
+      url: '#',
+      icon: 'arrow',
+      openInNewTab: false,
+      style: 'solid',
+      size: 'medium',
+      backgroundColor: '#6366f1',
+      textColor: '#ffffff',
+      borderRadius: 8,
+      hoverEffect: 'lift',
+      hoverBackgroundColor: '',
+      hoverTextColor: '',
+      animation: {
+        enabled: true,
+        type: 'fade-in',
+        delay: buttons.length * 0.1, // Stagger effect
+        duration: 0.5,
+      },
+    };
+    onUpdate({ buttons: [...buttons, newButton] });
+    setSelectedButtonIndex(buttons.length);
+  };
+
+  const handleUpdateButton = (field: string, value: any) => {
+    const updated = buttons.map((btn, i) => {
+      if (i === selectedButtonIndex) {
+        if (field.startsWith('animation.')) {
+          const animField = field.replace('animation.', '');
+          return { ...btn, animation: { ...btn.animation, [animField]: value } };
+        }
+        return { ...btn, [field]: value };
+      }
+      return btn;
+    });
+    onUpdate({ buttons: updated });
+  };
+
+  const handleDeleteButton = (index: number) => {
+    const updated = buttons.filter((_, i) => i !== index);
+    onUpdate({ buttons: updated });
+    if (selectedButtonIndex >= updated.length) {
+      setSelectedButtonIndex(Math.max(0, updated.length - 1));
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2909,26 +2962,105 @@ const BannerSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: any) =
 
       <Divider />
 
-      {/* Button */}
+      {/* Buttons Management */}
       <SettingGroup>
-        <Label>Button Text (optional)</Label>
-        <Input
-          type="text"
-          value={block.settings?.buttonText || ''}
-          onChange={(e) => onUpdate({ buttonText: e.target.value })}
-          placeholder="Get Started"
-        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <Label style={{ marginBottom: 0 }}>Buttons ({buttons.length})</Label>
+          <AddButton onClick={handleAddButton}>
+            <Plus size={14} />
+            Add Button
+          </AddButton>
+        </div>
+
+        {buttons.length > 0 && (
+          <ItemTabs>
+            {buttons.map((btn, i) => (
+              <ItemTab key={btn.id} $active={selectedButtonIndex === i} onClick={() => setSelectedButtonIndex(i)}>
+                {btn.text || `Button ${i + 1}`}
+              </ItemTab>
+            ))}
+          </ItemTabs>
+        )}
       </SettingGroup>
 
-      <SettingGroup>
-        <Label>Button URL</Label>
-        <Input
-          type="url"
-          value={block.settings?.buttonUrl || ''}
-          onChange={(e) => onUpdate({ buttonUrl: e.target.value })}
-          placeholder="https://example.com"
-        />
-      </SettingGroup>
+      {selectedButton && (
+        <>
+          {/* Enable/Disable Toggle */}
+          <SettingGroup>
+            <CheckboxWrapper>
+              <Checkbox
+                type="checkbox"
+                id="btnEnabled"
+                checked={selectedButton.enabled}
+                onChange={(e) => handleUpdateButton('enabled', e.target.checked)}
+              />
+              <CheckboxLabel htmlFor="btnEnabled">Enable this button</CheckboxLabel>
+            </CheckboxWrapper>
+          </SettingGroup>
+
+          {/* Content */}
+          <SettingGroup>
+            <Label>Button Text</Label>
+            <Input
+              type="text"
+              value={selectedButton.text}
+              onChange={(e) => handleUpdateButton('text', e.target.value)}
+              placeholder="Get Started"
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Button URL</Label>
+            <Input
+              type="url"
+              value={selectedButton.url}
+              onChange={(e) => handleUpdateButton('url', e.target.value)}
+              placeholder="https://example.com"
+            />
+          </SettingGroup>
+
+          <SettingGroup>
+            <CheckboxWrapper>
+              <Checkbox
+                type="checkbox"
+                id="openInNewTab"
+                checked={selectedButton.openInNewTab || false}
+                onChange={(e) => handleUpdateButton('openInNewTab', e.target.checked)}
+              />
+              <CheckboxLabel htmlFor="openInNewTab">Open in new tab</CheckboxLabel>
+            </CheckboxWrapper>
+          </SettingGroup>
+
+          <SettingGroup>
+            <Label>Icon</Label>
+            <Select
+              value={selectedButton.icon}
+              onChange={(e) => handleUpdateButton('icon', e.target.value)}
+            >
+              <option value="none">None</option>
+              <option value="arrow">Arrow →</option>
+              <option value="chevron">Chevron ›</option>
+              <option value="external">External Link ↗</option>
+              <option value="download">Download ↓</option>
+            </Select>
+          </SettingGroup>
+
+          <SettingGroup>
+            <DeleteItemButton onClick={() => handleDeleteButton(selectedButtonIndex)}>
+              <Trash2 size={14} />
+              Delete This Button
+            </DeleteItemButton>
+          </SettingGroup>
+        </>
+      )}
+
+      {buttons.length === 0 && (
+        <SettingGroup>
+          <HelpText style={{ textAlign: 'center', padding: '16px' }}>
+            No buttons added yet. Click "Add Button" to create one.
+          </HelpText>
+        </SettingGroup>
+      )}
 
     </>
   );
@@ -2936,50 +3068,31 @@ const BannerSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: any) =
 
 // Banner Style Settings - For Style & Animation tab
 const BannerStyleSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
+  const [selectedButtonIndex, setSelectedButtonIndex] = useState(0);
+  const buttons = block.settings?.buttons || [];
+  const selectedButton = buttons[selectedButtonIndex];
+
+  const handleUpdateButton = (field: string, value: any) => {
+    const updated = buttons.map((btn, i) => {
+      if (i === selectedButtonIndex) {
+        if (field.startsWith('animation.')) {
+          const animField = field.replace('animation.', '');
+          return { ...btn, animation: { ...btn.animation, [animField]: value } };
+        }
+        return { ...btn, [field]: value };
+      }
+      return btn;
+    });
+    onUpdate({ buttons: updated });
+  };
+
   return (
     <>
+      {/* Layout Settings */}
       <SectionHeader>
         <Palette size={16} />
-        Style Settings
+        Layout Settings
       </SectionHeader>
-
-      <SettingGroup>
-        <Label>Button Background Color</Label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ColorInput
-            type="color"
-            value={block.settings?.buttonColor || '#6366f1'}
-            onChange={(e) => onUpdate({ buttonColor: e.target.value })}
-          />
-          <Input
-            type="text"
-            value={block.settings?.buttonColor || '#6366f1'}
-            onChange={(e) => onUpdate({ buttonColor: e.target.value })}
-            placeholder="#6366f1"
-            style={{ flex: 1 }}
-          />
-        </div>
-      </SettingGroup>
-
-      <SettingGroup>
-        <Label>Button Text Color</Label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ColorInput
-            type="color"
-            value={block.settings?.buttonTextColor || '#ffffff'}
-            onChange={(e) => onUpdate({ buttonTextColor: e.target.value })}
-          />
-          <Input
-            type="text"
-            value={block.settings?.buttonTextColor || '#ffffff'}
-            onChange={(e) => onUpdate({ buttonTextColor: e.target.value })}
-            placeholder="#ffffff"
-            style={{ flex: 1 }}
-          />
-        </div>
-      </SettingGroup>
-
-      <Divider />
 
       <SettingGroup>
         <Label>Content Alignment</Label>
@@ -3044,6 +3157,222 @@ const BannerStyleSettings: React.FC<{ block: BannerBlock; onUpdate: (settings: a
       </SettingGroup>
 
       <Divider />
+
+      {/* Button Style Settings */}
+      {buttons.length > 0 && (
+        <>
+          <SectionHeader>
+            <Sparkles size={16} />
+            Button Style & Animation
+          </SectionHeader>
+
+          <SettingGroup>
+            <Label>Select Button to Style</Label>
+            <ItemTabs>
+              {buttons.map((btn, i) => (
+                <ItemTab key={btn.id} $active={selectedButtonIndex === i} onClick={() => setSelectedButtonIndex(i)}>
+                  {btn.text || `Button ${i + 1}`}
+                </ItemTab>
+              ))}
+            </ItemTabs>
+          </SettingGroup>
+
+          {selectedButton && (
+            <>
+              {/* Button Style */}
+              <SettingGroup>
+                <Label>Button Style</Label>
+                <Select
+                  value={selectedButton.style}
+                  onChange={(e) => handleUpdateButton('style', e.target.value)}
+                >
+                  <option value="solid">Solid (Filled)</option>
+                  <option value="outline">Outline</option>
+                  <option value="ghost">Ghost (No Border)</option>
+                </Select>
+              </SettingGroup>
+
+              <SettingGroup>
+                <Label>Button Size</Label>
+                <Select
+                  value={selectedButton.size}
+                  onChange={(e) => handleUpdateButton('size', e.target.value)}
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </Select>
+              </SettingGroup>
+
+              <SettingGroup>
+                <Label>Background Color</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ColorInput
+                    type="color"
+                    value={selectedButton.backgroundColor}
+                    onChange={(e) => handleUpdateButton('backgroundColor', e.target.value)}
+                  />
+                  <Input
+                    type="text"
+                    value={selectedButton.backgroundColor}
+                    onChange={(e) => handleUpdateButton('backgroundColor', e.target.value)}
+                    placeholder="#6366f1"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </SettingGroup>
+
+              <SettingGroup>
+                <Label>Text Color</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ColorInput
+                    type="color"
+                    value={selectedButton.textColor}
+                    onChange={(e) => handleUpdateButton('textColor', e.target.value)}
+                  />
+                  <Input
+                    type="text"
+                    value={selectedButton.textColor}
+                    onChange={(e) => handleUpdateButton('textColor', e.target.value)}
+                    placeholder="#ffffff"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </SettingGroup>
+
+              <SettingGroup>
+                <Label>Border Radius (px)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="50"
+                  value={selectedButton.borderRadius}
+                  onChange={(e) => handleUpdateButton('borderRadius', parseInt(e.target.value) || 0)}
+                  placeholder="8"
+                />
+              </SettingGroup>
+
+              <Divider />
+
+              {/* Hover Effects */}
+              <SettingGroup>
+                <Label>Hover Effect</Label>
+                <Select
+                  value={selectedButton.hoverEffect}
+                  onChange={(e) => handleUpdateButton('hoverEffect', e.target.value)}
+                >
+                  <option value="none">None</option>
+                  <option value="lift">Lift (Move Up + Shadow)</option>
+                  <option value="glow">Glow</option>
+                  <option value="scale">Scale (Grow)</option>
+                  <option value="darken">Darken</option>
+                  <option value="lighten">Lighten</option>
+                </Select>
+              </SettingGroup>
+
+              <SettingGroup>
+                <Label>Hover Background Color (optional)</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ColorInput
+                    type="color"
+                    value={selectedButton.hoverBackgroundColor || selectedButton.backgroundColor}
+                    onChange={(e) => handleUpdateButton('hoverBackgroundColor', e.target.value)}
+                  />
+                  <Input
+                    type="text"
+                    value={selectedButton.hoverBackgroundColor || ''}
+                    onChange={(e) => handleUpdateButton('hoverBackgroundColor', e.target.value)}
+                    placeholder="Leave empty to keep same"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </SettingGroup>
+
+              <SettingGroup>
+                <Label>Hover Text Color (optional)</Label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ColorInput
+                    type="color"
+                    value={selectedButton.hoverTextColor || selectedButton.textColor}
+                    onChange={(e) => handleUpdateButton('hoverTextColor', e.target.value)}
+                  />
+                  <Input
+                    type="text"
+                    value={selectedButton.hoverTextColor || ''}
+                    onChange={(e) => handleUpdateButton('hoverTextColor', e.target.value)}
+                    placeholder="Leave empty to keep same"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </SettingGroup>
+
+              <Divider />
+
+              {/* Button Animation */}
+              <SettingGroup>
+                <CheckboxWrapper>
+                  <Checkbox
+                    type="checkbox"
+                    id="btnAnimEnabled"
+                    checked={selectedButton.animation?.enabled || false}
+                    onChange={(e) => handleUpdateButton('animation.enabled', e.target.checked)}
+                  />
+                  <CheckboxLabel htmlFor="btnAnimEnabled">Enable Button Animation</CheckboxLabel>
+                </CheckboxWrapper>
+              </SettingGroup>
+
+              {selectedButton.animation?.enabled && (
+                <>
+                  <SettingGroup>
+                    <Label>Animation Type</Label>
+                    <Select
+                      value={selectedButton.animation?.type || 'fade-in'}
+                      onChange={(e) => handleUpdateButton('animation.type', e.target.value)}
+                    >
+                      <option value="none">None</option>
+                      <option value="fade-in">Fade In</option>
+                      <option value="slide-up">Slide Up</option>
+                      <option value="slide-left">Slide from Right</option>
+                      <option value="slide-right">Slide from Left</option>
+                      <option value="bounce">Bounce</option>
+                      <option value="pulse">Pulse</option>
+                    </Select>
+                  </SettingGroup>
+
+                  <SettingGroup>
+                    <Label>Duration (seconds)</Label>
+                    <Input
+                      type="number"
+                      min="0.1"
+                      max="3"
+                      step="0.1"
+                      value={selectedButton.animation?.duration || 0.5}
+                      onChange={(e) => handleUpdateButton('animation.duration', parseFloat(e.target.value) || 0.5)}
+                      placeholder="0.5"
+                    />
+                  </SettingGroup>
+
+                  <SettingGroup>
+                    <Label>Delay (seconds)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={selectedButton.animation?.delay || 0}
+                      onChange={(e) => handleUpdateButton('animation.delay', parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                    <HelpText>Use delay for stagger effect with multiple buttons</HelpText>
+                  </SettingGroup>
+                </>
+              )}
+            </>
+          )}
+
+          <Divider />
+        </>
+      )}
     </>
   );
 };

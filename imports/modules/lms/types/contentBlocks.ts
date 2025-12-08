@@ -342,6 +342,44 @@ export interface ContentGridBlock extends BaseContentBlock {
 }
 
 // Banner/Hero Block
+// Banner Button with advanced settings
+export type BannerButtonStyle = 'solid' | 'outline' | 'ghost';
+export type BannerButtonSize = 'small' | 'medium' | 'large';
+export type BannerButtonIcon = 'arrow' | 'chevron' | 'external' | 'download' | 'none';
+export type BannerButtonHoverEffect = 'none' | 'lift' | 'glow' | 'scale' | 'darken' | 'lighten';
+export type BannerButtonAnimation = 'none' | 'fade-in' | 'slide-up' | 'slide-left' | 'slide-right' | 'bounce' | 'pulse';
+
+export interface BannerButton {
+  id: string;
+  enabled: boolean;
+  
+  // Content
+  text: string;
+  url: string;
+  icon: BannerButtonIcon;
+  openInNewTab?: boolean;
+  
+  // Style
+  style: BannerButtonStyle;
+  size: BannerButtonSize;
+  backgroundColor: string;
+  textColor: string;
+  borderRadius: number;
+  
+  // Hover Effects
+  hoverEffect: BannerButtonHoverEffect;
+  hoverBackgroundColor?: string;
+  hoverTextColor?: string;
+  
+  // Animation
+  animation: {
+    enabled: boolean;
+    type: BannerButtonAnimation;
+    delay: number;
+    duration: number;
+  };
+}
+
 export interface BannerBlockSettings {
   backgroundImage?: string;
   backgroundColor?: string;
@@ -352,10 +390,16 @@ export interface BannerBlockSettings {
   titleColor?: string; // custom title color
   subtitle?: string;
   subtitleColor?: string; // custom subtitle color
+  
+  // Legacy single button fields (for backward compatibility)
   buttonText?: string;
   buttonUrl?: string;
-  buttonColor?: string; // custom button background color
-  buttonTextColor?: string; // custom button text color
+  buttonColor?: string;
+  buttonTextColor?: string;
+  
+  // New multiple buttons array
+  buttons?: BannerButton[];
+  
   contentAlignment?: 'left' | 'center' | 'right';
   verticalAlignment?: 'top' | 'center' | 'bottom';
   height?: number; // height in px
