@@ -173,6 +173,9 @@ export interface AccordionPanel {
   id: string;
   title: string;
   content: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  imagePosition?: 'top' | 'bottom';
 }
 
 export interface AccordionBlockSettings {

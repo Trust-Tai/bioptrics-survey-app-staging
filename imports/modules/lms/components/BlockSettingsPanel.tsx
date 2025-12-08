@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { X, Settings, Plus, Trash2, Sparkles, Palette } from 'lucide-react';
+import { X, Settings, Plus, Trash2, Sparkles, Palette, Image, Upload } from 'lucide-react';
 import type { ContentBlock, RichTextBlock, ImageBlock, VideoBlock, VideoPlayerBlock, AudioPlayerBlock, PDFBlock, FileDownloadBlock, FileItem, AccordionBlock, AccordionPanel, CalloutBlock, ButtonBlock, QuizBlock, QuizQuestion, QuizAnswer, TabsBlock, TabItem, DividerBlock, FlipboxesBlock, FlipboxItem, ImageTextBlock, ContentGridBlock, GridCardItem, BannerBlock, BannerButton, TestimonialsBlock, TestimonialItem, TimelineBlock, TimelineItem, AnimationType, AnimationSettings, AnimationTrigger } from '../types/contentBlocks';
 
 interface BlockSettingsPanelProps {
@@ -1346,15 +1346,141 @@ const FileDownloadSettings: React.FC<{ block: FileDownloadBlock; onUpdate: (sett
   );
 };
 
+// Mini Rich Text Editor for Accordion Content
+const MiniRichTextEditor: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder }) => {
+  const editorRef = React.useRef<HTMLDivElement>(null);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+
+  React.useEffect(() => {
+    if (editorRef.current && !isInitialized) {
+      editorRef.current.innerHTML = value || '';
+      setIsInitialized(true);
+    }
+  }, [value, isInitialized]);
+
+  const handleBlur = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const execCommand = (command: string, val?: string) => {
+    document.execCommand(command, false, val);
+    editorRef.current?.focus();
+  };
+
+  const formatBlock = (tag: string) => {
+    document.execCommand('formatBlock', false, tag);
+    editorRef.current?.focus();
+  };
+
+  return (
+    <div style={{ border: '1px solid #e5e7eb', borderRadius: '6px', overflow: 'hidden' }}>
+      <div style={{ 
+        display: 'flex', 
+        gap: '2px', 
+        padding: '6px 8px', 
+        background: '#f9fafb', 
+        borderBottom: '1px solid #e5e7eb',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          type="button"
+          onClick={() => execCommand('bold')}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+          title="Bold"
+        >
+          B
+        </button>
+        <button
+          type="button"
+          onClick={() => execCommand('italic')}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', fontStyle: 'italic' }}
+          title="Italic"
+        >
+          I
+        </button>
+        <button
+          type="button"
+          onClick={() => execCommand('underline')}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', textDecoration: 'underline' }}
+          title="Underline"
+        >
+          U
+        </button>
+        <div style={{ width: '1px', background: '#e5e7eb', margin: '0 4px' }} />
+        <button
+          type="button"
+          onClick={() => formatBlock('h3')}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+          title="Heading"
+        >
+          H3
+        </button>
+        <button
+          type="button"
+          onClick={() => formatBlock('p')}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+          title="Paragraph"
+        >
+          P
+        </button>
+        <div style={{ width: '1px', background: '#e5e7eb', margin: '0 4px' }} />
+        <button
+          type="button"
+          onClick={() => execCommand('insertUnorderedList')}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+          title="Bullet List"
+        >
+          • List
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const url = prompt('Enter link URL:');
+            if (url) execCommand('createLink', url);
+          }}
+          style={{ padding: '4px 8px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+          title="Insert Link"
+        >
+          🔗
+        </button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        onBlur={handleBlur}
+        style={{
+          minHeight: '100px',
+          padding: '10px',
+          fontSize: '13px',
+          lineHeight: '1.5',
+          outline: 'none',
+        }}
+        data-placeholder={placeholder}
+        suppressContentEditableWarning
+      />
+    </div>
+  );
+};
+
 // Accordion Settings
 const AccordionSettings: React.FC<{ block: AccordionBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
   const panels = block.settings?.panels || [];
+  const fileInputRefs = React.useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleAddPanel = () => {
     const newPanel: AccordionPanel = {
       id: `panel-${Date.now()}`,
       title: 'New Section',
       content: '<p>Add your content here...</p>',
+      imageUrl: '',
+      imageAlt: '',
+      imagePosition: 'top',
     };
     onUpdate({ panels: [...panels, newPanel] });
   };
@@ -1382,6 +1508,14 @@ const AccordionSettings: React.FC<{ block: AccordionBlock; onUpdate: (settings: 
     }
   };
 
+  const handleImageUpload = (panelId: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleUpdatePanel(panelId, { imageUrl: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <>
       <SettingGroup>
@@ -1399,7 +1533,7 @@ const AccordionSettings: React.FC<{ block: AccordionBlock; onUpdate: (settings: 
                 </DeleteFileButton>
               </FileItemHeader>
 
-              <div style={{ marginBottom: '8px' }}>
+              <div style={{ marginBottom: '12px' }}>
                 <Label style={{ fontSize: '12px', marginBottom: '4px' }}>Section Title</Label>
                 <SmallInput
                   type="text"
@@ -1409,16 +1543,113 @@ const AccordionSettings: React.FC<{ block: AccordionBlock; onUpdate: (settings: 
                 />
               </div>
 
-              <div style={{ marginBottom: '8px' }}>
+              <div style={{ marginBottom: '12px' }}>
                 <Label style={{ fontSize: '12px', marginBottom: '4px' }}>Content</Label>
-                <Textarea
+                <MiniRichTextEditor
                   value={panel.content}
-                  onChange={(e) => handleUpdatePanel(panel.id, { content: e.target.value })}
-                  placeholder="Add content here..."
-                  rows={4}
-                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                  onChange={(content) => handleUpdatePanel(panel.id, { content })}
+                  placeholder="Add your content here..."
                 />
-                <HelpText>Supports HTML formatting</HelpText>
+              </div>
+
+              {/* Image Section */}
+              <div style={{ marginBottom: '12px' }}>
+                <Label style={{ fontSize: '12px', marginBottom: '4px' }}>
+                  <Image size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                  Panel Image (Optional)
+                </Label>
+                
+                {panel.imageUrl ? (
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ 
+                      position: 'relative', 
+                      borderRadius: '6px', 
+                      overflow: 'hidden',
+                      marginBottom: '8px'
+                    }}>
+                      <img 
+                        src={panel.imageUrl} 
+                        alt={panel.imageAlt || 'Panel image'} 
+                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                      />
+                      <button
+                        onClick={() => handleUpdatePanel(panel.id, { imageUrl: '', imageAlt: '' })}
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          background: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <SmallInput
+                      type="text"
+                      value={panel.imageAlt || ''}
+                      onChange={(e) => handleUpdatePanel(panel.id, { imageAlt: e.target.value })}
+                      placeholder="Image alt text"
+                      style={{ marginBottom: '8px' }}
+                    />
+                    <Select
+                      value={panel.imagePosition || 'top'}
+                      onChange={(e) => handleUpdatePanel(panel.id, { imagePosition: e.target.value as 'top' | 'bottom' })}
+                      style={{ fontSize: '12px' }}
+                    >
+                      <option value="top">Image at top</option>
+                      <option value="bottom">Image at bottom</option>
+                    </Select>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={(el) => { fileInputRefs.current[panel.id] = el; }}
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(panel.id, file);
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.current[panel.id]?.click()}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          background: '#f3f4f6',
+                          border: '1px dashed #d1d5db',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#6b7280',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Upload size={14} />
+                        Upload Image
+                      </button>
+                    </div>
+                    <SmallInput
+                      type="text"
+                      value={panel.imageUrl || ''}
+                      onChange={(e) => handleUpdatePanel(panel.id, { imageUrl: e.target.value })}
+                      placeholder="Or paste image URL..."
+                      style={{ marginTop: '8px', fontSize: '11px' }}
+                    />
+                  </div>
+                )}
               </div>
 
               <CheckboxWrapper>

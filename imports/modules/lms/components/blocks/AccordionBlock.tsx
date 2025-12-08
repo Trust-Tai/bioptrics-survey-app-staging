@@ -93,6 +93,31 @@ const AccordionContentInner = styled.div`
   }
 `;
 
+const PanelImage = styled.img`
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  
+  &.image-top {
+    margin-bottom: 16px;
+  }
+  
+  &.image-bottom {
+    margin-top: 16px;
+  }
+`;
+
+const ContentText = styled.div`
+  p {
+    margin: 0 0 12px 0;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+`;
+
 const EmptyState = styled.div`
   padding: 48px 24px;
   text-align: center;
@@ -240,10 +265,32 @@ export const AccordionBlock: React.FC<AccordionBlockProps> = ({ block }) => {
             <AccordionContent isOpen={isOpen} height={contentHeight}>
               <AccordionContentInner
                 ref={(el) => { contentRefs.current[panel.id] = el; }}
-                dangerouslySetInnerHTML={{
-                  __html: panel.content || '<p>No content</p>',
-                }}
-              />
+              >
+                {/* Image at top */}
+                {panel.imageUrl && panel.imagePosition !== 'bottom' && (
+                  <PanelImage 
+                    src={panel.imageUrl} 
+                    alt={panel.imageAlt || panel.title || 'Panel image'} 
+                    className="image-top"
+                  />
+                )}
+                
+                {/* Content */}
+                <ContentText
+                  dangerouslySetInnerHTML={{
+                    __html: panel.content || '<p>No content</p>',
+                  }}
+                />
+                
+                {/* Image at bottom */}
+                {panel.imageUrl && panel.imagePosition === 'bottom' && (
+                  <PanelImage 
+                    src={panel.imageUrl} 
+                    alt={panel.imageAlt || panel.title || 'Panel image'} 
+                    className="image-bottom"
+                  />
+                )}
+              </AccordionContentInner>
             </AccordionContent>
           </AccordionItemWrapper>
         );
