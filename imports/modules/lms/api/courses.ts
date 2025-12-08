@@ -19,6 +19,8 @@ export interface CourseDoc {
   content?: CourseBlock[];
   category?: string;
   tags?: string[];
+  learningObjectives?: string[];
+  learnerAudience?: string;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
