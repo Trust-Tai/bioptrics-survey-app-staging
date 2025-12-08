@@ -8,6 +8,8 @@ Meteor.methods({
     description: string;
     category?: string;
     tags?: string[];
+    learningObjectives?: string[];
+    learnerAudience?: string;
   }) {
     try {
       console.log('[courses.insert] Called with data:', courseData);
@@ -23,6 +25,8 @@ Meteor.methods({
         description: String,
         category: Match.Optional(String),
         tags: Match.Optional([String]),
+        learningObjectives: Match.Optional([String]),
+        learnerAudience: Match.Optional(String),
       });
 
       const courseId = await Courses.insertAsync({
@@ -52,6 +56,8 @@ Meteor.methods({
     category?: string;
     tags?: string[];
     thumbnail?: string;
+    learningObjectives?: string[];
+    learnerAudience?: string;
   }) {
     // Note: JWT authentication is handled by admin_jwt token, not Meteor accounts
     const userId = this.userId || 'admin'; // Fallback for JWT auth
