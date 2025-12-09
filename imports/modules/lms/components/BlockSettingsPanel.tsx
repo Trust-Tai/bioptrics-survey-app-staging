@@ -1134,6 +1134,53 @@ const PDFSettings: React.FC<{ block: PDFBlock; onUpdate: (settings: any) => void
           <CheckboxLabel htmlFor="allowDownload">Allow users to download PDF</CheckboxLabel>
         </CheckboxWrapper>
       </SettingGroup>
+
+      <Divider />
+
+      <SettingGroup>
+        <Label>Additional Content (Optional)</Label>
+        <MiniRichTextEditor
+          value={block.settings.content || ''}
+          onChange={(content) => onUpdate({ content })}
+          placeholder="Add description or instructions for this PDF..."
+        />
+        <HelpText>Add text content to display alongside the PDF</HelpText>
+      </SettingGroup>
+
+      {block.settings.content && (
+        <>
+          <SettingGroup>
+            <Label>Content Position</Label>
+            <Select
+              value={block.settings.contentPosition || 'top'}
+              onChange={e => onUpdate({ contentPosition: e.target.value })}
+            >
+              <option value="top">Top - Above PDF</option>
+              <option value="bottom">Bottom - Below PDF</option>
+              <option value="left">Left - Side by side</option>
+              <option value="right">Right - Side by side</option>
+            </Select>
+          </SettingGroup>
+
+          {(block.settings.contentPosition === 'left' || block.settings.contentPosition === 'right') && (
+            <SettingGroup>
+              <Label>Content Width ({block.settings.contentWidth || 40}%)</Label>
+              <RangeWrapper>
+                <RangeInput
+                  type="range"
+                  min="20"
+                  max="60"
+                  step="5"
+                  value={block.settings.contentWidth || 40}
+                  onChange={e => onUpdate({ contentWidth: parseInt(e.target.value) })}
+                />
+                <RangeValue>{block.settings.contentWidth || 40}%</RangeValue>
+              </RangeWrapper>
+              <HelpText>PDF takes remaining {100 - (block.settings.contentWidth || 40)}%</HelpText>
+            </SettingGroup>
+          )}
+        </>
+      )}
     </>
   );
 };
@@ -2085,12 +2132,16 @@ const QuizSettings: React.FC<{ block: QuizBlock; onUpdate: (settings: any) => vo
 // Tabs Settings
 const TabsSettings: React.FC<{ block: TabsBlock; onUpdate: (settings: any) => void }> = ({ block, onUpdate }) => {
   const tabs = block.settings?.tabs || [];
+  const fileInputRefs = React.useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleAddTab = () => {
     const newTab: TabItem = {
       id: `tab-${Date.now()}`,
       label: 'New Tab',
       content: '<p>Add your content here...</p>',
+      imageUrl: '',
+      imageAlt: '',
+      imagePosition: 'top',
     };
     onUpdate({ tabs: [...tabs, newTab] });
   };
@@ -2109,6 +2160,14 @@ const TabsSettings: React.FC<{ block: TabsBlock; onUpdate: (settings: any) => vo
         t.id === tabId ? { ...t, ...updates } : t
       ),
     });
+  };
+
+  const handleImageUpload = (tabId: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      handleUpdateTab(tabId, { imageUrl: reader.result as string });
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -2138,16 +2197,113 @@ const TabsSettings: React.FC<{ block: TabsBlock; onUpdate: (settings: any) => vo
                 />
               </div>
 
-              <div style={{ marginBottom: '8px' }}>
+              <div style={{ marginBottom: '12px' }}>
                 <Label style={{ fontSize: '12px', marginBottom: '4px' }}>Tab Content</Label>
-                <Textarea
+                <MiniRichTextEditor
                   value={tab.content}
-                  onChange={(e) => handleUpdateTab(tab.id, { content: e.target.value })}
-                  placeholder="Add content here..."
-                  rows={4}
-                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                  onChange={(content) => handleUpdateTab(tab.id, { content })}
+                  placeholder="Add your content here..."
                 />
-                <HelpText>Supports HTML formatting</HelpText>
+              </div>
+
+              {/* Image Section */}
+              <div style={{ marginBottom: '12px' }}>
+                <Label style={{ fontSize: '12px', marginBottom: '4px' }}>
+                  <Image size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                  Tab Image (Optional)
+                </Label>
+                
+                {tab.imageUrl ? (
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ 
+                      position: 'relative', 
+                      borderRadius: '6px', 
+                      overflow: 'hidden',
+                      marginBottom: '8px'
+                    }}>
+                      <img 
+                        src={tab.imageUrl} 
+                        alt={tab.imageAlt || 'Tab image'} 
+                        style={{ width: '100%', height: 'auto', display: 'block' }}
+                      />
+                      <button
+                        onClick={() => handleUpdateTab(tab.id, { imageUrl: '', imageAlt: '' })}
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          background: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <SmallInput
+                      type="text"
+                      value={tab.imageAlt || ''}
+                      onChange={(e) => handleUpdateTab(tab.id, { imageAlt: e.target.value })}
+                      placeholder="Image alt text"
+                      style={{ marginBottom: '8px' }}
+                    />
+                    <Select
+                      value={tab.imagePosition || 'top'}
+                      onChange={(e) => handleUpdateTab(tab.id, { imagePosition: e.target.value as 'top' | 'bottom' })}
+                      style={{ fontSize: '12px' }}
+                    >
+                      <option value="top">Image at top</option>
+                      <option value="bottom">Image at bottom</option>
+                    </Select>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={(el) => { fileInputRefs.current[tab.id] = el; }}
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(tab.id, file);
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.current[tab.id]?.click()}
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          background: '#f3f4f6',
+                          border: '1px dashed #d1d5db',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#6b7280',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Upload size={14} />
+                        Upload Image
+                      </button>
+                    </div>
+                    <SmallInput
+                      type="text"
+                      value={tab.imageUrl || ''}
+                      onChange={(e) => handleUpdateTab(tab.id, { imageUrl: e.target.value })}
+                      placeholder="Or paste image URL..."
+                      style={{ marginTop: '8px', fontSize: '11px' }}
+                    />
+                  </div>
+                )}
               </div>
 
               <CheckboxWrapper>
@@ -2566,13 +2722,11 @@ const ImageTextSettings: React.FC<{ block: ImageTextBlock; onUpdate: (settings: 
 
       <SettingGroup>
         <Label>Content</Label>
-        <Textarea
+        <MiniRichTextEditor
           value={block.settings?.content || ''}
-          onChange={(e) => onUpdate({ content: e.target.value })}
+          onChange={(content) => onUpdate({ content })}
           placeholder="Add your text content here..."
-          rows={6}
         />
-        <HelpText>Supports HTML formatting</HelpText>
       </SettingGroup>
 
       <Divider />

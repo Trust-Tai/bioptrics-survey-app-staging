@@ -84,6 +84,31 @@ const TabPanel = styled.div`
   }
 `;
 
+const TabImage = styled.img`
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  
+  &.image-top {
+    margin-bottom: 16px;
+  }
+  
+  &.image-bottom {
+    margin-top: 16px;
+  }
+`;
+
+const ContentText = styled.div`
+  p {
+    margin: 0 0 12px 0;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+`;
+
 const EmptyState = styled.div`
   padding: 48px 24px;
   text-align: center;
@@ -160,11 +185,32 @@ export const TabsBlock: React.FC<TabsBlockProps> = ({ block }) => {
       </TabNavigation>
 
       <TabContent>
-        <TabPanel
-          dangerouslySetInnerHTML={{
-            __html: activeTabData?.content || '<p>No content</p>',
-          }}
-        />
+        <TabPanel>
+          {/* Image at top */}
+          {activeTabData?.imageUrl && activeTabData?.imagePosition !== 'bottom' && (
+            <TabImage 
+              src={activeTabData.imageUrl} 
+              alt={activeTabData.imageAlt || activeTabData.label || 'Tab image'} 
+              className="image-top"
+            />
+          )}
+          
+          {/* Content */}
+          <ContentText
+            dangerouslySetInnerHTML={{
+              __html: activeTabData?.content || '<p>No content</p>',
+            }}
+          />
+          
+          {/* Image at bottom */}
+          {activeTabData?.imageUrl && activeTabData?.imagePosition === 'bottom' && (
+            <TabImage 
+              src={activeTabData.imageUrl} 
+              alt={activeTabData.imageAlt || activeTabData.label || 'Tab image'} 
+              className="image-bottom"
+            />
+          )}
+        </TabPanel>
       </TabContent>
     </TabsContainer>
   );

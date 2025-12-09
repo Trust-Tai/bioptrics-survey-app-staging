@@ -134,6 +134,10 @@ export interface PDFBlockSettings {
   fileName?: string;
   allowDownload?: boolean;
   displayHeight?: string;
+  // Optional content with position
+  content?: string;
+  contentPosition?: 'top' | 'bottom' | 'left' | 'right';
+  contentWidth?: number; // percentage 0-100
 }
 
 export interface PDFBlock extends BaseContentBlock {
@@ -249,6 +253,9 @@ export interface TabItem {
   id: string;
   label: string;
   content: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  imagePosition?: 'top' | 'bottom';
 }
 
 export interface TabsBlockSettings {
