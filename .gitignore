@@ -1,6 +1,9 @@
 node_modules/
 scope-of-work.docx
 .env
+.env.local
+.env.production
+.env.staging
 
 # Ignore all markdown files
 *.md
