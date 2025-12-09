@@ -1,0 +1,21 @@
+// Settings components barrel file
+export { RichTextSettings } from './RichTextSettings';
+export { ImageSettings } from './ImageSettings';
+export { VideoSettings } from './VideoSettings';
+export { VideoPlayerSettings } from './VideoPlayerSettings';
+export { AudioPlayerSettings } from './AudioPlayerSettings';
+export { PDFSettings } from './PDFSettings';
+export { FileDownloadSettings } from './FileDownloadSettings';
+export { AccordionSettings } from './AccordionSettings';
+export { CalloutSettings } from './CalloutSettings';
+export { ButtonSettings } from './ButtonSettings';
+export { DividerSettings } from './DividerSettings';
+export { QuizSettings } from './QuizSettings';
+export { TabsSettings } from './TabsSettings';
+export { FlipboxesSettings } from './FlipboxesSettings';
+export { ImageTextSettings } from './ImageTextSettings';
+export { ContentGridSettings } from './ContentGridSettings';
+export { BannerSettings } from './BannerSettings';
+export { BannerStyleSettings } from './BannerStyleSettings';
+export { TestimonialsSettings } from './TestimonialsSettings';
+export { TimelineSettings } from './TimelineSettings';
