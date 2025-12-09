@@ -6,6 +6,55 @@ const PDFContainer = styled.div`
   width: 100%;
 `;
 
+const PDFLayout = styled.div<{ $layout: 'vertical' | 'horizontal' }>`
+  display: flex;
+  flex-direction: ${props => props.$layout === 'horizontal' ? 'row' : 'column'};
+  gap: 20px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const ContentSection = styled.div<{ $width?: number }>`
+  flex: ${props => props.$width ? `0 0 ${props.$width}%` : '1'};
+  color: #374151;
+  line-height: 1.6;
+  
+  p {
+    margin: 0 0 12px 0;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  ul, ol {
+    margin: 0 0 12px 0;
+    padding-left: 24px;
+  }
+  
+  strong {
+    font-weight: 600;
+  }
+  
+  em {
+    font-style: italic;
+  }
+  
+  @media (max-width: 768px) {
+    flex: 1;
+  }
+`;
+
+const PDFSection = styled.div<{ $width?: number }>`
+  flex: ${props => props.$width ? `0 0 ${props.$width}%` : '1'};
+  
+  @media (max-width: 768px) {
+    flex: 1;
+  }
+`;
+
 const PDFEmptyState = styled.div`
   width: 100%;
   height: 400px;
@@ -113,6 +162,18 @@ export const PDFBlock: React.FC<PDFBlockProps> = ({ block }) => {
   const fileName = settings?.fileName || 'document.pdf';
   const allowDownload = settings?.allowDownload !== false;
   const displayHeight = settings?.displayHeight || '600px';
+  const content = settings?.content;
+  const contentPosition = settings?.contentPosition || 'top';
+  const contentWidth = settings?.contentWidth || 40;
+
+  // Determine layout
+  const isHorizontal = contentPosition === 'left' || contentPosition === 'right';
+  // Content first means content appears first in DOM (left for horizontal, top for vertical)
+  // Left position: content on left, PDF on right -> content first
+  // Right position: PDF on left, content on right -> PDF first
+  // Top position: content on top -> content first  
+  // Bottom position: PDF on top -> PDF first
+  const contentFirst = contentPosition === 'top' || contentPosition === 'left';
 
   if (!pdfUrl) {
     return (
@@ -139,8 +200,8 @@ export const PDFBlock: React.FC<PDFBlockProps> = ({ block }) => {
     );
   }
 
-  return (
-    <PDFContainer>
+  const pdfViewer = (
+    <PDFSection $width={isHorizontal ? (100 - contentWidth) : undefined}>
       <PDFViewer height={displayHeight}>
         <PDFEmbed
           src={`${pdfUrl}#toolbar=${allowDownload ? 1 : 0}`}
@@ -182,6 +243,35 @@ export const PDFBlock: React.FC<PDFBlockProps> = ({ block }) => {
             </DownloadButton>
           )}
         </PDFInfo>
+      )}
+    </PDFSection>
+  );
+
+  const contentSection = content ? (
+    <ContentSection 
+      $width={isHorizontal ? contentWidth : undefined}
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  ) : null;
+
+  return (
+    <PDFContainer>
+      {content ? (
+        <PDFLayout $layout={isHorizontal ? 'horizontal' : 'vertical'}>
+          {contentFirst ? (
+            <>
+              {contentSection}
+              {pdfViewer}
+            </>
+          ) : (
+            <>
+              {pdfViewer}
+              {contentSection}
+            </>
+          )}
+        </PDFLayout>
+      ) : (
+        pdfViewer
       )}
     </PDFContainer>
   );
