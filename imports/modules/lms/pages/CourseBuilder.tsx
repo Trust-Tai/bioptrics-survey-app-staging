@@ -427,6 +427,12 @@ const CourseBuilder: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const hasInitializedModules = useRef(false);
+  
+  // Local state for module fields to avoid race conditions
+  const [localModuleGoals, setLocalModuleGoals] = useState<Record<string, string>>({});
+  const [localModuleDurations, setLocalModuleDurations] = useState<Record<string, number>>({});
+  const moduleGoalsSaveTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const moduleDurationSaveTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
 
   // Subscribe to data
   const { course, modules, topics, quizzes, isLoading } = useTracker(() => {
@@ -496,6 +502,51 @@ const CourseBuilder: React.FC = () => {
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
+  };
+
+  // Handle module description change with debounce to prevent race conditions
+  const handleModuleGoalsChange = (moduleId: string, value: string) => {
+    // Update local state immediately for responsive UI
+    setLocalModuleGoals(prev => ({ ...prev, [moduleId]: value }));
+    
+    // Clear existing timeout for this module
+    if (moduleGoalsSaveTimeouts.current[moduleId]) {
+      clearTimeout(moduleGoalsSaveTimeouts.current[moduleId]);
+    }
+    
+    // Debounce the server save (500ms delay)
+    moduleGoalsSaveTimeouts.current[moduleId] = setTimeout(() => {
+      Meteor.call('modules.update', moduleId, { goals: value });
+    }, 500);
+  };
+
+  // Get module goals value (local state takes priority, then server data)
+  const getModuleGoals = (module: ModuleDoc): string => {
+    if (localModuleGoals.hasOwnProperty(module._id)) {
+      return localModuleGoals[module._id];
+    }
+    return module.goals || '';
+  };
+
+  // Handle module duration change with debounce
+  const handleModuleDurationChange = (moduleId: string, value: number) => {
+    setLocalModuleDurations(prev => ({ ...prev, [moduleId]: value }));
+    
+    if (moduleDurationSaveTimeouts.current[moduleId]) {
+      clearTimeout(moduleDurationSaveTimeouts.current[moduleId]);
+    }
+    
+    moduleDurationSaveTimeouts.current[moduleId] = setTimeout(() => {
+      Meteor.call('modules.update', moduleId, { estimatedMinutes: value });
+    }, 500);
+  };
+
+  // Get module duration value
+  const getModuleDuration = (module: ModuleDoc): number => {
+    if (localModuleDurations.hasOwnProperty(module._id)) {
+      return localModuleDurations[module._id];
+    }
+    return module.estimatedMinutes || 0;
   };
 
   const handleInputChange = (field: keyof CourseFormData, value: any) => {
@@ -1062,17 +1113,8 @@ const CourseBuilder: React.FC = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                       <Input
                                         type="number"
-                                        value={module.estimatedMinutes}
-                                        onChange={(e) => {
-                                          const minutes = parseInt(e.target.value) || 0;
-                                          Meteor.call('modules.update', module._id, {
-                                            estimatedMinutes: minutes,
-                                          }, (error: any) => {
-                                            if (error) {
-                                              toast.error('Failed to update duration: ' + error.message);
-                                            }
-                                          });
-                                        }}
+                                        value={getModuleDuration(module)}
+                                        onChange={(e) => handleModuleDurationChange(module._id, parseInt(e.target.value) || 0)}
                                         min="0"
                                         style={{ width: '80px' }}
                                         placeholder="60"
@@ -1083,12 +1125,8 @@ const CourseBuilder: React.FC = () => {
                                   <FormGroup>
                                     <Label>Module Description</Label>
                                     <TextArea
-                                      value={module.goals || ''}
-                                      onChange={(e) => {
-                                        Meteor.call('modules.update', module._id, {
-                                          goals: e.target.value,
-                                        });
-                                      }}
+                                      value={getModuleGoals(module)}
+                                      onChange={(e) => handleModuleGoalsChange(module._id, e.target.value)}
                                       placeholder="Describe what this module covers..."
                                       rows={4}
                                     />
