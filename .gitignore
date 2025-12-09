@@ -5,5 +5,9 @@ scope-of-work.docx
 .env.production
 .env.staging
 
+# Deployment scripts (server-only, not in version control)
+deploy_newgold.sh
+deploy_bioptrics_staging.sh
+
 # Ignore all markdown files
 *.md
