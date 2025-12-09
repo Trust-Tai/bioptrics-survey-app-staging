@@ -125,4 +125,79 @@ Meteor.methods({
 
     return true;
   },
+
+  async 'modules.copy'(moduleId: string) {
+    // Note: JWT authentication is handled by admin_jwt token, not Meteor accounts
+    const userId = this.userId || 'admin'; // Fallback for JWT auth
+
+    check(moduleId, String);
+
+    const sourceModule = await Modules.findOneAsync(moduleId);
+    if (!sourceModule) {
+      throw new Meteor.Error('not-found', 'Module not found');
+    }
+
+    // Get the current max order for this course
+    const maxOrderModule = await Modules.findOneAsync(
+      { courseId: sourceModule.courseId },
+      { sort: { order: -1 } }
+    );
+    const nextOrder = maxOrderModule ? maxOrderModule.order + 1 : 1;
+
+    // Create a copy of the module
+    const newModuleId = await Modules.insertAsync({
+      courseId: sourceModule.courseId,
+      title: `${sourceModule.title} (Copy)`,
+      description: sourceModule.description || '',
+      goals: sourceModule.goals || '',
+      order: nextOrder,
+      estimatedMinutes: sourceModule.estimatedMinutes || 60,
+      learningObjectives: sourceModule.learningObjectives || [],
+      status: 'draft',
+      createdBy: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+
+    // Copy all topics in the module
+    const sourceTopics = await Topics.find({ moduleId }).fetchAsync();
+    for (const topic of sourceTopics) {
+      const topicData = topic as any;
+      await Topics.insertAsync({
+        courseId: sourceModule.courseId,
+        moduleId: newModuleId,
+        title: topic.title,
+        description: topic.description || '',
+        content: topicData.content || '',
+        order: topic.order,
+        estimatedMinutes: topic.estimatedMinutes || 10,
+        status: 'draft',
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+    }
+
+    // Copy all quizzes in the module
+    const sourceQuizzes = await Quizzes.find({ moduleId }).fetchAsync();
+    for (const quiz of sourceQuizzes) {
+      const quizData = quiz as any;
+      await Quizzes.insertAsync({
+        courseId: sourceModule.courseId,
+        moduleId: newModuleId,
+        title: quiz.title,
+        description: quiz.description || '',
+        questions: quiz.questions || [],
+        order: quiz.order,
+        passingScore: quizData.passingScore || 70,
+        timeLimit: quizData.timeLimit,
+        status: 'draft',
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+    }
+
+    return newModuleId;
+  },
 });

@@ -185,6 +185,13 @@ export const QuizEditor: React.FC = () => {
       />
 
       <MainLayout>
+        {/* Quiz Settings Sidebar - Left */}
+        <QuizSettings
+          settings={quizSettings}
+          totalPoints={calculateTotalPoints()}
+          onUpdate={handleUpdateSettings}
+        />
+
         <Canvas>
           <CanvasInner>
             <QuizTitle
@@ -211,13 +218,6 @@ export const QuizEditor: React.FC = () => {
             />
           </CanvasInner>
         </Canvas>
-
-        {/* Quiz Settings Sidebar */}
-        <QuizSettings
-          settings={quizSettings}
-          totalPoints={calculateTotalPoints()}
-          onUpdate={handleUpdateSettings}
-        />
       </MainLayout>
 
       <QuestionEditor

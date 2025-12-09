@@ -8,12 +8,12 @@ const SidebarContainer = styled.div`
   width: 400px;
   height: calc(100vh - 73px);
   background: white;
-  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 73px;
-  right: 0;
+  left: 0;
   overflow: hidden;
   flex-shrink: 0;
   align-self: flex-start;

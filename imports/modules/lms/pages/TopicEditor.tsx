@@ -105,6 +105,19 @@ export const TopicEditor: React.FC = () => {
       />
 
       <MainLayout>
+        {/* Left Sidebar - Block Library & Settings */}
+        <RightSidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          selectedBlock={selectedBlock}
+          onAddBlock={handleAddBlock}
+          onUpdateBlock={settings => selectedBlock && updateBlock(selectedBlock.id, settings)}
+          onCloseSettings={() => setSelectedBlock(null)}
+          course={course}
+          module={module}
+          topic={topic}
+        />
+
         <ContentCanvas
           topicTitle={topic.title}
           isEditingTitle={isEditingTitle}
@@ -122,19 +135,6 @@ export const TopicEditor: React.FC = () => {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-        />
-
-        {/* Sticky Right Sidebar - Always visible */}
-        <RightSidebar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          selectedBlock={selectedBlock}
-          onAddBlock={handleAddBlock}
-          onUpdateBlock={settings => selectedBlock && updateBlock(selectedBlock.id, settings)}
-          onCloseSettings={() => setSelectedBlock(null)}
-          course={course}
-          module={module}
-          topic={topic}
         />
       </MainLayout>
 
