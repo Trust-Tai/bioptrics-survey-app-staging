@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText, Trash2, GripVertical } from 'lucide-react';
 
 interface TopicCardProps {
   topic: {
@@ -10,6 +10,7 @@ interface TopicCardProps {
     title: string;
     description?: string;
     order: number;
+    estimatedMinutes?: number;
   };
   moduleId: string;
   courseId: string;
@@ -24,63 +25,75 @@ interface TopicCardProps {
 
 const Card = styled.div`
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px 16px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   transition: all 0.2s;
   cursor: pointer;
+  border-bottom: 1px solid #e5e7eb;
+  
+  &:last-child {
+    border-bottom: none;
+  }
   
   &:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: #fafafa;
   }
 `;
 
-const LeftSection = styled.div`
+const DragHandle = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  color: #d1d5db;
+  cursor: grab;
+  
+  &:hover {
+    color: #9ca3af;
+  }
 `;
 
 const IconWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: #f3f4f6;
-  border-radius: 6px;
-  color: #6b7280;
+  width: 36px;
+  height: 36px;
+  background: #dbeafe;
+  border-radius: 8px;
+  color: #3b82f6;
+  flex-shrink: 0;
 `;
 
-const TitleSection = styled.div`
+const ContentSection = styled.div`
   flex: 1;
+  min-width: 0;
+`;
+
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const TitleInput = styled.input`
   width: 100%;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #111827;
   background: white;
-  border: 1px solid #3b82f6;
+  border: 2px solid #3b82f6;
   border-radius: 4px;
   padding: 4px 8px;
   
   &:focus {
     outline: none;
-    ring: 2px;
-    ring-color: #3b82f6;
   }
 `;
 
 const TitleText = styled.span`
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #111827;
   cursor: pointer;
   transition: color 0.2s;
@@ -90,27 +103,46 @@ const TitleText = styled.span`
   }
 `;
 
-const Description = styled.p`
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 2px;
-`;
-
-const Actions = styled.div`
+const MetaInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+  
+  span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .dot {
+    color: #d1d5db;
+  }
+`;
+
+const RightSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const ObjectivesTag = styled.span`
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
 `;
 
 const DeleteButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 8px;
   background: transparent;
   border: none;
   border-radius: 4px;
-  color: #9ca3af;
+  color: #d1d5db;
   cursor: pointer;
   transition: all 0.2s;
   
@@ -164,41 +196,48 @@ export const TopicCard: React.FC<TopicCardProps> = ({
     onDelete(moduleId, topic.id);
   };
 
+  const estimatedTime = topic.estimatedMinutes || 5;
+
   return (
     <Card onClick={handleCardClick}>
-      <LeftSection>
-        <IconWrapper>
-          <FileText size={16} />
-        </IconWrapper>
-        <TitleSection>
-          {isEditing ? (
-            <TitleInput
-              type="text"
-              value={editingTitle}
-              onChange={(e) => onTitleChange(e.target.value)}
-              onBlur={() => onFinishEdit(moduleId, topic.id)}
-              onKeyDown={handleKeyDown}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
-            />
-          ) : (
-            <>
-              <TitleText onClick={handleTitleClick} title="Click to edit">
-                {topic.title}
-              </TitleText>
-              {topic.description && (
-                <Description>{topic.description}</Description>
-              )}
-            </>
-          )}
-        </TitleSection>
-      </LeftSection>
+      <DragHandle onClick={(e) => e.stopPropagation()}>
+        <GripVertical size={18} />
+      </DragHandle>
+      <IconWrapper>
+        <FileText size={18} />
+      </IconWrapper>
+      <ContentSection>
+        {isEditing ? (
+          <TitleInput
+            type="text"
+            value={editingTitle}
+            onChange={(e) => onTitleChange(e.target.value)}
+            onBlur={() => onFinishEdit(moduleId, topic.id)}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+          />
+        ) : (
+          <>
+            <TitleText onClick={handleTitleClick} title="Click to edit">
+              Topic {topic.order}: {topic.title}
+            </TitleText>
+            <MetaInfo>
+              <span>Content</span>
+              <span className="dot">·</span>
+              <span>~{estimatedTime} min</span>
+              <span className="dot">·</span>
+              <span>Required</span>
+            </MetaInfo>
+          </>
+        )}
+      </ContentSection>
       
-      <Actions>
+      <RightSection>
         <DeleteButton onClick={handleDeleteClick} title="Delete topic">
-          <Trash2 size={14} />
+          <Trash2 size={16} />
         </DeleteButton>
-      </Actions>
+      </RightSection>
     </Card>
   );
 };

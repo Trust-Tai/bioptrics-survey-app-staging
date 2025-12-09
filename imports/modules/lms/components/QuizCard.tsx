@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Trash2 } from 'lucide-react';
+import { HelpCircle, Trash2, GripVertical } from 'lucide-react';
 
 interface QuizCardProps {
   quiz: {
@@ -10,6 +10,7 @@ interface QuizCardProps {
     title: string;
     description?: string;
     order: number;
+    estimatedMinutes?: number;
   };
   moduleId: string;
   courseId: string;
@@ -23,94 +24,113 @@ interface QuizCardProps {
 }
 
 const Card = styled.div`
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
-  border-radius: 8px;
-  padding: 12px 16px;
+  background: white;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   transition: all 0.2s;
   cursor: pointer;
+  border-bottom: 1px solid #e5e7eb;
+  
+  &:last-child {
+    border-bottom: none;
+  }
   
   &:hover {
-    border-color: #f59e0b;
-    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);
+    background: #fafafa;
   }
 `;
 
-const LeftSection = styled.div`
+const DragHandle = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  color: #d1d5db;
+  cursor: grab;
+  
+  &:hover {
+    color: #9ca3af;
+  }
 `;
 
 const IconWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: #fbbf24;
-  border-radius: 6px;
-  color: white;
+  width: 36px;
+  height: 36px;
+  background: #fed7aa;
+  border-radius: 8px;
+  color: #ea580c;
+  flex-shrink: 0;
 `;
 
-const TitleSection = styled.div`
+const ContentSection = styled.div`
   flex: 1;
+  min-width: 0;
 `;
 
 const TitleInput = styled.input`
   width: 100%;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #111827;
   background: white;
-  border: 1px solid #f59e0b;
+  border: 2px solid #f97316;
   border-radius: 4px;
   padding: 4px 8px;
   
   &:focus {
     outline: none;
-    ring: 2px;
-    ring-color: #f59e0b;
   }
 `;
 
 const TitleText = styled.span`
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #111827;
   cursor: pointer;
   transition: color 0.2s;
   
   &:hover {
-    color: #f59e0b;
+    color: #f97316;
   }
 `;
 
-const Description = styled.p`
-  font-size: 13px;
-  color: #92400e;
-  margin-top: 2px;
-`;
-
-const Actions = styled.div`
+const MetaInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+  
+  span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .dot {
+    color: #d1d5db;
+  }
+`;
+
+const RightSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
 `;
 
 const DeleteButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 8px;
   background: transparent;
   border: none;
   border-radius: 4px;
-  color: #92400e;
+  color: #d1d5db;
   cursor: pointer;
   transition: all 0.2s;
   
@@ -164,41 +184,48 @@ export const QuizCard: React.FC<QuizCardProps> = ({
     onDelete(moduleId, quiz.id);
   };
 
+  const estimatedTime = quiz.estimatedMinutes || 5;
+
   return (
     <Card onClick={handleCardClick}>
-      <LeftSection>
-        <IconWrapper>
-          <CheckCircle size={16} />
-        </IconWrapper>
-        <TitleSection>
-          {isEditing ? (
-            <TitleInput
-              type="text"
-              value={editingTitle}
-              onChange={(e) => onTitleChange(e.target.value)}
-              onBlur={() => onFinishEdit(moduleId, quiz.id)}
-              onKeyDown={handleKeyDown}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
-            />
-          ) : (
-            <>
-              <TitleText onClick={handleTitleClick} title="Click to edit">
-                {quiz.title}
-              </TitleText>
-              {quiz.description && (
-                <Description>{quiz.description}</Description>
-              )}
-            </>
-          )}
-        </TitleSection>
-      </LeftSection>
+      <DragHandle onClick={(e) => e.stopPropagation()}>
+        <GripVertical size={18} />
+      </DragHandle>
+      <IconWrapper>
+        <HelpCircle size={18} />
+      </IconWrapper>
+      <ContentSection>
+        {isEditing ? (
+          <TitleInput
+            type="text"
+            value={editingTitle}
+            onChange={(e) => onTitleChange(e.target.value)}
+            onBlur={() => onFinishEdit(moduleId, quiz.id)}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            autoFocus
+          />
+        ) : (
+          <>
+            <TitleText onClick={handleTitleClick} title="Click to edit">
+              Topic {quiz.order}: {quiz.title}
+            </TitleText>
+            <MetaInfo>
+              <span>Quiz</span>
+              <span className="dot">·</span>
+              <span>~{estimatedTime} min</span>
+              <span className="dot">·</span>
+              <span>Required</span>
+            </MetaInfo>
+          </>
+        )}
+      </ContentSection>
       
-      <Actions>
+      <RightSection>
         <DeleteButton onClick={handleDeleteClick} title="Delete quiz">
-          <Trash2 size={14} />
+          <Trash2 size={16} />
         </DeleteButton>
-      </Actions>
+      </RightSection>
     </Card>
   );
 };

@@ -12,7 +12,7 @@ interface QuizSettingsProps {
 const SidebarContainer = styled.div`
   width: 400px;
   background: white;
-  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
   padding: 24px;
   position: sticky;
   top: 73px;
