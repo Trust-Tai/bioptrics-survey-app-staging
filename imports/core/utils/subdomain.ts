@@ -13,7 +13,7 @@ export class SubdomainRouter {
       defaultRoute: '/dashboard'
     },
     {
-      subdomain: 'pulse-dev',
+      subdomain: 'pulse-lms',
       moduleId: 'lms',
       defaultRoute: '/dashboard'
     }
@@ -31,7 +31,7 @@ export class SubdomainRouter {
     
     // For localhost development - check path first
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      // Check for path-based routing: localhost:3000/pulse or localhost:3000/pulse-dev
+      // Check for path-based routing: localhost:3000/pulse or localhost:3000/pulse-lms
       const pathSegments = pathname.split('/').filter(segment => segment !== '');
       if (pathSegments.length > 0) {
         const firstSegment = pathSegments[0];

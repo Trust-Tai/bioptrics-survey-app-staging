@@ -93,7 +93,7 @@ function RequireAdminAuth() {
     localStorage.setItem('admin_redirect_after_login', redirectTo);
     
     // For subdomain access, store that we want to go to admin/home
-    if (typeof window !== 'undefined' && window.location.hostname.includes('pulse-dev.bioptrics.com')) {
+    if (typeof window !== 'undefined' && window.location.hostname.includes('pulse-lms.bioptrics.com')) {
       localStorage.setItem('admin_redirect_after_login', '/admin/home');
     }
     
@@ -304,7 +304,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/lms/builder/:courseId" element={<CourseBuilder />} />
         <Route path="/admin/lms/builder/:courseId/topic/:moduleId/:topicId" element={<TopicEditor />} />
         <Route path="/admin/lms/builder/:courseId/quiz/:quizId" element={<QuizEditor />} />
-        <Route path="/pulse-dev" element={<LMSComingSoon />} />
+        <Route path="/pulse-lms" element={<LMSComingSoon />} />
       </Route>
       {/* Catch-all route for 404 pages */}
       <Route path="*" element={<NotFoundPage />} />
