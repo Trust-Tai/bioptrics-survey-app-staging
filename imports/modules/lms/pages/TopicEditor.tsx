@@ -46,6 +46,15 @@ export const TopicEditor: React.FC = () => {
   } = useBlockManagement();
 
   const [activeTab, setActiveTab] = useState<'outline' | 'content' | 'settings'>('content');
+  const [highlightSidebar, setHighlightSidebar] = useState(false);
+
+  // Handle highlight sidebar when add block button is clicked
+  const handleHighlightSidebar = () => {
+    setActiveTab('content');
+    setHighlightSidebar(true);
+    // Auto-reset after animation
+    setTimeout(() => setHighlightSidebar(false), 2000);
+  };
   
   // Auto-save hook
   const { showSaved: autoShowSaved } = useAutoSave(topicId, contentBlocks);
@@ -117,6 +126,7 @@ export const TopicEditor: React.FC = () => {
           module={module}
           topic={topic}
           topicId={topicId}
+          highlightSidebar={highlightSidebar}
         />
 
         <ContentCanvas
@@ -129,7 +139,7 @@ export const TopicEditor: React.FC = () => {
           onCancelEditTitle={handleCancelEditTitle}
           blocks={contentBlocks}
           draggedIndex={draggedIndex}
-          onAddBlock={() => setActiveTab('content')}
+          onAddBlock={handleHighlightSidebar}
           onEditBlock={setSelectedBlock}
           onDeleteBlock={setDeleteConfirm}
           onUpdateBlock={updateBlock}

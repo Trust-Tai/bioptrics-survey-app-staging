@@ -1,12 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { Meteor } from 'meteor/meteor';
 import { Clock, Settings } from 'lucide-react';
+
+// Pulse animation for highlighting sidebar
+const pulseHighlight = keyframes`
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(6, 182, 212, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+`;
+
+// Shake/vibrate animation
+const shakeAnimation = keyframes`
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+`;
+
 import { BlockLibrary } from '../BlockLibrary';
 import { BlockSettingsPanel } from '../BlockSettingsPanel';
 import type { ContentBlock } from '../../types/contentBlocks';
 
-const SidebarContainer = styled.div`
+const SidebarContainer = styled.div<{ isHighlighted?: boolean }>`
   width: 400px;
   height: calc(100vh - 73px);
   background: white;
@@ -19,6 +46,15 @@ const SidebarContainer = styled.div`
   overflow: hidden;
   flex-shrink: 0;
   align-self: flex-start;
+  transition: all 0.3s ease;
+  
+  ${props => props.isHighlighted && css`
+    border-right: 3px solid #06b6d4;
+    animation: 
+      ${pulseHighlight} 0.8s ease-in-out 3,
+      ${shakeAnimation} 0.5s ease-in-out 2;
+    background: linear-gradient(to right, #ecfeff, white);
+  `}
 `;
 
 const TabNavigation = styled.div`
@@ -189,6 +225,7 @@ interface RightSidebarProps {
   module: any;
   topic: any;
   topicId?: string;
+  highlightSidebar?: boolean;
 }
 
 export const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -202,7 +239,16 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   module,
   topic,
   topicId,
+  highlightSidebar,
 }) => {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when highlighted
+  useEffect(() => {
+    if (highlightSidebar && sidebarRef.current) {
+      sidebarRef.current.scrollTop = 0;
+    }
+  }, [highlightSidebar]);
   const [duration, setDuration] = useState<number>(topic?.estimatedMinutes || 5);
   const [showSaved, setShowSaved] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -237,7 +283,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   };
 
   return (
-    <SidebarContainer>
+    <SidebarContainer ref={sidebarRef} isHighlighted={highlightSidebar}>
       <TabNavigation>
         <TabButton
           isActive={activeTab === 'content'}
