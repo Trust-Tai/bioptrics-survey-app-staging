@@ -31,7 +31,7 @@ const MainContent = styled.div`
 const AdminHomePage: React.FC = () => {
   // Check if we're on the LMS subdomain
   const isLMSSubdomain = typeof window !== 'undefined' && 
-    window.location.hostname.includes('pulse-dev.bioptrics.com');
+    window.location.hostname.includes('pulse-lms.bioptrics.com');
 
   // If on LMS subdomain, show the LMS coming soon page
   if (isLMSSubdomain) {

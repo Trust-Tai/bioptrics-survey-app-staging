@@ -1,24 +1,37 @@
+
 module.exports = {
-    apps: [
-      {
-        name: 'newgold-survey',
-        script: 'main.js',
-        env: {
-          // Local MongoDB connection
-          MONGO_URL: 'mongodb://localhost:27017/bioptrics-local',
-          ROOT_URL: 'http://localhost:3000',
-          PORT: 3000,
-          NODE_ENV: 'development',
-          DYNAMIC_IMPORTS_URL: 'http://localhost:3000'
-        },
-        // Production environment (commented out)
-        // env_production: {
-        //   MONGO_URL: 'mongodb+srv://tayeshobajo:1Manchester_sm@kv8slwx.mongodb.net/bioptrics-demo?retryWrites=true&w=majority',
-        //   ROOT_URL: 'https://survey.bioptrics.com',
-        //   PORT: 3000,
-        //   NODE_ENV: 'production',
-        //   DYNAMIC_IMPORTS_URL: 'https://survey.bioptrics.com'
-        // },
-      },
-    ],
-  };
+  apps: [
+    {
+      name: 'bioptrics-survey',
+      script: 'main.js',
+      cwd: '/var/www/newgold-survey-build/bundle',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        MONGO_URL: process.env.MONGO_URL,
+        ROOT_URL: process.env.ROOT_URL,
+        PORT: process.env.PORT || 3000,
+        NODE_ENV: 'production',
+        DYNAMIC_IMPORTS_URL: process.env.DYNAMIC_IMPORTS_URL
+      }
+    },
+    {
+      name: 'bioptrics-staging',
+      script: 'main.js',
+      cwd: '/var/www/bioptrics-staging-build/bundle',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        MONGO_URL: process.env.MONGO_URL_STAGING,
+        ROOT_URL: process.env.ROOT_URL_STAGING,
+        PORT: process.env.PORT_STAGING || 3001,
+        NODE_ENV: 'staging',
+        DYNAMIC_IMPORTS_URL: process.env.DYNAMIC_IMPORTS_URL_STAGING
+      }
+    }
+  ]
+};

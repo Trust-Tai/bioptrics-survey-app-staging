@@ -1,6 +1,13 @@
 node_modules/
 scope-of-work.docx
 .env
+.env.local
+.env.production
+.env.staging
+
+# Deployment scripts (server-only, not in version control)
+deploy_newgold.sh
+deploy_bioptrics_staging.sh
 
 # Ignore all markdown files
 *.md

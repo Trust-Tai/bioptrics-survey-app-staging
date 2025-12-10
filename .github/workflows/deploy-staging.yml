@@ -1,13 +1,13 @@
-name: Deploy to Production
+name: Deploy to Staging
 
 on:
   # Manual trigger from the GitHub UI
   workflow_dispatch:
 
-  # Optional: auto-deploy on push to main
+  # Optional: auto-deploy on push to develop
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   deploy:
@@ -28,4 +28,4 @@ jobs:
           command_timeout: 30m
           script: |
             set -e
-            /var/www/deploy_newgold.sh
+            /var/www/deploy_bioptrics_staging.sh
