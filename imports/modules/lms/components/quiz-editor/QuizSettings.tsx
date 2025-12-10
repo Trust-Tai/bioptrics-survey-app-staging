@@ -6,7 +6,9 @@ import type { QuizSettings as QuizSettingsType } from '../../api/quizzes';
 interface QuizSettingsProps {
   settings: QuizSettingsType;
   totalPoints: number;
+  estimatedMinutes: number;
   onUpdate: (settings: Partial<QuizSettingsType>) => void;
+  onDurationChange: (minutes: number) => void;
 }
 
 const SidebarContainer = styled.div`
@@ -154,7 +156,9 @@ const InfoText = styled.p`
 export const QuizSettings: React.FC<QuizSettingsProps> = ({
   settings,
   totalPoints,
+  estimatedMinutes,
   onUpdate,
+  onDurationChange,
 }) => {
   return (
     <SidebarContainer>
@@ -204,6 +208,21 @@ export const QuizSettings: React.FC<QuizSettingsProps> = ({
             <strong>Total Points:</strong> {totalPoints} points
           </InfoText>
         </InfoBox>
+
+        <FormGroup style={{ marginTop: '16px' }}>
+          <Label>Estimated Duration</Label>
+          <InputSuffix>
+            <Input
+              type="number"
+              min="1"
+              max="999"
+              value={estimatedMinutes}
+              onChange={(e) => onDurationChange(parseInt(e.target.value) || 5)}
+            />
+            <span>minutes</span>
+          </InputSuffix>
+          <HelpText>Estimated time to complete this quiz (shown in course outline)</HelpText>
+        </FormGroup>
       </Section>
 
       <Divider />

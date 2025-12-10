@@ -226,8 +226,6 @@ export const TopicCard: React.FC<TopicCardProps> = ({
               <span>Content</span>
               <span className="dot">·</span>
               <span>~{estimatedTime} min</span>
-              <span className="dot">·</span>
-              <span>Required</span>
             </MetaInfo>
           </>
         )}

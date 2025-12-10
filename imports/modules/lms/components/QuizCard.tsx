@@ -214,8 +214,6 @@ export const QuizCard: React.FC<QuizCardProps> = ({
               <span>Quiz</span>
               <span className="dot">·</span>
               <span>~{estimatedTime} min</span>
-              <span className="dot">·</span>
-              <span>Required</span>
             </MetaInfo>
           </>
         )}

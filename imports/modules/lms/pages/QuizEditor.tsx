@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import {
@@ -88,6 +88,35 @@ export const QuizEditor: React.FC = () => {
       setQuizSettings(quiz.settings);
     }
   }, [quiz?.settings]);
+
+  // Estimated duration state
+  const [estimatedMinutes, setEstimatedMinutes] = useState<number>(quiz?.estimatedMinutes || 5);
+  const durationSaveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync estimated minutes when quiz loads
+  useEffect(() => {
+    if (quiz?.estimatedMinutes !== undefined) {
+      setEstimatedMinutes(quiz.estimatedMinutes);
+    }
+  }, [quiz?.estimatedMinutes]);
+
+  // Handle duration change with auto-save
+  const handleDurationChange = (minutes: number) => {
+    const newValue = Math.max(1, minutes);
+    setEstimatedMinutes(newValue);
+    
+    // Clear existing timeout
+    if (durationSaveTimeout.current) {
+      clearTimeout(durationSaveTimeout.current);
+    }
+    
+    // Auto-save after 500ms
+    durationSaveTimeout.current = setTimeout(() => {
+      if (quizId) {
+        Meteor.call('quizzes.update', quizId, { estimatedMinutes: newValue });
+      }
+    }, 500);
+  };
 
   // Auto-save hook
   const { showSaved: autoSaveShown, isSaving } = useQuizAutoSave(
@@ -189,7 +218,9 @@ export const QuizEditor: React.FC = () => {
         <QuizSettings
           settings={quizSettings}
           totalPoints={calculateTotalPoints()}
+          estimatedMinutes={estimatedMinutes}
           onUpdate={handleUpdateSettings}
+          onDurationChange={handleDurationChange}
         />
 
         <Canvas>

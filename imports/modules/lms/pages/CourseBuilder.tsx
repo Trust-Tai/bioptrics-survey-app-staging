@@ -4,7 +4,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Plus, Trash2, ChevronDown, Upload, Copy, GripVertical, FileText, Sparkles, Eye, Check } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Upload, Copy, GripVertical, FileText, Eye, Check } from 'lucide-react';
 import { Courses } from '../api/courses';
 import { Modules } from '../api/modules';
 import { Topics } from '../api/topics';
@@ -357,29 +357,6 @@ const OutlineStats = styled.div`
   }
 `;
 
-const RefineButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  svg {
-    color: #8b5cf6;
-  }
-  
-  &:hover {
-    background: #f9fafb;
-    border-color: #8b5cf6;
-  }
-`;
 
 const ModuleCard = styled.div`
   background: white;
@@ -762,12 +739,23 @@ const CourseBuilder: React.FC = () => {
     }, 500);
   };
 
-  // Get module duration value
+  // Get module duration value - calculated dynamically from topics and quizzes
   const getModuleDuration = (module: ModuleDoc): number => {
-    if (localModuleDurations.hasOwnProperty(module._id)) {
-      return localModuleDurations[module._id];
-    }
-    return module.estimatedMinutes || 0;
+    // Get all topics belonging to this module
+    const moduleTopics = topics.filter(t => t.moduleId === module._id);
+    const moduleQuizzes = quizzes.filter(q => q.moduleId === module._id);
+    
+    // Sum up estimated minutes from topics (default 5 min per topic)
+    const topicsDuration = moduleTopics.reduce((sum, topic) => {
+      return sum + (topic.estimatedMinutes || 5);
+    }, 0);
+    
+    // Sum up estimated minutes from quizzes (default 5 min per quiz)
+    const quizzesDuration = moduleQuizzes.reduce((sum, quiz) => {
+      return sum + (quiz.estimatedMinutes || 5);
+    }, 0);
+    
+    return topicsDuration + quizzesDuration;
   };
 
   const handleInputChange = (field: keyof CourseFormData, value: any) => {
@@ -1192,9 +1180,9 @@ const CourseBuilder: React.FC = () => {
     setEditingQuizTitle('');
   };
 
-  // Calculate total length
+  // Calculate total length - dynamically from all topics and quizzes
   const getTotalLength = () => {
-    const totalMinutes = modules.reduce((sum, module) => sum + module.estimatedMinutes, 0);
+    const totalMinutes = modules.reduce((sum, module) => sum + getModuleDuration(module), 0);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}m`;
@@ -1345,11 +1333,6 @@ const CourseBuilder: React.FC = () => {
                       <div className="total">Total length: {getTotalLength()}</div>
                       <div className="details">{modules.length} modules · {getTotalTopics()} topics</div>
                     </OutlineStats>
-                    <RefineButton>
-                      <Sparkles size={16} />
-                      Refine with AI
-                      <ChevronDown size={14} />
-                    </RefineButton>
                   </OutlineHeaderRight>
                 </OutlineHeader>
 
@@ -1578,6 +1561,7 @@ const CourseBuilder: React.FC = () => {
 
                               {currentTab === 'goals' && (
                                 <div>
+                                  {/* Estimated Duration - Hidden for now
                                   <FormGroup>
                                     <Label>Estimated Duration</Label>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1592,6 +1576,7 @@ const CourseBuilder: React.FC = () => {
                                       <span style={{ fontSize: '14px', color: '#6b7280' }}>Minutes</span>
                                     </div>
                                   </FormGroup>
+                                  */}
                                   <FormGroup>
                                     <Label>Module Description</Label>
                                     <TextArea

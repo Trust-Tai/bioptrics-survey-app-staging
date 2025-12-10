@@ -51,6 +51,7 @@ Meteor.methods({
     title?: string;
     description?: string;
     contentBlocks?: any[];
+    estimatedMinutes?: number;
     status?: 'draft' | 'published';
   }) {
     // Note: JWT authentication is handled by admin_jwt token, not Meteor accounts

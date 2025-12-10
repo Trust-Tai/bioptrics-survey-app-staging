@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { Meteor } from 'meteor/meteor';
+import { Clock, Settings } from 'lucide-react';
 import { BlockLibrary } from '../BlockLibrary';
 import { BlockSettingsPanel } from '../BlockSettingsPanel';
 import type { ContentBlock } from '../../types/contentBlocks';
@@ -107,9 +109,78 @@ const TopicText = styled.div<{ isActive?: boolean }>`
   }
 `;
 
+const SettingsContainer = styled.div`
+  padding: 24px 20px;
+`;
+
+const SettingsSection = styled.div`
+  margin-bottom: 24px;
+`;
+
+const SettingsSectionTitle = styled.h3`
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  svg {
+    color: #6b7280;
+  }
+`;
+
+const SettingsLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+`;
+
+const DurationInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const DurationInput = styled.input`
+  width: 80px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  
+  &:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+  }
+  
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+`;
+
+const DurationUnit = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+`;
+
+const SaveIndicator = styled.span<{ visible: boolean }>`
+  font-size: 12px;
+  color: #10b981;
+  opacity: ${props => props.visible ? 1 : 0};
+  transition: opacity 0.2s;
+  margin-left: 8px;
+`;
+
 interface RightSidebarProps {
-  activeTab: 'outline' | 'content';
-  onTabChange: (tab: 'outline' | 'content') => void;
+  activeTab: 'outline' | 'content' | 'settings';
+  onTabChange: (tab: 'outline' | 'content' | 'settings') => void;
   selectedBlock: ContentBlock | null;
   onAddBlock: (blockType: any) => void;
   onUpdateBlock: (settings: any) => void;
@@ -117,6 +188,7 @@ interface RightSidebarProps {
   course: any;
   module: any;
   topic: any;
+  topicId?: string;
 }
 
 export const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -129,7 +201,41 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   course,
   module,
   topic,
+  topicId,
 }) => {
+  const [duration, setDuration] = useState<number>(topic?.estimatedMinutes || 5);
+  const [showSaved, setShowSaved] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync duration when topic changes
+  useEffect(() => {
+    if (topic?.estimatedMinutes !== undefined) {
+      setDuration(topic.estimatedMinutes);
+    }
+  }, [topic?.estimatedMinutes]);
+
+  const handleDurationChange = (value: number) => {
+    const newValue = Math.max(1, value); // Minimum 1 minute
+    setDuration(newValue);
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Auto-save after 500ms
+    saveTimeoutRef.current = setTimeout(() => {
+      if (topicId) {
+        Meteor.call('topics.update', topicId, { estimatedMinutes: newValue }, (error: any) => {
+          if (!error) {
+            setShowSaved(true);
+            setTimeout(() => setShowSaved(false), 2000);
+          }
+        });
+      }
+    }, 500);
+  };
+
   return (
     <SidebarContainer>
       <TabNavigation>
@@ -144,6 +250,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           onClick={() => onTabChange('outline')}
         >
           Outline
+        </TabButton>
+        <TabButton
+          isActive={activeTab === 'settings'}
+          onClick={() => onTabChange('settings')}
+        >
+          Settings
         </TabButton>
       </TabNavigation>
 
@@ -225,6 +337,32 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               />
             )}
           </>
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsContainer>
+            <SettingsSection>
+              <SettingsSectionTitle>
+                <Clock size={16} />
+                Time & Duration
+              </SettingsSectionTitle>
+              
+              <SettingsLabel>
+                Estimated Duration
+                <SaveIndicator visible={showSaved}>✓ Saved</SaveIndicator>
+              </SettingsLabel>
+              <DurationInputWrapper>
+                <DurationInput
+                  type="number"
+                  value={duration}
+                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 1)}
+                  min="1"
+                  max="999"
+                />
+                <DurationUnit>minutes</DurationUnit>
+              </DurationInputWrapper>
+            </SettingsSection>
+          </SettingsContainer>
         )}
       </TabContent>
     </SidebarContainer>
