@@ -178,16 +178,23 @@ const SettingsLabel = styled.label`
 const DurationInputWrapper = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+`;
+
+const DurationFieldGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 
 const DurationInput = styled.input`
-  width: 80px;
-  padding: 8px 12px;
+  width: 60px;
+  padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
   color: #111827;
+  text-align: center;
   
   &:focus {
     outline: none;
@@ -197,7 +204,12 @@ const DurationInput = styled.input`
   
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button {
-    opacity: 1;
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  &[type=number] {
+    -moz-appearance: textfield;
   }
 `;
 
@@ -249,20 +261,29 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
       sidebarRef.current.scrollTop = 0;
     }
   }, [highlightSidebar]);
-  const [duration, setDuration] = useState<number>(topic?.estimatedMinutes || 5);
+  // Duration state - separate hours and minutes
+  const totalMinutes = topic?.estimatedMinutes || 5;
+  const [hours, setHours] = useState<number>(Math.floor(totalMinutes / 60));
+  const [minutes, setMinutes] = useState<number>(totalMinutes % 60);
   const [showSaved, setShowSaved] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync duration when topic changes
   useEffect(() => {
     if (topic?.estimatedMinutes !== undefined) {
-      setDuration(topic.estimatedMinutes);
+      setHours(Math.floor(topic.estimatedMinutes / 60));
+      setMinutes(topic.estimatedMinutes % 60);
     }
   }, [topic?.estimatedMinutes]);
 
-  const handleDurationChange = (value: number) => {
-    const newValue = Math.max(1, value); // Minimum 1 minute
-    setDuration(newValue);
+  const handleDurationChange = (newHours: number, newMinutes: number) => {
+    const h = Math.max(0, Math.min(99, newHours || 0));
+    const m = Math.max(0, Math.min(59, newMinutes || 0));
+    setHours(h);
+    setMinutes(m);
+    
+    const totalMins = h * 60 + m;
+    const finalValue = Math.max(1, totalMins); // Minimum 1 minute
     
     // Clear existing timeout
     if (saveTimeoutRef.current) {
@@ -272,7 +293,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     // Auto-save after 500ms
     saveTimeoutRef.current = setTimeout(() => {
       if (topicId) {
-        Meteor.call('topics.update', topicId, { estimatedMinutes: newValue }, (error: any) => {
+        Meteor.call('topics.update', topicId, { estimatedMinutes: finalValue }, (error: any) => {
           if (!error) {
             setShowSaved(true);
             setTimeout(() => setShowSaved(false), 2000);
@@ -398,14 +419,28 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                 <SaveIndicator visible={showSaved}>✓ Saved</SaveIndicator>
               </SettingsLabel>
               <DurationInputWrapper>
-                <DurationInput
-                  type="number"
-                  value={duration}
-                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 1)}
-                  min="1"
-                  max="999"
-                />
-                <DurationUnit>minutes</DurationUnit>
+                <DurationFieldGroup>
+                  <DurationInput
+                    type="number"
+                    value={hours}
+                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0, minutes)}
+                    min="0"
+                    max="99"
+                    placeholder="0"
+                  />
+                  <DurationUnit>hours</DurationUnit>
+                </DurationFieldGroup>
+                <DurationFieldGroup>
+                  <DurationInput
+                    type="number"
+                    value={minutes}
+                    onChange={(e) => handleDurationChange(hours, parseInt(e.target.value) || 0)}
+                    min="0"
+                    max="59"
+                    placeholder="0"
+                  />
+                  <DurationUnit>min</DurationUnit>
+                </DurationFieldGroup>
               </DurationInputWrapper>
             </SettingsSection>
           </SettingsContainer>

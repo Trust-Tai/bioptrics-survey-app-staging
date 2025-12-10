@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Settings2, Clock, Award, RotateCcw, Shuffle, Eye, CheckCircle } from 'lucide-react';
 import type { QuizSettings as QuizSettingsType } from '../../api/quizzes';
@@ -101,6 +101,49 @@ const InputSuffix = styled.div`
     color: #6b7280;
     white-space: nowrap;
   }
+`;
+
+const DurationWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const DurationField = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const DurationInput = styled.input`
+  width: 60px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  text-align: center;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  &[type=number] {
+    -moz-appearance: textfield;
+  }
+`;
+
+const DurationLabel = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+  white-space: nowrap;
 `;
 
 const CheckboxWrapper = styled.div`
@@ -211,16 +254,38 @@ export const QuizSettings: React.FC<QuizSettingsProps> = ({
 
         <FormGroup style={{ marginTop: '16px' }}>
           <Label>Estimated Duration</Label>
-          <InputSuffix>
-            <Input
-              type="number"
-              min="1"
-              max="999"
-              value={estimatedMinutes}
-              onChange={(e) => onDurationChange(parseInt(e.target.value) || 5)}
-            />
-            <span>minutes</span>
-          </InputSuffix>
+          <DurationWrapper>
+            <DurationField>
+              <DurationInput
+                type="number"
+                min="0"
+                max="99"
+                value={Math.floor(estimatedMinutes / 60)}
+                onChange={(e) => {
+                  const h = parseInt(e.target.value) || 0;
+                  const m = estimatedMinutes % 60;
+                  onDurationChange(Math.max(1, h * 60 + m));
+                }}
+                placeholder="0"
+              />
+              <DurationLabel>hours</DurationLabel>
+            </DurationField>
+            <DurationField>
+              <DurationInput
+                type="number"
+                min="0"
+                max="59"
+                value={estimatedMinutes % 60}
+                onChange={(e) => {
+                  const h = Math.floor(estimatedMinutes / 60);
+                  const m = parseInt(e.target.value) || 0;
+                  onDurationChange(Math.max(1, h * 60 + m));
+                }}
+                placeholder="0"
+              />
+              <DurationLabel>min</DurationLabel>
+            </DurationField>
+          </DurationWrapper>
           <HelpText>Estimated time to complete this quiz (shown in course outline)</HelpText>
         </FormGroup>
       </Section>

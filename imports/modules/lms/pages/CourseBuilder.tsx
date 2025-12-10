@@ -4,7 +4,7 @@ import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Plus, Trash2, ChevronDown, Upload, Copy, GripVertical, FileText, Eye, Check } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Upload, Copy, GripVertical, FileText, Eye, Check, Settings, User } from 'lucide-react';
 import { Courses } from '../api/courses';
 import { Modules } from '../api/modules';
 import { Topics } from '../api/topics';
@@ -119,6 +119,42 @@ const HeaderContent = styled.div`
   flex: 1;
 `;
 
+const ViewToggle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+  margin-left: 16px;
+`;
+
+const ToggleButton = styled.button<{ isActive?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  background: ${props => props.isActive ? 'white' : 'transparent'};
+  color: ${props => props.isActive ? '#111827' : '#6b7280'};
+  box-shadow: ${props => props.isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'};
+  
+  &:hover {
+    color: #111827;
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
 const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
@@ -128,7 +164,7 @@ const HeaderLeft = styled.div`
 
 const CourseTitle = styled.span`
   position: absolute;
-  left: 50%;
+  left: 38%;
   top: 50%;
   transform: translate(-50%, -50%);
   font-size: 16px;
@@ -140,6 +176,9 @@ const CourseTitle = styled.span`
   padding: 4px 8px;
   border-radius: 4px;
   z-index: 10;
+  max-width: 350px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   
   &:hover {
     background: #f3f4f6;
@@ -148,7 +187,7 @@ const CourseTitle = styled.span`
 
 const HeaderTitleInput = styled.input`
   position: absolute;
-  left: 50%;
+  left: 38%;
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 10;
@@ -382,12 +421,12 @@ const DragHandle = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
-  color: #d1d5db;
+  color: #9ca3af;
   cursor: grab;
   padding: 4px;
   
   &:hover {
-    color: #9ca3af;
+    color: #6b7280;
   }
 `;
 
@@ -1238,6 +1277,16 @@ const CourseBuilder: React.FC = () => {
             >
               {isSaving ? 'Saving...' : 'Save Draft'}
             </SaveButton>
+            <ViewToggle>
+              <ToggleButton isActive>
+                <Settings size={16} />
+                Admin
+              </ToggleButton>
+              <ToggleButton onClick={() => navigate('/admin/lms/learner')}>
+                <User size={16} />
+                User
+              </ToggleButton>
+            </ViewToggle>
           </HeaderActions>
         </HeaderContent>
       </Header>

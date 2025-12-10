@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import styled from 'styled-components';
+import { Settings, User } from 'lucide-react';
 import { Courses } from '../api/courses';
 import { CourseTemplates } from '../api/courseTemplates';
 import { Button } from '../../../ui/admin/dashboard/components/shared/Button';
@@ -92,6 +93,47 @@ const LoadingState = styled.div`
   font-size: 16px;
 `;
 
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const ViewToggle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+`;
+
+const ToggleButton = styled.button<{ isActive?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  background: ${props => props.isActive ? 'white' : 'transparent'};
+  color: ${props => props.isActive ? '#111827' : '#6b7280'};
+  box-shadow: ${props => props.isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'};
+  
+  &:hover {
+    color: #111827;
+  }
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
 const LMSDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -165,9 +207,21 @@ const LMSDashboard: React.FC = () => {
           <h1>Content Library</h1>
           <p>Create and manage courses for the marketplace</p>
         </HeaderContent>
-        <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-          + Create Course
-        </Button>
+        <HeaderRight>
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+            + Create Course
+          </Button>
+          <ViewToggle>
+            <ToggleButton isActive>
+              <Settings size={16} />
+              Admin
+            </ToggleButton>
+            <ToggleButton onClick={() => navigate('/admin/lms/learner')}>
+              <User size={16} />
+              User
+            </ToggleButton>
+          </ViewToggle>
+        </HeaderRight>
       </Header>
 
       <SearchWrapper>
