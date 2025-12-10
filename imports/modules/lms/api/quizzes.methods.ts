@@ -66,6 +66,7 @@ Meteor.methods({
     description?: string;
     questions?: any[];
     settings?: any;
+    estimatedMinutes?: number;
     status?: 'draft' | 'published';
   }) {
     // Note: JWT authentication is handled by admin_jwt token, not Meteor accounts
@@ -111,6 +112,26 @@ Meteor.methods({
     }
 
     await Quizzes.removeAsync(quizId);
+
+    return true;
+  },
+
+  async 'quizzes.reorder'(moduleId: string, quizIds: string[]) {
+    // Note: JWT authentication is handled by admin_jwt token, not Meteor accounts
+    const userId = this.userId || 'admin'; // Fallback for JWT auth
+
+    check(moduleId, String);
+    check(quizIds, [String]);
+
+    // Update order for each quiz
+    for (let i = 0; i < quizIds.length; i++) {
+      await Quizzes.updateAsync(quizIds[i], {
+        $set: {
+          order: i + 1,
+          updatedAt: new Date(),
+        },
+      });
+    }
 
     return true;
   },

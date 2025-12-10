@@ -45,7 +45,16 @@ export const TopicEditor: React.FC = () => {
     handleDrop,
   } = useBlockManagement();
 
-  const [activeTab, setActiveTab] = useState<'outline' | 'content'>('content');
+  const [activeTab, setActiveTab] = useState<'outline' | 'content' | 'settings'>('content');
+  const [highlightSidebar, setHighlightSidebar] = useState(false);
+
+  // Handle highlight sidebar when add block button is clicked
+  const handleHighlightSidebar = () => {
+    setActiveTab('content');
+    setHighlightSidebar(true);
+    // Auto-reset after animation
+    setTimeout(() => setHighlightSidebar(false), 2000);
+  };
   
   // Auto-save hook
   const { showSaved: autoShowSaved } = useAutoSave(topicId, contentBlocks);
@@ -70,8 +79,8 @@ export const TopicEditor: React.FC = () => {
     return (
       <PageContainer>
         <TopicEditorHeader
-          course={course}
-          module={module}
+          course={(course as any) ?? undefined}
+          module={(module?._id ? module : undefined) as any}
           topic={topic}
           onBack={handleBackToCourseBuilder}
         />
@@ -85,8 +94,8 @@ export const TopicEditor: React.FC = () => {
     return (
       <PageContainer>
         <TopicEditorHeader
-          course={course}
-          module={module}
+          course={(course as any) ?? undefined}
+          module={(module?._id ? module : undefined) as any}
           topic={topic}
           onBack={handleBackToCourseBuilder}
         />
@@ -98,33 +107,14 @@ export const TopicEditor: React.FC = () => {
   return (
     <PageContainer>
       <TopicEditorHeader
-        course={course}
-        module={module}
+        course={(course as any) ?? undefined}
+        module={(module?._id ? module : undefined) as any}
         topic={topic}
         onBack={handleBackToCourseBuilder}
       />
 
       <MainLayout>
-        <ContentCanvas
-          topicTitle={topic.title}
-          isEditingTitle={isEditingTitle}
-          editTitleValue={editTitle}
-          onEditTitleChange={setEditTitle}
-          onStartEditTitle={() => setIsEditingTitle(true)}
-          onSaveTitle={handleSaveTitle}
-          onCancelEditTitle={handleCancelEditTitle}
-          blocks={contentBlocks}
-          draggedIndex={draggedIndex}
-          onAddBlock={() => setActiveTab('content')}
-          onEditBlock={setSelectedBlock}
-          onDeleteBlock={setDeleteConfirm}
-          onUpdateBlock={updateBlock}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        />
-
-        {/* Sticky Right Sidebar - Always visible */}
+        {/* Left Sidebar - Block Library & Settings */}
         <RightSidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -135,6 +125,27 @@ export const TopicEditor: React.FC = () => {
           course={course}
           module={module}
           topic={topic}
+          topicId={topicId}
+          highlightSidebar={highlightSidebar}
+        />
+
+        <ContentCanvas
+          topicTitle={topic.title}
+          isEditingTitle={isEditingTitle}
+          editTitleValue={editTitle}
+          onEditTitleChange={setEditTitle}
+          onStartEditTitle={() => setIsEditingTitle(true)}
+          onSaveTitle={handleSaveTitle}
+          onCancelEditTitle={handleCancelEditTitle}
+          blocks={contentBlocks}
+          draggedIndex={draggedIndex}
+          onAddBlock={handleHighlightSidebar}
+          onEditBlock={setSelectedBlock}
+          onDeleteBlock={setDeleteConfirm}
+          onUpdateBlock={updateBlock}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         />
       </MainLayout>
 

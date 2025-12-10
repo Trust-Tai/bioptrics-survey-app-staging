@@ -1,22 +1,60 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useRef } from 'react';
+import styled, { keyframes, css } from 'styled-components';
+import { Meteor } from 'meteor/meteor';
+import { Clock, Settings } from 'lucide-react';
+
+// Pulse animation for highlighting sidebar
+const pulseHighlight = keyframes`
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(6, 182, 212, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+`;
+
+// Shake/vibrate animation
+const shakeAnimation = keyframes`
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+`;
+
 import { BlockLibrary } from '../BlockLibrary';
 import { BlockSettingsPanel } from '../BlockSettingsPanel';
 import type { ContentBlock } from '../../types/contentBlocks';
 
-const SidebarContainer = styled.div`
+const SidebarContainer = styled.div<{ isHighlighted?: boolean }>`
   width: 400px;
   height: calc(100vh - 73px);
   background: white;
-  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 73px;
-  right: 0;
+  left: 0;
   overflow: hidden;
   flex-shrink: 0;
   align-self: flex-start;
+  transition: all 0.3s ease;
+  
+  ${props => props.isHighlighted && css`
+    border-right: 3px solid #06b6d4;
+    animation: 
+      ${pulseHighlight} 0.8s ease-in-out 3,
+      ${shakeAnimation} 0.5s ease-in-out 2;
+    background: linear-gradient(to right, #ecfeff, white);
+  `}
 `;
 
 const TabNavigation = styled.div`
@@ -107,9 +145,90 @@ const TopicText = styled.div<{ isActive?: boolean }>`
   }
 `;
 
+const SettingsContainer = styled.div`
+  padding: 24px 20px;
+`;
+
+const SettingsSection = styled.div`
+  margin-bottom: 24px;
+`;
+
+const SettingsSectionTitle = styled.h3`
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  svg {
+    color: #6b7280;
+  }
+`;
+
+const SettingsLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+`;
+
+const DurationInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const DurationFieldGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const DurationInput = styled.input`
+  width: 60px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  text-align: center;
+  
+  &:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+  }
+  
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  &[type=number] {
+    -moz-appearance: textfield;
+  }
+`;
+
+const DurationUnit = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+`;
+
+const SaveIndicator = styled.span<{ visible: boolean }>`
+  font-size: 12px;
+  color: #10b981;
+  opacity: ${props => props.visible ? 1 : 0};
+  transition: opacity 0.2s;
+  margin-left: 8px;
+`;
+
 interface RightSidebarProps {
-  activeTab: 'outline' | 'content';
-  onTabChange: (tab: 'outline' | 'content') => void;
+  activeTab: 'outline' | 'content' | 'settings';
+  onTabChange: (tab: 'outline' | 'content' | 'settings') => void;
   selectedBlock: ContentBlock | null;
   onAddBlock: (blockType: any) => void;
   onUpdateBlock: (settings: any) => void;
@@ -117,6 +236,8 @@ interface RightSidebarProps {
   course: any;
   module: any;
   topic: any;
+  topicId?: string;
+  highlightSidebar?: boolean;
 }
 
 export const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -129,9 +250,61 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   course,
   module,
   topic,
+  topicId,
+  highlightSidebar,
 }) => {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when highlighted
+  useEffect(() => {
+    if (highlightSidebar && sidebarRef.current) {
+      sidebarRef.current.scrollTop = 0;
+    }
+  }, [highlightSidebar]);
+  // Duration state - separate hours and minutes
+  const totalMinutes = topic?.estimatedMinutes || 5;
+  const [hours, setHours] = useState<number>(Math.floor(totalMinutes / 60));
+  const [minutes, setMinutes] = useState<number>(totalMinutes % 60);
+  const [showSaved, setShowSaved] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync duration when topic changes
+  useEffect(() => {
+    if (topic?.estimatedMinutes !== undefined) {
+      setHours(Math.floor(topic.estimatedMinutes / 60));
+      setMinutes(topic.estimatedMinutes % 60);
+    }
+  }, [topic?.estimatedMinutes]);
+
+  const handleDurationChange = (newHours: number, newMinutes: number) => {
+    const h = Math.max(0, Math.min(99, newHours || 0));
+    const m = Math.max(0, Math.min(59, newMinutes || 0));
+    setHours(h);
+    setMinutes(m);
+    
+    const totalMins = h * 60 + m;
+    const finalValue = Math.max(1, totalMins); // Minimum 1 minute
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Auto-save after 500ms
+    saveTimeoutRef.current = setTimeout(() => {
+      if (topicId) {
+        Meteor.call('topics.update', topicId, { estimatedMinutes: finalValue }, (error: any) => {
+          if (!error) {
+            setShowSaved(true);
+            setTimeout(() => setShowSaved(false), 2000);
+          }
+        });
+      }
+    }, 500);
+  };
+
   return (
-    <SidebarContainer>
+    <SidebarContainer ref={sidebarRef} isHighlighted={highlightSidebar}>
       <TabNavigation>
         <TabButton
           isActive={activeTab === 'content'}
@@ -144,6 +317,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           onClick={() => onTabChange('outline')}
         >
           Outline
+        </TabButton>
+        <TabButton
+          isActive={activeTab === 'settings'}
+          onClick={() => onTabChange('settings')}
+        >
+          Settings
         </TabButton>
       </TabNavigation>
 
@@ -225,6 +404,46 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               />
             )}
           </>
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsContainer>
+            <SettingsSection>
+              <SettingsSectionTitle>
+                <Clock size={16} />
+                Time & Duration
+              </SettingsSectionTitle>
+              
+              <SettingsLabel>
+                Estimated Duration
+                <SaveIndicator visible={showSaved}>✓ Saved</SaveIndicator>
+              </SettingsLabel>
+              <DurationInputWrapper>
+                <DurationFieldGroup>
+                  <DurationInput
+                    type="number"
+                    value={hours}
+                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0, minutes)}
+                    min="0"
+                    max="99"
+                    placeholder="0"
+                  />
+                  <DurationUnit>hours</DurationUnit>
+                </DurationFieldGroup>
+                <DurationFieldGroup>
+                  <DurationInput
+                    type="number"
+                    value={minutes}
+                    onChange={(e) => handleDurationChange(hours, parseInt(e.target.value) || 0)}
+                    min="0"
+                    max="59"
+                    placeholder="0"
+                  />
+                  <DurationUnit>min</DurationUnit>
+                </DurationFieldGroup>
+              </DurationInputWrapper>
+            </SettingsSection>
+          </SettingsContainer>
         )}
       </TabContent>
     </SidebarContainer>
