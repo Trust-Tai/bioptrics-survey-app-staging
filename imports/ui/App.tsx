@@ -82,6 +82,7 @@ import LMSDashboard from '/imports/modules/lms/pages/LMSDashboard';
 import CourseBuilder from '/imports/modules/lms/pages/CourseBuilder';
 import { TopicEditor } from '/imports/modules/lms/pages/TopicEditor';
 import { QuizEditor } from '/imports/modules/lms/pages/QuizEditor';
+import { LearnerLayout, LearnerDashboard, LearnerHome, LearnerCertificates, LearnerSettings } from '/imports/modules/lms/pages/learner';
 
 function RequireAdminAuth() {
   const location = useLocation();
@@ -304,6 +305,12 @@ const AppRoutes: React.FC = () => {
         <Route path="/admin/lms/builder/:courseId" element={<CourseBuilder />} />
         <Route path="/admin/lms/builder/:courseId/topic/:moduleId/:topicId" element={<TopicEditor />} />
         <Route path="/admin/lms/builder/:courseId/quiz/:quizId" element={<QuizEditor />} />
+        <Route path="/admin/lms/learner" element={<LearnerLayout />}>
+          <Route index element={<LearnerHome />} />
+          <Route path="courses" element={<LearnerDashboard />} />
+          <Route path="certificates" element={<LearnerCertificates />} />
+          <Route path="settings" element={<LearnerSettings />} />
+        </Route>
         <Route path="/pulse-dev" element={<LMSComingSoon />} />
       </Route>
       {/* Catch-all route for 404 pages */}

@@ -45,11 +45,11 @@ const Card = styled.div`
 const DragHandle = styled.div`
   display: flex;
   align-items: center;
-  color: #d1d5db;
+  color: #9ca3af;
   cursor: grab;
   
   &:hover {
-    color: #9ca3af;
+    color: #6b7280;
   }
 `;
 
