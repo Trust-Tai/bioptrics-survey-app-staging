@@ -197,18 +197,46 @@ const Sidebar = styled.aside<SidebarProps>`
   left: 0;
   top: 0;
   height: max-content;
+  max-height: calc(100vh - 64px);
   z-index: 0;
   transition: all 0.3s ease;
-  overflow-x: visible;
-  overflow-y: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
   background-clip: padding-box;
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
 
   @media (max-width: 1024px) {
     width: ${({$collapsed}) => $collapsed ? '72px' : '280px'};
-    margin: 24px 0 24px 12px;
-    height: calc(100vh - 48px);
+    margin: 12px 0 12px 12px;
+    height: calc(100vh - 24px);
+    max-height: calc(100vh - 24px);
     overflow-y: auto;
+    overflow-x: hidden;
     z-index: 1045;
+    padding-bottom: 2rem;
+    
+    /* Ensure scrollbar is always visible on mobile when content overflows */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
   }
   
   /* Force all text elements to use sidebar text color */

@@ -1,0 +1,31 @@
+name: Deploy to Staging
+
+on:
+  # Manual trigger from the GitHub UI
+  workflow_dispatch:
+
+  # Optional: auto-deploy on push to develop
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (for metadata)
+        uses: actions/checkout@v4
+
+      - name: SSH and run deploy script on server
+        uses: appleboy/ssh-action@v1.0.0
+        timeout-minutes: 30
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: 22
+          command_timeout: 30m
+          script: |
+            set -e
+            /var/www/deploy_bioptrics_staging.sh
