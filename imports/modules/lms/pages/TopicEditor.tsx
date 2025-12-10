@@ -70,8 +70,8 @@ export const TopicEditor: React.FC = () => {
     return (
       <PageContainer>
         <TopicEditorHeader
-          course={course}
-          module={module}
+          course={(course as any) ?? undefined}
+          module={(module?._id ? module : undefined) as any}
           topic={topic}
           onBack={handleBackToCourseBuilder}
         />
@@ -85,8 +85,8 @@ export const TopicEditor: React.FC = () => {
     return (
       <PageContainer>
         <TopicEditorHeader
-          course={course}
-          module={module}
+          course={(course as any) ?? undefined}
+          module={(module?._id ? module : undefined) as any}
           topic={topic}
           onBack={handleBackToCourseBuilder}
         />
@@ -98,8 +98,8 @@ export const TopicEditor: React.FC = () => {
   return (
     <PageContainer>
       <TopicEditorHeader
-        course={course}
-        module={module}
+        course={(course as any) ?? undefined}
+        module={(module?._id ? module : undefined) as any}
         topic={topic}
         onBack={handleBackToCourseBuilder}
       />
