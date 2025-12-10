@@ -45,7 +45,7 @@ export const TopicEditor: React.FC = () => {
     handleDrop,
   } = useBlockManagement();
 
-  const [activeTab, setActiveTab] = useState<'outline' | 'content'>('content');
+  const [activeTab, setActiveTab] = useState<'outline' | 'content' | 'settings'>('content');
   
   // Auto-save hook
   const { showSaved: autoShowSaved } = useAutoSave(topicId, contentBlocks);
@@ -116,6 +116,7 @@ export const TopicEditor: React.FC = () => {
           course={course}
           module={module}
           topic={topic}
+          topicId={topicId}
         />
 
         <ContentCanvas
