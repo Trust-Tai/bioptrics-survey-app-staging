@@ -28,6 +28,7 @@ const shakeAnimation = keyframes`
     transform: translateX(4px);
   }
 `;
+
 import { BlockLibrary } from '../BlockLibrary';
 import { BlockSettingsPanel } from '../BlockSettingsPanel';
 import type { ContentBlock } from '../../types/contentBlocks';
