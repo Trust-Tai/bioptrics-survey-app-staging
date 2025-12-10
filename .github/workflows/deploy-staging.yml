@@ -19,11 +19,13 @@ jobs:
 
       - name: SSH and run deploy script on server
         uses: appleboy/ssh-action@v1.0.0
+        timeout-minutes: 30
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           port: 22
+          command_timeout: 30m
           script: |
             set -e
             /var/www/deploy_bioptrics_staging.sh
