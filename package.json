@@ -91,7 +91,7 @@
     "testModule": "tests/main.js"
   },
   "engines": {
-    "node": "20.x",
+    "node": "18.x",
     "npm": "10.x"
   }
 }
