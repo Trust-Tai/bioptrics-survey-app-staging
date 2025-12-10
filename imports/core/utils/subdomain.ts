@@ -16,6 +16,11 @@ export class SubdomainRouter {
       subdomain: 'pulse-lms',
       moduleId: 'lms',
       defaultRoute: '/dashboard'
+    },
+    {
+      subdomain: 'dev-pulse-lms',
+      moduleId: 'lms',
+      defaultRoute: '/dashboard'
     }
   ];
 
