@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { TopicEditorHeader } from '../components/topic-editor/TopicEditorHeader';
 import { ContentCanvas } from '../components/topic-editor/ContentCanvas';
@@ -70,14 +70,22 @@ export const TopicEditor: React.FC = () => {
     highlightTimeoutRef.current = setTimeout(() => setHighlightSidebar(false), 2000);
   };
   
-  // Auto-save hook
-  const { showSaved: autoShowSaved } = useAutoSave(topicId, contentBlocks);
+  // Track if user has made local changes (to prevent server overwriting them)
+  const hasLocalChanges = useRef(false);
+
+  // Callback when auto-save completes - allow server sync again
+  const handleSaveComplete = useCallback(() => {
+    // Reset flag after a short delay to ensure server has updated
+    setTimeout(() => {
+      hasLocalChanges.current = false;
+    }, 500);
+  }, []);
+
+  // Auto-save hook with save complete callback
+  const { showSaved: autoShowSaved } = useAutoSave(topicId, contentBlocks, 2000, handleSaveComplete);
   
   // Combine save indicators
   const showSaved = titleShowSaved || autoShowSaved;
-
-  // Track if user has made local changes (to prevent server overwriting them)
-  const hasLocalChanges = useRef(false);
   
   // Initialize content blocks from topic
   // Only sync from server if user hasn't made local changes
