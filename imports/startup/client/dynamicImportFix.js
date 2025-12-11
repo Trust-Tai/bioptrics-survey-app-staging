@@ -29,7 +29,7 @@ function applyDynamicImportFix() {
       let targetRootUrl = originalRootUrl;
       
       // Check if we're on a subdomain that should use main domain for assets
-      if (currentHostname.includes('pulse-lms.bioptrics.com')) {
+      if (currentHostname.includes('pulse-lms.bioptrics.com') || currentHostname.includes('dev-pulse-lms.bioptrics.com')) {
         // Keep ROOT_URL as main domain for asset serving
         targetRootUrl = 'https://pulse.bioptrics.com';
         console.log(`[dynamicImportFix] Subdomain detected, keeping ROOT_URL as main domain: ${targetRootUrl}`);

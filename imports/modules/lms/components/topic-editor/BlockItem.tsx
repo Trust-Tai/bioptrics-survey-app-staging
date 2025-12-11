@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { GripVertical, Edit2, Trash2 } from 'lucide-react';
 import { ContentBlockRenderer } from '../blocks/ContentBlockRenderer';
 import { getBlockColor } from '../../utils/blockHelpers';
@@ -46,19 +46,44 @@ export const BlockItem: React.FC<BlockItemProps> = ({
   onUpdate,
 }) => {
   const blockColor = getBlockColor(block.type);
+  const isDraggingRef = useRef(false);
+
+  // Only allow drag when initiated from drag handle
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isDraggingRef.current) {
+      e.preventDefault();
+      return;
+    }
+    onDragStart();
+  };
+
+  const handleDragEnd = () => {
+    isDraggingRef.current = false;
+  };
+
+  // Enable drag only when mousedown on handle
+  const handleMouseDownOnHandle = () => {
+    isDraggingRef.current = true;
+  };
+
+  // Prevent drag from content area (allows text selection)
+  const handleContentMouseDown = () => {
+    isDraggingRef.current = false;
+  };
 
   return (
     <BlockWrapper
       isDragging={isDragging}
       draggable
-      onDragStart={onDragStart}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
       <BlockContainer color={blockColor}>
         <BlockHeader color={blockColor}>
           <BlockHeaderLeft>
-            <DragHandle>
+            <DragHandle onMouseDown={handleMouseDownOnHandle}>
               <GripVertical size={18} />
             </DragHandle>
             <BlockTitle>{getBlockTypeName(block.type)}</BlockTitle>
@@ -74,11 +99,12 @@ export const BlockItem: React.FC<BlockItemProps> = ({
           </BlockActions>
         </BlockHeader>
         
-        <BlockContent>
+        <BlockContent onMouseDown={handleContentMouseDown}>
           <ContentBlockRenderer
             block={block}
             isEditing={true}
             onUpdate={onUpdate}
+            onEdit={onEdit}
           />
         </BlockContent>
       </BlockContainer>

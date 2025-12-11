@@ -6,8 +6,17 @@ export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentB
   const [showSaved, setShowSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const savedIndicatorRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedContentRef = useRef<string>('');
   const isInitialLoadRef = useRef(true);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (savedIndicatorRef.current) clearTimeout(savedIndicatorRef.current);
+    };
+  }, []);
 
   // Serialize content for comparison (ignoring order changes that don't matter)
   const serializeContent = useCallback((blocks: ContentBlock[]): string => {
@@ -54,7 +63,11 @@ export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentB
           lastSavedContentRef.current = currentContent;
           setIsDirty(false);
           setShowSaved(true);
-          setTimeout(() => setShowSaved(false), 2000);
+          // Clear previous indicator timeout
+          if (savedIndicatorRef.current) {
+            clearTimeout(savedIndicatorRef.current);
+          }
+          savedIndicatorRef.current = setTimeout(() => setShowSaved(false), 2000);
         } else {
           console.error('Auto-save error:', error);
         }

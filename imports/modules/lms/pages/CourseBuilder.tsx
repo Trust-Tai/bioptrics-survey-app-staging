@@ -683,15 +683,26 @@ const CourseBuilder: React.FC = () => {
       };
     }
 
-    const courseHandle = Meteor.subscribe('courses.single', courseId);
-    const structureHandle = Meteor.subscribe('course.fullStructure', courseId);
+    // Start subscriptions (they will be cached by Meteor)
+    Meteor.subscribe('courses.single', courseId);
+    Meteor.subscribe('course.fullStructure', courseId);
+    
+    // Fetch data from Minimongo cache (data persists from previous navigation)
+    const courseData = Courses.findOne(courseId);
+    const modulesData = Modules.find({ courseId }, { sort: { order: 1 } }).fetch();
+    const topicsData = Topics.find({ courseId }, { sort: { order: 1 } }).fetch();
+    const quizzesData = Quizzes.find({ courseId }, { sort: { order: 1 } }).fetch();
+    
+    // Only show loading if we don't have course data in cache yet
+    // When navigating back, Minimongo will have cached data available immediately
+    const shouldShowLoading = !courseData;
 
     return {
-      course: Courses.findOne(courseId),
-      modules: Modules.find({ courseId }, { sort: { order: 1 } }).fetch(),
-      topics: Topics.find({ courseId }, { sort: { order: 1 } }).fetch(),
-      quizzes: Quizzes.find({ courseId }, { sort: { order: 1 } }).fetch(),
-      isLoading: !courseHandle.ready() || !structureHandle.ready(),
+      course: courseData,
+      modules: modulesData,
+      topics: topicsData,
+      quizzes: quizzesData,
+      isLoading: shouldShowLoading,
     };
   }, [courseId, isNewCourse]);
 

@@ -25,12 +25,14 @@ interface ContentBlockRendererProps {
   block: ContentBlock;
   isEditing: boolean;
   onUpdate: (settings: any) => void;
+  onEdit?: () => void;
 }
 
 export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
   block,
   isEditing,
   onUpdate,
+  onEdit,
 }) => {
   const renderBlock = () => {
     switch (block.type) {
@@ -50,10 +52,10 @@ export const ContentBlockRenderer: React.FC<ContentBlockRendererProps> = ({
         return <AudioPlayerBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
       
       case 'pdf':
-        return <PDFBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+        return <PDFBlock block={block} isEditing={isEditing} onUpdate={onUpdate} onEdit={onEdit} />;
       
       case 'file-download':
-        return <FileDownloadBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
+        return <FileDownloadBlock block={block} isEditing={isEditing} onUpdate={onUpdate} onEdit={onEdit} />;
       
       case 'accordion':
         return <AccordionBlock block={block} isEditing={isEditing} onUpdate={onUpdate} />;
