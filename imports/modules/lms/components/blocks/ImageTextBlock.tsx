@@ -121,63 +121,22 @@ const ButtonWrapper = styled.div<{ alignment: string }>`
   }};
 `;
 
-const CTAButton = styled.a<{ variant: string }>`
+const CTAButton = styled.a<{ $buttonColor: string; $textColor: string }>`
   display: inline-block;
   padding: 12px 24px;
   font-size: 16px;
   font-weight: 600;
   border-radius: 6px;
-  text-decoration: none;
+  text-decoration: none !important;
   transition: all 0.2s;
   cursor: pointer;
+  background: ${props => props.$buttonColor} !important;
+  color: ${props => props.$textColor} !important;
+  border: 2px solid ${props => props.$buttonColor} !important;
   
-  ${props => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background: #3b82f6;
-          color: #ffffff;
-          border: 2px solid #3b82f6;
-          
-          &:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-          }
-        `;
-      case 'secondary':
-        return `
-          background: transparent;
-          color: #3b82f6;
-          border: 2px solid #3b82f6;
-          
-          &:hover {
-            background: #eff6ff;
-          }
-        `;
-      case 'success':
-        return `
-          background: #10b981;
-          color: #ffffff;
-          border: 2px solid #10b981;
-          
-          &:hover {
-            background: #059669;
-            border-color: #059669;
-          }
-        `;
-      default:
-        return `
-          background: #3b82f6;
-          color: #ffffff;
-          border: 2px solid #3b82f6;
-          
-          &:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-          }
-        `;
-    }
-  }}
+  &:hover {
+    filter: brightness(0.9);
+  }
 `;
 
 const EmptyState = styled.div`
@@ -225,7 +184,8 @@ export const ImageTextBlock: React.FC<ImageTextBlockProps> = ({ block }) => {
   const content = settings?.content || '';
   const buttonText = settings?.buttonText || '';
   const buttonUrl = settings?.buttonUrl || '';
-  const buttonVariant = settings?.buttonVariant || 'primary';
+  const buttonColor = settings?.buttonColor || '#3b82f6';
+  const buttonTextColor = settings?.buttonTextColor || '#ffffff';
   const buttonAlignment = settings?.buttonAlignment || 'left';
 
   if (!content) {
@@ -266,7 +226,8 @@ export const ImageTextBlock: React.FC<ImageTextBlockProps> = ({ block }) => {
           <ButtonWrapper alignment={buttonAlignment}>
             <CTAButton
               href={buttonUrl}
-              variant={buttonVariant}
+              $buttonColor={buttonColor}
+              $textColor={buttonTextColor}
               target="_blank"
               rel="noopener noreferrer"
             >

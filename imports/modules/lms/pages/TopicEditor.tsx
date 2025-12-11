@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { TopicEditorHeader } from '../components/topic-editor/TopicEditorHeader';
 import { ContentCanvas } from '../components/topic-editor/ContentCanvas';
@@ -47,13 +47,27 @@ export const TopicEditor: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'outline' | 'content' | 'settings'>('content');
   const [highlightSidebar, setHighlightSidebar] = useState(false);
+  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle highlight sidebar when add block button is clicked
   const handleHighlightSidebar = () => {
     setActiveTab('content');
     setHighlightSidebar(true);
+    // Clear previous timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
     // Auto-reset after animation
-    setTimeout(() => setHighlightSidebar(false), 2000);
+    highlightTimeoutRef.current = setTimeout(() => setHighlightSidebar(false), 2000);
   };
   
   // Auto-save hook
@@ -62,16 +76,38 @@ export const TopicEditor: React.FC = () => {
   // Combine save indicators
   const showSaved = titleShowSaved || autoShowSaved;
 
+  // Track if user has made local changes (to prevent server overwriting them)
+  const hasLocalChanges = useRef(false);
+  
   // Initialize content blocks from topic
+  // Only sync from server if user hasn't made local changes
   useEffect(() => {
-    if (topic?.contentBlocks) {
+    if (topic?.contentBlocks && !hasLocalChanges.current) {
       setContentBlocks(topic.contentBlocks as any);
     }
   }, [topic?.contentBlocks]);
 
+  // Reset local changes flag when navigating to different topic
+  useEffect(() => {
+    hasLocalChanges.current = false;
+  }, [topicId]);
+
   const handleAddBlock = (blockType: any) => {
+    hasLocalChanges.current = true; // Mark as having local changes
     addBlock(blockType);
     // Stay on content tab after adding block
+  };
+
+  // Wrapper for updateBlock that marks local changes
+  const handleUpdateBlock = (blockId: string, settings: any) => {
+    hasLocalChanges.current = true;
+    updateBlock(blockId, settings);
+  };
+
+  // Wrapper for deleteBlock that marks local changes
+  const handleDeleteBlock = (blockId: string) => {
+    hasLocalChanges.current = true;
+    deleteBlock(blockId);
   };
 
   // Loading state
@@ -120,7 +156,7 @@ export const TopicEditor: React.FC = () => {
           onTabChange={setActiveTab}
           selectedBlock={selectedBlock}
           onAddBlock={handleAddBlock}
-          onUpdateBlock={settings => selectedBlock && updateBlock(selectedBlock.id, settings)}
+          onUpdateBlock={settings => selectedBlock && handleUpdateBlock(selectedBlock.id, settings)}
           onCloseSettings={() => setSelectedBlock(null)}
           course={course}
           module={module}
@@ -142,7 +178,7 @@ export const TopicEditor: React.FC = () => {
           onAddBlock={handleHighlightSidebar}
           onEditBlock={setSelectedBlock}
           onDeleteBlock={setDeleteConfirm}
-          onUpdateBlock={updateBlock}
+          onUpdateBlock={handleUpdateBlock}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -151,7 +187,7 @@ export const TopicEditor: React.FC = () => {
 
       <DeleteConfirmation
         isOpen={!!deleteConfirm}
-        onConfirm={() => deleteBlock(deleteConfirm!)}
+        onConfirm={() => handleDeleteBlock(deleteConfirm!)}
         onCancel={() => setDeleteConfirm(null)}
       />
 
