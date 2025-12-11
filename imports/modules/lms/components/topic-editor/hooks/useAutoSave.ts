@@ -2,7 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Meteor } from 'meteor/meteor';
 import type { ContentBlock } from '../../../types/contentBlocks';
 
-export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentBlock[], delay: number = 2000) => {
+export const useAutoSave = (
+  topicId: string | undefined, 
+  contentBlocks: ContentBlock[], 
+  delay: number = 2000,
+  onSaveComplete?: () => void
+) => {
   const [showSaved, setShowSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,6 +68,10 @@ export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentB
           lastSavedContentRef.current = currentContent;
           setIsDirty(false);
           setShowSaved(true);
+          // Notify that save is complete (allows server sync to resume)
+          if (onSaveComplete) {
+            onSaveComplete();
+          }
           // Clear previous indicator timeout
           if (savedIndicatorRef.current) {
             clearTimeout(savedIndicatorRef.current);
@@ -80,7 +89,7 @@ export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentB
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [topicId, contentBlocks, delay, serializeContent]);
+  }, [topicId, contentBlocks, delay, serializeContent, onSaveComplete]);
 
   // Reset initial load flag when topicId changes
   useEffect(() => {
