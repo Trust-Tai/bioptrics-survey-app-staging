@@ -1,6 +1,43 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { Star, Heart, Zap, Award, Target, Lightbulb, Rocket, CheckCircle, Gift, Shield, Users, TrendingUp, BookOpen, Settings, Globe, Mail, Phone, Camera, Music, Video, FileText, Folder, Calendar, Clock, MapPin, Search, Bell, Lock, Unlock, Eye, ThumbsUp, Flag } from 'lucide-react';
 import type { FlipboxesBlock as FlipboxesBlockType } from '../../types/contentBlocks';
+
+// Icon mapping for Lucide icons
+const iconMap: { [key: string]: React.FC<{ size?: number }> } = {
+  'star': Star,
+  'heart': Heart,
+  'zap': Zap,
+  'award': Award,
+  'target': Target,
+  'lightbulb': Lightbulb,
+  'rocket': Rocket,
+  'check-circle': CheckCircle,
+  'gift': Gift,
+  'shield': Shield,
+  'users': Users,
+  'trending-up': TrendingUp,
+  'book-open': BookOpen,
+  'settings': Settings,
+  'globe': Globe,
+  'mail': Mail,
+  'phone': Phone,
+  'camera': Camera,
+  'music': Music,
+  'video': Video,
+  'file-text': FileText,
+  'folder': Folder,
+  'calendar': Calendar,
+  'clock': Clock,
+  'map-pin': MapPin,
+  'search': Search,
+  'bell': Bell,
+  'lock': Lock,
+  'unlock': Unlock,
+  'eye': Eye,
+  'thumbs-up': ThumbsUp,
+  'flag': Flag,
+};
 
 const FlipboxesContainer = styled.div`
   width: 100%;
@@ -67,7 +104,36 @@ const FlipboxIcon = styled.div`
     width: 48px;
     height: 48px;
   }
+
+  img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
 `;
+
+// Helper component to render icon based on type
+const RenderIcon: React.FC<{ iconValue?: string; customIcon?: string }> = ({ iconValue, customIcon }) => {
+  if (!iconValue && !customIcon) return null;
+
+  // Custom uploaded image
+  if (customIcon) {
+    return <img src={customIcon} alt="Icon" />;
+  }
+
+  // Lucide icon
+  if (iconValue && iconMap[iconValue]) {
+    const IconComponent = iconMap[iconValue];
+    return <IconComponent size={48} />;
+  }
+
+  // Emoji or text
+  if (iconValue) {
+    return <span>{iconValue}</span>;
+  }
+
+  return null;
+};
 
 const FlipboxTitle = styled.h3`
   font-size: 20px;
@@ -191,8 +257,10 @@ export const FlipboxesBlock: React.FC<FlipboxesBlockProps> = ({ block }) => {
                   bgColor={flipbox.frontBgColor || frontBgColor}
                   textColor={flipbox.frontTextColor || frontTextColor}
                 >
-                  {flipbox.frontIcon && (
-                    <FlipboxIcon dangerouslySetInnerHTML={{ __html: flipbox.frontIcon }} />
+                  {(flipbox.frontIcon || flipbox.frontCustomIcon) && (
+                    <FlipboxIcon>
+                      <RenderIcon iconValue={flipbox.frontIcon} customIcon={flipbox.frontCustomIcon} />
+                    </FlipboxIcon>
                   )}
                   <FlipboxTitle>{flipbox.frontTitle || 'Front Title'}</FlipboxTitle>
                   {flipbox.frontDescription && (
@@ -216,8 +284,10 @@ export const FlipboxesBlock: React.FC<FlipboxesBlockProps> = ({ block }) => {
                   bgColor={flipbox.backBgColor || backBgColor}
                   textColor={flipbox.backTextColor || backTextColor}
                 >
-                  {flipbox.backIcon && (
-                    <FlipboxIcon dangerouslySetInnerHTML={{ __html: flipbox.backIcon }} />
+                  {(flipbox.backIcon || flipbox.backCustomIcon) && (
+                    <FlipboxIcon>
+                      <RenderIcon iconValue={flipbox.backIcon} customIcon={flipbox.backCustomIcon} />
+                    </FlipboxIcon>
                   )}
                   <FlipboxTitle>{flipbox.backTitle || 'Back Title'}</FlipboxTitle>
                   {flipbox.backDescription && (

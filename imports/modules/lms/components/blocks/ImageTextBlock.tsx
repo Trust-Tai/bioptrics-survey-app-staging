@@ -55,7 +55,7 @@ const TextSection = styled.div<{ layout: string }>`
   }
 `;
 
-const Heading = styled.h2<{ level: string }>`
+const Heading = styled.h2<{ level: string; $color: string }>`
   font-size: ${props => {
     switch (props.level) {
       case 'h1': return '32px';
@@ -68,13 +68,13 @@ const Heading = styled.h2<{ level: string }>`
     }
   }};
   font-weight: 600;
-  color: #111827;
+  color: ${props => props.$color};
   margin: 0 0 16px 0;
   line-height: 1.3;
 `;
 
-const Content = styled.div`
-  color: #374151;
+const Content = styled.div<{ $color: string }>`
+  color: ${props => props.$color};
   font-size: 16px;
   line-height: 1.6;
   
@@ -121,63 +121,22 @@ const ButtonWrapper = styled.div<{ alignment: string }>`
   }};
 `;
 
-const CTAButton = styled.a<{ variant: string }>`
+const CTAButton = styled.a<{ $buttonColor: string; $textColor: string }>`
   display: inline-block;
   padding: 12px 24px;
   font-size: 16px;
   font-weight: 600;
   border-radius: 6px;
-  text-decoration: none;
+  text-decoration: none !important;
   transition: all 0.2s;
   cursor: pointer;
+  background: ${props => props.$buttonColor} !important;
+  color: ${props => props.$textColor} !important;
+  border: 2px solid ${props => props.$buttonColor} !important;
   
-  ${props => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background: #3b82f6;
-          color: #ffffff;
-          border: 2px solid #3b82f6;
-          
-          &:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-          }
-        `;
-      case 'secondary':
-        return `
-          background: transparent;
-          color: #3b82f6;
-          border: 2px solid #3b82f6;
-          
-          &:hover {
-            background: #eff6ff;
-          }
-        `;
-      case 'success':
-        return `
-          background: #10b981;
-          color: #ffffff;
-          border: 2px solid #10b981;
-          
-          &:hover {
-            background: #059669;
-            border-color: #059669;
-          }
-        `;
-      default:
-        return `
-          background: #3b82f6;
-          color: #ffffff;
-          border: 2px solid #3b82f6;
-          
-          &:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-          }
-        `;
-    }
-  }}
+  &:hover {
+    filter: brightness(0.9);
+  }
 `;
 
 const EmptyState = styled.div`
@@ -225,8 +184,11 @@ export const ImageTextBlock: React.FC<ImageTextBlockProps> = ({ block }) => {
   const content = settings?.content || '';
   const buttonText = settings?.buttonText || '';
   const buttonUrl = settings?.buttonUrl || '';
-  const buttonVariant = settings?.buttonVariant || 'primary';
+  const buttonColor = settings?.buttonColor || '#3b82f6';
+  const buttonTextColor = settings?.buttonTextColor || '#ffffff';
   const buttonAlignment = settings?.buttonAlignment || 'left';
+  const headingColor = settings?.headingColor || '#1f2937';
+  const contentColor = settings?.contentColor || '#4b5563';
 
   if (!content) {
     return (
@@ -255,18 +217,19 @@ export const ImageTextBlock: React.FC<ImageTextBlockProps> = ({ block }) => {
 
       <TextSection layout={layout}>
         {heading && (
-          <Heading as={headingLevel} level={headingLevel}>
+          <Heading as={headingLevel} level={headingLevel} $color={headingColor}>
             {heading}
           </Heading>
         )}
         
-        <Content dangerouslySetInnerHTML={{ __html: content }} />
+        <Content $color={contentColor} dangerouslySetInnerHTML={{ __html: content }} />
         
         {buttonText && buttonUrl && (
           <ButtonWrapper alignment={buttonAlignment}>
             <CTAButton
               href={buttonUrl}
-              variant={buttonVariant}
+              $buttonColor={buttonColor}
+              $textColor={buttonTextColor}
               target="_blank"
               rel="noopener noreferrer"
             >
