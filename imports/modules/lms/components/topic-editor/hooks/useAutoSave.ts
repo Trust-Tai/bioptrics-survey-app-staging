@@ -63,6 +63,13 @@ export const useAutoSave = (
 
     // Set new timeout for auto-save
     saveTimeoutRef.current = setTimeout(() => {
+      // Debug: Log what's being saved
+      console.log('[AutoSave] Saving blocks:', contentBlocks.map(b => ({ 
+        id: b.id, 
+        type: b.type, 
+        visibility: b.visibility 
+      })));
+      
       Meteor.call('topics.update', topicId, { contentBlocks }, (error: any) => {
         if (!error) {
           lastSavedContentRef.current = currentContent;

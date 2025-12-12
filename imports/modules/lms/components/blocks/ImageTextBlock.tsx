@@ -55,7 +55,7 @@ const TextSection = styled.div<{ layout: string }>`
   }
 `;
 
-const Heading = styled.h2<{ level: string }>`
+const Heading = styled.h2<{ level: string; $color: string }>`
   font-size: ${props => {
     switch (props.level) {
       case 'h1': return '32px';
@@ -68,13 +68,13 @@ const Heading = styled.h2<{ level: string }>`
     }
   }};
   font-weight: 600;
-  color: #111827;
+  color: ${props => props.$color};
   margin: 0 0 16px 0;
   line-height: 1.3;
 `;
 
-const Content = styled.div`
-  color: #374151;
+const Content = styled.div<{ $color: string }>`
+  color: ${props => props.$color};
   font-size: 16px;
   line-height: 1.6;
   
@@ -187,6 +187,8 @@ export const ImageTextBlock: React.FC<ImageTextBlockProps> = ({ block }) => {
   const buttonColor = settings?.buttonColor || '#3b82f6';
   const buttonTextColor = settings?.buttonTextColor || '#ffffff';
   const buttonAlignment = settings?.buttonAlignment || 'left';
+  const headingColor = settings?.headingColor || '#1f2937';
+  const contentColor = settings?.contentColor || '#4b5563';
 
   if (!content) {
     return (
@@ -215,12 +217,12 @@ export const ImageTextBlock: React.FC<ImageTextBlockProps> = ({ block }) => {
 
       <TextSection layout={layout}>
         {heading && (
-          <Heading as={headingLevel} level={headingLevel}>
+          <Heading as={headingLevel} level={headingLevel} $color={headingColor}>
             {heading}
           </Heading>
         )}
         
-        <Content dangerouslySetInnerHTML={{ __html: content }} />
+        <Content $color={contentColor} dangerouslySetInnerHTML={{ __html: content }} />
         
         {buttonText && buttonUrl && (
           <ButtonWrapper alignment={buttonAlignment}>
