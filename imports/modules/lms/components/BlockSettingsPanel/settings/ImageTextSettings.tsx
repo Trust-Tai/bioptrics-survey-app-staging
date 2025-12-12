@@ -214,6 +214,24 @@ export const ImageTextSettings: React.FC<ImageTextSettingsProps> = ({ block, onU
         </Select>
       </SettingGroup>
 
+      <SettingGroup>
+        <Label>Heading Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.headingColor || '#1f2937'}
+            onChange={(e) => onUpdate({ headingColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.headingColor || '#1f2937'}
+            onChange={(e) => onUpdate({ headingColor: e.target.value })}
+            placeholder="#1f2937"
+            style={{ flex: 1 }}
+          />
+        </div>
+      </SettingGroup>
+
       <Divider />
 
       <SettingGroup>
@@ -223,6 +241,24 @@ export const ImageTextSettings: React.FC<ImageTextSettingsProps> = ({ block, onU
           onChange={(content) => onUpdate({ content })}
           placeholder="Add your text content here..."
         />
+      </SettingGroup>
+
+      <SettingGroup>
+        <Label>Content Color</Label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ColorInput
+            type="color"
+            value={block.settings?.contentColor || '#4b5563'}
+            onChange={(e) => onUpdate({ contentColor: e.target.value })}
+          />
+          <Input
+            type="text"
+            value={block.settings?.contentColor || '#4b5563'}
+            onChange={(e) => onUpdate({ contentColor: e.target.value })}
+            placeholder="#4b5563"
+            style={{ flex: 1 }}
+          />
+        </div>
       </SettingGroup>
 
       <Divider />

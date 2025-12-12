@@ -161,19 +161,7 @@ export const AnimationSettingsPanel: React.FC<AnimationSettingsPanelProps> = ({ 
             </RadioGroup>
           </SettingGroup>
 
-          <SettingGroup>
-            <Label>Easing</Label>
-            <Select
-              value={animation.easing || 'ease'}
-              onChange={(e) => handleAnimationUpdate({ easing: e.target.value as any })}
-            >
-              <option value="ease">Ease (Default)</option>
-              <option value="ease-in">Ease In</option>
-              <option value="ease-out">Ease Out</option>
-              <option value="ease-in-out">Ease In-Out</option>
-              <option value="linear">Linear</option>
-            </Select>
-          </SettingGroup>
+          {/* Easing option hidden per user request */}
         </>
       )}
     </>

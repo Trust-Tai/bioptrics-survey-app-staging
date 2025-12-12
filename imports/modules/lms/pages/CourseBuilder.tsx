@@ -343,10 +343,86 @@ const UploadBox = styled.div`
   padding: 24px;
   text-align: center;
   color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
   
   svg {
     margin: 0 auto 8px;
   }
+`;
+
+const ImagePreviewContainer = styled.div`
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+`;
+
+const CourseImagePreview = styled.img`
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+`;
+
+const ImageOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  
+  ${ImagePreviewContainer}:hover & {
+    opacity: 1;
+  }
+`;
+
+const ImageActionButton = styled.button`
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  &.change {
+    background: white;
+    border: none;
+    color: #374151;
+    
+    &:hover {
+      background: #f3f4f6;
+    }
+  }
+  
+  &.remove {
+    background: #ef4444;
+    border: none;
+    color: white;
+    
+    &:hover {
+      background: #dc2626;
+    }
+  }
+`;
+
+const HiddenInput = styled.input`
+  display: none;
 `;
 
 const CourseOutlineSection = styled.div`
@@ -632,6 +708,7 @@ interface CourseFormData {
   description: string;
   learnerAudience: string;
   learningObjectives: string[];
+  thumbnail: string;
 }
 
 const CourseBuilder: React.FC = () => {
@@ -648,7 +725,9 @@ const CourseBuilder: React.FC = () => {
     description: '',
     learnerAudience: 'All Levels',
     learningObjectives: [''],
+    thumbnail: '',
   });
+  const courseImageInputRef = useRef<HTMLInputElement>(null);
 
   // UI state
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
@@ -717,6 +796,7 @@ const CourseBuilder: React.FC = () => {
         learningObjectives: (course as any).learningObjectives?.length > 0 
           ? (course as any).learningObjectives 
           : [''],
+        thumbnail: course.thumbnail || '',
       });
     }
   }, [course]);
@@ -742,6 +822,7 @@ const CourseBuilder: React.FC = () => {
           description: formData.description.trim(),
           learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
           learnerAudience: formData.learnerAudience.trim(),
+          thumbnail: formData.thumbnail,
         }, (error: any) => {
           if (error) reject(error);
           else resolve(true);
@@ -824,6 +905,7 @@ const CourseBuilder: React.FC = () => {
         description: newFormData.description.trim(),
         learningObjectives: newFormData.learningObjectives.filter(obj => obj.trim() !== ''),
         learnerAudience: newFormData.learnerAudience.trim(),
+        thumbnail: newFormData.thumbnail,
       }, (error: any) => {
         if (error) console.error('Auto-save failed:', error);
       });
@@ -851,6 +933,7 @@ const CourseBuilder: React.FC = () => {
             description: formData.description.trim(),
             learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
             learnerAudience: formData.learnerAudience.trim(),
+            thumbnail: formData.thumbnail,
           }, (error: any) => {
             if (error) console.error('Auto-save failed:', error);
           });
@@ -859,6 +942,41 @@ const CourseBuilder: React.FC = () => {
       }
     }
     setIsEditingHeaderTitle(false);
+  };
+
+  // Course image upload handler
+  const handleCourseImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size should be less than 2MB');
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageData = event.target?.result as string;
+      handleInputChange('thumbnail', imageData);
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    if (courseImageInputRef.current) {
+      courseImageInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveCourseImage = () => {
+    handleInputChange('thumbnail', '');
   };
 
   const handleSaveCourse = async () => {
@@ -878,6 +996,7 @@ const CourseBuilder: React.FC = () => {
             description: formData.description.trim(),
             learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
             learnerAudience: formData.learnerAudience.trim(),
+            thumbnail: formData.thumbnail,
           }, (error: any, result: any) => {
             if (error) reject(error);
             else resolve(result);
@@ -894,6 +1013,7 @@ const CourseBuilder: React.FC = () => {
             description: formData.description.trim(),
             learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
             learnerAudience: formData.learnerAudience.trim(),
+            thumbnail: formData.thumbnail,
           }, (error: any) => {
             if (error) reject(error);
             else resolve(true);
@@ -1286,7 +1406,7 @@ const CourseBuilder: React.FC = () => {
               onClick={handleSaveCourse}
               disabled={isSaving || !formData.topic.trim()}
             >
-              {isSaving ? 'Saving...' : 'Save Draft'}
+              {isSaving ? 'Saving...' : 'Save'}
             </SaveButton>
             <ViewToggle>
               <ToggleButton isActive>
@@ -1367,11 +1487,40 @@ const CourseBuilder: React.FC = () => {
             </FormGroup>
 
             <FormGroup>
-              <Label>Upload Content</Label>
-              <UploadBox>
-                <Upload size={24} />
-                <p>Drop files here or click to upload</p>
-              </UploadBox>
+              <Label>Course Image</Label>
+              {formData.thumbnail ? (
+                <ImagePreviewContainer>
+                  <CourseImagePreview src={formData.thumbnail} alt="Course thumbnail" />
+                  <ImageOverlay>
+                    <ImageActionButton 
+                      className="change" 
+                      onClick={() => courseImageInputRef.current?.click()}
+                    >
+                      <Upload size={16} />
+                      Change
+                    </ImageActionButton>
+                    <ImageActionButton 
+                      className="remove" 
+                      onClick={handleRemoveCourseImage}
+                    >
+                      <Trash2 size={16} />
+                      Remove
+                    </ImageActionButton>
+                  </ImageOverlay>
+                </ImagePreviewContainer>
+              ) : (
+                <UploadBox onClick={() => courseImageInputRef.current?.click()}>
+                  <Upload size={24} />
+                  <p>Drop files here or click to upload</p>
+                </UploadBox>
+              )}
+              <HiddenInput
+                ref={courseImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCourseImageUpload}
+              />
+              <HelperText>Recommended size: 800x450px (16:9 aspect ratio)</HelperText>
             </FormGroup>
           </FormSection>
         </LeftPanel>
