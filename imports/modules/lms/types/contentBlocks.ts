@@ -1,6 +1,6 @@
 // Content Block Types for Topic Editor
 
-export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid' | 'banner' | 'testimonials' | 'timeline';
+export type ContentBlockType = 'rich-text' | 'image' | 'video' | 'video-player' | 'audio-player' | 'media' | 'pdf' | 'file-download' | 'accordion' | 'callout' | 'button' | 'quiz' | 'tabs' | 'divider' | 'flipboxes' | 'image-text' | 'content-grid' | 'banner' | 'testimonials' | 'timeline';
 
 // Animation Types
 export type AnimationType = 
@@ -31,11 +31,58 @@ export interface AnimationSettings {
   easing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
 }
 
+// Spacing Settings for Padding and Margin
+export interface SpacingValue {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface SpacingSettings {
+  padding: SpacingValue;
+  margin: SpacingValue;
+}
+
+// Background Settings
+export type BackgroundSize = 'cover' | 'contain' | 'auto' | 'custom';
+export type BackgroundPosition = 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'custom';
+export type BackgroundRepeat = 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+export type BackgroundAttachment = 'scroll' | 'fixed';
+
+export interface BackgroundOverlay {
+  color: string;
+  opacity: number; // 0-100
+}
+
+export interface BackgroundSettings {
+  color: string;
+  opacity: number; // 0-100
+  image: string;
+  size: BackgroundSize;
+  customSize?: string; // e.g., "100px 50px"
+  position: BackgroundPosition;
+  customPosition?: string; // e.g., "50% 25%"
+  repeat: BackgroundRepeat;
+  attachment: BackgroundAttachment;
+  overlay: BackgroundOverlay;
+}
+
+// Visibility Settings for responsive display
+export interface VisibilitySettings {
+  desktop: boolean;  // Show on desktop (992px+)
+  tablet: boolean;   // Show on tablet (768px - 991px)
+  mobile: boolean;   // Show on mobile (< 768px)
+}
+
 export interface BaseContentBlock {
   id: string;
   type: ContentBlockType;
   order: number;
   animation?: AnimationSettings;
+  spacing?: SpacingSettings;
+  background?: BackgroundSettings;
+  visibility?: VisibilitySettings;
 }
 
 export interface RichTextBlockSettings {
@@ -127,6 +174,26 @@ export interface AudioPlayerBlockSettings {
 export interface AudioPlayerBlock extends BaseContentBlock {
   type: 'audio-player';
   settings: AudioPlayerBlockSettings;
+}
+
+// Unified Media Block (combines video and audio)
+export interface MediaBlockSettings {
+  mediaType?: 'video' | 'audio';
+  mediaUrl?: string;
+  title?: string;
+  artist?: string;
+  posterUrl?: string;
+  bgColor?: string;
+  accentColor?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  showControls?: boolean;
+}
+
+export interface MediaBlock extends BaseContentBlock {
+  type: 'media';
+  settings: MediaBlockSettings;
 }
 
 export interface PDFBlockSettings {
@@ -285,11 +352,13 @@ export interface FlipboxItem {
   frontTitle: string;
   frontDescription?: string;
   frontIcon?: string;
+  frontCustomIcon?: string;
   frontBgColor?: string;
   frontTextColor?: string;
   backTitle: string;
   backDescription?: string;
   backIcon?: string;
+  backCustomIcon?: string;
   backBgColor?: string;
   backTextColor?: string;
 }
@@ -475,7 +544,7 @@ export interface TimelineBlock extends BaseContentBlock {
   settings: TimelineBlockSettings;
 }
 
-export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock | BannerBlock | TestimonialsBlock | TimelineBlock;
+export type ContentBlock = RichTextBlock | ImageBlock | VideoBlock | VideoPlayerBlock | AudioPlayerBlock | MediaBlock | PDFBlock | FileDownloadBlock | AccordionBlock | CalloutBlock | ButtonBlock | QuizBlock | TabsBlock | DividerBlock | FlipboxesBlock | ImageTextBlock | ContentGridBlock | BannerBlock | TestimonialsBlock | TimelineBlock;
 
 // Block Library Item
 export interface BlockLibraryItem {

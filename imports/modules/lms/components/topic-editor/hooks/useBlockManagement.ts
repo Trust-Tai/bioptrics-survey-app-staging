@@ -14,23 +14,42 @@ export const useBlockManagement = () => {
   };
 
   const updateBlock = (blockId: string, settings: any) => {
-    // Check if this is an animation update (special _animation key)
+    // Check for special block-level updates (prefixed with _)
     const isAnimationUpdate = '_animation' in settings;
+    const isSpacingUpdate = '_spacing' in settings;
+    const isBackgroundUpdate = '_background' in settings;
+    const isVisibilityUpdate = '_visibility' in settings;
+    const hasBlockLevelUpdates = isAnimationUpdate || isSpacingUpdate || isBackgroundUpdate || isVisibilityUpdate;
+
+    // Debug: Log visibility updates
+    if (isVisibilityUpdate) {
+      console.log('[useBlockManagement] Visibility update for block:', blockId, settings._visibility);
+    }
     
     setContentBlocks(prev =>
       prev.map(block => {
         if (block.id !== blockId) return block;
         
-        if (isAnimationUpdate) {
-          // Update the animation property on the block itself
-          const { _animation, ...restSettings } = settings;
-          return { 
-            ...block, 
-            animation: _animation,
-            settings: Object.keys(restSettings).length > 0 
-              ? { ...block.settings, ...restSettings } 
-              : block.settings 
-          };
+        if (hasBlockLevelUpdates) {
+          // Extract block-level properties and remaining settings
+          const { _animation, _spacing, _background, _visibility, ...restSettings } = settings;
+          const updatedBlock = { ...block };
+          
+          if (isAnimationUpdate) updatedBlock.animation = _animation;
+          if (isSpacingUpdate) updatedBlock.spacing = _spacing;
+          if (isBackgroundUpdate) updatedBlock.background = _background;
+          if (isVisibilityUpdate) {
+            updatedBlock.visibility = _visibility;
+            console.log('[useBlockManagement] Updated block visibility:', updatedBlock.visibility);
+          }
+          
+          // Update settings if there are remaining properties
+          if (Object.keys(restSettings).length > 0) {
+            updatedBlock.settings = { ...block.settings, ...restSettings };
+          }
+          
+          console.log('[useBlockManagement] Final block to save:', { id: updatedBlock.id, visibility: updatedBlock.visibility });
+          return updatedBlock;
         }
         
         // Regular settings update
@@ -40,15 +59,23 @@ export const useBlockManagement = () => {
     
     // Update selected block if it's being edited
     if (selectedBlock?.id === blockId) {
-      if (isAnimationUpdate) {
-        const { _animation, ...restSettings } = settings;
-        setSelectedBlock(prev => prev ? { 
-          ...prev, 
-          animation: _animation,
-          settings: Object.keys(restSettings).length > 0 
-            ? { ...prev.settings, ...restSettings } 
-            : prev.settings 
-        } : null);
+      if (hasBlockLevelUpdates) {
+        const { _animation, _spacing, _background, _visibility, ...restSettings } = settings;
+        setSelectedBlock(prev => {
+          if (!prev) return null;
+          const updatedBlock = { ...prev };
+          
+          if (isAnimationUpdate) updatedBlock.animation = _animation;
+          if (isSpacingUpdate) updatedBlock.spacing = _spacing;
+          if (isBackgroundUpdate) updatedBlock.background = _background;
+          if (isVisibilityUpdate) updatedBlock.visibility = _visibility;
+          
+          if (Object.keys(restSettings).length > 0) {
+            updatedBlock.settings = { ...prev.settings, ...restSettings };
+          }
+          
+          return updatedBlock;
+        });
       } else {
         setSelectedBlock(prev => prev ? { ...prev, settings: { ...prev.settings, ...settings } } : null);
       }

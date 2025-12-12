@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTracker } from 'meteor/react-meteor-data';
 import { Meteor } from 'meteor/meteor';
 import { FileText, Zap, Download, ExternalLink, Folder } from 'lucide-react';
 import { Courses } from '../../api/courses';
+import { Enrollments } from '../../api/enrollments';
+import { Modules } from '../../api/modules';
+import { Topics } from '../../api/topics';
 
 const PageContainer = styled.div`
   max-width: 1400px;
@@ -252,37 +255,51 @@ const toolsByCourse = [
 
 export const LearnerDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [enrollmentData, setEnrollmentData] = useState<any[]>([]);
+  const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(true);
 
-  // Fetch published courses
+  // Fetch published courses and enrollments
   const { courses, isLoading } = useTracker(() => {
-    const handle = Meteor.subscribe('courses.published');
+    const courseHandle = Meteor.subscribe('courses.published');
+    const enrollmentHandle = Meteor.subscribe('enrollments.my');
+    
+    // Note: JWT auth uses 'admin' fallback for userId
+    const userId = Meteor.userId() || 'admin';
     
     return {
       courses: Courses.find({ status: 'published' }, { sort: { createdAt: -1 } }).fetch(),
-      isLoading: !handle.ready(),
+      enrollments: Enrollments.find({ userId }).fetch(),
+      isLoading: !courseHandle.ready() || !enrollmentHandle.ready(),
     };
   }, []);
 
-  // Generate sample progress for demo
-  const getProgress = (index: number) => {
-    const progressValues = [75, 40, 10, 60, 25];
-    return progressValues[index % progressValues.length];
-  };
+  // Fetch enriched enrollment data
+  useEffect(() => {
+    setIsLoadingEnrollments(true);
+    Meteor.call('enrollments.getMyEnrollments', (error: any, result: any) => {
+      if (!error && result) {
+        setEnrollmentData(result);
+      }
+      setIsLoadingEnrollments(false);
+    });
+  }, []);
 
-  const getNextLesson = (index: number) => {
-    const lessons = [
-      'Loops & Functions',
-      'Meditation Techniques',
-      'Crafting Your Message',
-      'Building Relationships',
-      'Goal Setting',
-    ];
-    return lessons[index % lessons.length];
-  };
+  // Auto-enroll in courses if not enrolled
+  useEffect(() => {
+    if (!isLoading && courses.length > 0) {
+      courses.forEach(course => {
+        Meteor.call('enrollments.autoEnroll', course._id);
+      });
+    }
+  }, [isLoading, courses]);
 
   const handleCourseClick = (courseId: string) => {
-    // Navigate to course player/detail page
     navigate(`/admin/lms/learner/course/${courseId}`);
+  };
+
+  // Get enrollment data for a course
+  const getEnrollmentForCourse = (courseId: string) => {
+    return enrollmentData.find(e => e.courseId === courseId);
   };
 
   return (
@@ -296,41 +313,55 @@ export const LearnerDashboard: React.FC = () => {
             // Show sample courses if no published courses
             <>
               {[
-                { _id: '1', title: 'Introduction to Python Programming' },
-                { _id: '2', title: "Neuroplasticity: Unlock Your Brain's Potential" },
-                { _id: '3', title: 'Public Speaking Mastery' },
-              ].map((course, index) => (
+                { _id: '1', title: 'Introduction to Python Programming', thumbnail: courseImages[0] },
+                { _id: '2', title: "Neuroplasticity: Unlock Your Brain's Potential", thumbnail: courseImages[1] },
+                { _id: '3', title: 'Public Speaking Mastery', thumbnail: courseImages[2] },
+              ].map((course, index) => {
+                const enrollment = getEnrollmentForCourse(course._id);
+                const progress = enrollment?.overallProgress || (index === 0 ? 75 : index === 1 ? 40 : 10);
+                const nextLesson = enrollment?.nextTopic?.title || 
+                  (index === 0 ? 'Loops & Functions' : index === 1 ? 'Meditation Techniques' : 'Crafting Your Message');
+                
+                return (
+                  <CourseCard key={course._id} onClick={() => handleCourseClick(course._id)}>
+                    <CourseImage bgImage={course.thumbnail} />
+                    <CourseContent>
+                      <CourseTitle>{course.title}</CourseTitle>
+                      <ProgressContainer>
+                        <ProgressBar>
+                          <ProgressFill progress={progress} />
+                        </ProgressBar>
+                        <ProgressText>{progress}%</ProgressText>
+                      </ProgressContainer>
+                      <NextLesson>Next Lesson: {nextLesson}</NextLesson>
+                    </CourseContent>
+                  </CourseCard>
+                );
+              })}
+            </>
+          ) : (
+            courses.map((course, index) => {
+              const enrollment = getEnrollmentForCourse(course._id);
+              const progress = enrollment?.overallProgress || 0;
+              const nextLesson = enrollment?.nextTopic?.title || 'Start Learning';
+              const thumbnail = course.thumbnail || courseImages[index % courseImages.length];
+              
+              return (
                 <CourseCard key={course._id} onClick={() => handleCourseClick(course._id)}>
-                  <CourseImage bgImage={courseImages[index % courseImages.length]} />
+                  <CourseImage bgImage={thumbnail} />
                   <CourseContent>
                     <CourseTitle>{course.title}</CourseTitle>
                     <ProgressContainer>
                       <ProgressBar>
-                        <ProgressFill progress={getProgress(index)} />
+                        <ProgressFill progress={progress} />
                       </ProgressBar>
-                      <ProgressText>{getProgress(index)}%</ProgressText>
+                      <ProgressText>{progress}%</ProgressText>
                     </ProgressContainer>
-                    <NextLesson>Next Lesson: {getNextLesson(index)}</NextLesson>
+                    <NextLesson>Next Lesson: {nextLesson}</NextLesson>
                   </CourseContent>
                 </CourseCard>
-              ))}
-            </>
-          ) : (
-            courses.map((course, index) => (
-              <CourseCard key={course._id} onClick={() => handleCourseClick(course._id)}>
-                <CourseImage bgImage={courseImages[index % courseImages.length]} />
-                <CourseContent>
-                  <CourseTitle>{course.title}</CourseTitle>
-                  <ProgressContainer>
-                    <ProgressBar>
-                      <ProgressFill progress={getProgress(index)} />
-                    </ProgressBar>
-                    <ProgressText>{getProgress(index)}%</ProgressText>
-                  </ProgressContainer>
-                  <NextLesson>Next Lesson: {getNextLesson(index)}</NextLesson>
-                </CourseContent>
-              </CourseCard>
-            ))
+              );
+            })
           )}
         </CoursesGrid>
       </Section>

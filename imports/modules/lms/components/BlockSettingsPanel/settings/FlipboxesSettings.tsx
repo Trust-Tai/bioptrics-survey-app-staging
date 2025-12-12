@@ -1,5 +1,6 @@
-import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import styled from 'styled-components';
+import { Plus, Trash2, Upload, Star, Heart, Zap, Award, Target, Lightbulb, Rocket, CheckCircle, Gift, Shield, Users, TrendingUp, BookOpen, Settings, Globe, Mail, Phone, Camera, Music, Video, FileText, Folder, Calendar, Clock, MapPin, Search, Bell, Lock, Unlock, Eye, Edit, Trash, Download, Share, Send, MessageCircle, ThumbsUp, Flag } from 'lucide-react';
 import type { FlipboxesBlock, FlipboxItem } from '../../../types/contentBlocks';
 import {
   SettingGroup,
@@ -18,6 +19,259 @@ import {
   AddFileButton,
   SmallInput,
 } from '../shared/StyledComponents';
+
+// Icon Selector Styles
+const IconSelectorContainer = styled.div`
+  margin-bottom: 6px;
+`;
+
+const IconTypeToggle = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+`;
+
+const ToggleButton = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+  border: 1px solid ${props => props.$active ? '#3b82f6' : '#e5e7eb'};
+  background: ${props => props.$active ? '#eff6ff' : 'white'};
+  color: ${props => props.$active ? '#3b82f6' : '#6b7280'};
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #3b82f6;
+  }
+`;
+
+const IconGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+`;
+
+const IconButton = styled.button<{ $selected: boolean }>`
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid ${props => props.$selected ? '#3b82f6' : '#e5e7eb'};
+  background: ${props => props.$selected ? '#eff6ff' : 'white'};
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: ${props => props.$selected ? '#3b82f6' : '#374151'};
+
+  &:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+`;
+
+const CustomIconUpload = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const UploadButton = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  border: 1px dashed #d1d5db;
+  background: #f9fafb;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.15s;
+  flex: 1;
+
+  &:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+`;
+
+const CustomIconPreview = styled.div`
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+`;
+
+const HiddenInput = styled.input`
+  display: none;
+`;
+
+// Predefined icons list
+const predefinedIcons = [
+  { name: 'star', icon: Star },
+  { name: 'heart', icon: Heart },
+  { name: 'zap', icon: Zap },
+  { name: 'award', icon: Award },
+  { name: 'target', icon: Target },
+  { name: 'lightbulb', icon: Lightbulb },
+  { name: 'rocket', icon: Rocket },
+  { name: 'check-circle', icon: CheckCircle },
+  { name: 'gift', icon: Gift },
+  { name: 'shield', icon: Shield },
+  { name: 'users', icon: Users },
+  { name: 'trending-up', icon: TrendingUp },
+  { name: 'book-open', icon: BookOpen },
+  { name: 'settings', icon: Settings },
+  { name: 'globe', icon: Globe },
+  { name: 'mail', icon: Mail },
+  { name: 'phone', icon: Phone },
+  { name: 'camera', icon: Camera },
+  { name: 'music', icon: Music },
+  { name: 'video', icon: Video },
+  { name: 'file-text', icon: FileText },
+  { name: 'folder', icon: Folder },
+  { name: 'calendar', icon: Calendar },
+  { name: 'clock', icon: Clock },
+  { name: 'map-pin', icon: MapPin },
+  { name: 'search', icon: Search },
+  { name: 'bell', icon: Bell },
+  { name: 'lock', icon: Lock },
+  { name: 'unlock', icon: Unlock },
+  { name: 'eye', icon: Eye },
+  { name: 'thumbs-up', icon: ThumbsUp },
+  { name: 'flag', icon: Flag },
+];
+
+// Icon Selector Component
+interface IconSelectorProps {
+  value: string;
+  customIcon?: string;
+  onChange: (value: string, customIcon?: string) => void;
+  label: string;
+}
+
+const IconSelector: React.FC<IconSelectorProps> = ({ value, customIcon, onChange, label }) => {
+  const [iconType, setIconType] = useState<'emoji' | 'icon' | 'custom'>(
+    customIcon ? 'custom' : (predefinedIcons.some(i => i.name === value) ? 'icon' : 'emoji')
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleIconSelect = (iconName: string) => {
+    onChange(iconName, undefined);
+  };
+
+  const handleEmojiChange = (emoji: string) => {
+    onChange(emoji, undefined);
+  };
+
+  const handleCustomIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      onChange('custom', base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <IconSelectorContainer>
+      <Label style={{ fontSize: '11px', marginBottom: '4px' }}>{label}</Label>
+      <IconTypeToggle>
+        <ToggleButton
+          type="button"
+          $active={iconType === 'emoji'}
+          onClick={() => setIconType('emoji')}
+        >
+          Emoji
+        </ToggleButton>
+        <ToggleButton
+          type="button"
+          $active={iconType === 'icon'}
+          onClick={() => setIconType('icon')}
+        >
+          Icon
+        </ToggleButton>
+        <ToggleButton
+          type="button"
+          $active={iconType === 'custom'}
+          onClick={() => setIconType('custom')}
+        >
+          Custom
+        </ToggleButton>
+      </IconTypeToggle>
+
+      {iconType === 'emoji' && (
+        <SmallInput
+          type="text"
+          value={!predefinedIcons.some(i => i.name === value) && !customIcon ? value : ''}
+          onChange={(e) => handleEmojiChange(e.target.value)}
+          placeholder="✨ Enter emoji"
+        />
+      )}
+
+      {iconType === 'icon' && (
+        <IconGrid>
+          {predefinedIcons.map((iconItem) => {
+            const IconComponent = iconItem.icon;
+            return (
+              <IconButton
+                key={iconItem.name}
+                type="button"
+                $selected={value === iconItem.name}
+                onClick={() => handleIconSelect(iconItem.name)}
+                title={iconItem.name}
+              >
+                <IconComponent size={14} />
+              </IconButton>
+            );
+          })}
+        </IconGrid>
+      )}
+
+      {iconType === 'custom' && (
+        <CustomIconUpload>
+          <UploadButton>
+            <Upload size={14} />
+            Upload Icon
+            <HiddenInput
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCustomIconUpload}
+            />
+          </UploadButton>
+          {customIcon && (
+            <CustomIconPreview>
+              <img src={customIcon} alt="Custom icon" />
+            </CustomIconPreview>
+          )}
+        </CustomIconUpload>
+      )}
+    </IconSelectorContainer>
+  );
+};
 
 interface FlipboxesSettingsProps {
   block: FlipboxesBlock;
@@ -72,15 +326,15 @@ export const FlipboxesSettings: React.FC<FlipboxesSettingsProps> = ({ block, onU
               <div style={{ marginBottom: '12px' }}>
                 <Label style={{ fontSize: '12px', marginBottom: '8px', display: 'block' }}>Front Side</Label>
                 
-                <div style={{ marginBottom: '6px' }}>
-                  <Label style={{ fontSize: '11px', marginBottom: '2px' }}>Icon/Emoji</Label>
-                  <SmallInput
-                    type="text"
-                    value={flipbox.frontIcon || ''}
-                    onChange={(e) => handleUpdateFlipbox(flipbox.id, { frontIcon: e.target.value })}
-                    placeholder="✨"
-                  />
-                </div>
+                <IconSelector
+                  label="Icon"
+                  value={flipbox.frontIcon || ''}
+                  customIcon={flipbox.frontCustomIcon}
+                  onChange={(value, customIcon) => handleUpdateFlipbox(flipbox.id, { 
+                    frontIcon: value, 
+                    frontCustomIcon: customIcon 
+                  })}
+                />
 
                 <div style={{ marginBottom: '6px' }}>
                   <Label style={{ fontSize: '11px', marginBottom: '2px' }}>Title</Label>
@@ -128,15 +382,15 @@ export const FlipboxesSettings: React.FC<FlipboxesSettingsProps> = ({ block, onU
               <div style={{ marginBottom: '8px' }}>
                 <Label style={{ fontSize: '12px', marginBottom: '8px', display: 'block' }}>Back Side</Label>
                 
-                <div style={{ marginBottom: '6px' }}>
-                  <Label style={{ fontSize: '11px', marginBottom: '2px' }}>Icon/Emoji</Label>
-                  <SmallInput
-                    type="text"
-                    value={flipbox.backIcon || ''}
-                    onChange={(e) => handleUpdateFlipbox(flipbox.id, { backIcon: e.target.value })}
-                    placeholder="💡"
-                  />
-                </div>
+                <IconSelector
+                  label="Icon"
+                  value={flipbox.backIcon || ''}
+                  customIcon={flipbox.backCustomIcon}
+                  onChange={(value, customIcon) => handleUpdateFlipbox(flipbox.id, { 
+                    backIcon: value, 
+                    backCustomIcon: customIcon 
+                  })}
+                />
 
                 <div style={{ marginBottom: '6px' }}>
                   <Label style={{ fontSize: '11px', marginBottom: '2px' }}>Title</Label>

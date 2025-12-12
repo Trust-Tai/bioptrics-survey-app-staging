@@ -117,12 +117,21 @@ const DownloadButton = styled.a<{ variant: string }>`
   }
 `;
 
-const EmptyState = styled.div`
+const EmptyState = styled.div<{ $clickable?: boolean }>`
   padding: 48px 24px;
   text-align: center;
   background: #f9fafb;
   border: 2px dashed #d1d5db;
   border-radius: 8px;
+  cursor: ${props => props.$clickable ? 'pointer' : 'default'};
+  transition: all 0.2s;
+  
+  ${props => props.$clickable && `
+    &:hover {
+      border-color: #3b82f6;
+      background-color: #f0f9ff;
+    }
+  `}
 `;
 
 const EmptyIcon = styled.svg`
@@ -167,6 +176,7 @@ interface FileDownloadBlockProps {
   block: FileDownloadBlockType;
   isEditing?: boolean;
   onUpdate?: (blockId: string, settings: any) => void;
+  onEdit?: () => void;
 }
 
 const getFileTypeColor = (fileType: string): string => {
@@ -187,7 +197,7 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 };
 
-export const FileDownloadBlock: React.FC<FileDownloadBlockProps> = ({ block }) => {
+export const FileDownloadBlock: React.FC<FileDownloadBlockProps> = ({ block, isEditing, onEdit }) => {
   const { settings } = block;
   const files = settings?.files || [];
   const buttonStyle = settings?.buttonStyle || 'button';
@@ -199,7 +209,10 @@ export const FileDownloadBlock: React.FC<FileDownloadBlockProps> = ({ block }) =
   if (files.length === 0) {
     return (
       <FileDownloadContainer>
-        <EmptyState>
+        <EmptyState 
+          $clickable={isEditing && !!onEdit}
+          onClick={isEditing && onEdit ? onEdit : undefined}
+        >
           <EmptyIcon fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path 
               strokeLinecap="round" 
@@ -209,7 +222,9 @@ export const FileDownloadBlock: React.FC<FileDownloadBlockProps> = ({ block }) =
             />
           </EmptyIcon>
           <EmptyText>No files available</EmptyText>
-          <EmptySubtext>Click edit to add downloadable files</EmptySubtext>
+          <EmptySubtext>
+            {isEditing ? 'Click here to add downloadable files' : 'Click edit to add downloadable files'}
+          </EmptySubtext>
         </EmptyState>
       </FileDownloadContainer>
     );
