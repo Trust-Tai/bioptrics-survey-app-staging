@@ -4,6 +4,7 @@ export { ImageSettings } from './ImageSettings';
 export { VideoSettings } from './VideoSettings';
 export { VideoPlayerSettings } from './VideoPlayerSettings';
 export { AudioPlayerSettings } from './AudioPlayerSettings';
+export { MediaSettings } from './MediaSettings';
 export { PDFSettings } from './PDFSettings';
 export { FileDownloadSettings } from './FileDownloadSettings';
 export { AccordionSettings } from './AccordionSettings';

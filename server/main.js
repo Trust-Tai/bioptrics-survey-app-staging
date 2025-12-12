@@ -67,7 +67,15 @@ import '../imports/modules/lms/api/modules.methods';
 import '../imports/modules/lms/api/topics.methods';
 import '../imports/modules/lms/api/quizzes.methods';
 import '../imports/modules/lms/api/modules.publications';
+import '../imports/modules/lms/api/topics.publications';
 import '../imports/modules/lms/api/quizzes.publications';
+// Import LMS Learner module (enrollments & notes)
+import '../imports/modules/lms/api/enrollments';
+import '../imports/modules/lms/api/enrollments.methods';
+import '../imports/modules/lms/api/enrollments.publications';
+import '../imports/modules/lms/api/notes';
+import '../imports/modules/lms/api/notes.methods';
+import '../imports/modules/lms/api/notes.publications';
 
 Meteor.publish('wpsCategories', function () {
   return WPSCategories.find();

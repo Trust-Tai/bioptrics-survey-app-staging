@@ -164,7 +164,7 @@ const TimelineContent = styled.p`
 `;
 
 // Horizontal Timeline Styles
-const HorizontalTimeline = styled.div`
+const HorizontalTimeline = styled.div<{ $lineColor: string; $showIcons: boolean }>`
   position: relative;
   padding: 40px 0 20px;
   overflow-x: auto;
@@ -172,11 +172,11 @@ const HorizontalTimeline = styled.div`
   &::before {
     content: '';
     position: absolute;
-    top: 50px;
+    top: ${props => props.$showIcons ? '60px' : '50px'};
     left: 0;
     right: 0;
     height: 2px;
-    background: #e5e7eb;
+    background: ${props => props.$lineColor};
   }
 `;
 
@@ -207,8 +207,24 @@ const HorizontalDot = styled.div<{ $color: string }>`
   z-index: 1;
 `;
 
-const HorizontalCard = styled.div`
-  margin-top: 40px;
+const HorizontalIcon = styled.div<{ $color: string }>`
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: ${props => props.$color};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 1;
+`;
+
+const HorizontalCard = styled.div<{ $showIcons?: boolean }>`
+  margin-top: ${props => props.$showIcons ? '50px' : '40px'};
   background: white;
   border-radius: 8px;
   padding: 16px;
@@ -281,12 +297,18 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({ block, isEditing }
   if (layout === 'horizontal') {
     return (
       <Container>
-        <HorizontalTimeline>
+        <HorizontalTimeline $lineColor={lineColor} $showIcons={showIcons}>
           <HorizontalTrack>
             {items.map((item) => (
               <HorizontalItem key={item.id}>
-                <HorizontalDot $color={item.iconColor || dotColor} />
-                <HorizontalCard>
+                {showIcons ? (
+                  <HorizontalIcon $color={item.iconColor || dotColor}>
+                    {defaultIcons[item.icon || 'default']}
+                  </HorizontalIcon>
+                ) : (
+                  <HorizontalDot $color={item.iconColor || dotColor} />
+                )}
+                <HorizontalCard $showIcons={showIcons}>
                   {showDates && item.date && (
                     <TimelineDate $color={item.iconColor || dotColor}>
                       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">

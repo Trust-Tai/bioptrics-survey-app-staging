@@ -2,12 +2,26 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Meteor } from 'meteor/meteor';
 import type { ContentBlock } from '../../../types/contentBlocks';
 
-export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentBlock[], delay: number = 2000) => {
+export const useAutoSave = (
+  topicId: string | undefined, 
+  contentBlocks: ContentBlock[], 
+  delay: number = 2000,
+  onSaveComplete?: () => void
+) => {
   const [showSaved, setShowSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const savedIndicatorRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedContentRef = useRef<string>('');
   const isInitialLoadRef = useRef(true);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (savedIndicatorRef.current) clearTimeout(savedIndicatorRef.current);
+    };
+  }, []);
 
   // Serialize content for comparison (ignoring order changes that don't matter)
   const serializeContent = useCallback((blocks: ContentBlock[]): string => {
@@ -49,12 +63,27 @@ export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentB
 
     // Set new timeout for auto-save
     saveTimeoutRef.current = setTimeout(() => {
+      // Debug: Log what's being saved
+      console.log('[AutoSave] Saving blocks:', contentBlocks.map(b => ({ 
+        id: b.id, 
+        type: b.type, 
+        visibility: b.visibility 
+      })));
+      
       Meteor.call('topics.update', topicId, { contentBlocks }, (error: any) => {
         if (!error) {
           lastSavedContentRef.current = currentContent;
           setIsDirty(false);
           setShowSaved(true);
-          setTimeout(() => setShowSaved(false), 2000);
+          // Notify that save is complete (allows server sync to resume)
+          if (onSaveComplete) {
+            onSaveComplete();
+          }
+          // Clear previous indicator timeout
+          if (savedIndicatorRef.current) {
+            clearTimeout(savedIndicatorRef.current);
+          }
+          savedIndicatorRef.current = setTimeout(() => setShowSaved(false), 2000);
         } else {
           console.error('Auto-save error:', error);
         }
@@ -67,7 +96,7 @@ export const useAutoSave = (topicId: string | undefined, contentBlocks: ContentB
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [topicId, contentBlocks, delay, serializeContent]);
+  }, [topicId, contentBlocks, delay, serializeContent, onSaveComplete]);
 
   // Reset initial load flag when topicId changes
   useEffect(() => {

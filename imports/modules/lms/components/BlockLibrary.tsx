@@ -174,25 +174,18 @@ const blockLibraryData = [
         color: '#10b981',
       },
       {
+        type: 'media' as ContentBlockType,
+        name: 'Media Player',
+        description: 'Video & Audio with smart detection',
+        icon: <Play size={20} />,
+        color: '#8b5cf6',
+      },
+      {
         type: 'video' as ContentBlockType,
         name: 'YouTube Video',
         description: 'Embed YouTube videos',
         icon: <Video size={20} />,
         color: '#ef4444',
-      },
-      {
-        type: 'video-player' as ContentBlockType,
-        name: 'Video Player',
-        description: 'Upload and play video files (MP4, WebM)',
-        icon: <Play size={20} />,
-        color: '#8b5cf6',
-      },
-      {
-        type: 'audio-player' as ContentBlockType,
-        name: 'Audio Player',
-        description: 'Upload audio files or podcasts (MP3, WAV)',
-        icon: <Music size={20} />,
-        color: '#f59e0b',
       },
       {
         type: 'pdf' as ContentBlockType,

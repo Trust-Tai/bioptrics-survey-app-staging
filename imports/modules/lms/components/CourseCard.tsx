@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { Star, MoreVertical, Edit, Eye, Copy, Trash2 } from 'lucide-react';
+import { Star, MoreVertical, Edit, Eye, Copy, Trash2, Globe, EyeOff } from 'lucide-react';
 import { Meteor } from 'meteor/meteor';
 import { Badge } from '../../../ui/components/shared/Badge';
 import { Button } from '../../../ui/admin/dashboard/components/shared/Button';
@@ -185,6 +185,26 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEdit }) => {
           }
         });
         break;
+      case 'publish':
+        Meteor.call('courses.update', course._id, { status: 'published' }, (error: any) => {
+          if (error) {
+            console.error('Error publishing course:', error);
+            alert('Failed to publish course');
+          } else {
+            alert('Course published successfully! It will now appear in the learner view.');
+          }
+        });
+        break;
+      case 'unpublish':
+        Meteor.call('courses.update', course._id, { status: 'draft' }, (error: any) => {
+          if (error) {
+            console.error('Error unpublishing course:', error);
+            alert('Failed to unpublish course');
+          } else {
+            alert('Course unpublished. It will no longer appear in the learner view.');
+          }
+        });
+        break;
       case 'delete':
         if (confirm(`Are you sure you want to delete "${course.title}"?`)) {
           Meteor.call('courses.delete', course._id, (error: any) => {
@@ -238,6 +258,18 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEdit }) => {
                 <Copy size={16} />
                 <span>Duplicate</span>
               </MenuItem>
+              <Divider />
+              {course.status === 'draft' ? (
+                <MenuItem onClick={() => handleAction('publish')}>
+                  <Globe size={16} />
+                  <span>Publish Course</span>
+                </MenuItem>
+              ) : (
+                <MenuItem onClick={() => handleAction('unpublish')}>
+                  <EyeOff size={16} />
+                  <span>Unpublish Course</span>
+                </MenuItem>
+              )}
               <Divider />
               <MenuItem danger onClick={() => handleAction('delete')}>
                 <Trash2 size={16} />

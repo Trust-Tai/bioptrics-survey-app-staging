@@ -1,4 +1,22 @@
-import type { ContentBlock, ContentBlockType } from '../types/contentBlocks';
+import type { ContentBlock, ContentBlockType, SpacingSettings, BackgroundSettings } from '../types/contentBlocks';
+
+// Default spacing values
+export const getDefaultSpacing = (): SpacingSettings => ({
+  padding: { top: 0, right: 0, bottom: 0, left: 0 },
+  margin: { top: 5, right: 0, bottom: 5, left: 0 },
+});
+
+// Default background values
+export const getDefaultBackground = (): BackgroundSettings => ({
+  color: '',
+  opacity: 100,
+  image: '',
+  size: 'cover',
+  position: 'center',
+  repeat: 'no-repeat',
+  attachment: 'scroll',
+  overlay: { color: '', opacity: 0 },
+});
 
 // Extract YouTube video ID from various URL formats
 export const extractYouTubeVideoId = (url: string): string | null => {
@@ -25,6 +43,8 @@ export const createDefaultBlock = (blockType: ContentBlockType, order: number): 
   const baseBlock = {
     id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     order,
+    spacing: getDefaultSpacing(),
+    background: getDefaultBackground(),
   };
 
   switch (blockType) {

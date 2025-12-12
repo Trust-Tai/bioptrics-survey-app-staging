@@ -261,20 +261,54 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
       sidebarRef.current.scrollTop = 0;
     }
   }, [highlightSidebar]);
+
+  // Auto-switch to Content tab when a block is NEWLY selected (for editing)
+  const prevSelectedBlockRef = useRef<ContentBlock | null>(null);
+  useEffect(() => {
+    // Only switch tab if a NEW block was selected (not just tab change)
+    if (selectedBlock && selectedBlock !== prevSelectedBlockRef.current && activeTab !== 'content') {
+      onTabChange('content');
+    }
+    prevSelectedBlockRef.current = selectedBlock;
+  }, [selectedBlock]);
+
+  // Handle tab change - close block settings when switching away from Content
+  const handleTabChange = (tab: 'outline' | 'content' | 'settings') => {
+    if (tab !== 'content' && selectedBlock) {
+      onCloseSettings(); // Clear selected block when leaving Content tab
+    }
+    onTabChange(tab);
+  };
+
   // Duration state - separate hours and minutes
-  const totalMinutes = topic?.estimatedMinutes || 5;
-  const [hours, setHours] = useState<number>(Math.floor(totalMinutes / 60));
-  const [minutes, setMinutes] = useState<number>(totalMinutes % 60);
+  const [hours, setHours] = useState<number>(0);
+  const [minutes, setMinutes] = useState<number>(5);
   const [showSaved, setShowSaved] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const savedIndicatorRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync duration when topic changes
+  // Sync duration when topic changes - only update if values are different
   useEffect(() => {
     if (topic?.estimatedMinutes !== undefined) {
-      setHours(Math.floor(topic.estimatedMinutes / 60));
-      setMinutes(topic.estimatedMinutes % 60);
+      const newHours = Math.floor(topic.estimatedMinutes / 60);
+      const newMinutes = topic.estimatedMinutes % 60;
+      // Only update if different to prevent unnecessary re-renders
+      setHours(prev => prev !== newHours ? newHours : prev);
+      setMinutes(prev => prev !== newMinutes ? newMinutes : prev);
     }
   }, [topic?.estimatedMinutes]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (savedIndicatorRef.current) {
+        clearTimeout(savedIndicatorRef.current);
+      }
+    };
+  }, []);
 
   const handleDurationChange = (newHours: number, newMinutes: number) => {
     const h = Math.max(0, Math.min(99, newHours || 0));
@@ -296,7 +330,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         Meteor.call('topics.update', topicId, { estimatedMinutes: finalValue }, (error: any) => {
           if (!error) {
             setShowSaved(true);
-            setTimeout(() => setShowSaved(false), 2000);
+            // Clear previous indicator timeout
+            if (savedIndicatorRef.current) {
+              clearTimeout(savedIndicatorRef.current);
+            }
+            savedIndicatorRef.current = setTimeout(() => setShowSaved(false), 2000);
           }
         });
       }
@@ -308,19 +346,19 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
       <TabNavigation>
         <TabButton
           isActive={activeTab === 'content'}
-          onClick={() => onTabChange('content')}
+          onClick={() => handleTabChange('content')}
         >
           Content
         </TabButton>
         <TabButton
           isActive={activeTab === 'outline'}
-          onClick={() => onTabChange('outline')}
+          onClick={() => handleTabChange('outline')}
         >
           Outline
         </TabButton>
         <TabButton
           isActive={activeTab === 'settings'}
-          onClick={() => onTabChange('settings')}
+          onClick={() => handleTabChange('settings')}
         >
           Settings
         </TabButton>

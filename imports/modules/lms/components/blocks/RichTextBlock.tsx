@@ -17,11 +17,17 @@ const RichTextContainer = styled.div<{ settings: RichTextBlockType['settings'] }
   background-color: ${props => props.settings.backgroundColor || 'transparent'};
   border-radius: 4px;
   line-height: 1.6;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
   
   &[contenteditable="true"] {
     outline: none;
     border: 2px dashed #cbd5e1;
     cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
     
     &:focus {
       border-color: #6366f1;
@@ -141,9 +147,54 @@ export const RichTextBlock: React.FC<RichTextBlockProps> = ({ block, isEditing, 
     editorRef.current?.focus();
   };
 
-  const formatBlock = (tag: string) => {
-    document.execCommand('formatBlock', false, tag);
+  // Apply heading/paragraph style to selected text only (inline)
+  const applyTextStyle = (tag: string) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      editorRef.current?.focus();
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString();
+
+    // If no text selected, don't do anything
+    if (!selectedText) {
+      editorRef.current?.focus();
+      return;
+    }
+
+    // Define styles for each tag (using absolute px values to prevent compounding)
+    const styles: Record<string, { fontSize: string; fontWeight: string }> = {
+      h1: { fontSize: '32px', fontWeight: '600' },
+      h2: { fontSize: '24px', fontWeight: '600' },
+      h3: { fontSize: '20px', fontWeight: '600' },
+      p: { fontSize: '16px', fontWeight: '400' },
+    };
+
+    const style = styles[tag] || styles.p;
+
+    // Get the selected content and extract plain text (removes nested spans)
+    const plainText = selectedText;
+
+    // Create a span with the heading style
+    const span = document.createElement('span');
+    span.style.fontSize = style.fontSize;
+    span.style.fontWeight = style.fontWeight;
+    span.textContent = plainText; // Use plain text to avoid nesting
+
+    // Replace selection with styled span
+    range.deleteContents();
+    range.insertNode(span);
+
+    // Clear selection and focus
+    selection.removeAllRanges();
     editorRef.current?.focus();
+
+    // Trigger update
+    if (editorRef.current) {
+      onUpdate({ content: editorRef.current.innerHTML });
+    }
   };
 
   return (
@@ -162,16 +213,16 @@ export const RichTextBlock: React.FC<RichTextBlockProps> = ({ block, isEditing, 
           
           <div style={{ width: '1px', background: '#e5e7eb', margin: '0 4px' }} />
           
-          <ToolbarButton onClick={() => formatBlock('h1')} title="Heading 1">
+          <ToolbarButton onClick={() => applyTextStyle('h1')} title="Heading 1">
             H1
           </ToolbarButton>
-          <ToolbarButton onClick={() => formatBlock('h2')} title="Heading 2">
+          <ToolbarButton onClick={() => applyTextStyle('h2')} title="Heading 2">
             H2
           </ToolbarButton>
-          <ToolbarButton onClick={() => formatBlock('h3')} title="Heading 3">
+          <ToolbarButton onClick={() => applyTextStyle('h3')} title="Heading 3">
             H3
           </ToolbarButton>
-          <ToolbarButton onClick={() => formatBlock('p')} title="Paragraph">
+          <ToolbarButton onClick={() => applyTextStyle('p')} title="Paragraph">
             P
           </ToolbarButton>
           
@@ -220,6 +271,8 @@ export const RichTextBlock: React.FC<RichTextBlockProps> = ({ block, isEditing, 
         onBlur={handleBlur}
         settings={block.settings}
         suppressContentEditableWarning
+        onDragStart={(e) => e.stopPropagation()}
+        draggable={false}
       />
     </div>
   );

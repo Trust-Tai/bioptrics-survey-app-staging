@@ -55,7 +55,7 @@ const PDFSection = styled.div<{ $width?: number }>`
   }
 `;
 
-const PDFEmptyState = styled.div`
+const PDFEmptyState = styled.div<{ $clickable?: boolean }>`
   width: 100%;
   height: 400px;
   background-color: #f9fafb;
@@ -66,6 +66,15 @@ const PDFEmptyState = styled.div`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  cursor: ${props => props.$clickable ? 'pointer' : 'default'};
+  transition: all 0.2s;
+  
+  ${props => props.$clickable && `
+    &:hover {
+      border-color: #3b82f6;
+      background-color: #f0f9ff;
+    }
+  `}
 `;
 
 const PDFIcon = styled.svg`
@@ -154,9 +163,10 @@ interface PDFBlockProps {
   block: PDFBlockType;
   isEditing?: boolean;
   onUpdate?: (blockId: string, settings: any) => void;
+  onEdit?: () => void;
 }
 
-export const PDFBlock: React.FC<PDFBlockProps> = ({ block }) => {
+export const PDFBlock: React.FC<PDFBlockProps> = ({ block, isEditing, onEdit }) => {
   const { settings } = block;
   const pdfUrl = settings?.pdfUrl;
   const fileName = settings?.fileName || 'document.pdf';
@@ -178,7 +188,10 @@ export const PDFBlock: React.FC<PDFBlockProps> = ({ block }) => {
   if (!pdfUrl) {
     return (
       <PDFContainer>
-        <PDFEmptyState>
+        <PDFEmptyState 
+          $clickable={isEditing && !!onEdit} 
+          onClick={isEditing && onEdit ? onEdit : undefined}
+        >
           <PDFIcon fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path 
               strokeLinecap="round" 
@@ -194,7 +207,9 @@ export const PDFBlock: React.FC<PDFBlockProps> = ({ block }) => {
             />
           </PDFIcon>
           <PDFEmptyText>No PDF uploaded</PDFEmptyText>
-          <PDFEmptySubtext>Click edit to upload a PDF document</PDFEmptySubtext>
+          <PDFEmptySubtext>
+            {isEditing ? 'Click here to upload a PDF document' : 'Click edit to upload a PDF document'}
+          </PDFEmptySubtext>
         </PDFEmptyState>
       </PDFContainer>
     );

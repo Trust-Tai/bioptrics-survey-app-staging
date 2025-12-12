@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { X, Settings, Sparkles } from 'lucide-react';
-import type { ContentBlock, BannerBlock } from '../types/contentBlocks';
+import { X, Settings, Sparkles, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import styled from 'styled-components';
+import type { ContentBlock, BannerBlock, VisibilitySettings as VisibilitySettingsType } from '../types/contentBlocks';
 
 // Import shared components from the modular folder
 import { AnimationSettingsPanel } from './BlockSettingsPanel/shared/AnimationSettingsPanel';
+import { SpacingBackgroundSettings } from './BlockSettingsPanel/shared/SpacingBackgroundSettings';
+import { VisibilitySettings } from './BlockSettingsPanel/settings/VisibilitySettings';
 
 // Import all settings components
 import {
@@ -12,6 +15,7 @@ import {
   VideoSettings,
   VideoPlayerSettings,
   AudioPlayerSettings,
+  MediaSettings,
   PDFSettings,
   FileDownloadSettings,
   AccordionSettings,
@@ -39,6 +43,49 @@ import {
   Tab,
 } from './BlockSettingsPanel/shared/StyledComponents';
 
+// Visibility Section Styles
+const VisibilitySection = styled.div`
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+`;
+
+const VisibilitySectionHeader = styled.button<{ $expanded: boolean }>`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: ${props => props.$expanded ? '#f9fafb' : 'white'};
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #f9fafb;
+  }
+`;
+
+const VisibilitySectionTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  
+  svg {
+    color: #6b7280;
+  }
+`;
+
+const VisibilitySectionContent = styled.div<{ $expanded: boolean }>`
+  display: ${props => props.$expanded ? 'block' : 'none'};
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+`;
+
 interface BlockSettingsPanelProps {
   block: ContentBlock;
   onUpdate: (settings: any) => void;
@@ -49,6 +96,11 @@ type SettingsTab = 'content' | 'style';
 
 export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, onUpdate, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('content');
+  const [visibilityExpanded, setVisibilityExpanded] = useState(false);
+
+  const handleVisibilityUpdate = (visibility: VisibilitySettingsType) => {
+    onUpdate({ _visibility: visibility });
+  };
 
   const renderSettings = () => {
     switch (block.type) {
@@ -62,6 +114,8 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
         return <VideoPlayerSettings block={block} onUpdate={onUpdate} />;
       case 'audio-player':
         return <AudioPlayerSettings block={block} onUpdate={onUpdate} />;
+      case 'media':
+        return <MediaSettings block={block} onUpdate={onUpdate} />;
       case 'pdf':
         return <PDFSettings block={block} onUpdate={onUpdate} />;
       case 'file-download':
@@ -102,6 +156,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
       case 'video': return 'Video';
       case 'video-player': return 'Video Player';
       case 'audio-player': return 'Audio Player';
+      case 'media': return 'Media Player';
       case 'pdf': return 'PDF Document';
       case 'file-download': return 'File Download';
       case 'accordion': return 'Accordion';
@@ -154,9 +209,31 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({ block, o
           renderSettings()
         ) : (
           <>
+            <SpacingBackgroundSettings block={block} onUpdate={onUpdate} />
             {block.type === 'banner' && (
               <BannerStyleSettings block={block as BannerBlock} onUpdate={onUpdate} />
             )}
+            
+            {/* Visibility Section */}
+            <VisibilitySection>
+              <VisibilitySectionHeader 
+                $expanded={visibilityExpanded}
+                onClick={() => setVisibilityExpanded(!visibilityExpanded)}
+              >
+                <VisibilitySectionTitle>
+                  <Eye size={16} />
+                  Visibility
+                </VisibilitySectionTitle>
+                {visibilityExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </VisibilitySectionHeader>
+              <VisibilitySectionContent $expanded={visibilityExpanded}>
+                <VisibilitySettings 
+                  visibility={block.visibility}
+                  onUpdate={handleVisibilityUpdate}
+                />
+              </VisibilitySectionContent>
+            </VisibilitySection>
+            
             <AnimationSettingsPanel block={block} onUpdate={onUpdate} />
           </>
         )}

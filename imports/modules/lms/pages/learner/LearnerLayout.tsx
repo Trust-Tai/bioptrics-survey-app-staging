@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Award, Settings, Search, User, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Award, Settings, Search, User, ChevronDown, StickyNote, Target, BarChart } from 'lucide-react';
 
 const LayoutContainer = styled.div`
   display: flex;
@@ -214,6 +214,18 @@ export const LearnerLayout: React.FC = () => {
           <NavItem to="/admin/lms/learner/courses">
             <BookOpen />
             Learning
+          </NavItem>
+          <NavItem to="/admin/lms/learner/action-tracker">
+            <Target />
+            Action Tracker
+          </NavItem>
+          <NavItem to="/admin/lms/learner/performance">
+            <BarChart />
+            My Performance
+          </NavItem>
+          <NavItem to="/admin/lms/learner/notes">
+            <StickyNote />
+            My Notes
           </NavItem>
           <NavItem to="/admin/lms/learner/certificates">
             <Award />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import type { ContentGridBlock, GridCardItem } from '../../../types/contentBlocks';
 import {
   SettingGroup,
@@ -73,6 +74,25 @@ const ImagePreview = styled.img`
   margin-top: 8px;
 `;
 
+const LoadingOverlay = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #6b7280;
+  gap: 8px;
+  
+  svg {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
 const AddButton = styled.button`
   display: flex;
   align-items: center;
@@ -101,6 +121,8 @@ interface ContentGridSettingsProps {
 
 export const ContentGridSettings: React.FC<ContentGridSettingsProps> = ({ block, onUpdate }) => {
   const [selectedItemIndex, setSelectedItemIndex] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const items = block.settings.items || [];
@@ -134,14 +156,40 @@ export const ContentGridSettings: React.FC<ContentGridSettingsProps> = ({ block,
     onUpdate({ items: newItems });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        handleUpdateItem({ imageUrl: event.target?.result as string });
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      // Web Worker based compression - non-blocking
+      const options = {
+        maxSizeMB: 0.5, // Max 500KB for grid items
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+        onProgress: (progress: number) => {
+          setUploadProgress(Math.round(progress));
+        },
       };
-      reader.readAsDataURL(file);
+
+      const compressedFile = await imageCompression(file, options);
+      
+      const imageData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target?.result as string);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(compressedFile);
+      });
+      
+      handleUpdateItem({ imageUrl: imageData });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -192,19 +240,28 @@ export const ContentGridSettings: React.FC<ContentGridSettingsProps> = ({ block,
           <SettingGroup>
             <Label>Image</Label>
             <ImageUploadContainer>
-              <ChangeImageButton onClick={() => fileInputRef.current?.click()}>
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Change Image
-              </ChangeImageButton>
+              {isUploading ? (
+                <LoadingOverlay>
+                  <Loader2 size={24} />
+                  <span style={{ fontSize: '13px' }}>Compressing... {uploadProgress}%</span>
+                </LoadingOverlay>
+              ) : (
+                <ChangeImageButton onClick={() => fileInputRef.current?.click()}>
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Change Image
+                </ChangeImageButton>
+              )}
               <HiddenFileInput
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
               />
-              <ImagePreview src={selectedItem.imageUrl || ''} alt="Preview" />
+              {!isUploading && selectedItem.imageUrl && (
+                <ImagePreview src={selectedItem.imageUrl} alt="Preview" />
+              )}
             </ImageUploadContainer>
           </SettingGroup>
 
